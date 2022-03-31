@@ -128,7 +128,7 @@ class Booster {
     if (config_.tree_learner == std::string("feature")) {
       Log::Fatal("Do not support feature parallel in c api");
     }
-    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial")) {
+    if (Network::num_machines() == 1 && config_.tree_learner != std::string("serial") && config_.tree_learner != std::string("serial2")) {
       Log::Warning("Only find one worker, will switch to serial tree learner");
       config_.tree_learner = "serial";
     }
@@ -351,6 +351,11 @@ class Booster {
     return boosting_->TrainOneIter(nullptr, nullptr);
   }
 
+  bool TrainOneIter_new(const score_t* gradients, const score_t* hessians,const score_t* gradients2, const score_t* hessians2)   {
+    UNIQUE_LOCK(mutex_)
+    return boosting_->TrainOneIter_new(gradients, hessians, gradients2, hessians2);
+  }  
+    
   void Refit(const int32_t* leaf_preds, int32_t nrow, int32_t ncol) {
     UNIQUE_LOCK(mutex_)
     std::vector<std::vector<int32_t>> v_leaf_preds(nrow, std::vector<int32_t>(ncol, 0));
@@ -721,6 +726,16 @@ class Booster {
     boosting_->SaveModelToFile(start_iteration, num_iteration, feature_importance_type, filename);
   }
 
+  void SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type,
+                          int num_labels,
+                          int num_label, const char* filename) {
+    boosting_->SaveModelToFile(start_iteration, num_iteration, feature_importance_type, num_labels, num_label, filename);
+  }  
+  
+  void SetNumlabels(int num_labels) {
+    boosting_->SetNumlabels(num_labels);
+  }  
+    
   void LoadModelFromString(const char* model_str) {
     size_t len = std::strlen(model_str);
     boosting_->LoadModelFromString(model_str, len);
@@ -1716,6 +1731,32 @@ int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
   API_END();
 }
 
+int LGBM_BoosterUpdateOneIterCustom2(BoosterHandle handle,
+                                    const float* grad,
+                                    const float* hess,
+                                    const float* grad2,
+                                    const float* hess2,
+                                    int* is_finished) {
+  API_BEGIN();
+  #ifdef SCORE_T_USE_DOUBLE
+  (void) handle;       // UNUSED VARIABLE
+  (void) grad;         // UNUSED VARIABLE
+  (void) hess;         // UNUSED VARIABLE
+  (void) grad2;         // UNUSED VARIABLE
+  (void) hess2;         // UNUSED VARIABLE
+  (void) is_finished;  // UNUSED VARIABLE
+  Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
+  #else
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  if (ref_booster->TrainOneIter_new(grad, hess, grad2, hess2)) {
+    *is_finished = 1;
+  } else {
+    *is_finished = 0;
+  }
+  #endif
+  API_END();
+}
+
 int LGBM_BoosterRollbackOneIter(BoosterHandle handle) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
@@ -1877,6 +1918,13 @@ struct FastConfig {
 int LGBM_FastConfigFree(FastConfigHandle fastConfig) {
   API_BEGIN();
   delete reinterpret_cast<FastConfig*>(fastConfig);
+  API_END();
+}
+
+int LGBM_BoosterSetNumLabels(BoosterHandle handle, int num_labels) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SetNumlabels(num_labels);
   API_END();
 }
 
@@ -2241,6 +2289,20 @@ int LGBM_BoosterSaveModel(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   ref_booster->SaveModelToFile(start_iteration, num_iteration,
                                feature_importance_type, filename);
+  API_END();
+}
+
+int LGBM_BoosterSaveModel2(BoosterHandle handle,
+                          int start_iteration,
+                          int num_iteration,
+                          int feature_importance_type,
+                          int num_labels,
+                          int save_num_label,
+                          const char* filename) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->SaveModelToFile(start_iteration, num_iteration,
+                               feature_importance_type, num_labels, save_num_label, filename);
   API_END();
 }
 

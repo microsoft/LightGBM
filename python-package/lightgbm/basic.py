@@ -185,6 +185,11 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+    elif isinstance(data, np.ndarray) and data.shape[1] > 1:
+        if data.dtype == dtype:
+            return data.transpose().reshape(-1)
+        else:
+            return data.transpose().astype(dtype=dtype, copy=False).reshape(-1)
     else:
         raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                         "It should be list, numpy 1-D array or pandas Series")
@@ -2558,6 +2563,19 @@ class Booster:
         self.best_iteration = -1
         self.best_score = {}
         params = {} if params is None else deepcopy(params)
+                         
+        if 'num_labels' in params and params['num_labels'] > 1:
+            if not 'tree_learner' in params and params['tree_learner'] != 'serial2':
+                raise ValueError('tree_learner should be serial2')
+            
+        
+        if 'num_labels' not in params :
+            params['num_labels'] = 1
+        elif params['num_labels'] != train_set.label.shape[1]:
+            raise ValueError('num_labels {} should be equal to train_set shape {}'.format(params['num_labels'],train_set.label.shape[1]))
+        self.num_labels__ = params['num_labels']
+                         
+                         
         if train_set is not None:
             # Training task
             if not isinstance(train_set, Dataset):
@@ -2956,7 +2974,7 @@ class Booster:
         self.params.update(params)
         return self
 
-    def update(self, train_set=None, fobj=None):
+    def update(self, train_set=None, fobj=None, ep = None):
         """Update Booster for one iteration.
 
         Parameters
@@ -3020,10 +3038,14 @@ class Booster:
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
-            grad, hess = fobj(self.__inner_predict(0), self.train_set)
-            return self.__boost(grad, hess)
+            if self.num_labels__ > 1:
+                grad, hess, grad2, hess2 = fobj(self.__inner_predict(0), self.train_set, ep)
+                return self.__boost(grad, hess, grad2, hess2)
+            else:
+                grad, hess = fobj(self.__inner_predict(0), self.train_set)
+                return self.__boost(grad, hess)
 
-    def __boost(self, grad, hess):
+    def __boost(self, grad, hess, grad2 = None, hess2 = None):
         """Boost Booster for one iteration with customized gradient statistics.
 
         .. note::
@@ -3064,11 +3086,24 @@ class Booster:
                 f"number of models per one iteration ({self.__num_class})"
             )
         is_finished = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
-            self.handle,
-            grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-            hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-            ctypes.byref(is_finished)))
+        if 'num_labels' in self.params and self.params['num_labels'] > 1:
+            grad2 = list_to_1d_numpy(grad2, name='gradient')
+            hess2 = list_to_1d_numpy(hess2, name='hessian')
+            assert grad2.flags.c_contiguous
+            assert hess2.flags.c_contiguous
+            _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom2(
+                self.handle,
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                grad2.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess2.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                ctypes.byref(is_finished)))
+        else:
+            _safe_call(_LIB.LGBM_BoosterUpdateOneIterCustom(
+                self.handle,
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                ctypes.byref(is_finished)))
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
@@ -3303,6 +3338,41 @@ class Booster:
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
+    def save_model2(self, filename, num_iteration=None, start_iteration=0, num_label = 0, importance_type='split'):
+        """Save Booster to file (mtgbm version).
+
+        Parameters
+        ----------
+        filename : string
+            Filename to save Booster.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        num_label : int, optional (default=0)
+            index of task to save.
+
+        Returns
+        -------
+        self : Booster
+            Returns self.
+        """
+        if num_iteration is None:
+            num_iteration = self.best_iteration
+        importance_type_int = FEATURE_IMPORTANCE_TYPE_MAPPER[importance_type]
+        _safe_call(_LIB.LGBM_BoosterSaveModel2(
+            self.handle,
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            ctypes.c_int(importance_type_int),
+            ctypes.c_int(self.num_labels__),
+            ctypes.c_int(num_label),
+            c_str(filename)))
+        _dump_pandas_categorical(self.pandas_categorical, filename)
+        return self    
+                         
     def shuffle_models(self, start_iteration=0, end_iteration=-1):
         """Shuffle models.
 
@@ -3867,9 +3937,9 @@ class Booster:
             raise ValueError("Data_idx should be smaller than number of dataset")
         if self.__inner_predict_buffer[data_idx] is None:
             if data_idx == 0:
-                n_preds = self.train_set.num_data() * self.__num_class
+                n_preds = self.train_set.num_data() * self.__num_class * self.num_labels__ 
             else:
-                n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class
+                n_preds = self.valid_sets[data_idx - 1].num_data() * self.__num_class * self.num_labels__ 
             self.__inner_predict_buffer[data_idx] = np.empty(n_preds, dtype=np.float64)
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
@@ -3976,3 +4046,10 @@ class Booster:
             else:
                 self.__attr.pop(key, None)
         return self
+    
+    def set_num_labels(self,num_labels):
+        """Set num_labels to the Booster.
+        """
+        _safe_call(_LIB.LGBM_BoosterSetNumLabels(
+                    self.handle,
+                    ctypes.c_int(num_labels)))

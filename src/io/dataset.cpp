@@ -889,14 +889,14 @@ bool Dataset::GetFloatField(const char* field_name, data_size_t* out_len,
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
 #else
     *out_ptr = metadata_.label();
-    *out_len = num_data_;
+    *out_len = metadata_.label_.size();
 #endif
   } else if (name == std::string("weight") || name == std::string("weights")) {
 #ifdef LABEL_T_USE_DOUBLE
     Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
 #else
     *out_ptr = metadata_.weights();
-    *out_len = num_data_;
+    *out_len = metadata_.weights_.size();
 #endif
   } else {
     return false;

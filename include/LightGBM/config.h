@@ -827,6 +827,9 @@ struct Config {
   // desc = used only in ``rank_xendcg`` objective
   // desc = random seed for objectives, if random process is needed
   int objective_seed = 5;
+    
+  // desc = for mtgbm
+  int num_labels = 1;
 
   // check = >0
   // alias = num_classes

@@ -597,6 +597,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                                       const float* hess,
                                                       int* is_finished);
 
+LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom2(BoosterHandle handle,
+                                                      const float* grad,
+                                                      const float* hess,
+                                                      const float* grad2,
+                                                      const float* hess2,
+                                                      int* is_finished);
+
+
 /*!
  * \brief Rollback one iteration.
  * \param handle Handle of booster
@@ -1223,6 +1231,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
                                             int feature_importance_type,
                                             const char* filename);
 
+LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel2(BoosterHandle handle,
+                          int start_iteration,
+                          int num_iteration,
+                          int feature_importance_type,
+                          int num_labels,
+                          int num_label,
+                          const char* filename);
+
 /*!
  * \brief Save model to string.
  * \param handle Handle of booster
@@ -1351,6 +1367,9 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     int rank,
                                                     void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
+
+LIGHTGBM_C_EXPORT int LGBM_BoosterSetNumLabels(BoosterHandle handle, int num_labels);
+
 
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
 /*! \brief Inline specifier no-op in C using standards before C99. */

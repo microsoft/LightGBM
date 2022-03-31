@@ -61,6 +61,8 @@ class TreeLearner {
   */
   virtual Tree* Train(const score_t* gradients, const score_t* hessians, bool is_first_tree) = 0;
 
+  virtual void Train_serial2(Tree* tree, const score_t* gradients, const score_t* hessians, bool is_first_tree);
+
   /*!
   * \brief use an existing tree to fit the new gradients and hessians.
   */
@@ -78,7 +80,10 @@ class TreeLearner {
   virtual void SetBaggingData(const Dataset* subset,
                               const data_size_t* used_indices,
                               data_size_t num_data) = 0;
-
+    
+  virtual void SetBaggingData2(const Dataset* subset,
+                              const data_size_t* used_indices,
+                              data_size_t num_data);   
   /*!
   * \brief Using last trained tree to predict score then adding to out_score;
   * \param out_score output score

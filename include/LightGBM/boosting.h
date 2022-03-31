@@ -84,6 +84,9 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual bool TrainOneIter(const score_t* gradients, const score_t* hessians) = 0;
 
+  virtual bool TrainOneIter_new(const score_t* gradients, const score_t* hessians,const score_t* gradients2, const score_t* hessians2) = 0;
+    
+    
   /*!
   * \brief Rollback one iteration
   */
@@ -206,6 +209,17 @@ class LIGHTGBM_EXPORT Boosting {
   */
   virtual bool SaveModelToFile(int start_iteration, int num_iterations, int feature_importance_type, const char* filename) const = 0;
 
+    
+  virtual bool SaveModelToFile(int start_iteration, int num_iterations,
+                          int num_labels,
+                          int num_label,
+                          int feature_importance_type,
+                          const char* filename) = 0;
+
+  virtual bool SetNumlabels(
+                          int num_labels) = 0;
+    
+    
   /*!
   * \brief Save model to string
   * \param start_iteration The model will be saved start from

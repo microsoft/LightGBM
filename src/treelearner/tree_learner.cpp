@@ -9,6 +9,7 @@
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
+#include "serial_mt_tree_learner.h"
 
 namespace LightGBM {
 
@@ -21,6 +22,8 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
       } else {
         return new SerialTreeLearner(config);
       }
+    } else if (learner_type == std::string("serial2")) {
+      return new SerialMTTreeLearner(config);
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<SerialTreeLearner>(config);
     } else if (learner_type == std::string("data")) {
@@ -51,5 +54,13 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
   }
   return nullptr;
 }
+    
+void TreeLearner::Train_serial2(Tree* tree, const score_t* gradients, const score_t* hessians, bool is_first_tree) {
+//   return 0;
+}
 
+void TreeLearner::SetBaggingData2(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data)  {
+//   return 0;
+}
+    
 }  // namespace LightGBM

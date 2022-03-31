@@ -45,6 +45,31 @@ class ScoreUpdater {
       }
     }
   }
+    
+  ScoreUpdater(const Dataset* data, int num_tree_per_iteration, int num_labels) : data_(data) {
+    
+    num_data_ = data->num_data();
+    int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration * num_labels;
+    score_.resize(total_size);
+    // default start score is zero
+    std::memset(score_.data(), 0, total_size * sizeof(double));
+    has_init_score_ = false;
+    const double* init_score = data->metadata().init_score();
+    // if exists initial score, will start from it
+    if (init_score != nullptr) {
+      if ((data->metadata().num_init_score() % num_data_) != 0
+          || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
+        Log::Fatal("Number of class for initial score error");
+      }
+      has_init_score_ = true;
+      #pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
+        score_[i] = init_score[i];
+        Log::Info("ScoreUpdater %d %f",i,init_score[i]);
+      }
+    }
+  }  
+    
   /*! \brief Destructor */
   ~ScoreUpdater() {
   }

@@ -350,26 +350,61 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   }
 
   int start_model = start_iteration * num_tree_per_iteration_;
+    
+  if (save_num_label == -1){
+      std::vector<std::string> tree_strs(num_used_model - start_model);
+      std::vector<size_t> tree_sizes(num_used_model - start_model);
+      // output tree models
+      #pragma omp parallel for schedule(static)
+      for (int i = start_model; i < num_used_model; ++i) {
+        const int idx = i - start_model;
+        tree_strs[idx] = "Tree=" + std::to_string(idx) + '\n';
+        tree_strs[idx] += models_[i]->ToString() + '\n';
+        tree_sizes[idx] = tree_strs[idx].size();
+      }
 
-  std::vector<std::string> tree_strs(num_used_model - start_model);
-  std::vector<size_t> tree_sizes(num_used_model - start_model);
-  // output tree models
-  #pragma omp parallel for schedule(static)
-  for (int i = start_model; i < num_used_model; ++i) {
-    const int idx = i - start_model;
-    tree_strs[idx] = "Tree=" + std::to_string(idx) + '\n';
-    tree_strs[idx] += models_[i]->ToString() + '\n';
-    tree_sizes[idx] = tree_strs[idx].size();
+      ss << "tree_sizes=" << CommonC::Join(tree_sizes, " ") << '\n';
+      ss << '\n';
+
+      for (int i = 0; i < num_used_model - start_model; ++i) {
+        ss << tree_strs[i];
+        tree_strs[i].clear();
+      }
+      ss << "end of trees" << "\n";
   }
+  else{
+      int ii = 0;
+      for (int i = start_model; i < num_used_model; ++i) {
+        if (i % num_labels_ == save_num_label){
+           ii += 1;   
+        }
+      }
+      std::vector<std::string> tree_strs(ii);
+      std::vector<size_t> tree_sizes(ii);
+      // output tree models
+      ii = 0;
+      for (int i = start_model; i < num_used_model; ++i) {
+        if (i % num_labels_ == save_num_label){
+           tree_strs[ii] = "Tree=" + std::to_string(ii) + '\n';
+           tree_strs[ii] += models_[i]->ToString() + '\n';
+           tree_sizes[ii] = tree_strs[ii].size();
+           ii += 1;
+        }
+      }
 
-  ss << "tree_sizes=" << CommonC::Join(tree_sizes, " ") << '\n';
-  ss << '\n';
-
-  for (int i = 0; i < num_used_model - start_model; ++i) {
-    ss << tree_strs[i];
-    tree_strs[i].clear();
+      ss << "tree_sizes=" << Common::Join(tree_sizes, " ") << '\n';
+      ss << '\n';
+      ii = 0;
+      for (int i = 0; i < num_used_model - start_model; ++i) {
+        if (i % num_labels_ == save_num_label){
+          ss << tree_strs[ii];
+          tree_strs[ii].clear();
+          ii += 1;
+        }
+      }
+      ss << "end of trees" << "\n";   
   }
-  ss << "end of trees" << "\n";
+    
   std::vector<double> feature_importances = FeatureImportance(
       num_iteration, feature_importance_type);
   // store the importance first
@@ -414,6 +449,22 @@ bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_i
     Log::Fatal("Model file %s is not available for writes", filename);
   }
   std::string str_to_write = SaveModelToString(start_iteration, num_iteration, feature_importance_type);
+  auto size = writer->Write(str_to_write.c_str(), str_to_write.size());
+  return size > 0;
+}
+    
+bool GBDT::SaveModelToFile(int start_iteration, int num_iteration, int feature_importance_type,
+                          int num_labels,
+                          int num_label, const char* filename) {
+  /*! \brief File to write models */
+  save_num_label = num_label;
+  num_labels_ = num_labels;
+  auto writer = VirtualFileWriter::Make(filename);
+  if (!writer->Init()) {
+    Log::Fatal("Model file %s is not available for writes", filename);
+  }
+  std::string str_to_write = SaveModelToString(start_iteration, num_iteration, feature_importance_type);
+  save_num_label = -1
   auto size = writer->Write(str_to_write.c_str(), str_to_write.size());
   return size > 0;
 }

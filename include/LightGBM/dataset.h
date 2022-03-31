@@ -205,7 +205,11 @@ class Metadata {
   * \brief Get size of initial scores
   */
   inline int64_t num_init_score() const { return num_init_score_; }
-
+    
+  /*! \brief Label data */
+  std::vector<label_t> label_;
+  /*! \brief Weights data */
+  std::vector<label_t> weights_;
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
   /*! \brief Disable copy */
@@ -226,10 +230,6 @@ class Metadata {
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
-  /*! \brief Label data */
-  std::vector<label_t> label_;
-  /*! \brief Weights data */
-  std::vector<label_t> weights_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */

@@ -310,12 +310,13 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
     Log::Fatal("label cannot be nullptr");
   }
   if (num_data_ != len) {
-    Log::Fatal("Length of label is not same with #data");
+    Log::Info("Length of label is not same with #data");
   }
-  if (label_.empty()) { label_.resize(num_data_); }
-
+  if (label_.empty()) { label_.resize(len); }
+  // new size for label
+  label_ = std::vector<label_t>(len);
   #pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
-  for (data_size_t i = 0; i < num_data_; ++i) {
+  for (data_size_t i = 0; i < len; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
   }
 }

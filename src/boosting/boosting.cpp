@@ -67,4 +67,18 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
   }
 }
 
+bool TrainOneIter_new(const score_t* gradients, const score_t* hessians,const score_t* gradients2, const score_t* hessians2){
+   return 0;   
+}
+
+bool SaveModelToFile(int start_iteration, int num_iterations,
+                          int num_labels,
+                          int num_label, const char* filename){
+   return 0;   
+}
+ 
+bool SetNumlabels(int num_labels){
+   return 0;   
+}    
+    
 }  // namespace LightGBM

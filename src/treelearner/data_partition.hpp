@@ -128,6 +128,11 @@ class DataPartition {
     used_data_indices_ = used_data_indices;
     used_data_count_ = num_used_data;
   }
+    
+  void SetUsedDataIndices2(const data_size_t* used_data_indices, data_size_t num_used_data) {
+    used_data_indices2_ = used_data_indices;
+    used_data_count2_ = num_used_data;
+  }  
 
   /*!
   * \brief Get number of data on one leaf
@@ -147,7 +152,16 @@ class DataPartition {
 
   /*! \brief Get number of leaves */
   int num_leaves() const { return num_leaves_; }
-
+    
+  /*! \brief Get number of datas */
+  int num_datas() const { return num_data_; }
+    
+  /*! \brief Get used_data_indices2_ */  
+  const data_size_t* get_used_data_indices() const { return used_data_indices2_; }
+  
+  /*! \brief Get used_data_count2_ */  
+  data_size_t get_used_data_count_() const { return used_data_count2_; }
+    
  private:
   /*! \brief Number of all data */
   data_size_t num_data_;
@@ -161,8 +175,13 @@ class DataPartition {
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> indices_;
   /*! \brief used data indices, used for bagging */
   const data_size_t* used_data_indices_;
+    
+  const data_size_t* used_data_indices2_;
   /*! \brief used data count, used for bagging */
   data_size_t used_data_count_;
+  
+  data_size_t used_data_count2_;  
+  
   ParallelPartitionRunner<data_size_t, true> runner_;
 };
 

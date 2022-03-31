@@ -13,13 +13,18 @@ namespace LightGBM {
 void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
   int early_stop_round_counter = 0;
   // set zero
-  std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
+  std::memset(output, 0, sizeof(double) * (num_tree_per_iteration_ + num_labels_ - 1));
   const int end_iteration_for_pred = start_iteration_for_pred_ + num_iteration_for_pred_;
-  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
+  for (int i = start_iteration_for_pred_; i < end_iteration_for_pred/num_labels_; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
+      output[k] += models_[i * num_tree_per_iteration_ * num_labels_ + k]->Predict(features);
     }
+      
+    for (int l = 1; l < num_labels_; ++l) {
+      output[num_tree_per_iteration_ - 1 + l] += models_[i * num_tree_per_iteration_ * num_labels_ + num_tree_per_iteration_ - 1 + l]->Predict(features);
+    }  
+      
     // check early stopping
     ++early_stop_round_counter;
     if (early_stop->round_period == early_stop_round_counter) {

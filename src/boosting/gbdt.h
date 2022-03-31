@@ -144,6 +144,9 @@ class GBDT : public GBDTBase {
   * \param hessians nullptr for using default objective, otherwise use self-defined boosting
   * \return True if cannot train any more
   */
+  bool TrainOneIter_new(const score_t* gradients, const score_t* hessians,const score_t* gradients2, const score_t* hessians2) override;
+  bool TrainOneIter_old(const score_t* gradients, const score_t* hessians);  
+  
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) override;
 
   /*!
@@ -193,7 +196,7 @@ class GBDT : public GBDTBase {
     if (data_idx > 0) {
       num_data = valid_score_updater_[data_idx - 1]->num_data();
     }
-    return num_data * num_class_;
+    return num_data * num_class_ * num_labels_;
   }
 
   /*!
@@ -213,7 +216,7 @@ class GBDT : public GBDTBase {
   * \return number of prediction
   */
   inline int NumPredictOneRow(int start_iteration, int num_iteration, bool is_pred_leaf, bool is_pred_contrib) const override {
-    int num_pred_in_one_row = num_class_;
+    int num_pred_in_one_row = num_class_ * num_labels_;
     if (is_pred_leaf) {
       int max_iteration = GetCurrentIteration();
       start_iteration = std::max(start_iteration, 0);
@@ -287,6 +290,14 @@ class GBDT : public GBDTBase {
                        int feature_importance_type,
                        const char* filename) const override;
 
+
+  bool SaveModelToFile(int start_iteration, int num_iterations,
+                       int feature_importance_type,
+                          int num_labels,
+                          int num_label, const char* filename) override;
+    
+  bool SetNumlabels(int num_labels) override;
+    
   /*!
   * \brief Save model to string
   * \param start_iteration The model will be saved start from
@@ -510,6 +521,8 @@ class GBDT : public GBDTBase {
   int num_tree_per_iteration_;
   /*! \brief Number of class */
   int num_class_;
+  /*! \brief Number of labels */
+  int num_labels_;
   /*! \brief Index of label column */
   data_size_t label_idx_;
   /*! \brief number of used model */
@@ -538,6 +551,7 @@ class GBDT : public GBDTBase {
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
   bool linear_tree_;
+  int save_num_label = -1;
 };
 
 }  // namespace LightGBM

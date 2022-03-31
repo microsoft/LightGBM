@@ -15,6 +15,12 @@
 #include <ctime>
 #include <sstream>
 
+#ifdef __APPLE__
+#include <sys/malloc.h>
+#else
+#include <malloc.h>
+#endif
+
 namespace LightGBM {
 
 Common::Timer global_timer;
@@ -60,6 +66,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_iteration_for_pred_ = 0;
   max_feature_idx_ = 0;
   num_class_ = config->num_class;
+  num_labels_ = config->num_labels;
   config_ = std::unique_ptr<Config>(new Config(*config));
   early_stopping_round_ = config_->early_stopping_round;
   es_first_metric_only_ = config_->first_metric_only;
@@ -103,7 +110,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   }
   training_metrics_.shrink_to_fit();
 
-  train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
+  train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_, num_labels_));
 
   num_data_ = train_data_->num_data();
   // create buffer for gradients and Hessians
@@ -145,7 +152,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
     Log::Fatal("Cannot add validation data, since it has different bin mappers with training data");
   }
   // for a validation dataset, we need its score and metric
-  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_));
+  auto new_score_updater = std::unique_ptr<ScoreUpdater>(new ScoreUpdater(valid_data, num_tree_per_iteration_, num_labels_));
   // update score
   for (int i = 0; i < iter_; ++i) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -229,6 +236,9 @@ data_size_t GBDT::BalancedBaggingHelper(data_size_t start, data_size_t cnt,
 
 void GBDT::Bagging(int iter) {
   Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
+  // save the index of data which would be used in renew the value of leafs  
+  tree_learner_->SetBaggingData2(nullptr, bag_data_indices_.data(), num_data_);
+  
   // if need bagging
   if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
       need_re_bagging_) {
@@ -259,6 +269,7 @@ void GBDT::Bagging(int iter) {
                               bag_data_cnt_, false);
       tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                     bag_data_cnt_);
+      tree_learner_->SetBaggingData2(nullptr, bag_data_indices_.data(), num_data_);
     }
   }
 }
@@ -369,6 +380,11 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 }
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
+   GBDT::TrainOneIter_old(gradients, hessians);
+}
+
+
+bool GBDT::TrainOneIter_old(const score_t* gradients, const score_t* hessians) {
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
@@ -432,6 +448,87 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     }
     // add model
     models_.push_back(std::move(new_tree));
+  }
+
+  if (!should_continue) {
+    Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
+    if (models_.size() > static_cast<size_t>(num_tree_per_iteration_)) {
+      for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+        models_.pop_back();
+      }
+    }
+    return true;
+  }
+
+  ++iter_;
+  return false;
+}
+    
+
+bool GBDT::TrainOneIter_new(const score_t* gradients, const score_t* hessians,const score_t* gradients2, const score_t* hessians2) {
+  Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
+  std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
+  // bagging logic
+  Bagging(iter_);
+
+  bool should_continue = false;
+  for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
+    const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
+    for (int cur_tree_id2 = 0; cur_tree_id2 < config_->num_labels; ++cur_tree_id2) {
+      const size_t offset2 = static_cast<size_t>(cur_tree_id2) * num_data_;
+      
+        std::unique_ptr<Tree> new_tree(new Tree(2, false, false));
+        if (class_need_train_[cur_tree_id] && train_data_->num_features() > 0) {
+          auto grad = gradients + offset;
+          auto hess = hessians + offset;
+          auto grad2 = gradients2 + offset2;
+          auto hess2 = hessians2 + offset2;
+          
+          // need to copy gradients for bagging subset.
+          if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+            for (int i = 0; i < bag_data_cnt_; ++i) {
+              gradients_[offset + i] = grad[bag_data_indices_[i]];
+              hessians_[offset + i] = hess[bag_data_indices_[i]];
+            }
+            grad = gradients_.data() + offset;
+            hess = hessians_.data() + offset;
+          }
+          bool is_first_tree = models_.size() < static_cast<size_t>(num_tree_per_iteration_);
+          // split data to learn one tree with grad and hess
+          new_tree.reset(tree_learner_->Train(grad, hess, is_first_tree));
+          // renew the leaf value of one tree with grad2 and hess2
+          tree_learner_->Train_serial2(new_tree.get(), grad2, hess2, is_first_tree);
+        }
+
+        if (new_tree->num_leaves() > 1) {
+          should_continue = true;
+          auto score_ptr = train_score_updater_->score() + offset + offset2;
+          auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
+          // shrinkage by learning rate
+          new_tree->Shrinkage(shrinkage_rate_);
+          // update score
+          UpdateScore(new_tree.get(), cur_tree_id2);
+          if (std::fabs(init_scores[cur_tree_id]) > kEpsilon) {
+            Log::Warning("please set grad and hess both.");
+            new_tree->AddBias(init_scores[cur_tree_id]);
+          }
+        } else {
+          // only add default score one-time
+          if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
+            if (objective_function_ != nullptr && !config_->boost_from_average && !train_score_updater_->has_init_score()) {
+              init_scores[cur_tree_id] = ObtainAutomaticInitialScore(objective_function_, cur_tree_id);
+              // updates scores
+              train_score_updater_->AddScore(init_scores[cur_tree_id], cur_tree_id);
+              for (auto& score_updater : valid_score_updater_) {
+                score_updater->AddScore(init_scores[cur_tree_id], cur_tree_id);
+              }
+            }
+            new_tree->AsConstantTree(init_scores[cur_tree_id]);
+          }
+        }
+        // add model
+        models_.push_back(std::move(new_tree));
+      }
   }
 
   if (!should_continue) {
@@ -596,7 +693,7 @@ std::vector<double> GBDT::GetEvalAt(int data_idx) const {
 
 /*! \brief Get training scores result */
 const double* GBDT::GetTrainingScore(int64_t* out_len) {
-  *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_;
+  *out_len = static_cast<int64_t>(train_score_updater_->num_data()) * num_class_ * num_labels_;
   return train_score_updater_->score();
 }
 
@@ -637,7 +734,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     auto used_idx = data_idx - 1;
     raw_scores = valid_score_updater_[used_idx]->score();
     num_data = valid_score_updater_[used_idx]->num_data();
-    *out_len = static_cast<int64_t>(num_data) * num_class_;
+    *out_len = static_cast<int64_t>(num_data) * num_class_ * num_labels_;
   }
   if (objective_function_ != nullptr) {
     #pragma omp parallel for schedule(static)
@@ -649,14 +746,18 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
       std::vector<double> tmp_result(num_class_);
       objective_function_->ConvertOutput(tree_pred.data(), tmp_result.data());
       for (int j = 0; j < num_class_; ++j) {
-        out_result[j * num_data + i] = static_cast<double>(tmp_result[j]);
+          for (int k = 0; k < num_labels_; ++k) {
+              out_result[k * num_tree_per_iteration_ * num_data + j * num_data + i] = static_cast<double>(tmp_result[k * num_tree_per_iteration_ * num_data + j * num_data + i]);
+          }
       }
     }
   } else {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       for (int j = 0; j < num_tree_per_iteration_; ++j) {
-        out_result[j * num_data + i] = static_cast<double>(raw_scores[j * num_data + i]);
+        for (int k = 0; k < num_labels_; ++k) {
+          out_result[k * num_tree_per_iteration_ * num_data + j * num_data + i] = static_cast<double>(raw_scores[k * num_tree_per_iteration_ * num_data + j * num_data + i]);
+        }
       }
     }
   }
@@ -832,5 +933,10 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     is_use_subset_ = false;
   }
 }
-
+    
+bool GBDT::SetNumlabels(int num_labels){
+    num_labels_ = num_labels;
+    return 0;
+    
+}
 }  // namespace LightGBM

@@ -233,7 +233,7 @@ def train(
                                     end_iteration=init_iteration + num_boost_round,
                                     evaluation_result_list=None))
 
-        booster.update(fobj=fobj)
+        booster.update(fobj=fobj, ep = i)
 
         evaluation_result_list = []
         # check evaluation result.
