@@ -189,7 +189,6 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
         data = dtrain
         , params = params
         , nrounds = nround_value
-        , save_name = tempfile(fileext = ".model")
       )
     }, "nrounds should be greater than zero")
   }

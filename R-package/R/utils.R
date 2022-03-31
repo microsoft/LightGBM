@@ -220,8 +220,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 
 #' @importFrom parallel detectCores
 lgb.get.default.num.threads <- function() {
-  # nolint
-  if (require("RhpcBLASctl", quietly = TRUE)) {
+  if (require("RhpcBLASctl", quietly = TRUE)) { # nolint
     return(RhpcBLASctl::get_num_cores())
   } else {
     msg <- "Optional package 'RhpcBLASctl' not found."
