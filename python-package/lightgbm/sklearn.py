@@ -657,19 +657,23 @@ class LGBMModel(_LGBMModelBase):
         params = _choose_param_value("metric", params, original_metric)
 
         # use joblib conventions for negative n_jobs, just like scikit-learn
-        if self.n_jobs is None or self.n_jobs < 0:
-            num_threads_aliases = _ConfigAliases.get("num_threads")
-            num_threads_aliases = [alias for alias in num_threads_aliases if alias != "n_jobs"]
-            if not any([k in num_threads_aliases for k in params.keys()]):
-                if self.n_jobs is None:
-                    if cpu_count_lib == "joblib":
-                        params["num_threads"] = cpu_count(only_physical_cores=True)
-                    elif cpu_count_lib == "psutil":
-                        params["num_threads"] = cpu_count(logical=False)
-                    else:
-                        params["num_threads"] = cpu_count()
-                elif self.n_jobs < 0:
-                    params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
+        n_jobs = self.n_jobs
+        if stage == "fit":
+            params.pop("n_jobs")
+        num_threads_aliases = _ConfigAliases.get("num_threads")
+        for alias in num_threads_aliases:
+            if alias in params:
+                n_jobs = params.pop(alias)
+        if n_jobs is None or n_jobs < 0:
+            if n_jobs is None:
+                if cpu_count_lib == "joblib":
+                    params["num_threads"] = cpu_count(only_physical_cores=True)
+                elif cpu_count_lib == "psutil":
+                    params["num_threads"] = cpu_count(logical=False)
+                else:
+                    params["num_threads"] = cpu_count()
+            elif n_jobs < 0:
+                params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
 
         return params
 
