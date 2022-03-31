@@ -808,7 +808,7 @@ predict.lgb.Booster <- function(object,
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
     if ("reshape" %in% names(additional_params)) {
-      warning("'reshape' argument is no longer supported.")
+      stop("'reshape' argument is no longer supported.")
     }
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
