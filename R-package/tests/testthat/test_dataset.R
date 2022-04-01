@@ -548,5 +548,5 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
   expect_identical(actual_num_bins, expected_num_bins)
   bins_by_name <- sapply(colnames(raw_mat), ds$get_feature_num_bin)
-  expect_identical(bins_by_name, expected_num_bins)
+  expect_identical(unname(bins_by_name), expected_num_bins)
 })
