@@ -381,6 +381,12 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
+      if (is.character(feature)) {
+        feature <- which(colnames(self) == feature)
+        if (length(feature) == 0L) {
+          stop("feature not found")
+        }
+      }
       num_bin <- integer(1L)
       .Call(
         LGBM_DatasetGetFeatureNumBin_R

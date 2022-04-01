@@ -634,7 +634,9 @@ def test_feature_num_bin(min_data_in_bin):
         np.array([1, 2] * 49 + 2 * [np.nan]),
         np.zeros(100),
     ]).T
-    ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}).construct()
+    feature_name = [f'x{i}' for i in range(X.shape[1])]
+    ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}, feature_name=feature_name)
+    ds.construct()
     expected_num_bins = [
         100 // min_data_in_bin + 1,  # extra bin for zero
         3,  # 0, 1, 2
@@ -644,6 +646,8 @@ def test_feature_num_bin(min_data_in_bin):
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    bins_by_name = [ds.feature_num_bin(name) for name in feature_name]
+    assert bins_by_name == expected_num_bins
 
 
 def test_feature_num_bin_with_max_bin_by_feature():
