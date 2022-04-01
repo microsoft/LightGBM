@@ -18,6 +18,7 @@ lightgbm(
   serializable = TRUE,
   objective = "regression",
   init_score = NULL,
+  num_threads = NULL,
   ...
 )
 }
@@ -59,6 +60,23 @@ For a list of accepted objectives, see
 the "objective" item of the "Parameters" section of the documentation}.}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{num_threads}{Number of parallel threads to use. For best speed, this should be set to the number of
+                   physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+                   number of maximum threads.
+
+                   Be aware that using too many threads can result in speed degradation in smaller datasets
+                   (see the parameters documentation for more details).
+
+                   If passing zero, will use the default number of threads configured for OpenMP
+                   (typically controlled through an environment variable \code{OMP_NUM_THREADS}).
+
+                   If passing \code{NULL} (the default), will try to use the number of physical cores in the
+                   system, but be aware that getting the number of cores detected correctly requires package
+                   \code{RhpcBLASctl} to be installed.
+
+                   This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+                   if passed there.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{

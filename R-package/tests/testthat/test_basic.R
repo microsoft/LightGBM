@@ -2928,6 +2928,51 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
   expect_false(any(model_txt_lines == "objective=regression_l1"))
 })
 
+test_that("lightgbm() accepts 'num_threads' as either top-level argument or under params", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 1L
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 10L
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+})
+
 test_that("lightgbm() accepts 'weight' and 'weights'", {
   data(mtcars)
   X <- as.matrix(mtcars[, -1L])
