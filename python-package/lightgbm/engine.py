@@ -12,10 +12,6 @@ from . import callback
 from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
 from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
 
-_LGBM_CustomObjectiveFunction = Callable[
-    [np.ndarray, Dataset],
-    Tuple[np.ndarray, np.ndarray]
-]
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[str, float, bool]
@@ -40,8 +36,8 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for Booster. Values passed through ``params`` take precedence over those
-        supplied via keyword arguments.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -58,7 +54,7 @@ def train(
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -128,7 +124,7 @@ def train(
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value=None
+        default_value='none'
     )
     fobj = None
     if callable(params["objective"]):
@@ -379,7 +375,7 @@ def _agg_cv_result(raw_results):
 
 def cv(params, train_set, num_boost_round=100,
        folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, fobj=None, feval=None, init_model=None,
+       metrics=None, feval=None, init_model=None,
        feature_name='auto', categorical_feature='auto',
        fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
        return_cvbooster=False):
@@ -388,8 +384,8 @@ def cv(params, train_set, num_boost_round=100,
     Parameters
     ----------
     params : dict
-        Parameters for Booster. Values passed through ``params`` take precedence over those
-        supplied via keyword arguments.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -417,7 +413,7 @@ def cv(params, train_set, num_boost_round=100,
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -496,7 +492,7 @@ def cv(params, train_set, num_boost_round=100,
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value=None
+        default_value='none'
     )
     fobj = None
     if callable(params["objective"]):
