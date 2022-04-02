@@ -2308,13 +2308,13 @@ def test_objective_callable_train_binary_classification():
     booster = lgb.train(
         params=params,
         train_set=train_dataset,
-        num_boost_round=100
+        num_boost_round=20
     )
     y_pred = logistic_sigmoid(booster.predict(X))
     logloss_error = log_loss(y, y_pred)
     rocauc_error = roc_auc_score(y, y_pred)
     assert booster.params['objective'] == 'none'
-    assert logloss_error == pytest.approx(0.25, 0.1)
+    assert logloss_error == pytest.approx(0.55, 0.1)
     assert rocauc_error == pytest.approx(0.99, 0.5)
 
 
@@ -2328,12 +2328,12 @@ def test_objective_callable_train_regression():
     booster = lgb.train(
         params,
         lgb_train,
-        num_boost_round=100
+        num_boost_round=20
     )
     y_pred = booster.predict(X)
     mse_error = mean_squared_error(y, y_pred)
     assert booster.params['objective'] == 'none'
-    assert mse_error == pytest.approx(119, 1)
+    assert mse_error == pytest.approx(286, 1)
 
 
 def test_objective_callable_cv_binary_classification():
@@ -2347,13 +2347,13 @@ def test_objective_callable_cv_binary_classification():
     cv_res = lgb.cv(
         params,
         train_dataset,
-        num_boost_round=100,
+        num_boost_round=20,
         nfold=3,
         return_cvbooster=True
     )
     cv_booster = cv_res['cvbooster'].boosters
     cv_logloss_errors = [
-        log_loss(y, logistic_sigmoid(cb.predict(X))) < 0.29 for cb in cv_booster
+        log_loss(y, logistic_sigmoid(cb.predict(X))) < 0.56 for cb in cv_booster
     ]
     cv_objs = [
         cb.params['objective'] == 'none' for cb in cv_booster
@@ -2373,14 +2373,14 @@ def test_objective_callable_cv_regression():
     cv_res = lgb.cv(
         params_with_metric,
         lgb_train,
-        num_boost_round=100,
+        num_boost_round=20,
         nfold=3,
         stratified=False,
         return_cvbooster=True
     )
     cv_booster = cv_res['cvbooster'].boosters
     cv_mse_errors = [
-        mean_squared_error(y, cb.predict(X)) < 295 for cb in cv_booster
+        mean_squared_error(y, cb.predict(X)) < 463 for cb in cv_booster
     ]
     cv_objs = [
         cb.params['objective'] == 'none' for cb in cv_booster
