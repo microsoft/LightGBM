@@ -596,13 +596,10 @@ class LGBMModel(_LGBMModelBase):
                     raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
             if stage == "fit":
-                self._fobj = _ObjectiveFunctionWrapper(self._objective)
-                params['objective'] = self._fobj
+                params['objective'] = _ObjectiveFunctionWrapper(self._objective)
             else:
                 params['objective'] = 'None'
         else:
-            if stage == "fit":
-                self._fobj = None
             params['objective'] = self._objective
 
         params.pop('importance_type', None)
