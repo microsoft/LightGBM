@@ -124,7 +124,7 @@ def train(
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value='none'
+        default_value=None
     )
     fobj = None
     if callable(params["objective"]):
@@ -492,7 +492,7 @@ def cv(params, train_set, num_boost_round=100,
     params = _choose_param_value(
         main_param_name='objective',
         params=params,
-        default_value='none'
+        default_value=None
     )
     fobj = None
     if callable(params["objective"]):
