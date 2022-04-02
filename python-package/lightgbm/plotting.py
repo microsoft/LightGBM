@@ -488,8 +488,8 @@ def _to_graphviz(
                     fillcolor = "#ffdddd"  # light red
                 style = "filled"
             label = f"<{label}>"
-            add(root['left_child'], total_count, name, l_dec, highlight and direction=="left")
-            add(root['right_child'], total_count, name, r_dec, highlight and direction=="right")
+            add(root['left_child'], total_count, name, l_dec, highlight and direction == "left")
+            add(root['right_child'], total_count, name, r_dec, highlight and direction == "right")
         else:  # leaf
             shape = "ellipse"
             name = f"leaf{root['leaf_index']}"
