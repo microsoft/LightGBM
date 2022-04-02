@@ -428,6 +428,17 @@ SEXP LGBM_DatasetGetNumFeature_R(SEXP handle,
   R_API_END();
 }
 
+SEXP LGBM_DatasetGetFeatureNumBin_R(SEXP handle, SEXP feature_idx, SEXP out) {
+  R_API_BEGIN();
+  _AssertDatasetHandleNotNull(handle);
+  int feature = Rf_asInteger(feature_idx);
+  int nbins;
+  CHECK_CALL(LGBM_DatasetGetFeatureNumBin(R_ExternalPtrAddr(handle), feature, &nbins));
+  INTEGER(out)[0] = nbins;
+  return R_NilValue;
+  R_API_END();
+}
+
 // --- start Booster interfaces
 
 void _BoosterFinalizer(SEXP handle) {
@@ -939,6 +950,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_DatasetUpdateParamChecking_R", (DL_FUNC) &LGBM_DatasetUpdateParamChecking_R, 2},
   {"LGBM_DatasetGetNumData_R"         , (DL_FUNC) &LGBM_DatasetGetNumData_R         , 2},
   {"LGBM_DatasetGetNumFeature_R"      , (DL_FUNC) &LGBM_DatasetGetNumFeature_R      , 2},
+  {"LGBM_DatasetGetFeatureNumBin_R"   , (DL_FUNC) &LGBM_DatasetGetFeatureNumBin_R   , 3},
   {"LGBM_BoosterCreate_R"             , (DL_FUNC) &LGBM_BoosterCreate_R             , 2},
   {"LGBM_BoosterFree_R"               , (DL_FUNC) &LGBM_BoosterFree_R               , 1},
   {"LGBM_BoosterCreateFromModelfile_R", (DL_FUNC) &LGBM_BoosterCreateFromModelfile_R, 1},

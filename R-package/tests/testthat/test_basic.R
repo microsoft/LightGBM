@@ -1,4 +1,6 @@
-context("lightgbm()")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
@@ -78,7 +80,6 @@ test_that("train and predict binary classification", {
         , metric = "binary_error"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
@@ -112,7 +113,6 @@ test_that("train and predict softmax", {
         , num_class = 3L
     )
     , nrounds = 20L
-    , save_name = tempfile(fileext = ".model")
   )
 
   expect_false(is.null(bst$record_evals))
@@ -136,7 +136,6 @@ test_that("use of multiple eval metrics works", {
         , metric = metrics
     )
     , nrounds = 10L
-    , save_name = tempfile(fileext = ".model")
   )
   expect_false(is.null(bst$record_evals))
   expect_named(
@@ -159,7 +158,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , metric = "binary_error"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - -1.590853) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 1.871015) <  TOLERANCE)
@@ -177,7 +175,6 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , metric = "l2"
     )
     , nrounds = nrounds
-    , save_name = tempfile(fileext = ".model")
   )
   expect_true(abs(bst$lower_bound() - 0.1513859) < TOLERANCE)
   expect_true(abs(bst$upper_bound() - 0.9080349) < TOLERANCE)
@@ -192,7 +189,6 @@ test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
         data = dtrain
         , params = params
         , nrounds = nround_value
-        , save_name = tempfile(fileext = ".model")
       )
     }, "nrounds should be greater than zero")
   }
@@ -211,7 +207,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , metric = "l2"
       , num_leaves = 5L
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   set.seed(708L)
@@ -224,7 +219,6 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   set.seed(708L)
@@ -238,12 +232,11 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -287,7 +280,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
       "valid1" = dvalid1
       , "valid2" = dvalid2
     )
-    , save_name = tempfile(fileext = ".model")
   )
 
   expect_named(
@@ -305,26 +297,6 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   expect_true(abs(bst$record_evals[["valid2"]][["binary_error"]][["eval"]][[1L]] - 0.02226317) < TOLERANCE)
 })
 
-test_that("lightgbm() does not write model to disk if save_name=NULL", {
-  files_before <- list.files(getwd())
-
-  model <- lightgbm(
-    data = train$data
-    , label = train$label
-    , nrounds = 5L
-    , params = list(objective = "binary")
-    , verbose = 0L
-    , save_name = NULL
-  )
-
-  files_after <- list.files(getwd())
-
-  expect_equal(files_before, files_after)
-})
-
-
-context("training continuation")
-
 test_that("training continuation works", {
   dtrain <- lgb.Dataset(
     train$data
@@ -337,6 +309,7 @@ test_that("training continuation works", {
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
 
   # train for 10 consecutive iterations
@@ -355,8 +328,6 @@ test_that("training continuation works", {
   expect_lt(abs(err_bst - err_bst2), 0.01)
 })
 
-context("lgb.cv()")
-
 test_that("cv works", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(
@@ -373,6 +344,31 @@ test_that("cv works", {
     , early_stopping_rounds = 10L
   )
   expect_false(is.null(bst$record_evals))
+})
+
+test_that("CVBooster$reset_parameter() works as expected", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  n_folds <- 2L
+  cv_bst <- lgb.cv(
+    params = list(
+      objective = "regression"
+      , min_data = 1L
+      , num_leaves = 7L
+      , verbose = VERBOSITY
+    )
+    , data = dtrain
+    , nrounds = 3L
+    , nfold = n_folds
+  )
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
+  expect_length(cv_bst$boosters, n_folds)
+  for (bst in cv_bst$boosters) {
+    expect_equal(bst[["booster"]]$params[["num_leaves"]], 7L)
+  }
+  cv_bst$reset_parameter(list(num_leaves = 11L))
+  for (bst in cv_bst$boosters) {
+    expect_equal(bst[["booster"]]$params[["num_leaves"]], 11L)
+  }
 })
 
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
@@ -437,7 +433,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , num_leaves = 5L
     )
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
   expect_named(
     cv_bst$record_evals
     , c("start_iter", "valid")
@@ -475,7 +471,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = params
     , nfold = 5L
   )
-  expect_is(cv_bst, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst, "lgb.CVBooster"))
 
   dtrain <- .new_dataset()
   cv_bst_linear <- lgb.cv(
@@ -484,7 +480,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , nfold = 5L
   )
-  expect_is(cv_bst_linear, "lgb.CVBooster")
+  expect_true(methods::is(cv_bst_linear, "lgb.CVBooster"))
 
   expect_true(cv_bst_linear$best_score < cv_bst$best_score)
 })
@@ -519,12 +515,139 @@ test_that("lgb.cv() respects showsd argument", {
     evals_showsd[["eval"]]
     , evals_no_showsd[["eval"]]
   )
-  expect_is(evals_showsd[["eval_err"]], "list")
+  expect_true(methods::is(evals_showsd[["eval_err"]], "list"))
   expect_equal(length(evals_showsd[["eval_err"]]), nrounds)
   expect_identical(evals_no_showsd[["eval_err"]], list())
 })
 
-context("lgb.train()")
+test_that("lgb.cv() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+})
+
+test_that("lgb.cv() respects parameter aliases for objective", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], "binary_logloss")
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  cv_bst <- lgb.cv(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+      application = "regression_l1"
+      , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  for (bst_list in cv_bst$boosters) {
+    bst <- bst_list[["booster"]]
+    expect_equal(bst$params$objective, "regression_l1")
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    #       allowing access to the "objective" attribute of the Booster object on the C++ side
+    model_txt_lines <- strsplit(
+      x = bst$save_model_to_string()
+      , split = "\n"
+    )[[1L]]
+    expect_true(any(model_txt_lines == "objective=regression_l1"))
+    expect_false(any(model_txt_lines == "objective=regression_l2"))
+  }
+})
+
+test_that("lgb.cv() respects parameter aliases for metric", {
+  nrounds <- 3L
+  nfold <- 4L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  cv_bst <- lgb.cv(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , nfold = nfold
+  )
+  expect_equal(cv_bst$best_iter, nrounds)
+  expect_named(cv_bst$record_evals[["valid"]], c("auc", "binary_logloss"))
+  expect_length(cv_bst$record_evals[["valid"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_length(cv_bst$record_evals[["valid"]][["auc"]][["eval"]], nrounds)
+  expect_length(cv_bst$boosters, nfold)
+})
+
+test_that("lgb.cv() respects eval_train_metric argument", {
+  dtrain <- lgb.Dataset(train$data, label = train$label)
+  params <- list(
+    objective = "regression"
+    , metric = "l2"
+    , min_data = 1L
+  )
+  nrounds <- 5L
+  set.seed(708L)
+  bst_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = TRUE
+  )
+  set.seed(708L)
+  bst_no_train <- lgb.cv(
+    params = params
+    , data = dtrain
+    , nrounds = nrounds
+    , nfold = 3L
+    , showsd = FALSE
+    , eval_train_metric = FALSE
+  )
+  expect_equal(
+    bst_train$record_evals[["valid"]][["l2"]]
+    , bst_no_train$record_evals[["valid"]][["l2"]]
+  )
+  expect_true("train" %in% names(bst_train$record_evals))
+  expect_false("train" %in% names(bst_no_train$record_evals))
+  expect_true(methods::is(bst_train$record_evals[["train"]][["l2"]][["eval"]], "list"))
+  expect_equal(
+    length(bst_train$record_evals[["train"]][["l2"]][["eval"]])
+    , nrounds
+  )
+})
 
 test_that("lgb.train() works as expected with multiple eval metrics", {
   metrics <- c("binary_error", "auc", "binary_logloss")
@@ -538,6 +661,7 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
       objective = "binary"
       , metric = metrics
       , learning_rate = 1.0
+      , verbose = VERBOSITY
     )
     , valids = list(
       "train" = lgb.Dataset(
@@ -555,9 +679,101 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
   )
 })
 
+test_that("lgb.train() raises an informative error for unrecognized objectives", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  expect_error({
+    bst <- lgb.train(
+      data = dtrain
+      , params = list(
+        objective_type = "not_a_real_objective"
+        , verbosity = VERBOSITY
+      )
+    )
+  }, regexp = "Unknown objective type name: not_a_real_objective")
+})
+
+test_that("lgb.train() respects parameter aliases for objective", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , application = "binary"
+      , num_iterations = nrounds
+    )
+    , valids = list(
+      "the_training_data" = dtrain
+    )
+  )
+  expect_named(bst$record_evals[["the_training_data"]], "binary_logloss")
+  expect_length(bst$record_evals[["the_training_data"]][["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["objective"]], "binary")
+})
+
+test_that("lgb.train() prefers objective in params to keyword argument", {
+  data("EuStockMarkets")
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
+      , label = EuStockMarkets[, "DAX"]
+    )
+    , params = list(
+        loss = "regression_l1"
+        , verbosity = VERBOSITY
+    )
+    , nrounds = 5L
+    , obj = "regression_l2"
+  )
+  expect_equal(bst$params$objective, "regression_l1")
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  #       allowing access to the "objective" attribute of the Booster object on the C++ side
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lgb.train() respects parameter aliases for metric", {
+  nrounds <- 3L
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  bst <- lgb.train(
+    data = dtrain
+    , params = list(
+      num_leaves = 5L
+      , objective = "binary"
+      , num_iterations = nrounds
+      , metric_types = c("auc", "binary_logloss")
+    )
+    , valids = list(
+      "train" = dtrain
+    )
+  )
+  record_results <- bst$record_evals[["train"]]
+  expect_equal(sort(names(record_results)), c("auc", "binary_logloss"))
+  expect_length(record_results[["auc"]][["eval"]], nrounds)
+  expect_length(record_results[["binary_logloss"]][["eval"]], nrounds)
+  expect_equal(bst$params[["metric"]], list("auc", "binary_logloss"))
+})
+
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(
+    objective = "regression"
+    , metric = "l2,l1"
+    , verbose = VERBOSITY
+  )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lgb.train(
@@ -584,7 +800,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       objective = "regression"
       , metric = "l2"
       , num_leaves = 5L
-      , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
@@ -599,7 +815,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
-      , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
@@ -615,13 +831,13 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
-      , save_name = tempfile(fileext = ".model")
+      , verbose = VERBOSITY
     )
   )
 
   top_level_l2 <- top_level_bst$eval_train()[[1L]][["value"]]
-  params_l2    <- param_bst$eval_train()[[1L]][["value"]]
-  both_l2      <- both_customized$eval_train()[[1L]][["value"]]
+  params_l2 <- param_bst$eval_train()[[1L]][["value"]]
+  both_l2 <- both_customized$eval_train()[[1L]][["value"]]
 
   # check type just to be sure the subsetting didn't return a NULL
   expect_true(is.numeric(top_level_l2))
@@ -651,7 +867,11 @@ test_that("lgb.train() throws an informative error if 'data' is not an lgb.Datas
   for (val in bad_values) {
     expect_error({
       bst <- lgb.train(
-        params = list(objective = "regression", metric = "l2,l1")
+        params = list(
+            objective = "regression"
+            , metric = "l2,l1"
+            , verbose = VERBOSITY
+        )
         , data = val
         , 10L
       )
@@ -666,7 +886,11 @@ test_that("lgb.train() throws an informative error if 'valids' is not a list of 
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+      )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -681,7 +905,11 @@ test_that("lgb.train() errors if 'valids' is a list of lgb.Dataset objects but s
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+      )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -696,7 +924,11 @@ test_that("lgb.train() throws an informative error if 'valids' contains lgb.Data
   )
   expect_error({
     bst <- lgb.train(
-      params = list(objective = "regression", metric = "l2,l1")
+      params = list(
+        objective = "regression"
+        , metric = "l2,l1"
+        , verbose = VERBOSITY
+    )
       , data = lgb.Dataset(train$data, label = train$label)
       , 10L
       , valids = valids
@@ -715,6 +947,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     objective = "binary"
     , metric = "binary_error"
     , force_col_wise = TRUE
+    , verbose = VERBOSITY
   )
   bst_col_wise <- lgb.train(
     params = params
@@ -726,6 +959,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     objective = "binary"
     , metric = "binary_error"
     , force_row_wise = TRUE
+    , verbose = VERBOSITY
   )
   bst_row_wise <- lgb.train(
     params = params
@@ -764,6 +998,7 @@ test_that("lgb.train() works as expected with sparse features", {
       objective = "binary"
       , min_data = 1L
       , min_data_in_bin = 1L
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -804,6 +1039,7 @@ test_that("lgb.train() works with early stopping for classification", {
     params = list(
       objective = "binary"
       , metric = "binary_error"
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -822,11 +1058,12 @@ test_that("lgb.train() works with early stopping for classification", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -875,6 +1112,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
       params = list(
         objective = "binary"
         , metric = "binary_error"
+        , verbose = VERBOSITY
       )
       , data = dtrain
       , nrounds = nrounds
@@ -898,6 +1136,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
         objective = "binary"
         , metric = "binary_error"
         , n_iter_no_change = value
+        , verbose = VERBOSITY
       )
       , data = dtrain
       , nrounds = nrounds
@@ -931,12 +1170,13 @@ test_that("lgb.train() works with early stopping for classification with a metri
   #############################
   early_stopping_rounds <- 5L
   # the harsh max_depth guarantees that AUC improves over at least the first few iterations
-  bst_auc  <- lgb.train(
+  bst_auc <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "auc"
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -944,12 +1184,13 @@ test_that("lgb.train() works with early stopping for classification with a metri
       "valid1" = dvalid
     )
   )
-  bst_binary_error  <- lgb.train(
+  bst_binary_error <- lgb.train(
     params = list(
       objective = "binary"
       , metric = "binary_error"
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1008,6 +1249,7 @@ test_that("lgb.train() works with early stopping for regression", {
     params = list(
       objective = "regression"
       , metric = "rmse"
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1026,11 +1268,12 @@ test_that("lgb.train() works with early stopping for regression", {
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = "rmse"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1065,6 +1308,7 @@ test_that("lgb.train() does not stop early if early_stopping_rounds is not given
     params = list(
       objective = "regression"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1108,12 +1352,14 @@ test_that("If first_metric_only is not given or is FALSE, lgb.train() decides to
       objective = "regression"
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , list(
       objective = "regression"
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = FALSE
+      , verbose = VERBOSITY
     )
   )
 
@@ -1176,6 +1422,7 @@ test_that("If first_metric_only is TRUE, lgb.train() decides to stop early based
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1221,6 +1468,7 @@ test_that("lgb.train() works when a mixture of functions and strings are passed 
     params = list(
       objective = "regression"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1276,6 +1524,7 @@ test_that("lgb.train() works when a list of strings or a character vector is pas
       params = list(
         objective = "binary"
         , metric = "None"
+        , verbose = VERBOSITY
       )
       , data = DTRAIN_RANDOM_CLASSIFICATION
       , nrounds = nrounds
@@ -1312,6 +1561,7 @@ test_that("lgb.train() works when you specify both 'metric' and 'eval' with stri
     params = list(
       objective = "binary"
       , metric = "binary_error"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1343,6 +1593,7 @@ test_that("lgb.train() works when you give a function for eval", {
     params = list(
       objective = "binary"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1381,7 +1632,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
   # train with early stopping #
   #############################
   early_stopping_rounds <- 5L
-  bst  <- lgb.train(
+  bst <- lgb.train(
     params = list(
       objective = "regression"
       , metric = c(
@@ -1391,6 +1642,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
       )
       , min_data_in_bin = 5L
       , early_stopping_rounds = early_stopping_rounds
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1430,6 +1682,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
     , obj = "regression"
     , params = list(
       metric = "rmse"
+      , verbose = VERBOSITY
     )
     , colnames = feature_names
   )
@@ -1484,6 +1737,60 @@ test_that("lgb.train() works with integer, double, and numeric data", {
   }
 })
 
+test_that("lgb.train() updates params based on keyword arguments", {
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+  )
+
+  # defaults from keyword arguments should be used if not specified in params
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list()
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 1L)
+  expect_equal(bst$params[["num_iterations"]], 100L)
+
+  # main param names should be preferred to keyword arguments
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbosity" = 5L
+          , "num_iterations" = 2L
+        )
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 5L)
+  expect_equal(bst$params[["num_iterations"]], 2L)
+
+  # aliases should be preferred to keyword arguments, and converted to main parameter name
+  invisible(
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbose" = 5L
+          , "num_boost_round" = 2L
+        )
+      )
+    })
+  )
+  expect_equal(bst$params[["verbosity"]], 5L)
+  expect_false("verbose" %in% bst$params)
+  expect_equal(bst$params[["num_iterations"]], 2L)
+  expect_false("num_boost_round" %in% bst$params)
+})
+
 test_that("when early stopping is not activated, best_iter and best_score come from valids and not training data", {
   set.seed(708L)
   trainDF <- data.frame(
@@ -1512,6 +1819,7 @@ test_that("when early stopping is not activated, best_iter and best_score come f
     , metric = "rmse"
     , learning_rate = 1.5
     , num_leaves = 5L
+    , verbose = VERBOSITY
   )
 
   # example 1: two valids, neither are the training data
@@ -1671,6 +1979,7 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
       , metric = "auc"
       , learning_rate = 1.5
       , num_leaves = 5L
+      , verbose = VERBOSITY
     )
   )
   # note that "something-random-we-would-not-hardcode" was recognized as the training
@@ -1727,7 +2036,6 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
       , num_leaves = 5L
     )
     , verbose = -7L
-    , save_name = tempfile(fileext = ".model")
   )
   # when verbose <= 0 is passed to lightgbm(), 'valids' is passed through to lgb.train()
   # untouched. If you set verbose to > 0, the training data will still be first but called "train"
@@ -1899,9 +2207,135 @@ test_that("early stopping works with lgb.cv()", {
     length(bst$record_evals[["valid"]][["increasing_metric"]][["eval"]])
     , early_stopping_rounds + 1L
   )
+
+  # every booster's predict method should use best_iter as num_iteration in predict
+  random_data <- as.matrix(rnorm(10L), ncol = 1L, drop = FALSE)
+  for (x in bst$boosters) {
+    expect_equal(x$booster$best_iter, bst$best_iter)
+    expect_gt(x$booster$current_iter(), bst$best_iter)
+    preds_iter <- predict(x$booster, random_data, num_iteration = bst$best_iter)
+    preds_no_iter <- predict(x$booster, random_data)
+    expect_equal(preds_iter, preds_no_iter)
+  }
 })
 
-context("linear learner")
+test_that("lgb.cv() respects changes to logging verbosity", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  # (verbose = 1) should be INFO and WARNING level logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 1L
+    )
+  })
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = 0) should be WARNING level logs only
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = 0L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+
+  # (verbose = -1) no logs
+  lgb_cv_logs <- capture.output({
+    cv_bst <- lgb.cv(
+      params = list()
+      , nfold = 2L
+      , nrounds = 5L
+      , data = dtrain
+      , obj = "binary"
+      , verbose = -1L
+    )
+  })
+  # NOTE: this is not length(lgb_cv_logs) == 0 because lightgbm's
+  #       dependencies might print other messages
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
+  expect_false(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+})
+
+test_that("lgb.cv() updates params based on keyword arguments", {
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+  )
+
+  # defaults from keyword arguments should be used if not specified in params
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list()
+        , nfold = 2L
+      )
+    })
+  )
+
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 1L)
+    expect_equal(bst_params[["num_iterations"]], 100L)
+  }
+
+  # main param names should be preferred to keyword arguments
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbosity" = 5L
+          , "num_iterations" = 2L
+        )
+        , nfold = 2L
+      )
+    })
+  )
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 5L)
+    expect_equal(bst_params[["num_iterations"]], 2L)
+  }
+
+  # aliases should be preferred to keyword arguments, and converted to main parameter name
+  invisible(
+    capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , obj = "regression"
+        , params = list(
+          "verbose" = 5L
+          , "num_boost_round" = 2L
+        )
+        , nfold = 2L
+      )
+    })
+  )
+  for (bst in cv_bst$boosters) {
+    bst_params <- bst[["booster"]]$params
+    expect_equal(bst_params[["verbosity"]], 5L)
+    expect_false("verbose" %in% bst_params)
+    expect_equal(bst_params[["num_iterations"]], 2L)
+    expect_false("num_boost_round" %in% bst_params)
+  }
+
+})
 
 test_that("lgb.train() fit on linearly-relatead data improves when using linear learners", {
   set.seed(708L)
@@ -1915,7 +2349,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -1949,7 +2383,7 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
   set.seed(708L)
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -1986,7 +2420,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -2032,7 +2466,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
 
   params <- list(
     objective = "regression"
-    , verbose = -1L
+    , verbose = VERBOSITY
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
@@ -2142,8 +2576,6 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
   expect_true(bst_lin_last_mse <  bst_last_mse)
 })
 
-context("interaction constraints")
-
 test_that("lgb.train() throws an informative error if interaction_constraints is not a list", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression", interaction_constraints = "[1,2],[3]")
@@ -2243,8 +2675,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   expect_equal(pred1, pred2)
 
 })
-
-context("monotone constraints")
 
 .generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
   n_samples <- 3000L
@@ -2392,3 +2822,181 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
     })
   }
 }
+
+test_that("lightgbm() accepts objective as function argument and under params", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression_l1"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() prioritizes objective under params over objective as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(objective = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst1$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "regression"
+    , params = list(loss = "regression_l1")
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst2$params$objective, "regression_l1")
+  model_txt_lines <- strsplit(
+    x = bst2$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression_l1"))
+  expect_false(any(model_txt_lines == "objective=regression_l2"))
+})
+
+test_that("lightgbm() accepts init_score as function argument", {
+  bst1 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+
+  bst2 <- lightgbm(
+    data = train$data
+    , label = train$label
+    , init_score = pred1
+    , objective = "binary"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+
+  expect_true(any(pred1 != pred2))
+})
+
+test_that("lightgbm() defaults to 'regression' objective if objective not otherwise provided", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(bst$params$objective, "regression")
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression"))
+  expect_false(any(model_txt_lines == "objective=regression_l1"))
+})
+
+test_that("lightgbm() accepts 'num_threads' as either top-level argument or under params", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 1L
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 10L
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+})
+
+test_that("lightgbm() accepts 'weight' and 'weights'", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- as.numeric(mtcars[, 1L])
+  w <- rep(1.0, nrow(X))
+  model <- lightgbm(
+    X
+    , y
+    , weights = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
+
+  # Avoid a bad CRAN check due to partial argument matches
+  lgb_args <- list(
+    X
+    , y
+    , weight = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  model <- do.call(lightgbm, lgb_args)
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
+})

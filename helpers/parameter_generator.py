@@ -34,6 +34,8 @@ def get_parameter_infos(
     member_infos: List[List[Dict[str, List]]] = []
     with open(config_hpp) as config_hpp_file:
         for line in config_hpp_file:
+            if line.strip() in {"#ifndef __NVCC__", "#endif  // __NVCC__"}:
+                continue
             if "#pragma region Parameters" in line:
                 is_inparameter = True
             elif "#pragma region" in line and "Parameters" in line:

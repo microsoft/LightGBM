@@ -1,4 +1,6 @@
-context("testing lgb.Dataset functionality")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 data(agaricus.train, package = "lightgbm")
 train_data <- agaricus.train$data[seq_len(1000L), ]
@@ -144,7 +146,10 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
   dtest$set_reference(dtrain)
 
   # after setting reference to dtrain, those attributes should have dtrain's values
-  expect_is(dtest$.__enclos_env__$private$predictor, "lgb.Predictor")
+  expect_true(methods::is(
+    dtest$.__enclos_env__$private$predictor
+    , "lgb.Predictor"
+  ))
   expect_identical(
     dtest$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
     , dtrain$.__enclos_env__$private$predictor$.__enclos_env__$private$handle
@@ -195,7 +200,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
-  expect_is(handle, "externalptr")
+  expect_true(methods::is(handle, "externalptr"))
   expect_false(is.null(handle))
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
@@ -368,6 +373,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
 
   # should be able to train right away
@@ -406,7 +412,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , data = dtest_read_in
   )
 
-  expect_is(bst, "lgb.CVBooster")
+  expect_true(methods::is(bst, "lgb.CVBooster"))
 })
 
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
@@ -493,6 +499,9 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
     dtrain$get_colnames()
   }, regexp = "cannot get column names before dataset has been constructed")
   expect_error({
+    dtrain$get_feature_num_bin(1L)
+  }, regexp = "Cannot get number of bins in feature before constructing Dataset.")
+  expect_error({
     dtrain$save_binary(fname = tempfile(fileext = ".bin"))
   }, regexp = "Attempting to create a Dataset without any raw data")
   expect_error({
@@ -515,4 +524,27 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
   expect_error({
     dtrain$set_reference(reference = dvalid)
   }, regexp = "cannot get column names before dataset has been constructed")
+})
+
+test_that("lgb.Dataset$get_feature_num_bin() works", {
+  raw_df <- data.frame(
+    all_random = runif(100L)
+    , two_vals = rep(c(1.0, 2.0), 50L)
+    , three_vals = c(rep(c(0.0, 1.0, 2.0), 33L), 0.0)
+    , two_vals_plus_missing = c(rep(c(1.0, 2.0), 49L), NA_real_, NA_real_)
+    , all_zero = rep(0.0, 100L)
+  )
+  raw_mat <- data.matrix(raw_df)
+  min_data_in_bin <- 2L
+  ds <- lgb.Dataset(raw_mat, params = list(min_data_in_bin = min_data_in_bin))
+  ds$construct()
+  expected_num_bins <- c(
+    100L %/% min_data_in_bin + 1L  # extra bin for zero
+    , 3L  # 0, 1, 2
+    , 3L  # 0, 1, 2
+    , 4L  # 0, 1, 2 + NA
+    , 0L  # unused
+  )
+  actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
+  expect_identical(actual_num_bins, expected_num_bins)
 })

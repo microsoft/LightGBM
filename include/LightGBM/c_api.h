@@ -433,6 +433,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
+ * \brief Get number of bins for feature.
+ * \param handle Handle of dataset
+ * \param feature Index of the feature
+ * \param[out] out The address to hold number of bins
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
+                                                   int feature,
+                                                   int* out);
+
+/*!
  * \brief Add features from ``source`` to ``target``.
  * \param target The handle of the dataset to add features to
  * \param source The handle of the dataset to take features from
@@ -572,6 +583,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
 /*!
  * \brief Update the model by specifying gradient and Hessian directly
  *        (this can be used to support customized loss functions).
+ * \note
+ * The length of the arrays referenced by ``grad`` and ``hess`` must be equal to
+ * ``num_class * num_train_data``, this is not verified by the library, the caller must ensure this.
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
@@ -827,7 +841,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param indices Pointer to column indices for CSR or row indices for CSC
  * \param data Pointer to the data space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nindptr Number of rows in the matrix + 1
+ * \param nindptr Number of entries in ``indptr``
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col_or_row Number of columns for CSR or number of rows for CSC
  * \param predict_type What should be predicted, only feature contributions supported currently
@@ -836,7 +850,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
- * \param[out] out_len Length of output indices and data
+ * \param[out] out_len Length of output data and output indptr (pointer to an array with two entries where to write them)
  * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
  * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
  * \param[out] out_data Pointer to sparse data space

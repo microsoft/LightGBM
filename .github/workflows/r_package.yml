@@ -40,7 +40,7 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: ubuntu-latest
             task: r-package
@@ -50,27 +50,27 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           - os: windows-latest
             task: r-package
@@ -82,28 +82,21 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
-            build_type: cmake
-          # Visual Studio 2017
-          - os: windows-2016
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
+            r_version: 4.1
             build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.0
+            r_version: 3.6
             build_type: cmake
           # Visual Studio 2022
           - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.0
+            r_version: 4.1
             build_type: cmake
           ###############
           # CRAN builds #
@@ -111,24 +104,18 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
-          - os: macOS-latest
+          - os: macOS-10.15
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           ################
           # Other checks #
@@ -136,7 +123,7 @@ jobs:
           - os: ubuntu-latest
             task: r-rchk
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
@@ -151,13 +138,13 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v1
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'macOS') || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
           export GITHUB_ACTIONS="true"
-          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+          if [[ $(echo "${{ matrix.os }}" | head -c5) == "macOS" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
@@ -201,7 +188,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -209,7 +196,7 @@ jobs:
         run: |
           cd R-package/tests
           exit_code=0
-          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=1
+          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
           cat ./tests.log
           exit ${exit_code}
   test-r-debian-clang:
@@ -232,7 +219,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then

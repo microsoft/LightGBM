@@ -7,16 +7,18 @@
 lightgbm(
   data,
   label = NULL,
-  weight = NULL,
+  weights = NULL,
   params = list(),
   nrounds = 100L,
   verbose = 1L,
   eval_freq = 1L,
   early_stopping_rounds = NULL,
-  save_name = "lightgbm.model",
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
+  objective = "regression",
+  init_score = NULL,
+  num_threads = NULL,
   ...
 )
 }
@@ -27,7 +29,8 @@ may allow you to pass other types of data like \code{matrix} and then separately
 
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
-\item{weight}{vector of response values. If not NULL, will set to dataset}
+\item{weights}{Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
+observations / rows have the same importance / weight.}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
@@ -44,15 +47,36 @@ fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
 If training stops early, the returned model will have attribute \code{best_iter}
 set to the iteration number of the best iteration.}
 
-\item{save_name}{File name to use when writing the trained model to disk. Should end in ".model".
-If passing `NULL`, will not save the trained model to disk.}
-
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
 \item{serializable}{whether to make the resulting objects serializable through functions such as
 \code{save} or \code{saveRDS} (see section "Model serialization").}
+
+\item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
+For a list of accepted objectives, see
+\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+the "objective" item of the "Parameters" section of the documentation}.}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from}
+
+\item{num_threads}{Number of parallel threads to use. For best speed, this should be set to the number of
+                   physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+                   number of maximum threads.
+
+                   Be aware that using too many threads can result in speed degradation in smaller datasets
+                   (see the parameters documentation for more details).
+
+                   If passing zero, will use the default number of threads configured for OpenMP
+                   (typically controlled through an environment variable \code{OMP_NUM_THREADS}).
+
+                   If passing \code{NULL} (the default), will try to use the number of physical cores in the
+                   system, but be aware that getting the number of cores detected correctly requires package
+                   \code{RhpcBLASctl} to be installed.
+
+                   This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+                   if passed there.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{

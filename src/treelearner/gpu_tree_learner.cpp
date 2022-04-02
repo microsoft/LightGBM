@@ -245,7 +245,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   }
   // allocate memory for all features (FIXME: 4 GB barrier on some devices, need to split to multiple buffers)
   device_features_.reset();
-  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>(num_dense_feature4_ * num_data_, ctx_));
+  device_features_ = std::unique_ptr<boost::compute::vector<Feature4>>(new boost::compute::vector<Feature4>((uint64_t)num_dense_feature4_ * num_data_, ctx_));
   // unpin old buffer if necessary before destructing them
   if (ptr_pinned_gradients_) {
     queue_.enqueue_unmap_buffer(pinned_gradients_, ptr_pinned_gradients_);
@@ -427,7 +427,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     #pragma omp critical
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
-                        i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
+                        (uint64_t)i * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
     printf("first example of feature-group tuple is: %d %d %d %d\n", host4[0].s[0], host4[0].s[1], host4[0].s[2], host4[0].s[3]);
     printf("Feature-groups copied to device with multipliers ");
@@ -503,7 +503,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     }
     // copying the last 1 to (dword_features - 1) feature-groups in the last tuple
     queue_.enqueue_write_buffer(device_features_->get_buffer(),
-                        (num_dense_feature4_ - 1) * num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
+                        (num_dense_feature4_ - 1) * (uint64_t)num_data_ * sizeof(Feature4), num_data_ * sizeof(Feature4), host4);
     #if GPU_DEBUG >= 1
     printf("Last features copied to device\n");
     #endif
@@ -719,10 +719,30 @@ void GPUTreeLearner::InitGPU(int platform_id, int device_id) {
   } else {
     Log::Fatal("bin size %d cannot run on GPU", max_num_bin_);
   }
-  if (max_num_bin_ == 65) {
+
+  // ignore the feature groups that contain categorical features when producing warnings about max_bin.
+  // these groups may contain larger number of bins due to categorical features, but not due to the setting of max_bin.
+  int max_num_bin_no_categorical = 0;
+  int cur_feature_group = 0;
+  bool categorical_feature_found = false;
+  for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
+    const int feature_group = train_data_->Feature2Group(inner_feature_index);
+    const BinMapper* feature_bin_mapper = train_data_->FeatureBinMapper(inner_feature_index);
+    if (feature_bin_mapper->bin_type() == BinType::CategoricalBin) {
+      categorical_feature_found = true;
+    }
+    if (feature_group != cur_feature_group || inner_feature_index == num_features_ - 1) {
+      if (!categorical_feature_found) {
+        max_num_bin_no_categorical = std::max(max_num_bin_no_categorical, train_data_->FeatureGroupNumBin(cur_feature_group));
+      }
+      categorical_feature_found = false;
+      cur_feature_group = feature_group;
+    }
+  }
+  if (max_num_bin_no_categorical == 65) {
     Log::Warning("Setting max_bin to 63 is suggested for best performance");
   }
-  if (max_num_bin_ == 17) {
+  if (max_num_bin_no_categorical == 17) {
     Log::Warning("Setting max_bin to 15 is suggested for best performance");
   }
   ctx_ = boost::compute::context(dev_);

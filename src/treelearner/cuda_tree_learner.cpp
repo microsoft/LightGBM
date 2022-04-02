@@ -63,6 +63,43 @@ CUDATreeLearner::CUDATreeLearner(const Config* config)
 }
 
 CUDATreeLearner::~CUDATreeLearner() {
+  #pragma omp parallel for schedule(static, num_gpu_)
+
+  for (int device_id = 0; device_id < num_gpu_; ++device_id) {
+    CUDASUCCESS_OR_FATAL(cudaSetDevice(device_id));
+
+    if (device_features_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_features_[device_id]));
+    }
+
+    if (device_gradients_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_gradients_[device_id]));
+    }
+
+    if (device_hessians_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_hessians_[device_id]));
+    }
+
+    if (device_feature_masks_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_feature_masks_[device_id]));
+    }
+
+    if (device_data_indices_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_data_indices_[device_id]));
+    }
+
+    if (sync_counters_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(sync_counters_[device_id]));
+    }
+
+    if (device_subhistograms_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_subhistograms_[device_id]));
+    }
+
+    if (device_histogram_outputs_[device_id] != NULL) {
+      CUDASUCCESS_OR_FATAL(cudaFree(device_histogram_outputs_[device_id]));
+    }
+  }
 }
 
 
@@ -469,10 +506,30 @@ void CUDATreeLearner::InitGPU(int num_gpu) {
   } else {
     Log::Fatal("bin size %d cannot run on GPU", max_num_bin_);
   }
-  if (max_num_bin_ == 65) {
+
+  // ignore the feature groups that contain categorical features when producing warnings about max_bin.
+  // these groups may contain larger number of bins due to categorical features, but not due to the setting of max_bin.
+  int max_num_bin_no_categorical = 0;
+  int cur_feature_group = 0;
+  bool categorical_feature_found = false;
+  for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
+    const int feature_group = train_data_->Feature2Group(inner_feature_index);
+    const BinMapper* feature_bin_mapper = train_data_->FeatureBinMapper(inner_feature_index);
+    if (feature_bin_mapper->bin_type() == BinType::CategoricalBin) {
+      categorical_feature_found = true;
+    }
+    if (feature_group != cur_feature_group || inner_feature_index == num_features_ - 1) {
+      if (!categorical_feature_found) {
+        max_num_bin_no_categorical = std::max(max_num_bin_no_categorical, train_data_->FeatureGroupNumBin(cur_feature_group));
+      }
+      categorical_feature_found = false;
+      cur_feature_group = feature_group;
+    }
+  }
+  if (max_num_bin_no_categorical == 65) {
     Log::Warning("Setting max_bin to 63 is suggested for best performance");
   }
-  if (max_num_bin_ == 17) {
+  if (max_num_bin_no_categorical == 17) {
     Log::Warning("Setting max_bin to 15 is suggested for best performance");
   }
 

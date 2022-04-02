@@ -2,8 +2,6 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
-context("Predictor")
-
 test_that("Predictor$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
@@ -81,7 +79,7 @@ test_that("start_iteration works correctly", {
         , early_stopping_rounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
-    pred1 <- predict(bst, data = test$data, rawscore = TRUE)
+    pred1 <- predict(bst, newdata = test$data, rawscore = TRUE)
     pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))
@@ -112,4 +110,62 @@ test_that("start_iteration works correctly", {
     pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
     pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
     expect_equal(pred_leaf1, pred_leaf2)
+})
+
+test_that("predictions for regression and binary classification are returned as vectors", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    model <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+
+    data(agaricus.train, package = "lightgbm")
+    X <- agaricus.train$data
+    y <- agaricus.train$label
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "binary"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+})
+
+test_that("predictions for multiclass classification are returned as matrix", {
+    data(iris)
+    X <- as.matrix(iris[, -5L])
+    y <- as.numeric(iris$Species) - 1.0
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "multiclass"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(num_class = 3L)
+    )
+    pred <- predict(model, X)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
 })
