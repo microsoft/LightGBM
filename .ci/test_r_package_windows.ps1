@@ -122,7 +122,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't

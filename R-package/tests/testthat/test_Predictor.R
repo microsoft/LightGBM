@@ -134,67 +134,33 @@ test_that("start_iteration works correctly", {
 }
 
 .expect_row_names_kept <- function(bst, X, multiclass = FALSE) {
-    pred <- predict(bst, X, reshape = TRUE)
+    pred <- predict(bst, X)
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, reshape = TRUE, rawscore = TRUE)
+    pred <- predict(bst, X, rawscore = TRUE)
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, reshape = TRUE, predleaf = TRUE)
+    pred <- predict(bst, X, predleaf = TRUE)
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, reshape = TRUE, predcontrib = TRUE)
+    pred <- predict(bst, X, predcontrib = TRUE)
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, reshape = FALSE)
-    if (!multiclass || NROW(X) == NROW(pred)) {
-        .expect_has_row_names(pred, X)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
-    pred <- predict(bst, X, reshape = FALSE, rawscore = TRUE)
-    if (!multiclass || NROW(X) == NROW(pred)) {
-        .expect_has_row_names(pred, X)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
-    pred <- predict(bst, X, reshape = FALSE, predleaf = TRUE)
-    if (NROW(X) == NROW(pred)) {
-        .expect_has_row_names(pred, X)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
+
     Xcopy <- X
     row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy, reshape = TRUE)
+    pred <- predict(bst, Xcopy)
     .expect_doesnt_have_row_names(pred)
 
     Xcsc <- as(X, "CsparseMatrix")
-    pred <- predict(bst, Xcsc, reshape = TRUE)
+    pred <- predict(bst, Xcsc)
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, reshape = TRUE, rawscore = TRUE)
+    pred <- predict(bst, Xcsc, rawscore = TRUE)
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, reshape = TRUE, predleaf = TRUE)
+    pred <- predict(bst, Xcsc, predleaf = TRUE)
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, reshape = TRUE, predcontrib = TRUE)
+    pred <- predict(bst, Xcsc, predcontrib = TRUE)
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, reshape = FALSE)
-    if (!multiclass || NROW(Xcsc) == NROW(pred)) {
-        .expect_has_row_names(pred, Xcsc)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
-    pred <- predict(bst, Xcsc, reshape = FALSE, rawscore = TRUE)
-    if (!multiclass || NROW(Xcsc) == NROW(pred)) {
-        .expect_has_row_names(pred, Xcsc)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
-    pred <- predict(bst, Xcsc, reshape = FALSE, predleaf = TRUE)
-    if (NROW(Xcsc) == NROW(pred)) {
-        .expect_has_row_names(pred, Xcsc)
-    } else {
-        .expect_doesnt_have_row_names(pred)
-    }
+
     Xcopy <- Xcsc
     row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy, reshape = TRUE)
+    pred <- predict(bst, Xcopy)
     .expect_doesnt_have_row_names(pred)
 }
 
@@ -241,4 +207,61 @@ test_that("predict() keeps row names from data (multi-class classification)", {
         , verbose = VERBOSITY
     )
     .expect_row_names_kept(bst, X, TRUE)
+
+test_that("predictions for regression and binary classification are returned as vectors", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    model <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+
+    data(agaricus.train, package = "lightgbm")
+    X <- agaricus.train$data
+    y <- agaricus.train$label
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "binary"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+})
+
+test_that("predictions for multiclass classification are returned as matrix", {
+    data(iris)
+    X <- as.matrix(iris[, -5L])
+    y <- as.numeric(iris$Species) - 1.0
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "multiclass"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(num_class = 3L)
+    )
+    pred <- predict(model, X)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
 })

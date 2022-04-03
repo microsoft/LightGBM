@@ -7,7 +7,7 @@ apt-get install --no-install-recommends -y \
 
 # installation of dependencies needs to happen before building the package,
 # since `R CMD build` needs to install the package to build vignettes
-Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'rhub', 'testthat'), dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'rhub', 'testthat'), dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
 
 sh build-cran-package.sh || exit -1
 
