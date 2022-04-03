@@ -112,16 +112,32 @@ test_that("start_iteration works correctly", {
     expect_equal(pred_leaf1, pred_leaf2)
 })
 
+test_that("Predictor params should override keyword argument", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- as.numeric(mtcars[, 1L])
+})
+
 test_that("predictions for regression and binary classification are returned as vectors", {
     data(mtcars)
     X <- as.matrix(mtcars[, -1L])
     y <- as.numeric(mtcars[, 1L])
-    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    dtrain <- lgb.Dataset(
+      X
+      , label = y
+      , params = list(
+        max_bins = 5L
+        , min_data_in_bin = 1L
+      )
+    )
     model <- lgb.train(
       data = dtrain
       , obj = "regression"
       , nrounds = 5L
       , verbose = VERBOSITY
+      , params = list(
+        min_data_in_leaf = 1L
+      )
     )
     pred <- predict(model, X)
     expect_true(is.vector(pred))
