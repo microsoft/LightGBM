@@ -112,10 +112,165 @@ test_that("start_iteration works correctly", {
     expect_equal(pred_leaf1, pred_leaf2)
 })
 
-test_that("Predictor params should override keyword argument", {
+test_that("predict() params should override keyword argument for raw-score predictions", {
+  data(agaricus.train, package = "lightgbm")
+  X <- agaricus.train$data
+  y <- agaricus.train$label
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = X
+      , label = y
+      , params = list(
+        verbosity = VERBOSITY
+        , data_seed = 708L
+        , min_data_in_bin = 5L
+      )
+    )
+    , params = list(
+      objective = "binary"
+      , min_data_in_leaf = 1L
+      , seed = 708L
+    )
+    , nrounds = 10L
+    , verbose = VERBOSITY
+  )
+
+  # check that the predictions from predict.lgb.Booster() really look like raw score predictions
+  preds_prob <- predict(bst, X)
+  preds_raw_s3_keyword <- predict(bst, X, rawscore = TRUE)
+  preds_prob_from_raw <- 1.0 / (1.0 + exp(-preds_raw_s3_keyword))
+  expect_equal(preds_prob, preds_prob_from_raw, tolerance = 1e-6)
+  accuracy <- sum(as.integer(preds_prob_from_raw > 0.5) == y) / length(y)
+  expect_equal(accuracy, 1.0)
+
+  # should get the same results from Booster$predict() method
+  preds_raw_r6_keyword <- bst$predict(X, rawscore = TRUE)
+  expect_equal(preds_raw_s3_keyword, preds_raw_r6_keyword)
+
+  # using a parameter alias of predict_raw_score should result in raw scores being returned
+  aliases <- .PARAMETER_ALIASES()[["predict_raw_score"]]
+  expect_true(length(aliases) > 1L)
+  for (rawscore_alias in aliases) {
+    params <- as.list(
+      stats::setNames(
+        object = TRUE
+        , nm = rawscore_alias
+      )
+    )
+    preds_raw_s3_param <- predict(bst, X, params = params)
+    preds_raw_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_raw_s3_keyword, preds_raw_s3_param)
+    expect_equal(preds_raw_s3_keyword, preds_raw_r6_param)
+  }
+})
+
+test_that("predict() params should override keyword argument for leaf-index predictions", {
   data(mtcars)
-  X <- as.matrix(mtcars[, -1L])
-  y <- as.numeric(mtcars[, 1L])
+  X <- as.matrix(mtcars[, which(names(mtcars) != "mpg")])
+  y <- as.numeric(mtcars[, "mpg"])
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = X
+      , label = y
+      , params = list(
+        min_data_in_bin = 1L
+        , verbosity = VERBOSITY
+        , data_seed = 708L
+      )
+    )
+    , params = list(
+      objective = "regression"
+      , min_data_in_leaf = 1L
+      , seed = 708L
+    )
+    , nrounds = 10L
+    , verbose = VERBOSITY
+  )
+
+  # check that predictions really look like leaf index predictions
+  preds_leaf_s3_keyword <- predict(bst, X, predleaf = TRUE)
+  expect_true(is.matrix(preds_leaf_s3_keyword))
+  expect_equal(dim(preds_leaf_s3_keyword), c(32L, 10L))
+  expect_true(min(preds_leaf_s3_keyword) >= 0L)
+  max_leaf_node_index <- max(
+    model = lgb.model.dt.tree(bst)[["leaf_index"]]
+    , na.rm = TRUE
+  )
+  expect_true(max(preds_leaf_s3_keyword) <= max_leaf_node_index)
+
+  # should get the same results from Booster$predict() method
+  preds_leaf_r6_keyword <- bst$predict(X, predleaf = TRUE)
+  expect_equal(preds_leaf_s3_keyword, preds_leaf_r6_keyword)
+
+  # using a parameter alias of predict_leaf_index should result in leaf indices being returned
+  aliases <- .PARAMETER_ALIASES()[["predict_leaf_index"]]
+  expect_true(length(aliases) > 1L)
+  for (predleaf_alias in aliases) {
+    params <- as.list(
+      stats::setNames(
+        object = TRUE
+        , nm = predleaf_alias
+      )
+    )
+    preds_leaf_s3_param <- predict(bst, X, params = params)
+    preds_leaf_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_leaf_s3_keyword, preds_leaf_s3_param)
+    expect_equal(preds_leaf_s3_keyword, preds_leaf_r6_param)
+  }
+})
+
+test_that("predict() params should override keyword argument for feature contributions", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, which(names(mtcars) != "mpg")])
+  y <- as.numeric(mtcars[, "mpg"])
+  bst <- lgb.train(
+    data = lgb.Dataset(
+      data = X
+      , label = y
+      , params = list(
+        min_data_in_bin = 1L
+        , verbosity = VERBOSITY
+        , data_seed = 708L
+      )
+    )
+    , params = list(
+      objective = "regression"
+      , min_data_in_leaf = 1L
+      , seed = 708L
+    )
+    , nrounds = 10L
+    , verbose = VERBOSITY
+  )
+
+  # check that predictions really look like feature contributions
+  preds_contrib_s3_keyword <- predict(bst, X, predcontrib = TRUE)
+  num_features <- ncol(X)
+  shap_base_value <- preds_contrib_s3_keyword[, ncol(preds_contrib_s3_keyword)]
+  expect_true(is.matrix(preds_contrib_s3_keyword))
+  expect_equal(dim(preds_contrib_s3_keyword), c(nrow(X), num_features + 1L))
+  expect_equal(length(unique(shap_base_value)), 1L)
+  expect_equal(mean(y), shap_base_value[1L])
+  expect_equal(predict(bst, X), rowSums(preds_contrib_s3_keyword))
+
+  # should get the same results from Booster$predict() method
+  preds_contrib_r6_keyword <- bst$predict(X, predcontrib = TRUE)
+  expect_equal(preds_contrib_s3_keyword, preds_contrib_r6_keyword)
+
+  # using a parameter alias of predict_contrib should result in feature contributions being returned
+  aliases <- .PARAMETER_ALIASES()[["predict_contrib"]]
+  expect_true(length(aliases) > 1L)
+  for (predcontrib_alias in aliases) {
+    params <- as.list(
+      stats::setNames(
+        object = TRUE
+        , nm = predcontrib_alias
+      )
+    )
+    preds_contrib_s3_param <- predict(bst, X, params = params)
+    preds_contrib_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_contrib_s3_keyword, preds_contrib_s3_param)
+    expect_equal(preds_contrib_s3_keyword, preds_contrib_r6_param)
+  }
 })
 
 test_that("predictions for regression and binary classification are returned as vectors", {
