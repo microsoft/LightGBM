@@ -207,6 +207,7 @@ test_that("predict() keeps row names from data (multi-class classification)", {
         , verbose = VERBOSITY
     )
     .expect_row_names_kept(bst, X, TRUE)
+})
 
 test_that("predictions for regression and binary classification are returned as vectors", {
     data(mtcars)
