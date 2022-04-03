@@ -139,7 +139,7 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
     Xspv <- as(X[1L, , drop = FALSE], "sparseVector")
     pred_spv <- predict(bst, Xspv, predcontrib = TRUE)
     expect_s4_class(pred_spv, "dsparseVector")
-    expect_equal(t(as(pred_spv, "CsparseMatrix")), pred_csc[1L, , drop = FALSE])
+    expect_equal(Matrix::t(as(pred_spv, "CsparseMatrix")), unname(pred_csc[1L, , drop = FALSE]))
 })
 
 test_that("predictions for regression and binary classification are returned as vectors", {
