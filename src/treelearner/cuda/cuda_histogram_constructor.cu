@@ -284,7 +284,11 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner0(
   } else if (cuda_row_data_->row_ptr_bit_type() == 64) {
     LaunchConstructHistogramKernelInner1<HIST_TYPE, SHARED_HIST_SIZE, BIN_TYPE, uint64_t>(cuda_smaller_leaf_splits, num_data_in_smaller_leaf);
   } else {
-    Log::Fatal("Unknown row_ptr_bit_type = %d", cuda_row_data_->row_ptr_bit_type());
+    if (!cuda_row_data_->is_sparse()) {
+      LaunchConstructHistogramKernelInner1<HIST_TYPE, SHARED_HIST_SIZE, BIN_TYPE, uint16_t>(cuda_smaller_leaf_splits, num_data_in_smaller_leaf);
+    } else {
+      Log::Fatal("Unknown row_ptr_bit_type = %d", cuda_row_data_->row_ptr_bit_type());
+    }
   }
 }
 

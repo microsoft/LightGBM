@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
   || exit -1

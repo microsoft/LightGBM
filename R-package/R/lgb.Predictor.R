@@ -84,8 +84,7 @@ Predictor <- R6::R6Class(
                        rawscore = FALSE,
                        predleaf = FALSE,
                        predcontrib = FALSE,
-                       header = FALSE,
-                       reshape = FALSE) {
+                       header = FALSE) {
 
       # Check if number of iterations is existing - if not, then set it to -1 (use all)
       if (is.null(num_iteration)) {
@@ -215,23 +214,12 @@ Predictor <- R6::R6Class(
       # Get number of cases per row
       npred_per_case <- length(preds) / num_row
 
-
       # Data reshaping
-
-      if (predleaf | predcontrib) {
-
-        # Predict leaves only, reshaping is mandatory
+      if (npred_per_case > 1L || predleaf || predcontrib) {
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
-
-      } else if (reshape && npred_per_case > 1L) {
-
-        # Predict with data reshaping
-        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
-
       }
 
       return(preds)
-
     }
 
   ),
