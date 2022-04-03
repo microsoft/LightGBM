@@ -123,7 +123,8 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
       data = dtrain
       , obj = "regression"
       , nrounds = 5L
-      , verbose = -1L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
     )
 
     Xcsc <- as(X, "CsparseMatrix")
@@ -133,8 +134,68 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
     Xcsr <- as(X, "RsparseMatrix")
     pred_csr <- predict(bst, Xcsr, predcontrib = TRUE)
     expect_s4_class(pred_csr, "dgRMatrix")
+    expect_equal(as(pred_csr, "CsparseMatrix"), pred_csc)
 
     Xspv <- as(X[1L, , drop = FALSE], "sparseVector")
     pred_spv <- predict(bst, Xspv, predcontrib = TRUE)
     expect_s4_class(pred_spv, "dsparseVector")
+    expect_equal(t(as.matrix(pred_spv)), pred_csc[1L, , drop = FALSE])
+})
+
+test_that("predictions for regression and binary classification are returned as vectors", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    model <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+
+    data(agaricus.train, package = "lightgbm")
+    X <- agaricus.train$data
+    y <- agaricus.train$label
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "binary"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+    )
+    pred <- predict(model, X)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.vector(pred))
+    expect_equal(length(pred), nrow(X))
+})
+
+test_that("predictions for multiclass classification are returned as matrix", {
+    data(iris)
+    X <- as.matrix(iris[, -5L])
+    y <- as.numeric(iris$Species) - 1.0
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "multiclass"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(num_class = 3L)
+    )
+    pred <- predict(model, X)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
+    pred <- predict(model, X, rawscore = TRUE)
+    expect_true(is.matrix(pred))
+    expect_equal(nrow(pred), nrow(X))
+    expect_equal(ncol(pred), 3L)
 })
