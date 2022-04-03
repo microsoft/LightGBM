@@ -868,7 +868,11 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
 }
 
 struct SparseOutputPointers {
-  void* indptr; int32_t* indices; void* data; int indptr_type; int data_type;
+  void* indptr;
+  int32_t* indices;
+  void* data;
+  int indptr_type;
+  int data_type;
   SparseOutputPointers(void* indptr, int32_t* indices, void* data)
   : indptr(indptr), indices(indices), data(data) {}
 };
