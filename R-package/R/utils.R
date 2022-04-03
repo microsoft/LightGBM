@@ -217,3 +217,26 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
   params[[main_param_name]] <- alternative_kwarg_value
   return(params)
 }
+
+#' @importFrom parallel detectCores
+lgb.get.default.num.threads <- function() {
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) { # nolint
+    return(RhpcBLASctl::get_num_cores())
+  } else {
+    msg <- "Optional package 'RhpcBLASctl' not found."
+    cores <- 0L
+    if (Sys.info()["sysname"] != "Linux") {
+      cores <- parallel::detectCores(logical = FALSE)
+      if (is.na(cores) || cores < 0L) {
+        cores <- 0L
+      }
+    }
+    if (cores == 0L) {
+      msg <- paste(msg, "Will use default number of OpenMP threads.", sep = " ")
+    } else {
+      msg <- paste(msg, "Detection of CPU cores might not be accurate.", sep = " ")
+    }
+    warning(msg)
+    return(cores)
+  }
+}
