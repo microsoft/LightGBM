@@ -188,7 +188,6 @@ Predictor <- R6::R6Class(
           out@j <- res$indices
           out@x <- res$data
           out@Dim <- as.integer(c(nrow(data), ncols_out))
-          return(out)
 
         } else if (inherits(data, "dgCMatrix")) {
 
@@ -215,7 +214,6 @@ Predictor <- R6::R6Class(
           out@i <- res$indices
           out@x <- res$data
           out@Dim <- as.integer(c(nrow(data), length(res$indptr) - 1L))
-          return(out)
 
         } else {
 
@@ -227,6 +225,11 @@ Predictor <- R6::R6Class(
                        , collapse = ", ")))
 
         }
+
+        if (NROW(row.names(data))) {
+          out@Dimnames[[1L]] <- row.names(data)
+        }
+        return(out)
 
       } else {
 

@@ -127,9 +127,12 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
       , params = list(min_data_in_leaf = 5L)
     )
 
+    pred_dense <- predict(bst, X, predcontrib = TRUE)
+
     Xcsc <- as(X, "CsparseMatrix")
     pred_csc <- predict(bst, Xcsc, predcontrib = TRUE)
     expect_s4_class(pred_csc, "dgCMatrix")
+    expect_equal(pred_dense, as.matrix(pred_csc))
 
     Xcsr <- as(X, "RsparseMatrix")
     pred_csr <- predict(bst, Xcsr, predcontrib = TRUE)
