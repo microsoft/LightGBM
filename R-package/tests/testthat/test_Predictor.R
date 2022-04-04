@@ -134,6 +134,42 @@ test_that("start_iteration works correctly", {
     }
 }
 
+.check_all_row_name_expectations <- function(bst, X) {
+
+    # dense matrix with row names
+    pred <- predict(bst, X)
+    .expect_has_row_names(pred, X)
+    pred <- predict(bst, X, rawscore = TRUE)
+    .expect_has_row_names(pred, X)
+    pred <- predict(bst, X, predleaf = TRUE)
+    .expect_has_row_names(pred, X)
+    pred <- predict(bst, X, predcontrib = TRUE)
+    .expect_has_row_names(pred, X)
+
+    # dense matrix without row names
+    Xcopy <- X
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy)
+    .expect_doesnt_have_row_names(pred)
+
+    # sparse matrix with row names
+    Xcsc <- as(X, "CsparseMatrix")
+    pred <- predict(bst, Xcsc)
+    .expect_has_row_names(pred, Xcsc)
+    pred <- predict(bst, Xcsc, rawscore = TRUE)
+    .expect_has_row_names(pred, Xcsc)
+    pred <- predict(bst, Xcsc, predleaf = TRUE)
+    .expect_has_row_names(pred, Xcsc)
+    pred <- predict(bst, Xcsc, predcontrib = TRUE)
+    .expect_has_row_names(pred, Xcsc)
+
+    # sparse matrix without row names
+    Xcopy <- Xcsc
+    row.names(Xcopy) <- NULL
+    pred <- predict(bst, Xcopy)
+    .expect_doesnt_have_row_names(pred)
+}
+
 test_that("predict() keeps row names from data (regression)", {
     data("mtcars")
     X <- as.matrix(mtcars[, -1L])
@@ -153,39 +189,7 @@ test_that("predict() keeps row names from data (regression)", {
         , verbose = VERBOSITY
         , params = list(min_data_in_leaf = 1L)
     )
-
-    # dense matrix with row names
-    pred <- predict(bst, X)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, rawscore = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predleaf = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predcontrib = TRUE)
-    .expect_has_row_names(pred, X)
-
-    # dense matrix without row names
-    Xcopy <- X
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
-
-    # sparse matrix with row names
-    Xcsc <- as(X, "CsparseMatrix")
-    pred <- predict(bst, Xcsc)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, rawscore = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predleaf = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predcontrib = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-
-    # sparse matrix without row names
-    Xcopy <- Xcsc
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
+    .check_all_row_name_expectations(bst, X)
 })
 
 test_that("predict() keeps row names from data (binary classification)", {
@@ -200,39 +204,7 @@ test_that("predict() keeps row names from data (binary classification)", {
         , nrounds = 5L
         , verbose = VERBOSITY
     )
-
-    # dense matrix with row names
-    pred <- predict(bst, X)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, rawscore = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predleaf = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predcontrib = TRUE)
-    .expect_has_row_names(pred, X)
-
-    # dense matrix without row names
-    Xcopy <- X
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
-
-    # sparse matrix with row names
-    Xcsc <- as(X, "CsparseMatrix")
-    pred <- predict(bst, Xcsc)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, rawscore = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predleaf = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predcontrib = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-
-    # sparse matrix without row names
-    Xcopy <- Xcsc
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
+    .check_all_row_name_expectations(bst, X)
 })
 
 test_that("predict() keeps row names from data (multi-class classification)", {
@@ -248,39 +220,7 @@ test_that("predict() keeps row names from data (multi-class classification)", {
         , nrounds = 5L
         , verbose = VERBOSITY
     )
-
-    # dense matrix with row names
-    pred <- predict(bst, X)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, rawscore = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predleaf = TRUE)
-    .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predcontrib = TRUE)
-    .expect_has_row_names(pred, X)
-
-    # dense matrix without row names
-    Xcopy <- X
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
-
-    # sparse matrix with row names
-    Xcsc <- as(X, "CsparseMatrix")
-    pred <- predict(bst, Xcsc)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, rawscore = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predleaf = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predcontrib = TRUE)
-    .expect_has_row_names(pred, Xcsc)
-
-    # sparse matrix without row names
-    Xcopy <- Xcsc
-    row.names(Xcopy) <- NULL
-    pred <- predict(bst, Xcopy)
-    .expect_doesnt_have_row_names(pred)
+    .check_all_row_name_expectations(bst, X)
 })
 
 test_that("predictions for regression and binary classification are returned as vectors", {
