@@ -1718,7 +1718,8 @@ test_that("lgb.train() works with integer, double, and numeric data", {
       , label = y
       , params = list(
         objective = "regression"
-        , min_data = 1L
+        , min_data_in_bin = 1L
+        , min_data_in_leaf = 1L
         , learning_rate = 0.01
         , seed = 708L
       )
@@ -2984,7 +2985,11 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , weights = w
     , obj = "regression"
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
+    , params = list(
+      min_data_in_bin = 1L
+      , min_data_in_leaf = 1L
+    )
   )
   expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 
