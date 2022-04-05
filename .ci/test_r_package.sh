@@ -17,10 +17,12 @@ fi
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
+    export R_MAC_PKG_URL=https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.1.2
+    export R_MAC_PKG_URL=https://cran.r-project.org/bin/macosx/base/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="4.1.2-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
@@ -76,7 +78,7 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self || exit -1
     sudo tlmgr --verify-repo=none install inconsolata helvetic || exit -1
 
-    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
+    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit -1
