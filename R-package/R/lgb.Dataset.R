@@ -288,6 +288,10 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
+      # If the data didn't have feature names we take the ones defined at cpp side
+      # otherwise we just overwrite them
+      self$get_colnames()
+
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 

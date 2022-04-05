@@ -1821,6 +1821,7 @@ class Dataset:
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
+            self.feature_name = self.get_feature_name()
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):

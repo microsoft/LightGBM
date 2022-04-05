@@ -646,8 +646,15 @@ def test_feature_num_bin(min_data_in_bin):
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    # test using defined feature names
     bins_by_name = [ds.feature_num_bin(name) for name in feature_name]
     assert bins_by_name == expected_num_bins
+    # test using default feature names
+    ds_no_names = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin})
+    ds_no_names.construct()
+    default_names = [f'Column_{i}' for i in range(X.shape[1])]
+    bins_by_default_name = [ds_no_names.feature_num_bin(name) for name in default_names]
+    assert bins_by_default_name == expected_num_bins
 
 
 def test_feature_num_bin_with_max_bin_by_feature():
