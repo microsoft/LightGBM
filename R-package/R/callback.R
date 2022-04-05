@@ -71,7 +71,7 @@ merge.eval.string <- function(env) {
 
 }
 
-cb.print.evaluation <- function(period) {
+cb_print_evaluation <- function(period) {
 
   # Create callback
   callback <- function(env) {
@@ -103,13 +103,13 @@ cb.print.evaluation <- function(period) {
 
   # Store attributes
   attr(callback, "call") <- match.call()
-  attr(callback, "name") <- "cb.print.evaluation"
+  attr(callback, "name") <- "cb_print_evaluation"
 
   return(callback)
 
 }
 
-cb.record.evaluation <- function() {
+cb_record_evaluation <- function() {
 
   # Create callback
   callback <- function(env) {
@@ -178,13 +178,13 @@ cb.record.evaluation <- function() {
 
   # Store attributes
   attr(callback, "call") <- match.call()
-  attr(callback, "name") <- "cb.record.evaluation"
+  attr(callback, "name") <- "cb_record_evaluation"
 
   return(callback)
 
 }
 
-cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
+cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
 
   factor_to_bigger_better <- NULL
   best_iter <- NULL
@@ -316,7 +316,7 @@ cb.early.stop <- function(stopping_rounds, first_metric_only, verbose) {
   }
 
   attr(callback, "call") <- match.call()
-  attr(callback, "name") <- "cb.early.stop"
+  attr(callback, "name") <- "cb_early_stop"
 
   return(callback)
 
@@ -335,13 +335,13 @@ add.cb <- function(cb_list, cb) {
   # Set names of elements
   names(cb_list) <- callback.names(cb_list = cb_list)
 
-  if ("cb.early.stop" %in% names(cb_list)) {
+  if ("cb_early_stop" %in% names(cb_list)) {
 
     # Concatenate existing elements
-    cb_list <- c(cb_list, cb_list["cb.early.stop"])
+    cb_list <- c(cb_list, cb_list["cb_early_stop"])
 
     # Remove only the first one
-    cb_list["cb.early.stop"] <- NULL
+    cb_list["cb_early_stop"] <- NULL
 
   }
 
