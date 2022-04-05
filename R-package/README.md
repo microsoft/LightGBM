@@ -453,6 +453,7 @@ You can replicate these checks locally using Docker. Note that instrumented vers
 
 ```shell
 docker run \
+    --rm \
     -v $(pwd):/opt/LightGBM \
     -w /opt/LightGBM \
     -it \
