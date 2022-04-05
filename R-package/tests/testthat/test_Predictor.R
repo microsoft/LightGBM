@@ -192,11 +192,10 @@ test_that("predict() params should override keyword argument for leaf-index pred
   expect_true(is.matrix(preds_leaf_s3_keyword))
   expect_equal(dim(preds_leaf_s3_keyword), c(32L, 10L))
   expect_true(min(preds_leaf_s3_keyword) >= 0L)
-  max_leaf_node_index <- max(
-    model = lgb.model.dt.tree(bst)[["leaf_index"]]
-    , na.rm = TRUE
-  )
-  expect_true(max(preds_leaf_s3_keyword) <= max_leaf_node_index)
+  trees_dt <- lgb.model.dt.tree(bst)
+  max_leaf_by_tree_from_dt <- trees_dt[, .(idx = max(leaf_index, na.rm = TRUE)), by = tree_index]$idx
+  max_leaf_by_tree_from_preds <- apply(preds_leaf_s3_keyword, 2, max, na.rm = TRUE)
+  expect_equal(max_leaf_by_tree_from_dt, max_leaf_by_tree_from_preds)
 
   # should get the same results from Booster$predict() method
   preds_leaf_r6_keyword <- bst$predict(X, predleaf = TRUE)
