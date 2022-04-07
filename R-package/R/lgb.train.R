@@ -1,3 +1,5 @@
+#' @name importFrom RhpcBLASctl omp_get_max_threads omp_set_num_threads
+
 #' @name lgb.train
 #' @title Main training logic for LightGBM
 #' @description Logic to train with LightGBM
@@ -148,6 +150,10 @@ lgb.train <- function(params = list(),
   # R side before being passed into the Dataset object
   interaction_constraints <- params[["interaction_constraints"]]
   params["interaction_constraints"] <- NULL
+
+  # This is a temporary workround for GH issue 4705
+  curr_threads <- RhpcBLASctl::omp_get_max_threads()
+  on.exit(RhpcBLASctl::omp_set_num_threads(curr_threads))
 
   # Construct datasets, if needed
   data$update_params(params = params)
