@@ -28,6 +28,10 @@ class ColSampler {
       std::unordered_set<int> constraint_set(constraint.begin(), constraint.end());
       interaction_constraints_.push_back(constraint_set);
     }
+    for (auto constraint : config->tree_interaction_constraints_vector) {
+      std::unordered_set<int> constraint_set(constraint.begin(), constraint.end());
+      tree_interaction_constraints_.push_back(constraint_set);
+    }
   }
 
   static int GetCnt(size_t total_cnt, double fraction) {
@@ -89,30 +93,67 @@ class ColSampler {
   }
 
   std::vector<int8_t> GetByNode(const Tree* tree, int leaf) {
-    // get interaction constraints for current branch
-    std::unordered_set<int> allowed_features;
-    if (!interaction_constraints_.empty()) {
-      std::vector<int> branch_features = tree->branch_features(leaf);
-      allowed_features.insert(branch_features.begin(), branch_features.end());
-      for (auto constraint : interaction_constraints_) {
+    std::unordered_set<int> tree_allowed_features;
+    if (!tree_interaction_constraints_.empty()) {
+      std::set<int> tree_features = tree->tree_features();
+      tree_allowed_features.insert(tree_features.begin(), tree_features.end());
+      for (auto constraint : tree_interaction_constraints_) {
         int num_feat_found = 0;
-        if (branch_features.size() == 0) {
-          allowed_features.insert(constraint.begin(), constraint.end());
+
+        if (tree_features.empty()) {
+          tree_allowed_features.insert(constraint.begin(), constraint.end());
         }
-        for (int feat : branch_features) {
+
+        for (int feat : tree_features) {
           if (constraint.count(feat) == 0) { break; }
           ++num_feat_found;
-          if (num_feat_found == static_cast<int>(branch_features.size())) {
-            allowed_features.insert(constraint.begin(), constraint.end());
+          if (num_feat_found == static_cast<int>(tree_features.size())) {
+            tree_allowed_features.insert(constraint.begin(), constraint.end());
             break;
           }
         }
       }
     }
 
+    // get interaction constraints for current branch
+    std::unordered_set<int> branch_allowed_features;
+    if (!interaction_constraints_.empty()) {
+      std::vector<int> branch_features = tree->branch_features(leaf);
+      for (auto constraint : interaction_constraints_) {
+        int num_feat_found = 0;
+        if (branch_features.empty()) {
+          branch_allowed_features.insert(constraint.begin(), constraint.end());
+        }
+        for (int feat : branch_features) {
+          if (constraint.count(feat) == 0) { break; }
+          ++num_feat_found;
+          if (num_feat_found == static_cast<int>(branch_features.size())) {
+            branch_allowed_features.insert(constraint.begin(), constraint.end());
+            break;
+          }
+        }
+      }
+    }
+
+    // intersect allowed features for branch and tree
+    std::unordered_set<int> allowed_features;
+
+    if(tree_interaction_constraints_.empty() && !interaction_constraints_.empty()) {
+      allowed_features.insert(branch_allowed_features.begin(), branch_allowed_features.end());
+    } else if(!tree_interaction_constraints_.empty() && interaction_constraints_.empty()){
+      allowed_features.insert(tree_allowed_features.begin(), tree_allowed_features.end());
+    } else {
+      for (int element : tree_allowed_features) {
+        if (branch_allowed_features.count(element) > 0) {
+          allowed_features.insert(element);
+        }
+      }
+    }
+
+
     std::vector<int8_t> ret(train_data_->num_features(), 0);
     if (fraction_bynode_ >= 1.0f) {
-      if (interaction_constraints_.empty()) {
+      if (interaction_constraints_.empty() && tree_interaction_constraints_.empty()) {
         return std::vector<int8_t>(train_data_->num_features(), 1);
       } else {
         for (int feat : allowed_features) {
@@ -128,7 +169,7 @@ class ColSampler {
       auto used_feature_cnt = GetCnt(used_feature_indices_.size(), fraction_bynode_);
       std::vector<int>* allowed_used_feature_indices;
       std::vector<int> filtered_feature_indices;
-      if (interaction_constraints_.empty()) {
+      if (interaction_constraints_.empty() && tree_interaction_constraints_.empty()) {
         allowed_used_feature_indices = &used_feature_indices_;
       } else {
         for (int feat_ind : used_feature_indices_) {
@@ -154,7 +195,7 @@ class ColSampler {
           GetCnt(valid_feature_indices_.size(), fraction_bynode_);
       std::vector<int>* allowed_valid_feature_indices;
       std::vector<int> filtered_feature_indices;
-      if (interaction_constraints_.empty()) {
+      if (interaction_constraints_.empty() && tree_interaction_constraints_.empty()) {
         allowed_valid_feature_indices = &valid_feature_indices_;
       } else {
         for (int feat : valid_feature_indices_) {
@@ -199,6 +240,8 @@ class ColSampler {
   std::vector<int> valid_feature_indices_;
   /*! \brief interaction constraints index in original (raw data) features */
   std::vector<std::unordered_set<int>> interaction_constraints_;
+  /*! \brief tree nteraction constraints index in original (raw data) features */
+  std::vector<std::unordered_set<int>> tree_interaction_constraints_;
 };
 
 }  // namespace LightGBM
