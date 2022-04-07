@@ -159,6 +159,10 @@ class Tree {
   /*! \brief Get features on leaf's branch*/
   inline std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
 
+  std::set<int> tree_features() const {
+    return tree_features_;
+  }
+
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
   inline double internal_value(int node_idx) const {
@@ -522,6 +526,10 @@ class Tree {
   bool track_branch_features_;
   /*! \brief Features on leaf's branch, original index */
   std::vector<std::vector<int>> branch_features_;
+
+  /*! \brief Features used by the tree, original index */
+  std::set<int> tree_features_;
+
   double shrinkage_;
   int max_depth_;
   /*! \brief Tree has linear model at each leaf */
@@ -581,7 +589,9 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
     branch_features_[num_leaves_] = branch_features_[leaf];
     branch_features_[num_leaves_].push_back(split_feature_[new_node_idx]);
     branch_features_[leaf].push_back(split_feature_[new_node_idx]);
+    tree_features_.insert(split_feature_[new_node_idx]);
   }
+
 }
 
 inline double Tree::Predict(const double* feature_values) const {

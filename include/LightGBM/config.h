@@ -590,6 +590,14 @@ struct Config {
   // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
   std::string interaction_constraints = "";
 
+  // desc = controls which features can appear in the same tree
+  // desc = by default interaction constraints are disabled, to enable them you can specify
+  // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
+  // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
+  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+  // desc = any two features can only appear in the same tree only if there exists a constraint containing both features
+  std::string tree_interaction_constraints = "";
+
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug
@@ -1151,6 +1159,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  std::vector<std::vector<int>> tree_interaction_constraints_vector;
   static const std::unordered_map<std::string, std::string>& ParameterTypes();
   static const std::string DumpAliases();
 
@@ -1160,6 +1169,7 @@ struct Config {
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
   void GetInteractionConstraints();
+  void GetTreeInteractionConstraints();
 };
 
 inline bool Config::GetString(

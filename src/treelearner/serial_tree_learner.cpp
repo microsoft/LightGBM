@@ -196,7 +196,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   // some initial works before training
   BeforeTrain();
 
-  bool track_branch_features = !(config_->interaction_constraints_vector.empty());
+  bool track_branch_features = !(config_->interaction_constraints_vector.empty()
+                                 && config_->tree_interaction_constraints_vector.empty());
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_ptr = tree.get();
   constraints_->ShareTreePointer(tree_ptr);
@@ -339,6 +340,19 @@ void SerialTreeLearner::BeforeTrain() {
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit", global_timer);
+
+  #pragma omp parallel for schedule(static)
+  for (int i = 0; i < config_->num_leaves; ++i) {
+    int feat_index = best_split_per_leaf_[i].feature;
+    if(feat_index == -1) continue;
+
+    int inner_feat_index = train_data_->InnerFeatureIndex(feat_index);
+    auto allowed_feature = col_sampler_.GetByNode(tree, i);
+    if(!allowed_feature[inner_feat_index]){
+      RecomputeBestSplitForLeaf(tree, i, &best_split_per_leaf_[i]);
+    }
+  }
+
   // check depth of current leaf
   if (config_->max_depth > 0) {
     // only need to check left leaf, since right leaf is in same level of left leaf
@@ -1016,7 +1030,7 @@ double SerialTreeLearner::GetParentOutput(const Tree* tree, const LeafSplits* le
   return parent_output;
 }
 
-void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInfo* split) {
+void SerialTreeLearner::RecomputeBestSplitForLeaf(const Tree* tree, int leaf, SplitInfo* split) {
   FeatureHistogram* histogram_array_;
   if (!histogram_pool_.Get(leaf, &histogram_array_)) {
     Log::Warning(
