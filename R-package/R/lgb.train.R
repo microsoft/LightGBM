@@ -1,4 +1,4 @@
-#' @name importFrom RhpcBLASctl omp_get_max_threads omp_set_num_threads
+#' @importFrom RhpcBLASctl omp_get_max_threads omp_set_num_threads
 
 #' @name lgb.train
 #' @title Main training logic for LightGBM
