@@ -815,7 +815,9 @@ predict.lgb.Booster <- function(object,
   rawscore <- FALSE
   predleaf <- FALSE
   predcontrib <- FALSE
-  if (type == "leaf") {
+  if (type == "raw") {
+    rawscore <- TRUE
+  } else if (type == "leaf") {
     predleaf <- TRUE
   } else if (type == "contrib") {
     predcontrib <- TRUE
