@@ -31,11 +31,12 @@ a character representing a path to a text file (CSV, TSV, or LibSVM)}
       results) from which the "link" number is produced for a given objective function - for example, for
       \code{objective="binary"}, this corresponds to log-odds. For many objectives such as "regression",
       since no transformation is applied, the output will be the same as for "link".
-\item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls in
-      each tree in the model, outputted as as integers, with one column per tree.
-\item \code{"contrib"}: will return the per-feature contributions for each prediction, including an intercept
-      (each feature will produce one column). If there are multiple classes, each class will have separate
-      feature contributions (thus the number of columns is feaures+1 multiplied by the number of classes).
+\item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+      in each tree in the model, outputted as as integers, with one column per tree.
+\item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+      intercept (each feature will produce one column). If there are multiple classes, each class will
+      have separate feature contributions (thus the number of columns is feaures+1 multiplied by the
+      number of classes).
 }}
 
 \item{start_iteration}{int or None, optional (default=None)
