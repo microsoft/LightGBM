@@ -663,6 +663,8 @@ Dataset Parameters
       -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 
       -  the linear model at each leaf includes all the numerical features in that leaf's branch
+      
+      -  the first tree has constant leaf values
 
       -  categorical features are used for splits as normal but are not used in the linear models
 
