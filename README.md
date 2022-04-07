@@ -1,3 +1,12 @@
+
+Forked version of LightGBM by veneres
+===============================
+
+This forked version of LightGBM is made to be used with the proof of concept of ILMART, a new additive model based on
+LambdaMART.
+Further information will be shared soon.
+
+
 <img src=https://github.com/microsoft/LightGBM/blob/master/docs/logo/LightGBM_logo_black_text.svg width=300 />
 
 Light Gradient Boosting Machine
