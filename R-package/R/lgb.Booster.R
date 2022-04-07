@@ -713,6 +713,22 @@ Booster <- R6::R6Class(
 #' @param object Object of class \code{lgb.Booster}
 #' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
 #'                a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param type Type of prediction to output. Allowed types are:\itemize{
+#'             \item \code{"link"}: will output the predicted score according to the objective function being
+#'                   optimized (depending on the link function that the objective uses), after applying any necessary
+#'                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+#'             \item \code{"response"}: for classification objectives, will output the class with the highest predicted
+#'                   probability. For other objectives, will output the same as "link".
+#'             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+#'                   results) from which the "link" number is produced for a given objective function - for example, for
+#'                   \code{objective="binary"}, this corresponds to log-odds. For many objectives such as "regression",
+#'                   since no transformation is applied, the output will be the same as for "link".
+#'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls in
+#'                   each tree in the model, outputted as as integers, with one column per tree.
+#'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an intercept
+#'                   (each feature will produce one column). If there are multiple classes, each class will have separate
+#'                   feature contributions (thus the number of columns is feaures+1 multiplied by the number of classes).
+#'             }
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -721,22 +737,19 @@ Booster <- R6::R6Class(
 #'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
 #'                      best iteration is used; otherwise, all iterations from start_iteration are used.
 #'                      If <= 0, all iterations from start_iteration are used (no limits).
-#' @param rawscore whether the prediction should be returned in the for of original untransformed
-#'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-#'                 for logistic regression would result in predictions for log-odds instead of probabilities.
-#' @param predleaf whether predict leaf index instead.
-#' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
 #' @param ... ignored
-#' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#'         For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
+#' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
+#'         \code{type="link"} on a binary classification or regression objective), will return a vector with one
+#'         row per observation in \code{newdata}.
 #'
-#'         When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
-#'         returned as a matrix.
+#'         For prediction types that are meant to return more than one output per observation (e.g. when predicting
+#'         \code{type="link"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
+#'         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 #'
 #' @examples
 #' \donttest{
@@ -770,15 +783,13 @@ Booster <- R6::R6Class(
 #'    )
 #' )
 #' }
-#' @importFrom utils modifyList
+#' @importFrom utils modifyList head
 #' @export
 predict.lgb.Booster <- function(object,
                                 newdata,
+                                type = c("link", "response", "raw", "leaf", "contrib"),
                                 start_iteration = NULL,
                                 num_iteration = NULL,
-                                rawscore = FALSE,
-                                predleaf = FALSE,
-                                predcontrib = FALSE,
                                 header = FALSE,
                                 params = list(),
                                 ...) {
@@ -799,18 +810,34 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  return(
-    object$predict(
-      data = newdata
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , params = params
-    )
+  type <- head(type, 1L)
+  rawscore <- FALSE
+  predleaf <- FALSE
+  predcontrib <- FALSE
+  if (type == "leaf") {
+    predleaf <- TRUE
+  } else if (type == "contrib") {
+    predcontrib <- TRUE
+  }
+
+  pred <- object$predict(
+    data = newdata
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , params = params
   )
+  if (type == "response") {
+    if (object$params$objective == "binary") {
+      pred <- as.integer(pred >= 0.5)
+    } else if (object$params$objective %in% c("multiclass", "multiclassova")) {
+      pred <- max.col(pred) - 1L
+    }
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster

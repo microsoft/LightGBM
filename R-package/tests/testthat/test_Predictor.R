@@ -81,8 +81,8 @@ test_that("start_iteration works correctly", {
         , early_stopping_rounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
-    pred1 <- predict(bst, newdata = test$data, rawscore = TRUE)
-    pred_contrib1 <- predict(bst, test$data, predcontrib = TRUE)
+    pred1 <- predict(bst, newdata = test$data, type = "raw")
+    pred_contrib1 <- predict(bst, test$data, type = "contrib")
     pred2 <- rep(0.0, length(pred1))
     pred_contrib2 <- rep(0.0, length(pred2))
     step <- 11L
@@ -96,7 +96,7 @@ test_that("start_iteration works correctly", {
         inc_pred <- predict(bst, test$data
             , start_iteration = start_iter
             , num_iteration = n_iter
-            , rawscore = TRUE
+            , type = "raw"
         )
         inc_pred_contrib <- bst$predict(test$data
             , start_iteration = start_iter
@@ -109,8 +109,8 @@ test_that("start_iteration works correctly", {
     expect_equal(pred2, pred1)
     expect_equal(pred_contrib2, pred_contrib1)
 
-    pred_leaf1 <- predict(bst, test$data, predleaf = TRUE)
-    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, predleaf = TRUE)
+    pred_leaf1 <- predict(bst, test$data, type = "leaf")
+    pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, type = "leaf")
     expect_equal(pred_leaf1, pred_leaf2)
 })
 
@@ -139,11 +139,11 @@ test_that("start_iteration works correctly", {
     # dense matrix with row names
     pred <- predict(bst, X)
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, rawscore = TRUE)
+    pred <- predict(bst, X, type = "raw")
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predleaf = TRUE)
+    pred <- predict(bst, X, type = "leaf")
     .expect_has_row_names(pred, X)
-    pred <- predict(bst, X, predcontrib = TRUE)
+    pred <- predict(bst, X, type = "contrib")
     .expect_has_row_names(pred, X)
 
     # dense matrix without row names
@@ -156,11 +156,11 @@ test_that("start_iteration works correctly", {
     Xcsc <- as(X, "CsparseMatrix")
     pred <- predict(bst, Xcsc)
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, rawscore = TRUE)
+    pred <- predict(bst, Xcsc, type = "raw")
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predleaf = TRUE)
+    pred <- predict(bst, Xcsc, type = "leaf")
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, Xcsc, predcontrib = TRUE)
+    pred <- predict(bst, Xcsc, type = "contrib")
     .expect_has_row_names(pred, Xcsc)
 
     # sparse matrix without row names
@@ -245,7 +245,7 @@ test_that("predictions for regression and binary classification are returned as 
     pred <- predict(model, X)
     expect_true(is.vector(pred))
     expect_equal(length(pred), nrow(X))
-    pred <- predict(model, X, rawscore = TRUE)
+    pred <- predict(model, X, type = "raw")
     expect_true(is.vector(pred))
     expect_equal(length(pred), nrow(X))
 
@@ -262,7 +262,7 @@ test_that("predictions for regression and binary classification are returned as 
     pred <- predict(model, X)
     expect_true(is.vector(pred))
     expect_equal(length(pred), nrow(X))
-    pred <- predict(model, X, rawscore = TRUE)
+    pred <- predict(model, X, type = "raw")
     expect_true(is.vector(pred))
     expect_equal(length(pred), nrow(X))
 })
@@ -283,7 +283,7 @@ test_that("predictions for multiclass classification are returned as matrix", {
     expect_true(is.matrix(pred))
     expect_equal(nrow(pred), nrow(X))
     expect_equal(ncol(pred), 3L)
-    pred <- predict(model, X, rawscore = TRUE)
+    pred <- predict(model, X, type = "raw")
     expect_true(is.matrix(pred))
     expect_equal(nrow(pred), nrow(X))
     expect_equal(ncol(pred), 3L)
