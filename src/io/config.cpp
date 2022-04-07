@@ -185,10 +185,18 @@ void Config::GetAucMuWeights() {
 }
 
 void Config::GetInteractionConstraints() {
-  if (interaction_constraints == "") {
+  if (interaction_constraints.empty()) {
     interaction_constraints_vector = std::vector<std::vector<int>>();
   } else {
     interaction_constraints_vector = Common::StringToArrayofArrays<int>(interaction_constraints, '[', ']', ',');
+  }
+}
+
+void Config::GetTreeInteractionConstraints() {
+  if (tree_interaction_constraints.empty()) {
+    tree_interaction_constraints_vector = std::vector<std::vector<int>>();
+  } else {
+    tree_interaction_constraints_vector = Common::StringToArrayofArrays<int>(tree_interaction_constraints, '[', ']', ',');
   }
 }
 
@@ -220,6 +228,8 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetAucMuWeights();
 
   GetInteractionConstraints();
+
+  GetTreeInteractionConstraints();
 
   // sort eval_at
   std::sort(eval_at.begin(), eval_at.end());
