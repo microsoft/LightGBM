@@ -246,7 +246,7 @@ test_that("predict() params should override keyword argument for feature contrib
   # check that predictions really look like feature contributions
   preds_contrib_s3_keyword <- predict(bst, X, predcontrib = TRUE)
   num_features <- ncol(X)
-  shap_base_value <- preds_contrib_s3_keyword[, ncol(preds_contrib_s3_keyword)]
+  shap_base_value <- unname(preds_contrib_s3_keyword[, ncol(preds_contrib_s3_keyword)])
   expect_true(is.matrix(preds_contrib_s3_keyword))
   expect_equal(dim(preds_contrib_s3_keyword), c(nrow(X), num_features + 1L))
   expect_equal(length(unique(shap_base_value)), 1L)
