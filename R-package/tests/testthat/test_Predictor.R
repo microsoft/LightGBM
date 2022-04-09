@@ -190,7 +190,7 @@ test_that("predict() params should override keyword argument for leaf-index pred
   # check that predictions really look like leaf index predictions
   preds_leaf_s3_keyword <- predict(bst, X, predleaf = TRUE)
   expect_true(is.matrix(preds_leaf_s3_keyword))
-  expect_equal(dim(preds_leaf_s3_keyword), c(32L, 10L))
+  expect_equal(dim(preds_leaf_s3_keyword), c(nrow(X), bst$current_iter()))
   expect_true(min(preds_leaf_s3_keyword) >= 0L)
   trees_dt <- lgb.model.dt.tree(bst)
   max_leaf_by_tree_from_dt <- trees_dt[, .(idx = max(leaf_index, na.rm = TRUE)), by = tree_index]$idx
