@@ -335,6 +335,7 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
 
     ```shell
     docker run \
+        --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
         -t ubuntu:20.04 \
@@ -452,6 +453,7 @@ You can replicate these checks locally using Docker. Note that instrumented vers
 
 ```shell
 docker run \
+    --rm \
     -v $(pwd):/opt/LightGBM \
     -w /opt/LightGBM \
     -it \
