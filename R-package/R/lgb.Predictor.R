@@ -133,6 +133,9 @@ Predictor <- R6::R6Class(
         ncols_out <- integer(1L)
         .Call(LGBM_BoosterGetNumClasses_R, private$handle, ncols_out)
         ncols_out <- (ncols + 1L) * max(ncols_out, 1L)
+        if (is.na(ncols_out)) {
+          ncols_out <- as.numeric(ncols + 1L) * as.numeric(max(ncols_out, 1L))
+        }
         if (!inherits(data, "dsparseVector") && ncols_out > .Machine$integer.max) {
           stop("Resulting matrix of feature contributions is too large for R to handle.")
         }
