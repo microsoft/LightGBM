@@ -2,6 +2,8 @@ VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
 
+TOLERANCE <- 1e-6
+
 library(Matrix)
 
 test_that("Predictor$finalize() should not fail", {
@@ -123,8 +125,7 @@ test_that("predict() params should override keyword argument for raw-score predi
       data = X
       , label = y
       , params = list(
-        verbosity = VERBOSITY
-        , data_seed = 708L
+        data_seed = 708L
         , min_data_in_bin = 5L
       )
     )
@@ -141,7 +142,7 @@ test_that("predict() params should override keyword argument for raw-score predi
   preds_prob <- predict(bst, X)
   preds_raw_s3_keyword <- predict(bst, X, rawscore = TRUE)
   preds_prob_from_raw <- 1.0 / (1.0 + exp(-preds_raw_s3_keyword))
-  expect_equal(preds_prob, preds_prob_from_raw, tolerance = 1e-6)
+  expect_equal(preds_prob, preds_prob_from_raw, tolerance = TOLERANCE)
   accuracy <- sum(as.integer(preds_prob_from_raw > 0.5) == y) / length(y)
   expect_equal(accuracy, 1.0)
 
@@ -176,7 +177,6 @@ test_that("predict() params should override keyword argument for leaf-index pred
       , label = y
       , params = list(
         min_data_in_bin = 1L
-        , verbosity = VERBOSITY
         , data_seed = 708L
       )
     )
@@ -230,7 +230,6 @@ test_that("predict() params should override keyword argument for feature contrib
       , label = y
       , params = list(
         min_data_in_bin = 1L
-        , verbosity = VERBOSITY
         , data_seed = 708L
       )
     )
