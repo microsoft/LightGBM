@@ -664,6 +664,8 @@ Dataset Parameters
 
       -  the linear model at each leaf includes all the numerical features in that leaf's branch
 
+      -  the first tree has constant leaf values
+
       -  categorical features are used for splits as normal but are not used in the linear models
 
       -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R

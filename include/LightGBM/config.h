@@ -586,6 +586,7 @@ struct Config {
   // desc = fit piecewise linear gradient boosting tree
   // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
   // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // descl2 = the first tree has constant leaf values
   // descl2 = categorical features are used for splits as normal but are not used in the linear models
   // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
   // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
