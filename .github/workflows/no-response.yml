@@ -20,4 +20,4 @@ jobs:
               Thank you for taking the time to improve LightGBM!
           daysUntilClose: 30
           responseRequiredLabel: awaiting response
-          token: ${{ secrets.WORKFLOW }}
+          token: ${{ github.token }}
