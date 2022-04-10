@@ -157,7 +157,7 @@ Predictor <- R6::R6Class(
             , num_iteration
             , private$params
           )
-          out <- new("dsparseVector")
+          out <- methods::new("dsparseVector")
           out@i <- res$indices + 1L
           out@x <- res$data
           out@length <- ncols_out
