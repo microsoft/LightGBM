@@ -183,7 +183,7 @@ Predictor <- R6::R6Class(
             , num_iteration
             , private$params
           )
-          out <- new("dgRMatrix")
+          out <- methods::new("dgRMatrix")
           out@p <- res$indptr
           out@j <- res$indices
           out@x <- res$data
