@@ -219,6 +219,15 @@ Predictor <- R6::R6Class(
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
       }
 
+      # Keep row names if possible
+      if (NROW(row.names(data)) && NROW(data) == NROW(preds)) {
+        if (is.null(dim(preds))) {
+          names(preds) <- row.names(data)
+        } else {
+          row.names(preds) <- row.names(data)
+        }
+      }
+
       return(preds)
     }
 
