@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer
+from .utils import load_breast_cancer, dummy_obj, mse_obj
 
 
 def test_basic(tmp_path):
@@ -515,15 +515,6 @@ def test_choose_param_value():
 
 @pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
 def test_choose_param_value_objective(objective_alias):
-    def dummy_obj(preds, train_data):
-        return np.ones(preds.shape), np.ones(preds.shape)
-
-    def mse_obj(y_pred, dtrain):
-        y_true = dtrain.get_label()
-        grad = (y_pred - y_true)
-        hess = np.ones(len(grad))
-        return grad, hess
-
     # If callable is found in objective
     params = {objective_alias: dummy_obj}
     params = lgb.basic._choose_param_value(

@@ -118,6 +118,14 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 def make_synthetic_regression(n_samples=100):
     return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
 
+def dummy_obj(preds, train_data):
+        return np.ones(preds.shape), np.ones(preds.shape)
+
+def mse_obj(y_pred, dtrain):
+    y_true = dtrain.get_label()
+    grad = (y_pred - y_true)
+    hess = np.ones(len(grad))
+    return grad, hess
 
 def softmax(x):
     row_wise_max = np.max(x, axis=1).reshape(-1, 1)
