@@ -599,7 +599,7 @@ class LGBMModel(_LGBMModelBase):
                 params['objective'] = _ObjectiveFunctionWrapper(self._objective)
             else:
                 if isinstance(self, LGBMRegressor):
-                    params['objective'] =  "regression"
+                    params['objective'] = "regression"
                 elif isinstance(self, LGBMClassifier):
                     if self._n_classes > 2:
                         params['objective'] = "multiclass"
