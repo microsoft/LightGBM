@@ -63,7 +63,7 @@ test_that(".PARAMETER_ALIASES() uses the internal session cache", {
   cache_key <- "PARAMETER_ALIASES"
 
   # clear cache, so this test isn't reliant on the order unit tests are run in
-  if (exists(cache_key, where = .lgb_session_cache_env)){
+  if (exists(cache_key, where = .lgb_session_cache_env)) {
     rm(list = cache_key, envir = .lgb_session_cache_env)
   }
   expect_false(exists(cache_key, where = .lgb_session_cache_env))
@@ -83,7 +83,7 @@ test_that(".PARAMETER_ALIASES() uses the internal session cache", {
   expect_equal(iter_aliases, c("test", "other_test"))
 
   # re-set cache so this doesn't interfere with other unit tests
-  if (exists(cache_key, where = .lgb_session_cache_env)){
+  if (exists(cache_key, where = .lgb_session_cache_env)) {
     rm(list = cache_key, envir = .lgb_session_cache_env)
   }
   expect_false(exists(cache_key, where = .lgb_session_cache_env))
