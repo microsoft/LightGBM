@@ -2200,7 +2200,7 @@ def test_metrics():
         params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
         params_dummy_obj_class_1_verbose = {'objective': dummy_obj, 'num_class': 1, 'verbose': -1}
         params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
-        params_dummy_obj_verbose= {'objective': dummy_obj, 'verbose': -1}
+        params_dummy_obj_verbose = {'objective': dummy_obj, 'verbose': -1}
         # multiclass default metric
         res = get_cv_result(params_obj_class_3_verbose)
         assert len(res) == 2
