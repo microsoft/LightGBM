@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer, dummy_obj, mse_obj
+from .utils import dummy_obj, load_breast_cancer, mse_obj
 
 
 def test_basic(tmp_path):
