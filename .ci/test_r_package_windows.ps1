@@ -170,7 +170,8 @@ if ($env:COMPILER -ne "MSVC") {
     # Putting the msys64 utilities at the beginning of PATH temporarily to be
     # sure they're used for that purpose.
     if ($env:R_MAJOR_VERSION -eq "3") {
-      $env:PATH = "C:\Rtools\bin;C:\msys64\usr\bin;" + $env:PATH
+      # $env:PATH = "C:\Rtools\bin;C:\msys64\usr\bin;" + $env:PATH
+      $env:PATH = "C:\msys64\usr\bin;C:\Rtools\bin;" + $env:PATH
     }
     Write-Output "--- location of tar ---"
     Get-Command tar
