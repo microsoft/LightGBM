@@ -272,6 +272,21 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
+
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
+
+    dataset->device_type_ = config_.device_type;
+    dataset->gpu_device_id_ = config_.gpu_device_id;
+    #ifdef USE_CUDA_EXP
+    if (config_.device_type == std::string("cuda_exp")) {
+      dataset->CreateCUDAColumnData();
+      dataset->metadata_.CreateCUDAMetadata(dataset->gpu_device_id_);
+    } else {
+      dataset->cuda_column_data_ = nullptr;
+    }
+    #endif  // USE_CUDA_EXP
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -328,6 +343,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   } else {
     // load data from binary file
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // not need to check validation data
   // check meta data
@@ -787,6 +805,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   if (dataset->has_raw()) {
@@ -1166,6 +1185,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
@@ -1443,6 +1463,46 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
     }
   }
   return forced_bins;
+}
+
+void DatasetLoader::CheckCategoricalFeatureNumBin(
+  const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+  const int max_bin, const std::vector<int>& max_bin_by_feature) const {
+  bool need_warning = false;
+  if (bin_mappers.size() < 1024) {
+    for (size_t i = 0; i < bin_mappers.size(); ++i) {
+      const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
+      if (bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+        need_warning = true;
+        break;
+      }
+    }
+  } else {
+    const int num_threads = OMP_NUM_THREADS();
+    std::vector<bool> thread_need_warning(num_threads, false);
+    Threading::For<size_t>(0, bin_mappers.size(), 1,
+      [&bin_mappers, &thread_need_warning, &max_bin_by_feature, max_bin] (int thread_index, size_t start, size_t end) {
+        for (size_t i = start; i < end; ++i) {
+          thread_need_warning[thread_index] = false;
+          const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
+          if (bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+            thread_need_warning[thread_index] = true;
+            break;
+          }
+        }
+      });
+    for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+      if (thread_need_warning[thread_index]) {
+        need_warning = true;
+        break;
+      }
+    }
+  }
+
+  if (need_warning) {
+    Log::Warning("Categorical features with more bins than the configured maximum bin number found.");
+    Log::Warning("For categorical features, max_bin and max_bin_by_feature may be ignored with a large number of categories.");
+  }
 }
 
 }  // namespace LightGBM

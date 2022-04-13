@@ -6,14 +6,13 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
   start_iteration = NULL,
   num_iteration = NULL,
   rawscore = FALSE,
   predleaf = FALSE,
   predcontrib = FALSE,
   header = FALSE,
-  reshape = FALSE,
   params = list(),
   ...
 )
@@ -21,7 +20,7 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
 a character representing a path to a text file (CSV, TSV, or LibSVM)}
 
 \item{start_iteration}{int or None, optional (default=None)
@@ -44,9 +43,6 @@ for logistic regression would result in predictions for log-odds instead of prob
 
 \item{header}{only used for prediction for text file. True if text file has header}
 
-\item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
-
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
@@ -56,12 +52,10 @@ valid values.}
 }
 \value{
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-        For multiclass classification, either a \code{num_class * nrows(data)} vector or
-        a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-        the \code{reshape} value.
+        For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
 
-        When \code{predleaf = TRUE}, the output is a matrix object with the
-        number of columns corresponding to the number of trees.
+        When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
+        returned as a matrix.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}

@@ -474,7 +474,6 @@ Booster <- R6::R6Class(
                        predleaf = FALSE,
                        predcontrib = FALSE,
                        header = FALSE,
-                       reshape = FALSE,
                        params = list()) {
 
       self$restore_handle()
@@ -501,7 +500,6 @@ Booster <- R6::R6Class(
           , predleaf = predleaf
           , predcontrib = predcontrib
           , header = header
-          , reshape = reshape
         )
       )
 
@@ -713,8 +711,8 @@ Booster <- R6::R6Class(
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
-#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
+#'                a character representing a path to a text file (CSV, TSV, or LibSVM)
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -729,20 +727,16 @@ Booster <- R6::R6Class(
 #' @param predleaf whether predict leaf index instead.
 #' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
-#' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
-#'                prediction outputs per case.
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
 #' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
-#'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-#'         the \code{reshape} value.
+#'         For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
 #'
-#'         When \code{predleaf = TRUE}, the output is a matrix object with the
-#'         number of columns corresponding to the number of trees.
+#'         When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
+#'         returned as a matrix.
 #'
 #' @examples
 #' \donttest{
@@ -779,14 +773,13 @@ Booster <- R6::R6Class(
 #' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
-                                data,
+                                newdata,
                                 start_iteration = NULL,
                                 num_iteration = NULL,
                                 rawscore = FALSE,
                                 predleaf = FALSE,
                                 predcontrib = FALSE,
                                 header = FALSE,
-                                reshape = FALSE,
                                 params = list(),
                                 ...) {
 
@@ -796,6 +789,9 @@ predict.lgb.Booster <- function(object,
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
+    if ("reshape" %in% names(additional_params)) {
+      stop("'reshape' argument is no longer supported.")
+    }
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
       , paste(names(additional_params), collapse = ", ")
@@ -805,14 +801,13 @@ predict.lgb.Booster <- function(object,
 
   return(
     object$predict(
-      data = data
+      data = newdata
       , start_iteration = start_iteration
       , num_iteration = num_iteration
       , rawscore = rawscore
       , predleaf =  predleaf
       , predcontrib =  predcontrib
       , header = header
-      , reshape = reshape
       , params = params
     )
   )

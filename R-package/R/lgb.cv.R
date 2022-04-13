@@ -246,12 +246,12 @@ lgb.cv <- function(params = list()
 
   # Add printing log callback
   if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.record.evaluation())
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_record_evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -272,10 +272,10 @@ lgb.cv <- function(params = list()
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping <- FALSE
 
-    # Remove the cb.early.stop() function if it was passed in to callbacks
+    # Remove the cb_early_stop() function if it was passed in to callbacks
     callbacks <- Filter(
       f = function(cb_func) {
-        !identical(attr(cb_func, "name"), "cb.early.stop")
+        !identical(attr(cb_func, "name"), "cb_early_stop")
       }
       , x = callbacks
     )
@@ -285,7 +285,7 @@ lgb.cv <- function(params = list()
   if (using_early_stopping) {
     callbacks <- add.cb(
       cb_list = callbacks
-      , cb = cb.early.stop(
+      , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
         , verbose = verbose
@@ -433,6 +433,10 @@ lgb.cv <- function(params = list()
       )
     )
     cv_booster$best_score <- cv_booster$record_evals[["valid"]][[first_metric]][[.EVAL_KEY()]][[cv_booster$best_iter]]
+  }
+  # Propagate the best_iter attribute from the cv_booster to the individual boosters
+  for (bst in cv_booster$boosters) {
+    bst$booster$best_iter <- cv_booster$best_iter
   }
 
   if (reset_data) {

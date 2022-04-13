@@ -433,6 +433,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
+ * \brief Get number of bins for feature.
+ * \param handle Handle of dataset
+ * \param feature Index of the feature
+ * \param[out] out The address to hold number of bins
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
+                                                   int feature,
+                                                   int* out);
+
+/*!
  * \brief Add features from ``source`` to ``target``.
  * \param target The handle of the dataset to add features to
  * \param source The handle of the dataset to take features from

@@ -2,7 +2,6 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
-import pickle
 import random
 import socket
 from itertools import groupby
@@ -24,10 +23,8 @@ if machine() != 'x86_64':
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
-import cloudpickle
 import dask.array as da
 import dask.dataframe as dd
-import joblib
 import numpy as np
 import pandas as pd
 import sklearn.utils.estimator_checks as sklearn_checks
@@ -37,7 +34,7 @@ from scipy.sparse import csc_matrix, csr_matrix
 from scipy.stats import spearmanr
 from sklearn.datasets import make_blobs, make_regression
 
-from .utils import make_ranking
+from .utils import make_ranking, pickle_obj, unpickle_obj
 
 tasks = ['binary-classification', 'multiclass-classification', 'regression', 'ranking']
 distributed_training_algorithms = ['data', 'voting']
@@ -59,7 +56,8 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
+    pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Fails to run with CUDA Experimental interface')
 ]
 
 
@@ -232,32 +230,6 @@ def _constant_metric(y_true, y_pred):
     value = 0.708
     is_higher_better = False
     return metric_name, value, is_higher_better
-
-
-def _pickle(obj, filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'wb') as f:
-            pickle.dump(obj, f)
-    elif serializer == 'joblib':
-        joblib.dump(obj, filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'wb') as f:
-            cloudpickle.dump(obj, f)
-    else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
-
-
-def _unpickle(filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'rb') as f:
-            return pickle.load(f)
-    elif serializer == 'joblib':
-        return joblib.load(filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'rb') as f:
-            return cloudpickle.load(f)
-    else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
 
 
 def _objective_least_squares(y_true, y_pred):
@@ -1341,23 +1313,23 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             assert getattr(local_model, "client", None) is None
 
             tmp_file = tmp_path / "model-1.pkl"
-            _pickle(
+            pickle_obj(
                 obj=dask_model,
                 filepath=tmp_file,
                 serializer=serializer
             )
-            model_from_disk = _unpickle(
+            model_from_disk = unpickle_obj(
                 filepath=tmp_file,
                 serializer=serializer
             )
 
             local_tmp_file = tmp_path / "local-model-1.pkl"
-            _pickle(
+            pickle_obj(
                 obj=local_model,
                 filepath=local_tmp_file,
                 serializer=serializer
             )
-            local_model_from_disk = _unpickle(
+            local_model_from_disk = unpickle_obj(
                 filepath=local_tmp_file,
                 serializer=serializer
             )
@@ -1397,23 +1369,23 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
                 local_model.client_
 
             tmp_file2 = tmp_path / "model-2.pkl"
-            _pickle(
+            pickle_obj(
                 obj=dask_model,
                 filepath=tmp_file2,
                 serializer=serializer
             )
-            fitted_model_from_disk = _unpickle(
+            fitted_model_from_disk = unpickle_obj(
                 filepath=tmp_file2,
                 serializer=serializer
             )
 
             local_tmp_file2 = tmp_path / "local-model-2.pkl"
-            _pickle(
+            pickle_obj(
                 obj=local_model,
                 filepath=local_tmp_file2,
                 serializer=serializer
             )
-            local_fitted_model_from_disk = _unpickle(
+            local_fitted_model_from_disk = unpickle_obj(
                 filepath=local_tmp_file2,
                 serializer=serializer
             )

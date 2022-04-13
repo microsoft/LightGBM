@@ -78,7 +78,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.2"
+  $env:R_WINDOWS_VERSION = "4.1.3"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -122,7 +122,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't

@@ -1,6 +1,9 @@
 # coding: utf-8
+import pickle
 from functools import lru_cache
 
+import cloudpickle
+import joblib
 import numpy as np
 import sklearn.datasets
 from sklearn.utils import check_random_state
@@ -131,3 +134,29 @@ def sklearn_multiclass_custom_objective(y_true, y_pred):
     factor = num_class / (num_class - 1)
     hess = factor * prob * (1 - prob)
     return grad, hess
+
+
+def pickle_obj(obj, filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'wb') as f:
+            pickle.dump(obj, f)
+    elif serializer == 'joblib':
+        joblib.dump(obj, filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'wb') as f:
+            cloudpickle.dump(obj, f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')
+
+
+def unpickle_obj(filepath, serializer):
+    if serializer == 'pickle':
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+    elif serializer == 'joblib':
+        return joblib.load(filepath)
+    elif serializer == 'cloudpickle':
+        with open(filepath, 'rb') as f:
+            return cloudpickle.load(f)
+    else:
+        raise ValueError(f'Unrecognized serializer type: {serializer}')

@@ -295,7 +295,6 @@ Dataset <- R6::R6Class(
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
-          , reshape = TRUE
         )
 
         # Not needed to transpose, for is col_marjor
@@ -374,6 +373,21 @@ Dataset <- R6::R6Class(
 
       }
 
+    },
+
+    # Get number of bins for feature
+    get_feature_num_bin = function(feature) {
+      if (lgb.is.null.handle(x = private$handle)) {
+        stop("Cannot get number of bins in feature before constructing Dataset.")
+      }
+      num_bin <- integer(1L)
+      .Call(
+        LGBM_DatasetGetFeatureNumBin_R
+        , private$handle
+        , feature - 1L
+        , num_bin
+      )
+      return(num_bin)
     },
 
     # Get column names
