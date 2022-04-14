@@ -195,6 +195,8 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
     .expect_has_row_names(pred, Xcsc)
     pred <- predict(bst, Xcsc, predcontrib = TRUE)
     .expect_has_row_names(pred, Xcsc)
+    pred <- predict(bst, as(Xcsc, "RsparseMatrix"), predcontrib = TRUE)
+    .expect_has_row_names(pred, Xcsc)
 
     # sparse matrix without row names
     Xcopy <- Xcsc
