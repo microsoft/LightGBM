@@ -1896,7 +1896,7 @@ def test_metrics():
                                        'verbose': -1}
     params_obj_metric_none_verbose = {'objective': 'binary', 'metric': 'None', 'verbose': -1}
     params_dummy_obj_metric_log_verbose = {'objective': dummy_obj, 'metric': 'binary_logloss', 'verbose': -1}
-    params_metric_err_verbose = {'metric': 'binary_error', 'verbose': -1}
+    params_dummy_obj_metric_err_verbose = {'metric': 'binary_error', 'objective': dummy_obj, 'verbose': -1}
     params_dummy_obj_metric_inv_verbose = {'objective': dummy_obj, 'metric_types': 'invalid_metric', 'verbose': -1}
     params_dummy_obj_metric_multi_verbose = {'objective': dummy_obj, 'metric': ['binary_logloss', 'binary_error'], 'verbose': -1}
     params_dummy_obj_metric_none_verbose = {'objective': dummy_obj, 'metric': 'None', 'verbose': -1}
@@ -1967,7 +1967,7 @@ def test_metrics():
     assert len(res) == 0
 
     # metric in params
-    res = get_cv_result(params=params_metric_err_verbose)
+    res = get_cv_result(params=params_dummy_obj_metric_err_verbose)
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
 
@@ -2051,7 +2051,7 @@ def test_metrics():
     assert 'valid error-mean' in res
 
     # metric in params with custom one
-    res = get_cv_result(params=params_metric_err_verbose, feval=constant_metric)
+    res = get_cv_result(params=params_dummy_obj_metric_err_verbose, feval=constant_metric)
     assert len(res) == 4
     assert 'valid binary_error-mean' in res
     assert 'valid error-mean' in res
@@ -2197,7 +2197,6 @@ def test_metrics():
         # Custom objective replaces multiclass
         params_obj_class_3_verbose = {'objective': obj_multi_alias, 'num_class': 3, 'verbose': -1}
         params_dummy_obj_class_3_verbose = {'objective': dummy_obj, 'num_class': 3, 'verbose': -1}
-        params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
         params_dummy_obj_class_1_verbose = {'objective': dummy_obj, 'num_class': 1, 'verbose': -1}
         params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
         params_dummy_obj_verbose = {'objective': dummy_obj, 'verbose': -1}
@@ -2354,12 +2353,12 @@ def test_objective_callable_cv_binary_classification():
 def test_objective_callable_cv_regression():
     X, y = make_synthetic_regression()
     lgb_train = lgb.Dataset(X, y)
-    params_with_metric = {
+    params = {
         'verbose': -1,
         'objective': mse_obj
     }
     cv_res = lgb.cv(
-        params_with_metric,
+        params,
         lgb_train,
         num_boost_round=20,
         nfold=3,

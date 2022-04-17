@@ -598,17 +598,7 @@ class LGBMModel(_LGBMModelBase):
             if stage == "fit":
                 params['objective'] = _ObjectiveFunctionWrapper(self._objective)
             else:
-                if isinstance(self, LGBMRegressor):
-                    params['objective'] = "regression"
-                elif isinstance(self, LGBMClassifier):
-                    if self._n_classes > 2:
-                        params['objective'] = "multiclass"
-                    else:
-                        params['objective'] = "binary"
-                elif isinstance(self, LGBMRanker):
-                    params['objective'] = "lambdarank"
-                else:
-                    raise ValueError("Unknown LGBMModel type.")
+                params['objective'] = 'None'
         else:
             params['objective'] = self._objective
 
