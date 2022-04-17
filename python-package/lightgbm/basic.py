@@ -3760,7 +3760,7 @@ class Booster:
             ctypes.c_int(iteration),
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if importance_type_int == 0:
+        if importance_type_int == C_API_FEATURE_IMPORTANCE_SPLIT:
             return result.astype(np.int32)
         else:
             return result

@@ -49,6 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     container: rocker/verse
     steps:
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v2.4.0
         with:
