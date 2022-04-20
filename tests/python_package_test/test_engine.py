@@ -1068,6 +1068,39 @@ def test_cvbooster():
     assert ret < 0.15
 
 
+def test_cvbooster_save_load():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    def predict(cv_booster):
+        return np.array(cv_booster.predict(X_test))
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=25,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+
+    ret_origin = predict(cvbooster)
+    other_ret = []
+
+    cvbooster.save_model('lgb.model')
+
+    other_ret.append(predict(lgb.CVBooster(model_file='lgb.model')))
+    other_ret.append(predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string())))
+
+    for ret in other_ret:
+        np.testing.assert_array_equal(ret_origin, ret)
+
+
 def test_feature_name():
     X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}

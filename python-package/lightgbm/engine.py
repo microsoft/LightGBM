@@ -2,6 +2,7 @@
 """Library with training routines of LightGBM."""
 import collections
 import copy
+import json
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -266,7 +267,8 @@ class CVBooster:
 
     Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
     This class has the same methods as Booster class.
-    All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
+    All method calls, except for saving and loading the model, are actually performed for underlying Boosters and
+    then all returned results are returned in a list.
 
     Attributes
     ----------
@@ -276,17 +278,41 @@ class CVBooster:
         The best iteration of fitted model.
     """
 
-    def __init__(self):
+    def __init__(self, model_file=None):
         """Initialize the CVBooster.
 
         Generally, no need to instantiate manually.
+
+        Parameters
+        ----------
+        model_file : str, pathlib.Path or None, optional (default=None)
+            Path to the CVBooster model file.
         """
         self.boosters = []
         self.best_iteration = -1
 
+        if model_file is not None:
+            with open(str(model_file), "r") as file:
+                self._from_dict(json.load(file))
+
     def _append(self, booster):
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
+
+    def _from_dict(self, models):
+        """Load CVBooster from dict"""
+        self.best_iteration = models["best_iteration"]
+        self.boosters = []
+        for model_str in models["boosters"]:
+            self.boosters.append(Booster(model_str=model_str))
+
+    def _to_dict(self, num_iteration, start_iteration, importance_type):
+        """Serialize CVBooster to dict"""
+        models_str = []
+        for booster in self.boosters:
+            models_str.append(booster.model_to_string(num_iteration=num_iteration, start_iteration=start_iteration,
+                                                      importance_type=importance_type))
+        return {"boosters": models_str, "best_iteration": self.best_iteration}
 
     def __getattr__(self, name):
         """Redirect methods call of CVBooster."""
@@ -297,6 +323,73 @@ class CVBooster:
                 ret.append(getattr(booster, name)(*args, **kwargs))
             return ret
         return handler_function
+
+    def model_from_string(self, model_str):
+        """Load CVBooster from a string.
+
+        Parameters
+        ----------
+        model_str : str
+            Model will be loaded from this string.
+
+        Returns
+        -------
+        self : CVBooster
+            Loaded CVBooster object.
+        """
+        self._from_dict(json.loads(model_str))
+        return self
+
+    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+        """Save CVBooster to string.
+
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        str_repr : str
+            String representation of CVBooster.
+        """
+        return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
+
+    def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
+        """Save CVBoosters to file.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            Filename to save Booster.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        self : CVBooster
+            Returns self.
+        """
+        with open(filename, "w") as file:
+            json.dump(self._to_dict(num_iteration, start_iteration, importance_type), file)
+
+        return self
 
 
 def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
