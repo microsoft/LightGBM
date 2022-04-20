@@ -300,14 +300,14 @@ class CVBooster:
         self.boosters.append(booster)
 
     def _from_dict(self, models):
-        """Load CVBooster from dict"""
+        """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
             self.boosters.append(Booster(model_str=model_str))
 
     def _to_dict(self, num_iteration, start_iteration, importance_type):
-        """Serialize CVBooster to dict"""
+        """Serialize CVBooster to dict."""
         models_str = []
         for booster in self.boosters:
             models_str.append(booster.model_to_string(num_iteration=num_iteration, start_iteration=start_iteration,
