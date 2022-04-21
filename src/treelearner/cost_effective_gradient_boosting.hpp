@@ -32,6 +32,7 @@ class CostEfficientGradientBoosting {
       return true;
     }
   }
+
   void Init() {
     auto train_data = tree_learner_->train_data_;
     if (!init_) {
@@ -63,6 +64,17 @@ class CostEfficientGradientBoosting {
     }
     init_ = true;
   }
+
+  void BeforeTrain() {
+    // clear the splits in splits_per_leaf_
+    const int num_total_splits = static_cast<int>(splits_per_leaf_.size());
+    const int num_threads = OMP_NUM_THREADS();
+    #pragma omp parallel for schedule(static) num_threads(num_threads)
+    for (int i = 0; i < num_total_splits; ++i) {
+      splits_per_leaf_[i].Reset();
+    }
+  }
+
   double DetlaGain(int feature_index, int real_fidx, int leaf_index,
                    int num_data_in_leaf, SplitInfo split_info) {
     auto config = tree_learner_->config_;
@@ -82,6 +94,7 @@ class CostEfficientGradientBoosting {
                      feature_index] = split_info;
     return delta;
   }
+
   void UpdateLeafBestSplits(Tree* tree, int best_leaf,
                             const SplitInfo* best_split_info,
                             std::vector<SplitInfo>* best_split_per_leaf) {
