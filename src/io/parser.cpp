@@ -270,32 +270,12 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   if (type == DataType::LIBSVM) {
     output_label_index = GetLabelIdxForLibsvm(lines[0], num_features, label_idx);
     ret.reset(new LibSVMParser(output_label_index, num_col, atof));
-    if (num_features > 0) {
-      // num_features is specified by loaded model
-      // this can happen when loading a model for prediction
-      // or loading a model for continual training
-      if(ret->NumFeatures() > num_features) {
-        Log::Warning("Number of features found in LibSVM file (%d) is greater than number of features found in loaded model (%d).",
-          ret->NumFeatures(), num_features);
-      } else {
-        Log::Warning("Number of features found in LivSVM file (%d) is smaller than number of features found in loaded model (%d).",
-          ret->NumFeatures(), num_features);
-      }
-    }
   } else if (type == DataType::TSV) {
     output_label_index = GetLabelIdxForTSV(lines[0], num_features, label_idx);
     ret.reset(new TSVParser(output_label_index, num_col, atof));
-    if (num_features > 0 && num_features != ret->NumFeatures()) {
-      Log::Fatal("Number of features in TSV file (%d) mismatches the number of features (%d) in loaded model.",
-        ret->NumFeatures(), num_features);
-    }
   } else if (type == DataType::CSV) {
     output_label_index = GetLabelIdxForCSV(lines[0], num_features, label_idx);
     ret.reset(new CSVParser(output_label_index, num_col, atof));
-    if (num_features > 0 && num_features != ret->NumFeatures()) {
-      Log::Fatal("Number of features in CSV file (%d) mismatches the number of features (%d) in loaded model.",
-        ret->NumFeatures(), num_features);
-    }
   }
 
   if (output_label_index < 0 && label_idx >= 0) {

@@ -18,19 +18,7 @@ namespace LightGBM {
 using json11::Json;
 
 DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
-  :DatasetLoader(io_config, predict_fun, num_class, filename, 0) {}
-
-DatasetLoader::DatasetLoader(
-  const Config& io_config,
-  const PredictFunction& predict_fun,
-  int num_class,
-  const char* filename,
-  const int num_features_from_init_model)
-  :config_(io_config),
-  random_(config_.data_random_seed),
-  predict_fun_(predict_fun),
-  num_class_(num_class),
-  num_features_from_init_model_(num_features_from_init_model) {
+  :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {
   label_idx_ = 0;
   weight_idx_ = NO_SPECIFIC;
   group_idx_ = NO_SPECIFIC;
@@ -230,7 +218,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
     dataset->parser_config_str_ = Parser::GenerateParserConfigStr(filename, config_.parser_config_file.c_str(), config_.header, label_idx_);
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, num_features_from_init_model_, label_idx_,
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
                                                                config_.precise_float_parser, dataset->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
@@ -317,7 +305,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   }
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
-    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, num_features_from_init_model_, label_idx_,
+    auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
                                                                config_.precise_float_parser, train_data->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);

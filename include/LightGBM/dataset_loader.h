@@ -16,8 +16,6 @@ namespace LightGBM {
 
 class DatasetLoader {
  public:
-  LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename, const int num_features_from_init_model);
-
   LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
 
   LIGHTGBM_EXPORT ~DatasetLoader();
@@ -97,8 +95,6 @@ class DatasetLoader {
   std::unordered_set<int> categorical_features_;
   /*! \brief Whether to store raw feature values */
   bool store_raw_;
-  /*! \brief number of features from init model */
-  int num_features_from_init_model_;
 };
 
 }  // namespace LightGBM
