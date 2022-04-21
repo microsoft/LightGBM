@@ -104,7 +104,16 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     size_t feature_importances_int = static_cast<size_t>(feature_importances[i]);
     if (feature_importances_int > 0) {
-      pairs.emplace_back(feature_importances_int, feature_names_[i]);
+      Log::Warning("i = %d, feature_names_.size() = %d", i, feature_names_.size());
+      if (i < feature_names_.size()) {
+        pairs.emplace_back(feature_importances_int, feature_names_[i]);
+      } else {
+        // with LibSVM format and continual training, the number of features in dataset can be fewer than in the intial model
+        // in that case FeatureImportance returns with the number of features in the intial model
+        std::stringstream str_buf;
+        str_buf << "Column_" << i << "_from_init_model";
+        pairs.emplace_back(feature_importances_int, str_buf.str());
+      }
     }
   }
   str_buf << '\n' << "\"feature_importances\":" << "{";
@@ -377,7 +386,15 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     size_t feature_importances_int = static_cast<size_t>(feature_importances[i]);
     if (feature_importances_int > 0) {
-      pairs.emplace_back(feature_importances_int, feature_names_[i]);
+      if (i < feature_names_.size()) {
+        pairs.emplace_back(feature_importances_int, feature_names_[i]);
+      } else {
+        // with LibSVM format and continual training, the number of features in dataset can be fewer than in the intial model
+        // in that case FeatureImportance returns with the number of features in the intial model
+        std::stringstream str_buf;
+        str_buf << "Column_" << i << "_from_init_model";
+        pairs.emplace_back(feature_importances_int, str_buf.str());
+      }
     }
   }
   // sort the importance
@@ -636,10 +653,14 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+          const int real_feature_index = models_[iter]->split_feature(split_idx);
 #ifdef DEBUG
-          CHECK_GE(models_[iter]->split_feature(split_idx), 0);
+          CHECK_GE(real_feature_index, 0);
 #endif
-          feature_importances[models_[iter]->split_feature(split_idx)] += 1.0;
+          if (static_cast<size_t>(real_feature_index) >= feature_importances.size()) {
+            feature_importances.resize(real_feature_index + 1);
+          }
+          feature_importances[real_feature_index] += 1.0;
         }
       }
     }
@@ -647,10 +668,14 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
         if (models_[iter]->split_gain(split_idx) > 0) {
+          const int real_feature_index = models_[iter]->split_feature(split_idx);
 #ifdef DEBUG
-          CHECK_GE(models_[iter]->split_feature(split_idx), 0);
+          CHECK_GE(real_feature_index, 0);
 #endif
-          feature_importances[models_[iter]->split_feature(split_idx)] += models_[iter]->split_gain(split_idx);
+          if (static_cast<size_t>(real_feature_index) >= feature_importances.size()) {
+            feature_importances.resize(real_feature_index + 1);
+          }
+          feature_importances[real_feature_index] += models_[iter]->split_gain(split_idx);
         }
       }
     }
