@@ -280,7 +280,7 @@ class CVBooster:
 
     def __init__(
         self,
-        model_file: Optional[str, pathlib.Path] = None
+        model_file: Optional[str, Path] = None
     ):
         """Initialize the CVBooster.
 
@@ -373,7 +373,7 @@ class CVBooster:
 
     def save_model(
         self,
-        filename: Union[str, pathlib.Path],
+        filename: Union[str, Path],
         num_iteration: Optional[int] = None,
         start_iteration: int = 0,
         importance_type: str = 'split'
