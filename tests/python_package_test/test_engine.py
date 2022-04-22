@@ -1083,22 +1083,20 @@ def test_cvbooster_save_load():
         return np.array(cv_booster.predict(X_test))
 
     cv_res = lgb.cv(params, lgb_train,
-                    num_boost_round=25,
+                    num_boost_round=10,
                     nfold=nfold,
                     callbacks=[lgb.early_stopping(stopping_rounds=5)],
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
 
-    ret_origin = predict(cvbooster)
-    other_ret = []
+    preds = predict(cvbooster)
 
     cvbooster.save_model('lgb.model')
+    preds_from_file = predict(lgb.CVBooster(model_file='lgb.model')))
+    preds_from_string =  predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string())))
 
-    other_ret.append(predict(lgb.CVBooster(model_file='lgb.model')))
-    other_ret.append(predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string())))
-
-    for ret in other_ret:
-        np.testing.assert_array_equal(ret_origin, ret)
+    np.testing.assert_array_equal(preds, preds_from_file)
+    np.testing.assert_array_equal(preds, preds_from_string)
 
 
 def test_feature_name():
