@@ -1068,7 +1068,7 @@ def test_cvbooster():
     assert ret < 0.15
 
 
-def test_cvbooster_save_load():
+def test_cvbooster_save_load(tmp_path):
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
@@ -1091,12 +1091,21 @@ def test_cvbooster_save_load():
 
     preds = predict(cvbooster)
 
-    cvbooster.save_model('lgb.model')
-    preds_from_file = predict(lgb.CVBooster(model_file='lgb.model')))
-    preds_from_string =  predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string())))
+    model_path_txt = str(tmp_path / 'lgb.model')
+    model_path_pkl = str(tmp_path / 'lgb.pkl')
+
+    cvbooster.save_model(model_path_txt)
+    with open(model_path_pkl, 'wb') as f:
+        pickle.dump(cvbooster, f)
+
+    preds_from_file = predict(lgb.CVBooster(model_file=model_path_txt))
+    preds_from_string = predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string()))
+    with open(model_path_pkl, 'rb') as f:
+        preds_from_pkl = predict(pickle.load(f))
 
     np.testing.assert_array_equal(preds, preds_from_file)
     np.testing.assert_array_equal(preds, preds_from_string)
+    np.testing.assert_array_equal(preds, preds_from_pkl)
 
 
 def test_feature_name():

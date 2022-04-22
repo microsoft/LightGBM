@@ -327,6 +327,12 @@ class CVBooster:
             return ret
         return handler_function
 
+    def __getstate__(self) -> Dict[str, Any]:
+        return vars(self)
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        vars(self).update(state)
+
     def model_from_string(self, model_str: str) -> "CVBooster":
         """Load CVBooster from a string.
 
