@@ -280,7 +280,7 @@ class CVBooster:
 
     def __init__(
         self,
-        model_file: Optional[str, Path] = None
+        model_file: Optional[Union[str, Path]] = None
     ):
         """Initialize the CVBooster.
 
