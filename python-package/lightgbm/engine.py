@@ -278,7 +278,10 @@ class CVBooster:
         The best iteration of fitted model.
     """
 
-    def __init__(self, model_file=None):
+    def __init__(
+        self,
+        model_file: Optional[str, pathlib.Path] = None
+    ):
         """Initialize the CVBooster.
 
         Generally, no need to instantiate manually.
