@@ -1485,7 +1485,7 @@ void DatasetLoader::CheckCategoricalFeatureNumBin(
         for (size_t i = start; i < end; ++i) {
           thread_need_warning[thread_index] = false;
           const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
-          if (bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+          if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
             thread_need_warning[thread_index] = true;
             break;
           }
