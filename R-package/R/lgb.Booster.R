@@ -713,12 +713,15 @@ Booster <- R6::R6Class(
 #' @param object Object of class \code{lgb.Booster}
 #' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
 #'                a character representing a path to a text file (CSV, TSV, or LibSVM)
-#' @param start_iteration int or None, optional (default=None)
+#' @param start_iteration int or `NULL`, optional (default=`NULL`)
 #'                        Start index of the iteration to predict.
-#'                        If None or <= 0, starts from the first iteration.
-#' @param num_iteration int or None, optional (default=None)
+#'                        If `NULL` or <= 0, starts from the first iteration.
+#'
+#'                        If using `index1=FALSE`, it will be assumed that the numeration starts
+#'                        at zero (e.g. passing '2' will mean starting from the 3rd round).
+#' @param num_iteration int or `NULL`, optional (default=`NULL`)
 #'                      Limit number of iterations in the prediction.
-#'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
+#'                      If `NULL`, if the best iteration exists and start_iteration is `NULL` or <= 0, the
 #'                      best iteration is used; otherwise, all iterations from start_iteration are used.
 #'                      If <= 0, all iterations from start_iteration are used (no limits).
 #' @param rawscore whether the prediction should be returned in the for of original untransformed
@@ -731,6 +734,10 @@ Booster <- R6::R6Class(
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
 #'               valid values.
+#' @param index1 When passing argument `start_iteration` and/or when producing outputs that correspond
+#'               to some numeration (such as leaf indices), whether to take these inputs as and/or make
+#'               these outputs have a numeration starting at 1 or at 0. Note that the underlying lightgbm
+#'               core library uses zero-based numeration, thus `index1=FALSE` will be slightly faster.
 #' @param ... ignored
 #' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
 #'         For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
@@ -781,6 +788,7 @@ predict.lgb.Booster <- function(object,
                                 predcontrib = FALSE,
                                 header = FALSE,
                                 params = list(),
+                                index1 = TRUE,
                                 ...) {
 
   if (!lgb.is.Booster(x = object)) {
@@ -799,18 +807,25 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  return(
-    object$predict(
-      data = newdata
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , params = params
-    )
+  if (!is.null(start_iteration) && start_iteration > 0L && index1) {
+    start_iteration <- start_iteration - 1L
+  }
+
+  pred <- object$predict(
+    data = newdata
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , params = params
   )
+
+  if (predleaf && index1) {
+    pred <- pred + 1.0
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster
