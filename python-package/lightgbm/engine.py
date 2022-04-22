@@ -302,14 +302,14 @@ class CVBooster:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
-    def _from_dict(self, models):
+    def _from_dict(self, models: Dict[str, any]) -> None:
         """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
             self.boosters.append(Booster(model_str=model_str))
 
-    def _to_dict(self, num_iteration, start_iteration, importance_type):
+    def _to_dict(self, num_iteration: int, start_iteration: int, importance_type: str) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
         models_str = []
         for booster in self.boosters:
@@ -327,7 +327,7 @@ class CVBooster:
             return ret
         return handler_function
 
-    def model_from_string(self, model_str):
+    def model_from_string(self, model_str: str) -> "CVBooster":
         """Load CVBooster from a string.
 
         Parameters
@@ -343,7 +343,12 @@ class CVBooster:
         self._from_dict(json.loads(model_str))
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
         """Save CVBooster to string.
 
         Parameters
@@ -366,7 +371,13 @@ class CVBooster:
         """
         return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
 
-    def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
+    def save_model(
+        self,
+        filename: Union[str, pathlib.Path],
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> "CVBooster":
         """Save CVBoosters to file.
 
         Parameters
