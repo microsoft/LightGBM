@@ -31,6 +31,11 @@ else  # Linux
         sudo apt-get install --no-install-recommends -y \
             software-properties-common
 
+        export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
+        sudo locale-gen ${LANG}
+        sudo update-locale
+
         sudo apt-get install --no-install-recommends -y \
             apt-utils \
             build-essential \
@@ -47,17 +52,12 @@ else  # Linux
             locales \
             netcat \
             unzip \
-            zip
+            zip || exit -1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         fi
-
-        export LANG="en_US.UTF-8"
-        export LC_ALL="${LANG}"
-        sudo locale-gen ${LANG}
-        sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
