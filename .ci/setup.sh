@@ -29,6 +29,7 @@ else  # Linux
 
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
+            locales \
             software-properties-common
 
         export LANG="en_US.UTF-8"
@@ -49,7 +50,6 @@ else  # Linux
             libicu66 \
             libssl1.1 \
             libunwind8 \
-            locales \
             netcat \
             unzip \
             zip || exit -1
