@@ -45,8 +45,9 @@ else  # Linux
             git \
             iputils-ping \
             jq \
-            libc6 \
+            libicu-dev \
             libcurl4 \
+            libssl-dev \
             libunwind8 \
             netcat \
             unzip \
