@@ -34,7 +34,6 @@ else  # Linux
 
         export LANG="en_US.UTF-8"
         sudo locale-gen ${LANG}
-        #export LC_ALL="${LANG}"
         sudo update-locale LANG=${LANG}
 
         sudo apt-get install --no-install-recommends -y \
@@ -47,8 +46,6 @@ else  # Linux
             iputils-ping \
             jq \
             libcurl4 \
-            libicu66 \
-            libssl1.1 \
             libunwind8 \
             netcat \
             unzip \
