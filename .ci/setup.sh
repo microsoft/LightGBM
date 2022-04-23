@@ -32,9 +32,9 @@ else  # Linux
             software-properties-common
 
         export LANG="en_US.UTF-8"
-        export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
-        sudo update-locale
+        #export LC_ALL="${LANG}"
+        sudo update-locale LANG=${LANG}
 
         sudo apt-get install --no-install-recommends -y \
             apt-utils \
