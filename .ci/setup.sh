@@ -45,6 +45,7 @@ else  # Linux
             git \
             iputils-ping \
             jq \
+            libc6 \
             libcurl4 \
             libunwind8 \
             netcat \
