@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - skip
+    - master
   tags:
     include:
     - v*
