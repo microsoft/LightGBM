@@ -16,7 +16,7 @@ resources:
   - container: ubuntu1404
     image: lightgbm/vsts-agent:ubuntu-14.04
   - container: ubuntu-latest
-    image: 'ubuntu:latest'
+    image: 'ubuntu:20.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
     image: wch1/r-debug
