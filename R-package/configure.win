@@ -70,9 +70,9 @@ then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
-###############
+#############
 # INET_PTON #
-###############
+#############
 
 ac_inet_pton="no"
 
