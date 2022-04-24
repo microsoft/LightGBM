@@ -326,7 +326,7 @@ endif()
 
 if(WIN32)
   include(CheckSymbolExists)
-  list(APPEND CMAKE_REQUIRED_LIBRARIES  "ws2_32")
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "ws2_32")
   check_symbol_exists(inet_pton "ws2tcpip.h" WIN32_INET_PTON_FOUND)
   if(WIN32_INET_PTON_FOUND)
     add_definitions(-DWIN32_HAS_INET_PTON)
