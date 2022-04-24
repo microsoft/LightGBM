@@ -331,6 +331,7 @@ if(WIN32)
   if(WIN32_INET_PTON_FOUND)
     add_definitions(-DWIN32_HAS_INET_PTON)
   endif()
+  list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES "ws2_32")
 endif()
 
 if(MSVC)
