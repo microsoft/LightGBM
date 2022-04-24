@@ -62,7 +62,6 @@ const int INVALID_SOCKET = -1;
 #ifdef _WIN32
 // existence of inet_pton is checked in CMakeLists.txt and stored in WIN32_HAS_INET_PTON
 #ifndef WIN32_HAS_INET_PTON
-// not using visual studio in windows
 inline int inet_pton(int af, const char *src, void *dst) {
   struct sockaddr_storage ss;
   int size = sizeof(ss);
