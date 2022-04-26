@@ -19,8 +19,9 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
-                    make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
+from .utils import (SERIALIZERS, dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
+                    softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -1089,26 +1090,45 @@ def test_cvbooster_save_load(tmp_path):
                     callbacks=[lgb.early_stopping(stopping_rounds=5)],
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
-
     preds = cvbooster.predict(X_test)
 
     model_path_txt = str(tmp_path / 'lgb.model')
-    model_path_pkl = str(tmp_path / 'lgb.pkl')
 
     cvbooster.save_model(model_path_txt)
-    with open(model_path_pkl, 'wb') as f:
-        pickle.dump(cvbooster, f)
-
+    model_string = cvbooster.model_to_string()
     del cvbooster
 
     preds_from_txt_file = lgb.CVBooster(model_file=model_path_txt).predict(X_test)
-    preds_from_string = lgb.CVBooster().model_from_string(cvbooster.model_to_string()).predict(X_test)
-    with open(model_path_pkl, 'rb') as f:
-        preds_from_pkl = pickle.load(f).predict(X_test)
-
+    preds_from_string = lgb.CVBooster().model_from_string(model_string).predict(X_test)
     np.testing.assert_array_equal(preds, preds_from_txt_file)
     np.testing.assert_array_equal(preds, preds_from_string)
-    np.testing.assert_array_equal(preds, preds_from_pkl)
+
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_cvbooster_picklable(serializer):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+
+    cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
+    del cvbooster
+
+    preds_from_disk = cvbooster_from_disk.predict(X_test)
+    np.testing.assert_array_equal(preds, preds_from_disk)
 
 
 def test_feature_name():
