@@ -1273,10 +1273,17 @@ test_that("Booster's print, show, and summary work correctly", {
 
     data("mtcars")
     model <- lgb.train(
-        params = list(objective = "regression")
+        params = list(
+          objective = "regression"
+          , min_data_in_leaf = 1L
+        )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
-            , label = mtcars$mpg)
+            , label = mtcars$mpg
+            , params = list(
+              min_data_in_bin = 1L
+            )
+        )
         , verbose = VERBOSITY
         , nrounds = 5L
     )
@@ -1332,10 +1339,17 @@ test_that("Booster's print, show, and summary work correctly", {
 test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     data("mtcars")
     model <- lgb.train(
-        params = list(objective = "regression")
+        params = list(
+          objective = "regression"
+          , min_data_in_leaf = 1L
+        )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
-            , label = mtcars$mpg)
+            , label = mtcars$mpg
+            , params = list(
+              min_data_in_bin = 1L
+            )
+        )
         , verbose = VERBOSITY
         , nrounds = 5L
     )

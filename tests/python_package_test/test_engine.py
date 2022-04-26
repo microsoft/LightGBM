@@ -19,14 +19,18 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, make_synthetic_regression,
-                    sklearn_multiclass_custom_objective, softmax)
+from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
 
-def dummy_obj(preds, train_data):
-    return np.ones(preds.shape), np.ones(preds.shape)
+def logloss_obj(preds, train_data):
+    y_true = train_data.get_label()
+    y_pred = logistic_sigmoid(preds)
+    grad = y_pred - y_true
+    hess = y_pred * (1.0 - y_pred)
+    return grad, hess
 
 
 def multi_logloss(y_true, y_pred):
@@ -1882,7 +1886,7 @@ def test_metrics():
     lgb_valid = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
     evals_result = {}
-    params_verbose = {'verbose': -1}
+    params_dummy_obj_verbose = {'verbose': -1, 'objective': dummy_obj}
     params_obj_verbose = {'objective': 'binary', 'verbose': -1}
     params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
     params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
@@ -1891,11 +1895,11 @@ def test_metrics():
                                        'metric': ['binary_logloss', 'binary_error'],
                                        'verbose': -1}
     params_obj_metric_none_verbose = {'objective': 'binary', 'metric': 'None', 'verbose': -1}
-    params_metric_log_verbose = {'metric': 'binary_logloss', 'verbose': -1}
-    params_metric_err_verbose = {'metric': 'binary_error', 'verbose': -1}
-    params_metric_inv_verbose = {'metric_types': 'invalid_metric', 'verbose': -1}
-    params_metric_multi_verbose = {'metric': ['binary_logloss', 'binary_error'], 'verbose': -1}
-    params_metric_none_verbose = {'metric': 'None', 'verbose': -1}
+    params_dummy_obj_metric_log_verbose = {'objective': dummy_obj, 'metric': 'binary_logloss', 'verbose': -1}
+    params_dummy_obj_metric_err_verbose = {'objective': dummy_obj, 'metric': 'binary_error', 'verbose': -1}
+    params_dummy_obj_metric_inv_verbose = {'objective': dummy_obj, 'metric_types': 'invalid_metric', 'verbose': -1}
+    params_dummy_obj_metric_multi_verbose = {'objective': dummy_obj, 'metric': ['binary_logloss', 'binary_error'], 'verbose': -1}
+    params_dummy_obj_metric_none_verbose = {'objective': dummy_obj, 'metric': 'None', 'verbose': -1}
 
     def get_cv_result(params=params_obj_verbose, **kwargs):
         return lgb.cv(params, lgb_train, num_boost_round=2, **kwargs)
@@ -1910,7 +1914,7 @@ def test_metrics():
             **kwargs
         )
 
-    # no fobj, no feval
+    # no custom objective, no feval
     # default metric
     res = get_cv_result()
     assert len(res) == 2
@@ -1957,40 +1961,40 @@ def test_metrics():
         res = get_cv_result(metrics=na_alias)
         assert len(res) == 0
 
-    # fobj, no feval
+    # custom objective, no feval
     # no default metric
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj)
+    res = get_cv_result(params=params_dummy_obj_verbose)
     assert len(res) == 0
 
     # metric in params
-    res = get_cv_result(params=params_metric_err_verbose, fobj=dummy_obj)
+    res = get_cv_result(params=params_dummy_obj_metric_err_verbose)
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
 
     # metric in args
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj, metrics='binary_error')
+    res = get_cv_result(params=params_dummy_obj_verbose, metrics='binary_error')
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
 
     # metric in args overwrites its' alias in params
-    res = get_cv_result(params=params_metric_inv_verbose, fobj=dummy_obj, metrics='binary_error')
+    res = get_cv_result(params=params_dummy_obj_metric_inv_verbose, metrics='binary_error')
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
 
     # multiple metrics in params
-    res = get_cv_result(params=params_metric_multi_verbose, fobj=dummy_obj)
+    res = get_cv_result(params=params_dummy_obj_metric_multi_verbose)
     assert len(res) == 4
     assert 'valid binary_logloss-mean' in res
     assert 'valid binary_error-mean' in res
 
     # multiple metrics in args
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj,
+    res = get_cv_result(params=params_dummy_obj_verbose,
                         metrics=['binary_logloss', 'binary_error'])
     assert len(res) == 4
     assert 'valid binary_logloss-mean' in res
     assert 'valid binary_error-mean' in res
 
-    # no fobj, feval
+    # no custom objective, feval
     # default metric with custom one
     res = get_cv_result(feval=constant_metric)
     assert len(res) == 4
@@ -2040,41 +2044,41 @@ def test_metrics():
     assert len(res) == 2
     assert 'valid error-mean' in res
 
-    # fobj, feval
+    # custom objective, feval
     # no default metric, only custom one
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj, feval=constant_metric)
+    res = get_cv_result(params=params_dummy_obj_verbose, feval=constant_metric)
     assert len(res) == 2
     assert 'valid error-mean' in res
 
     # metric in params with custom one
-    res = get_cv_result(params=params_metric_err_verbose, fobj=dummy_obj, feval=constant_metric)
+    res = get_cv_result(params=params_dummy_obj_metric_err_verbose, feval=constant_metric)
     assert len(res) == 4
     assert 'valid binary_error-mean' in res
     assert 'valid error-mean' in res
 
     # metric in args with custom one
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj,
+    res = get_cv_result(params=params_dummy_obj_verbose,
                         feval=constant_metric, metrics='binary_error')
     assert len(res) == 4
     assert 'valid binary_error-mean' in res
     assert 'valid error-mean' in res
 
     # metric in args overwrites one in params, custom one is evaluated too
-    res = get_cv_result(params=params_metric_inv_verbose, fobj=dummy_obj,
+    res = get_cv_result(params=params_dummy_obj_metric_inv_verbose,
                         feval=constant_metric, metrics='binary_error')
     assert len(res) == 4
     assert 'valid binary_error-mean' in res
     assert 'valid error-mean' in res
 
     # multiple metrics in params with custom one
-    res = get_cv_result(params=params_metric_multi_verbose, fobj=dummy_obj, feval=constant_metric)
+    res = get_cv_result(params=params_dummy_obj_metric_multi_verbose, feval=constant_metric)
     assert len(res) == 6
     assert 'valid binary_logloss-mean' in res
     assert 'valid binary_error-mean' in res
     assert 'valid error-mean' in res
 
     # multiple metrics in args with custom one
-    res = get_cv_result(params=params_verbose, fobj=dummy_obj, feval=constant_metric,
+    res = get_cv_result(params=params_dummy_obj_verbose, feval=constant_metric,
                         metrics=['binary_logloss', 'binary_error'])
     assert len(res) == 6
     assert 'valid binary_logloss-mean' in res
@@ -2082,11 +2086,11 @@ def test_metrics():
     assert 'valid error-mean' in res
 
     # custom metric is evaluated despite 'None' is passed
-    res = get_cv_result(params=params_metric_none_verbose, fobj=dummy_obj, feval=constant_metric)
+    res = get_cv_result(params=params_dummy_obj_metric_none_verbose, feval=constant_metric)
     assert len(res) == 2
     assert 'valid error-mean' in res
 
-    # no fobj, no feval
+    # no custom objective, no feval
     # default metric
     train_booster()
     assert len(evals_result['valid_0']) == 1
@@ -2114,23 +2118,23 @@ def test_metrics():
         train_booster(params=params)
         assert len(evals_result) == 0
 
-    # fobj, no feval
+    # custom objective, no feval
     # no default metric
-    train_booster(params=params_verbose, fobj=dummy_obj)
+    train_booster(params=params_dummy_obj_verbose)
     assert len(evals_result) == 0
 
     # metric in params
-    train_booster(params=params_metric_log_verbose, fobj=dummy_obj)
+    train_booster(params=params_dummy_obj_metric_log_verbose)
     assert len(evals_result['valid_0']) == 1
     assert 'binary_logloss' in evals_result['valid_0']
 
     # multiple metrics in params
-    train_booster(params=params_metric_multi_verbose, fobj=dummy_obj)
+    train_booster(params=params_dummy_obj_metric_multi_verbose)
     assert len(evals_result['valid_0']) == 2
     assert 'binary_logloss' in evals_result['valid_0']
     assert 'binary_error' in evals_result['valid_0']
 
-    # no fobj, feval
+    # no custom objective, feval
     # default metric with custom one
     train_booster(feval=constant_metric)
     assert len(evals_result['valid_0']) == 2
@@ -2161,27 +2165,27 @@ def test_metrics():
     assert len(evals_result) == 1
     assert 'error' in evals_result['valid_0']
 
-    # fobj, feval
+    # custom objective, feval
     # no default metric, only custom one
-    train_booster(params=params_verbose, fobj=dummy_obj, feval=constant_metric)
+    train_booster(params=params_dummy_obj_verbose, feval=constant_metric)
     assert len(evals_result['valid_0']) == 1
     assert 'error' in evals_result['valid_0']
 
     # metric in params with custom one
-    train_booster(params=params_metric_log_verbose, fobj=dummy_obj, feval=constant_metric)
+    train_booster(params=params_dummy_obj_metric_log_verbose, feval=constant_metric)
     assert len(evals_result['valid_0']) == 2
     assert 'binary_logloss' in evals_result['valid_0']
     assert 'error' in evals_result['valid_0']
 
     # multiple metrics in params with custom one
-    train_booster(params=params_metric_multi_verbose, fobj=dummy_obj, feval=constant_metric)
+    train_booster(params=params_dummy_obj_metric_multi_verbose, feval=constant_metric)
     assert len(evals_result['valid_0']) == 3
     assert 'binary_logloss' in evals_result['valid_0']
     assert 'binary_error' in evals_result['valid_0']
     assert 'error' in evals_result['valid_0']
 
     # custom metric is evaluated despite 'None' is passed
-    train_booster(params=params_metric_none_verbose, fobj=dummy_obj, feval=constant_metric)
+    train_booster(params=params_dummy_obj_metric_none_verbose, feval=constant_metric)
     assert len(evals_result) == 1
     assert 'error' in evals_result['valid_0']
 
@@ -2190,9 +2194,12 @@ def test_metrics():
 
     obj_multi_aliases = ['multiclass', 'softmax', 'multiclassova', 'multiclass_ova', 'ova', 'ovr']
     for obj_multi_alias in obj_multi_aliases:
+        # Custom objective replaces multiclass
         params_obj_class_3_verbose = {'objective': obj_multi_alias, 'num_class': 3, 'verbose': -1}
-        params_obj_class_1_verbose = {'objective': obj_multi_alias, 'num_class': 1, 'verbose': -1}
+        params_dummy_obj_class_3_verbose = {'objective': dummy_obj, 'num_class': 3, 'verbose': -1}
+        params_dummy_obj_class_1_verbose = {'objective': dummy_obj, 'num_class': 1, 'verbose': -1}
         params_obj_verbose = {'objective': obj_multi_alias, 'verbose': -1}
+        params_dummy_obj_verbose = {'objective': dummy_obj, 'verbose': -1}
         # multiclass default metric
         res = get_cv_result(params_obj_class_3_verbose)
         assert len(res) == 2
@@ -2203,20 +2210,20 @@ def test_metrics():
         assert 'valid multi_logloss-mean' in res
         assert 'valid error-mean' in res
         # multiclass metric alias with custom one for custom objective
-        res = get_cv_result(params_obj_class_3_verbose, fobj=dummy_obj, feval=constant_metric)
+        res = get_cv_result(params_dummy_obj_class_3_verbose, feval=constant_metric)
         assert len(res) == 2
         assert 'valid error-mean' in res
         # no metric for invalid class_num
-        res = get_cv_result(params_obj_class_1_verbose, fobj=dummy_obj)
+        res = get_cv_result(params_dummy_obj_class_1_verbose)
         assert len(res) == 0
         # custom metric for invalid class_num
-        res = get_cv_result(params_obj_class_1_verbose, fobj=dummy_obj, feval=constant_metric)
+        res = get_cv_result(params_dummy_obj_class_1_verbose, feval=constant_metric)
         assert len(res) == 2
         assert 'valid error-mean' in res
         # multiclass metric alias with custom one with invalid class_num
         with pytest.raises(lgb.basic.LightGBMError):
-            get_cv_result(params_obj_class_1_verbose, metrics=obj_multi_alias,
-                          fobj=dummy_obj, feval=constant_metric)
+            get_cv_result(params_dummy_obj_class_1_verbose, metrics=obj_multi_alias,
+                          feval=constant_metric)
         # multiclass default metric without num_class
         with pytest.raises(lgb.basic.LightGBMError):
             get_cv_result(params_obj_verbose)
@@ -2237,20 +2244,20 @@ def test_metrics():
     with pytest.raises(lgb.basic.LightGBMError):
         get_cv_result(params_class_3_verbose)
     # no metric with non-default num_class for custom objective
-    res = get_cv_result(params_class_3_verbose, fobj=dummy_obj)
+    res = get_cv_result(params_dummy_obj_class_3_verbose)
     assert len(res) == 0
     for metric_multi_alias in obj_multi_aliases + ['multi_logloss']:
         # multiclass metric alias for custom objective
-        res = get_cv_result(params_class_3_verbose, metrics=metric_multi_alias, fobj=dummy_obj)
+        res = get_cv_result(params_dummy_obj_class_3_verbose, metrics=metric_multi_alias)
         assert len(res) == 2
         assert 'valid multi_logloss-mean' in res
     # multiclass metric for custom objective
-    res = get_cv_result(params_class_3_verbose, metrics='multi_error', fobj=dummy_obj)
+    res = get_cv_result(params_dummy_obj_class_3_verbose, metrics='multi_error')
     assert len(res) == 2
     assert 'valid multi_error-mean' in res
     # binary metric with non-default num_class for custom objective
     with pytest.raises(lgb.basic.LightGBMError):
-        get_cv_result(params_class_3_verbose, metrics='binary_error', fobj=dummy_obj)
+        get_cv_result(params_dummy_obj_class_3_verbose, metrics='binary_error')
 
 
 def test_multiple_feval_train():
@@ -2276,6 +2283,97 @@ def test_multiple_feval_train():
     assert 'binary_logloss' in evals_result['valid_0']
     assert 'error' in evals_result['valid_0']
     assert 'decreasing_metric' in evals_result['valid_0']
+
+
+def test_objective_callable_train_binary_classification():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {
+        'verbose': -1,
+        'objective': logloss_obj,
+        'learning_rate': 0.01
+    }
+    train_dataset = lgb.Dataset(X, y)
+    booster = lgb.train(
+        params=params,
+        train_set=train_dataset,
+        num_boost_round=20
+    )
+    y_pred = logistic_sigmoid(booster.predict(X))
+    logloss_error = log_loss(y, y_pred)
+    rocauc_error = roc_auc_score(y, y_pred)
+    assert booster.params['objective'] == 'none'
+    assert logloss_error == pytest.approx(0.547907)
+    assert rocauc_error == pytest.approx(0.995944)
+
+
+def test_objective_callable_train_regression():
+    X, y = make_synthetic_regression()
+    params = {
+        'verbose': -1,
+        'objective': mse_obj
+    }
+    lgb_train = lgb.Dataset(X, y)
+    booster = lgb.train(
+        params,
+        lgb_train,
+        num_boost_round=20
+    )
+    y_pred = booster.predict(X)
+    mse_error = mean_squared_error(y, y_pred)
+    assert booster.params['objective'] == 'none'
+    assert mse_error == pytest.approx(286.724194)
+
+
+def test_objective_callable_cv_binary_classification():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {
+        'verbose': -1,
+        'objective': logloss_obj,
+        'learning_rate': 0.01
+    }
+    train_dataset = lgb.Dataset(X, y)
+    cv_res = lgb.cv(
+        params,
+        train_dataset,
+        num_boost_round=20,
+        nfold=3,
+        return_cvbooster=True
+    )
+    cv_booster = cv_res['cvbooster'].boosters
+    cv_logloss_errors = [
+        log_loss(y, logistic_sigmoid(cb.predict(X))) < 0.56 for cb in cv_booster
+    ]
+    cv_objs = [
+        cb.params['objective'] == 'none' for cb in cv_booster
+    ]
+    assert all(cv_objs)
+    assert all(cv_logloss_errors)
+
+
+def test_objective_callable_cv_regression():
+    X, y = make_synthetic_regression()
+    lgb_train = lgb.Dataset(X, y)
+    params = {
+        'verbose': -1,
+        'objective': mse_obj
+    }
+    cv_res = lgb.cv(
+        params,
+        lgb_train,
+        num_boost_round=20,
+        nfold=3,
+        stratified=False,
+        return_cvbooster=True
+    )
+    cv_booster = cv_res['cvbooster'].boosters
+    cv_mse_errors = [
+        mean_squared_error(y, cb.predict(X)) < 463 for cb in cv_booster
+    ]
+    cv_objs = [
+        cb.params['objective'] == 'none' for cb in cv_booster
+    ]
+    assert all(cv_objs)
+    assert all(cv_mse_errors)
 
 
 def test_multiple_feval_cv():
@@ -2334,7 +2432,8 @@ def test_multiclass_custom_objective():
     builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
     builtin_obj_preds = builtin_obj_bst.predict(X)
 
-    custom_obj_bst = lgb.train(params, ds, num_boost_round=10, fobj=custom_obj)
+    params['objective'] = custom_obj
+    custom_obj_bst = lgb.train(params, ds, num_boost_round=10)
     custom_obj_preds = softmax(custom_obj_bst.predict(X))
 
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
