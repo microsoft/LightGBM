@@ -1083,9 +1083,6 @@ def test_cvbooster_save_load(tmp_path):
     nfold = 3
     lgb_train = lgb.Dataset(X_train, y_train)
 
-    def predict(cv_booster):
-        return np.array(cv_booster.predict(X_test))
-
     cv_res = lgb.cv(params, lgb_train,
                     num_boost_round=10,
                     nfold=nfold,
@@ -1093,7 +1090,7 @@ def test_cvbooster_save_load(tmp_path):
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
 
-    preds = predict(cvbooster)
+    preds = cvbooster.predict(X_test)
 
     model_path_txt = str(tmp_path / 'lgb.model')
     model_path_pkl = str(tmp_path / 'lgb.pkl')
@@ -1101,13 +1098,15 @@ def test_cvbooster_save_load(tmp_path):
     cvbooster.save_model(model_path_txt)
     with open(model_path_pkl, 'wb') as f:
         pickle.dump(cvbooster, f)
-del cvboost
-    preds_from_txt_file = predict(lgb.CVBooster(model_file=model_path_txt))
-    preds_from_string = predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string()))
-    with open(model_path_pkl, 'rb') as f:
-        preds_from_pkl = predict(pickle.load(f))
 
-    np.testing.assert_array_equal(preds, preds_from_file)
+    del cvbooster
+
+    preds_from_txt_file = lgb.CVBooster(model_file=model_path_txt).predict(X_test)
+    preds_from_string = lgb.CVBooster().model_from_string(cvbooster.model_to_string()).predict(X_test)
+    with open(model_path_pkl, 'rb') as f:
+        preds_from_pkl = pickle.load(f).predict(X_test)
+
+    np.testing.assert_array_equal(preds, preds_from_txt_file)
     np.testing.assert_array_equal(preds, preds_from_string)
     np.testing.assert_array_equal(preds, preds_from_pkl)
 
