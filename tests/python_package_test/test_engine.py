@@ -1101,8 +1101,8 @@ def test_cvbooster_save_load(tmp_path):
     cvbooster.save_model(model_path_txt)
     with open(model_path_pkl, 'wb') as f:
         pickle.dump(cvbooster, f)
-
-    preds_from_file = predict(lgb.CVBooster(model_file=model_path_txt))
+del cvboost
+    preds_from_txt_file = predict(lgb.CVBooster(model_file=model_path_txt))
     preds_from_string = predict(lgb.CVBooster().model_from_string(cvbooster.model_to_string()))
     with open(model_path_pkl, 'rb') as f:
         preds_from_pkl = predict(pickle.load(f))
