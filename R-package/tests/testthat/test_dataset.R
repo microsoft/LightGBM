@@ -556,7 +556,7 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   ds_no_names <- lgb.Dataset(no_names_mat, params = list(min_data_in_bin = min_data_in_bin))
   ds_no_names$construct()
   default_names <- lapply(
-    X = seq(1L, ncol(raw_mat)),
+    X = seq(1L, ncol(raw_mat))
     , FUN = function(i) {
       sprintf("Column_%d", i - 1L)
     }
