@@ -1,14 +1,13 @@
 # coding: utf-8
 """Plotting library."""
-import operator
 from copy import deepcopy
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Booster, _log_warning
-from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_Series
+from .basic import Booster, _data_from_pandas, _log_warning
+from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
 
@@ -422,7 +421,7 @@ def _to_graphviz(
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     constraints: Optional[List[int]] = None,
-    x: Optional[Union[np.ndarray, pd_Series]] = None,
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -450,26 +449,27 @@ def _to_graphviz(
             l_dec = 'yes'
             r_dec = 'no'
             if root['decision_type'] == '<=':
-                lte_symbol = "&#8804;"
-                operator_symbol = lte_symbol
-                decision_op = operator.le
+                operator = "&#8804;"
             elif root['decision_type'] == '==':
-                operator_symbol = "="
-                decision_op = operator.eq
+                operator = "="
             else:
                 raise ValueError('Invalid decision type in tree model.')
             name = f"split{root['split_index']}"
             split_feature = root['split_feature']
             if feature_names is not None:
-                label = f"<B>{feature_names[split_feature]}</B> {operator_symbol}"
+                label = f"<B>{feature_names[split_feature]}</B> {operator}"
             else:
-                label = f"feature <B>{split_feature}</B> {operator_symbol} "
+                label = f"feature <B>{split_feature}</B> {operator} "
             direction = None
-            if x is not None:
-                if decision_op(x[split_feature], root['threshold']):
-                    direction = 'left'
+            if example_case is not None:
+                if root['decision_type'] == '==':
+                    thresholds = {int(x) for x in root['threshold'].split('||')}
+                    if example_case[split_feature] in thresholds:
+                        direction = 'left'
+                    else:
+                        direction = 'right'
                 else:
-                    direction = 'right'
+                    direction = 'left' if example_case[split_feature] <= root['threshold'] else 'right'
             label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
@@ -510,7 +510,7 @@ def _to_graphviz(
     rankdir = "LR" if orientation == "horizontal" else "TB"
     graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir=rankdir)
     if "internal_count" in tree_info['tree_structure']:
-        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"], highlight=True)
+        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"], highlight=example_case is not None)
     else:
         raise Exception("Cannot plot trees with no split")
 
@@ -541,7 +541,7 @@ def create_tree_digraph(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
-    x: Optional[Union[np.ndarray, pd_Series]] = None,
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -582,8 +582,8 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
-    x : numpy 1-D array or pandas Series, optional (default=None)
-        Single sample with the same structure as the training data.
+    example_case : numpy 2-D array or pandas DataFrame, optional (default=None)
+        Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
@@ -616,8 +616,18 @@ def create_tree_digraph(
     if show_info is None:
         show_info = []
 
+    if example_case is not None:
+        if example_case.shape[0] > 1:
+            raise ValueError('example_case must have a single row.')
+        if isinstance(example_case, pd_DataFrame):
+            example_case = _data_from_pandas(example_case, None, None, booster.pandas_categorical)[0][0]
+        elif isinstance(example_case, np.ndarray) and example_case.ndim == 2:
+            example_case = example_case[0]
+        else:
+            raise ValueError('example_case must be a numpy 2-D array or a pandas Dataframe')
+
     graph = _to_graphviz(tree_info, show_info, feature_names, precision,
-                         orientation, monotone_constraints, x=x, **kwargs)
+                         orientation, monotone_constraints, example_case=example_case, **kwargs)
 
     return graph
 
@@ -631,7 +641,7 @@ def plot_tree(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
-    x: Optional[Union[np.ndarray, pd_Series]] = None,
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Plot specified tree.
@@ -679,8 +689,8 @@ def plot_tree(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
-    x : numpy 1-D array or pandas Series, optional (default=None)
-        Single sample with the same structure as the training data.
+    example_case : numpy 2-D array or pandas DataFrame, optional (default=None)
+        Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
@@ -704,7 +714,7 @@ def plot_tree(
 
     graph = create_tree_digraph(booster=booster, tree_index=tree_index,
                                 show_info=show_info, precision=precision,
-                                orientation=orientation, x=x, **kwargs)
+                                orientation=orientation, example_case=example_case, **kwargs)
 
     s = BytesIO()
     s.write(graph.pipe(format='png'))

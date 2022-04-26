@@ -2,8 +2,11 @@
 import pytest
 from sklearn.model_selection import train_test_split
 
+import numpy as np
 import lightgbm as lgb
 from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
+
+from .utils import make_synthetic_regression
 
 if MATPLOTLIB_INSTALLED:
     import matplotlib
@@ -185,6 +188,66 @@ def test_create_tree_digraph(breast_cancer_split):
     assert '#ddffdd' in graph_body
     assert 'data' not in graph_body
     assert 'count' not in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
+def test_example_case_in_tree_digraph():
+    X, y = make_synthetic_regression()
+    rng = np.random.RandomState(0)
+    cat = rng.randint(1, 4, X.shape[0])
+    y *= cat
+    X = np.hstack([X, cat.reshape(-1, 1)])
+    feature_name = [f'x{i}' for i in range(X.shape[1] - 1)] + ['cat']
+    ds = lgb.Dataset(X, y, feature_name=feature_name, categorical_feature=[X.shape[1] - 1])
+
+    num_round = 3
+    bst = lgb.train({'num_leaves': 7}, ds, num_boost_round=num_round)
+    mod = bst.dump_model()
+    example_case = X[[0]]
+    makes_categorical_splits = False
+    seen_indices = set()
+    for i in range(num_round):
+        graph = lgb.create_tree_digraph(bst, example_case=example_case, tree_index=i)
+        gbody = graph.body
+        node = mod['tree_info'][i]['tree_structure']
+        while 'decision_type' in node:  # iterate through the splits
+            split_index = node['split_index']
+
+            node_in_graph = [n for n in gbody if f'split{split_index}' in n and '->' not in n]
+            assert len(node_in_graph) == 1
+            seen_indices.add(gbody.index(node_in_graph[0]))
+
+            edge_to_node = [e for e in gbody if f'-> split{split_index}' in e]
+            if node['decision_type'] == '<=':
+                if example_case[0][node['split_feature']] <= node['threshold']:
+                    node = node['left_child']
+                else:
+                    node = node['right_child']
+            else:
+                makes_categorical_splits = True
+                if example_case[0][node['split_feature']] in {int(t) for t in node['threshold'].split('||')}:
+                    node = node['left_child']
+                else:
+                    node = node['right_child']
+            assert 'color=blue' in node_in_graph[0]
+            if edge_to_node:
+                assert len(edge_to_node) == 1
+                assert 'color=blue' in edge_to_node[0]
+                seen_indices.add(gbody.index(edge_to_node[0]))
+        # we're in a leaf now
+        leaf_index = node['leaf_index']
+        leaf_in_graph = [n for n in gbody if f'leaf{leaf_index}' in n and '->' not in n]
+        edge_to_leaf = [e for e in gbody if f'-> leaf{leaf_index}' in e]
+        assert len(leaf_in_graph) == 1
+        assert 'color=blue' in leaf_in_graph[0]
+        assert len(edge_to_leaf) == 1
+        assert 'color=blue' in edge_to_leaf[0]
+        seen_indices.update([gbody.index(leaf_in_graph[0]), gbody.index(edge_to_leaf[0])])
+
+        # check that the rest of the elements have black color
+        remaining_elements = [e for i, e in enumerate(graph.body) if i not in seen_indices and 'graph' not in e]
+        assert all('color=black' in e for e in remaining_elements)
+    assert makes_categorical_splits
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason='matplotlib is not installed')
