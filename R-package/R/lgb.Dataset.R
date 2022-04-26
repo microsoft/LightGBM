@@ -386,9 +386,10 @@ Dataset <- R6::R6Class(
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
       if (is.character(feature)) {
-        feature <- which(colnames(self) == feature)
+        feature_name <- feature
+        feature <- which(private$colnames == feature_name)
         if (length(feature) == 0L) {
-          stop("feature not found")
+          stop(sprintf("feature '%s' not found", feature_name))
         }
       }
       num_bin <- integer(1L)

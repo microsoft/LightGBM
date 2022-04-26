@@ -555,7 +555,12 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   colnames(no_names_mat) <- NULL
   ds_no_names <- lgb.Dataset(no_names_mat, params = list(min_data_in_bin = min_data_in_bin))
   ds_no_names$construct()
-  default_names <- lapply(seq(1L, ncol(raw_mat)), function(i) sprintf("Column_%d", i - 1L))
+  default_names <- lapply(
+    X = seq(1L, ncol(raw_mat)),
+    , FUN = function(i) {
+      sprintf("Column_%d", i - 1L)
+    }
+  )
   bins_by_default_name <- sapply(default_names, ds_no_names$get_feature_num_bin)
   expect_identical(bins_by_default_name, expected_num_bins)
 })
