@@ -674,6 +674,16 @@ def test_feature_num_bin(min_data_in_bin):
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    # check for feature indices outside of range
+    num_features = X.shape[1]
+    with pytest.raises(
+      lgb.basic.LightGBMError,
+      match=(
+        f'Tried to retrieve number of bins for feature index {num_features}, '
+        f'but the total number of features is {num_features}.'
+      )
+    ):
+      ds.feature_num_bin(num_features)
 
 
 def test_feature_num_bin_with_max_bin_by_feature():
