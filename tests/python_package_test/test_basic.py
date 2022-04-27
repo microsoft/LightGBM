@@ -677,13 +677,13 @@ def test_feature_num_bin(min_data_in_bin):
     # check for feature indices outside of range
     num_features = X.shape[1]
     with pytest.raises(
-      lgb.basic.LightGBMError,
-      match=(
-        f'Tried to retrieve number of bins for feature index {num_features}, '
-        f'but the valid feature indices are \\[0, {num_features - 1}\\].'
-      )
+        lgb.basic.LightGBMError,
+        match=(
+            f'Tried to retrieve number of bins for feature index {num_features}, '
+            f'but the valid feature indices are \\[0, {num_features - 1}\\].'
+        )
     ):
-      ds.feature_num_bin(num_features)
+        ds.feature_num_bin(num_features)
 
 
 def test_feature_num_bin_with_max_bin_by_feature():
