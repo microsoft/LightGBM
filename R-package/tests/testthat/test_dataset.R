@@ -548,3 +548,13 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
   expect_identical(actual_num_bins, expected_num_bins)
 })
+
+test_that("lgb.Dataset can be constructed with categorical features and without colnames", {
+  raw_mat <- data.matrix(rep(c(0L, 1L), 50L))
+  ds <- lgb.Dataset(raw_mat, categorical_feature = 1L)$construct()
+  sparse_mat <- Matrix::Matrix(raw_mat, sparse = TRUE)
+  expect_true(methods::is(sparse_mat, "dgCMatrix"))
+  ds2 <- lgb.Dataset(sparse_mat, categorical_feature = 1L)$construct()
+  expect_null(ds$.__enclos_env__$private$colnames)
+  expect_null(ds2$.__enclos_env__$private$colnames)
+})

@@ -156,31 +156,32 @@ Dataset <- R6::R6Class(
         # Check for character name
         if (is.character(private$categorical_feature)) {
 
-            cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
+          cate_indices <- as.list(match(private$categorical_feature, private$colnames) - 1L)
 
-            # Provided indices, but some indices are missing?
-            if (sum(is.na(cate_indices)) > 0L) {
-              stop(
-                "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
-                , sQuote(private$categorical_feature[is.na(cate_indices)])
-              )
-            }
+          # Provided indices, but some indices are missing?
+          if (sum(is.na(cate_indices)) > 0L) {
+            stop(
+              "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
+              , sQuote(private$categorical_feature[is.na(cate_indices)])
+            )
+          }
 
-          } else {
+        } else {
 
-            # Check if more categorical features were output over the feature space
-            if (max(private$categorical_feature) > length(private$colnames)) {
-              stop(
-                "lgb.self.get.handle: supplied a too large value in categorical_feature: "
-                , max(private$categorical_feature)
-                , " but only "
-                , length(private$colnames)
-                , " features"
-              )
-            }
+          # Check if more categorical features were output over the feature space
+          data_is_matrix <- is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")
+          if (data_is_matrix && max(private$categorical_feature) > ncol(private$raw_data)) {
+            stop(
+              "lgb.self.get.handle: supplied a too large value in categorical_feature: "
+              , max(private$categorical_feature)
+              , " but only "
+              , ncol(private$raw_data)
+              , " features"
+            )
+          }
 
-            # Store indices as [0, n-1] indexed instead of [1, n] indexed
-            cate_indices <- as.list(private$categorical_feature - 1L)
+          # Store indices as [0, n-1] indexed instead of [1, n] indexed
+          cate_indices <- as.list(private$categorical_feature - 1L)
 
           }
 
