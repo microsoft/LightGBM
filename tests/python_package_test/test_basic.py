@@ -680,7 +680,7 @@ def test_feature_num_bin(min_data_in_bin):
       lgb.basic.LightGBMError,
       match=(
         f'Tried to retrieve number of bins for feature index {num_features}, '
-        f'but the total number of features is {num_features}.'
+        f'but the valid feature indices are \\[0, {num_features - 1}\\].'
       )
     ):
       ds.feature_num_bin(num_features)
