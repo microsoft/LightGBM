@@ -169,8 +169,8 @@ Dataset <- R6::R6Class(
           } else {
 
             # Check if more categorical features were output over the feature space
-            data_is_filename <- is.matrix(private$raw_data) || methods::is(private$raw_data, "dgCMatrix")
-            if (data_is_matrix && max(private$categorical_feature) > ncol(private$raw_data)) {
+            data_is_not_filename <- !is.character(private$raw_data)
+            if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
