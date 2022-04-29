@@ -29,12 +29,7 @@ else  # Linux
 
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
-            locales \
             software-properties-common
-
-        export LANG="en_US.UTF-8"
-        sudo locale-gen ${LANG}
-        sudo update-locale LANG=${LANG}
 
         sudo apt-get install --no-install-recommends -y \
             apt-utils \
@@ -45,18 +40,24 @@ else  # Linux
             git \
             iputils-ping \
             jq \
-            libicu-dev \
             libcurl4 \
-            libssl-dev \
+            libicu66 \
+            libssl1.1 \
             libunwind8 \
+            locales \
             netcat \
             unzip \
-            zip || exit -1
+            zip
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         fi
+
+        export LANG="en_US.UTF-8"
+        export LC_ALL="${LANG}"
+        sudo locale-gen ${LANG}
+        sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
         sudo apt-get update
