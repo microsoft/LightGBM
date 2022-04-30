@@ -176,7 +176,7 @@ class RegressionL2loss: public ObjectiveFunction {
     if (weights_ != nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += label_[i] * weights_[i];
+        suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
@@ -330,7 +330,7 @@ class RegressionHuberLoss: public RegressionL2loss {
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
         } else {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i] * alpha_);
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * static_cast<score_t>(weights_[i]) * alpha_);
         }
         hessians[i] = static_cast<score_t>(weights_[i]);
       }
