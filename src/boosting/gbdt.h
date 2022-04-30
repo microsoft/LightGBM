@@ -193,7 +193,7 @@ class GBDT : public GBDTBase {
     if (data_idx > 0) {
       num_data = valid_score_updater_[data_idx - 1]->num_data();
     }
-    return num_data * num_class_;
+    return static_cast<int64_t>(num_data) * num_class_;
   }
 
   /*!
