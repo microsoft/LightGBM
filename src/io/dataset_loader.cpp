@@ -609,7 +609,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     read_cnt = reader->Read(buffer.data(), size_of_feature);
 
     if (read_cnt != size_of_feature) {
-      Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
+      Log::Fatal("Binary file error: feature %d is incorrect, read count: %zu", i, read_cnt);
     }
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
@@ -639,7 +639,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     for (int i = 0; i < dataset->num_data(); ++i) {
       read_cnt = reader->Read(buffer.data(), row_size);
       if (read_cnt != row_size) {
-        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
+        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %zu", i, read_cnt);
       }
       mem_ptr = buffer.data();
       const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
