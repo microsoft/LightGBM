@@ -1896,7 +1896,7 @@ def test_metrics():
                                        'verbose': -1}
     params_obj_metric_none_verbose = {'objective': 'binary', 'metric': 'None', 'verbose': -1}
     params_dummy_obj_metric_log_verbose = {'objective': dummy_obj, 'metric': 'binary_logloss', 'verbose': -1}
-    params_dummy_obj_metric_err_verbose = {'metric': 'binary_error', 'objective': dummy_obj, 'verbose': -1}
+    params_dummy_obj_metric_err_verbose = {'objective': dummy_obj, 'metric': 'binary_error', 'verbose': -1}
     params_dummy_obj_metric_inv_verbose = {'objective': dummy_obj, 'metric_types': 'invalid_metric', 'verbose': -1}
     params_dummy_obj_metric_multi_verbose = {'objective': dummy_obj, 'metric': ['binary_logloss', 'binary_error'], 'verbose': -1}
     params_dummy_obj_metric_none_verbose = {'objective': dummy_obj, 'metric': 'None', 'verbose': -1}
@@ -1914,7 +1914,7 @@ def test_metrics():
             **kwargs
         )
 
-    # no fobj, no feval
+    # no custom objective, no feval
     # default metric
     res = get_cv_result()
     assert len(res) == 2
@@ -1961,7 +1961,7 @@ def test_metrics():
         res = get_cv_result(metrics=na_alias)
         assert len(res) == 0
 
-    # fobj, no feval
+    # custom objective, no feval
     # no default metric
     res = get_cv_result(params=params_dummy_obj_verbose)
     assert len(res) == 0
@@ -1994,7 +1994,7 @@ def test_metrics():
     assert 'valid binary_logloss-mean' in res
     assert 'valid binary_error-mean' in res
 
-    # no fobj, feval
+    # no custom objective, feval
     # default metric with custom one
     res = get_cv_result(feval=constant_metric)
     assert len(res) == 4
@@ -2044,7 +2044,7 @@ def test_metrics():
     assert len(res) == 2
     assert 'valid error-mean' in res
 
-    # fobj, feval
+    # custom objective, feval
     # no default metric, only custom one
     res = get_cv_result(params=params_dummy_obj_verbose, feval=constant_metric)
     assert len(res) == 2
@@ -2090,7 +2090,7 @@ def test_metrics():
     assert len(res) == 2
     assert 'valid error-mean' in res
 
-    # no fobj, no feval
+    # no custom objective, no feval
     # default metric
     train_booster()
     assert len(evals_result['valid_0']) == 1
@@ -2118,7 +2118,7 @@ def test_metrics():
         train_booster(params=params)
         assert len(evals_result) == 0
 
-    # fobj, no feval
+    # custom objective, no feval
     # no default metric
     train_booster(params=params_dummy_obj_verbose)
     assert len(evals_result) == 0
@@ -2134,7 +2134,7 @@ def test_metrics():
     assert 'binary_logloss' in evals_result['valid_0']
     assert 'binary_error' in evals_result['valid_0']
 
-    # no fobj, feval
+    # no custom objective, feval
     # default metric with custom one
     train_booster(feval=constant_metric)
     assert len(evals_result['valid_0']) == 2
@@ -2165,7 +2165,7 @@ def test_metrics():
     assert len(evals_result) == 1
     assert 'error' in evals_result['valid_0']
 
-    # fobj, feval
+    # custom objective, feval
     # no default metric, only custom one
     train_booster(params=params_dummy_obj_verbose, feval=constant_metric)
     assert len(evals_result['valid_0']) == 1
@@ -2302,8 +2302,8 @@ def test_objective_callable_train_binary_classification():
     logloss_error = log_loss(y, y_pred)
     rocauc_error = roc_auc_score(y, y_pred)
     assert booster.params['objective'] == 'none'
-    assert logloss_error == pytest.approx(0.55, 0.1)
-    assert rocauc_error == pytest.approx(0.99, 0.5)
+    assert logloss_error == pytest.approx(0.547907)
+    assert rocauc_error == pytest.approx(0.995944)
 
 
 def test_objective_callable_train_regression():
@@ -2321,7 +2321,7 @@ def test_objective_callable_train_regression():
     y_pred = booster.predict(X)
     mse_error = mean_squared_error(y, y_pred)
     assert booster.params['objective'] == 'none'
-    assert mse_error == pytest.approx(286, 1)
+    assert mse_error == pytest.approx(286.724194)
 
 
 def test_objective_callable_cv_binary_classification():
