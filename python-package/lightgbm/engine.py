@@ -224,6 +224,7 @@ def train(
             valid_set._reverse_update_params()
     booster.best_iteration = 0
 
+    is_finished = False
     # start training
     for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
@@ -234,7 +235,7 @@ def train(
                                     end_iteration=init_iteration + num_boost_round,
                                     evaluation_result_list=None))
 
-        booster.update(fobj=fobj)
+        is_finished = booster.update(fobj=fobj)
 
         evaluation_result_list = []
         # check evaluation result.
@@ -253,6 +254,8 @@ def train(
         except callback.EarlyStopException as earlyStopException:
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
+            break
+        if is_finished:
             break
     booster.best_score = collections.defaultdict(collections.OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
