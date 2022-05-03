@@ -57,7 +57,7 @@ jobs:
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: macOS-10.15
+          - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 4.1
@@ -67,7 +67,7 @@ jobs:
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: macOS-10.15
+          - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 4.1
@@ -112,7 +112,7 @@ jobs:
             compiler: gcc
             r_version: 4.1
             build_type: cran
-          - os: macOS-10.15
+          - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 4.1
@@ -138,13 +138,13 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v1
       - name: Setup and run tests on Linux and macOS
-        if: startsWith(matrix.os, 'macOS') || matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
           export GITHUB_ACTIONS="true"
-          if [[ $(echo "${{ matrix.os }}" | head -c5) == "macOS" ]]; then
+          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
@@ -180,6 +180,9 @@ jobs:
           - r_customization: csan
             compiler: clang
     steps:
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v2.4.0
         with:
@@ -188,7 +191,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -210,6 +213,9 @@ jobs:
         run: |
           apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v2.4.0
         with:
@@ -219,7 +225,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then

@@ -1718,7 +1718,8 @@ test_that("lgb.train() works with integer, double, and numeric data", {
       , label = y
       , params = list(
         objective = "regression"
-        , min_data = 1L
+        , min_data_in_bin = 1L
+        , min_data_in_leaf = 1L
         , learning_rate = 0.01
         , seed = 708L
       )
@@ -2926,4 +2927,81 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression"))
   expect_false(any(model_txt_lines == "objective=regression_l1"))
+})
+
+test_that("lightgbm() accepts 'num_threads' as either top-level argument or under params", {
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 1L
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+
+  bst <- lightgbm(
+    data = train$data
+    , label = train$label
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , num_threads = 10L
+    , params = list(num_threads = 1L)
+  )
+  expect_equal(bst$params$num_threads, 1L)
+  model_txt_lines <- strsplit(
+    x = bst$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+})
+
+test_that("lightgbm() accepts 'weight' and 'weights'", {
+  data(mtcars)
+  X <- as.matrix(mtcars[, -1L])
+  y <- as.numeric(mtcars[, 1L])
+  w <- rep(1.0, nrow(X))
+  model <- lightgbm(
+    X
+    , y
+    , weights = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = VERBOSITY
+    , params = list(
+      min_data_in_bin = 1L
+      , min_data_in_leaf = 1L
+    )
+  )
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
+
+  # Avoid a bad CRAN check due to partial argument matches
+  lgb_args <- list(
+    X
+    , y
+    , weight = w
+    , obj = "regression"
+    , nrounds = 5L
+    , verbose = -1L
+  )
+  model <- do.call(lightgbm, lgb_args)
+  expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 })

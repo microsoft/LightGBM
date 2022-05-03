@@ -7,7 +7,6 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from logging import Logger
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
@@ -41,21 +40,37 @@ class _DummyLogger:
         warnings.warn(msg, stacklevel=3)
 
 
-_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
+_LOGGER: Any = _DummyLogger()
+_INFO_METHOD_NAME = "info"
+_WARNING_METHOD_NAME = "warning"
 
 
-def register_logger(logger: Logger) -> None:
+def register_logger(
+    logger: Any, info_method_name: str = "info", warning_method_name: str = "warning"
+) -> None:
     """Register custom logger.
 
     Parameters
     ----------
-    logger : logging.Logger
+    logger : Any
         Custom logger.
+    info_method_name : str, optional (default="info")
+        Method used to log info messages.
+    warning_method_name : str, optional (default="warning")
+        Method used to log warning messages.
     """
-    if not isinstance(logger, Logger):
-        raise TypeError("Logger should inherit logging.Logger class")
-    global _LOGGER
+    def _has_method(logger: Any, method_name: str) -> bool:
+        return callable(getattr(logger, method_name, None))
+
+    if not _has_method(logger, info_method_name) or not _has_method(logger, warning_method_name):
+        raise TypeError(
+            f"Logger must provide '{info_method_name}' and '{warning_method_name}' method"
+        )
+
+    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME
     _LOGGER = logger
+    _INFO_METHOD_NAME = info_method_name
+    _WARNING_METHOD_NAME = warning_method_name
 
 
 def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
@@ -76,16 +91,16 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
 
 
 def _log_info(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_warning(msg: str) -> None:
-    _LOGGER.warning(msg)
+    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg)
 
 
 @_normalize_native_string
 def _log_native(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_callback(msg: bytes) -> None:
@@ -736,8 +751,7 @@ class _InnerPredictor:
         return this
 
     def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
-                is_reshape=True):
+                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False):
         """Predict logic.
 
         Parameters
@@ -758,8 +772,6 @@ class _InnerPredictor:
         data_has_header : bool, optional (default=False)
             Whether data has header.
             Used only for txt data.
-        is_reshape : bool, optional (default=True)
-            Whether to reshape to (nrow, ncol).
 
         Returns
         -------
@@ -816,7 +828,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
-        if is_reshape and not is_sparse and preds.size != nrow:
+        if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -1387,8 +1399,8 @@ class Dataset:
         if predictor is not None:
             init_score = predictor.predict(data,
                                            raw_score=True,
-                                           data_has_header=data_has_header,
-                                           is_reshape=False)
+                                           data_has_header=data_has_header)
+            init_score = init_score.ravel()
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, (str, Path)):
@@ -3172,7 +3184,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     A ``Dataset`` to evaluate.
@@ -3218,7 +3230,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The training dataset.
@@ -3249,7 +3261,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The validation dataset.
@@ -3473,7 +3485,7 @@ class Booster:
 
     def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, **kwargs):
+                data_has_header=False, **kwargs):
         """Make a prediction.
 
         Parameters
@@ -3507,8 +3519,6 @@ class Booster:
         data_has_header : bool, optional (default=False)
             Whether the data has header.
             Used only if data is str.
-        is_reshape : bool, optional (default=True)
-            If True, result is reshaped to [nrow, ncol].
         **kwargs
             Other parameters for the prediction.
 
@@ -3526,7 +3536,7 @@ class Booster:
                 num_iteration = -1
         return predictor.predict(data, start_iteration, num_iteration,
                                  raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, is_reshape)
+                                 data_has_header)
 
     def refit(
         self,
@@ -3749,7 +3759,7 @@ class Booster:
             ctypes.c_int(iteration),
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if importance_type_int == 0:
+        if importance_type_int == C_API_FEATURE_IMPORTANCE_SPLIT:
             return result.astype(np.int32)
         else:
             return result

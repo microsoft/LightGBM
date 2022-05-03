@@ -169,12 +169,13 @@ Dataset <- R6::R6Class(
           } else {
 
             # Check if more categorical features were output over the feature space
-            if (max(private$categorical_feature) > length(private$colnames)) {
+            data_is_not_filename <- !is.character(private$raw_data)
+            if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
                 , " but only "
-                , length(private$colnames)
+                , ncol(private$raw_data)
                 , " features"
               )
             }
@@ -295,7 +296,6 @@ Dataset <- R6::R6Class(
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
-          , reshape = TRUE
         )
 
         # Not needed to transpose, for is col_marjor
