@@ -3165,6 +3165,204 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   .assert_has_expected_record_evals(bst)
 })
 
+test_that("lightgbm() only prints eval metrics when expected to", {
+  dvalid <- lgb.Dataset(
+    data = test$data
+    , label = test$label
+    , free_raw_data = FALSE
+  )
+  nrounds <- 5L
+
+  .assert_has_expected_record_evals <- function(fitted_model, valids_should_include_train_set) {
+    record_evals <- fitted_model$record_evals
+    expect_equal(record_evals$start_iter, 1L)
+    expect_equal(
+      object = unlist(record_evals[["valid1"]][["auc"]][["eval"]])
+      , expected = c(0.9805752, 0.9805752, 0.9934957, 0.9934957, 0.9949372)
+      , tolerance = TOLERANCE
+    )
+    if (isTRUE(valids_should_include_train_set)) {
+      expect_named(record_evals, c("start_iter", "valid1", "train"), ignore.order = TRUE, ignore.case = FALSE)
+      expect_equal(
+        object = unlist(record_evals[["train"]][["auc"]][["eval"]])
+        , expected = c(0.9817835, 0.9817835, 0.9929513, 0.9929513, 0.9947141)
+        , tolerance = TOLERANCE
+      )
+      expect_equal(record_evals[["train"]][["auc"]][["eval_err"]], list())
+    } else {
+      expect_named(record_evals, c("start_iter", "valid1"), ignore.order = TRUE, ignore.case = FALSE)
+    }
+    expect_equal(record_evals[["valid1"]][["auc"]][["eval_err"]], list())
+  }
+
+  # regardless of value passed to keyword argument 'verbose', value in params
+  # should take precedence
+  for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
+
+    # (verbose = -1) should not be any logs, should be record evals only for valid1
+    log_txt <- capture.output({
+      bst <- lightgbm(
+        data = train$data
+        , label = train$label
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = -1L
+        )
+        , nrounds = nrounds
+        , valids = list(
+          "valid1" = dvalid
+        )
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
+    expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+    expect_false(any(grepl("train's auc\\:[0-9]+", log_txt)))
+    .assert_has_expected_record_evals(
+      fitted_model = bst
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose = 0) should be only WARN-level LightGBM logs, record evals only for valid1
+    log_txt <- capture.output({
+      bst <- lightgbm(
+        data = train$data
+        , label = train$label
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = 0L
+        )
+        , nrounds = nrounds
+        , valids = list(
+          "valid1" = dvalid
+        )
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+    expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+    expect_false(any(grepl("train's auc\\:[0-9]+", log_txt)))
+    .assert_has_expected_record_evals(
+      fitted_model = bst
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, record eval messages,
+    #               and record evals for both valid1 and train
+    log_txt <- capture.output({
+      bst <- lightgbm(
+        data = train$data
+        , label = train$label
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = 2L
+        )
+        , nrounds = nrounds
+        , valids = list(
+          "valid1" = dvalid
+        )
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+    expect_equal(sum(grepl("valid1's auc\\:[0-9]+", log_txt)), nrounds)
+    expect_equal(sum(grepl("train's auc\\:[0-9]+", log_txt)), nrounds)
+    .assert_has_expected_record_evals(
+      fitted_model = bst
+      , valids_should_include_train_set = TRUE
+    )
+  }
+
+  # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
+  # alter what messages are printed
+
+  # (verbose = -1) should not be any logs, should be record evals only for valid1
+  log_txt <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = dvalid
+      )
+      , verbose = -1L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
+  expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+  expect_false(any(grepl("train's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_record_evals(
+    fitted_model = bst
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose = 0) should be only WARN-level LightGBM logs, record evals only for valid1
+  log_txt <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = dvalid
+      )
+      , verbose = 0L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+  expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+  expect_false(any(grepl("train's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_record_evals(
+    fitted_model = bst
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, record eval messages,
+  #               and record evals for both valid1 and train
+  log_txt <- capture.output({
+    bst <- lightgbm(
+      data = train$data
+      , label = train$label
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = dvalid
+      )
+      , verbose = 2L
+    )
+  })
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+  expect_equal(sum(grepl("valid1's auc\\:[0-9]+", log_txt)), nrounds)
+  expect_equal(sum(grepl("train's auc\\:[0-9]+", log_txt)), nrounds)
+  .assert_has_expected_record_evals(
+    fitted_model = bst
+    , valids_should_include_train_set = TRUE
+  )
+})
+
 test_that("lgb.cv() only prints eval metrics when expected to", {
   dtrain <- lgb.Dataset(
     data = train$data
