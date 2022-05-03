@@ -135,7 +135,7 @@ class RegressionL2loss: public ObjectiveFunction {
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
+        gradients[i] = static_cast<score_t>(static_cast<score_t>((score[i] - label_[i])) * weights_[i]);
         hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
@@ -176,7 +176,7 @@ class RegressionL2loss: public ObjectiveFunction {
     if (weights_ != nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += label_[i] * weights_[i];
+        suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {

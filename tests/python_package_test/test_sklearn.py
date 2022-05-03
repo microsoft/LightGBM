@@ -1050,7 +1050,7 @@ def test_inf_handle():
     ncols = 10
     X = np.random.randn(nrows, ncols)
     y = np.random.randn(nrows) + np.full(nrows, 1e30)
-    weight = np.full(nrows, 1e10)
+    weight = np.full(nrows, 1e300)
     params = {'n_estimators': 20, 'verbose': -1}
     params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
                   'callbacks': [lgb.early_stopping(5)]}
