@@ -198,7 +198,7 @@ void Application::InitTrain() {
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddValidDataset(valid_datas_[i].get(),
                                Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
-    Log::Debug("Number of data points in validation set #%zu: %zu", i + 1, valid_datas_[i]->num_data());
+    Log::Debug("Number of data points in validation set #%zu: %d", i + 1, valid_datas_[i]->num_data());
   }
   Log::Info("Finished initializing training");
 }
