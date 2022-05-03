@@ -3165,3 +3165,156 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   .assert_has_expected_record_evals(bst)
 })
 
+test_that("lgb.cv() only prints eval metrics when expected to", {
+  dtrain <- lgb.Dataset(
+    data = train$data
+    , label = train$label
+  )
+  nrounds <- 5L
+  nfolds <- 3L
+
+  .assert_has_expected_record_evals <- function(fitted_model) {
+    record_evals <- fitted_model$record_evals
+    expect_named(record_evals, c("start_iter", "valid"), ignore.order = TRUE, ignore.case = FALSE)
+    expect_equal(record_evals$start_iter, 1L)
+    expect_equal(
+      object = unlist(record_evals[["valid"]][["auc"]][["eval"]])
+      , expected = c(0.979056, 0.9844697, 0.9900813, 0.9908026, 0.9935588)
+      , tolerance = TOLERANCE
+    )
+    expect_equal(
+      object = unlist(fitted_model$record_evals[["valid"]][["auc"]][["eval_err"]])
+      , expected = c(0.0009148442, 0.0067418719, 0.0045669616, 0.0049976408, 0.00131507)
+      , tolerance = TOLERANCE
+    )
+  }
+
+  # regardless of value passed to keyword argument 'verbose', value in params
+  # should take precedence
+  for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
+
+    # (verbose = -1) should not be any logs, should be record evals
+    set.seed(708L)
+    log_txt <- capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = -1L
+        )
+        , nrounds = nrounds
+        , nfold = nfolds
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
+    expect_false(any(grepl("valid's auc\\:[0-9]+", log_txt)))
+    .assert_has_expected_record_evals(cv_bst)
+
+    # (verbose = 0) should be only WARN-level LightGBM logs
+    set.seed(708L)
+    log_txt <- capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = 0L
+        )
+        , nrounds = nrounds
+        , nfold = nfolds
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+    expect_false(any(grepl("valid's auc\\:[0-9]+", log_txt)))
+    .assert_has_expected_record_evals(cv_bst)
+
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+    set.seed(708L)
+    log_txt <- capture.output({
+      cv_bst <- lgb.cv(
+        data = dtrain
+        , params = list(
+          num_leaves = 5L
+          , objective = "binary"
+          , metric =  "auc"
+          , verbose = 2L
+        )
+        , nrounds = nrounds
+        , nfold = nfolds
+        , verbose = verbose_keyword_arg
+      )
+    })
+    expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+    expect_equal(sum(grepl("valid's auc\\:[0-9]+", log_txt)), nrounds)
+    .assert_has_expected_record_evals(cv_bst)
+  }
+
+  # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
+  # alter what messages are printed
+
+  # (verbose = -1) should not be any logs, should be record evals
+  set.seed(708L)
+  log_txt <- capture.output({
+    cv_bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , nfold = nfolds
+      , verbose = -1L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
+  expect_false(any(grepl("valid's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_record_evals(cv_bst)
+
+  # (verbose = 0) should be only WARN-level LightGBM logs
+  set.seed(708L)
+  log_txt <- capture.output({
+    cv_bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , nfold = nfolds
+      , verbose = 0L
+    )
+  })
+  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+  expect_false(any(grepl("valid's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_record_evals(cv_bst)
+
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+  set.seed(708L)
+  log_txt <- capture.output({
+    cv_bst <- lgb.cv(
+      data = dtrain
+      , params = list(
+        num_leaves = 5L
+        , objective = "binary"
+        , metric =  "auc"
+      )
+      , nrounds = nrounds
+      , nfold = nfolds
+      , verbose = 1L
+    )
+  })
+  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
+  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
+  expect_equal(sum(grepl("valid's auc\\:[0-9]+", log_txt)), nrounds)
+  .assert_has_expected_record_evals(cv_bst)
+})
