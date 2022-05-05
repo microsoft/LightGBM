@@ -279,7 +279,9 @@ void SerialTreeLearner::BeforeTrain() {
 
   larger_leaf_splits_->Init();
 
-  cegb_->BeforeTrain();
+  if (cegb_ != nullptr) {
+    cegb_->BeforeTrain();
+  }
 }
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
