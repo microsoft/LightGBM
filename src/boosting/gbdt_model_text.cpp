@@ -104,7 +104,6 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     size_t feature_importances_int = static_cast<size_t>(feature_importances[i]);
     if (feature_importances_int > 0) {
-      Log::Warning("i = %d, feature_names_.size() = %d", i, feature_names_.size());
       if (i < feature_names_.size()) {
         pairs.emplace_back(feature_importances_int, feature_names_[i]);
       } else {
