@@ -52,7 +52,7 @@ if ($env:TASK -eq "swig") {
 
 conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
 # sometimes conda downgrades cpython to pypy
-conda remove -n $env:CONDA_ENV pypy
+conda remove -n $env:CONDA_ENV pypy$env:PYTHON_VERSION
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
