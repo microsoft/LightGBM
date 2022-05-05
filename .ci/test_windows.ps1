@@ -50,9 +50,9 @@ if ($env:TASK -eq "swig") {
   Exit 0
 }
 
-conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest scikit-learn scipy ; Check-Output $?
-# python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-conda install -q -y -n $env:CONDA_ENV libxml2 python-graphviz ; Check-Output $?
+conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
+# sometimes conda downgrades cpython to pypy
+conda remove -n $env:CONDA_ENV pypy
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
