@@ -3006,16 +3006,68 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 })
 
+.assert_has_expected_logs <- function(log_txt, lgb_info, lgb_warn, early_stopping, valid1_eval_msg, train_eval_msg) {
+  expect_identical(
+    object = any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt))
+    , expected = lgb_info
+  )
+  expect_identical(
+    object = any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt))
+    , expected = lgb_warn
+  )
+  expect_identical(
+    object = any(grepl("Will train until there is no improvement in 5 rounds", log_txt))
+    , expected = early_stopping
+  )
+  expect_identical(
+    object = any(grepl("Did not meet early stopping", log_txt))
+    , expected = early_stopping
+  )
+  expect_identical(
+    object = any(grepl("valid1's auc\\:[0-9]+", log_txt))
+    , expected = valid1_eval_msg
+  )
+  expect_identical(
+    object = any(grepl("train's auc\\:[0-9]+", log_txt))
+    , expected = train_eval_msg
+  )
+}
+
 test_that("lgb.train() only prints eval metrics when expected to", {
-  dtrain <- lgb.Dataset(
-    data = train$data
-    , label = train$label
-  )
-  dvalid <- lgb.Dataset(
-    data = test$data
-    , label = test$label
-  )
   nrounds <- 5L
+
+  .train <- function(verbose_kwarg, verbose_param, nrounds) {
+    params <- list(
+      num_leaves = 5L
+      , objective = "binary"
+      , metric =  "auc"
+      , early_stopping_round = nrounds
+    )
+    if (!is.null(verbose_param)) {
+      params[["verbose"]] <- verbose_param
+    }
+    train_kwargs <- list(
+      data = lgb.Dataset(data = train$data, label = train$label)
+      , params = params
+      , nrounds = nrounds
+      , valids = list(
+        "valid1" = lgb.Dataset(data = test$data, label = test$label)
+      )
+    )
+    if (!is.null(verbose_kwarg)) {
+      train_kwargs[["verbose"]] <- verbose_kwarg
+    }
+    log_txt <- capture.output({
+      bst <- do.call(
+        what = lgb.train
+        , args = train_kwargs
+      )
+    })
+    return(list(
+      booster = bst
+      , logs = log_txt
+    ))
+  }
 
   .assert_has_expected_record_evals <- function(fitted_model) {
     record_evals <- fitted_model$record_evals
@@ -3034,155 +3086,98 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
 
     # (verbose = -1) should not be any logs, should be record evals
-    log_txt <- capture.output({
-      bst <- lgb.train(
-        data = dtrain
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = -1L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
-    expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
-    expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
-    expect_false(any(grepl("Did not meet early stopping", log_txt)))
-    expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
-    .assert_has_expected_record_evals(bst)
+    out <- .train(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = -1L
+      , nrounds = nrounds
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = FALSE
+      , early_stopping = FALSE
+      , valid1_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(out[["booster"]])
 
     # (verbose = 0) should be only WARN-level LightGBM logs
-    log_txt <- capture.output({
-      bst <- lgb.train(
-        data = dtrain
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = 0L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
-    expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
-    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
-    expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
-    expect_false(any(grepl("Did not meet early stopping", log_txt)))
-    expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
-    .assert_has_expected_record_evals(bst)
+    out <- .train(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 0L
+      , nrounds = nrounds
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = TRUE
+      , early_stopping = FALSE
+      , valid1_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(out[["booster"]])
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
-    log_txt <- capture.output({
-      bst <- lgb.train(
-        data = dtrain
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = 2L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
-    expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
-    expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
-    expect_equal(sum(grepl("Will train until there is no improvement in 5 rounds", log_txt)), 1L)
-    expect_equal(sum(grepl("Did not meet early stopping", log_txt)), 1L)
-    # NOTE: one of the messages like "valid1's auc:0.123" is re-printed by the "Did not meet early stopping" message
-    expect_equal(sum(grepl("valid1's auc\\:[0-9]+", log_txt)), nrounds + 1L)
-    .assert_has_expected_record_evals(bst)
+    out <- .train(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 1L
+      , nrounds = nrounds
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = TRUE
+      , lgb_warn = TRUE
+      , early_stopping = TRUE
+      , valid1_eval_msg = TRUE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(out[["booster"]])
   }
 
   # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
   # alter what messages are printed
 
   # (verbose = -1) should not be any logs, should be record evals
-  log_txt <- capture.output({
-    bst <- lgb.train(
-      data = dtrain
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = -1L
-    )
-  })
+  out <- .train(
+    verbose_kwarg = -1L
+    , verbose_param = NULL
+    , nrounds = nrounds
+  )
+  log_txt <- out[["logs"]]
   expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
   expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
   expect_false(any(grepl("Did not meet early stopping", log_txt)))
   expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
-  .assert_has_expected_record_evals(bst)
+  .assert_has_expected_record_evals(out[["booster"]])
 
   # (verbose = 0) should be only WARN-level LightGBM logs
-  log_txt <- capture.output({
-    bst <- lgb.train(
-      data = dtrain
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = 0L
-    )
-  })
+  out <- .train(
+    verbose_kwarg = 0L
+    , verbose_param = NULL
+    , nrounds = nrounds
+  )
+  log_txt <- out[["logs"]]
   expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
   expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
   expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
   expect_false(any(grepl("Did not meet early stopping", log_txt)))
   expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
-  .assert_has_expected_record_evals(bst)
+  .assert_has_expected_record_evals(out[["booster"]])
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
-  log_txt <- capture.output({
-    bst <- lgb.train(
-      data = dtrain
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = 2L
-    )
-  })
+  out <- .train(
+    verbose_kwarg = 1L
+    , verbose_param = NULL
+    , nrounds = nrounds
+  )
+  log_txt <- out[["logs"]]
   expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
   expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
   expect_equal(sum(grepl("Will train until there is no improvement in 5 rounds", log_txt)), 1L)
   expect_equal(sum(grepl("Did not meet early stopping", log_txt)), 1L)
   # NOTE: one of the messages like "valid1's auc:0.123" is re-printed by the "Did not meet early stopping" message
   expect_equal(sum(grepl("valid1's auc\\:[0-9]+", log_txt)), nrounds + 1L)
-  .assert_has_expected_record_evals(bst)
+  .assert_has_expected_record_evals(out[["booster"]])
 })
 
 test_that("lightgbm() only prints eval metrics when expected to", {
