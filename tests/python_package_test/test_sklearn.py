@@ -1045,19 +1045,6 @@ def test_multiple_eval_metrics():
     assert 'binary_logloss' in gbm.evals_result_['training']
 
 
-def test_inf_handle():
-    nrows = 100
-    ncols = 10
-    X = np.random.randn(nrows, ncols)
-    y = np.random.randn(nrows) + np.full(nrows, 1e30)
-    weight = np.full(nrows, 1e300)
-    params = {'n_estimators': 20, 'verbose': -1}
-    params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
-                  'callbacks': [lgb.early_stopping(5)]}
-    gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-    np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
-
-
 def test_nan_handle():
     nrows = 100
     ncols = 10
