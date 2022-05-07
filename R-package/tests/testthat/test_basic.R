@@ -3143,11 +3143,14 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , verbose_param = NULL
     , nrounds = nrounds
   )
-  log_txt <- out[["logs"]]
-  expect_false(any(grepl("\\[LightGBM\\]", log_txt)))
-  expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
-  expect_false(any(grepl("Did not meet early stopping", log_txt)))
-  expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = FALSE
+    , early_stopping = FALSE
+    , valid1_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
   .assert_has_expected_record_evals(out[["booster"]])
 
   # (verbose = 0) should be only WARN-level LightGBM logs
@@ -3156,12 +3159,14 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , verbose_param = NULL
     , nrounds = nrounds
   )
-  log_txt <- out[["logs"]]
-  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
-  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
-  expect_false(any(grepl("Will train until there is no improvement in 5 rounds", log_txt)))
-  expect_false(any(grepl("Did not meet early stopping", log_txt)))
-  expect_false(any(grepl("valid1's auc\\:[0-9]+", log_txt)))
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = TRUE
+    , early_stopping = FALSE
+    , valid1_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
   .assert_has_expected_record_evals(out[["booster"]])
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
@@ -3170,13 +3175,14 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , verbose_param = NULL
     , nrounds = nrounds
   )
-  log_txt <- out[["logs"]]
-  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt)))
-  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt)))
-  expect_equal(sum(grepl("Will train until there is no improvement in 5 rounds", log_txt)), 1L)
-  expect_equal(sum(grepl("Did not meet early stopping", log_txt)), 1L)
-  # NOTE: one of the messages like "valid1's auc:0.123" is re-printed by the "Did not meet early stopping" message
-  expect_equal(sum(grepl("valid1's auc\\:[0-9]+", log_txt)), nrounds + 1L)
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = TRUE
+    , lgb_warn = TRUE
+    , early_stopping = TRUE
+    , valid1_eval_msg = TRUE
+    , train_eval_msg = FALSE
+  )
   .assert_has_expected_record_evals(out[["booster"]])
 })
 
