@@ -3220,38 +3220,19 @@ test_that("lgb.train() only prints eval metrics when expected to", {
 })
 
 test_that("lightgbm() only prints eval metrics when expected to", {
-  dvalid <- lgb.Dataset(
-    data = test$data
-    , label = test$label
-    , free_raw_data = FALSE
-  )
-  nrounds <- 5L
 
   # regardless of value passed to keyword argument 'verbose', value in params
   # should take precedence
   for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
 
-    # (verbose = -1) should not be any logs, should be record evals only for valid1
-    log_txt <- capture.output({
-      bst <- lightgbm(
-        data = train$data
-        , label = train$label
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = -1L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
+    # (verbose = -1) should not be any logs, train should not be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = -1L
+    )
     .assert_has_expected_logs(
-      log_txt = log_txt
+      log_txt = out[["logs"]]
       , lgb_info = FALSE
       , lgb_warn = FALSE
       , early_stopping = FALSE
@@ -3259,31 +3240,18 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
-      fitted_model = bst
+      fitted_model = out[["booster"]]
       , valids_should_include_train_set = FALSE
     )
 
-    # (verbose = 0) should be only WARN-level LightGBM logs, record evals only for valid1
-    log_txt <- capture.output({
-      bst <- lightgbm(
-        data = train$data
-        , label = train$label
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = 0L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
+    # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 0L
+    )
     .assert_has_expected_logs(
-      log_txt = log_txt
+      log_txt = out[["logs"]]
       , lgb_info = FALSE
       , lgb_warn = TRUE
       , early_stopping = FALSE
@@ -3291,32 +3259,19 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
-      fitted_model = bst
+      fitted_model = out[["booster"]]
       , valids_should_include_train_set = FALSE
     )
 
-    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, record eval messages,
-    #               and record evals for both valid1 and train
-    log_txt <- capture.output({
-      bst <- lightgbm(
-        data = train$data
-        , label = train$label
-        , params = list(
-          num_leaves = 5L
-          , objective = "binary"
-          , metric =  "auc"
-          , verbose = 2L
-          , early_stopping_round = nrounds
-        )
-        , nrounds = nrounds
-        , valids = list(
-          "valid1" = dvalid
-        )
-        , verbose = verbose_keyword_arg
-      )
-    })
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
+    #               train should be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 1L
+    )
     .assert_has_expected_logs(
-      log_txt = log_txt
+      log_txt = out[["logs"]]
       , lgb_info = TRUE
       , lgb_warn = TRUE
       , early_stopping = TRUE
@@ -3324,7 +3279,7 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , train_eval_msg = TRUE
     )
     .assert_has_expected_record_evals(
-      fitted_model = bst
+      fitted_model = out[["booster"]]
       , valids_should_include_train_set = TRUE
     )
   }
@@ -3332,26 +3287,14 @@ test_that("lightgbm() only prints eval metrics when expected to", {
   # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
   # alter what messages are printed
 
-  # (verbose = -1) should not be any logs, should be record evals only for valid1
-  log_txt <- capture.output({
-    bst <- lightgbm(
-      data = train$data
-      , label = train$label
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = -1L
-    )
-  })
+  # (verbose = -1) should not be any logs, train should not be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = -1L
+    , verbose_param = NULL
+  )
   .assert_has_expected_logs(
-    log_txt = log_txt
+    log_txt = out[["logs"]]
     , lgb_info = FALSE
     , lgb_warn = FALSE
     , early_stopping = FALSE
@@ -3359,30 +3302,18 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
-    fitted_model = bst
+    fitted_model = out[["booster"]]
     , valids_should_include_train_set = FALSE
   )
 
-  # (verbose = 0) should be only WARN-level LightGBM logs, record evals only for valid1
-  log_txt <- capture.output({
-    bst <- lightgbm(
-      data = train$data
-      , label = train$label
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = 0L
-    )
-  })
+  # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = 0L
+    , verbose_param = NULL
+  )
   .assert_has_expected_logs(
-    log_txt = log_txt
+    log_txt = out[["logs"]]
     , lgb_info = FALSE
     , lgb_warn = TRUE
     , early_stopping = FALSE
@@ -3390,31 +3321,19 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
-    fitted_model = bst
+    fitted_model = out[["booster"]]
     , valids_should_include_train_set = FALSE
   )
 
-  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, record eval messages,
-  #               and record evals for both valid1 and train
-  log_txt <- capture.output({
-    bst <- lightgbm(
-      data = train$data
-      , label = train$label
-      , params = list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric =  "auc"
-        , early_stopping_round = nrounds
-      )
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = dvalid
-      )
-      , verbose = 2L
-    )
-  })
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
+  #               train should be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = 1L
+    , verbose_param = NULL
+  )
   .assert_has_expected_logs(
-    log_txt = log_txt
+    log_txt = out[["logs"]]
     , lgb_info = TRUE
     , lgb_warn = TRUE
     , early_stopping = TRUE
@@ -3422,7 +3341,7 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , train_eval_msg = TRUE
   )
   .assert_has_expected_record_evals(
-    fitted_model = bst
+    fitted_model = out[["booster"]]
     , valids_should_include_train_set = TRUE
   )
 })
