@@ -3055,51 +3055,56 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   expect_equal(record_evals[["valid1"]][["auc"]][["eval_err"]], list())
 }
 
-test_that("lgb.train() only prints eval metrics when expected to", {
+.train_for_verbosity_test <- function(train_function, verbose_kwarg, verbose_param){
   nrounds <- 5L
-
-  .train <- function(verbose_kwarg, verbose_param, nrounds) {
-    params <- list(
-      num_leaves = 5L
-      , objective = "binary"
-      , metric =  "auc"
-      , early_stopping_round = nrounds
-    )
-    if (!is.null(verbose_param)) {
-      params[["verbose"]] <- verbose_param
-    }
-    train_kwargs <- list(
-      data = lgb.Dataset(data = train$data, label = train$label)
-      , params = params
-      , nrounds = nrounds
-      , valids = list(
-        "valid1" = lgb.Dataset(data = test$data, label = test$label)
-      )
-    )
-    if (!is.null(verbose_kwarg)) {
-      train_kwargs[["verbose"]] <- verbose_kwarg
-    }
-    log_txt <- capture.output({
-      bst <- do.call(
-        what = lgb.train
-        , args = train_kwargs
-      )
-    })
-    return(list(
-      booster = bst
-      , logs = log_txt
-    ))
+  params <- list(
+    num_leaves = 5L
+    , objective = "binary"
+    , metric =  "auc"
+    , early_stopping_round = nrounds
+  )
+  if (!is.null(verbose_param)) {
+    params[["verbose"]] <- verbose_param
   }
+  train_kwargs <- list(
+    params = params
+    , nrounds = nrounds
+    , valids = list(
+      "valid1" = lgb.Dataset(data = test$data, label = test$label)
+    )
+  )
+  if (!is.null(verbose_kwarg)) {
+    train_kwargs[["verbose"]] <- verbose_kwarg
+  }
+  if (deparse(substitute(train_function)) == "lgb.train") {
+    train_kwargs[["data"]] <- lgb.Dataset(
+      data = train$data
+      , label = train$label
+    )
+  } else {
+    train_kwargs[["data"]] <- train$data
+    train_kwargs[["label"]] <- train$label
+  }
+  log_txt <- capture.output({
+    bst <- do.call(
+      what = train_function
+      , args = train_kwargs
+    )
+  })
+  return(list(booster = bst, logs = log_txt))
+}
+
+test_that("lgb.train() only prints eval metrics when expected to", {
 
   # regardless of value passed to keyword argument 'verbose', value in params
   # should take precedence
   for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
 
     # (verbose = -1) should not be any logs, should be record evals
-    out <- .train(
-      verbose_kwarg = verbose_keyword_arg
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
       , verbose_param = -1L
-      , nrounds = nrounds
     )
     .assert_has_expected_logs(
       log_txt = out[["logs"]]
@@ -3115,10 +3120,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     )
 
     # (verbose = 0) should be only WARN-level LightGBM logs
-    out <- .train(
-      verbose_kwarg = verbose_keyword_arg
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
       , verbose_param = 0L
-      , nrounds = nrounds
     )
     .assert_has_expected_logs(
       log_txt = out[["logs"]]
@@ -3134,10 +3139,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     )
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
-    out <- .train(
-      verbose_kwarg = verbose_keyword_arg
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
       , verbose_param = 1L
-      , nrounds = nrounds
     )
     .assert_has_expected_logs(
       log_txt = out[["logs"]]
@@ -3157,10 +3162,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   # alter what messages are printed
 
   # (verbose = -1) should not be any logs, should be record evals
-  out <- .train(
-    verbose_kwarg = -1L
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = -1L
     , verbose_param = NULL
-    , nrounds = nrounds
   )
   .assert_has_expected_logs(
     log_txt = out[["logs"]]
@@ -3176,10 +3181,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   )
 
   # (verbose = 0) should be only WARN-level LightGBM logs
-  out <- .train(
-    verbose_kwarg = 0L
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = 0L
     , verbose_param = NULL
-    , nrounds = nrounds
   )
   .assert_has_expected_logs(
     log_txt = out[["logs"]]
@@ -3195,10 +3200,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
   )
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
-  out <- .train(
-    verbose_kwarg = 1L
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = 1L
     , verbose_param = NULL
-    , nrounds = nrounds
   )
   .assert_has_expected_logs(
     log_txt = out[["logs"]]
