@@ -3033,6 +3033,28 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   )
 }
 
+.assert_has_expected_record_evals <- function(fitted_model, valids_should_include_train_set) {
+  record_evals <- fitted_model$record_evals
+  expect_equal(record_evals$start_iter, 1L)
+  expect_equal(
+    object = unlist(record_evals[["valid1"]][["auc"]][["eval"]])
+    , expected = c(0.9805752, 0.9805752, 0.9934957, 0.9934957, 0.9949372)
+    , tolerance = TOLERANCE
+  )
+  if (isTRUE(valids_should_include_train_set)) {
+    expect_named(record_evals, c("start_iter", "valid1", "train"), ignore.order = TRUE, ignore.case = FALSE)
+    expect_equal(
+      object = unlist(record_evals[["train"]][["auc"]][["eval"]])
+      , expected = c(0.9817835, 0.9817835, 0.9929513, 0.9929513, 0.9947141)
+      , tolerance = TOLERANCE
+    )
+    expect_equal(record_evals[["train"]][["auc"]][["eval_err"]], list())
+  } else {
+    expect_named(record_evals, c("start_iter", "valid1"), ignore.order = TRUE, ignore.case = FALSE)
+  }
+  expect_equal(record_evals[["valid1"]][["auc"]][["eval_err"]], list())
+}
+
 test_that("lgb.train() only prints eval metrics when expected to", {
   nrounds <- 5L
 
@@ -3069,18 +3091,6 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     ))
   }
 
-  .assert_has_expected_record_evals <- function(fitted_model) {
-    record_evals <- fitted_model$record_evals
-    expect_named(record_evals, c("start_iter", "valid1"), ignore.order = TRUE, ignore.case = FALSE)
-    expect_equal(record_evals$start_iter, 1L)
-    expect_equal(
-      object = unlist(record_evals[["valid1"]][["auc"]][["eval"]])
-      , expected = c(0.9805752, 0.9805752, 0.9934957, 0.9934957, 0.9949372)
-      , tolerance = TOLERANCE
-    )
-    expect_equal(fitted_model$record_evals[["valid1"]][["auc"]][["eval_err"]], list())
-  }
-
   # regardless of value passed to keyword argument 'verbose', value in params
   # should take precedence
   for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
@@ -3099,7 +3109,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , valid1_eval_msg = FALSE
       , train_eval_msg = FALSE
     )
-    .assert_has_expected_record_evals(out[["booster"]])
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
 
     # (verbose = 0) should be only WARN-level LightGBM logs
     out <- .train(
@@ -3115,7 +3128,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , valid1_eval_msg = FALSE
       , train_eval_msg = FALSE
     )
-    .assert_has_expected_record_evals(out[["booster"]])
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
     out <- .train(
@@ -3131,7 +3147,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , valid1_eval_msg = TRUE
       , train_eval_msg = FALSE
     )
-    .assert_has_expected_record_evals(out[["booster"]])
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
   }
 
   # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
@@ -3151,7 +3170,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , valid1_eval_msg = FALSE
     , train_eval_msg = FALSE
   )
-  .assert_has_expected_record_evals(out[["booster"]])
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
 
   # (verbose = 0) should be only WARN-level LightGBM logs
   out <- .train(
@@ -3167,7 +3189,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , valid1_eval_msg = FALSE
     , train_eval_msg = FALSE
   )
-  .assert_has_expected_record_evals(out[["booster"]])
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
   out <- .train(
@@ -3183,7 +3208,10 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , valid1_eval_msg = TRUE
     , train_eval_msg = FALSE
   )
-  .assert_has_expected_record_evals(out[["booster"]])
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
 })
 
 test_that("lightgbm() only prints eval metrics when expected to", {
@@ -3193,28 +3221,6 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , free_raw_data = FALSE
   )
   nrounds <- 5L
-
-  .assert_has_expected_record_evals <- function(fitted_model, valids_should_include_train_set) {
-    record_evals <- fitted_model$record_evals
-    expect_equal(record_evals$start_iter, 1L)
-    expect_equal(
-      object = unlist(record_evals[["valid1"]][["auc"]][["eval"]])
-      , expected = c(0.9805752, 0.9805752, 0.9934957, 0.9934957, 0.9949372)
-      , tolerance = TOLERANCE
-    )
-    if (isTRUE(valids_should_include_train_set)) {
-      expect_named(record_evals, c("start_iter", "valid1", "train"), ignore.order = TRUE, ignore.case = FALSE)
-      expect_equal(
-        object = unlist(record_evals[["train"]][["auc"]][["eval"]])
-        , expected = c(0.9817835, 0.9817835, 0.9929513, 0.9929513, 0.9947141)
-        , tolerance = TOLERANCE
-      )
-      expect_equal(record_evals[["train"]][["auc"]][["eval_err"]], list())
-    } else {
-      expect_named(record_evals, c("start_iter", "valid1"), ignore.order = TRUE, ignore.case = FALSE)
-    }
-    expect_equal(record_evals[["valid1"]][["auc"]][["eval_err"]], list())
-  }
 
   # regardless of value passed to keyword argument 'verbose', value in params
   # should take precedence
