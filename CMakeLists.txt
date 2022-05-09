@@ -326,12 +326,12 @@ endif()
 
 # Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
 # As of 2022, MinGW started including a definition of inet_pton.
-if(WIN32)
+if(WIN32 OR WIN64)
   include(CheckSymbolExists)
   list(APPEND CMAKE_REQUIRED_LIBRARIES "ws2_32")
-  check_symbol_exists(inet_pton "ws2tcpip.h" WIN32_INET_PTON_FOUND)
-  if(WIN32_INET_PTON_FOUND)
-    add_definitions(-DWIN32_HAS_INET_PTON)
+  check_symbol_exists(inet_pton "ws2tcpip.h" WIN_INET_PTON_FOUND)
+  if(WIN_INET_PTON_FOUND)
+    add_definitions(-DWIN_HAS_INET_PTON)
   endif()
   list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES "ws2_32")
 endif()

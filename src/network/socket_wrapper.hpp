@@ -59,9 +59,9 @@ const int INVALID_SOCKET = -1;
 
 #endif
 
-#ifdef _WIN32
-// existence of inet_pton is checked in CMakeLists.txt and configure.win, then stored in WIN32_HAS_INET_PTON
-#ifndef WIN32_HAS_INET_PTON
+#if defined(_WIN32) || defined(_WIN64)
+// existence of inet_pton is checked in CMakeLists.txt and configure.win, then stored in WIN_HAS_INET_PTON
+#ifndef WIN_HAS_INET_PTON
 inline int inet_pton(int af, const char *src, void *dst) {
   struct sockaddr_storage ss;
   int size = sizeof(ss);

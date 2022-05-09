@@ -77,13 +77,10 @@ fi
 ac_inet_pton="no"
 
 cat > conftest.cpp <<EOL
-#ifdef _WIN32
 #include <ws2tcpip.h>
 #endif
 int main() {
-  #ifdef _WIN32
   void* p = inet_pton;
-  #endif
   return 0;
 }
 EOL
@@ -95,7 +92,7 @@ echo "checking whether INET_PTON works...${ac_inet_pton}"
 
 if test "${ac_inet_pton}" = "yes";
 then
-    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN32_HAS_INET_PTON=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 fi
 
 # Generate Makevars.win from Makevars.win.in
