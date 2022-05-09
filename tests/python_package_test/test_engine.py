@@ -966,6 +966,26 @@ def test_continue_train_multiclass():
     assert evals_result['valid_0']['multi_logloss'][-1] == pytest.approx(ret)
 
 
+def test_continue_train_different_feature_size():
+    np.random.seed(0)
+    train_X = np.random.randn(100, 10)
+    train_y = np.sum(train_X, axis=1)
+    train_data = lgb.Dataset(train_X, label=train_y)
+    params = {
+        "objective": "regression",
+        "num_trees": 10,
+        "num_leaves": 31,
+        "verbose": 2,
+        'predict_disable_shape_check': True,
+    }
+    model = lgb.train(train_set=train_data, params=params)
+
+    train_X_cont = np.random.rand(100, 5)
+    train_y_cont = np.sum(train_X_cont, axis=1)
+    train_data_cont = lgb.Dataset(train_X_cont, label=train_y_cont)
+    lgb.train(train_set=train_data_cont, params=params, init_model=model)
+
+
 def test_cv():
     X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
