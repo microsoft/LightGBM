@@ -377,15 +377,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     size_t feature_importances_int = static_cast<size_t>(feature_importances[i]);
     if (feature_importances_int > 0) {
-      if (i < feature_names_.size()) {
-        pairs.emplace_back(feature_importances_int, feature_names_[i]);
-      } else {
-        // with LibSVM format and continual training, the number of features in dataset can be fewer than in the intial model
-        // in that case FeatureImportance returns with the number of features in the intial model
-        std::stringstream str_buf;
-        str_buf << "Column_" << i << "_from_init_model";
-        pairs.emplace_back(feature_importances_int, str_buf.str());
-      }
+      pairs.emplace_back(feature_importances_int, feature_names_[i]);
     }
   }
   // sort the importance

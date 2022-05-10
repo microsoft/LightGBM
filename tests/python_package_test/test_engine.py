@@ -991,8 +991,6 @@ def test_continue_train_different_feature_size(capsys):
     lgb.train(train_set=train_data_cont, params=params, init_model=model)
     captured = capsys.readouterr()
     assert captured.out.find("features found in continually trained model, but at least") != -1
-    #feature_importance = new_model.feature_importance()
-    #assert len(feature_importance) == 10
 
 
 def test_cv():
