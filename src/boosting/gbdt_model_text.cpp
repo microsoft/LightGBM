@@ -104,15 +104,7 @@ std::string GBDT::DumpModel(int start_iteration, int num_iteration, int feature_
   for (size_t i = 0; i < feature_importances.size(); ++i) {
     size_t feature_importances_int = static_cast<size_t>(feature_importances[i]);
     if (feature_importances_int > 0) {
-      if (i < feature_names_.size()) {
-        pairs.emplace_back(feature_importances_int, feature_names_[i]);
-      } else {
-        // with LibSVM format and continual training, the number of features in dataset can be fewer than in the intial model
-        // in that case FeatureImportance returns with the number of features in the intial model
-        std::stringstream str_buf;
-        str_buf << "Column_" << i << "_from_init_model";
-        pairs.emplace_back(feature_importances_int, str_buf.str());
-      }
+      pairs.emplace_back(feature_importances_int, feature_names_[i]);
     }
   }
   str_buf << '\n' << "\"feature_importances\":" << "{";
@@ -648,6 +640,8 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
   }
 
   std::vector<double> feature_importances(max_feature_idx_ + 1, 0.0);
+  bool warn_about_feature_number = false;
+  int max_feature_index_found = -1;
   if (importance_type == 0) {
     for (int iter = 0; iter < num_used_model; ++iter) {
       for (int split_idx = 0; split_idx < models_[iter]->num_leaves() - 1; ++split_idx) {
@@ -657,9 +651,11 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
           CHECK_GE(real_feature_index, 0);
 #endif
           if (static_cast<size_t>(real_feature_index) >= feature_importances.size()) {
-            feature_importances.resize(real_feature_index + 1);
+            warn_about_feature_number = true;
+            max_feature_index_found = real_feature_index;
+          } else {
+            feature_importances[real_feature_index] += 1.0;
           }
-          feature_importances[real_feature_index] += 1.0;
         }
       }
     }
@@ -672,14 +668,20 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
           CHECK_GE(real_feature_index, 0);
 #endif
           if (static_cast<size_t>(real_feature_index) >= feature_importances.size()) {
-            feature_importances.resize(real_feature_index + 1);
+            warn_about_feature_number = true;
+            max_feature_index_found = real_feature_index;
+          } else {
+            feature_importances[real_feature_index] += models_[iter]->split_gain(split_idx);
           }
-          feature_importances[real_feature_index] += models_[iter]->split_gain(split_idx);
         }
       }
     }
   } else {
     Log::Fatal("Unknown importance type: only support split=0 and gain=1");
+  }
+  if (warn_about_feature_number) {
+    Log::Warning("%d features found in continually trained model, but at least %d features found in initial model.",
+      static_cast<int>(feature_importances.size(), max_feature_index_found + 1));
   }
   return feature_importances;
 }
