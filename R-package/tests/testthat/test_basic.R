@@ -3005,3 +3005,485 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   model <- do.call(lightgbm, lgb_args)
   expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 })
+
+.assert_has_expected_logs <- function(log_txt, lgb_info, lgb_warn, early_stopping, valid_eval_msg, train_eval_msg) {
+  expect_identical(
+    object = any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt))
+    , expected = lgb_info
+  )
+  expect_identical(
+    object = any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt))
+    , expected = lgb_warn
+  )
+  expect_identical(
+    object = any(grepl("Will train until there is no improvement in 5 rounds", log_txt))
+    , expected = early_stopping
+  )
+  expect_identical(
+    object = any(grepl("Did not meet early stopping", log_txt))
+    , expected = early_stopping
+  )
+  expect_identical(
+    object = any(grepl("valid's auc\\:[0-9]+", log_txt))
+    , expected = valid_eval_msg
+  )
+  expect_identical(
+    object = any(grepl("train's auc\\:[0-9]+", log_txt))
+    , expected = train_eval_msg
+  )
+}
+
+.assert_has_expected_record_evals <- function(fitted_model, valids_should_include_train_set) {
+  record_evals <- fitted_model$record_evals
+  expect_equal(record_evals$start_iter, 1L)
+  if (inherits(fitted_model, "lgb.CVBooster")) {
+    expected_valid_auc <- c(0.979056, 0.9844697, 0.9900813, 0.9908026, 0.9935588)
+  } else {
+    expected_valid_auc <-  c(0.9805752, 0.9805752, 0.9934957, 0.9934957, 0.9949372)
+  }
+  expect_equal(
+    object = unlist(record_evals[["valid"]][["auc"]][["eval"]])
+    , expected = expected_valid_auc
+    , tolerance = TOLERANCE
+  )
+  if (isTRUE(valids_should_include_train_set)) {
+    expect_named(record_evals, c("start_iter", "valid", "train"), ignore.order = TRUE, ignore.case = FALSE)
+    expect_equal(
+      object = unlist(record_evals[["train"]][["auc"]][["eval"]])
+      , expected = c(0.9817835, 0.9817835, 0.9929513, 0.9929513, 0.9947141)
+      , tolerance = TOLERANCE
+    )
+    expect_equal(record_evals[["train"]][["auc"]][["eval_err"]], list())
+  } else {
+    expect_named(record_evals, c("start_iter", "valid"), ignore.order = TRUE, ignore.case = FALSE)
+  }
+  expect_equal(record_evals[["valid"]][["auc"]][["eval_err"]], list())
+}
+
+.train_for_verbosity_test <- function(train_function, verbose_kwarg, verbose_param) {
+  set.seed(708L)
+  nrounds <- 5L
+  params <- list(
+    num_leaves = 5L
+    , objective = "binary"
+    , metric =  "auc"
+    , early_stopping_round = nrounds
+  )
+  if (!is.null(verbose_param)) {
+    params[["verbose"]] <- verbose_param
+  }
+  train_kwargs <- list(
+    params = params
+    , nrounds = nrounds
+  )
+  if (!is.null(verbose_kwarg)) {
+    train_kwargs[["verbose"]] <- verbose_kwarg
+  }
+  function_name <- deparse(substitute(train_function))
+  if (function_name == "lgb.train") {
+    train_kwargs[["data"]] <- lgb.Dataset(
+      data = train$data
+      , label = train$label
+    )
+    train_kwargs[["valids"]] <- list(
+      "valid" = lgb.Dataset(data = test$data, label = test$label)
+    )
+  } else if (function_name == "lightgbm") {
+    train_kwargs[["data"]] <- train$data
+    train_kwargs[["label"]] <- train$label
+    train_kwargs[["valids"]] <- list(
+      "valid" = lgb.Dataset(data = test$data, label = test$label)
+    )
+  } else if (function_name == "lgb.cv") {
+    train_kwargs[["data"]] <- lgb.Dataset(
+      data = train$data
+      , label = train$label
+    )
+    train_kwargs[["nfold"]] <- 3L
+    train_kwargs[["showsd"]] <- FALSE
+  }
+  log_txt <- capture.output({
+    bst <- do.call(
+      what = train_function
+      , args = train_kwargs
+    )
+  })
+  return(list(booster = bst, logs = log_txt))
+}
+
+test_that("lgb.train() only prints eval metrics when expected to", {
+
+  # regardless of value passed to keyword argument 'verbose', value in params
+  # should take precedence
+  for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
+
+    # (verbose = -1) should not be any logs, should be record evals
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = -1L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = FALSE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose = 0) should be only WARN-level LightGBM logs
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 0L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = TRUE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+    out <- .train_for_verbosity_test(
+      train_function = lgb.train
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 1L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = TRUE
+      , lgb_warn = TRUE
+      , early_stopping = TRUE
+      , valid_eval_msg = TRUE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+  }
+
+  # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
+  # alter what messages are printed
+
+  # (verbose = -1) should not be any logs, should be record evals
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = -1L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = FALSE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose = 0) should be only WARN-level LightGBM logs
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = 0L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = TRUE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+  out <- .train_for_verbosity_test(
+    train_function = lgb.train
+    , verbose_kwarg = 1L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = TRUE
+    , lgb_warn = TRUE
+    , early_stopping = TRUE
+    , valid_eval_msg = TRUE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+})
+
+test_that("lightgbm() only prints eval metrics when expected to", {
+
+  # regardless of value passed to keyword argument 'verbose', value in params
+  # should take precedence
+  for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
+
+    # (verbose = -1) should not be any logs, train should not be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = -1L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = FALSE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 0L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = TRUE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
+    #               train should be in valids
+    out <- .train_for_verbosity_test(
+      train_function = lightgbm
+      , verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 1L
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = TRUE
+      , lgb_warn = TRUE
+      , early_stopping = TRUE
+      , valid_eval_msg = TRUE
+      , train_eval_msg = TRUE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = TRUE
+    )
+  }
+
+  # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
+  # alter what messages are printed
+
+  # (verbose = -1) should not be any logs, train should not be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = -1L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = FALSE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = 0L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = TRUE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
+  #               train should be in valids
+  out <- .train_for_verbosity_test(
+    train_function = lightgbm
+    , verbose_kwarg = 1L
+    , verbose_param = NULL
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = TRUE
+    , lgb_warn = TRUE
+    , early_stopping = TRUE
+    , valid_eval_msg = TRUE
+    , train_eval_msg = TRUE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = TRUE
+  )
+})
+
+test_that("lgb.cv() only prints eval metrics when expected to", {
+
+  # regardless of value passed to keyword argument 'verbose', value in params
+  # should take precedence
+  for (verbose_keyword_arg in c(-5L, -1L, 0L, 1L, 5L)) {
+
+    # (verbose = -1) should not be any logs, should be record evals
+    out <- .train_for_verbosity_test(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = -1L
+      , train_function = lgb.cv
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = FALSE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose = 0) should be only WARN-level LightGBM logs
+    out <- .train_for_verbosity_test(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 0L
+      , train_function = lgb.cv
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = FALSE
+      , lgb_warn = TRUE
+      , early_stopping = FALSE
+      , valid_eval_msg = FALSE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+
+    # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+    out <- .train_for_verbosity_test(
+      verbose_kwarg = verbose_keyword_arg
+      , verbose_param = 1L
+      , train_function = lgb.cv
+    )
+    .assert_has_expected_logs(
+      log_txt = out[["logs"]]
+      , lgb_info = TRUE
+      , lgb_warn = TRUE
+      , early_stopping = TRUE
+      , valid_eval_msg = TRUE
+      , train_eval_msg = FALSE
+    )
+    .assert_has_expected_record_evals(
+      fitted_model = out[["booster"]]
+      , valids_should_include_train_set = FALSE
+    )
+  }
+
+  # if verbosity isn't specified in `params`, changing keyword argument `verbose` should
+  # alter what messages are printed
+
+  # (verbose = -1) should not be any logs, should be record evals
+  out <- .train_for_verbosity_test(
+    verbose_kwarg = verbose_keyword_arg
+    , verbose_param = -1L
+    , train_function = lgb.cv
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = FALSE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose = 0) should be only WARN-level LightGBM logs
+  out <- .train_for_verbosity_test(
+    verbose_kwarg = verbose_keyword_arg
+    , verbose_param = 0L
+    , train_function = lgb.cv
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = FALSE
+    , lgb_warn = TRUE
+    , early_stopping = FALSE
+    , valid_eval_msg = FALSE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+
+  # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
+  out <- .train_for_verbosity_test(
+    verbose_kwarg = verbose_keyword_arg
+    , verbose_param = 1L
+    , train_function = lgb.cv
+  )
+  .assert_has_expected_logs(
+    log_txt = out[["logs"]]
+    , lgb_info = TRUE
+    , lgb_warn = TRUE
+    , early_stopping = TRUE
+    , valid_eval_msg = TRUE
+    , train_eval_msg = FALSE
+  )
+  .assert_has_expected_record_evals(
+    fitted_model = out[["booster"]]
+    , valids_should_include_train_set = FALSE
+  )
+})

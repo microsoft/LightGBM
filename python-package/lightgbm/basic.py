@@ -7,7 +7,6 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from logging import Logger
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
@@ -3185,7 +3184,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     A ``Dataset`` to evaluate.
@@ -3231,7 +3230,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The training dataset.
@@ -3262,7 +3261,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The validation dataset.
