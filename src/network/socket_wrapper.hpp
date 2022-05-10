@@ -59,7 +59,7 @@ const int INVALID_SOCKET = -1;
 
 #endif
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef(_WIN32)
 // existence of inet_pton is checked in CMakeLists.txt and configure.win, then stored in WIN_HAS_INET_PTON
 #ifndef WIN_HAS_INET_PTON
 inline int inet_pton(int af, const char *src, void *dst) {
