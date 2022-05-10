@@ -10,6 +10,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/threading.h>
 
 #include <vector>
 
@@ -67,12 +68,12 @@ class CostEfficientGradientBoosting {
 
   void BeforeTrain() {
     // clear the splits in splits_per_leaf_
-    const int num_total_splits = static_cast<int>(splits_per_leaf_.size());
-    const int num_threads = OMP_NUM_THREADS();
-    #pragma omp parallel for schedule(static) num_threads(num_threads)
-    for (int i = 0; i < num_total_splits; ++i) {
-      splits_per_leaf_[i].Reset();
-    }
+    Threading::For<size_t>(0, splits_per_leaf_.size(), 1024,
+      [this] (int /*thread_index*/, size_t start, size_t end) {
+      for (size_t i = start; i < end; ++i) {
+        splits_per_leaf_[i].Reset();
+      }
+    });
   }
 
   double DeltaGain(int feature_index, int real_fidx, int leaf_index,
