@@ -161,6 +161,11 @@ lightgbm <- function(data,
     , params = params
     , alternative_kwarg_value = num_threads
   )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
 
   # Set data to a temporary variable
   dtrain <- data
@@ -175,7 +180,7 @@ lightgbm <- function(data,
     , "data" = dtrain
     , "nrounds" = nrounds
     , "obj" = objective
-    , "verbose" = verbose
+    , "verbose" = params[["verbosity"]]
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
     , "init_model" = init_model
@@ -189,7 +194,7 @@ lightgbm <- function(data,
   }
 
   # Set validation as oneself
-  if (verbose > 0L) {
+  if (params[["verbosity"]] > 0L) {
     train_args[["valids"]][["train"]] <- dtrain
   }
 
