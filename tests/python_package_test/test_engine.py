@@ -975,7 +975,7 @@ def test_continue_train_different_feature_size():
         "objective": "regression",
         "num_trees": 10,
         "num_leaves": 31,
-        "verbose": 2,
+        "verbose": -1,
         'predict_disable_shape_check': True,
     }
     model = lgb.train(train_set=train_data, params=params)
