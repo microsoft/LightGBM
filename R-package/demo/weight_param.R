@@ -72,8 +72,6 @@ small_weight_loss <- as.numeric(model$record_evals$test$l2$eval)
 plot(small_weight_loss) # It learns!
 
 # Run 3: sum of weights equal to 6513 (x 1e5) with adjusted regularization (learning)
-# To make it better, we are first cleaning the environment and reloading LightGBM
-lgb.unloader(wipe = TRUE)
 
 # And now, we are doing as usual
 library(lightgbm)
