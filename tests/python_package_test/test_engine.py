@@ -972,8 +972,8 @@ def test_continue_train_multiclass():
 
 def test_continue_train_different_feature_size(capsys):
     np.random.seed(0)
-    train_X = np.random.randn(100, 10)
-    train_y = np.sum(train_X, axis=1)
+    train_X = np.hstack([np.ones(800).reshape(-1, 8), np.arange(200, 0, -1).reshape(-1, 2)])
+    train_y = np.sum(train_X[:, -2:], axis=1)
     train_data = lgb.Dataset(train_X, label=train_y)
     params = {
         "objective": "regression",
@@ -990,7 +990,7 @@ def test_continue_train_different_feature_size(capsys):
     params.update({"verbose": 2})
     lgb.train(train_set=train_data_cont, params=params, init_model=model)
     captured = capsys.readouterr()
-    assert captured.out.find("features found in continually trained model, but at least") != -1
+    assert captured.out.find("features found in dataset for continual training, but at least") != -1
 
 
 def test_cv():
