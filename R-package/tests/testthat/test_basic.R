@@ -156,6 +156,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         num_leaves = 5L
         , objective = "binary"
         , metric = "binary_error"
+        , verbose = VERBOSITY
     )
     , nrounds = nrounds
   )
@@ -173,6 +174,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         num_leaves = 5L
         , objective = "regression"
         , metric = "l2"
+        , verbose = VERBOSITY
     )
     , nrounds = nrounds
   )
@@ -206,6 +208,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       objective = "regression"
       , metric = "l2"
       , num_leaves = 5L
+      , verbose = VERBOSITY
     )
   )
 
@@ -218,6 +221,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
+      , verbose = VERBOSITY
     )
   )
 
@@ -231,6 +235,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , metric = "l2"
       , num_leaves = 5L
       , nrounds = nrounds
+      , verbose = VERBOSITY
     )
   )
 
@@ -335,6 +340,7 @@ test_that("cv works", {
     , metric = "l2,l1"
     , min_data = 1L
     , learning_rate = 1.0
+    , verbose = VERBOSITY
   )
   bst <- lgb.cv(
     params
@@ -431,6 +437,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , metric = "auc,binary_error"
       , learning_rate = 1.5
       , num_leaves = 5L
+      , verbose = VERBOSITY
     )
   )
   expect_true(methods::is(cv_bst, "lgb.CVBooster"))
@@ -491,6 +498,7 @@ test_that("lgb.cv() respects showsd argument", {
     objective = "regression"
     , metric = "l2"
     , min_data = 1L
+    , verbose = VERBOSITY
   )
   nrounds <- 5L
   set.seed(708L)
@@ -549,6 +557,7 @@ test_that("lgb.cv() respects parameter aliases for objective", {
       num_leaves = 5L
       , application = "binary"
       , num_iterations = nrounds
+      , verbose = VERBOSITY
     )
     , nfold = nfold
   )
@@ -600,6 +609,7 @@ test_that("lgb.cv() respects parameter aliases for metric", {
       , objective = "binary"
       , num_iterations = nrounds
       , metric_types = c("auc", "binary_logloss")
+      , verbose = VERBOSITY
     )
     , nfold = nfold
   )
@@ -616,6 +626,7 @@ test_that("lgb.cv() respects eval_train_metric argument", {
     objective = "regression"
     , metric = "l2"
     , min_data = 1L
+    , verbose = VERBOSITY
   )
   nrounds <- 5L
   set.seed(708L)
@@ -707,6 +718,7 @@ test_that("lgb.train() respects parameter aliases for objective", {
       num_leaves = 5L
       , application = "binary"
       , num_iterations = nrounds
+      , verbose = VERBOSITY
     )
     , valids = list(
       "the_training_data" = dtrain
@@ -755,6 +767,7 @@ test_that("lgb.train() respects parameter aliases for metric", {
       , objective = "binary"
       , num_iterations = nrounds
       , metric_types = c("auc", "binary_logloss")
+      , verbose = VERBOSITY
     )
     , valids = list(
       "train" = dtrain
@@ -1722,6 +1735,7 @@ test_that("lgb.train() works with integer, double, and numeric data", {
         , min_data_in_leaf = 1L
         , learning_rate = 0.01
         , seed = 708L
+        , verbose = VERBOSITY
       )
       , nrounds = nrounds
     )
@@ -2061,6 +2075,7 @@ test_that("lgb.cv() works when you specify both 'metric' and 'eval' with strings
     params = list(
       objective = "binary"
       , metric = "binary_error"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -2094,6 +2109,7 @@ test_that("lgb.cv() works when you give a function for eval", {
     params = list(
       objective = "binary"
       , metric = "None"
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nfold = nfolds
@@ -2119,6 +2135,7 @@ test_that("If first_metric_only is TRUE, lgb.cv() decides to stop early based on
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
@@ -2175,6 +2192,7 @@ test_that("early stopping works with lgb.cv()", {
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
+      , verbose = VERBOSITY
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
@@ -2620,7 +2638,11 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
+  params <- list(
+    objective = "regression"
+    , interaction_constraints = list(c(1L, 2L), 3L)
+    , verbose = VERBOSITY
+  )
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2629,7 +2651,11 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   pred1 <- bst$predict(test$data)
 
   cnames <- colnames(train$data)
-  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]]))
+  params <- list(
+    objective = "regression"
+    , interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]])
+    , verbose = VERBOSITY
+  )
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2637,7 +2663,11 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
   )
   pred2 <- bst$predict(test$data)
 
-  params <- list(objective = "regression", interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L))
+  params <- list(
+    objective = "regression"
+    , interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L)
+    , verbose = VERBOSITY
+  )
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2654,7 +2684,11 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   set.seed(1L)
   dtrain <- lgb.Dataset(train$data, label = train$label)
 
-  params <- list(objective = "regression", interaction_constraints = list(c(1L, 2L), 3L))
+  params <- list(
+    objective = "regression"
+    , interaction_constraints = list(c(1L, 2L), 3L)
+    , verbose = VERBOSITY
+  )
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2663,8 +2697,11 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   pred1 <- bst$predict(test$data)
 
   new_colnames <- paste0(colnames(train$data), "_x")
-  params <- list(objective = "regression"
-                 , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L]))
+  params <- list(
+    objective = "regression"
+    , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L])
+    , verbose = VERBOSITY
+  )
   bst <- lightgbm(
     data = dtrain
     , params = params
@@ -2807,6 +2844,7 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
         , monotone_constraints = c(1L, -1L, 0L)
         , monotone_constraints_method = monotone_constraints_method
         , use_missing = FALSE
+        , verbose = VERBOSITY
       )
       constrained_model <- lgb.train(
         params = params
@@ -2830,7 +2868,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
     , label = train$label
     , params = list(objective = "regression_l1")
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   expect_equal(bst1$params$objective, "regression_l1")
   model_txt_lines <- strsplit(
@@ -2845,7 +2883,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
     , label = train$label
     , objective = "regression_l1"
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   expect_equal(bst2$params$objective, "regression_l1")
   model_txt_lines <- strsplit(
@@ -2863,7 +2901,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     , objective = "regression"
     , params = list(objective = "regression_l1")
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   expect_equal(bst1$params$objective, "regression_l1")
   model_txt_lines <- strsplit(
@@ -2879,7 +2917,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     , objective = "regression"
     , params = list(loss = "regression_l1")
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   expect_equal(bst2$params$objective, "regression_l1")
   model_txt_lines <- strsplit(
@@ -2896,7 +2934,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , label = train$label
     , objective = "binary"
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   pred1 <- predict(bst1, train$data, rawscore = TRUE)
 
@@ -2906,7 +2944,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , init_score = pred1
     , objective = "binary"
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   pred2 <- predict(bst2, train$data, rawscore = TRUE)
 
@@ -2918,7 +2956,7 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
     data = train$data
     , label = train$label
     , nrounds = 5L
-    , verbose = -1L
+    , verbose = VERBOSITY
   )
   expect_equal(bst$params$objective, "regression")
   model_txt_lines <- strsplit(
