@@ -480,6 +480,7 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     eval_from_file <- bst$eval(
         data = lgb.Dataset(
             data = test_file
+            , params = list(verbose = VERBOSITY)
         )$construct()
         , name = "test"
     )
@@ -551,6 +552,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         train_set = Dataset$new(
             data = agaricus.train$data
             , label = agaricus.train$label
+            , params = list(verbose = VERBOSITY)
         )
     )
     expect_true(lgb.is.Booster(bst))
