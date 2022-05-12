@@ -104,7 +104,7 @@ class BinMapper {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+  void SaveBinaryToFile(BinaryWriter* writer) const;
 
   /*!
   * \brief Mapping bin into feature value
@@ -280,7 +280,7 @@ class Bin {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  virtual void SaveBinaryToFile(const VirtualFileWriter* writer) const = 0;
+  virtual void SaveBinaryToFile(BinaryWriter* writer) const = 0;
 
   /*!
   * \brief Load from memory

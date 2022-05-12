@@ -12,6 +12,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/byte_buffer.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -951,6 +952,12 @@ int LGBM_SampleIndices(int32_t num_total_row,
   API_END();
 }
 
+int LGBM_ByteBufferFree(ByteBufferHandle handle) {
+  API_BEGIN();
+  delete reinterpret_cast<LightGBM::ByteBuffer*>(handle);
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -995,6 +1002,29 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   API_END();
 }
 
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledData(double** sample_data,
+                                                        int** sample_indices,
+                                                        int32_t ncol,
+                                                        const int* num_per_col,
+                                                        int32_t num_sample_row,
+                                                        int32_t num_total_row,
+                                                        const char* parameters,
+                                                        DatasetHandle* out) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+  DatasetLoader loader(config, nullptr, 1, nullptr);
+  *out = loader.ConstructFromSampleData(sample_data,
+                                        sample_indices,
+                                        ncol,
+                                        num_per_col,
+                                        num_sample_row,
+                                        static_cast<data_size_t>(num_total_row));
+  API_END();
+}
+
 
 int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   int64_t num_total_row,
@@ -1007,12 +1037,40 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
   API_END();
 }
 
+int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
+                                              int32_t buffer_size,
+                                              int64_t num_row,
+                                              const char* parameters,
+                                              DatasetHandle* out) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+  DatasetLoader loader(config, nullptr, 1, nullptr);
+  *out = loader.LoadFromSerializedReference(static_cast<const char*>(buffer),
+                                            static_cast<size_t>(buffer_size),
+                                            static_cast<data_size_t>(num_row));
+  API_END();
+}
+
+// Kept for back compat with old signature and old behavior of Finish
 int LGBM_DatasetPushRows(DatasetHandle dataset,
                          const void* data,
                          int data_type,
                          int32_t nrow,
                          int32_t ncol,
                          int32_t start_row) {
+  return LGBM_DatasetPushRowBatch(dataset, data, data_type, nrow, ncol, start_row, 1);
+}
+
+int LGBM_DatasetPushRowBatch(DatasetHandle dataset,
+                         const void* data,
+                         int data_type,
+                         int32_t nrow,
+                         int32_t ncol,
+                         int32_t start_row,
+                         int mark_finished_if_last) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
@@ -1020,7 +1078,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1029,12 +1087,13 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (start_row + nrow == p_dataset->num_data()) {
+  if (mark_finished_if_last && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
   API_END();
 }
 
+// Kept for back compat with old signature and old behavior of Finish
 int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                               const void* indptr,
                               int indptr_type,
@@ -1045,6 +1104,19 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                               int64_t nelem,
                               int64_t,
                               int64_t start_row) {
+  return LGBM_DatasetPushRowBatchByCSR(dataset, indptr, indptr_type, indices, data, data_type, nindptr, nelem, start_row, 1);
+}
+
+int LGBM_DatasetPushRowBatchByCSR(DatasetHandle dataset,
+                              const void* indptr,
+                              int indptr_type,
+                              const int32_t* indices,
+                              const void* data,
+                              int data_type,
+                              int64_t nindptr,
+                              int64_t nelem,
+                              int64_t start_row,
+                              int mark_finished_if_last) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1062,9 +1134,16 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (start_row + nrow == static_cast<int64_t>(p_dataset->num_data())) {
+  if (mark_finished_if_last && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
   }
+  API_END();
+}
+
+int LGBM_DatasetMarkFinished(DatasetHandle dataset) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  p_dataset->FinishLoad();
   API_END();
 }
 
@@ -1473,6 +1552,18 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
   dataset->SaveBinaryFile(filename);
   API_END();
 }
+
+int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,
+                                           ByteBufferHandle* out) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  std::unique_ptr<LightGBM::ByteBuffer> ret;
+  ret.reset(new LightGBM::ByteBuffer());
+  dataset->SerializeReference(ret.get());
+  *out = ret.release();
+  API_END();
+}
+
 
 int LGBM_DatasetDumpText(DatasetHandle handle,
                          const char* filename) {

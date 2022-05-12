@@ -20,6 +20,8 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
+  LIGHTGBM_EXPORT Dataset* LoadFromSerializedReference(const char* buffer, size_t buffer_size, data_size_t num_data);
+
   LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 
   LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename) {
@@ -41,6 +43,8 @@ class DatasetLoader {
                                                         const std::unordered_set<int>& categorical_features);
 
  private:
+  void LoadHeaderFromMemory(Dataset* dataset, const char* buffer);
+
   Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   void SetHeader(const char* filename);

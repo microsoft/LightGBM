@@ -540,7 +540,7 @@ void Metadata::LoadFromMemory(const void* memory) {
   LoadQueryWeights();
 }
 
-void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+void Metadata::SaveBinaryToFile(VirtualFileWriter* writer) const {
   writer->AlignedWrite(&num_data_, sizeof(num_data_));
   writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
   writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
