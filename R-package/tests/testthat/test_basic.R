@@ -80,6 +80,12 @@ test_that("train and predict binary classification", {
         , metric = "binary_error"
     )
     , nrounds = nrounds
+    , valids = list(
+      "train" = lgb.Dataset(
+        data = train$data
+        , label = train$label
+      )
+    )
   )
   expect_false(is.null(bst$record_evals))
   record_results <- lgb.get.eval.result(bst, "train", "binary_error")
@@ -98,10 +104,11 @@ test_that("train and predict binary classification", {
 
 test_that("train and predict softmax", {
   set.seed(708L)
+  X_mat <- as.matrix(iris[, -5L])
   lb <- as.numeric(iris$Species) - 1L
 
   bst <- lightgbm(
-    data = as.matrix(iris[, -5L])
+    data = X_mat
     , label = lb
     , params = list(
         num_leaves = 4L
@@ -113,6 +120,12 @@ test_that("train and predict softmax", {
         , num_class = 3L
     )
     , nrounds = 20L
+    , valids = list(
+      "train" = lgb.Dataset(
+        data = X_mat
+        , label = lb
+      )
+    )
   )
 
   expect_false(is.null(bst$record_evals))
@@ -136,6 +149,12 @@ test_that("use of multiple eval metrics works", {
         , metric = metrics
     )
     , nrounds = 10L
+    , valids = list(
+      "train" = lgb.Dataset(
+        data = train$data
+        , label = train$label
+      )
+    )
   )
   expect_false(is.null(bst$record_evals))
   expect_named(
@@ -284,6 +303,10 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
     , valids = list(
       "valid1" = dvalid1
       , "valid2" = dvalid2
+      , "train" = lgb.Dataset(
+        data = train$data
+        , label = train$label
+      )
     )
   )
 
@@ -3044,7 +3067,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
 })
 
-.assert_has_expected_logs <- function(log_txt, lgb_info, lgb_warn, early_stopping, valid_eval_msg, train_eval_msg) {
+.assert_has_expected_logs <- function(log_txt, lgb_info, lgb_warn, early_stopping, valid_eval_msg) {
   expect_identical(
     object = any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt))
     , expected = lgb_info
@@ -3065,13 +3088,9 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     object = any(grepl("valid's auc\\:[0-9]+", log_txt))
     , expected = valid_eval_msg
   )
-  expect_identical(
-    object = any(grepl("train's auc\\:[0-9]+", log_txt))
-    , expected = train_eval_msg
-  )
 }
 
-.assert_has_expected_record_evals <- function(fitted_model, valids_should_include_train_set) {
+.assert_has_expected_record_evals <- function(fitted_model) {
   record_evals <- fitted_model$record_evals
   expect_equal(record_evals$start_iter, 1L)
   if (inherits(fitted_model, "lgb.CVBooster")) {
@@ -3084,17 +3103,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , expected = expected_valid_auc
     , tolerance = TOLERANCE
   )
-  if (isTRUE(valids_should_include_train_set)) {
-    expect_named(record_evals, c("start_iter", "valid", "train"), ignore.order = TRUE, ignore.case = FALSE)
-    expect_equal(
-      object = unlist(record_evals[["train"]][["auc"]][["eval"]])
-      , expected = c(0.9817835, 0.9817835, 0.9929513, 0.9929513, 0.9947141)
-      , tolerance = TOLERANCE
-    )
-    expect_equal(record_evals[["train"]][["auc"]][["eval_err"]], list())
-  } else {
-    expect_named(record_evals, c("start_iter", "valid"), ignore.order = TRUE, ignore.case = FALSE)
-  }
+   expect_named(record_evals, c("start_iter", "valid"), ignore.order = TRUE, ignore.case = FALSE)
   expect_equal(record_evals[["valid"]][["auc"]][["eval_err"]], list())
 }
 
@@ -3167,11 +3176,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , lgb_warn = FALSE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose = 0) should be only WARN-level LightGBM logs
@@ -3186,11 +3193,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
@@ -3205,11 +3210,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = TRUE
       , valid_eval_msg = TRUE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
   }
 
@@ -3228,11 +3231,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , lgb_warn = FALSE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose = 0) should be only WARN-level LightGBM logs
@@ -3247,11 +3248,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
@@ -3266,11 +3265,9 @@ test_that("lgb.train() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = TRUE
     , valid_eval_msg = TRUE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 })
 
@@ -3292,11 +3289,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , lgb_warn = FALSE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
@@ -3311,11 +3306,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
@@ -3331,11 +3324,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = TRUE
       , valid_eval_msg = TRUE
-      , train_eval_msg = TRUE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = TRUE
     )
   }
 
@@ -3354,11 +3345,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , lgb_warn = FALSE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose = 0) should be only WARN-level LightGBM logs, train should not be in valids
@@ -3373,11 +3362,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages, and
@@ -3393,11 +3380,9 @@ test_that("lightgbm() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = TRUE
     , valid_eval_msg = TRUE
-    , train_eval_msg = TRUE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = TRUE
   )
 })
 
@@ -3419,11 +3404,9 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
       , lgb_warn = FALSE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose = 0) should be only WARN-level LightGBM logs
@@ -3438,11 +3421,9 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = FALSE
       , valid_eval_msg = FALSE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
 
     # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
@@ -3457,11 +3438,9 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
       , lgb_warn = TRUE
       , early_stopping = TRUE
       , valid_eval_msg = TRUE
-      , train_eval_msg = FALSE
     )
     .assert_has_expected_record_evals(
       fitted_model = out[["booster"]]
-      , valids_should_include_train_set = FALSE
     )
   }
 
@@ -3480,11 +3459,9 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     , lgb_warn = FALSE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose = 0) should be only WARN-level LightGBM logs
@@ -3499,11 +3476,9 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = FALSE
     , valid_eval_msg = FALSE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 
   # (verbose > 0) should be INFO- and WARN-level LightGBM logs, and record eval messages
@@ -3518,10 +3493,8 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     , lgb_warn = TRUE
     , early_stopping = TRUE
     , valid_eval_msg = TRUE
-    , train_eval_msg = FALSE
   )
   .assert_has_expected_record_evals(
     fitted_model = out[["booster"]]
-    , valids_should_include_train_set = FALSE
   )
 })
