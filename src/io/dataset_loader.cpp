@@ -540,7 +540,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     read_cnt = reader->Read(buffer.data(), size_of_feature);
 
     if (read_cnt != size_of_feature) {
-      Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
+      Log::Fatal("Binary file error: feature %d is incorrect, read count: %zu", i, read_cnt);
     }
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
@@ -570,7 +570,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     for (int i = 0; i < dataset->num_data(); ++i) {
       read_cnt = reader->Read(buffer.data(), row_size);
       if (read_cnt != row_size) {
-        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
+        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %zu", i, read_cnt);
       }
       mem_ptr = buffer.data();
       const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
@@ -1332,7 +1332,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   } else {
     OMP_INIT_EX();
     // if need to prediction with initial model
-    std::vector<double> init_score(dataset->num_data_ * num_class_);
+    std::vector<double> init_score(static_cast<size_t>(dataset->num_data_) * num_class_);
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
@@ -1399,7 +1399,7 @@ void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* 
                                             const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
   if (predict_fun_) {
-    init_score = std::vector<double>(dataset->num_data_ * num_class_);
+    init_score = std::vector<double>(static_cast<size_t>(dataset->num_data_) * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score, &parser, &dataset]
@@ -1560,7 +1560,7 @@ void DatasetLoader::CheckCategoricalFeatureNumBin(
         for (size_t i = start; i < end; ++i) {
           thread_need_warning[thread_index] = false;
           const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
-          if (bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+          if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
             thread_need_warning[thread_index] = true;
             break;
           }

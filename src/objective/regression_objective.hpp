@@ -24,7 +24,7 @@ namespace LightGBM {
     for (data_size_t i = 0; i < cnt_data; ++i) {                          \
       ref_data[i] = data_reader(i);                                       \
     }                                                                     \
-    const double float_pos = (1.0f - alpha) * cnt_data;                   \
+    const double float_pos = static_cast<double>(1.0 - alpha) * cnt_data; \
     const data_size_t pos = static_cast<data_size_t>(float_pos);          \
     if (pos < 1) {                                                        \
       return ref_data[ArrayArgs<T>::ArgMax(ref_data)];                    \
@@ -135,7 +135,7 @@ class RegressionL2loss: public ObjectiveFunction {
     } else {
       #pragma omp parallel for schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        gradients[i] = static_cast<score_t>((score[i] - label_[i]) * weights_[i]);
+        gradients[i] = static_cast<score_t>(static_cast<score_t>((score[i] - label_[i])) * weights_[i]);
         hessians[i] = static_cast<score_t>(weights_[i]);
       }
     }
@@ -176,7 +176,7 @@ class RegressionL2loss: public ObjectiveFunction {
     if (weights_ != nullptr) {
       #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += label_[i] * weights_[i];
+        suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
@@ -330,7 +330,7 @@ class RegressionHuberLoss: public RegressionL2loss {
         if (std::abs(diff) <= alpha_) {
           gradients[i] = static_cast<score_t>(diff * weights_[i]);
         } else {
-          gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i] * alpha_);
+          gradients[i] = static_cast<score_t>(Common::Sign(diff) * static_cast<score_t>(weights_[i]) * alpha_);
         }
         hessians[i] = static_cast<score_t>(weights_[i]);
       }
