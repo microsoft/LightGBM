@@ -373,7 +373,7 @@ class LGBMModel(_LGBMModelBase):
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
-        n_jobs: Union[int, None] = None,
+        n_jobs: Optional[int] = None,
         importance_type: str = 'split',
         **kwargs
     ):
