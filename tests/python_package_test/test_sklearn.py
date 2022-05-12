@@ -1310,6 +1310,8 @@ def test_negative_n_jobs():
         return None
     val_minus_two = n_threads - 1
     X, y = load_breast_cancer(return_X_y=True)
+    # Note: according to joblib's formula, a value of n_jobs=-2 means
+    # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
     gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
     gbm.booster_.save_model("model.txt")
     with open("model.txt", "r") as f:

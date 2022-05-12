@@ -443,8 +443,8 @@ class LGBMModel(_LGBMModelBase):
             For better performance, it is recommended to set this to the number of physical cores
             in the CPU.
 
-            Negative integers are interpreted as following joblib's formula, just like scikit-learn
-            (so e.g. -1 means using all threads). A value of zero corresponds the default number of
+            Negative integers are interpreted as following joblib's formula (n_cpus + 1 + n_jobs), just like
+            scikit-learn (so e.g. -1 means using all threads). A value of zero corresponds the default number of
             threads configured for OpenMP in the system. A value of ``None`` (the default) corresponds
             to using the number of physical cores in the system (its correct detection requires
             either the ``joblib`` or the ``psutil`` util libraries to be installed).
