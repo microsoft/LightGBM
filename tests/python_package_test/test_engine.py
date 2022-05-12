@@ -3605,11 +3605,10 @@ def test_cegb_split_buffer_clean():
         'cegb_penalty_feature_coupled': 5 * np.arange(C),
         'cegb_penalty_split': 0.0002,
         'cegb_tradeoff': 10.0,
-        'num_threads': 16,
         'force_col_wise': True,
     }
 
     model = lgb.train(params, train, num_boost_round=10)
     predicts = model.predict(test_data)
-    rmse = np.sqrt(np.mean((predicts - test_y) ** 2))
+    rmse = np.sqrt(mean_squared_error(test_y, predicts))
     assert rmse < 10.0
