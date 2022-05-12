@@ -1314,7 +1314,7 @@ def test_negative_n_jobs():
     gbm.booster_.save_model("model.txt")
     with open("model.txt", "r") as f:
         model_txt = f.read()
-    assert bool(re.search(r"\[num_threads: %d\]" % val_minus_two, model_txt))
+    assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
 
 
 def test_default_n_jobs():
