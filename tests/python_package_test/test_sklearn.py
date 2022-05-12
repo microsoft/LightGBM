@@ -1324,4 +1324,4 @@ def test_default_n_jobs():
     gbm.booster_.save_model("model.txt")
     with open("model.txt", "r") as f:
         model_txt = f.read()
-    assert bool(re.search(r"\[num_threads: %d\]" % n_cores, model_txt))
+    assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
