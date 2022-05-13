@@ -2420,14 +2420,20 @@ def test_default_objective_and_metric():
     assert len(evals_result['valid_0']['l2']) == 5
 
 
-def test_multiclass_custom_objective():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
     def custom_obj(y_pred, ds):
         y_true = ds.get_label()
-        return sklearn_multiclass_custom_objective(y_true, y_pred)
+        weight = ds.get_weight()
+        grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
+        return grad, hess
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2)
     ds = lgb.Dataset(X, y)
+    if use_weight:
+        ds.set_weight(weight)
     params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
     builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
     builtin_obj_preds = builtin_obj_bst.predict(X)
@@ -2439,16 +2445,25 @@ def test_multiclass_custom_objective():
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
 
 
-def test_multiclass_custom_eval():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
     def custom_eval(y_pred, ds):
         y_true = ds.get_label()
-        return 'custom_logloss', log_loss(y_true, y_pred), False
+        weight = ds.get_weight()  # weight is None when not set
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    weight = np.full_like(y, 2)
+    X_train, X_valid, y_train, y_valid, weight_train, weight_valid = train_test_split(
+        X, y, weight, test_size=0.2, random_state=0
+    )
     train_ds = lgb.Dataset(X_train, y_train)
     valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+    if use_weight:
+        train_ds.set_weight(weight_train)
+        valid_ds.set_weight(weight_valid)
     params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
     eval_result = {}
     bst = lgb.train(

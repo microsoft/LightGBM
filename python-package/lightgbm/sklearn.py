@@ -54,7 +54,10 @@ class _ObjectiveFunctionWrapper:
         Parameters
         ----------
         func : callable
-            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
+            Expects a callable with following signatures:
+            ``func(y_true, y_pred)``,
+            ``func(y_true, y_pred, weight)``
+            or ``func(y_true, y_pred, weight, group)``
             and returns (grad, hess):
 
                 y_true : numpy 1-D array of shape = [n_samples]
@@ -63,6 +66,8 @@ class _ObjectiveFunctionWrapper:
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
+                weight : numpy 1-D array of shape = [n_samples]
+                    The weight of samples. Weights should be non-negative.
                 group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
@@ -107,19 +112,11 @@ class _ObjectiveFunctionWrapper:
         if argc == 2:
             grad, hess = self.func(labels, preds)
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_weight())
+        elif argc == 4:
+            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError(f"Self-defined objective function should have 2 or 3 arguments, got {argc}")
-        """weighted for objective"""
-        weight = dataset.get_weight()
-        if weight is not None:
-            if grad.ndim == 2:  # multi-class
-                num_data = grad.shape[0]
-                if weight.size != num_data:
-                    raise ValueError("grad and hess should be of shape [n_samples, n_classes]")
-                weight = weight.reshape(num_data, 1)
-            grad *= weight
-            hess *= weight
+            raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
 
 

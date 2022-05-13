@@ -1273,18 +1273,64 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     np.testing.assert_array_equal(preds_1d, preds_2d)
 
 
-def test_multiclass_custom_objective():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2) if use_weight else None
     params = {'n_estimators': 10, 'num_leaves': 7}
     builtin_obj_model = lgb.LGBMClassifier(**params)
-    builtin_obj_model.fit(X, y)
+    builtin_obj_model.fit(X, y, sample_weight=weight)
     builtin_obj_preds = builtin_obj_model.predict_proba(X)
 
     custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
-    custom_obj_model.fit(X, y)
+    custom_obj_model.fit(X, y, sample_weight=weight)
     custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
 
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
     assert not callable(builtin_obj_model.objective_)
     assert callable(custom_obj_model.objective_)
+
+
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
+    def custom_eval(y_true, y_pred, weight):
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    if use_weight:
+        weight = np.full_like(y, 2)
+        X_train, X_valid, y_train, y_valid, weight_train, weight_valid = train_test_split(
+            X, y, weight, test_size=0.2, random_state=0
+        )
+    else:
+        X_train, X_valid, y_train, y_valid = train_test_split(
+            X, y, test_size=0.2, random_state=0
+        )
+        weight_train = None
+        weight_valid = None
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    eval_result = {}
+    model = lgb.LGBMClassifier(**params)
+    model.fit(
+        X_train,
+        y_train,
+        sample_weight=weight_train,
+        eval_set=[(X_train, y_train), (X_valid, y_valid)],
+        eval_names=['train', 'valid'],
+        eval_sample_weight=[weight_train, weight_valid],
+        eval_metric=custom_eval,
+        callbacks=[lgb.record_evaluation(eval_result)],
+    )
+
+    train_ds = (X_train, y_train, weight_train)
+    valid_ds = (X_valid, y_valid, weight_valid)
+    for key, (X, y_true, weight) in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(
+            eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss']
+        )
+        y_pred = model.predict_proba(X)
+        _, metric_value, _ = custom_eval(y_true, y_pred, weight)
+        np.testing.assert_allclose(metric_value, eval_result[key]['custom_logloss'][-1])
