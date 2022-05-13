@@ -50,7 +50,7 @@ set to the iteration number of the best iteration.}
                 }
             }}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
@@ -63,7 +63,7 @@ set to the iteration number of the best iteration.}
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output}
 
 \item{serializable}{whether to make the resulting objects serializable through functions such as
 \code{save} or \code{saveRDS} (see section "Model serialization").}
