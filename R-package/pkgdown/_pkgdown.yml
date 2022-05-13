@@ -95,7 +95,3 @@ reference:
     - '`lgb.interprete`'
     - '`lgb.plot.importance`'
     - '`lgb.plot.interpretation`'
-  - title: Miscellaneous
-    desc: Ungroupable functions to troubleshoot LightGBM
-    contents:
-    - '`lgb.unloader`'

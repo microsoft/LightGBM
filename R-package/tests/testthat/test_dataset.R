@@ -564,3 +564,18 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   bins_by_default_name <- sapply(default_names, ds_no_names$get_feature_num_bin)
   expect_identical(bins_by_default_name, expected_num_bins)
 })
+
+test_that("lgb.Dataset can be constructed with categorical features and without colnames", {
+  # check that dataset can be constructed
+  raw_mat <- matrix(rep(c(0L, 1L), 50L), ncol = 1L)
+  ds <- lgb.Dataset(raw_mat, categorical_feature = 1L)$construct()
+  sparse_mat <- as(raw_mat, "dgCMatrix")
+  ds2 <- lgb.Dataset(sparse_mat, categorical_feature = 1L)$construct()
+  # check that the column names are NULL
+  expect_null(ds$.__enclos_env__$private$colnames)
+  expect_null(ds2$.__enclos_env__$private$colnames)
+  # check for error when index is greater than the number of columns
+  expect_error({
+    lgb.Dataset(raw_mat, categorical_feature = 2L)$construct()
+  }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
+})
