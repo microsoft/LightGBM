@@ -117,7 +117,7 @@ class CrossEntropy: public ObjectiveFunction {
       #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += label_[i] * weights_[i];
+        suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
@@ -247,7 +247,7 @@ class CrossEntropyLambda: public ObjectiveFunction {
       #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
 
       for (data_size_t i = 0; i < num_data_; ++i) {
-        suml += label_[i] * weights_[i];
+        suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {

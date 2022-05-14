@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer
+from .utils import dummy_obj, load_breast_cancer, mse_obj
 
 
 def test_basic(tmp_path):
@@ -513,6 +513,36 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+@pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
+def test_choose_param_value_objective(objective_alias):
+    # If callable is found in objective
+    params = {objective_alias: dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=None
+    )
+    assert params['objective'] == dummy_obj
+
+    # Value in params should be preferred to the default_value passed from keyword arguments
+    params = {objective_alias: dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == dummy_obj
+
+    # None of objective or its aliases in params, but default_value is callable.
+    params = {}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == mse_obj
+
+
 @pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_list_to_1d_numpy(collection, dtype):
@@ -644,6 +674,16 @@ def test_feature_num_bin(min_data_in_bin):
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    # check for feature indices outside of range
+    num_features = X.shape[1]
+    with pytest.raises(
+        lgb.basic.LightGBMError,
+        match=(
+            f'Tried to retrieve number of bins for feature index {num_features}, '
+            f'but the valid feature indices are \\[0, {num_features - 1}\\].'
+        )
+    ):
+        ds.feature_num_bin(num_features)
 
 
 def test_feature_num_bin_with_max_bin_by_feature():

@@ -83,6 +83,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , label_gain = "0,1,3"
         , min_data = 1L
         , learning_rate = 0.01
+        , verbose = VERBOSITY
     )
     nfold <- 4L
     nrounds <- 10L
