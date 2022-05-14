@@ -162,7 +162,7 @@ test_that("Sparse feature contribution predictions do not take inputs with wrong
       , params = list(min_data_in_leaf = 5L)
     )
 
-    X_wrong <- X[, c(1L:10, 1L:10L)]
+    X_wrong <- X[, c(1L:10L, 1L:10L)]
     X_wrong <- as(X_wrong, "CsparseMatrix")
     expect_error(predict(bst, X_wrong, predcontrib = TRUE))
 
