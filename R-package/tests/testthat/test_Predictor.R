@@ -162,7 +162,7 @@ test_that("Sparse feature contribution predictions do not take inputs with wrong
       , params = list(min_data_in_leaf = 5L)
     )
 
-    X_wrong <- cbind(X, X)
+    X_wrong <- X[, c(1L:10:, 1L:10L)]
     X_wrong <- as(X_wrong, "CsparseMatrix")
     expect_error(predict(bst, X_wrong, predcontrib = TRUE))
 
@@ -183,7 +183,7 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
     SmatC <- as(Dmat, "sparseMatrix")
     SmatR <- as(SmatC, "RsparseMatrix")
 
-    dtrain <- lgb.Dataset(Dmat, label = y, params = list(max_bins = 5L))
+    dtrain <- lgb.Dataset(as.matrix(Dmat), label = y, params = list(max_bins = 5L))
     bst <- lgb.train(
       data = dtrain
       , obj = "regression"
