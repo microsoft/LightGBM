@@ -149,6 +149,53 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
     expect_equal(Matrix::t(as(pred_spv, "CsparseMatrix")), unname(pred_csc[1L, , drop = FALSE]))
 })
 
+test_that("Sparse feature contribution predictions do not take inputs with wrong number of columns", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
+    )
+
+    X_wrong <- cbind(X, X)
+    X_wrong <- as(X_wrong, "CsparseMatrix")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE))
+
+    X_wrong <- as(X_wrong, "RsparseMatrix")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE))
+
+    X_wrong <- as(X_wrong, "CsparseMatrix")
+    X_wrong <- X_wrong[, 1L:3L]
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE))
+})
+
+test_that("Feature contribution predictions do not take non-general CSR or CSC inputs", {
+    set.seed(123L)
+    y <- runif(25L)
+    Dmat <- matrix(runif(625L), nrow = 25L, ncol = 25L)
+    Dmat <- crossprod(Dmat)
+    Dmat <- as(Dmat, "symmetricMatrix")
+    SmatC <- as(Dmat, "sparseMatrix")
+    SmatR <- as(SmatC, "RsparseMatrix")
+
+    dtrain <- lgb.Dataset(Dmat, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
+    )
+
+    expect_error(predict(bst, SmatC, predcontrib = TRUE))
+    expect_error(predict(bst, SmatR, predcontrib = TRUE))
+})
+
 test_that("predict() params should override keyword argument for raw-score predictions", {
   data(agaricus.train, package = "lightgbm")
   X <- agaricus.train$data
