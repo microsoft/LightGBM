@@ -179,7 +179,7 @@ except ImportError:
 try:
     from joblib import cpu_count
 
-    def _LGBMCpuCount(only_physical_cores: bool=True):
+    def _LGBMCpuCount(only_physical_cores: bool = True):
         return cpu_count(only_physical_cores=only_physical_cores)
 except ImportError:
     try:
