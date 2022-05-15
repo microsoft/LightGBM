@@ -18,7 +18,7 @@
 # main C++ code
 include/    @guolinke @shiyu1994
 src/    @guolinke @shiyu1994
-CMakeLists.txt    @guolinke @jameslamb @StrikerRUS @huanzhang12 @shiyu1994
+CMakeLists.txt    @guolinke @jameslamb @StrikerRUS @shiyu1994
 tests/c_api_test/    @guolinke @shiyu1994
 tests/cpp_tests/    @guolinke @shiyu1994
 tests/data/    @guolinke @shiyu1994
@@ -49,14 +49,14 @@ examples/     @StrikerRUS @jameslamb @guolinke @jmoralez
 # docker setup
 docker/    @StrikerRUS @jameslamb
 docker/dockerfile-cli    @guolinke @shiyu1994 @StrikerRUS @jameslamb
-docker/gpu/    @huanzhang12 @StrikerRUS @jameslamb
+docker/gpu/    @StrikerRUS @jameslamb
 docker/dockerfile-python    @StrikerRUS @shiyu1994 @jameslamb @jmoralez
 docker/dockerfile-r    @jameslamb @jmoralez
 
 # GPU code
-docs/GPU-*.rst    @huanzhang12 @shiyu1994 @guolinke
-src/treelearner/gpu_tree_learner.cpp    @huanzhang12 @guolinke @shiyu1994
-src/treelearner/tree_learner.cpp    @huanzhang12 @guolinke @shiyu1994
+docs/GPU-*.rst    @shiyu1994 @guolinke
+src/treelearner/gpu_tree_learner.cpp    @guolinke @shiyu1994
+src/treelearner/tree_learner.cpp    @guolinke @shiyu1994
 
 # JAVA code
 swig/    @guolinke @shiyu1994
