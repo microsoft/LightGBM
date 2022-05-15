@@ -658,7 +658,7 @@ class LGBMModel(_LGBMModelBase):
 
         Parameters
         ----------
-        n_jobs : int
+        n_jobs : int or None
             The original value of n_jobs, potentially having special values such as 'None' or
             negative integers.
 
