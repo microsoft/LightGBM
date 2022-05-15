@@ -654,7 +654,7 @@ class LGBMModel(_LGBMModelBase):
         return params
 
     def _process_n_jobs(self, n_jobs: int):
-        """Convert special values of n_jobs to their actual values according to the formulas that apply
+        """Convert special values of n_jobs to their actual values according to the formulas that apply.
 
         Parameters
         ----------
