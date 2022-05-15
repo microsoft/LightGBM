@@ -174,3 +174,21 @@ except ImportError:
 
         def __init__(self, *args, **kwargs):
             pass
+
+"""cpu_count()"""
+try:
+    from joblib import cpu_count
+
+    def _LGBMCpuCount(only_physical_cores: bool=True):
+        return cpu_count(only_physical_cores=only_physical_cores)
+except ImportError:
+    try:
+        from psutil import cpu_count
+
+        def _LGBMCpuCount():
+            return cpu_count(logical=only_physical_cores)
+    except ImportError:
+        from multiprocessing import cpu_count
+
+        def _LGBMCpuCount():
+            return cpu_count()

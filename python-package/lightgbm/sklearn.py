@@ -11,19 +11,8 @@ from .callback import record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame)
+                     pd_DataFrame, _LGBMCpuCount)
 from .engine import train
-
-try:
-    from joblib import cpu_count
-    cpu_count_lib = "joblib"
-except ImportError:
-    try:
-        from psutil import cpu_count
-        cpu_count_lib = "psutil"
-    except ImportError:
-        from multiprocessing import cpu_count
-        cpu_count_lib = "multiprocessing"
 
 _EvalResultType = Tuple[str, float, bool]
 
@@ -657,25 +646,33 @@ class LGBMModel(_LGBMModelBase):
         params = _choose_param_value("metric", params, original_metric)
 
         # use joblib conventions for negative n_jobs, just like scikit-learn
-        n_jobs = self.n_jobs
+        # at predict time, this is handled later due to the order of parameter updates
         if stage == "fit":
-            del params["n_jobs"]
-        num_threads_aliases = _ConfigAliases.get("num_threads")
-        for alias in num_threads_aliases:
-            if alias in params:
-                n_jobs = params.pop(alias)
-        if n_jobs is None or n_jobs < 0:
-            if n_jobs is None:
-                if cpu_count_lib == "joblib":
-                    params["num_threads"] = cpu_count(only_physical_cores=True)
-                elif cpu_count_lib == "psutil":
-                    params["num_threads"] = cpu_count(logical=False)
-                else:
-                    params["num_threads"] = cpu_count()
-            elif n_jobs < 0:
-                params["num_threads"] = max(cpu_count() + 1 + self.n_jobs, 1)
+            params = _choose_param_value("num_threads", params, self.n_jobs)
+            params["num_threads"] = self._process_n_jobs(params["num_threads"])
 
         return params
+
+    def _process_n_jobs(self, n_jobs: int):
+        """
+        Convert special values of n_jobs to their actual values according to the formulas that apply
+
+        Parameters
+        ----------
+        n_jobs : int
+            The original value of n_jobs, Potentially having special values such as 'None' or
+            negative integers.
+
+        Returns
+        -------
+        n_jobs : int
+            The value of n_jobs with special values converted to actual number of threads.
+        """
+        if n_jobs is None:
+            n_jobs = _LGBMCpuCount(only_physical_cores=True)
+        elif n_jobs < 0:
+            n_jobs = max(_LGBMCpuCount(only_physical_cores=False) + 1 + n_jobs, 1)
+        return n_jobs
 
     def fit(
         self,
@@ -852,6 +849,12 @@ class LGBMModel(_LGBMModelBase):
         ):
             predict_params.pop(alias, None)
         predict_params.update(kwargs)
+
+        # number of threads can have values with special meaning which is only applied
+        # in the scikit-learn interface, these should not reach the c++ side as-is
+        predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
+        predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
+
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
 
