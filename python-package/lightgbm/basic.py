@@ -1353,7 +1353,7 @@ class Dataset:
 
         Returns
         -------
-        params : dict or None
+        params : dict
             The used parameters in this Dataset object.
         """
         if self.params is not None:
@@ -1380,6 +1380,8 @@ class Dataset:
                                                 "weight_column",
                                                 "zero_as_missing")
             return {k: v for k, v in self.params.items() if k in dataset_params}
+        else:
+            return {}
 
     def _free_handle(self):
         if self.handle is not None:
