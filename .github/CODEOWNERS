@@ -10,7 +10,7 @@
 *    @guolinke @StrikerRUS @jameslamb @shiyu1994
 
 # other catch-alls that will get matched if specific rules below are not matched
-*.R    @Laurae2 @jameslamb @jmoralez
+*.R    @jameslamb @jmoralez
 *.py    @StrikerRUS @jmoralez @jameslamb @shiyu1994 @hzy46 @tongwu-msft
 *.cpp    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
 *.h    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
@@ -18,7 +18,7 @@
 # main C++ code
 include/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
 src/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
-CMakeLists.txt    @guolinke @Laurae2 @jameslamb @StrikerRUS @huanzhang12 @btrotta @shiyu1994 @hzy46 @tongwu-msft
+CMakeLists.txt    @guolinke @jameslamb @StrikerRUS @huanzhang12 @btrotta @shiyu1994 @hzy46 @tongwu-msft
 tests/c_api_test/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
 tests/cpp_tests/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
 tests/data/    @guolinke @btrotta @shiyu1994 @hzy46 @tongwu-msft
@@ -27,7 +27,7 @@ windows/    @guolinke @btrotta @StrikerRUS @shiyu1994 @hzy46 @tongwu-msft
 # R code
 build_r.R    @jameslamb @StrikerRUS @jmoralez
 build-cran-package.sh    @jameslamb @StrikerRUS @jmoralez
-R-package/    @Laurae2 @jameslamb @jmoralez
+R-package/    @jameslamb @jmoralez
 
 # Python code
 python-package/    @StrikerRUS @shiyu1994 @jameslamb @hzy46 @tongwu-msft @jmoralez
@@ -51,7 +51,7 @@ docker/    @StrikerRUS @jameslamb
 docker/dockerfile-cli    @guolinke @shiyu1994 @StrikerRUS @jameslamb
 docker/gpu/    @huanzhang12 @StrikerRUS @jameslamb
 docker/dockerfile-python    @StrikerRUS @shiyu1994 @jameslamb @jmoralez
-docker/dockerfile-r    @Laurae2 @jameslamb @jmoralez
+docker/dockerfile-r    @jameslamb @jmoralez
 
 # GPU code
 docs/GPU-*.rst    @huanzhang12 @shiyu1994 @guolinke
