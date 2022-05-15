@@ -8,10 +8,23 @@ import numpy as np
 
 from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _log_warning
 from .callback import record_evaluation
-from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
-                     _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
-                     _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase,
-                     _LGBMRegressorBase, dt_DataTable, pd_DataFrame)
+from .compat import (
+    SKLEARN_INSTALLED,
+    LGBMNotFittedError,
+    _LGBMAssertAllFinite,
+    _LGBMCheckArray,
+    _LGBMCheckClassificationTargets,
+    _LGBMCheckSampleWeight,
+    _LGBMCheckXY,
+    _LGBMClassifierBase,
+    _LGBMComputeSampleWeight,
+    _LGBMCpuCount,
+    _LGBMLabelEncoder,
+    _LGBMModelBase,
+    _LGBMRegressorBase,
+    dt_DataTable,
+    pd_DataFrame,
+)
 from .engine import train
 
 _EvalResultType = Tuple[str, float, bool]
