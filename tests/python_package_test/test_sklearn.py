@@ -1308,6 +1308,7 @@ def test_negative_n_jobs():
     n_threads = joblib.cpu_count()
     if n_threads <= 1:
         return None
+    # 'val_minus_two' here is the expected number of threads for n_jobs=-2
     val_minus_two = n_threads - 1
     X, y = load_breast_cancer(return_X_y=True)
     # Note: according to joblib's formula, a value of n_jobs=-2 means
