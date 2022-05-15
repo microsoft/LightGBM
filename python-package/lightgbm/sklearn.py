@@ -10,8 +10,8 @@ from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _Config
 from .callback import record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
-                     _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame, _LGBMCpuCount)
+                     _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase,
+                     _LGBMRegressorBase, dt_DataTable, pd_DataFrame)
 from .engine import train
 
 _EvalResultType = Tuple[str, float, bool]
