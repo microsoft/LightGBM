@@ -12,17 +12,17 @@
 # other catch-alls that will get matched if specific rules below are not matched
 *.R    @jameslamb @jmoralez
 *.py    @StrikerRUS @jmoralez @jameslamb @shiyu1994
-*.cpp    @guolinke @btrotta @shiyu1994
-*.h    @guolinke @btrotta @shiyu1994
+*.cpp    @guolinke @shiyu1994
+*.h    @guolinke @shiyu1994
 
 # main C++ code
-include/    @guolinke @btrotta @shiyu1994
-src/    @guolinke @btrotta @shiyu1994
-CMakeLists.txt    @guolinke @jameslamb @StrikerRUS @huanzhang12 @btrotta @shiyu1994
-tests/c_api_test/    @guolinke @btrotta @shiyu1994
-tests/cpp_tests/    @guolinke @btrotta @shiyu1994
-tests/data/    @guolinke @btrotta @shiyu1994
-windows/    @guolinke @btrotta @StrikerRUS @shiyu1994
+include/    @guolinke @shiyu1994
+src/    @guolinke @shiyu1994
+CMakeLists.txt    @guolinke @jameslamb @StrikerRUS @huanzhang12 @shiyu1994
+tests/c_api_test/    @guolinke @shiyu1994
+tests/cpp_tests/    @guolinke @shiyu1994
+tests/data/    @guolinke @shiyu1994
+windows/    @guolinke @StrikerRUS @shiyu1994
 
 # R code
 build_r.R    @jameslamb @StrikerRUS @jmoralez
