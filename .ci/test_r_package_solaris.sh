@@ -10,7 +10,7 @@ apt-get install --no-install-recommends -y \
 RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'rhub', 'testthat'), dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
 
 sh build-cran-package.sh \
-    --r-executable=RDvalgrind \
+    --r-executable=RD \
     || exit -1
 
 log_file="rhub_logs.txt"
