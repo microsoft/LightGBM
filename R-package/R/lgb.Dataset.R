@@ -289,9 +289,12 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
-      # If the data didn't have feature names we take the ones defined at cpp side
-      # otherwise we just overwrite them
-      self$get_colnames()
+      # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
+      # in cases like constructing from a file or from a matrix with no column names.
+      private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
+      )
 
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
