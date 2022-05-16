@@ -43,7 +43,7 @@
 #'                     These should follow the requirements from the descriptions above.
 #'                 }
 #'             }
-#' @param eval_freq evaluation output frequency
+#' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
@@ -51,7 +51,8 @@
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
-#' @param verbose verbosity for output
+#' @param verbose verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+#'                printing of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
 #'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
