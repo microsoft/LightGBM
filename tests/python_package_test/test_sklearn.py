@@ -1,6 +1,7 @@
 # coding: utf-8
 import itertools
 import math
+from functools import partial
 from os import getenv
 from pathlib import Path
 
@@ -1300,19 +1301,15 @@ def test_multiclass_custom_eval(use_weight):
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    train_test_split_func = partial(train_test_split, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split_func(X, y)
     if use_weight:
         weight = np.full_like(y, 2)
-        X_train, X_valid, y_train, y_valid, weight_train, weight_valid = train_test_split(
-            X, y, weight, test_size=0.2, random_state=0
-        )
+        weight_train, weight_valid = train_test_split_func(weight)
     else:
-        X_train, X_valid, y_train, y_valid = train_test_split(
-            X, y, test_size=0.2, random_state=0
-        )
         weight_train = None
         weight_valid = None
     params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
-    eval_result = {}
     model = lgb.LGBMClassifier(**params)
     model.fit(
         X_train,
@@ -1322,9 +1319,8 @@ def test_multiclass_custom_eval(use_weight):
         eval_names=['train', 'valid'],
         eval_sample_weight=[weight_train, weight_valid],
         eval_metric=custom_eval,
-        callbacks=[lgb.record_evaluation(eval_result)],
     )
-
+    eval_result = model.evals_result_
     train_ds = (X_train, y_train, weight_train)
     valid_ds = (X_valid, y_valid, weight_valid)
     for key, (X, y_true, weight) in zip(['train', 'valid'], [train_ds, valid_ds]):

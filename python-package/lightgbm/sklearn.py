@@ -25,6 +25,10 @@ _LGBM_ScikitCustomObjectiveFunction = Union[
         [np.ndarray, np.ndarray, np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
+    Callable[
+        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray]
+    ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     Callable[
@@ -440,8 +444,9 @@ class LGBMModel(_LGBMModelBase):
         ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
-        ``objective(y_true, y_pred) -> grad, hess`` or
-        ``objective(y_true, y_pred, group) -> grad, hess``:
+        ``objective(y_true, y_pred) -> grad, hess``,
+        ``objective(y_true, y_pred, weight) -> grad, hess``
+        or ``objective(y_true, y_pred, weight, group) -> grad, hess``:
 
             y_true : numpy 1-D array of shape = [n_samples]
                 The target values.
@@ -449,6 +454,8 @@ class LGBMModel(_LGBMModelBase):
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
+            weight : numpy 1-D array of shape = [n_samples]
+                The weight of samples. Weights should be non-negative.
             group : numpy 1-D array
                 Group/query data.
                 Only used in the learning-to-rank task.
