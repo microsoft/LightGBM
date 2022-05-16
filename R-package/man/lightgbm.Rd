@@ -37,7 +37,8 @@ the "Parameters" section of the documentation} for a list of parameters and vali
 
 \item{nrounds}{number of training rounds}
 
-\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
 \item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
