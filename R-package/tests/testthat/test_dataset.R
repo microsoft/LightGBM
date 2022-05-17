@@ -533,10 +533,16 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
     , three_vals = c(rep(c(0.0, 1.0, 2.0), 33L), 0.0)
     , two_vals_plus_missing = c(rep(c(1.0, 2.0), 49L), NA_real_, NA_real_)
     , all_zero = rep(0.0, 100L)
+    , categorical = sample.int(2L, 100L, replace = TRUE)
   )
+  n_features <- ncol(raw_df)
   raw_mat <- data.matrix(raw_df)
   min_data_in_bin <- 2L
-  ds <- lgb.Dataset(raw_mat, params = list(min_data_in_bin = min_data_in_bin))
+  ds <- lgb.Dataset(
+    raw_mat
+    , params = list(min_data_in_bin = min_data_in_bin)
+    , categorical_feature = n_features
+  )
   ds$construct()
   expected_num_bins <- c(
     100L %/% min_data_in_bin + 1L  # extra bin for zero
@@ -544,9 +550,30 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
     , 3L  # 0, 1, 2
     , 4L  # 0, 1, 2 + NA
     , 0L  # unused
+    , 3L  # 1, 2 + NA
   )
-  actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
+  actual_num_bins <- sapply(1L:n_features, ds$get_feature_num_bin)
   expect_identical(actual_num_bins, expected_num_bins)
+  # test using defined feature names
+  bins_by_name <- sapply(colnames(raw_mat), ds$get_feature_num_bin)
+  expect_identical(unname(bins_by_name), expected_num_bins)
+  # test using default feature names
+  no_names_mat <- raw_mat
+  colnames(no_names_mat) <- NULL
+  ds_no_names <- lgb.Dataset(
+    no_names_mat
+    , params = list(min_data_in_bin = min_data_in_bin)
+    , categorical_feature = n_features
+  )
+  ds_no_names$construct()
+  default_names <- lapply(
+    X = seq(1L, ncol(raw_mat))
+    , FUN = function(i) {
+      sprintf("Column_%d", i - 1L)
+    }
+  )
+  bins_by_default_name <- sapply(default_names, ds_no_names$get_feature_num_bin)
+  expect_identical(bins_by_default_name, expected_num_bins)
 })
 
 test_that("lgb.Dataset can be constructed with categorical features and without colnames", {
@@ -555,9 +582,9 @@ test_that("lgb.Dataset can be constructed with categorical features and without 
   ds <- lgb.Dataset(raw_mat, categorical_feature = 1L)$construct()
   sparse_mat <- as(raw_mat, "dgCMatrix")
   ds2 <- lgb.Dataset(sparse_mat, categorical_feature = 1L)$construct()
-  # check that the column names are NULL
-  expect_null(ds$.__enclos_env__$private$colnames)
-  expect_null(ds2$.__enclos_env__$private$colnames)
+  # check that the column names are the default ones
+  expect_equal(ds$.__enclos_env__$private$colnames, "Column_0")
+  expect_equal(ds2$.__enclos_env__$private$colnames, "Column_0")
   # check for error when index is greater than the number of columns
   expect_error({
     lgb.Dataset(raw_mat, categorical_feature = 2L)$construct()
