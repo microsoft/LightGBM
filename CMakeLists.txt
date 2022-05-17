@@ -165,11 +165,11 @@ if(USE_GPU)
 endif()
 
 if(__INTEGRATE_OPENCL)
-    if(WIN32)
+    if(APPLE)
+        message(FATAL_ERROR "Integrated OpenCL build is not available on macOS")
+    else()
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
-    else()
-        message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
     endif()
 endif()
 
@@ -523,7 +523,7 @@ if(__INTEGRATE_OPENCL)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
 if(USE_CUDA OR USE_CUDA_EXP)
