@@ -655,6 +655,17 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype):
     assert np.shares_memory(X, built_data)
 
 
+def test_categorical_code_conversion_doesnt_modify_original_data():
+    pd = pytest.importorskip('pandas')
+    X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
+    df = pd.DataFrame(X.copy(), columns=['x1'], dtype='category')
+    data = lgb.basic._data_from_pandas(df, ['x1'], None, None)[0]
+    # check that the original data wasn't modified
+    np.testing.assert_equal(df['x1'], X[:, 0])
+    # check that the built data has the codes
+    np.testing.assert_equal(df['x1'].cat.codes, data[:, 0])
+
+
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])
 def test_feature_num_bin(min_data_in_bin):
     X = np.vstack([

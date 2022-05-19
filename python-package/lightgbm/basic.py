@@ -549,7 +549,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
-            data = data.copy()  # not alter origin DataFrame
+            data = data.copy(deep=False)  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
