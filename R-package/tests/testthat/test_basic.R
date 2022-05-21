@@ -78,6 +78,7 @@ test_that("train and predict binary classification", {
         num_leaves = 5L
         , objective = "binary"
         , metric = "binary_error"
+        , verbose = VERBOSITY
     )
     , nrounds = nrounds
     , valids = list(
@@ -118,6 +119,7 @@ test_that("train and predict softmax", {
         , objective = "multiclass"
         , metric = "multi_error"
         , num_class = 3L
+        , verbose = VERBOSITY
     )
     , nrounds = 20L
     , valids = list(
@@ -147,6 +149,7 @@ test_that("use of multiple eval metrics works", {
         , learning_rate = 1.0
         , objective = "binary"
         , metric = metrics
+        , verbose = VERBOSITY
     )
     , nrounds = 10L
     , valids = list(
@@ -298,6 +301,7 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
             "binary_error"
             , "auc"
         )
+        , verbose = VERBOSITY
     )
     , nrounds = nrounds
     , valids = list(

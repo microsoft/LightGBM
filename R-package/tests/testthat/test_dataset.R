@@ -12,7 +12,13 @@ test_label <- agaricus.test$label[1L:100L]
 
 test_that("lgb.Dataset: basic construction, saving, loading", {
   # from sparse matrix
-  dtest1 <- lgb.Dataset(test_data, label = test_label)
+  dtest1 <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = list(
+      verbose = VERBOSITY
+    )
+  )
   # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
@@ -21,7 +27,12 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   tmp_file <- tempfile("lgb.Dataset_")
   lgb.Dataset.save(dtest1, tmp_file)
   # read from a local file
-  dtest3 <- lgb.Dataset(tmp_file)
+  dtest3 <- lgb.Dataset(
+    tmp_file
+    , params = list(
+      verbose = VERBOSITY
+    )
+  )
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
@@ -358,6 +369,9 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(
+      verbose = VERBOSITY
+    )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -389,6 +403,9 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(
+      verbosity = VERBOSITY
+    )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -404,6 +421,8 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , num_iterations = 5L
+    , verbosity = VERBOSITY
   )
 
   # should be able to train right away
@@ -446,7 +465,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = TRUE)
+    , params = list(
+      header = TRUE
+      , verbosity = VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("x1", "x2"))
@@ -467,7 +489,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = FALSE)
+    , params = list(
+      header = FALSE
+      , verbosity = VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))
