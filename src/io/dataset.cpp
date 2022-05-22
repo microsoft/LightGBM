@@ -438,6 +438,54 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   gpu_device_id_ = io_config.gpu_device_id;
 }
 
+void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
+  data_size_t num_total_rows = 0;
+  data_size_t current_index = 0;
+  for (int i = 0; i < nsources; ++i) {
+    num_total_rows += sources[i]->num_pushed_rows();
+    CHECK_EQ(num_groups_, sources[i]->num_groups_);
+  }
+
+  // This Dataset should be sized as the total coalesced size
+  CHECK_EQ(num_data_, num_total_rows);
+
+  for (int i = 0; i < nsources; ++i) {
+    AppendOneDataset(sources[i], current_index);
+    current_index += sources[i]->num_pushed_rows();
+  }
+
+  FinishLoad();
+  metadata_.FinishCoalesce();
+
+  // TODO CUDA changes?
+}
+
+void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start_index) {
+  data_size_t source_size = source->num_pushed_rows();
+
+  OMP_INIT_EX();
+  #pragma omp parallel for schedule(static)
+  for (int group = 0; group < num_groups_; ++group) {
+    OMP_LOOP_EX_BEGIN();
+    feature_groups_[group]->InsertFrom(source->feature_groups_[group].get(), start_index, source_size);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  // Fix args to be refs
+  metadata_.AppendFrom(&source->metadata_, source->num_pushed_rows());
+
+  if (has_raw_) {
+    // TODO
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < source_size; ++i) {
+      for (int j = 0; j < num_numeric_features_; ++j) {
+        raw_data_[j][start_index + i] = source->raw_data_[j][i];
+      }
+    }
+  }
+}
+
 void Dataset::FinishLoad() {
   if (is_finish_load_) {
     return;

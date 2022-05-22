@@ -451,6 +451,57 @@ class DenseBin : public Bin {
     }
   }
 
+  void InsertFrom(const Bin* source_bin, data_size_t start_index, data_size_t count) override {
+    auto other_bin = dynamic_cast<const DenseBin<VAL_T, IS_4BIT>*>(source_bin);
+    if (IS_4BIT) {
+      const int8_t is_source_odd = count & 1;
+      const int8_t is_dest_odd = start_index & 1;
+
+      data_size_t idx;
+
+      if (is_dest_odd) {
+        // Handle special case of leading half-byte merge
+        idx = start_index - 1;
+        const auto last_old_bin = static_cast<uint8_t>(data_[idx >> 1]);
+        const auto first_new_bin = static_cast<uint8_t>(other_bin->data_[0] & 0xf);
+        const int merged_idx = idx >> 1;
+        data_[merged_idx] = (last_old_bin | (first_new_bin << 4));
+
+        // Shift every source index by 4 bits, swapping high and low positions
+        const int source_idx_count = (count - 1) >> 1;
+        int dest_idx = merged_idx + 1;
+        for (int i = 0; i < source_idx_count; ++i, ++dest_idx) {
+          idx = i;
+          const auto previous_high_bin = static_cast<uint8_t>(other_bin->buf_[idx] >> 4 & 0xf);
+          idx = i + 1;
+          const auto next_low_bin = static_cast<uint8_t>(other_bin->data_[idx] & 0xf);
+          data_[dest_idx] = (previous_high_bin | (next_low_bin << 4));
+        }
+
+        // Handle special case of last leftover value moving to own byte index
+        if (!is_source_odd) {
+          const auto last_high_bin = static_cast<uint8_t>( (other_bin->buf_[idx] >> 4) & 0xf);
+          data_[dest_idx] = last_high_bin;
+        }
+      } else {
+        // We can just copy source data over since it byte-aligns.
+        // Note that we copy a full last byte even though only first half is "real".
+        // Order should be maintained by overall insertion flow.
+        const int source_idx_count = (count + 1) >> 1;
+        int dest_idx = start_index >> 1;
+        for (int i = 0; i < source_idx_count; ++i, ++dest_idx) {
+          data_[dest_idx] = other_bin->data_[i] | other_bin->buf_[i];
+        }
+      }
+    } else {
+      // Just whole values, so insert directly
+      data_size_t dest_index = start_index;
+      for (int i = 0; i < count; ++i, ++dest_index) {
+        data_[dest_index] = other_bin->data_[i];
+      }
+    }
+  }
+
   void SaveBinaryToFile(BinaryWriter* writer) const override {
     writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }

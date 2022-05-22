@@ -266,6 +266,14 @@ class Bin {
   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
+  /*!
+  * \brief Coalesce data from a given source to the current data
+  * \pram source_bin data source
+  * \param start_index Index to start inserting data
+  * \param count number of records to insert
+  */
+  virtual void InsertFrom(const Bin* source_bin, data_size_t start_index, data_size_t count) = 0;
+
   virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
   /*!
   * \brief Get bin iterator of this bin for specific feature

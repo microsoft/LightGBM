@@ -78,6 +78,11 @@ class Metadata {
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
+  * \brief Initialize space for initial score
+  */
+  void InitInitScore();
+
+  /*!
   * \brief Partition label by used indices
   * \param used_indices Indices of local used
   */
@@ -140,6 +145,33 @@ class Metadata {
   }
 
   /*!
+  * \brief Set Initial Score for one record
+  * \param idx Index of this record
+  * \param value Initial score value of this record
+  */
+  inline void SetInitScoreAt(data_size_t idx, double value) {
+    init_score_[idx] = value;
+  }
+
+  /*!
+  * \brief Append one query value by updating a running boundary calculation
+  *        we assume data will order by query, and records come in order.
+  * \param value Query Id value of this record
+  */
+  inline void AppendQueryToBoundaries(data_size_t value) {
+    if (query_boundaries_.size() == 0) {
+      query_boundaries_.push_back(0);
+      cur_boundary_ = 1;
+      last_qid_ = value;
+    } else if (value == last_qid_) {
+      cur_boundary_++;
+    } else {
+      query_boundaries_.push_back(cur_boundary_);
+      last_qid_ = value;
+    }
+  }
+
+  /*!
   * \brief Set Query Id for one record
   * \param idx Index of this record
   * \param value Query Id value of this record
@@ -150,6 +182,23 @@ class Metadata {
 
   /*! \brief Load initial scores from file */
   void LoadInitialScore(const std::string& data_filename);
+
+  /*!
+  * \brief Coalesce data from a given source to the current data
+  * \pram source metadata source
+  * \param count number of records to insert
+  */
+  void AppendFrom(const Metadata* source, data_size_t count);
+
+  /*!
+  * \brief Perform any extra operations after all data has been appended
+  */
+  void FinishCoalesce();
+
+  /*!
+  * \brief Perform any extra operations after all data has been appended
+  */
+  void FinishLoad();
 
   /*!
   * \brief Get weights, if not exists, will return nullptr
@@ -232,11 +281,17 @@ class Metadata {
   /*! \brief Load query boundaries from file */
   void LoadQueryBoundaries();
   /*! \brief Load query wights */
-  void LoadQueryWeights();
+  void CalculateQueryWeights();
+  void AppendLabel(const label_t* label, data_size_t len);
+  void AppendWeights(const label_t* weights, data_size_t len);
+  void AppendInitScore(const double* init_score, data_size_t len);
+  void AppendQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
+  /*! \brief Number of appended data */
+  data_size_t num_appended_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
@@ -255,6 +310,10 @@ class Metadata {
   std::vector<double> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
+
+  data_size_t last_qid_ = -1;
+  data_size_t cur_boundary_ = 0;
+
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;
@@ -394,7 +453,7 @@ class Dataset {
   }
 
   inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
-    if (is_finish_load_) { return; }
+    if (is_finish_load_) { return; } // TODO fix this to not need calling after done?
     for (auto fidx : feature_need_push_zeros_) {
       if (is_feature_added[fidx]) { continue; }
       const int group = feature2group_[fidx];
@@ -419,6 +478,7 @@ class Dataset {
         }
       }
     }
+    num_pushed_rows_++;
   }
 
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
@@ -441,6 +501,7 @@ class Dataset {
       }
     }
     FinishOneRow(tid, row_idx, is_feature_added);
+    num_pushed_rows_++;
   }
 
   inline void PushOneData(int tid, data_size_t row_idx, int group, int feature_idx, int sub_feature, double value) {
@@ -450,6 +511,28 @@ class Dataset {
       if (feat_ind >= 0) {
         raw_data_[feat_ind][row_idx] = static_cast<float>(value);
       }
+    }
+  }
+
+  inline void PushOneRowMetadata(data_size_t row_idx,
+                                 const label_t* label,
+                                 const label_t* weight,
+                                 const double* init_score,
+                                 const data_size_t* query) {
+    if (label == nullptr) {
+      Log::Fatal("Label must not be null");
+    } else {
+      metadata_.SetLabelAt(row_idx, *label);
+    }
+    if (weight != nullptr) {
+      metadata_.SetWeightAt(row_idx, *weight);
+    }
+    if (init_score != nullptr) {
+      metadata_.SetInitScoreAt(row_idx, *init_score);
+    }
+    if (query != nullptr) {
+      // Note this has an order dependency, so cannot parallelize
+      metadata_.AppendQueryToBoundaries(*query);
     }
   }
 
@@ -494,6 +577,8 @@ class Dataset {
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
       bool force_col_wise, bool force_row_wise) const;
+
+  LIGHTGBM_EXPORT void Coalesce(const Dataset** sources, int32_t nsources);
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -749,6 +834,15 @@ class Dataset {
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
+  /*! \brief Get Number of pushed rows */
+  inline data_size_t num_pushed_rows() const { return num_pushed_rows_; }
+
+  /*! \brief Get whether the Dataset is for loading only. It will be coalesced or finished later */
+  inline bool is_for_load_only() const { return is_for_load_only_; }
+
+  /*! \brief Set whether the Dataset is for loading only. It will be coalesced or finished later */
+  inline bool set_is_for_load_only(bool value) { is_for_load_only_ = value; } // TODO call this
+
   /*! \brief Disable copy */
   Dataset& operator=(const Dataset&) = delete;
   /*! \brief Disable copy */
@@ -804,6 +898,7 @@ class Dataset {
  private:
    void SerializeHeader(BinaryWriter* serializer);
    size_t GetSerializedHeaderSize();
+   void AppendOneDataset(const Dataset* dataset, data_size_t start_index);
    void CreateCUDAColumnData();
 
   std::string data_filename_;
@@ -817,6 +912,8 @@ class Dataset {
   int num_total_features_;
   /*! \brief Number of total data*/
   data_size_t num_data_;
+  /*! \brief Number of pushed rows*/
+  data_size_t num_pushed_rows_;
   /*! \brief Store some label level data*/
   Metadata metadata_;
   /*! \brief index of label column */
@@ -845,6 +942,7 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<float>> raw_data_;
   bool has_raw_;
+  bool is_for_load_only_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;

@@ -1054,6 +1054,32 @@ int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
   API_END();
 }
 
+void PushMetadata(const float* label, const float* weight, const double* init_score, const int32_t* query, const data_size_t& nrow, Dataset* p_dataset, const data_size_t& start_row)
+{
+  const float* label_ptr = label;
+  const float* weight_ptr = weight;
+  const double* init_score_ptr = init_score;
+  const int32_t* query_ptr = query;
+
+  // Query value has an order dependency, so cannot parallelize. Also, some can be null. Just do all metadata serially.
+  for (int i = 0; i < nrow; ++i) {
+    p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
+    label_ptr++;
+    if (weight != nullptr)
+    {
+      weight_ptr++;
+    }
+    if (init_score != nullptr)
+    {
+      init_score_ptr++;
+    }
+    if (query_ptr != nullptr)
+    {
+      query_ptr++;
+    }
+  }
+}
+
 // Kept for back compat with old signature and old behavior of Finish
 int LGBM_DatasetPushRows(DatasetHandle dataset,
                          const void* data,
@@ -1061,16 +1087,6 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
                          int32_t nrow,
                          int32_t ncol,
                          int32_t start_row) {
-  return LGBM_DatasetPushRowBatch(dataset, data, data_type, nrow, ncol, start_row, 1);
-}
-
-int LGBM_DatasetPushRowBatch(DatasetHandle dataset,
-                         const void* data,
-                         int data_type,
-                         int32_t nrow,
-                         int32_t ncol,
-                         int32_t start_row,
-                         int mark_finished_if_last) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
@@ -1087,13 +1103,70 @@ int LGBM_DatasetPushRowBatch(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (mark_finished_if_last && (start_row + nrow == p_dataset->num_data())) {
+  if (!p_dataset->is_for_load_only() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
   API_END();
 }
 
-// Kept for back compat with old signature and old behavior of Finish
+int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
+                                     const void* data,
+                                     int data_type,
+                                     int32_t nrow,
+                                     int32_t ncol,
+                                     int32_t start_row,
+                                     const float* label,
+                                     const float* weight,
+                                     const double* init_score,
+                                     const int32_t* query)
+{
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
+
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, start_row + i, one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  const float* label_ptr = label;
+  const float* weight_ptr = weight;
+  const double* init_score_ptr = init_score;
+  const int32_t* query_ptr = query;
+
+  // Query value has an order dependency, so cannot parallelize. Also, some can be null. Just do all metadata serially.
+  for (int i = 0; i < nrow; ++i) {
+    p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
+    label_ptr++;
+    if (weight != nullptr)
+    {
+      weight_ptr++;
+    }
+    if (init_score != nullptr)
+    {
+      init_score_ptr++;
+    }
+    if (query_ptr != nullptr)
+    {
+      query_ptr++;
+    }
+  }
+
+  if (!p_dataset->is_for_load_only() && (start_row + nrow == p_dataset->num_data())) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
 int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                               const void* indptr,
                               int indptr_type,
@@ -1104,19 +1177,42 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                               int64_t nelem,
                               int64_t,
                               int64_t start_row) {
-  return LGBM_DatasetPushRowBatchByCSR(dataset, indptr, indptr_type, indices, data, data_type, nindptr, nelem, start_row, 1);
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+  if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
 }
 
-int LGBM_DatasetPushRowBatchByCSR(DatasetHandle dataset,
-                              const void* indptr,
-                              int indptr_type,
-                              const int32_t* indices,
-                              const void* data,
-                              int data_type,
-                              int64_t nindptr,
-                              int64_t nelem,
-                              int64_t start_row,
-                              int mark_finished_if_last) {
+int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
+                                          const void* indptr,
+                                          int indptr_type,
+                                          const int32_t* indices,
+                                          const void* data,
+                                          int data_type,
+                                          int64_t nindptr,
+                                          int64_t nelem,
+                                          int64_t start_row,
+                                          const float* label,
+                                          const float* weight,
+                                          const double* init_score,
+                                          const int32_t* query) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1134,11 +1230,34 @@ int LGBM_DatasetPushRowBatchByCSR(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (mark_finished_if_last && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+
+  PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
+
+  if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
   }
   API_END();
 }
+
+LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetHandle* sources, int32_t nsources) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+
+  // TODO do we need to optimize so that 1st dataset can be used as return and doesn't need to be coalesced if just 1?
+  // Even if more than 1, it would be better to avoid copying the first and coalesce 2..N into it. (would need to remove const)
+
+  std::vector<const Dataset*> source_datasets;
+  source_datasets.reserve(nsources);
+  for (int i = 0; i < nsources; ++i) {
+    auto p_source = reinterpret_cast<const Dataset*>(sources[i]);
+    source_datasets.push_back(p_source);
+  }
+
+  auto dataset_ptr = reinterpret_cast<const Dataset**>(source_datasets.data());
+  p_dataset->Coalesce(dataset_ptr, nsources);
+  API_END();
+}
+
 
 int LGBM_DatasetMarkFinished(DatasetHandle dataset) {
   API_BEGIN();

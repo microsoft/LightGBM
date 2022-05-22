@@ -558,6 +558,24 @@ class SparseBin : public Bin {
     }
   }
 
+  void InsertFrom(const Bin* source_bin, data_size_t start_index, data_size_t) override {
+    auto other_bin = dynamic_cast<const SparseBin<VAL_T>*>(source_bin);
+
+    // Append each source thread push buffer to the end of the target one,  while shifting all
+    // source indexes by start_index since both Bins are stored with a 0-based offset and would collide.
+    // Note that this method of merging relies on FinishLoad creating the deltas_ and vals_ later.
+    for (size_t i = 0; i < other_bin->push_buffers_.size(); ++i) {
+      auto target_size = push_buffers_[i].size();
+      auto source_size = other_bin->push_buffers_[i].size();
+      push_buffers_[i].reserve(target_size + source_size);
+
+      for (size_t j = 0; j < source_size; ++j) {
+        auto source_pair = other_bin->push_buffers_[i][j];
+        push_buffers_[i].emplace_back(source_pair.first + start_index, source_pair.second);
+      }
+    }
+  }
+
   void CopySubrow(const Bin* full_bin, const data_size_t* used_indices,
                   data_size_t num_used_indices) override {
     auto other_bin = dynamic_cast<const SparseBin<VAL_T>*>(full_bin);

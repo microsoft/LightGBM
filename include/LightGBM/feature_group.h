@@ -253,6 +253,23 @@ class FeatureGroup {
     }
   }
 
+  /*!
+   * \brief Append data from the equivalent feature group in another Dataset
+   * \param source The feature group to append data from
+   * \param start_index Index to start inserting data
+   * \param count number of records to insert
+   */
+  inline void InsertFrom(const FeatureGroup* source, data_size_t start_index, data_size_t count) {
+    if (is_multi_val_) {
+      for (int i = 0; i < num_feature_; ++i) {
+        multi_bin_data_[i]->InsertFrom(source->multi_bin_data_[i].get(), start_index, count);
+      }
+    }
+    else {
+      bin_data_->InsertFrom(source->bin_data_.get(), start_index, count);
+    }
+  }
+
   void ReSize(int num_data) {
     if (!is_multi_val_) {
       bin_data_->ReSize(num_data);

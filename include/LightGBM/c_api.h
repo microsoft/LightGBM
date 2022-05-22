@@ -208,24 +208,16 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
                                            int32_t ncol,
                                            int32_t start_row);
 
-/*!
- * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row`` and mark_finished_if_last, will call ``dataset->FinishLoad``.
- * \param dataset Handle of dataset
- * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nrow Number of rows
- * \param ncol Number of columns
- * \param start_row Row start index
- * \param mark_finished_if_last Mark the Dataset finished if the last row is pushed. If 0, make sure to call ``LGBM_DatasetMarkFinished`` when done.
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowBatch(DatasetHandle dataset,
-                                           const void* data,
-                                           int data_type,
-                                           int32_t nrow,
-                                           int32_t ncol,
-                                           int32_t start_row,
-                                           int mark_finished_if_last);
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetaData(DatasetHandle dataset,
+                                                       const void* data,
+                                                       int data_type,
+                                                       int32_t nrow,
+                                                       int32_t ncol,
+                                                       int32_t start_row,
+                                                       const float* label,
+                                                       const float* weight,
+                                                       const double* init_score,
+                                                       const int32_t* query);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -253,29 +245,28 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                                                 int64_t num_col,
                                                 int64_t start_row);
 
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
+                                                            const void* indptr,
+                                                            int indptr_type,
+                                                            const int32_t* indices,
+                                                            const void* data,
+                                                            int data_type,
+                                                            int64_t nindptr,
+                                                            int64_t nelem,
+                                                            int64_t start_row,
+                                                            const float* label,
+                                                            const float* weight,
+                                                            const double* init_score,
+                                                            const int32_t* query);
+
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
- * \param dataset Handle of dataset
- * \param indptr Pointer to row headers
- * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
- * \param indices Pointer to column indices
- * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nindptr Number of rows in the matrix + 1
- * \param nelem Number of nonzero elements in the matrix
- * \param start_row Row start index
+ * \param dataset Handle of dataset to coalesce data into
+ * \param sources Pointer to a list of Datasets to coalesce data from
+ * \param nsources Number of coalesce sources
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowBatchByCSR(DatasetHandle dataset,
-                                                const void* indptr,
-                                                int indptr_type,
-                                                const int32_t* indices,
-                                                const void* data,
-                                                int data_type,
-                                                int64_t nindptr,
-                                                int64_t nelem,
-                                                int64_t start_row,
-                                                int mark_finished_if_last);
+LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetHandle* sources, int32_t nsources);
 
 /*!
  * \brief Mark the Dataset as complete by calling by calling ``dataset->FinishLoad``.

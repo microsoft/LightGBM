@@ -14,6 +14,7 @@ Metadata::Metadata() {
   num_weights_ = 0;
   num_init_score_ = 0;
   num_data_ = 0;
+  num_appended_data_ = 0;
   num_queries_ = 0;
   weight_load_from_file_ = false;
   query_load_from_file_ = false;
@@ -28,7 +29,7 @@ void Metadata::Init(const char* data_filename) {
   // for lambdarank, it needs query data for partition data in distributed learning
   LoadQueryBoundaries();
   LoadWeights();
-  LoadQueryWeights();
+  CalculateQueryWeights();
   LoadInitialScore(data_filename_);
 }
 
@@ -56,6 +57,14 @@ void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
     queries_ = std::vector<data_size_t>(num_data_, 0);
     query_load_from_file_ = false;
   }
+}
+
+void Metadata::InitInitScore() {
+  if (!init_score_.empty()) {
+    Log::Fatal("Initial score already contains data");
+  }
+  init_score_ = std::vector<double>(num_data_, 0.0);
+
 }
 
 void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
@@ -165,7 +174,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       for (size_t i = 0; i < tmp_buffer.size(); ++i) {
         query_boundaries_[i + 1] = query_boundaries_[i] + tmp_buffer[i];
       }
-      LoadQueryWeights();
+      CalculateQueryWeights();
       queries_.clear();
     }
     // check weights
@@ -278,7 +287,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       }
     }
     // re-load query weight
-    LoadQueryWeights();
+    CalculateQueryWeights();
   }
   if (num_queries_ > 0) {
     Log::Debug("Number of queries in %s: %i. Average number of rows per query: %f.",
@@ -312,6 +321,27 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
+void Metadata::AppendInitScore(const double* init_score, data_size_t len) {
+  // save to nullptr
+  if (init_score == nullptr || len == 0) {
+    init_score_.clear();
+    num_init_score_ = 0;
+    return;
+  }
+  if (init_score_.empty()) { init_score_.resize(num_data_); } // TODO check initialization of full size
+
+  #pragma omp parallel for schedule(static, 512) if (len >= 1024)
+  for (int64_t i = 0; i < len; ++i) {
+    init_score_[num_appended_data_ + i] = init_score[i];
+  }
+  init_score_load_from_file_ = false;
+  #ifdef USE_CUDA_EXP
+  if (cuda_metadata_ != nullptr) {
+    cuda_metadata_->SetInitScore(init_score_.data(), len); // TODO what to do here?
+  }
+  #endif  // USE_CUDA_EXP
+}
+
 void Metadata::SetLabel(const label_t* label, data_size_t len) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (label == nullptr) {
@@ -329,6 +359,23 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   #ifdef USE_CUDA_EXP
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetLabel(label_.data(), len);
+  }
+  #endif  // USE_CUDA_EXP
+}
+
+void Metadata::AppendLabel(const label_t* label, data_size_t len) {
+  if (label == nullptr) {
+    Log::Fatal("label cannot be nullptr");
+  }
+  if (label_.empty()) { label_.resize(num_data_); } // TODO check capacity initialization
+
+  #pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
+  for (data_size_t i = 0; i < len; ++i) {
+    label_[num_appended_data_ + i] = label[i];
+  }
+  #ifdef USE_CUDA_EXP
+  if (cuda_metadata_ != nullptr) {
+    cuda_metadata_->SetLabel(label_.data(), len); // TODO what to do here?
   }
   #endif  // USE_CUDA_EXP
 }
@@ -351,11 +398,34 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(weights[i]);
   }
-  LoadQueryWeights();
+  CalculateQueryWeights();
   weight_load_from_file_ = false;
   #ifdef USE_CUDA_EXP
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetWeights(weights_.data(), len);
+  }
+  #endif  // USE_CUDA_EXP
+}
+
+void Metadata::AppendWeights(const label_t* weights, data_size_t len) {
+  // save to nullptr
+  if (weights == nullptr || len == 0) {
+    weights_.clear();
+    num_weights_ = 0;
+    return;
+  }
+  if (weights_.empty()) { weights_.resize(num_data_); }
+  num_weights_ = num_data_; // TODO how do we set these?  some Finalize step?
+
+  #pragma omp parallel for schedule(static, 512) if (num_weights_ >= 1024)
+  for (data_size_t i = 0; i < len; ++i) {
+    weights_[num_appended_data_ + i] = weights[i];
+  }
+  CalculateQueryWeights();
+  weight_load_from_file_ = false;
+  #ifdef USE_CUDA_EXP
+  if (cuda_metadata_ != nullptr) {
+    cuda_metadata_->SetWeights(weights_.data(), len); // TODO what to do here?
   }
   #endif  // USE_CUDA_EXP
 }
@@ -382,7 +452,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   for (data_size_t i = 0; i < num_queries_; ++i) {
     query_boundaries_[i + 1] = query_boundaries_[i] + query[i];
   }
-  LoadQueryWeights();
+  CalculateQueryWeights();
   query_load_from_file_ = false;
   #ifdef USE_CUDA_EXP
   if (cuda_metadata_ != nullptr) {
@@ -394,6 +464,34 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
     }
   }
   #endif  // USE_CUDA_EXP
+}
+
+void Metadata::AppendQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
+  // save to nullptr
+  if (query_boundaries == nullptr || len == 0) {
+    query_boundaries_.clear();
+    num_queries_ = 0;
+    return;
+  }
+  auto dest_index = num_queries_ + 1;
+  num_queries_ += len - 1; // Remove the initial zero
+  query_boundaries_.resize(num_queries_ + 1);
+  query_boundaries_[0] = 0;
+  for (data_size_t i = 1; i < len; ++i, ++dest_index) {
+    query_boundaries_[dest_index] = query_boundaries[i];
+  }
+  query_load_from_file_ = false;
+#ifdef USE_CUDA_EXP
+  if (cuda_metadata_ != nullptr) { // TODO figure this out
+    if (query_weights_.size() > 0) {
+      CHECK_EQ(query_weights_.size(), static_cast<size_t>(num_queries_));
+      cuda_metadata_->SetQuery(query_boundaries_.data(), query_weights_.data(), num_queries_);
+    }
+    else {
+      cuda_metadata_->SetQuery(query_boundaries_.data(), nullptr, num_queries_);
+    }
+  }
+#endif  // USE_CUDA_EXP
 }
 
 void Metadata::LoadWeights() {
@@ -484,7 +582,7 @@ void Metadata::LoadQueryBoundaries() {
   query_load_from_file_ = true;
 }
 
-void Metadata::LoadQueryWeights() {
+void Metadata::CalculateQueryWeights() {
   if (weights_.size() == 0 || query_boundaries_.size() == 0) {
     return;
   }
@@ -497,6 +595,30 @@ void Metadata::LoadQueryWeights() {
       query_weights_[i] += weights_[j];
     }
     query_weights_[i] /= (query_boundaries_[i + 1] - query_boundaries_[i]);
+  }
+}
+
+void Metadata::AppendFrom(const Metadata* source, data_size_t count) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (num_data_ < count + num_appended_data_) {
+    Log::Fatal("Length of metadata is too long to append #data");
+  }
+  AppendLabel(source->label_.data(), count);
+  AppendWeights(source->weights_.data(), count);
+  AppendInitScore(source->init_score_.data(), count);
+  AppendQueryBoundaries(source->query_boundaries_.data(), static_cast<data_size_t>(source->query_boundaries_.size()));
+  num_appended_data_ += count;
+}
+
+void Metadata::FinishCoalesce() {
+  CalculateQueryWeights(); // TODO figure this out
+}
+
+void Metadata::FinishLoad() {
+  // Append the last query boundary that is in progress
+  if (cur_boundary_ > 0) {
+    query_boundaries_.push_back(cur_boundary_);
+    num_queries_++;
   }
 }
 
@@ -537,7 +659,7 @@ void Metadata::LoadFromMemory(const void* memory) {
                                               (num_queries_ + 1));
     query_load_from_file_ = true;
   }
-  LoadQueryWeights();
+  CalculateQueryWeights();
 }
 
 void Metadata::SaveBinaryToFile(VirtualFileWriter* writer) const {
