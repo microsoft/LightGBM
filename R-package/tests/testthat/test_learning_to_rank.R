@@ -60,7 +60,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
 test_that("learning-to-rank with lgb.cv() works as expected", {
     testthat::skip_if(
         ON_32_BIT_WINDOWS
-        , message = "Skipping on Solaris and 32-bit Windows"
+        , message = "Skipping on 32-bit Windows"
     )
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
