@@ -289,6 +289,13 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
+      # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
+      # in cases like constructing from a file or from a matrix with no column names.
+      private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
+      )
+
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 
@@ -380,6 +387,13 @@ Dataset <- R6::R6Class(
     get_feature_num_bin = function(feature) {
       if (lgb.is.null.handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
+      }
+      if (is.character(feature)) {
+        feature_name <- feature
+        feature <- which(private$colnames == feature_name)
+        if (length(feature) == 0L) {
+          stop(sprintf("feature '%s' not found", feature_name))
+        }
       }
       num_bin <- integer(1L)
       .Call(

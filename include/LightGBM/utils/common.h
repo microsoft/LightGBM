@@ -5,9 +5,6 @@
 #ifndef LIGHTGBM_UTILS_COMMON_H_
 #define LIGHTGBM_UTILS_COMMON_H_
 
-#if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
-#include <LightGBM/utils/common_legacy_solaris.h>
-#endif
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>

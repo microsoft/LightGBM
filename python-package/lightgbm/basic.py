@@ -549,7 +549,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
-            data = data.copy()  # not alter origin DataFrame
+            data = data.copy(deep=False)  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
@@ -1819,6 +1819,7 @@ class Dataset:
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
+            self.feature_name = self.get_feature_name()
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
@@ -2384,13 +2385,13 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
-    def feature_num_bin(self, feature: int) -> int:
+    def feature_num_bin(self, feature: Union[int, str]) -> int:
         """Get the number of bins for a feature.
 
         Parameters
         ----------
-        feature : int
-            Index of the feature.
+        feature : int or str
+            Index or name of the feature.
 
         Returns
         -------
@@ -2398,6 +2399,8 @@ class Dataset:
             The number of constructed bins for the feature in the Dataset.
         """
         if self.handle is not None:
+            if isinstance(feature, str):
+                feature = self.feature_name.index(feature)
             ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
                                                          ctypes.c_int(feature),

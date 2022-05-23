@@ -719,8 +719,9 @@ Booster <- R6::R6Class(
         res <- feval(private$inner_predict(data_idx), data)
 
         if (is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
-          stop("lgb.Booster.eval: custom eval function should return a
-            list with attribute (name, value, higher_better)");
+          stop(
+            "lgb.Booster.eval: custom eval function should return a list with attribute (name, value, higher_better)"
+          )
         }
 
         # Append names and evaluation
