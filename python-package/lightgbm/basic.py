@@ -7,7 +7,6 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from logging import Logger
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
@@ -550,7 +549,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
-            data = data.copy()  # not alter origin DataFrame
+            data = data.copy(deep=False)  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
@@ -1349,12 +1348,12 @@ class Dataset:
         self._start_row += nrow
         return self
 
-    def get_params(self):
+    def get_params(self) -> Dict[str, Any]:
         """Get the used parameters in the Dataset.
 
         Returns
         -------
-        params : dict or None
+        params : dict
             The used parameters in this Dataset object.
         """
         if self.params is not None:
@@ -1381,6 +1380,8 @@ class Dataset:
                                                 "weight_column",
                                                 "zero_as_missing")
             return {k: v for k, v in self.params.items() if k in dataset_params}
+        else:
+            return {}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1818,6 +1819,7 @@ class Dataset:
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
+            self.feature_name = self.get_feature_name()
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
@@ -2383,13 +2385,13 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
-    def feature_num_bin(self, feature: int) -> int:
+    def feature_num_bin(self, feature: Union[int, str]) -> int:
         """Get the number of bins for a feature.
 
         Parameters
         ----------
-        feature : int
-            Index of the feature.
+        feature : int or str
+            Index or name of the feature.
 
         Returns
         -------
@@ -2397,6 +2399,8 @@ class Dataset:
             The number of constructed bins for the feature in the Dataset.
         """
         if self.handle is not None:
+            if isinstance(feature, str):
+                feature = self.feature_name.index(feature)
             ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
                                                          ctypes.c_int(feature),

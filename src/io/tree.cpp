@@ -524,6 +524,7 @@ std::string Tree::NodeToJSON(int index) const {
 std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
   if (missing_type == MissingType::None

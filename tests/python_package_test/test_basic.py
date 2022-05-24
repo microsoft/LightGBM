@@ -655,6 +655,17 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype):
     assert np.shares_memory(X, built_data)
 
 
+def test_categorical_code_conversion_doesnt_modify_original_data():
+    pd = pytest.importorskip('pandas')
+    X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
+    df = pd.DataFrame(X.copy(), columns=['x1'], dtype='category')
+    data = lgb.basic._data_from_pandas(df, ['x1'], None, None)[0]
+    # check that the original data wasn't modified
+    np.testing.assert_equal(df['x1'], X[:, 0])
+    # check that the built data has the codes
+    np.testing.assert_equal(df['x1'].cat.codes, data[:, 0])
+
+
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])
 def test_feature_num_bin(min_data_in_bin):
     X = np.vstack([
@@ -663,17 +674,43 @@ def test_feature_num_bin(min_data_in_bin):
         np.array([0, 1, 2] * 33 + [0]),
         np.array([1, 2] * 49 + 2 * [np.nan]),
         np.zeros(100),
+        np.random.choice([0, 1], 100),
     ]).T
-    ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}).construct()
+    n_continuous = X.shape[1] - 1
+    feature_name = [f'x{i}' for i in range(n_continuous)] + ['cat1']
+    ds_kwargs = dict(
+        params={'min_data_in_bin': min_data_in_bin},
+        categorical_feature=[n_continuous],  # last feature
+    )
+    ds = lgb.Dataset(X, feature_name=feature_name, **ds_kwargs).construct()
     expected_num_bins = [
         100 // min_data_in_bin + 1,  # extra bin for zero
         3,  # 0, 1, 2
         3,  # 0, 1, 2
         4,  # 0, 1, 2 + nan
         0,  # unused
+        3,  # 0, 1 + nan
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    # test using defined feature names
+    bins_by_name = [ds.feature_num_bin(name) for name in feature_name]
+    assert bins_by_name == expected_num_bins
+    # test using default feature names
+    ds_no_names = lgb.Dataset(X, **ds_kwargs).construct()
+    default_names = [f'Column_{i}' for i in range(X.shape[1])]
+    bins_by_default_name = [ds_no_names.feature_num_bin(name) for name in default_names]
+    assert bins_by_default_name == expected_num_bins
+    # check for feature indices outside of range
+    num_features = X.shape[1]
+    with pytest.raises(
+        lgb.basic.LightGBMError,
+        match=(
+            f'Tried to retrieve number of bins for feature index {num_features}, '
+            f'but the valid feature indices are \\[0, {num_features - 1}\\].'
+        )
+    ):
+        ds.feature_num_bin(num_features)
 
 
 def test_feature_num_bin_with_max_bin_by_feature():

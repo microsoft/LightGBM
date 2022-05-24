@@ -1540,6 +1540,18 @@ def test_init_with_subset():
     assert subset_data_4.get_data() == "lgb_train_data.bin"
 
 
+def test_training_on_constructed_subset_without_params():
+    X = np.random.random((100, 10))
+    y = np.random.random(100)
+    lgb_data = lgb.Dataset(X, y)
+    subset_indices = [1, 2, 3, 4]
+    subset = lgb_data.subset(subset_indices).construct()
+    bst = lgb.train({}, subset, num_boost_round=1)
+    assert subset.get_params() == {}
+    assert subset.num_data() == len(subset_indices)
+    assert bst.current_iteration() == 1
+
+
 def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     number_of_dpoints = 3000
     x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
