@@ -1203,7 +1203,9 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
     rm(bst)
 
     # load the booster and make predictions...should be the same
-    expect_warning({bst2 <- readRDS.lgb.Booster(file = model_file)})
+    expect_warning({
+        bst2 <- readRDS.lgb.Booster(file = model_file)
+    })
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
 })
