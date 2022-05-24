@@ -303,7 +303,7 @@ class CVBooster:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
-    def _from_dict(self, models: Dict[str, any]) -> None:
+    def _from_dict(self, models: Dict[str, Any]) -> None:
         """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
@@ -356,7 +356,7 @@ class CVBooster:
         start_iteration: int = 0,
         importance_type: str = 'split'
     ) -> str:
-        """Save CVBooster to string.
+        """Save CVBooster to JSON string.
 
         Parameters
         ----------
@@ -374,7 +374,7 @@ class CVBooster:
         Returns
         -------
         str_repr : str
-            String representation of CVBooster.
+            JSON string representation of CVBooster.
         """
         return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
 
@@ -385,7 +385,7 @@ class CVBooster:
         start_iteration: int = 0,
         importance_type: str = 'split'
     ) -> "CVBooster":
-        """Save CVBoosters to file.
+        """Save CVBoosters to a file as JSON text.
 
         Parameters
         ----------
