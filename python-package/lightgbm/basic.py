@@ -1348,12 +1348,12 @@ class Dataset:
         self._start_row += nrow
         return self
 
-    def get_params(self):
+    def get_params(self) -> Dict[str, Any]:
         """Get the used parameters in the Dataset.
 
         Returns
         -------
-        params : dict or None
+        params : dict
             The used parameters in this Dataset object.
         """
         if self.params is not None:
@@ -1380,6 +1380,8 @@ class Dataset:
                                                 "weight_column",
                                                 "zero_as_missing")
             return {k: v for k, v in self.params.items() if k in dataset_params}
+        else:
+            return {}
 
     def _free_handle(self):
         if self.handle is not None:
