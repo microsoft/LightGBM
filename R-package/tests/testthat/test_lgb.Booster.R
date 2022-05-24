@@ -1253,24 +1253,64 @@ test_that("Booster's print, show, and summary work correctly", {
        )
     }
 
+    .has_expected_content_for_fitted_model <- function(printed_txt) {
+      expect_true(any(grepl("^LightGBM Model", printed_txt)))
+      expect_true(any(grepl("^Fitted to dataset", printed_txt)))
+    }
+
+    .has_expected_content_for_finalized_model <- function(printed_txt) {
+      expect_true(any(grepl("^LightGBM Model$", printed_txt)))
+      expect_true(any(grepl("Booster handle is invalid", printed_txt)))
+    }
+
     .check_methods_work <- function(model) {
 
-        # should work for fitted models
-        ret <- print(model)
-        .have_same_handle(ret, model)
-        ret <- show(model)
-        expect_null(ret)
-        ret <- summary(model)
-        .have_same_handle(ret, model)
+        #--- should work for fitted models --- #
 
-        # should not fail for finalized models
-        model$finalize()
-        ret <- print(model)
+        # print()
+        log_txt <- capture.output({
+          ret <- print(model)
+        })
         .have_same_handle(ret, model)
-        ret <- show(model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        # show()
+        log_txt <- capture.output({
+          ret <- show(model)
+        })
         expect_null(ret)
-        ret <- summary(model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        # summary()
+        log_text <- capture.output({
+          ret <- summary(model)
+        })
         .have_same_handle(ret, model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        #--- should not fail for finalized models ---#
+        model$finalize()
+
+        # print()
+        log_txt <- capture.output({
+          ret <- print(model)
+        })
+        .has_expected_content_for_finalized_model(log_txt)
+
+        # show()
+        .have_same_handle(ret, model)
+        log_txt <- capture.output({
+          ret <- show(model)
+        })
+        expect_null(ret)
+        .has_expected_content_for_finalized_model(log_txt)
+
+        # summary()
+        log_txt <- capture.output({
+          ret <- summary(model)
+        })
+        .have_same_handle(ret, model)
+        .has_expected_content_for_finalized_model(log_txt)
     }
 
     data("mtcars")
