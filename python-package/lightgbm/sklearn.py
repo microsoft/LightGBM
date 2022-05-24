@@ -83,7 +83,7 @@ class _ObjectiveFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[np.ndarray, np.ndarray]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -165,7 +165,7 @@ class _EvalFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[str, float, bool]:
         """Call passed function with appropriate arguments.
 
         Parameters
