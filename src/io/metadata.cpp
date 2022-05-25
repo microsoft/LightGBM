@@ -59,12 +59,29 @@ void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
   }
 }
 
+void Metadata::InitByReference(data_size_t num_data, const Metadata* reference) {
+  num_data_ = num_data;
+  label_ = std::vector<label_t>(num_data_);
+  if (reference->num_weights_ > 0) {
+    weights_ = std::vector<label_t>(num_data_, 0.0f);
+    num_weights_ = num_data_;
+    weight_load_from_file_ = false;
+  }
+  if (reference->num_init_score_ > 0) {
+    init_score_ = std::vector<double>(num_data_, 0);
+  }
+  if (reference->num_queries_ > 0) {
+    if (!query_weights_.empty()) { query_weights_.clear(); }
+    queries_ = std::vector<data_size_t>(num_data_, 0);
+    query_load_from_file_ = false;
+  }
+}
+
 void Metadata::InitInitScore() {
   if (!init_score_.empty()) {
     Log::Fatal("Initial score already contains data");
   }
   init_score_ = std::vector<double>(num_data_, 0.0);
-
 }
 
 void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
@@ -478,7 +495,7 @@ void Metadata::AppendQueryBoundaries(const data_size_t* query_boundaries, data_s
   query_boundaries_.resize(num_queries_ + 1);
   query_boundaries_[0] = 0;
   for (data_size_t i = 1; i < len; ++i, ++dest_index) {
-    query_boundaries_[dest_index] = query_boundaries[i];
+    query_boundaries_[dest_index] = query_boundaries[i] + num_appended_data_;
   }
   query_load_from_file_ = false;
 #ifdef USE_CUDA_EXP
@@ -614,7 +631,7 @@ void Metadata::FinishCoalesce() {
   CalculateQueryWeights(); // TODO figure this out
 }
 
-void Metadata::FinishLoad() {
+void Metadata::FinishStreaming() {
   // Append the last query boundary that is in progress
   if (cur_boundary_ > 0) {
     query_boundaries_.push_back(cur_boundary_);

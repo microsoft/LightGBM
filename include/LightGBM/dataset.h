@@ -78,6 +78,13 @@ class Metadata {
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
+  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \param num_data Number of data
+  * \param reference Reference metadata
+  */
+  void InitByReference(data_size_t num_data, const Metadata* reference);
+
+  /*!
   * \brief Initialize space for initial score
   */
   void InitInitScore();
@@ -159,15 +166,17 @@ class Metadata {
   * \param value Query Id value of this record
   */
   inline void AppendQueryToBoundaries(data_size_t value) {
+    // TODO switch to using SetQueryAt so we can parallelize
     if (query_boundaries_.size() == 0) {
       query_boundaries_.push_back(0);
       cur_boundary_ = 1;
       last_qid_ = value;
-    } else if (value == last_qid_) {
-      cur_boundary_++;
     } else {
-      query_boundaries_.push_back(cur_boundary_);
-      last_qid_ = value;
+      if (value != last_qid_) {
+        query_boundaries_.push_back(cur_boundary_);
+        last_qid_ = value;
+      }
+      cur_boundary_++;
     }
   }
 
@@ -196,9 +205,9 @@ class Metadata {
   void FinishCoalesce();
 
   /*!
-  * \brief Perform any extra operations after all data has been appended
+  * \brief Perform any extra operations after all data has been streamed
   */
-  void FinishLoad();
+  void FinishStreaming();
 
   /*!
   * \brief Get weights, if not exists, will return nullptr
@@ -434,6 +443,15 @@ class Dataset {
   /*! \brief Destructor */
   LIGHTGBM_EXPORT ~Dataset();
 
+  /*!
+  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \param num_data Number of data
+  * \param reference Reference metadata
+  */
+  LIGHTGBM_EXPORT void InitByReference(data_size_t num_data, const Dataset* reference) {
+    metadata_.InitByReference(num_data, &reference->metadata());
+  }
+
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;
@@ -524,13 +542,13 @@ class Dataset {
     } else {
       metadata_.SetLabelAt(row_idx, *label);
     }
-    if (weight != nullptr) {
+    if (weight) {
       metadata_.SetWeightAt(row_idx, *weight);
     }
-    if (init_score != nullptr) {
+    if (init_score) {
       metadata_.SetInitScoreAt(row_idx, *init_score);
     }
-    if (query != nullptr) {
+    if (query) {
       // Note this has an order dependency, so cannot parallelize
       metadata_.AppendQueryToBoundaries(*query);
     }
@@ -581,6 +599,8 @@ class Dataset {
   LIGHTGBM_EXPORT void Coalesce(const Dataset** sources, int32_t nsources);
 
   LIGHTGBM_EXPORT void FinishLoad();
+
+  LIGHTGBM_EXPORT void FinishStreaming();
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 

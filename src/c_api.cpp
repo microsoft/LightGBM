@@ -1031,8 +1031,11 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   DatasetHandle* out) {
   API_BEGIN();
   std::unique_ptr<Dataset> ret;
-  ret.reset(new Dataset(static_cast<data_size_t>(num_total_row)));
-  ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
+  data_size_t nrows = static_cast<data_size_t>(num_total_row);
+  ret.reset(new Dataset(nrows));
+  const Dataset* reference_dataset = reinterpret_cast<const Dataset*>(reference);
+  ret->CreateValid(reference_dataset);
+  ret->InitByReference(nrows, reference_dataset);
   *out = ret.release();
   API_END();
 }
@@ -1054,7 +1057,13 @@ int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
   API_END();
 }
 
-void PushMetadata(const float* label, const float* weight, const double* init_score, const int32_t* query, const data_size_t& nrow, Dataset* p_dataset, const data_size_t& start_row)
+void PushMetadata(const float* label,
+                  const float* weight,
+                  const double* init_score,
+                  const int32_t* query,
+                  const data_size_t& nrow,
+                  Dataset* p_dataset,
+                  const data_size_t& start_row)
 {
   const float* label_ptr = label;
   const float* weight_ptr = weight;
@@ -1147,16 +1156,13 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   for (int i = 0; i < nrow; ++i) {
     p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
     label_ptr++;
-    if (weight != nullptr)
-    {
+    if (weight) {
       weight_ptr++;
     }
-    if (init_score != nullptr)
-    {
+    if (init_score) {
       init_score_ptr++;
     }
-    if (query_ptr != nullptr)
-    {
+    if (query_ptr) {
       query_ptr++;
     }
   }
@@ -1258,6 +1264,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetH
   API_END();
 }
 
+int LGBM_DatasetFinishStreaming(DatasetHandle dataset) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  p_dataset->FinishStreaming();
+  API_END();
+}
 
 int LGBM_DatasetMarkFinished(DatasetHandle dataset) {
   API_BEGIN();

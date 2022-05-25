@@ -29,6 +29,7 @@ const char* Dataset::binary_reference_token =
 Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
+  num_pushed_rows_ = 0;
   is_finish_load_ = false;
   has_raw_ = false;
 }
@@ -37,6 +38,7 @@ Dataset::Dataset(data_size_t num_data) {
   CHECK_GT(num_data, 0);
   data_filename_ = "noname";
   num_data_ = num_data;
+  num_pushed_rows_ = 0;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
   group_bin_boundaries_.push_back(0);
@@ -447,6 +449,7 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
   }
 
   // This Dataset should be sized as the total coalesced size
+  Log::Info("num_data: %d, num_pushed: %d.", num_data_, num_total_rows);
   CHECK_EQ(num_data_, num_total_rows);
 
   for (int i = 0; i < nsources; ++i) {
@@ -504,6 +507,10 @@ void Dataset::FinishLoad() {
   }
   #endif  // USE_CUDA_EXP
   is_finish_load_ = true;
+}
+
+void Dataset::FinishStreaming() {
+  metadata_.FinishStreaming();
 }
 
 void PushDataToMultiValBin(

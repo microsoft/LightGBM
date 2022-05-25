@@ -208,7 +208,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
                                            int32_t ncol,
                                            int32_t start_row);
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetaData(DatasetHandle dataset,
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                                        const void* data,
                                                        int data_type,
                                                        int32_t nrow,
@@ -267,6 +267,13 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetHandle* sources, int32_t nsources);
+
+/*!
+ * \brief Complete streaming of the Dataset by calling ``dataset->FinishStreaming``.
+ * \param dataset Handle of dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetFinishStreaming(DatasetHandle dataset);
 
 /*!
  * \brief Mark the Dataset as complete by calling by calling ``dataset->FinishLoad``.

@@ -27,7 +27,7 @@ TEST(Serialization, JustWorks) {
 
   Dataset* dataset = static_cast<Dataset*>(datset_handle);
   Log::Info("Row count: %d", dataset->num_data());
-  Log::Info("Feture group count: %d", dataset->num_feature_groups());
+  Log::Info("Feature group count: %d", dataset->num_feature_groups());
 
   // Serialize the reference
   ByteBufferHandle buffer_handle;
@@ -40,7 +40,7 @@ TEST(Serialization, JustWorks) {
   // Deserialize the reference
   DatasetHandle deserialized_datset_handle;
   result = LGBM_DatasetCreateFromSerializedReference(buffer->Data(),
-    buffer->GetSize(),
+    static_cast<int32_t>(buffer->GetSize()),
     dataset->num_data(),
     params,
     &deserialized_datset_handle);

@@ -6,6 +6,12 @@
 #define LIGHTGBM_TESTS_UTILS_H_
 
 #include <LightGBM/c_api.h>
+#include <LightGBM/dataset.h>
+
+#include <vector>
+
+using LightGBM::Metadata;
+using namespace std;
 
 namespace LightGBM {
 
@@ -15,7 +21,78 @@ class TestUtils {
     /*!
     * Creates a Dataset from the internal repository examples.
     */
-    static int LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle *out);
+    static int LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle* out);
+
+
+    /*!
+    * Creates a dense Dataset of random values.
+    */
+    static void CreateRandomDenseData(int32_t nrows,
+                                      int32_t ncols,
+                                      std::vector<double>* features,
+                                      std::vector<float>* labels,
+                                      std::vector<float>* weights,
+                                      std::vector<double>* init_scores,
+                                      std::vector<int32_t>* groups);
+
+    /*!
+    * Creates a CSR sparse Dataset of random values.
+    */
+    static void TestUtils::CreateRandomSparseData(int32_t nrows,
+                                                  int32_t ncols,
+                                                  float sparse_percent,
+                                                  std::vector<int32_t>* indptr,
+                                                  std::vector<int32_t>* indices,
+                                                  std::vector<double>* values,
+                                                  std::vector<float>* labels,
+                                                  std::vector<float>* weights,
+                                                  std::vector<double>* init_scores,
+                                                  std::vector<int32_t>* groups);
+
+    /*!
+    * Creates a CSR sparse Dataset of random values.
+    */
+    static void TestUtils::CreateRandomMetadata(int32_t nrows,
+                                                std::vector<float>* labels,
+                                                std::vector<float>* weights,
+                                                std::vector<double>* init_scores,
+                                                std::vector<int32_t>* groups);
+
+    /*!
+    * Pushes nrows of data to a Dataset in batches of batch_count.
+    */
+    static void StreamDenseDataset(DatasetHandle dataset_handle,
+                                   int32_t nrows,
+                                   int32_t ncols,
+                                   int32_t batch_count,
+                                   const std::vector<double> *features,
+                                   const std::vector<float> *labels,
+                                   const std::vector<float> *weights,
+                                   const std::vector<double> *init_scores,
+                                   const std::vector<int32_t> *groups);
+
+    /*!
+    * Pushes nrows of data to a Dataset in batches of batch_count.
+    */
+    static void StreamSparseDataset(DatasetHandle dataset_handle,
+                                    int32_t nrows,
+                                    int32_t batch_count,
+                                    const std::vector<int32_t> *indptr,
+                                    const std::vector<int32_t> *indices,
+                                    const std::vector<double> *values,
+                                    const std::vector<float> *labels,
+                                    const std::vector<float> *weights,
+                                    const std::vector<double> *init_scores,
+                                    const std::vector<int32_t> *groups);
+
+    /*!
+    * Validates metadata against reference vectors.
+    */
+    static void AssertMetadata(const Metadata* metadata,
+                               const std::vector<float>* labels,
+                               const std::vector<float>* weights,
+                               const std::vector<double>* init_scores,
+                               const std::vector<int32_t>* groups);
 };
 }
 
