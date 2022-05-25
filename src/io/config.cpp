@@ -42,6 +42,19 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   for (auto arg : args) {
     KV2Map(&params, Common::Trim(arg).c_str());
   }
+  // define verbosity and set logging level
+  int verbosity = Config().verbosity;
+  GetInt(params, "verbose", &verbosity);
+  GetInt(params, "verbosity", &verbosity);
+  if (verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  } else if (verbosity == 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
+  } else if (verbosity >= 2) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  } else {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  }
   ParameterAlias::KeyAliasTransform(&params);
   return params;
 }
@@ -238,16 +251,6 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   if ((task == TaskType::kSaveBinary) && !save_binary) {
     Log::Info("save_binary parameter set to true because task is save_binary");
     save_binary = true;
-  }
-
-  if (verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  } else if (verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (verbosity >= 2) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   }
 
   // check for conflicts
