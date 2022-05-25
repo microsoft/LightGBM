@@ -480,6 +480,7 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     eval_from_file <- bst$eval(
         data = lgb.Dataset(
             data = test_file
+            , params = list(verbose = VERBOSITY)
         )$construct()
         , name = "test"
     )
@@ -551,6 +552,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         train_set = Dataset$new(
             data = agaricus.train$data
             , label = agaricus.train$label
+            , params = list(verbose = VERBOSITY)
         )
     )
     expect_true(lgb.is.Booster(bst))
@@ -1201,7 +1203,9 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
     rm(bst)
 
     # load the booster and make predictions...should be the same
-    expect_warning({bst2 <- readRDS.lgb.Booster(file = model_file)})
+    expect_warning({
+        bst2 <- readRDS.lgb.Booster(file = model_file)
+    })
     preds2 <- predict(bst2, X)
     expect_identical(preds, preds2)
 })
@@ -1251,32 +1255,79 @@ test_that("Booster's print, show, and summary work correctly", {
        )
     }
 
+    .has_expected_content_for_fitted_model <- function(printed_txt) {
+      expect_true(any(grepl("^LightGBM Model", printed_txt)))
+      expect_true(any(grepl("^Fitted to dataset", printed_txt)))
+    }
+
+    .has_expected_content_for_finalized_model <- function(printed_txt) {
+      expect_true(any(grepl("^LightGBM Model$", printed_txt)))
+      expect_true(any(grepl("Booster handle is invalid", printed_txt)))
+    }
+
     .check_methods_work <- function(model) {
 
-        # should work for fitted models
-        ret <- print(model)
-        .have_same_handle(ret, model)
-        ret <- show(model)
-        expect_null(ret)
-        ret <- summary(model)
-        .have_same_handle(ret, model)
+        #--- should work for fitted models --- #
 
-        # should not fail for finalized models
-        model$finalize()
-        ret <- print(model)
+        # print()
+        log_txt <- capture.output({
+          ret <- print(model)
+        })
         .have_same_handle(ret, model)
-        ret <- show(model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        # show()
+        log_txt <- capture.output({
+          ret <- show(model)
+        })
         expect_null(ret)
-        ret <- summary(model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        # summary()
+        log_text <- capture.output({
+          ret <- summary(model)
+        })
         .have_same_handle(ret, model)
+        .has_expected_content_for_fitted_model(log_txt)
+
+        #--- should not fail for finalized models ---#
+        model$finalize()
+
+        # print()
+        log_txt <- capture.output({
+          ret <- print(model)
+        })
+        .has_expected_content_for_finalized_model(log_txt)
+
+        # show()
+        .have_same_handle(ret, model)
+        log_txt <- capture.output({
+          ret <- show(model)
+        })
+        expect_null(ret)
+        .has_expected_content_for_finalized_model(log_txt)
+
+        # summary()
+        log_txt <- capture.output({
+          ret <- summary(model)
+        })
+        .have_same_handle(ret, model)
+        .has_expected_content_for_finalized_model(log_txt)
     }
 
     data("mtcars")
     model <- lgb.train(
-        params = list(objective = "regression")
+        params = list(
+          objective = "regression"
+          , min_data_in_leaf = 1L
+        )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
-            , label = mtcars$mpg)
+            , label = mtcars$mpg
+            , params = list(
+              min_data_in_bin = 1L
+            )
+        )
         , verbose = VERBOSITY
         , nrounds = 5L
     )
@@ -1332,10 +1383,17 @@ test_that("Booster's print, show, and summary work correctly", {
 test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     data("mtcars")
     model <- lgb.train(
-        params = list(objective = "regression")
+        params = list(
+          objective = "regression"
+          , min_data_in_leaf = 1L
+        )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
-            , label = mtcars$mpg)
+            , label = mtcars$mpg
+            , params = list(
+              min_data_in_bin = 1L
+            )
+        )
         , verbose = VERBOSITY
         , nrounds = 5L
     )

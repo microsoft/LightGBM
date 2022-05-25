@@ -83,7 +83,7 @@ class _ObjectiveFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[np.ndarray, np.ndarray]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -165,7 +165,7 @@ class _EvalFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[str, float, bool]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -599,11 +599,10 @@ class LGBMModel(_LGBMModelBase):
                     raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
             if stage == "fit":
-                self._fobj = _ObjectiveFunctionWrapper(self._objective)
-            params['objective'] = 'None'  # objective = nullptr for unknown objective
+                params['objective'] = _ObjectiveFunctionWrapper(self._objective)
+            else:
+                params['objective'] = 'None'
         else:
-            if stage == "fit":
-                self._fobj = None
             params['objective'] = self._objective
 
         params.pop('importance_type', None)
@@ -759,7 +758,6 @@ class LGBMModel(_LGBMModelBase):
             num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            fobj=self._fobj,
             feval=eval_metrics_callable,
             init_model=init_model,
             feature_name=feature_name,

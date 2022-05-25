@@ -169,12 +169,13 @@ Dataset <- R6::R6Class(
           } else {
 
             # Check if more categorical features were output over the feature space
-            if (max(private$categorical_feature) > length(private$colnames)) {
+            data_is_not_filename <- !is.character(private$raw_data)
+            if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
                 , " but only "
-                , length(private$colnames)
+                , ncol(private$raw_data)
                 , " features"
               )
             }
@@ -288,6 +289,13 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
+      # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
+      # in cases like constructing from a file or from a matrix with no column names.
+      private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
+      )
+
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 
@@ -295,7 +303,6 @@ Dataset <- R6::R6Class(
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
-          , reshape = TRUE
         )
 
         # Not needed to transpose, for is col_marjor
@@ -374,6 +381,28 @@ Dataset <- R6::R6Class(
 
       }
 
+    },
+
+    # Get number of bins for feature
+    get_feature_num_bin = function(feature) {
+      if (lgb.is.null.handle(x = private$handle)) {
+        stop("Cannot get number of bins in feature before constructing Dataset.")
+      }
+      if (is.character(feature)) {
+        feature_name <- feature
+        feature <- which(private$colnames == feature_name)
+        if (length(feature) == 0L) {
+          stop(sprintf("feature '%s' not found", feature_name))
+        }
+      }
+      num_bin <- integer(1L)
+      .Call(
+        LGBM_DatasetGetFeatureNumBin_R
+        , private$handle
+        , feature - 1L
+        , num_bin
+      )
+      return(num_bin)
     },
 
     # Get column names

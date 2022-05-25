@@ -4,7 +4,9 @@
     return(
         vapply(
             X = df
-            , FUN = function(x) {paste0(class(x), collapse = ",")}
+            , FUN = function(x) {
+                paste0(class(x), collapse = ",")
+            }
             , FUN.VALUE = character(1L)
         )
     )
@@ -40,8 +42,12 @@
     return(invisible(NULL))
 }
 
-.LGB_CONVERT_DEFAULT_FOR_LOGICAL_NA <- function() {return(-1L)}
-.LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA <- function() {return(0L)}
+.LGB_CONVERT_DEFAULT_FOR_LOGICAL_NA <- function() {
+    return(-1L)
+}
+.LGB_CONVERT_DEFAULT_FOR_NON_LOGICAL_NA <- function() {
+    return(0L)
+}
 
 
 #' @name lgb.convert_with_rules

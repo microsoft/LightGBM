@@ -7,7 +7,6 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from logging import Logger
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
@@ -41,21 +40,37 @@ class _DummyLogger:
         warnings.warn(msg, stacklevel=3)
 
 
-_LOGGER: Union[_DummyLogger, Logger] = _DummyLogger()
+_LOGGER: Any = _DummyLogger()
+_INFO_METHOD_NAME = "info"
+_WARNING_METHOD_NAME = "warning"
 
 
-def register_logger(logger: Logger) -> None:
+def register_logger(
+    logger: Any, info_method_name: str = "info", warning_method_name: str = "warning"
+) -> None:
     """Register custom logger.
 
     Parameters
     ----------
-    logger : logging.Logger
+    logger : Any
         Custom logger.
+    info_method_name : str, optional (default="info")
+        Method used to log info messages.
+    warning_method_name : str, optional (default="warning")
+        Method used to log warning messages.
     """
-    if not isinstance(logger, Logger):
-        raise TypeError("Logger should inherit logging.Logger class")
-    global _LOGGER
+    def _has_method(logger: Any, method_name: str) -> bool:
+        return callable(getattr(logger, method_name, None))
+
+    if not _has_method(logger, info_method_name) or not _has_method(logger, warning_method_name):
+        raise TypeError(
+            f"Logger must provide '{info_method_name}' and '{warning_method_name}' method"
+        )
+
+    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME
     _LOGGER = logger
+    _INFO_METHOD_NAME = info_method_name
+    _WARNING_METHOD_NAME = warning_method_name
 
 
 def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
@@ -76,16 +91,16 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
 
 
 def _log_info(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_warning(msg: str) -> None:
-    _LOGGER.warning(msg)
+    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg)
 
 
 @_normalize_native_string
 def _log_native(msg: str) -> None:
-    _LOGGER.info(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
 
 
 def _log_callback(msg: bytes) -> None:
@@ -183,8 +198,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
-        if _get_bad_pandas_dtypes([data.dtypes]):
-            raise ValueError('Series.dtypes must be int, float or bool')
+        _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
         return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
     else:
         raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
@@ -217,8 +231,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
     if _is_2d_list(data):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
-        if _get_bad_pandas_dtypes(data.dtypes):
-            raise ValueError('DataFrame.dtypes must be int, float or bool')
+        _check_for_bad_pandas_dtypes(data.dtypes)
         return cast_numpy_array_to_dtype(data.values, dtype)
     raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
@@ -500,7 +513,7 @@ def c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _get_bad_pandas_dtypes(dtypes):
+def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
     float128 = getattr(np, 'float128', type(None))
 
     def is_allowed_numpy_dtype(dtype):
@@ -509,7 +522,14 @@ def _get_bad_pandas_dtypes(dtypes):
             and not issubclass(dtype, (np.timedelta64, float128))
         )
 
-    return [i for i, dtype in enumerate(dtypes) if not is_allowed_numpy_dtype(dtype.type)]
+    bad_pandas_dtypes = [
+        f'{column_name}: {pandas_dtype}'
+        for column_name, pandas_dtype in pandas_dtypes_series.iteritems()
+        if not is_allowed_numpy_dtype(pandas_dtype.type)
+    ]
+    if bad_pandas_dtypes:
+        raise ValueError('pandas dtypes must be int, float or bool.\n'
+                         f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
 def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, validate_features):
@@ -540,7 +560,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
-            data = data.copy()  # not alter origin DataFrame
+            data = data.copy(deep=False)  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
@@ -551,12 +571,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 categorical_feature = list(categorical_feature)
         if feature_name == 'auto':
             feature_name = list(data.columns)
-        bad_indices = _get_bad_pandas_dtypes(data.dtypes)
-        if bad_indices:
-            bad_index_cols_str = ', '.join(data.columns[bad_indices])
-            raise ValueError("DataFrame.dtypes for data must be int, float or bool.\n"
-                             "Did not expect the data types in the following fields: "
-                             f"{bad_index_cols_str}")
+        _check_for_bad_pandas_dtypes(data.dtypes)
         df_dtypes = [dtype.type for dtype in data.dtypes]
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
         target_dtype = np.find_common_type(df_dtypes, [])
@@ -573,8 +588,7 @@ def _label_from_pandas(label):
     if isinstance(label, pd_DataFrame):
         if len(label.columns) > 1:
             raise ValueError('DataFrame for label cannot have multiple columns')
-        if _get_bad_pandas_dtypes(label.dtypes):
-            raise ValueError('DataFrame.dtypes for label must be int, float or bool')
+        _check_for_bad_pandas_dtypes(label.dtypes)
         label = np.ravel(label.values.astype(np.float32, copy=False))
     return label
 
@@ -748,8 +762,7 @@ class _InnerPredictor:
         return this
 
     def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
-                is_reshape=True):
+                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False):
         """Predict logic.
 
         Parameters
@@ -770,8 +783,6 @@ class _InnerPredictor:
         data_has_header : bool, optional (default=False)
             Whether data has header.
             Used only for txt data.
-        is_reshape : bool, optional (default=True)
-            Whether to reshape to (nrow, ncol).
 
         Returns
         -------
@@ -825,7 +836,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
-        if is_reshape and not is_sparse and preds.size != nrow:
+        if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -1345,12 +1356,12 @@ class Dataset:
         self._start_row += nrow
         return self
 
-    def get_params(self):
+    def get_params(self) -> Dict[str, Any]:
         """Get the used parameters in the Dataset.
 
         Returns
         -------
-        params : dict or None
+        params : dict
             The used parameters in this Dataset object.
         """
         if self.params is not None:
@@ -1377,6 +1388,8 @@ class Dataset:
                                                 "weight_column",
                                                 "zero_as_missing")
             return {k: v for k, v in self.params.items() if k in dataset_params}
+        else:
+            return {}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1396,8 +1409,8 @@ class Dataset:
         if predictor is not None:
             init_score = predictor.predict(data,
                                            raw_score=True,
-                                           data_has_header=data_has_header,
-                                           is_reshape=False)
+                                           data_has_header=data_has_header)
+            init_score = init_score.ravel()
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, (str, Path)):
@@ -1815,6 +1828,7 @@ class Dataset:
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
+            self.feature_name = self.get_feature_name()
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
@@ -2379,6 +2393,30 @@ class Dataset:
             return ret.value
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
+
+    def feature_num_bin(self, feature: Union[int, str]) -> int:
+        """Get the number of bins for a feature.
+
+        Parameters
+        ----------
+        feature : int or str
+            Index or name of the feature.
+
+        Returns
+        -------
+        number_of_bins : int
+            The number of constructed bins for the feature in the Dataset.
+        """
+        if self.handle is not None:
+            if isinstance(feature, str):
+                feature = self.feature_name.index(feature)
+            ret = ctypes.c_int(0)
+            _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
+                                                         ctypes.c_int(feature),
+                                                         ctypes.byref(ret)))
+            return ret.value
+        else:
+            raise LightGBMError("Cannot get feature_num_bin before construct dataset")
 
     def get_ref_chain(self, ref_limit=100):
         """Get a chain of Dataset objects.
@@ -3152,15 +3190,15 @@ class Booster:
             Data for the evaluating.
         name : str
             Name of the data.
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     A ``Dataset`` to evaluate.
@@ -3198,15 +3236,15 @@ class Booster:
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The training dataset.
@@ -3229,15 +3267,15 @@ class Booster:
 
         Parameters
         ----------
-        feval : callable or None, optional (default=None)
+        feval : callable, list of callable, or None, optional (default=None)
             Customized evaluation function.
-            Should accept two parameters: preds, eval_data,
+            Each evaluation function should accept two parameters: preds, eval_data,
             and return (eval_name, eval_result, is_higher_better) or list of such tuples.
 
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The validation dataset.
@@ -3461,7 +3499,7 @@ class Booster:
 
     def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, validate_features=False,
+                data_has_header=False, validate_features=False,
                 **kwargs):
         """Make a prediction.
 
@@ -3496,8 +3534,6 @@ class Booster:
         data_has_header : bool, optional (default=False)
             Whether the data has header.
             Used only if data is str.
-        is_reshape : bool, optional (default=True)
-            If True, result is reshaped to [nrow, ncol].
         validate_features : bool, optional (default=False)
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
@@ -3521,7 +3557,7 @@ class Booster:
                 num_iteration = -1
         return predictor.predict(data, start_iteration, num_iteration,
                                  raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, is_reshape)
+                                 data_has_header)
 
     def refit(
         self,
@@ -3744,7 +3780,7 @@ class Booster:
             ctypes.c_int(iteration),
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if importance_type_int == 0:
+        if importance_type_int == C_API_FEATURE_IMPORTANCE_SPLIT:
             return result.astype(np.int32)
         else:
             return result
