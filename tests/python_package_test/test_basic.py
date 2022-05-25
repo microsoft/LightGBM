@@ -650,7 +650,7 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype):
     df = pd.DataFrame(X)
     # feature names are required to not make a copy (rename makes a copy)
     feature_name = ['x1', 'x2']
-    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None, False)[0]
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
 
