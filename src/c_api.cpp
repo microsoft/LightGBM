@@ -2129,6 +2129,31 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   API_END();
 }
 
+int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
+			      const char** data_names,
+                              int data_num_features) {
+  API_BEGIN();
+  int booster_num_features;
+  size_t out_buffer_len;
+  LGBM_BoosterGetFeatureNames(handle, 0, &booster_num_features, 0, &out_buffer_len, nullptr);
+  if (booster_num_features != data_num_features) {
+    Log::Fatal("Booster was trained on %d features, but got %d input features to predict.", booster_num_features, data_num_features);
+  }
+  std::vector<std::vector<char>> tmp_names(booster_num_features);
+  std::vector<char*> booster_names(booster_num_features);
+  for (int i = 0; i < booster_num_features; ++i) {
+    tmp_names[i].resize(out_buffer_len);
+    booster_names[i] = tmp_names[i].data();
+  }
+  LGBM_BoosterGetFeatureNames(handle, data_num_features, &booster_num_features, out_buffer_len, &out_buffer_len, booster_names.data());
+  for (int i = 0; i < booster_num_features; ++i) {
+    if (strcmp(data_names[i], booster_names[i]) != 0) {
+      Log::Fatal("Expected '%s' at position %d but found '%s'", booster_names[i], i, data_names[i]);
+    }
+  }
+  API_END();
+}
+
 int LGBM_BoosterPredictForMat(BoosterHandle handle,
                               const void* data,
                               int data_type,

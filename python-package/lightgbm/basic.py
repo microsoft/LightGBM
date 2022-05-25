@@ -532,23 +532,12 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
                          f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical, validate_features):
+def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
             data = data.rename(columns=str)
-        elif isinstance(feature_name, list) and validate_features:
-            df_features = [str(x) for x in data.columns]
-            missing_features = set(feature_name) - set(df_features)
-            if missing_features:
-                raise ValueError(
-                    f"The following features are missing: {missing_features}.\n"
-                    "If you're sure the features are correct you can disable this check by setting validate_features=False"
-                )
-            sort_idxs = [df_features.index(feature) for feature in feature_name]
-            if not all(x == i for i, x in enumerate(sort_idxs)):
-                data = data.iloc[:, sort_idxs]  # ensure column order
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -1445,8 +1434,7 @@ class Dataset:
         data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
                                                                                              feature_name,
                                                                                              categorical_feature,
-                                                                                             self.pandas_categorical,
-                                                                                             False)
+                                                                                             self.pandas_categorical)
         label = _label_from_pandas(label)
 
         # process for args
@@ -3548,7 +3536,18 @@ class Booster:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical, validate_features)[0]
+        elif isinstance(data, pd_DataFrame) and validate_features:
+            data_names = [str(x) for x in data.columns]
+            ptr_names = (ctypes.c_char_p * len(data_names))()
+            ptr_names[:] = [x.encode('utf-8') for x in data_names]
+            _safe_call(
+                _LIB.LGBM_BoosterValidateFeatureNames(
+                    self.handle,
+                    ptr_names,
+                    ctypes.c_int(len(data_names)),
+                )
+            )
+        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical)[0]
         predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:

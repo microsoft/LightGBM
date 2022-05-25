@@ -1315,19 +1315,9 @@ def test_validate_features(task):
     assert model.booster_.feature_name() == features
 
     # try to predict with a different feature
-    df2 = df.rename(columns={'x1': 'z'})
-    with pytest.raises(ValueError, match="The following features are missing: {'x1'}"):
+    df2 = df.rename(columns={'x2': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x2' at position 1 but found 'z'"):
         model.predict(df2, validate_features=True)
 
     # check that disabling the check doesn't raise the error
     model.predict(df2, validate_features=False)
-
-    # predict with the features out of order
-    preds_sorted_features = model.predict(df[features])
-    scrambled_features = ['x3', 'x1', 'x4', 'x2']
-    preds_scrambled_features = model.predict(df[scrambled_features], validate_features=True)
-    np.testing.assert_allclose(preds_sorted_features, preds_scrambled_features)
-
-    # check that disabling the check doesn't raise an error and produces incorrect predictions
-    preds_scrambled_features_no_check = model.predict(df[scrambled_features], validate_features=False)
-    np.testing.assert_raises(AssertionError, np.testing.assert_allclose, preds_sorted_features, preds_scrambled_features_no_check)
