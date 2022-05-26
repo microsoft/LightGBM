@@ -164,14 +164,14 @@ test_that("Sparse feature contribution predictions do not take inputs with wrong
 
     X_wrong <- X[, c(1L:10L, 1L:10L)]
     X_wrong <- as(X_wrong, "CsparseMatrix")
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d columns")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d+ columns")
 
     X_wrong <- as(X_wrong, "RsparseMatrix")
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d columns")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d+ columns")
 
     X_wrong <- as(X_wrong, "CsparseMatrix")
     X_wrong <- X_wrong[, 1L:3L]
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d columns")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has \\d+ columns")
 })
 
 test_that("Feature contribution predictions do not take non-general CSR or CSC inputs", {
