@@ -572,6 +572,18 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
             categorical_feature = None
     return data, feature_name, categorical_feature, pandas_categorical
 
+def _reapply_pandas_categories(data, pandas_categorical, categorical_feature):
+    """Re-cast any columns that were trained as categorical"""
+    if (
+        not isinstance(data, pd_DataFrame)
+        or pandas_categorical is None
+        or not isinstance(categorical_feature, list)
+    ):
+        return data
+    for cat_col in categorical_feature:
+        if cat_col in data.columns and data[cat_col].dtype != 'category':
+            data[cat_col] = data[cat_col].astype("category")
+    return data
 
 def _label_from_pandas(label):
     if isinstance(label, pd_DataFrame):
@@ -781,6 +793,11 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+        data = _reapply_pandas_categories(
+            data,
+            self.pandas_categorical,
+            self.categorical_feature,
+        )
         data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
@@ -3681,6 +3698,8 @@ class Booster:
     def _to_predictor(self, pred_parameter=None):
         """Convert to predictor."""
         predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
+        feature_name = self.feature_name()
+        predictor.categorical_feature = [feature_name[i] for i in self.params.get("categorical_column", [])]
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
