@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "application/predictor.hpp"
+#include <LightGBM/utils/gdb.h>
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
 
@@ -43,7 +44,10 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
-#define API_BEGIN() try {
+/*! All endpoints can be debugged. Simply call
+ * trigger_gdb() before the C API call.
+ */
+#define API_BEGIN() GDB_ON_TRIGGER(); try {
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
