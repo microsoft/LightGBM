@@ -29,11 +29,9 @@
 #include <utility>
 #include <vector>
 
-#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 #define FMT_HEADER_ONLY
-#include "../../../external_libs/fmt/include/fmt/format.h"
-#endif
 #include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
+#include "../../../external_libs/fmt/include/fmt/format.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
