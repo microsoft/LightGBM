@@ -268,8 +268,12 @@ class CVBooster:
 
     Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
     This class has the same methods as Booster class.
-    All method calls, except for saving and loading the model, are actually performed for underlying Boosters and
+    All method calls, except for the following methods, are actually performed for underlying Boosters and
     then all returned results are returned in a list.
+
+    - model_from_string
+    - model_to_string
+    - save_model
 
     Attributes
     ----------
