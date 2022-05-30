@@ -537,7 +537,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str)
+            data = data.rename(columns=str, copy=False)
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
