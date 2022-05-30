@@ -3547,7 +3547,7 @@ class Booster:
                     ctypes.c_int(len(data_names)),
                 )
             )
-        data = _data_from_pandas(data, self.feature_name(), None, self.pandas_categorical)[0]
+        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predictor = self._to_predictor(deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
