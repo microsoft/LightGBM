@@ -3578,3 +3578,26 @@ def test_boost_from_average_with_single_leaf_trees():
     preds = model.predict(X)
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
+
+
+@pytest.mark.parametrize('verbosity', [-1, 0])
+def test_verbosity_can_suppress_alias_warnings(capsys, verbosity):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'subsample': 0.75,
+        'bagging_fraction': 0.8,
+        'force_col_wise': True,
+        'verbosity': verbosity,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] bagging_fraction is set=0.8, subsample=0.75 will be ignored. '
+        'Current value: bagging_fraction=0.8'
+    )
+    stdout = capsys.readouterr().out
+    if verbosity == -1:
+        assert stdout == ''
+    else:
+        assert expected_msg in stdout
