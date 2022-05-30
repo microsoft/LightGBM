@@ -2130,8 +2130,8 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
 }
 
 int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
-			      const char** data_names,
-                              int data_num_features) {
+                                     const char** data_names,
+                                     int data_num_features) {
   API_BEGIN();
   int booster_num_features;
   size_t out_buffer_len;
