@@ -653,13 +653,13 @@ class LGBMModel(_LGBMModelBase):
 
         return params
 
-    def _process_n_jobs(self, n_jobs: int):
+    def _process_n_jobs(self, n_jobs: Optional[int]) -> int:
         """Convert special values of n_jobs to their actual values according to the formulas that apply.
 
         Parameters
         ----------
-        n_jobs : int
-            The original value of n_jobs, Potentially having special values such as 'None' or
+        n_jobs : int or None
+            The original value of n_jobs, potentially having special values such as 'None' or
             negative integers.
 
         Returns
@@ -852,8 +852,7 @@ class LGBMModel(_LGBMModelBase):
         # number of threads can have values with special meaning which is only applied
         # in the scikit-learn interface, these should not reach the c++ side as-is
         n_jobs = self.n_jobs
-        num_threads_aliases = _ConfigAliases.get("num_threads")
-        for alias in num_threads_aliases:
+        for alias in _ConfigAliases.get("num_threads"):
             if alias in predict_params:
                 n_jobs = predict_params.pop(alias)
         predict_params["num_threads"] = self._process_n_jobs(n_jobs)
