@@ -678,6 +678,7 @@ std::vector<double> GBDT::FeatureImportance(int num_iteration, int importance_ty
   if (warn_about_feature_number) {
     Log::Warning("Only %d features found in dataset for continual training, but at least %d features found in initial model.",
       static_cast<int>(feature_importances.size()), max_feature_index_found + 1);
+    Log::Warning("Please check the number of features used in continual training.");
   }
   return feature_importances;
 }
