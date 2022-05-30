@@ -29,11 +29,9 @@
 #include <utility>
 #include <vector>
 
-#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 #define FMT_HEADER_ONLY
-#include "../../../external_libs/fmt/include/fmt/format.h"
-#endif
 #include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
+#include "../../../external_libs/fmt/include/fmt/format.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -1192,7 +1190,6 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
-#if (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 /*!
 * Safely formats a value onto a buffer according to a format string and null-terminates it.
 *
@@ -1257,7 +1254,6 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   }
   return str_buf.str();
 }
-#endif  // (!((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__))))
 
 
 }  // namespace CommonC
