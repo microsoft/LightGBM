@@ -3592,7 +3592,6 @@ def test_cegb_split_buffer_clean():
     train = lgb.Dataset(train_data, train_y, free_raw_data=True)
 
     params = {
-        'device': "cpu",
         'boosting_type': 'gbdt',
         'objective': 'regression',
         'max_bin': 255,
