@@ -31,7 +31,8 @@ TEST(Serialization, JustWorks) {
 
   // Serialize the reference
   ByteBufferHandle buffer_handle;
-  result = LGBM_DatasetSerializeReferenceToBinary(datset_handle, &buffer_handle);
+  int32_t buffer_len;
+  result = LGBM_DatasetSerializeReferenceToBinary(datset_handle, &buffer_handle, &buffer_len);
   EXPECT_EQ(0, result) << "LGBM_DatasetSerializeReferenceToBinary result code: " << result;
 
   ByteBuffer* buffer = static_cast<ByteBuffer*>(buffer_handle);

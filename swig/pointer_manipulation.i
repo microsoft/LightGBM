@@ -15,6 +15,7 @@
  * to arrays of size max(int64_t) instead of max(int32_t).
  */
 
+%pointer_functions(uint8_t, bytep)
 %pointer_functions(int, intp)
 %pointer_functions(long, longp)
 %pointer_functions(double, doublep)
@@ -32,6 +33,7 @@
 
 %pointer_cast(double *, void *, double_to_voidp_ptr)
 %pointer_cast(float *, void *, float_to_voidp_ptr)
+%pointer_cast(uint8_t *, void *, byte_to_voidp_ptr)
 %pointer_cast(int *, void *, int_to_voidp_ptr)
 %pointer_cast(int32_t *, void *, int32_t_to_voidp_ptr)
 %pointer_cast(int64_t *, void *, int64_t_to_voidp_ptr)
@@ -129,11 +131,13 @@ void NAME##_setitem(TYPE **ary, int64_t index, TYPE *value);
 
 %enddef
 
+%long_array_functions(uint8_t, byteArray)
 %long_array_functions(double, doubleArray)
 %long_array_functions(float, floatArray)
 %long_array_functions(int, intArray)
 %long_array_functions(long, longArray)
 
+%ptr_array_functions(void, voidPtrArray)
 %ptr_array_functions(double, doublePtrArray)
 %ptr_array_functions(int, intPtrArray)
 

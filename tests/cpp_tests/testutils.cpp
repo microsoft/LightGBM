@@ -42,6 +42,7 @@ int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config,
 */
 void TestUtils::CreateRandomDenseData(int32_t nrows,
                                       int32_t ncols,
+                                      int32_t nclasses,
                                       std::vector<double> *features,
                                       std::vector<float> *labels,
                                       std::vector<float> *weights,
@@ -58,7 +59,7 @@ void TestUtils::CreateRandomDenseData(int32_t nrows,
     }
   }
 
-  CreateRandomMetadata(nrows, labels, weights, init_scores, groups);
+  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
 }
 
 
@@ -67,6 +68,7 @@ void TestUtils::CreateRandomDenseData(int32_t nrows,
 */
 void TestUtils::CreateRandomSparseData(int32_t nrows,
                                        int32_t ncols,
+                                       int32_t nclasses,
                                        float sparse_percent,
                                        std::vector<int32_t>* indptr,
                                        std::vector<int32_t>* indices,
@@ -76,7 +78,7 @@ void TestUtils::CreateRandomSparseData(int32_t nrows,
                                        std::vector<double>* init_scores,
                                        std::vector<int32_t>* groups) {
   Random rand(42);
-  indptr->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols + 1));
+  indptr->reserve(static_cast<int32_t>(nrows + 1));
   indices->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
   values->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
 
@@ -88,20 +90,21 @@ void TestUtils::CreateRandomSparseData(int32_t nrows,
       float rnd = rand.NextFloat();
       if (rnd < sparse_percent)
       {
-        indices->push_back(ncols * row + col);
+        indices->push_back(col);
         values->push_back(rand.NextFloat());
       }
     }
     indptr->push_back(static_cast<int32_t>(indices->size() - 1));
   }
 
-  CreateRandomMetadata(nrows, labels, weights, init_scores, groups);
+  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
 }
 
 /*!
 * Creates fake data in the passed vectors.
 */
 void TestUtils::CreateRandomMetadata(int32_t nrows,
+                                     int32_t nclasses,
                                      std::vector<float>* labels,
                                      std::vector<float>* weights,
                                      std::vector<double>* init_scores,
@@ -112,7 +115,7 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
     weights->reserve(nrows);
   }
   if (init_scores) {
-    init_scores->reserve(nrows);
+    init_scores->reserve(nrows * nclasses);
   }
   if (groups) {
     weights->reserve(nrows);
@@ -127,7 +130,10 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
       weights->push_back(rand.NextFloat());
     }
     if (init_scores) {
-      init_scores->push_back(rand.NextFloat());
+      for (int32_t i = 0; i < nclasses; i++)
+      {
+        init_scores->push_back(rand.NextFloat());
+      }
     }
     if (groups) {
       if (rand.NextFloat() > 0.95) {
@@ -141,6 +147,7 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
 void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                    int32_t nrows,
                                    int32_t ncols,
+                                   int32_t nclasses,
                                    int32_t batch_count,
                                    const std::vector<double> *features,
                                    const std::vector<float> *labels,
@@ -148,16 +155,25 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                    const std::vector<double> *init_scores,
                                    const std::vector<int32_t> *groups) {
 
+  if ((nrows % batch_count) != 0) {
+    Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
+  }
+
   const double* features_ptr = features->data();
   const float* labels_ptr = labels->data();
   const float* weights_ptr = nullptr;
   if (weights) {
     weights_ptr = weights->data();
   }
+
+  // Since init_scores are in a column format, but need to be pushed as rows, we have to extract each batch
+  std::vector<double> init_score_batch;
   const double* init_scores_ptr = nullptr;
   if (init_scores) {
-    init_scores_ptr = init_scores->data();
+    init_score_batch.reserve(nclasses * batch_count);
+    init_scores_ptr = init_score_batch.data();
   }
+
   const int32_t* groups_ptr = nullptr;
   if (groups) {
     groups_ptr = groups->data();
@@ -167,6 +183,10 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
 
   for (int32_t i = 0; i < nrows; i += batch_count)
   {
+    if (init_scores) {
+      init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
+    }
+
     int result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
                                                   features_ptr,
                                                   1,
@@ -184,9 +204,6 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
     if (weights_ptr) {
       weights_ptr += batch_count;
     }
-    if (init_scores_ptr) {
-      init_scores_ptr += batch_count;
-    }
     if (groups_ptr) {
       groups_ptr += batch_count;
     }
@@ -202,6 +219,7 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
 
 void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                     int32_t nrows,
+                                    int32_t nclasses,
                                     int32_t batch_count,
                                     const std::vector<int32_t> *indptr,
                                     const std::vector<int32_t> *indices,
@@ -210,6 +228,10 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                     const std::vector<float> *weights,
                                     const std::vector<double> *init_scores,
                                     const std::vector<int32_t> *groups) {
+  Log::Info("     Begin StreamSparseDataset");
+  if ((nrows % batch_count) != 0) {
+    Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
+  }
 
   const int32_t* indptr_ptr = indptr->data();
   const int32_t* indices_ptr = indices->data();
@@ -219,21 +241,36 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
   if (weights) {
     weights_ptr = weights->data();
   }
+
+  // Since init_scores are in a column format, but need to be pushed as rows, we have to extract each batch
+  std::vector<double> init_score_batch;
   const double* init_scores_ptr = nullptr;
   if (init_scores) {
-    init_scores_ptr = init_scores->data();
+    init_score_batch.reserve(nclasses * batch_count);
+    init_scores_ptr = init_score_batch.data();
   }
+
   const int32_t* groups_ptr = nullptr;
   if (groups) {
     groups_ptr = groups->data();
   }
 
+  auto start_time = std::chrono::steady_clock::now();
+
   for (int32_t i = 0; i < nrows; i += batch_count)
   {
+    if (init_scores) {
+      init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
+    }
+
     int32_t nelem = indptr->at(i + batch_count - 1) - indptr->at(i);
 
+    if (i < 2 || i > nrows-2) {
+      Log::Info("     Calling LGBM_DatasetPushRowsByCSRWithMetadata %d", i);
+    }
+    Log::Info("       Streaming %d batch_count with first value of %d", batch_count, indptr_ptr[0]);
     int result = LGBM_DatasetPushRowsByCSRWithMetadata(dataset_handle,
-                                                       indptr,
+                                                       indptr_ptr,
                                                        2,
                                                        indices_ptr,
                                                        values_ptr,
@@ -245,22 +282,26 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                                        weights_ptr,
                                                        init_scores_ptr,
                                                        groups_ptr);
+    if (i < 2 || i > nrows - 2) {
+      Log::Info("     Finished calling LGBM_DatasetPushRowsByCSRWithMetadata");
+    }
     EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
 
     indptr_ptr += batch_count;
-    indices_ptr += nelem;
-    values_ptr += nelem;
     labels_ptr += batch_count;
     if (weights_ptr) {
       weights_ptr += batch_count;
-    }
-    if (init_scores_ptr) {
-      init_scores_ptr += batch_count;
     }
     if (groups_ptr) {
       groups_ptr += batch_count;
     }
   }
+
+  int result = LGBM_DatasetFinishStreaming(dataset_handle);
+  EXPECT_EQ(0, result) << "LGBM_DatasetFinishStreaming result code: " << result;
+
+  auto cur_time = std::chrono::steady_clock::now();
+  Log::Info(" Time: %d", cur_time - start_time);
 }
 
 void TestUtils::AssertMetadata(const Metadata* metadata,
@@ -296,9 +337,12 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     if (!ref_init_scores) {
       FAIL() << "Expected null init_scores";
     }
-    for (auto i = 0; i < nTotal; i++)
+    for (auto i = 0; i < ref_init_scores->size(); i++)
     {
-      EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Coalesced data: " << ref_init_scores->at(i);
+      EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Coalesced data: " << ref_init_scores->at(i) << " Index: " << i;
+      if (ref_init_scores->at(i) != init_scores[i]) {
+        FAIL() << "Mismatched init_scores";
+      }
     }
   } else if (ref_init_scores) {
     FAIL() << "Expected non-null init_scores";
@@ -330,4 +374,23 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     FAIL() << "Expected non-null query_boundaries";
   }
 }
+
+const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_batch,
+                                     int32_t index,
+                                     int32_t nrows,
+                                     int32_t nclasses,
+                                     int32_t batch_count,
+                                     const std::vector<double>* original_init_scores) {
+  // Extract a set of rows from the column-based format
+  init_score_batch.clear();
+  for (int32_t row = index; row < index + batch_count; row++)
+  {
+    for (int32_t c = 0; c < nclasses; c++)
+    {
+      init_score_batch.push_back(original_init_scores->at(row + nrows * c));
+    }
+  }
+  return init_score_batch.data();
+}
+
 } // LightGBM

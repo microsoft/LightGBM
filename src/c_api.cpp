@@ -952,6 +952,13 @@ int LGBM_SampleIndices(int32_t num_total_row,
   API_END();
 }
 
+int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val) {
+  API_BEGIN();
+  LightGBM::ByteBuffer* byteBuffer = reinterpret_cast<LightGBM::ByteBuffer*>(handle);
+  *out_val = byteBuffer->GetAt(index);
+  API_END();
+}
+
 int LGBM_ByteBufferFree(ByteBufferHandle handle) {
   API_BEGIN();
   delete reinterpret_cast<LightGBM::ByteBuffer*>(handle);
@@ -1070,7 +1077,8 @@ void PushMetadata(const float* label,
   const double* init_score_ptr = init_score;
   const int32_t* query_ptr = query;
 
-  // Query value has an order dependency, so cannot parallelize. Also, some can be null. Just do all metadata serially.
+  const int32_t nclasses = p_dataset->metadata().num_classes();
+
   for (int i = 0; i < nrow; ++i) {
     p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
     label_ptr++;
@@ -1080,9 +1088,9 @@ void PushMetadata(const float* label,
     }
     if (init_score != nullptr)
     {
-      init_score_ptr++;
+      init_score_ptr += nclasses;
     }
-    if (query_ptr != nullptr)
+    if (query != nullptr)
     {
       query_ptr++;
     }
@@ -1147,25 +1155,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   }
   OMP_THROW_EX();
 
-  const float* label_ptr = label;
-  const float* weight_ptr = weight;
-  const double* init_score_ptr = init_score;
-  const int32_t* query_ptr = query;
-
-  // Query value has an order dependency, so cannot parallelize. Also, some can be null. Just do all metadata serially.
-  for (int i = 0; i < nrow; ++i) {
-    p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
-    label_ptr++;
-    if (weight) {
-      weight_ptr++;
-    }
-    if (init_score) {
-      init_score_ptr++;
-    }
-    if (query_ptr) {
-      query_ptr++;
-    }
-  }
+  PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
 
   if (!p_dataset->is_for_load_only() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
@@ -1220,6 +1210,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                           const double* init_score,
                                           const int32_t* query) {
   API_BEGIN();
+  Log::Info("   Entering LGBM_DatasetPushRowsByCSRWithMetadata, start_row: %d, batch size: %d", start_row, nindptr - 1);
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1232,6 +1223,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
+    Log::Info("   Pushing batch row %d (overall row %d)", i, start_row + i);
     p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
@@ -1685,12 +1677,14 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
 }
 
 int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,
-                                           ByteBufferHandle* out) {
+                                           ByteBufferHandle* out,
+                                           int32_t* out_len) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   std::unique_ptr<LightGBM::ByteBuffer> ret;
   ret.reset(new LightGBM::ByteBuffer());
   dataset->SerializeReference(ret.get());
+  *out_len = static_cast<int32_t>(ret->GetSize());
   *out = ret.release();
   API_END();
 }
@@ -1761,6 +1755,14 @@ int LGBM_DatasetGetNumData(DatasetHandle handle,
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   *out = dataset->num_data();
+  API_END();
+}
+
+int LGBM_DatasetGetNumPushedData(DatasetHandle handle,
+                                 int* out) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  *out = dataset->num_pushed_rows();
   API_END();
 }
 
@@ -2677,6 +2679,7 @@ RowFunctionFromCSR_helper(const void* indptr, const int32_t* indices, const void
       ret.reserve(end - start);
     }
     for (int64_t i = start; i < end; ++i) {
+      Log::Info("        Pushing element index %d: feature %d and val %f", i, indices[i], data_ptr[i]);
       ret.emplace_back(indices[i], data_ptr[i]);
     }
     return ret;

@@ -106,6 +106,13 @@ LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
  * \param handle Handle of byte buffer to be freed
  * \return 0 when succeed, -1 when failure happens
  */
+LIGHTGBM_C_EXPORT int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val);
+
+/*!
+ * \brief Free space for byte buffer.
+ * \param handle Handle of byte buffer to be freed
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_ByteBufferFree(ByteBufferHandle handle);
 
 /* --- start Dataset interface */
@@ -463,10 +470,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
  * \brief Get dataset definition as a binary byte array (excluding data).
  * \param handle Handle of dataset
  * \param out The output byte array
+ * \param out_len The length of the output byte array (returned for convenience)
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,
-                                                             ByteBufferHandle* out);
+                                                             ByteBufferHandle* out,
+                                                             int32_t* out_len);
 
 /*!
  * \brief Save dataset to text file, intended for debugging use only.
@@ -528,6 +537,15 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetUpdateParamChecking(const char* old_parameters
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumData(DatasetHandle handle,
                                              int* out);
+
+/*!
+ * \brief Get number of data points pushed into the dataset.
+ * \param handle Handle of dataset
+ * \param[out] out The address to hold number of data points pushed
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumPushedData(DatasetHandle handle,
+                                                   int* out);
 
 /*!
  * \brief Get number of features.

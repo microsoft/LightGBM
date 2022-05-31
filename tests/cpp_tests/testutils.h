@@ -29,6 +29,7 @@ class TestUtils {
     */
     static void CreateRandomDenseData(int32_t nrows,
                                       int32_t ncols,
+                                      int32_t nclasses,
                                       std::vector<double>* features,
                                       std::vector<float>* labels,
                                       std::vector<float>* weights,
@@ -40,7 +41,8 @@ class TestUtils {
     */
     static void TestUtils::CreateRandomSparseData(int32_t nrows,
                                                   int32_t ncols,
-                                                  float sparse_percent,
+                                                  int32_t nclasses,
+                                                 float sparse_percent,
                                                   std::vector<int32_t>* indptr,
                                                   std::vector<int32_t>* indices,
                                                   std::vector<double>* values,
@@ -53,6 +55,7 @@ class TestUtils {
     * Creates a CSR sparse Dataset of random values.
     */
     static void TestUtils::CreateRandomMetadata(int32_t nrows,
+                                                int32_t nclasses,
                                                 std::vector<float>* labels,
                                                 std::vector<float>* weights,
                                                 std::vector<double>* init_scores,
@@ -64,6 +67,7 @@ class TestUtils {
     static void StreamDenseDataset(DatasetHandle dataset_handle,
                                    int32_t nrows,
                                    int32_t ncols,
+                                   int32_t nclasses,
                                    int32_t batch_count,
                                    const std::vector<double> *features,
                                    const std::vector<float> *labels,
@@ -76,6 +80,7 @@ class TestUtils {
     */
     static void StreamSparseDataset(DatasetHandle dataset_handle,
                                     int32_t nrows,
+                                    int32_t nclasses,
                                     int32_t batch_count,
                                     const std::vector<int32_t> *indptr,
                                     const std::vector<int32_t> *indices,
@@ -93,8 +98,14 @@ class TestUtils {
                                const std::vector<float>* weights,
                                const std::vector<double>* init_scores,
                                const std::vector<int32_t>* groups);
+
+    static const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_batch,
+                                                int32_t index,
+                                                int32_t nrows,
+                                                int32_t nclasses,
+                                                int32_t batch_count,
+                                                const std::vector<double>* original_init_scores);
 };
 }
-
 #endif  // LIGHTGBM_TESTS_UTILS_H_
 

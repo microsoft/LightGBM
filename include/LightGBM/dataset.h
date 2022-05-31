@@ -86,8 +86,9 @@ class Metadata {
 
   /*!
   * \brief Initialize space for initial score
+  * \param num_class Number of classes with initial scores
   */
-  void InitInitScore();
+  void InitInitScore(int32_t num_class);
 
   /*!
   * \brief Partition label by used indices
@@ -152,12 +153,17 @@ class Metadata {
   }
 
   /*!
-  * \brief Set Initial Score for one record
+  * \brief Set Initial Scores for one record.  Note that init_score has multiple columns and is stored in column format.
   * \param idx Index of this record
-  * \param value Initial score value of this record
+  * \param value Initial score values for this record, one per class
   */
-  inline void SetInitScoreAt(data_size_t idx, double value) {
-    init_score_[idx] = value;
+  inline void SetInitScoreAt(data_size_t idx, const double* values) {
+    const auto nclasses = num_classes();
+    const double* val_ptr = values;
+    for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr)
+    {
+      init_score_[i] = *val_ptr;
+    }
   }
 
   /*!
@@ -271,6 +277,16 @@ class Metadata {
   */
   inline int64_t num_init_score() const { return num_init_score_; }
 
+  /*!
+  * \brief Get number of classes
+  */
+  inline int32_t num_classes() const {
+    if (num_data_) {
+      return static_cast<int>(num_init_score_ / num_data_);
+    }
+    return 0;
+  }
+
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
   /*! \brief Disable copy */
@@ -291,9 +307,11 @@ class Metadata {
   void LoadQueryBoundaries();
   /*! \brief Load query wights */
   void CalculateQueryWeights();
+  void CalculateQueryBoundaries();
   void AppendLabel(const label_t* label, data_size_t len);
   void AppendWeights(const label_t* weights, data_size_t len);
   void AppendInitScore(const double* init_score, data_size_t len);
+  void AppendQuery(const data_size_t* weights, data_size_t len);
   void AppendQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
@@ -502,7 +520,9 @@ class Dataset {
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
+    Log::Info("     Pushing %d feature values for row %d", feature_values.size(), row_idx);
     for (auto& inner_data : feature_values) {
+      Log::Info("       Pushing %f for feature %d", inner_data.second, inner_data.first);
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {
@@ -546,11 +566,10 @@ class Dataset {
       metadata_.SetWeightAt(row_idx, *weight);
     }
     if (init_score) {
-      metadata_.SetInitScoreAt(row_idx, *init_score);
+      metadata_.SetInitScoreAt(row_idx, init_score);
     }
     if (query) {
-      // Note this has an order dependency, so cannot parallelize
-      metadata_.AppendQueryToBoundaries(*query);
+      metadata_.SetQueryAt(row_idx, *query);
     }
   }
 
@@ -601,6 +620,8 @@ class Dataset {
   LIGHTGBM_EXPORT void FinishLoad();
 
   LIGHTGBM_EXPORT void FinishStreaming();
+
+  LIGHTGBM_EXPORT void FinishMetadata();
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 

@@ -21,6 +21,7 @@ using namespace std;
 void test_stream_dense(DatasetHandle ref_datset_handle,
                        int32_t nrows,
                        int32_t ncols,
+                       int32_t nclasses,
                        int batch_count,
                        const std::vector<double>* features,
                        const std::vector<float>* labels,
@@ -38,12 +39,15 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
   TestUtils::StreamDenseDataset(dataset_handle,
                                 nrows,
                                 ncols,
+                                nclasses,
                                 batch_count,
                                 features,
                                 labels,
                                 weights,
                                 init_scores,
                                 groups);
+
+  dataset->FinishMetadata();  // TODO finalize design of this
 
   // TODO we should assert actual feature data
 
@@ -59,6 +63,7 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
 
 void test_stream_sparse(DatasetHandle ref_datset_handle,
                         int32_t nrows,
+                        int32_t nclasses,
                         int batch_count,
                         const std::vector<int32_t>* indptr,
                         const std::vector<int32_t>* indices,
@@ -77,6 +82,7 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
 
   TestUtils::StreamSparseDataset(dataset_handle,
                                  nrows,
+                                 nclasses,
                                  batch_count,
                                  indptr,
                                  indices,
@@ -85,6 +91,8 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
                                  weights,
                                  init_scores,
                                  groups);
+
+  dataset->FinishMetadata();  // TODO finalize design of this
 
   // TODO we should assert actual feature data
 
@@ -112,17 +120,18 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   Log::Info("Feature group count: %d", noriginalrows);
 
   // Add some fake initial_scores and groups so we can test streaming them
+  int nclasses = 2; // choose > 1 just to test multi-class handling
   std::vector<double> unused_init_scores;
-  unused_init_scores.resize(noriginalrows);
+  unused_init_scores.resize(noriginalrows * nclasses);
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
-  result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows, 1);
-  EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
+  result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
+  EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;
   result = LGBM_DatasetSetField(ref_datset_handle, "group", unused_groups.data(), noriginalrows, 2);
-  EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
+  EXPECT_EQ(0, result) << "LGBM_DatasetSetField group result code: " << result;
 
   // Now use the reference dataset schema to make some testable Datasets with N rows each
-  int32_t nrows = 10000;
+  int32_t nrows = 100;
   int32_t ncols = ref_dataset->num_features();
   std::vector<double> features;
   std::vector<float> labels;
@@ -131,19 +140,19 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   std::vector<int32_t> groups;
 
   Log::Info("Creating random data");
-  TestUtils::CreateRandomDenseData(nrows, ncols, &features, &labels, &weights, &init_scores, &groups);
+  TestUtils::CreateRandomDenseData(nrows, ncols, nclasses, &features, &labels, &weights, &init_scores, &groups);
 
   int32_t batch_count = 1;
-  test_stream_dense(ref_datset_handle, nrows, ncols, batch_count, &features, &labels, &weights, &init_scores, &groups);
+  test_stream_dense(ref_datset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows/100;
-  test_stream_dense(ref_datset_handle, nrows, ncols, batch_count, &features, &labels, &weights, &init_scores, &groups);
+  test_stream_dense(ref_datset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows/10;
-  test_stream_dense(ref_datset_handle, nrows, ncols, batch_count, &features, &labels, &weights, &init_scores, &groups);
+  test_stream_dense(ref_datset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows;
-  test_stream_dense(ref_datset_handle, nrows, ncols, batch_count, &features, &labels, &weights, &init_scores, &groups);
+  test_stream_dense(ref_datset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
 
   result = LGBM_DatasetFree(ref_datset_handle);
   EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
@@ -164,17 +173,19 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   Log::Info("Feature group count: %d", noriginalrows);
 
   // Add some fake initial_scores and groups so we can test streaming them
+  int32_t nclasses = 2;
   std::vector<double> unused_init_scores;
-  unused_init_scores.resize(noriginalrows);
+  unused_init_scores.resize(noriginalrows * nclasses);
+  unused_init_scores.assign(noriginalrows, 1.0);
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
-  result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows, 1);
+  result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
   result = LGBM_DatasetSetField(ref_datset_handle, "group", unused_groups.data(), noriginalrows, 2);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
 
   // Now use the reference dataset schema to make some testable Datasets with N rows each
-  int32_t nrows = 1000;
+  int32_t nrows = 100;
   int32_t ncols = ref_dataset->num_features();
   std::vector<int32_t> indptr;
   std::vector<int32_t> indices;
@@ -186,19 +197,19 @@ TEST(Stream, PushSparseRowsWithMetadata) {
 
   Log::Info("Creating random data");
   float sparse_percent = .1f;
-  TestUtils::CreateRandomSparseData(nrows, ncols, sparse_percent , &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  TestUtils::CreateRandomSparseData(nrows, ncols, nclasses, sparse_percent , &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   int32_t batch_count = 1;
-  test_stream_sparse(ref_datset_handle, nrows, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  test_stream_sparse(ref_datset_handle, nrows, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows / 100;
-  test_stream_sparse(ref_datset_handle, nrows, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  test_stream_sparse(ref_datset_handle, nrows, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows / 10;
-  test_stream_sparse(ref_datset_handle, nrows, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  test_stream_sparse(ref_datset_handle, nrows, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   batch_count = nrows;
-  test_stream_sparse(ref_datset_handle, nrows, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  test_stream_sparse(ref_datset_handle, nrows, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   result = LGBM_DatasetFree(ref_datset_handle);
   EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;

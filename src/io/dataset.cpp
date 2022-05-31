@@ -476,6 +476,7 @@ void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start
   OMP_THROW_EX();
 
   // Fix args to be refs
+  Log::Info("  Appending Metadata at %d.", source->num_pushed_rows());
   metadata_.AppendFrom(&source->metadata_, source->num_pushed_rows());
 
   if (has_raw_) {
@@ -511,6 +512,10 @@ void Dataset::FinishLoad() {
 
 void Dataset::FinishStreaming() {
   metadata_.FinishStreaming();
+}
+
+void Dataset::FinishMetadata() {
+  metadata_.FinishCoalesce();
 }
 
 void PushDataToMultiValBin(
