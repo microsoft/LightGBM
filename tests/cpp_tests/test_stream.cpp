@@ -31,34 +31,39 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
   Log::Info("Streaming %d rows dense data with a batch size of %d", nrows, batch_count);
   DatasetHandle dataset_handle;
 
-  int result = LGBM_DatasetCreateByReference(ref_datset_handle, nrows, &dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
+  try {
+    int result = LGBM_DatasetCreateByReference(ref_datset_handle, nrows, &dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
-  Dataset* dataset = static_cast<Dataset*>(dataset_handle);
+    Dataset* dataset = static_cast<Dataset*>(dataset_handle);
 
-  TestUtils::StreamDenseDataset(dataset_handle,
-                                nrows,
-                                ncols,
-                                nclasses,
-                                batch_count,
-                                features,
-                                labels,
-                                weights,
-                                init_scores,
-                                groups);
+    TestUtils::StreamDenseDataset(dataset_handle,
+                                  nrows,
+                                  ncols,
+                                  nclasses,
+                                  batch_count,
+                                  features,
+                                  labels,
+                                  weights,
+                                  init_scores,
+                                  groups);
 
-  dataset->FinishMetadata();  // TODO finalize design of this
+    dataset->FinishMetadata();  // TODO finalize design of this
 
-  // TODO we should assert actual feature data
+    // TODO we should assert actual feature data
 
-  TestUtils::AssertMetadata(&dataset->metadata(),
-                            labels,
-                            weights,
-                            init_scores,
-                            groups);
+    TestUtils::AssertMetadata(&dataset->metadata(),
+                              labels,
+                              weights,
+                              init_scores,
+                              groups);
 
-  result = LGBM_DatasetFree(dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  } finally {
+    if (dataset_handle) {
+      result = LGBM_DatasetFree(dataset_handle);
+      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+    }
+  }
 }
 
 void test_stream_sparse(DatasetHandle ref_datset_handle,
@@ -75,35 +80,40 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
   Log::Info("Streaming %d rows sparse data with a batch size of %d", nrows, batch_count);
   DatasetHandle dataset_handle;
 
-  int result = LGBM_DatasetCreateByReference(ref_datset_handle, nrows, &dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
+  try {
+    int result = LGBM_DatasetCreateByReference(ref_datset_handle, nrows, &dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
-  Dataset* dataset = static_cast<Dataset*>(dataset_handle);
+    Dataset* dataset = static_cast<Dataset*>(dataset_handle);
 
-  TestUtils::StreamSparseDataset(dataset_handle,
-                                 nrows,
-                                 nclasses,
-                                 batch_count,
-                                 indptr,
-                                 indices,
-                                 vals,
-                                 labels,
-                                 weights,
-                                 init_scores,
-                                 groups);
+    TestUtils::StreamSparseDataset(dataset_handle,
+                                   nrows,
+                                   nclasses,
+                                   batch_count,
+                                   indptr,
+                                   indices,
+                                   vals,
+                                   labels,
+                                   weights,
+                                   init_scores,
+                                   groups);
 
-  dataset->FinishMetadata();  // TODO finalize design of this
+    dataset->FinishMetadata();  // TODO finalize design of this
 
-  // TODO we should assert actual feature data
+    // TODO we should assert actual feature data
 
-  TestUtils::AssertMetadata(&dataset->metadata(),
-    labels,
-    weights,
-    init_scores,
-    groups);
+    TestUtils::AssertMetadata(&dataset->metadata(),
+      labels,
+      weights,
+      init_scores,
+      groups);
 
-  result = LGBM_DatasetFree(dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  } finally {
+    if (dataset_handle) {
+      result = LGBM_DatasetFree(dataset_handle);
+      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+    }
+  }
 }
 
 TEST(Stream, PushDenseRowsWithMetadata) {
