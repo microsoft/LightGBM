@@ -226,7 +226,9 @@ test_that("cpp errors should be raised as proper R errors", {
     , init_score = seq_len(10L)
   )
   expect_error({
-    dtrain$construct()
+    capture.output({
+      dtrain$construct()
+    }, type = "message")
   }, regexp = "Initial score size doesn't match data size")
 })
 
