@@ -3684,7 +3684,7 @@ class Booster:
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
-    def num_feature(self):
+    def num_feature(self) -> int:
         """Get number of features.
 
         Returns
@@ -3698,7 +3698,7 @@ class Booster:
             ctypes.byref(out_num_feature)))
         return out_num_feature.value
 
-    def feature_name(self):
+    def feature_name(self) -> List[str]:
         """Get names of features.
 
         Returns
@@ -3736,7 +3736,11 @@ class Booster:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def feature_importance(self, importance_type='split', iteration=None):
+    def feature_importance(
+        self,
+        importance_type: str = 'split',
+        iteration: Optional[int] = None
+    ) -> np.ndarray:
         """Get feature importances.
 
         Parameters
@@ -3876,7 +3880,7 @@ class Booster:
                     ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
-    def __inner_predict(self, data_idx):
+    def __inner_predict(self, data_idx: int):
         """Predict for training and validation dataset."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -3904,7 +3908,7 @@ class Booster:
             result = result.reshape(num_data, self.__num_class, order='F')
         return result
 
-    def __get_eval_info(self):
+    def __get_eval_info(self) -> None:
         """Get inner evaluation count and names."""
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
@@ -3953,7 +3957,7 @@ class Booster:
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
 
-    def attr(self, key):
+    def attr(self, key: str) -> Any:
         """Get attribute string from the Booster.
 
         Parameters
@@ -3969,7 +3973,7 @@ class Booster:
         """
         return self.__attr.get(key, None)
 
-    def set_attr(self, **kwargs):
+    def set_attr(self, **kwargs: Any) -> "Booster":
         """Set attributes to the Booster.
 
         Parameters
