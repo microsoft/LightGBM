@@ -46,14 +46,14 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   int verbosity = Config().verbosity;
   GetInt(params, "verbose", &verbosity);
   GetInt(params, "verbosity", &verbosity);
-  if (verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  if (verbosity < 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   } else if (verbosity == 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (verbosity >= 2) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  } else if (verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
   } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
   }
   ParameterAlias::KeyAliasTransform(&params);
   return params;
