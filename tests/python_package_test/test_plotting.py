@@ -4,7 +4,7 @@ import pytest
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
+from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import make_synthetic_regression
 
@@ -248,6 +248,23 @@ def test_example_case_in_tree_digraph():
         remaining_elements = [e for i, e in enumerate(graph.body) if i not in seen_indices and 'graph' not in e]
         assert all('color=black' in e for e in remaining_elements)
     assert makes_categorical_splits
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
+@pytest.mark.parametrize('input_type', ['array', 'dataframe'])
+def test_empty_example_case_on_tree_digraph_raises_error(input_type):
+    X, y = make_synthetic_regression()
+    if input_type == 'dataframe':
+        if not PANDAS_INSTALLED:
+            pytest.skip(reason='pandas is not installed')
+        X = pd_DataFrame(X)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.train({'num_leaves': 3}, ds, num_boost_round=1)
+    example_case = X[:0]
+    if input_type == 'dataframe':
+        example_case = pd_DataFrame(example_case)
+    with pytest.raises(ValueError, match='example_case must have a single row.'):
+        lgb.create_tree_digraph(bst, tree_index=0, example_case=example_case)
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason='matplotlib is not installed')
