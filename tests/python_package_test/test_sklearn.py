@@ -1320,11 +1320,11 @@ def test_negative_n_jobs(tmp_path):
     assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
 
 
-def test_default_n_jobs():
+def test_default_n_jobs(tmp_path):
     n_cores = joblib.cpu_count(only_physical_cores=True)
     X, y = load_breast_cancer(return_X_y=True)
     gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
-    gbm.booster_.save_model("model.txt")
-    with open("model.txt", "r") as f:
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
         model_txt = f.read()
     assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
