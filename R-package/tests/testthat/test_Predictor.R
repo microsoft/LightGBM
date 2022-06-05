@@ -101,7 +101,7 @@ test_that("start_iteration works correctly", {
         inc_pred_contrib <- bst$predict(test$data
             , start_iteration = start_iter
             , num_iteration = n_iter
-            , type = "contrib"
+            , predcontrib = TRUE
         )
         pred2 <- pred2 + inc_pred
         pred_contrib2 <- pred_contrib2 + inc_pred_contrib
