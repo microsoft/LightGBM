@@ -140,7 +140,7 @@ test_that("predict() params should override keyword argument for raw-score predi
 
   # check that the predictions from predict.lgb.Booster() really look like raw score predictions
   preds_prob <- predict(bst, X)
-  preds_raw_s3_keyword <- predict(bst, X, rawscore = TRUE)
+  preds_raw_s3_keyword <- predict(bst, X, type = "raw")
   preds_prob_from_raw <- 1.0 / (1.0 + exp(-preds_raw_s3_keyword))
   expect_equal(preds_prob, preds_prob_from_raw, tolerance = TOLERANCE)
   accuracy <- sum(as.integer(preds_prob_from_raw > 0.5) == y) / length(y)
@@ -160,9 +160,7 @@ test_that("predict() params should override keyword argument for raw-score predi
         , nm = rawscore_alias
       )
     )
-    preds_raw_s3_param <- predict(bst, X, params = params)
     preds_raw_r6_param <- bst$predict(X, params = params)
-    expect_equal(preds_raw_s3_keyword, preds_raw_s3_param)
     expect_equal(preds_raw_s3_keyword, preds_raw_r6_param)
   }
 })
@@ -190,7 +188,7 @@ test_that("predict() params should override keyword argument for leaf-index pred
   )
 
   # check that predictions really look like leaf index predictions
-  preds_leaf_s3_keyword <- predict(bst, X, predleaf = TRUE)
+  preds_leaf_s3_keyword <- predict(bst, X, type = "leaf")
   expect_true(is.matrix(preds_leaf_s3_keyword))
   expect_equal(dim(preds_leaf_s3_keyword), c(nrow(X), bst$current_iter()))
   expect_true(min(preds_leaf_s3_keyword) >= 0L)
@@ -213,9 +211,7 @@ test_that("predict() params should override keyword argument for leaf-index pred
         , nm = predleaf_alias
       )
     )
-    preds_leaf_s3_param <- predict(bst, X, params = params)
     preds_leaf_r6_param <- bst$predict(X, params = params)
-    expect_equal(preds_leaf_s3_keyword, preds_leaf_s3_param)
     expect_equal(preds_leaf_s3_keyword, preds_leaf_r6_param)
   }
 })
@@ -243,7 +239,7 @@ test_that("predict() params should override keyword argument for feature contrib
   )
 
   # check that predictions really look like feature contributions
-  preds_contrib_s3_keyword <- predict(bst, X, predcontrib = TRUE)
+  preds_contrib_s3_keyword <- predict(bst, X, type = "contrib")
   num_features <- ncol(X)
   shap_base_value <- unname(preds_contrib_s3_keyword[, ncol(preds_contrib_s3_keyword)])
   expect_true(is.matrix(preds_contrib_s3_keyword))
@@ -266,9 +262,7 @@ test_that("predict() params should override keyword argument for feature contrib
         , nm = predcontrib_alias
       )
     )
-    preds_contrib_s3_param <- predict(bst, X, params = params)
     preds_contrib_r6_param <- bst$predict(X, params = params)
-    expect_equal(preds_contrib_s3_keyword, preds_contrib_s3_param)
     expect_equal(preds_contrib_s3_keyword, preds_contrib_r6_param)
   }
 })
