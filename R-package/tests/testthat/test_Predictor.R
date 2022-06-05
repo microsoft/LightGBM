@@ -301,7 +301,7 @@ test_that("predict type='response' returns integers for classification objective
         , verbose = VERBOSITY
     )
     pred <- predict(bst, X, type = "response")
-    expect_true(all(pred %in% c(0, 1)))
+    expect_true(all(pred %in% c(0L, 1L)))
 
     data(iris)
     X <- as.matrix(iris[, -5L])
@@ -315,7 +315,7 @@ test_that("predict type='response' returns integers for classification objective
       , params = list(num_class = 3L)
     )
     pred <- predict(model, X, type = "response")
-    expect_true(all(pred %in% c(0, 1, 2)))
+    expect_true(all(pred %in% c(0L, 1L, 2L)))
 })
 
 test_that("predict type='response' returns decimals for regression objectives", {
@@ -330,5 +330,5 @@ test_that("predict type='response' returns decimals for regression objectives", 
         , verbose = VERBOSITY
     )
     pred <- predict(bst, X, type = "response")
-    expect_true(all(!(pred %in% c(0, 1))))
+    expect_true(all(!(pred %in% c(0.0, 1.0))))
 })
