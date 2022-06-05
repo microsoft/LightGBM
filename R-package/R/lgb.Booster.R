@@ -829,7 +829,7 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  if (!isnull(object$params$objective) && object$params$objective == "none" && type %in% c("link", "response")) {
+  if (!is.null(object$params$objective) && object$params$objective == "none" && type %in% c("link", "response")) {
     warning("Prediction types 'link' and 'response' are not supported for custom objectives.")
     type <- "raw"
   }
