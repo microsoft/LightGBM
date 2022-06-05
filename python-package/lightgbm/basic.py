@@ -3957,7 +3957,7 @@ class Booster:
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
 
-    def attr(self, key: str) -> Any:
+    def attr(self, key: str) -> Optional[str]:
         """Get attribute string from the Booster.
 
         Parameters
