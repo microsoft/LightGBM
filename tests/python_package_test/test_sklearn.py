@@ -1304,7 +1304,7 @@ def test_multiclass_custom_objective():
     assert callable(custom_obj_model.objective_)
 
 
-def test_negative_n_jobs():
+def test_negative_n_jobs(tmp_path):
     n_threads = joblib.cpu_count()
     if n_threads <= 1:
         return None
@@ -1314,8 +1314,8 @@ def test_negative_n_jobs():
     # Note: according to joblib's formula, a value of n_jobs=-2 means
     # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
     gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
-    gbm.booster_.save_model("model.txt")
-    with open("model.txt", "r") as f:
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
         model_txt = f.read()
     assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
 
