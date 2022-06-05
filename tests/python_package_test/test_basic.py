@@ -654,12 +654,11 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
     assert np.shares_memory(X, built_data)
 
 
-@pytest.mark.parametrize('feature_name', [[42], 'auto'])
+@pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
 def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
-    column_name = 42  # use int as name
-    assert [column_name] == feature_name or feature_name == 'auto'
+    column_name = 'a' if feature_name == 'auto' else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
     data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     # check that the original data wasn't modified
