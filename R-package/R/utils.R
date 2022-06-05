@@ -69,7 +69,13 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
     if (!methods::is(interaction_constraints, "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(interaction_constraints, function(x) {is.character(x) || is.numeric(x)}))) {
+    constraint_is_character_or_numeric <- sapply(
+        X = interaction_constraints
+        , FUN = function(x) {
+            return(is.character(x) || is.numeric(x))
+        }
+    )
+    if (!all(constraint_is_character_or_numeric)) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 

@@ -83,7 +83,7 @@ class _ObjectiveFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[np.ndarray, np.ndarray]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -165,7 +165,7 @@ class _EvalFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds, dataset):
+    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[str, float, bool]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -505,7 +505,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes = None
         self.set_params(**kwargs)
 
-    def _more_tags(self):
+    def _more_tags(self) -> Dict[str, Any]:
         return {
             'allow_nan': True,
             'X_types': ['2darray', 'sparse', '1dlabels'],
@@ -520,7 +520,7 @@ class LGBMModel(_LGBMModelBase):
     def __sklearn_is_fitted__(self) -> bool:
         return getattr(self, "fitted_", False)
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """Get parameters for this estimator.
 
         Parameters
@@ -538,7 +538,7 @@ class LGBMModel(_LGBMModelBase):
         params.update(self._other_params)
         return params
 
-    def set_params(self, **params):
+    def set_params(self, **params: Any) -> "LGBMModel":
         """Set the parameters of this estimator.
 
         Parameters
@@ -596,11 +596,10 @@ class LGBMModel(_LGBMModelBase):
                     raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
             if stage == "fit":
-                self._fobj = _ObjectiveFunctionWrapper(self._objective)
-            params['objective'] = 'None'  # objective = nullptr for unknown objective
+                params['objective'] = _ObjectiveFunctionWrapper(self._objective)
+            else:
+                params['objective'] = 'None'
         else:
-            if stage == "fit":
-                self._fobj = None
             params['objective'] = self._objective
 
         params.pop('importance_type', None)
@@ -756,7 +755,6 @@ class LGBMModel(_LGBMModelBase):
             num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            fobj=self._fobj,
             feval=eval_metrics_callable,
             init_model=init_model,
             feature_name=feature_name,
@@ -825,14 +823,14 @@ class LGBMModel(_LGBMModelBase):
     )
 
     @property
-    def n_features_(self):
+    def n_features_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
         return self._n_features
 
     @property
-    def n_features_in_(self):
+    def n_features_in_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
@@ -846,14 +844,14 @@ class LGBMModel(_LGBMModelBase):
         return self._best_score
 
     @property
-    def best_iteration_(self):
+    def best_iteration_(self) -> int:
         """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration
 
     @property
-    def objective_(self):
+    def objective_(self) -> Union[str, _LGBM_ScikitCustomObjectiveFunction]:
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
@@ -1090,7 +1088,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return self._classes
 
     @property
-    def n_classes_(self):
+    def n_classes_(self) -> int:
         """:obj:`int`: The number of classes."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')

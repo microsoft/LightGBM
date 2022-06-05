@@ -11,12 +11,16 @@ variables:
   AZURE: 'true'
   PYTHON_VERSION: '3.10'
   CONDA_ENV: test-env
+  runCodesignValidationInjection: false
+  skipComponentGovernanceDetection: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
   containers:
   - container: ubuntu1404
     image: lightgbm/vsts-agent:ubuntu-14.04
   - container: ubuntu-latest
-    image: 'ubuntu:latest'
+    image: 'ubuntu:20.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
     image: wch1/r-debug
@@ -313,7 +317,7 @@ jobs:
       R_LIB_PATH=~/Rlib
       export R_LIBS=${R_LIB_PATH}
       mkdir -p ${R_LIB_PATH}
-      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit -1
       sh build-cran-package.sh --r-executable=RD || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'

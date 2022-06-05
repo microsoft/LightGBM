@@ -486,6 +486,34 @@ Booster <- R6::R6Class(
         start_iteration <- 0L
       }
 
+      # possibly override keyword arguments with parameters
+      #
+      # NOTE: this length() check minimizes the latency introduced by these checks,
+      #       for the common case where params is empty
+      #
+      # NOTE: doing this here instead of in Predictor$predict() to keep
+      #       Predictor$predict() as fast as possible
+      if (length(params) > 0L) {
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_raw_score"
+          , params = params
+          , alternative_kwarg_value = rawscore
+        )
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_leaf_index"
+          , params = params
+          , alternative_kwarg_value = predleaf
+        )
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_contrib"
+          , params = params
+          , alternative_kwarg_value = predcontrib
+        )
+        rawscore <- params[["predict_raw_score"]]
+        predleaf <- params[["predict_leaf_index"]]
+        predcontrib <- params[["predict_contrib"]]
+      }
+
       # Predict on new data
       predictor <- Predictor$new(
         modelfile = private$handle
@@ -691,8 +719,9 @@ Booster <- R6::R6Class(
         res <- feval(private$inner_predict(data_idx), data)
 
         if (is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
-          stop("lgb.Booster.eval: custom eval function should return a
-            list with attribute (name, value, higher_better)");
+          stop(
+            "lgb.Booster.eval: custom eval function should return a list with attribute (name, value, higher_better)"
+          )
         }
 
         # Append names and evaluation
@@ -745,7 +774,8 @@ Booster <- R6::R6Class(
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
-#'               valid values.
+#'               valid values. Where these conflict with the values of keyword arguments to this function,
+#'               the values in \code{params} take precedence.
 #' @param ... ignored
 #' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
 #'         \code{type="link"} on a binary classification or regression objective), will return a vector with one

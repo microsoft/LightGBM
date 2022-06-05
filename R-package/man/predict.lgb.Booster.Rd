@@ -57,7 +57,8 @@ If <= 0, all iterations from start_iteration are used (no limits).}
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
-valid values.}
+valid values. Where these conflict with the values of keyword arguments to this function,
+the values in \code{params} take precedence.}
 
 \item{...}{ignored}
 }
