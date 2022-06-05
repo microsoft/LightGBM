@@ -724,12 +724,15 @@ Booster <- R6::R6Class(
 #'                   \code{objective="binary"}, this corresponds to log-odds. For many objectives such as "regression",
 #'                   since no transformation is applied, the output will be the same as for "link".
 #'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
-#'                   in each tree in the model, outputted as as integers, with one column per tree.
+#'                   in each tree in the model, outputted as integers, with one column per tree.
 #'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
 #'                   intercept (each feature will produce one column). If there are multiple classes, each class will
 #'                   have separate feature contributions (thus the number of columns is feaures+1 multiplied by the
 #'                   number of classes).
 #'             }
+#'
+#'             Note that, if using custom objectives, types "link" and "response" will not be available and will
+#'             default towards using "raw" instead.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -784,11 +787,11 @@ Booster <- R6::R6Class(
 #'    )
 #' )
 #' }
-#' @importFrom utils modifyList head
+#' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
                                 newdata,
-                                type = c("link", "response", "raw", "leaf", "contrib"),
+                                type = "link",
                                 start_iteration = NULL,
                                 num_iteration = NULL,
                                 header = FALSE,
@@ -801,17 +804,36 @@ predict.lgb.Booster <- function(object,
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
-    if ("reshape" %in% names(additional_params)) {
+    additional_params_names <- names(additional_params)
+    if ("reshape" %in% additional_params_names) {
       stop("'reshape' argument is no longer supported.")
     }
+
+    old_args_for_type <- list(
+      "rawscore" = "raw"
+      , "predleaf" = "leaf"
+      , "predcontrib" = "contrib"
+    )
+    for (arg in names(old_args_for_type)) {
+      if (arg %in% additional_params_names) {
+        stop(sprintf("Argument '%s' is no longer supported. Use type='%s' instead."
+                     , arg
+                     , old_args_for_type[[arg]]))
+      }
+    }
+
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
+      , paste(additional_params_names, collapse = ", ")
       , ". These are ignored. Use argument 'params' instead."
     ))
   }
 
-  type <- head(type, 1L)
+  if (object$params$objective == "none" && type %in% c("link", "response")) {
+    warning("Prediction types 'link' and 'response' are not supported for custom objectives.")
+    type <- "raw"
+  }
+
   rawscore <- FALSE
   predleaf <- FALSE
   predcontrib <- FALSE

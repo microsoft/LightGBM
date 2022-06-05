@@ -288,3 +288,47 @@ test_that("predictions for multiclass classification are returned as matrix", {
     expect_equal(nrow(pred), nrow(X))
     expect_equal(ncol(pred), 3L)
 })
+
+test_that("predict type='response' returns integers for classification objectives", {
+    data(agaricus.train, package = "lightgbm")
+    X <- as.matrix(agaricus.train$data)
+    y <- agaricus.train$label
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+        data = dtrain
+        , obj = "binary"
+        , nrounds = 5L
+        , verbose = VERBOSITY
+    )
+    pred <- predict(bst, X, type = "response")
+    expect_true(all(pred %in% c(0, 1)))
+
+    data(iris)
+    X <- as.matrix(iris[, -5L])
+    y <- as.numeric(iris$Species) - 1.0
+    dtrain <- lgb.Dataset(X, label = y)
+    model <- lgb.train(
+      data = dtrain
+      , obj = "multiclass"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(num_class = 3L)
+    )
+    pred <- predict(model, X, type = "response")
+    expect_true(all(pred %in% c(0, 1, 2)))
+})
+
+test_that("predict type='response' returns decimals for regression objectives", {
+    data(agaricus.train, package = "lightgbm")
+    X <- as.matrix(agaricus.train$data)
+    y <- agaricus.train$label
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+        data = dtrain
+        , obj = "regression"
+        , nrounds = 5L
+        , verbose = VERBOSITY
+    )
+    pred <- predict(bst, X, type = "response")
+    expect_true(all(!(pred %in% c(0, 1))))
+})
