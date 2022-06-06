@@ -449,7 +449,7 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
   }
 
   // This Dataset should be sized as the total coalesced size
-  Log::Info("num_data: %d, num_pushed: %d.", num_data_, num_total_rows);
+  Log::Info("Coalescing: num_datasets: %d, num_data: %d, num_pushed: %d. num_features_ %d. num_total_features: %d", nsources, num_data_, num_total_rows, num_features_, num_total_features_);
   CHECK_EQ(num_data_, num_total_rows);
 
   for (int i = 0; i < nsources; ++i) {
@@ -459,6 +459,7 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
 
   FinishLoad();
   metadata_.FinishCoalesce();
+  Log::Info("Finished Coalescing: num_data_: %d, num_total_features_: %d.", num_data_, num_total_features_);
 
   // TODO CUDA changes?
 }

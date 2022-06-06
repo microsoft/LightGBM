@@ -1064,6 +1064,19 @@ int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
   API_END();
 }
 
+int LGBM_DatasetInitMetadata(DatasetHandle reference,
+                             int64_t num_data,
+                             int has_weights,
+                             int has_init_scores,
+                             int has_groups,
+                             int nclasses) {
+  API_BEGIN();
+  data_size_t nrows = static_cast<data_size_t>(num_data);
+  Dataset* reference_dataset = reinterpret_cast<Dataset*>(reference);
+  reference_dataset->InitMetadata(nrows, has_weights, has_init_scores, has_groups, nclasses);
+  API_END();
+}
+
 void PushMetadata(const float* label,
                   const float* weight,
                   const double* init_score,
@@ -1210,7 +1223,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                           const double* init_score,
                                           const int32_t* query) {
   API_BEGIN();
-  Log::Info("   Entering LGBM_DatasetPushRowsByCSRWithMetadata, start_row: %d, batch size: %d", start_row, nindptr - 1);
+  // Log::Info("   Entering LGBM_DatasetPushRowsByCSRWithMetadata, start_row: %d, batch size: %d", start_row, nindptr - 1);
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1223,7 +1236,9 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
-    Log::Info("   Pushing batch row %d (overall row %d)", i, start_row + i);
+    if (start_row < 10) {
+      Log::Info("   Pushing batch row %d (overall row %d), nelem: %d", i, start_row + i, nelem);
+    }
     p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
@@ -1231,9 +1246,9 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
 
   PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
 
-  if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+  /* TODO figure this out   if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
-  }
+  }*/
   API_END();
 }
 
@@ -2679,7 +2694,6 @@ RowFunctionFromCSR_helper(const void* indptr, const int32_t* indices, const void
       ret.reserve(end - start);
     }
     for (int64_t i = start; i < end; ++i) {
-      Log::Info("        Pushing element index %d: feature %d and val %f", i, indices[i], data_ptr[i]);
       ret.emplace_back(indices[i], data_ptr[i]);
     }
     return ret;

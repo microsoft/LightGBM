@@ -417,6 +417,8 @@ class SparseBin : public Bin {
     for (size_t i = 0; i < push_buffers_.size(); ++i) {
       pair_cnt += push_buffers_[i].size();
     }
+    Log::Info("  Sparse vector pair count: %d.", pair_cnt);
+
     std::vector<std::pair<data_size_t, VAL_T>>& idx_val_pairs =
         push_buffers_[0];
     idx_val_pairs.reserve(pair_cnt);
@@ -462,9 +464,11 @@ class SparseBin : public Bin {
       vals_.push_back(bin);
       last_idx = cur_idx;
     }
+
     // avoid out of range
     deltas_.push_back(0);
     num_vals_ = static_cast<data_size_t>(vals_.size());
+    Log::Info("  Sparse element vals_ count %d.", num_vals_);
 
     // reduce memory cost
     deltas_.shrink_to_fit();

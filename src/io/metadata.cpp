@@ -79,6 +79,26 @@ void Metadata::InitByReference(data_size_t num_data, const Metadata* reference) 
   }
 }
 
+void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses) {
+  // Consolidate with above
+  num_data_ = num_data;
+  label_ = std::vector<label_t>(num_data_);
+  if (has_weights) {
+    weights_ = std::vector<label_t>(num_data_, 0.0f);
+    num_weights_ = num_data_;
+    weight_load_from_file_ = false;
+  }
+  if (has_init_scores) {
+    num_init_score_ = static_cast<int64_t>(num_data) * nclasses;
+    init_score_ = std::vector<double>(num_init_score_, 0);
+  }
+  if (has_groups) {
+    if (!query_weights_.empty()) { query_weights_.clear(); }
+    queries_ = std::vector<data_size_t>(num_data_, 0);
+    query_load_from_file_ = false;
+  }
+}
+
 void Metadata::InitInitScore(int32_t num_class) {
   if (!init_score_.empty()) {
     Log::Fatal("Initial score already contains data");
@@ -360,7 +380,6 @@ void Metadata::AppendInitScore(const double* init_score, data_size_t len) {
     int32_t dest_offset = num_data_ * col + num_appended_data_;
     int32_t source_offset = len * col;
     for (int64_t i = 0; i < len; ++i) {
-      Log::Info("     Appending Metadata at %d to %f.", dest_offset + i, init_score[i + source_offset]);
       init_score_[dest_offset + i] = init_score[i + source_offset];
     }
   }

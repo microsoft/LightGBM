@@ -84,6 +84,8 @@ class Metadata {
   */
   void InitByReference(data_size_t num_data, const Metadata* reference);
 
+  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses);
+
   /*!
   * \brief Initialize space for initial score
   * \param num_class Number of classes with initial scores
@@ -470,6 +472,10 @@ class Dataset {
     metadata_.InitByReference(num_data, &reference->metadata());
   }
 
+  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses) {
+    metadata_.Init(num_data, has_weights, has_init_scores, has_groups, nclasses);
+  }
+
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;
@@ -520,9 +526,11 @@ class Dataset {
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
-    Log::Info("     Pushing %d feature values for row %d", feature_values.size(), row_idx);
+    /* if (feature_values.size() > 0) {
+      Log::Info("     Pushing %d feature values for row %d", feature_values.size(), row_idx);
+    } */
     for (auto& inner_data : feature_values) {
-      Log::Info("       Pushing %f for feature %d", inner_data.second, inner_data.first);
+      // Log::Info("       Pushing %f for feature %d", inner_data.second, inner_data.first);
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {

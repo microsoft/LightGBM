@@ -379,13 +379,12 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   size_t size_of_header = *(reinterpret_cast<const size_t*>(mem_ptr));
   mem_ptr += sizeof(size_t);
 
-  Log::Info("Loading serialized header");
   LoadHeaderFromMemory(dataset.get(), mem_ptr);
+  dataset->num_data_ = num_data; // update to the given num_data
   mem_ptr += size_of_header;
 
   // read feature group definitions
   for (int i = 0; i < dataset->num_groups_; ++i) {
-    Log::Info("Reading feature group %d", i);
     // read feature size
     const size_t size_of_feature = *(reinterpret_cast<const size_t*>(mem_ptr));
     mem_ptr += sizeof(size_t);
@@ -394,7 +393,6 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   }
   dataset->feature_groups_.shrink_to_fit();
 
-  Log::Info("Calculating bin mappers");
   dataset->numeric_feature_map_ = std::vector<int>(dataset->num_features_, false);
   dataset->num_numeric_features_ = 0;
   for (int i = 0; i < dataset->num_features_; ++i) {
@@ -406,6 +404,8 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
       ++dataset->num_numeric_features_;
     }
   }
+
+  Log::Info("Loaded reference dataset: %d features, %d num_data", dataset->num_features_, num_data);
 
 // TODO need to get bin mappers?
 
@@ -776,10 +776,6 @@ void DatasetLoader::LoadHeaderFromMemory(Dataset* dataset,  const char* buffer) 
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->zero_as_missing_));
   dataset->has_raw_ = *(reinterpret_cast<const bool*>(mem_ptr));
 
-  Log::Info("Loaded header props");
-  Log::Info("Loaded %d row count", dataset->num_data_);
-  Log::Info("Loaded %d min_data_in_bin_", dataset->min_data_in_bin_);
-
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(dataset->has_raw_));
   const int* tmp_feature_map = reinterpret_cast<const int*>(mem_ptr);
   dataset->used_feature_map_.clear();
@@ -822,9 +818,6 @@ void DatasetLoader::LoadHeaderFromMemory(Dataset* dataset,  const char* buffer) 
     dataset->group_bin_boundaries_.push_back(tmp_ptr_group_bin_boundaries[i]);
   }
   mem_ptr += sizeof(uint64_t) * (dataset->num_groups_ + 1);
-
-  Log::Info("Loaded %d features", dataset->num_features_);
-  Log::Info("Loaded %d groups", dataset->num_groups_);
 
   // group_feature_start_
   const int* tmp_ptr_group_feature_start = reinterpret_cast<const int*>(mem_ptr);

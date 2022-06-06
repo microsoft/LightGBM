@@ -198,6 +198,13 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSerializedReference(const void* buff
                                                                 const char* parameters,
                                                                 DatasetHandle* out);
 
+LIGHTGBM_C_EXPORT int LGBM_DatasetInitMetadata(DatasetHandle reference,
+                                               int64_t num_data,
+                                               int has_weights,
+                                               int has_init_scores,
+                                               int has_groups,
+                                               int nclasses);
+
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
