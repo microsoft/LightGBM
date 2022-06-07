@@ -54,11 +54,12 @@ Remove-From-Path ".*PostgreSQL.*"
 Remove-From-Path ".*\\R\\.*"
 Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*rtools42.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
 
-Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\Rtools42 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
@@ -74,11 +75,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
-  $RTOOLS_INSTALL_PATH = "C:\rtools40"
+  $RTOOLS_INSTALL_PATH = "C:\rtools42"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.3"
+  $env:RTOOLS_EXE_FILE = "rtools42-5253-5107.exe"
+  $env:R_WINDOWS_VERSION = "4.2.0"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
