@@ -4,17 +4,22 @@ import collections
 import copy
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
-from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
+from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[str, float, bool]
+]
+
+_LGBM_PreprocCallable = Callable[
+    [Dataset, Dataset, Dict[str, Any]],
+    Tuple[Dataset, Dataset, Dict[str, Any]]
 ]
 
 
@@ -285,7 +290,7 @@ class CVBooster:
         self.boosters = []
         self.best_iteration = -1
 
-    def _append(self, booster):
+    def _append(self, booster: Booster) -> None:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
@@ -373,12 +378,25 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=100,
-       folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
-       fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+def cv(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]] = None,
+    nfold: int = 5,
+    stratified: bool = True,
+    shuffle: bool = True,
+    metrics: Optional[Union[str, List[str]]] = None,
+    feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: Union[str, List[str]] = 'auto',
+    categorical_feature: Union[str, List[str]] = 'auto',
+    fpreproc: Optional[_LGBM_PreprocCallable] = None,
+    seed: int = 0,
+    callbacks: Optional[List[Callable]] = None,
+    eval_train_metric: bool = False,
+    return_cvbooster: bool = False
+) -> Dict[str, Any]:
     """Perform the cross-validation with given parameters.
 
     Parameters
@@ -486,6 +504,7 @@ def cv(params, train_set, num_boost_round=100,
         ...}.
         If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
     """
+
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
     params = copy.deepcopy(params)
