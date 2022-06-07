@@ -190,21 +190,41 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
     fi
-elif [[ $TASK == "cuda" ]]; then
-    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
-    grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
+    if [[ $TASK == "cuda" ]]; then
+        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    else
+        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda_exp";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'std::string device_type = "cuda_exp"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+        # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
+        sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    fi
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        else
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda-exp || exit -1
+        fi
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        else
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda-exp || exit -1
+        fi
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -DUSE_CUDA=ON ..
+        if [[ $TASK == "cuda" ]]; then
+            cmake -DUSE_CUDA=ON ..
+        else
+            cmake -DUSE_CUDA_EXP=ON ..
+        fi
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then

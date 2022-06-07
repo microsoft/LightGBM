@@ -73,11 +73,12 @@ may allow you to pass other types of data like \code{matrix} and then separately
                 }
             }}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
 \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 

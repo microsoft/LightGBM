@@ -64,7 +64,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
-  if (config_->device_type == std::string("cuda")) {
+  if (config_->device_type == std::string("cuda") || config_->device_type == std::string("cuda_exp")) {
     LGBM_config_::current_learner = use_cuda_learner;
   }
 
@@ -331,7 +331,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
-      if (is_use_subset && bag_data_cnt < num_data_) {
+      if (is_use_subset && bag_data_cnt < num_data_ && config_->device_type != std::string("cuda_exp")) {
         for (int i = 0; i < bag_data_cnt; ++i) {
           gradients_[offset + i] = grad[bag_data_indices[i]];
           hessians_[offset + i] = hess[bag_data_indices[i]];

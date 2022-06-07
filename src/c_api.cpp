@@ -1550,6 +1550,25 @@ int LGBM_DatasetGetNumFeature(DatasetHandle handle,
   API_END();
 }
 
+int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
+                                 int feature,
+                                 int* out) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  int num_features = dataset->num_total_features();
+  if (feature < 0 || feature >= num_features) {
+    Log::Fatal("Tried to retrieve number of bins for feature index %d, "
+               "but the valid feature indices are [0, %d].", feature, num_features - 1);
+  }
+  int inner_idx = dataset->InnerFeatureIndex(feature);
+  if (inner_idx >= 0) {
+    *out = dataset->FeatureNumBin(inner_idx);
+  } else {
+    *out = 0;
+  }
+  API_END();
+}
+
 int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
                                 DatasetHandle source) {
   API_BEGIN();

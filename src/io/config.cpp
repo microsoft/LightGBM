@@ -142,6 +142,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "gpu";
     } else if (value == std::string("cuda")) {
       *device_type = "cuda";
+    } else if (value == std::string("cuda_exp")) {
+      *device_type = "cuda_exp";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -176,18 +178,18 @@ void Config::GetAucMuWeights() {
   } else {
     auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 0));
     if (auc_mu_weights.size() != static_cast<size_t>(num_class * num_class)) {
-      Log::Fatal("auc_mu_weights must have %d elements, but found %d", num_class * num_class, auc_mu_weights.size());
+      Log::Fatal("auc_mu_weights must have %d elements, but found %zu", num_class * num_class, auc_mu_weights.size());
     }
     for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
       for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
         if (i == j) {
           auc_mu_weights_matrix[i][j] = 0;
           if (std::fabs(auc_mu_weights[i * num_class + j]) > kZeroThreshold) {
-            Log::Info("AUC-mu matrix must have zeros on diagonal. Overwriting value in position %d of auc_mu_weights with 0.", i * num_class + j);
+            Log::Info("AUC-mu matrix must have zeros on diagonal. Overwriting value in position %zu of auc_mu_weights with 0.", i * num_class + j);
           }
         } else {
           if (std::fabs(auc_mu_weights[i * num_class + j]) < kZeroThreshold) {
-            Log::Fatal("AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero value in position %d of auc_mu_weights.", i * num_class + j);
+            Log::Fatal("AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero value in position %zu of auc_mu_weights.", i * num_class + j);
           }
           auc_mu_weights_matrix[i][j] = auc_mu_weights[i * num_class + j];
         }
@@ -223,7 +225,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetObjectiveType(params, &objective);
   GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
-  if (device_type == std::string("cuda")) {
+  if (device_type == std::string("cuda") || device_type == std::string("cuda_exp")) {
     LGBM_config_::current_device = lgbm_device_cuda;
   }
   GetTreeLearnerType(params, &tree_learner);
@@ -346,10 +348,17 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  // force col-wise for gpu & CUDA
   if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
+    // force col-wise for gpu, and cuda version
     force_col_wise = true;
     force_row_wise = false;
+    if (deterministic) {
+      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
+  } else if (device_type == std::string("cuda_exp")) {
+    // force row-wise for cuda_exp version
+    force_col_wise = false;
+    force_row_wise = true;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }

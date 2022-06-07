@@ -194,7 +194,7 @@ class GBDT : public GBDTBase {
     if (data_idx > 0) {
       num_data = valid_score_updater_[data_idx - 1]->num_data();
     }
-    return num_data * num_class_;
+    return static_cast<int64_t>(num_data) * num_class_;
   }
 
   /*!
@@ -477,7 +477,7 @@ class GBDT : public GBDTBase {
   /*! \brief Parser config file content */
   std::string parser_config_str_ = "";
 
-#ifdef USE_CUDA
+#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
   /*! \brief First order derivative of training data */
   std::vector<score_t, CHAllocator<score_t>> gradients_;
   /*! \brief Second order derivative of training data */

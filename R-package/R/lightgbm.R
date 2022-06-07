@@ -43,7 +43,7 @@
 #'                     These should follow the requirements from the descriptions above.
 #'                 }
 #'             }
-#' @param eval_freq evaluation output frequency, only effect when verbose > 0
+#' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
@@ -51,7 +51,8 @@
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
+#' @param verbose verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+#'                printing of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
 #'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
@@ -91,12 +92,29 @@ NULL
 #' @description Simple interface for training a LightGBM model.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
+#'                observations / rows have the same importance / weight.
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
 #'                  the "objective" item of the "Parameters" section of the documentation}.
 #' @param init_score initial score is the base prediction lightgbm will boost from
+#' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
+#'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
+#'                    number of maximum threads.
+#'
+#'                    Be aware that using too many threads can result in speed degradation in smaller datasets
+#'                    (see the parameters documentation for more details).
+#'
+#'                    If passing zero, will use the default number of threads configured for OpenMP
+#'                    (typically controlled through an environment variable \code{OMP_NUM_THREADS}).
+#'
+#'                    If passing \code{NULL} (the default), will try to use the number of physical cores in the
+#'                    system, but be aware that getting the number of cores detected correctly requires package
+#'                    \code{RhpcBLASctl} to be installed.
+#'
+#'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+#'                    if passed there.
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -117,7 +135,7 @@ NULL
 #' @export
 lightgbm <- function(data,
                      label = NULL,
-                     weight = NULL,
+                     weights = NULL,
                      params = list(),
                      nrounds = 100L,
                      verbose = 1L,
@@ -128,6 +146,7 @@ lightgbm <- function(data,
                      serializable = TRUE,
                      objective = "regression",
                      init_score = NULL,
+                     num_threads = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -135,12 +154,26 @@ lightgbm <- function(data,
     stop("nrounds should be greater than zero")
   }
 
+  if (is.null(num_threads)) {
+    num_threads <- lgb.get.default.num.threads()
+  }
+  params <- lgb.check.wrapper_param(
+    main_param_name = "num_threads"
+    , params = params
+    , alternative_kwarg_value = num_threads
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
+
   # Set data to a temporary variable
   dtrain <- data
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weight, init_score = init_score)
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
   }
 
   train_args <- list(
@@ -148,7 +181,7 @@ lightgbm <- function(data,
     , "data" = dtrain
     , "nrounds" = nrounds
     , "obj" = objective
-    , "verbose" = verbose
+    , "verbose" = params[["verbosity"]]
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
     , "init_model" = init_model
@@ -159,11 +192,6 @@ lightgbm <- function(data,
 
   if (! "valids" %in% names(train_args)) {
     train_args[["valids"]] <- list()
-  }
-
-  # Set validation as oneself
-  if (verbose > 0L) {
-    train_args[["valids"]][["train"]] <- dtrain
   }
 
   # Train a model using the regular way

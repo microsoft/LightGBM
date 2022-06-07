@@ -69,7 +69,13 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
     if (!methods::is(interaction_constraints, "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(interaction_constraints, function(x) {is.character(x) || is.numeric(x)}))) {
+    constraint_is_character_or_numeric <- sapply(
+        X = interaction_constraints
+        , FUN = function(x) {
+            return(is.character(x) || is.numeric(x))
+        }
+    )
+    if (!all(constraint_is_character_or_numeric)) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 
@@ -216,4 +222,27 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
   # through a keyword argument from lgb.train(), lgb.cv(), etc.
   params[[main_param_name]] <- alternative_kwarg_value
   return(params)
+}
+
+#' @importFrom parallel detectCores
+lgb.get.default.num.threads <- function() {
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) { # nolint
+    return(RhpcBLASctl::get_num_cores())
+  } else {
+    msg <- "Optional package 'RhpcBLASctl' not found."
+    cores <- 0L
+    if (Sys.info()["sysname"] != "Linux") {
+      cores <- parallel::detectCores(logical = FALSE)
+      if (is.na(cores) || cores < 0L) {
+        cores <- 0L
+      }
+    }
+    if (cores == 0L) {
+      msg <- paste(msg, "Will use default number of OpenMP threads.", sep = " ")
+    } else {
+      msg <- paste(msg, "Detection of CPU cores might not be accurate.", sep = " ")
+    }
+    warning(msg)
+    return(cores)
+  }
 }
