@@ -25,20 +25,19 @@ lgb.params2str <- function(params) {
     stop("params must be a list")
   }
 
-  # Split parameter names
   names(params) <- gsub("\\.", "_", names(params))
-
+  param_names <- names(params)
   ret <- list()
 
   # Perform key value join
-  for (key in names(params)) {
+  for (i in seq_along(params)) {
 
     # If a parameter has multiple values, join those values together with commas.
     # trimws() is necessary because format() will pad to make strings the same width
     val <- paste0(
       trimws(
         format(
-          x = params[[key]]
+          x = unname(params[[i]])
           , scientific = FALSE
         )
       )
@@ -47,7 +46,7 @@ lgb.params2str <- function(params) {
     if (nchar(val) <= 0L) next # Skip join
 
     # Join key value
-    pair <- paste0(c(key, val), collapse = "=")
+    pair <- paste0(c(param_names[[i]], val), collapse = "=")
     ret <- c(ret, pair)
 
   }
@@ -70,7 +69,13 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
     if (!methods::is(interaction_constraints, "list")) {
         stop("interaction_constraints must be a list")
     }
-    if (!all(sapply(interaction_constraints, function(x) {is.character(x) || is.numeric(x)}))) {
+    constraint_is_character_or_numeric <- sapply(
+        X = interaction_constraints
+        , FUN = function(x) {
+            return(is.character(x) || is.numeric(x))
+        }
+    )
+    if (!all(constraint_is_character_or_numeric)) {
         stop("every element in interaction_constraints must be a character vector or numeric vector")
     }
 
@@ -118,71 +123,6 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
 
 }
 
-lgb.check.obj <- function(params, obj) {
-
-  # List known objectives in a vector
-  OBJECTIVES <- c(
-    "regression"
-    , "regression_l1"
-    , "regression_l2"
-    , "mean_squared_error"
-    , "mse"
-    , "l2_root"
-    , "root_mean_squared_error"
-    , "rmse"
-    , "mean_absolute_error"
-    , "mae"
-    , "quantile"
-    , "huber"
-    , "fair"
-    , "poisson"
-    , "binary"
-    , "lambdarank"
-    , "multiclass"
-    , "softmax"
-    , "multiclassova"
-    , "multiclass_ova"
-    , "ova"
-    , "ovr"
-    , "xentropy"
-    , "cross_entropy"
-    , "xentlambda"
-    , "cross_entropy_lambda"
-    , "mean_absolute_percentage_error"
-    , "mape"
-    , "gamma"
-    , "tweedie"
-    , "rank_xendcg"
-    , "xendcg"
-    , "xe_ndcg"
-    , "xe_ndcg_mart"
-    , "xendcg_mart"
-  )
-
-  # Check whether the objective is empty or not, and take it from params if needed
-  if (!is.null(obj)) {
-    params$objective <- obj
-  }
-
-  # Check whether the objective is a character
-  if (is.character(params$objective)) {
-
-    # If the objective is a character, check if it is a known objective
-    if (!(params$objective %in% OBJECTIVES)) {
-
-      stop("lgb.check.obj: objective name error should be one of (", paste0(OBJECTIVES, collapse = ", "), ")")
-
-    }
-
-  } else if (!is.function(params$objective)) {
-
-    stop("lgb.check.obj: objective should be a character or a function")
-
-  }
-
-  return(params)
-
-}
 
 # [description]
 #     Take any character values from eval and store them in params$metric.
@@ -268,7 +208,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
     return(params)
   }
 
-  # if the main parameter wasn't proovided, prefer the first alias
+  # if the main parameter wasn't provided, prefer the first alias
   if (length(aliases_provided) > 0L) {
     first_param <- aliases_provided[1L]
     params[[main_param_name]] <- params[[first_param]]
@@ -282,4 +222,27 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
   # through a keyword argument from lgb.train(), lgb.cv(), etc.
   params[[main_param_name]] <- alternative_kwarg_value
   return(params)
+}
+
+#' @importFrom parallel detectCores
+lgb.get.default.num.threads <- function() {
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) { # nolint
+    return(RhpcBLASctl::get_num_cores())
+  } else {
+    msg <- "Optional package 'RhpcBLASctl' not found."
+    cores <- 0L
+    if (Sys.info()["sysname"] != "Linux") {
+      cores <- parallel::detectCores(logical = FALSE)
+      if (is.na(cores) || cores < 0L) {
+        cores <- 0L
+      }
+    }
+    if (cores == 0L) {
+      msg <- paste(msg, "Will use default number of OpenMP threads.", sep = " ")
+    } else {
+      msg <- paste(msg, "Detection of CPU cores might not be accurate.", sep = " ")
+    }
+    warning(msg)
+    return(cores)
+  }
 }

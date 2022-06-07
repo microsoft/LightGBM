@@ -1,4 +1,6 @@
-context("Test models with custom objective")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
@@ -9,7 +11,7 @@ watchlist <- list(eval = dtest, train = dtrain)
 TOLERANCE <- 1e-6
 
 logregobj <- function(preds, dtrain) {
-  labels <- getinfo(dtrain, "label")
+  labels <- get_field(dtrain, "label")
   preds <- 1.0 / (1.0 + exp(-preds))
   grad <- preds - labels
   hess <- preds * (1.0 - preds)
@@ -21,7 +23,7 @@ logregobj <- function(preds, dtrain) {
 # This may make built-in evalution metric calculate wrong results
 # Keep this in mind when you use the customization, and maybe you need write customized evaluation function
 evalerror <- function(preds, dtrain) {
-  labels <- getinfo(dtrain, "label")
+  labels <- get_field(dtrain, "label")
   preds <- 1.0 / (1.0 + exp(-preds))
   err <- as.numeric(sum(labels != (preds > 0.5))) / length(labels)
   return(list(
@@ -36,6 +38,7 @@ param <- list(
   , learning_rate = 1.0
   , objective = logregobj
   , metric = "auc"
+  , verbose = VERBOSITY
 )
 num_round <- 10L
 
@@ -50,6 +53,7 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
     params = list(
       num_leaves = 8L
       , learning_rate = 1.0
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = 4L

@@ -120,6 +120,23 @@ class BinMapper {
   }
 
   /*!
+  * \brief Maximum categorical value
+  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  */
+  inline int MaxCatValue() const {
+    if (bin_2_categorical_.size() == 0) {
+      return 0;
+    }
+    int max_cat_value = bin_2_categorical_[0];
+    for (size_t i = 1; i < bin_2_categorical_.size(); ++i) {
+      if (bin_2_categorical_[i] > max_cat_value) {
+        max_cat_value = bin_2_categorical_[i];
+      }
+    }
+    return max_cat_value;
+  }
+
+  /*!
   * \brief Get sizes in byte of this object
   */
   size_t SizesInByte() const;
@@ -159,13 +176,6 @@ class BinMapper {
   */
   void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
-
-  /*!
-  * \brief Use specific number of bin to calculate the size of this class
-  * \param bin The number of bin
-  * \return Size
-  */
-  static int SizeForSpecificBin(int bin);
 
   /*!
   * \brief Serializing this object to buffer
@@ -386,6 +396,10 @@ class Bin {
   * \brief Deep copy the bin
   */
   virtual Bin* Clone() = 0;
+
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
+
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
 };
 
 
@@ -459,6 +473,14 @@ class MultiValBin {
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 
   virtual MultiValBin* Clone() = 0;
+
+  #ifdef USE_CUDA_EXP
+  virtual const void* GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const = 0;
+  #endif  // USE_CUDA_EXP
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

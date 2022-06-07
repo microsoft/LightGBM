@@ -4,8 +4,10 @@
  */
 #include "parser.hpp"
 
+#include <functional>
 #include <string>
 #include <algorithm>
+#include <map>
 #include <memory>
 
 namespace LightGBM {
@@ -230,6 +232,30 @@ DataType GetDataType(const char* filename, bool header,
   return type;
 }
 
+// parser factory implementation.
+ParserFactory& ParserFactory::getInstance() {
+  static ParserFactory factory;
+  return factory;
+}
+
+void ParserFactory::Register(std::string class_name, std::function<Parser*(std::string)> m_objc) {
+  if (m_objc) {
+    object_map_.insert(
+        std::map<std::string, std::function<Parser*(std::string)>>::value_type(class_name, m_objc));
+  }
+}
+
+Parser* ParserFactory::getObject(std::string class_name, std::string config_str) {
+  std::map<std::string, std::function<Parser*(std::string)>>::const_iterator iter =
+      object_map_.find(class_name);
+  if (iter != object_map_.end()) {
+    return iter->second(config_str);
+  } else {
+    Log::Fatal("Cannot find parser class '%s', please register first or check config format.", class_name.c_str());
+    return nullptr;
+  }
+}
+
 Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser) {
   const int n_read_line = 32;
   auto lines = ReadKLineFromFile(filename, header, n_read_line);
@@ -258,4 +284,34 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   return ret.release();
 }
 
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser, std::string parser_config_str) {
+  // customized parser add-on.
+  if (!parser_config_str.empty()) {
+    std::unique_ptr<Parser> ret;
+    std::string class_name = Common::GetFromParserConfig(parser_config_str, "className");
+    Log::Info("Custom parser class name: %s", class_name.c_str());
+    Parser* p = ParserFactory::getInstance().getObject(class_name, parser_config_str);
+    ret.reset(p);
+    return ret.release();
+  }
+  return CreateParser(filename, header, num_features, label_idx, precise_float_parser);
+}
+
+std::string Parser::GenerateParserConfigStr(const char* filename, const char* parser_config_filename, bool header, int label_idx) {
+  TextReader<data_size_t> parser_config_reader(parser_config_filename, false);
+  parser_config_reader.ReadAllLines();
+  std::string parser_config_str = parser_config_reader.JoinedLines();
+  if (!parser_config_str.empty()) {
+    // save header to parser config in case needed.
+    if (header && Common::GetFromParserConfig(parser_config_str, "header").empty()) {
+      TextReader<data_size_t> text_reader(filename, header);
+      parser_config_str = Common::SaveToParserConfig(parser_config_str, "header", text_reader.first_line());
+    }
+    // save label id to parser config in case needed.
+    if (Common::GetFromParserConfig(parser_config_str, "labelId").empty()) {
+      parser_config_str = Common::SaveToParserConfig(parser_config_str, "labelId", std::to_string(label_idx));
+    }
+  }
+  return parser_config_str;
+}
 }  // namespace LightGBM

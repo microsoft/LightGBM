@@ -84,6 +84,17 @@ class TextReader {
   * \return Text data, store in std::vector by line
   */
   inline std::vector<std::string>& Lines() { return lines_; }
+  /*!
+  * \brief Get joined text data that read from file
+  * \return Text data, store in std::string, joined all lines by delimiter
+  */
+  inline std::string JoinedLines(std::string delimiter = "\n") {
+    std::stringstream ss;
+    for (auto line : lines_) {
+      ss << line << delimiter;
+    }
+    return ss.str();
+  }
 
   INDEX_T ReadAllAndProcess(const std::function<void(INDEX_T, const char*, size_t)>& process_fun) {
     last_line_ = "";

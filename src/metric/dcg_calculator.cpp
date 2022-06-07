@@ -106,27 +106,6 @@ void DCGCalculator::CalMaxDCG(const std::vector<data_size_t>& ks,
   }
 }
 
-
-double DCGCalculator::CalDCGAtK(data_size_t k, const label_t* label,
-                                const double* score, data_size_t num_data) {
-  // get sorted indices by score
-  std::vector<data_size_t> sorted_idx(num_data);
-  for (data_size_t i = 0; i < num_data; ++i) {
-    sorted_idx[i] = i;
-  }
-  std::stable_sort(sorted_idx.begin(), sorted_idx.end(),
-                   [score](data_size_t a, data_size_t b) {return score[a] > score[b]; });
-
-  if (k > num_data) { k = num_data; }
-  double dcg = 0.0f;
-  // calculate dcg
-  for (data_size_t i = 0; i < k; ++i) {
-    data_size_t idx = sorted_idx[i];
-    dcg += label_gain_[static_cast<int>(label[idx])] * discount_[i];
-  }
-  return dcg;
-}
-
 void DCGCalculator::CalDCG(const std::vector<data_size_t>& ks, const label_t* label,
                            const double * score, data_size_t num_data, std::vector<double>* out) {
   // get sorted indices by score

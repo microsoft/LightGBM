@@ -36,14 +36,14 @@ model_builtin <- lgb.train(
     , obj = "multiclass"
 )
 
-preds_builtin <- predict(model_builtin, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
+preds_builtin <- predict(model_builtin, test[, 1L:4L], rawscore = TRUE)
 probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 
 # Method 2 of training with custom objective function
 
 # User defined objective function, given prediction, return gradient and second order gradient
 custom_multiclass_obj <- function(preds, dtrain) {
-    labels <- getinfo(dtrain, "label")
+    labels <- get_field(dtrain, "label")
 
     # preds is a matrix with rows corresponding to samples and columns corresponding to choices
     preds <- matrix(preds, nrow = length(labels))
@@ -73,7 +73,7 @@ custom_multiclass_obj <- function(preds, dtrain) {
 
 # define custom metric
 custom_multiclass_metric <- function(preds, dtrain) {
-    labels <- getinfo(dtrain, "label")
+    labels <- get_field(dtrain, "label")
     preds <- matrix(preds, nrow = length(labels))
     preds <- preds - apply(preds, 1L, max)
     prob <- exp(preds) / rowSums(exp(preds))
@@ -109,7 +109,7 @@ model_custom <- lgb.train(
     , eval = custom_multiclass_metric
 )
 
-preds_custom <- predict(model_custom, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
+preds_custom <- predict(model_custom, test[, 1L:4L], rawscore = TRUE)
 probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
 
 # compare predictions

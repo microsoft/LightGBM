@@ -78,7 +78,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
   $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.1"
+  $env:R_WINDOWS_VERSION = "4.1.3"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -87,7 +87,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
-$env:CRAN_MIRROR = "https://cloud.r-project.org/"
+$env:CRAN_MIRROR = "https://cran.rstudio.com"
 $env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
 $env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
 $env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
@@ -109,7 +109,7 @@ tzutil /s "GMT Standard Time"
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
-Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
+Download-File-With-Retries -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
 Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
@@ -122,7 +122,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'Matrix', 'processx', 'R6', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
@@ -153,10 +153,10 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2')"
+      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
     } else {
@@ -165,7 +165,15 @@ if ($env:COMPILER -ne "MSVC") {
     }
     Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
+    # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
+    # some flavors of tar.exe can fail in some settings on Windows.
+    # Putting the msys64 utilities at the beginning of PATH temporarily to be
+    # sure they're used for that purpose.
+    if ($env:R_MAJOR_VERSION -eq "3") {
+      $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+    }
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
     # git repo around. This is to protect against the use of relative paths

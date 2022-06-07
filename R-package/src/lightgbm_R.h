@@ -20,6 +20,12 @@ LIGHTGBM_C_EXPORT SEXP LGBM_HandleIsNull_R(
   SEXP handle
 );
 
+/*!
+* \brief Throw a standardized error message when encountering a null Booster handle
+* \return No return, will throw an error
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_NullBoosterHandleError_R();
+
 // --- start Dataset interface
 
 /*!
@@ -207,6 +213,19 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
   SEXP out
 );
 
+/*!
+* \brief get number of bins for feature
+* \param handle the handle to the Dataset
+* \param feature the index of the feature
+* \param out The output of number of bins
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNumBin_R(
+  SEXP handle,
+  SEXP feature,
+  SEXP out
+);
+
 // --- start Booster interfaces
 
 /*!
@@ -300,6 +319,15 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterResetParameter_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumClasses_R(
   SEXP handle,
   SEXP out
+);
+
+/*!
+* \brief Get number of features.
+* \param handle Booster handle
+* \return Total number of features, as R integer
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetNumFeature_R(
+  SEXP handle
 );
 
 /*!
@@ -586,5 +614,11 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
   SEXP num_iteration,
   SEXP feature_importance_type
 );
+
+/*!
+* \brief Dump parameter aliases to JSON
+* \return R character vector (length=1) with aliases JSON
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_DumpParamAliases_R();
 
 #endif  // LIGHTGBM_R_H_

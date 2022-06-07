@@ -35,14 +35,19 @@ Predictor <- R6::R6Class(
         # Create handle on it
         handle <- .Call(
           LGBM_BoosterCreateFromModelfile_R
-          , modelfile
+          , path.expand(modelfile)
         )
         private$need_free_handle <- TRUE
 
-      } else if (methods::is(modelfile, "lgb.Booster.handle")) {
+      } else if (methods::is(modelfile, "lgb.Booster.handle") || inherits(modelfile, "externalptr")) {
 
         # Check if model file is a booster handle already
         handle <- modelfile
+        private$need_free_handle <- FALSE
+
+      } else if (lgb.is.Booster(modelfile)) {
+
+        handle <- modelfile$get_handle()
         private$need_free_handle <- FALSE
 
       } else {
@@ -79,8 +84,7 @@ Predictor <- R6::R6Class(
                        rawscore = FALSE,
                        predleaf = FALSE,
                        predcontrib = FALSE,
-                       header = FALSE,
-                       reshape = FALSE) {
+                       header = FALSE) {
 
       # Check if number of iterations is existing - if not, then set it to -1 (use all)
       if (is.null(num_iteration)) {
@@ -95,6 +99,8 @@ Predictor <- R6::R6Class(
 
       # Check if data is a file name and not a matrix
       if (identical(class(data), "character") && length(data) == 1L) {
+
+        data <- path.expand(data)
 
         # Data is a filename, create a temporary file with a "lightgbm_" pattern in it
         tmp_filename <- tempfile(pattern = "lightgbm_")
@@ -208,23 +214,21 @@ Predictor <- R6::R6Class(
       # Get number of cases per row
       npred_per_case <- length(preds) / num_row
 
-
       # Data reshaping
-
-      if (predleaf | predcontrib) {
-
-        # Predict leaves only, reshaping is mandatory
+      if (npred_per_case > 1L || predleaf || predcontrib) {
         preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
+      }
 
-      } else if (reshape && npred_per_case > 1L) {
-
-        # Predict with data reshaping
-        preds <- matrix(preds, ncol = npred_per_case, byrow = TRUE)
-
+      # Keep row names if possible
+      if (NROW(row.names(data)) && NROW(data) == NROW(preds)) {
+        if (is.null(dim(preds))) {
+          names(preds) <- row.names(data)
+        } else {
+          row.names(preds) <- row.names(data)
+        }
       }
 
       return(preds)
-
     }
 
   ),

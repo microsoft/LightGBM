@@ -15,9 +15,15 @@
 
 #include <LightGBM/export.h>
 
+#ifdef __cplusplus
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#else
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#endif
 
 
 typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
@@ -45,6 +51,17 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
  * \return Error information
  */
 LIGHTGBM_C_EXPORT const char* LGBM_GetLastError();
+
+/*!
+ * \brief Dump all parameter names with their aliases to JSON.
+ * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
+ * \param[out] out_len Actual output length
+ * \param[out] out_str JSON format string of parameters, should pre-allocate memory
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DumpParamAliases(int64_t buffer_len,
+                                            int64_t* out_len,
+                                            char* out_str);
 
 /*!
  * \brief Register a callback function for log redirecting.
@@ -79,7 +96,7 @@ LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
                                          void* out,
                                          int32_t* out_len);
 
-// --- start Dataset interface
+/* --- start Dataset interface */
 
 /*!
  * \brief Load dataset from file (like LightGBM CLI version does).
@@ -416,6 +433,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
                                                 int* out);
 
 /*!
+ * \brief Get number of bins for feature.
+ * \param handle Handle of dataset
+ * \param feature Index of the feature
+ * \param[out] out The address to hold number of bins
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
+                                                   int feature,
+                                                   int* out);
+
+/*!
  * \brief Add features from ``source`` to ``target``.
  * \param target The handle of the dataset to add features to
  * \param source The handle of the dataset to take features from
@@ -424,15 +452,15 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetNumFeature(DatasetHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
                                                   DatasetHandle source);
 
-// --- start Booster interfaces
+/* --- start Booster interfaces */
 
 /*!
-* \brief Get boolean representing whether booster is fitting linear trees.
+* \brief Get int representing whether booster is fitting linear trees.
 * \param handle Handle of booster
 * \param[out] out The address to hold linear trees indicator
 * \return 0 when succeed, -1 when failure happens
 */
-LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, bool* out);
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLinear(BoosterHandle handle, int* out);
 
 /*!
  * \brief Create a new boosting learner.
@@ -555,6 +583,9 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
 /*!
  * \brief Update the model by specifying gradient and Hessian directly
  *        (this can be used to support customized loss functions).
+ * \note
+ * The length of the arrays referenced by ``grad`` and ``hess`` must be equal to
+ * ``num_class * num_train_data``, this is not verified by the library, the caller must ensure this.
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
@@ -810,7 +841,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param indices Pointer to column indices for CSR or row indices for CSC
  * \param data Pointer to the data space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nindptr Number of rows in the matrix + 1
+ * \param nindptr Number of entries in ``indptr``
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col_or_row Number of columns for CSR or number of rows for CSC
  * \param predict_type What should be predicted, only feature contributions supported currently
@@ -819,7 +850,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForCSR(BoosterHandle handle,
  * \param num_iteration Number of iterations for prediction, <= 0 means no limit
  * \param parameter Other parameters for prediction, e.g. early stopping for prediction
  * \param matrix_type Type of matrix input and output, can be ``C_API_MATRIX_TYPE_CSR`` or ``C_API_MATRIX_TYPE_CSC``
- * \param[out] out_len Length of output indices and data
+ * \param[out] out_len Length of output data and output indptr (pointer to an array with two entries where to write them)
  * \param[out] out_indptr Pointer to output row headers for CSR or column headers for CSC
  * \param[out] out_indices Pointer to sparse column indices for CSR or row indices for CSC
  * \param[out] out_data Pointer to sparse data space
@@ -1321,10 +1352,26 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
 
-#if defined(_MSC_VER)
-#define THREAD_LOCAL __declspec(thread)  /*!< \brief Thread local specifier. */
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
+/*! \brief Inline specifier no-op in C using standards before C99. */
+#define INLINE_FUNCTION
 #else
-#define THREAD_LOCAL thread_local  /*!< \brief Thread local specifier. */
+/*! \brief Inline specifier. */
+#define INLINE_FUNCTION inline
+#endif
+
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 201112L))
+/*! \brief Thread local specifier no-op in C using standards before C11. */
+#define THREAD_LOCAL
+#elif !defined(__cplusplus)
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL _Thread_local
+#elif defined(_MSC_VER)
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL __declspec(thread)
+#else
+/*! \brief Thread local specifier. */
+#define THREAD_LOCAL thread_local
 #endif
 
 /*!
@@ -1338,11 +1385,17 @@ static char* LastErrorMsg() { static THREAD_LOCAL char err_msg[512] = "Everythin
 #endif
 /*!
  * \brief Set string message of the last error.
+ * \note
+ * This will call unsafe ``sprintf`` when compiled using C standards before C99.
  * \param msg Error message
  */
-inline void LGBM_SetLastError(const char* msg) {
+INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
+#if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
+  sprintf(LastErrorMsg(), "%s", msg);  /* NOLINT(runtime/printf) */
+#else
   const int err_buf_len = 512;
   snprintf(LastErrorMsg(), err_buf_len, "%s", msg);
+#endif
 }
 
-#endif  // LIGHTGBM_C_API_H_
+#endif  /* LIGHTGBM_C_API_H_ */

@@ -34,7 +34,11 @@ Logit <- function(x) log(x / (1.0 - x))
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
-setinfo(dtrain, "init_score", rep(Logit(mean(train$label)), length(train$label)))
+set_field(
+  dataset = dtrain
+  , field_name = "init_score"
+  , data = rep(Logit(mean(train$label)), length(train$label))
+)
 data(agaricus.test, package = "lightgbm")
 test <- agaricus.test
 

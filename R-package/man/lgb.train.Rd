@@ -20,7 +20,7 @@ lgb.train(
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
-  ...
+  serializable = TRUE
 )
 }
 \arguments{
@@ -73,11 +73,12 @@ may allow you to pass other types of data like \code{matrix} and then separately
                 }
             }}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
 \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
 \item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
 
@@ -99,19 +100,8 @@ set to the iteration number of the best iteration.}
 booster model into a predictor model which frees up memory and the
 original datasets}
 
-\item{...}{other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-the "Parameters" section of the documentation} for more information. A few key parameters:
-\itemize{
-    \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-    \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-    \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-                     overfitting. Tree still grow by leaf-wise.}
-    \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-                 the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-                 not the number of threads (most CPU using hyper-threading to generate 2 threads
-                 per CPU core).}
-}
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
+\item{serializable}{whether to make the resulting objects serializable through functions such as
+\code{save} or \code{saveRDS} (see section "Model serialization").}
 }
 \value{
 a trained booster model \code{lgb.Booster}.

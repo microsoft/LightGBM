@@ -37,6 +37,8 @@ int main() {
 EOL
 
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
 
 if test "${ac_mm_prefetch}" = "yes";
@@ -59,11 +61,37 @@ int main() {
 EOL
 
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
 echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
 
 if test "${ac_mm_malloc}" = "yes";
 then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
+fi
+
+#############
+# INET_PTON #
+#############
+
+ac_inet_pton="no"
+
+cat > conftest.cpp <<EOL
+#include <ws2tcpip.h>
+int main() {
+  void* p = inet_pton;
+  return 0;
+}
+EOL
+
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
+echo "checking whether INET_PTON works...${ac_inet_pton}"
+
+if test "${ac_inet_pton}" = "yes";
+then
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 fi
 
 # Generate Makevars.win from Makevars.win.in

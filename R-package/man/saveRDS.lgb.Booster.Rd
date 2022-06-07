@@ -2,7 +2,7 @@
 % Please edit documentation in R/saveRDS.lgb.Booster.R
 \name{saveRDS.lgb.Booster}
 \alias{saveRDS.lgb.Booster}
-\title{saveRDS for \code{lgb.Booster} models}
+\title{saveRDS for \code{lgb.Booster} models (DEPRECATED)}
 \usage{
 saveRDS.lgb.Booster(
   object,
@@ -38,8 +38,10 @@ compression to be used. Ignored if file is a connection.}
 NULL invisibly.
 }
 \description{
-Attempts to save a model using RDS. Has an additional parameter (\code{raw})
-             which decides whether to save the raw model or not.
+Calls \code{saveRDS} on an \code{lgb.Booster} object, making it serializable before the call if
+             it isn't already.
+
+             \bold{This function throws a warning and will be removed in future versions.}
 }
 \examples{
 \donttest{

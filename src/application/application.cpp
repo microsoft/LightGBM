@@ -31,14 +31,12 @@ namespace LightGBM {
 Application::Application(int argc, char** argv) {
   LoadParameters(argc, argv);
   // set number of threads for openmp
-  if (config_.num_threads > 0) {
-    omp_set_num_threads(config_.num_threads);
-  }
+  OMP_SET_NUM_THREADS(config_.num_threads);
   if (config_.data.size() == 0 && config_.task != TaskType::kConvertModel) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-  if (config_.device_type == std::string("cuda")) {
+  if (config_.device_type == std::string("cuda") || config_.device_type == std::string("cuda_exp")) {
       LGBM_config_::current_device = lgbm_device_cuda;
   }
 }
@@ -200,7 +198,7 @@ void Application::InitTrain() {
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddValidDataset(valid_datas_[i].get(),
                                Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
-    Log::Debug("Number of data points in validation set #%zu: %zu", i + 1, valid_datas_[i]->num_data());
+    Log::Debug("Number of data points in validation set #%zu: %d", i + 1, valid_datas_[i]->num_data());
   }
   Log::Info("Finished initializing training");
 }

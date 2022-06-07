@@ -12,19 +12,6 @@
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
 #'                   original datasets
-#' @param ... other parameters, see \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
-#'            the "Parameters" section of the documentation} for more information. A few key parameters:
-#'            \itemize{
-#'                \item{\code{boosting}: Boosting type. \code{"gbdt"}, \code{"rf"}, \code{"dart"} or \code{"goss"}.}
-#'                \item{\code{num_leaves}: Maximum number of leaves in one tree.}
-#'                \item{\code{max_depth}: Limit the max depth for tree model. This is used to deal with
-#'                                 overfitting. Tree still grow by leaf-wise.}
-#'                \item{\code{num_threads}: Number of threads for LightGBM. For the best speed, set this to
-#'                             the number of real CPU cores(\code{parallel::detectCores(logical = FALSE)}),
-#'                             not the number of threads (most CPU using hyper-threading to generate 2 threads
-#'                             per CPU core).}
-#'            }
-#'            NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained booster model \code{lgb.Booster}.
 #'
@@ -67,7 +54,7 @@ lgb.train <- function(params = list(),
                       early_stopping_rounds = NULL,
                       callbacks = list(),
                       reset_data = FALSE,
-                      ...) {
+                      serializable = TRUE) {
 
   # validate inputs early to avoid unnecessary computation
   if (nrounds <= 0L) {
@@ -86,32 +73,29 @@ lgb.train <- function(params = list(),
     }
   }
 
-  # Setup temporary variables
-  additional_params <- list(...)
-  params <- append(params, additional_params)
-  params$verbose <- verbose
-  params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
-  fobj <- NULL
-  eval_functions <- list(NULL)
-
-  if (length(additional_params) > 0L) {
-    warning(paste0(
-      "lgb.train: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
-      , ". These will be used, but in future releases of lightgbm, this warning will become an error. "
-      , "Add these to 'params' instead. See ?lgb.train for documentation on how to call this function."
-    ))
-  }
-
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
   params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
+  params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
     , alternative_kwarg_value = nrounds
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "metric"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "objective"
+    , params = params
+    , alternative_kwarg_value = obj
   )
   params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
@@ -120,16 +104,19 @@ lgb.train <- function(params = list(),
   )
   early_stopping_rounds <- params[["early_stopping_round"]]
 
-  # Check for objective (function or not)
+  # extract any function objects passed for objective or metric
+  fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
-    params$objective <- "NONE"
+    params$objective <- "none"
   }
 
   # If eval is a single function, store it as a 1-element list
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  params <- lgb.check.eval(params = params, eval = eval)
+  eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -223,13 +210,13 @@ lgb.train <- function(params = list(),
   }
 
   # Add printing log callback
-  if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
+  if (params[["verbosity"]] > 0L && eval_freq > 0L) {
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record && length(valids) > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.record.evaluation())
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_record_evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -250,10 +237,10 @@ lgb.train <- function(params = list(),
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping <- FALSE
 
-    # Remove the cb.early.stop() function if it was passed in to callbacks
+    # Remove the cb_early_stop() function if it was passed in to callbacks
     callbacks <- Filter(
       f = function(cb_func) {
-        !identical(attr(cb_func, "name"), "cb.early.stop")
+        !identical(attr(cb_func, "name"), "cb_early_stop")
       }
       , x = callbacks
     )
@@ -263,10 +250,10 @@ lgb.train <- function(params = list(),
   if (using_early_stopping) {
     callbacks <- add.cb(
       cb_list = callbacks
-      , cb = cb.early.stop(
+      , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
-        , verbose = verbose
+        , verbose = params[["verbosity"]] > 0L
       )
     )
   }
@@ -393,6 +380,10 @@ lgb.train <- function(params = list(),
     booster$best_score <- booster_old$best_score
     booster$record_evals <- booster_old$record_evals
 
+  }
+
+  if (serializable) {
+    booster$save_raw()
   }
 
   return(booster)

@@ -35,13 +35,25 @@ DatasetLoader::~DatasetLoader() {
 void DatasetLoader::SetHeader(const char* filename) {
   std::unordered_map<std::string, int> name2idx;
   std::string name_prefix("name:");
-  if (filename != nullptr) {
+  if (filename != nullptr && CheckCanLoadFromBin(filename) == "") {
     TextReader<data_size_t> text_reader(filename, config_.header);
 
     // get column names
     if (config_.header) {
       std::string first_line = text_reader.first_line();
       feature_names_ = Common::Split(first_line.c_str(), "\t,");
+    } else if (!config_.parser_config_file.empty()) {
+      // support to get header from parser config, so could utilize following label name to id mapping logic.
+      TextReader<data_size_t> parser_config_reader(config_.parser_config_file.c_str(), false);
+      parser_config_reader.ReadAllLines();
+      std::string parser_config_str = parser_config_reader.JoinedLines();
+      if (!parser_config_str.empty()) {
+        std::string header_in_parser_config = Common::GetFromParserConfig(parser_config_str, "header");
+        if (!header_in_parser_config.empty()) {
+          Log::Info("Get raw column names from parser config.");
+          feature_names_ = Common::Split(header_in_parser_config.c_str(), "\t,");
+        }
+      }
     }
 
     // load label idx first
@@ -68,6 +80,15 @@ void DatasetLoader::SetHeader(const char* filename) {
                      "please add the prefix \"name:\" to the column name");
         }
         Log::Info("Using column number %d as label", label_idx_);
+      }
+    }
+
+    if (!config_.parser_config_file.empty()) {
+      // if parser config file exists, feature names may be changed after customized parser applied.
+      // clear here so could use default filled feature names during dataset construction.
+      // may improve by saving real feature names defined in parser in the future.
+      if (!feature_names_.empty()) {
+        feature_names_.clear();
       }
     }
 
@@ -196,8 +217,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   auto bin_filename = CheckCanLoadFromBin(filename);
   bool is_load_from_binary = false;
   if (bin_filename.size() == 0) {
+    dataset->parser_config_str_ = Parser::GenerateParserConfigStr(filename, config_.parser_config_file.c_str(), config_.header, label_idx_);
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
-                                                               config_.precise_float_parser));
+                                                               config_.precise_float_parser, dataset->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -212,8 +234,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       auto sample_data = SampleTextDataFromMemory(text_data);
       CheckSampleSize(sample_data.size(),
                       static_cast<size_t>(dataset->num_data_));
-      // construct feature bin mappers
+      // construct feature bin mappers & clear sample data
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      std::vector<std::string>().swap(sample_data);
       if (dataset->has_raw()) {
         dataset->ResizeRaw(dataset->num_data_);
       }
@@ -232,8 +255,9 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
       }
       CheckSampleSize(sample_data.size(),
                       static_cast<size_t>(dataset->num_data_));
-      // construct feature bin mappers
+      // construct feature bin mappers & clear sample data
       ConstructBinMappersFromTextData(rank, num_machines, sample_data, parser.get(), dataset.get());
+      std::vector<std::string>().swap(sample_data);
       if (dataset->has_raw()) {
         dataset->ResizeRaw(dataset->num_data_);
       }
@@ -248,6 +272,21 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     is_load_from_binary = true;
     Log::Info("Load from binary file %s", bin_filename.c_str());
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
+
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
+
+    dataset->device_type_ = config_.device_type;
+    dataset->gpu_device_id_ = config_.gpu_device_id;
+    #ifdef USE_CUDA_EXP
+    if (config_.device_type == std::string("cuda_exp")) {
+      dataset->CreateCUDAColumnData();
+      dataset->metadata_.CreateCUDAMetadata(dataset->gpu_device_id_);
+    } else {
+      dataset->cuda_column_data_ = nullptr;
+    }
+    #endif  // USE_CUDA_EXP
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
@@ -256,8 +295,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
 
   return dataset.release();
 }
-
-
 
 Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data) {
   data_size_t num_global_data = 0;
@@ -269,7 +306,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   auto bin_filename = CheckCanLoadFromBin(filename);
   if (bin_filename.size() == 0) {
     auto parser = std::unique_ptr<Parser>(Parser::CreateParser(filename, config_.header, 0, label_idx_,
-                                                               config_.precise_float_parser));
+                                                               config_.precise_float_parser, train_data->parser_config_str_));
     if (parser == nullptr) {
       Log::Fatal("Could not recognize data format of %s", filename);
     }
@@ -306,6 +343,9 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   } else {
     // load data from binary file
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
+    // checks whether there's a initial score file when loaded from binary data files
+    // the intial score file should with suffix ".bin.init"
+    dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // not need to check validation data
   // check meta data
@@ -569,7 +609,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     read_cnt = reader->Read(buffer.data(), size_of_feature);
 
     if (read_cnt != size_of_feature) {
-      Log::Fatal("Binary file error: feature %d is incorrect, read count: %d", i, read_cnt);
+      Log::Fatal("Binary file error: feature %d is incorrect, read count: %zu", i, read_cnt);
     }
     dataset->feature_groups_.emplace_back(std::unique_ptr<FeatureGroup>(
       new FeatureGroup(buffer.data(),
@@ -599,7 +639,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
     for (int i = 0; i < dataset->num_data(); ++i) {
       read_cnt = reader->Read(buffer.data(), row_size);
       if (read_cnt != row_size) {
-        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %d", i, read_cnt);
+        Log::Fatal("Binary file error: row %d of raw data is incorrect, read count: %zu", i, read_cnt);
       }
       mem_ptr = buffer.data();
       const float* tmp_ptr_raw_row = reinterpret_cast<const float*>(mem_ptr);
@@ -765,6 +805,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   if (dataset->has_raw()) {
@@ -809,33 +850,48 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
 
   if (is_load_from_binary) {
     if (dataset->max_bin_ != config_.max_bin) {
-      Log::Fatal("Dataset max_bin %d != config %d", dataset->max_bin_, config_.max_bin);
+      Log::Fatal("Dataset was constructed with parameter max_bin=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->max_bin_, config_.max_bin);
     }
     if (dataset->min_data_in_bin_ != config_.min_data_in_bin) {
-      Log::Fatal("Dataset min_data_in_bin %d != config %d", dataset->min_data_in_bin_, config_.min_data_in_bin);
+      Log::Fatal("Dataset was constructed with parameter min_data_in_bin=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->min_data_in_bin_, config_.min_data_in_bin);
     }
     if (dataset->use_missing_ != config_.use_missing) {
-      Log::Fatal("Dataset use_missing %d != config %d", dataset->use_missing_, config_.use_missing);
+      Log::Fatal("Dataset was constructed with parameter use_missing=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->use_missing_, config_.use_missing);
     }
     if (dataset->zero_as_missing_ != config_.zero_as_missing) {
-      Log::Fatal("Dataset zero_as_missing %d != config %d", dataset->zero_as_missing_, config_.zero_as_missing);
+      Log::Fatal("Dataset was constructed with parameter zero_as_missing=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->zero_as_missing_, config_.zero_as_missing);
     }
     if (dataset->bin_construct_sample_cnt_ != config_.bin_construct_sample_cnt) {
-      Log::Fatal("Dataset bin_construct_sample_cnt %d != config %d", dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
+      Log::Fatal("Dataset was constructed with parameter bin_construct_sample_cnt=%d. It cannot be changed to %d when loading from binary file.",
+                 dataset->bin_construct_sample_cnt_, config_.bin_construct_sample_cnt);
     }
     if ((dataset->max_bin_by_feature_.size() != config_.max_bin_by_feature.size()) ||
         !std::equal(dataset->max_bin_by_feature_.begin(), dataset->max_bin_by_feature_.end(),
             config_.max_bin_by_feature.begin())) {
-      Log::Fatal("Dataset max_bin_by_feature does not match with config");
+      Log::Fatal("Parameter max_bin_by_feature cannot be changed when loading from binary file.");
     }
 
-    int label_idx = -1;
-    if (Common::AtoiAndCheck(config_.label_column.c_str(), &label_idx)) {
-      if (dataset->label_idx_ != label_idx) {
-        Log::Fatal("Dataset label_idx %d != config %d", dataset->label_idx_, label_idx);
-      }
-    } else {
-      Log::Info("Recommend use integer for label index when loading data from binary for sanity check.");
+    if (config_.label_column != "") {
+      Log::Warning("Parameter label_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.weight_column != "") {
+      Log::Warning("Parameter weight_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.group_column != "") {
+      Log::Warning("Parameter group_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.ignore_column != "") {
+      Log::Warning("Parameter ignore_column works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.two_round) {
+      Log::Warning("Parameter two_round works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
+    }
+    if (config_.header) {
+      Log::Warning("Parameter header works only in case of loading data directly from text file. It will be ignored when loading from binary file.");
     }
   }
 }
@@ -995,7 +1051,11 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
                                                                                     categorical_features_);
 
   // check the range of label_idx, weight_idx and group_idx
-  CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  // skip label check if user input parser config file,
+  // because label id is got from raw features while dataset features are consistent with customized parser.
+  if (dataset->parser_config_str_.empty()) {
+    CHECK(label_idx_ >= 0 && label_idx_ <= dataset->num_total_features_);
+  }
   CHECK(weight_idx_ < 0 || weight_idx_ < dataset->num_total_features_);
   CHECK(group_idx_ < 0 || group_idx_ < dataset->num_total_features_);
 
@@ -1125,6 +1185,7 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       cp_ptr += bin_mappers[i]->SizesInByte();
     }
   }
+  CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
                      Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
@@ -1143,7 +1204,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   double tmp_label = 0.0f;
   auto& ref_text_data = *text_data;
   std::vector<float> feature_row(dataset->num_features_);
-  if (predict_fun_ == nullptr) {
+  if (!predict_fun_) {
     OMP_INIT_EX();
     // if doesn't need to prediction with initial model
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
@@ -1196,7 +1257,7 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
   } else {
     OMP_INIT_EX();
     // if need to prediction with initial model
-    std::vector<double> init_score(dataset->num_data_ * num_class_);
+    std::vector<double> init_score(static_cast<size_t>(dataset->num_data_) * num_class_);
     #pragma omp parallel for schedule(static) private(oneline_features) firstprivate(tmp_label, feature_row)
     for (data_size_t i = 0; i < dataset->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
@@ -1262,8 +1323,8 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
 void DatasetLoader::ExtractFeaturesFromFile(const char* filename, const Parser* parser,
                                             const std::vector<data_size_t>& used_data_indices, Dataset* dataset) {
   std::vector<double> init_score;
-  if (predict_fun_ != nullptr) {
-    init_score = std::vector<double>(dataset->num_data_ * num_class_);
+  if (predict_fun_) {
+    init_score = std::vector<double>(static_cast<size_t>(dataset->num_data_) * num_class_);
   }
   std::function<void(data_size_t, const std::vector<std::string>&)> process_fun =
     [this, &init_score, &parser, &dataset]
@@ -1368,8 +1429,6 @@ std::string DatasetLoader::CheckCanLoadFromBin(const char* filename) {
   }
 }
 
-
-
 std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced_bins_path, int num_total_features,
                                                               const std::unordered_set<int>& categorical_features) {
   std::vector<std::vector<double>> forced_bins(num_total_features, std::vector<double>());
@@ -1404,6 +1463,46 @@ std::vector<std::vector<double>> DatasetLoader::GetForcedBins(std::string forced
     }
   }
   return forced_bins;
+}
+
+void DatasetLoader::CheckCategoricalFeatureNumBin(
+  const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+  const int max_bin, const std::vector<int>& max_bin_by_feature) const {
+  bool need_warning = false;
+  if (bin_mappers.size() < 1024) {
+    for (size_t i = 0; i < bin_mappers.size(); ++i) {
+      const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
+      if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+        need_warning = true;
+        break;
+      }
+    }
+  } else {
+    const int num_threads = OMP_NUM_THREADS();
+    std::vector<bool> thread_need_warning(num_threads, false);
+    Threading::For<size_t>(0, bin_mappers.size(), 1,
+      [&bin_mappers, &thread_need_warning, &max_bin_by_feature, max_bin] (int thread_index, size_t start, size_t end) {
+        for (size_t i = start; i < end; ++i) {
+          thread_need_warning[thread_index] = false;
+          const int max_bin_for_this_feature = max_bin_by_feature.empty() ? max_bin : max_bin_by_feature[i];
+          if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::CategoricalBin && bin_mappers[i]->num_bin() > max_bin_for_this_feature) {
+            thread_need_warning[thread_index] = true;
+            break;
+          }
+        }
+      });
+    for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+      if (thread_need_warning[thread_index]) {
+        need_warning = true;
+        break;
+      }
+    }
+  }
+
+  if (need_warning) {
+    Log::Warning("Categorical features with more bins than the configured maximum bin number found.");
+    Log::Warning("For categorical features, max_bin and max_bin_by_feature may be ignored with a large number of categories.");
+  }
 }
 
 }  // namespace LightGBM

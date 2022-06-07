@@ -7,113 +7,60 @@
 # [return] A named list, where each key is a parameter relevant to lgb.Dataset and each value is a character
 #          vector of corresponding aliases.
 .DATASET_PARAMETERS <- function() {
-    return(
-        list(
-            "bin_construct_sample_cnt" = c(
-                "bin_construct_sample_cnt"
-                , "subsample_for_bin"
-            )
-            , "categorical_feature" = c(
-                "categorical_feature"
-                , "cat_feature"
-                , "categorical_column"
-                , "cat_column"
-            )
-            , "data_random_seed" = c(
-                "data_random_seed"
-                , "data_seed"
-            )
-            , "enable_bundle" = c(
-                "enable_bundle"
-                , "is_enable_bundle"
-                , "bundle"
-            )
-            , "feature_pre_filter" = "feature_pre_filter"
-            , "forcedbins_filename" = "forcedbins_filename"
-            , "group_column" = c(
-                "group_column"
-                , "group"
-                , "group_id"
-                , "query_column"
-                , "query"
-                , "query_id"
-            )
-            , "header" = c(
-                "header"
-                , "has_header"
-            )
-            , "ignore_column" = c(
-                "ignore_column"
-                , "ignore_feature"
-                , "blacklist"
-            )
-            , "is_enable_sparse" = c(
-                "is_enable_sparse"
-                , "is_sparse"
-                , "enable_sparse"
-                , "sparse"
-            )
-            , "label_column" = c(
-                "label_column"
-                , "label"
-            )
-            , "linear_tree" = c(
-                "linear_tree"
-                , "linear_trees"
-            )
-            , "max_bin" = "max_bin"
-            , "max_bin_by_feature" = "max_bin_by_feature"
-            , "min_data_in_bin" = "min_data_in_bin"
-            , "pre_partition" = c(
-                "pre_partition"
-                , "is_pre_partition"
-            )
-            , "precise_float_parser" = "precise_float_parser"
-            , "two_round" = c(
-                "two_round"
-                , "two_round_loading"
-                , "use_two_round_loading"
-            )
-            , "use_missing" = "use_missing"
-            , "weight_column" = c(
-                "weight_column"
-                , "weight"
-            )
-            , "zero_as_missing" = "zero_as_missing"
-        )
-    )
+    all_aliases <- .PARAMETER_ALIASES()
+    return(all_aliases[c(
+        "bin_construct_sample_cnt"
+        , "categorical_feature"
+        , "data_random_seed"
+        , "enable_bundle"
+        , "feature_pre_filter"
+        , "forcedbins_filename"
+        , "group_column"
+        , "header"
+        , "ignore_column"
+        , "is_enable_sparse"
+        , "label_column"
+        , "linear_tree"
+        , "max_bin"
+        , "max_bin_by_feature"
+        , "min_data_in_bin"
+        , "pre_partition"
+        , "precise_float_parser"
+        , "two_round"
+        , "use_missing"
+        , "weight_column"
+        , "zero_as_missing"
+    )])
 }
+
+# [description] Non-exported environment, used for caching details that only need to be
+#               computed once per R session.
+.lgb_session_cache_env <- new.env()
 
 # [description] List of respected parameter aliases. Wrapped in a function to take advantage of
 #               lazy evaluation (so it doesn't matter what order R sources files during installation).
 # [return] A named list, where each key is a main LightGBM parameter and each value is a character
 #          vector of corresponding aliases.
 .PARAMETER_ALIASES <- function() {
-    learning_params <- list(
-        "boosting" = c(
-            "boosting"
-            , "boost"
-            , "boosting_type"
-        )
-        , "early_stopping_round" = c(
-            "early_stopping_round"
-            , "early_stopping_rounds"
-            , "early_stopping"
-            , "n_iter_no_change"
-        )
-        , "num_iterations" = c(
-            "num_iterations"
-            , "num_iteration"
-            , "n_iter"
-            , "num_tree"
-            , "num_trees"
-            , "num_round"
-            , "num_rounds"
-            , "num_boost_round"
-            , "n_estimators"
+    if (exists("PARAMETER_ALIASES", where = .lgb_session_cache_env)) {
+        return(get("PARAMETER_ALIASES", envir = .lgb_session_cache_env))
+    }
+    params_to_aliases <- jsonlite::fromJSON(
+        .Call(
+            LGBM_DumpParamAliases_R
         )
     )
-    return(c(learning_params, .DATASET_PARAMETERS()))
+    for (main_name in names(params_to_aliases)) {
+        aliases_with_main_name <- c(main_name, unlist(params_to_aliases[[main_name]]))
+        params_to_aliases[[main_name]] <- aliases_with_main_name
+    }
+    # store in cache so the next call to `.PARAMETER_ALIASES()` doesn't need to recompute this
+    assign(
+        x = "PARAMETER_ALIASES"
+        , value = params_to_aliases
+        , envir = .lgb_session_cache_env
+    )
+    return(params_to_aliases)
 }
 
 # [description]

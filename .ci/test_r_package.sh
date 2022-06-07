@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cloud.r-project.org/"
+CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
@@ -17,11 +17,13 @@ fi
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.1
-    export R_LINUX_VERSION="4.1.1-1.2004.0"
+    export R_MAC_VERSION=4.1.3
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
+    export R_LINUX_VERSION="4.1.3-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -38,7 +40,7 @@ if [[ $OS_NAME == "linux" ]]; then
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
@@ -66,20 +68,33 @@ fi
 if [[ $OS_NAME == "macos" ]]; then
     brew update-reset && brew update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install automake
+        brew install automake || exit -1
     fi
     brew install \
         checkbashisms \
-        qpdf
-    brew install --cask basictex
+        qpdf || exit -1
+    brew install --cask basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr --verify-repo=none update --self
-    sudo tlmgr --verify-repo=none install inconsolata helvetic
+    sudo tlmgr --verify-repo=none update --self || exit -1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic || exit -1
 
-    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
+    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
         -pkg $(pwd)/R.pkg \
-        -target /
+        -target / || exit -1
+
+    # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
+    # See https://github.com/r-lib/actions/issues/412.
+    if [[ $(sw_vers -productVersion | head -c2) -ge "11" ]]; then
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/R \
+            /usr/local/bin/R
+        sudo ln \
+            -sf \
+            /Library/Frameworks/R.framework/Resources/bin/Rscript \
+            /usr/local/bin/Rscript
+    fi
 
     # Fix "duplicate libomp versions" issue on Mac
     # by replacing the R libomp.dylib with a symlink to the one installed with brew
@@ -92,13 +107,13 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'testthat'
+# Manually install Depends and Imports libraries + 'knitr', 'RhpcBLASctl', 'rmarkdown', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown')"
 else
-    packages="c('data.table', 'jsonlite', 'Matrix', 'R6', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -112,7 +127,7 @@ cd ${BUILD_DIRECTORY}
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R --skip-install || exit -1
+    Rscript build_r.R -j4 --skip-install || exit -1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if

@@ -62,6 +62,7 @@ def plot_importance(
     xlabel : str or None, optional (default="Feature importance")
         X-axis title label.
         If None, title is disabled.
+        @importance_type@ placeholder can be used, and it will be replaced with the value of ``importance_type`` parameter.
     ylabel : str or None, optional (default="Features")
         Y-axis title label.
         If None, title is disabled.
@@ -150,6 +151,7 @@ def plot_importance(
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
+        xlabel = xlabel.replace('@importance_type@', importance_type)
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
@@ -234,12 +236,12 @@ def plot_split_value_histogram(
     elif not isinstance(booster, Booster):
         raise TypeError('booster must be Booster or LGBMModel.')
 
-    hist, bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
+    hist, split_bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
         raise ValueError('Cannot plot split value histogram, '
                          f'because feature {feature} was not used in splitting')
-    width = width_coef * (bins[1] - bins[0])
-    centred = (bins[:-1] + bins[1:]) / 2
+    width = width_coef * (split_bins[1] - split_bins[0])
+    centred = (split_bins[:-1] + split_bins[1:]) / 2
 
     if ax is None:
         if figsize is not None:
@@ -251,8 +253,8 @@ def plot_split_value_histogram(
     if xlim is not None:
         _check_not_tuple_of_2_elements(xlim, 'xlim')
     else:
-        range_result = bins[-1] - bins[0]
-        xlim = (bins[0] - range_result * 0.2, bins[-1] + range_result * 0.2)
+        range_result = split_bins[-1] - split_bins[0]
+        xlim = (split_bins[0] - range_result * 0.2, split_bins[-1] + range_result * 0.2)
     ax.set_xlim(xlim)
 
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))
@@ -283,7 +285,7 @@ def plot_metric(
     ylim: Optional[Tuple[float, float]] = None,
     title: Optional[str] = 'Metric during training',
     xlabel: Optional[str] = 'Iterations',
-    ylabel: Optional[str] = 'auto',
+    ylabel: Optional[str] = '@metric@',
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
     grid: bool = True
@@ -314,10 +316,11 @@ def plot_metric(
     xlabel : str or None, optional (default="Iterations")
         X-axis title label.
         If None, title is disabled.
-    ylabel : str or None, optional (default="auto")
+    ylabel : str or None, optional (default="@metric@")
         Y-axis title label.
         If 'auto', metric name is used.
         If None, title is disabled.
+        @metric@ placeholder can be used, and it will be replaced with metric name.
     figsize : tuple of 2 elements or None, optional (default=None)
         Figure size.
     dpi : int or None, optional (default=None)
@@ -339,6 +342,8 @@ def plot_metric(
         eval_results = deepcopy(booster.evals_result_)
     elif isinstance(booster, dict):
         eval_results = deepcopy(booster)
+    elif isinstance(booster, Booster):
+        raise TypeError("booster must be dict or LGBMModel. To use plot_metric with Booster type, first record the metrics using record_evaluation callback then pass that to plot_metric as argument `booster`")
     else:
         raise TypeError('booster must be dict or LGBMModel.')
 
@@ -353,13 +358,13 @@ def plot_metric(
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
     if dataset_names is None:
-        dataset_names = iter(eval_results.keys())
+        dataset_names_iter = iter(eval_results.keys())
     elif not isinstance(dataset_names, (list, tuple, set)) or not dataset_names:
         raise ValueError('dataset_names should be iterable and cannot be empty')
     else:
-        dataset_names = iter(dataset_names)
+        dataset_names_iter = iter(dataset_names)
 
-    name = next(dataset_names)  # take one as sample
+    name = next(dataset_names_iter)  # take one as sample
     metrics_for_one = eval_results[name]
     num_metric = len(metrics_for_one)
     if metric is None:
@@ -370,14 +375,17 @@ def plot_metric(
         if metric not in metrics_for_one:
             raise KeyError('No given metric in eval results.')
         results = metrics_for_one[metric]
-    num_iteration, max_result, min_result = len(results), max(results), min(results)
+    num_iteration = len(results)
+    max_result = max(results)
+    min_result = min(results)
     x_ = range(num_iteration)
     ax.plot(x_, results, label=name)
 
-    for name in dataset_names:
+    for name in dataset_names_iter:
         metrics_for_one = eval_results[name]
         results = metrics_for_one[metric]
-        max_result, min_result = max(max(results), max_result), min(min(results), min_result)
+        max_result = max(max(results), max_result)
+        min_result = min(min(results), min_result)
         ax.plot(x_, results, label=name)
 
     ax.legend(loc='best')
@@ -395,14 +403,12 @@ def plot_metric(
         ylim = (min_result - range_result * 0.2, max_result + range_result * 0.2)
     ax.set_ylim(ylim)
 
-    if ylabel == 'auto':
-        ylabel = metric
-
     if title is not None:
         ax.set_title(title)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
+        ylabel = ylabel.replace('@metric@', metric)
         ax.set_ylabel(ylabel)
     ax.grid(grid)
     return ax
@@ -550,7 +556,7 @@ def create_tree_digraph(
             - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
             - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
             - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
-            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of Hessian) of all observations that fall into this leaf node
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.
@@ -643,7 +649,7 @@ def plot_tree(
             - ``'internal_count'`` : number of records from the training data that fall into this non-leaf node
             - ``'internal_weight'`` : total weight of all nodes that fall into this non-leaf node
             - ``'leaf_count'`` : number of records from the training data that fall into this leaf node
-            - ``'leaf_weight'`` : total weight (sum of hessian) of all observations that fall into this leaf node
+            - ``'leaf_weight'`` : total weight (sum of Hessian) of all observations that fall into this leaf node
             - ``'data_percentage'`` : percentage of training data that fall into this node
     precision : int or None, optional (default=3)
         Used to restrict the display of floating point values to a certain precision.

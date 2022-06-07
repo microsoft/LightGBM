@@ -1,4 +1,5 @@
 # coding: utf-8
+import copy
 import json
 import pickle
 from pathlib import Path
@@ -112,15 +113,15 @@ gbm = lgb.train(params,
 print('Finished 10 - 20 rounds with model file...')
 
 # decay learning rates
-# learning_rates accepts:
-# 1. list/tuple with length = num_boost_round
+# reset_parameter callback accepts:
+# 1. list with length = num_boost_round
 # 2. function(curr_iter)
 gbm = lgb.train(params,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                learning_rates=lambda iter: 0.05 * (0.99 ** iter),
-                valid_sets=lgb_eval)
+                valid_sets=lgb_eval,
+                callbacks=[lgb.reset_parameter(learning_rate=lambda iter: 0.05 * (0.99 ** iter))])
 
 print('Finished 20 - 30 rounds with decay learning rates...')
 
@@ -159,11 +160,14 @@ def binary_error(preds, train_data):
     return 'error', np.mean(labels != (preds > 0.5)), False
 
 
-gbm = lgb.train(params,
+# Pass custom objective function through params
+params_custom_obj = copy.deepcopy(params)
+params_custom_obj['objective'] = loglikelihood
+
+gbm = lgb.train(params_custom_obj,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                fobj=loglikelihood,
                 feval=binary_error,
                 valid_sets=lgb_eval)
 
@@ -183,11 +187,14 @@ def accuracy(preds, train_data):
     return 'accuracy', np.mean(labels == (preds > 0.5)), True
 
 
-gbm = lgb.train(params,
+# Pass custom objective function through params
+params_custom_obj = copy.deepcopy(params)
+params_custom_obj['objective'] = loglikelihood
+
+gbm = lgb.train(params_custom_obj,
                 lgb_train,
                 num_boost_round=10,
                 init_model=gbm,
-                fobj=loglikelihood,
                 feval=[binary_error, accuracy],
                 valid_sets=lgb_eval)
 

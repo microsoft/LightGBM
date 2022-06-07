@@ -15,11 +15,15 @@
 
 #include <string>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <LightGBM/cuda/cuda_column_data.hpp>
+#include <LightGBM/cuda/cuda_metadata.hpp>
 
 namespace LightGBM {
 
@@ -143,6 +147,9 @@ class Metadata {
     queries_[idx] = static_cast<data_size_t>(value);
   }
 
+  /*! \brief Load initial scores from file */
+  void LoadInitialScore(const std::string& data_filename);
+
   /*!
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
@@ -210,9 +217,15 @@ class Metadata {
   /*! \brief Disable copy */
   Metadata(const Metadata&) = delete;
 
+  #ifdef USE_CUDA_EXP
+
+  CUDAMetadata* cuda_metadata() const { return cuda_metadata_.get(); }
+
+  void CreateCUDAMetadata(const int gpu_device_id);
+
+  #endif  // USE_CUDA_EXP
+
  private:
-  /*! \brief Load initial scores from file */
-  void LoadInitialScore();
   /*! \brief Load wights from file */
   void LoadWeights();
   /*! \brief Load query boundaries from file */
@@ -246,6 +259,9 @@ class Metadata {
   bool weight_load_from_file_;
   bool query_load_from_file_;
   bool init_score_load_from_file_;
+  #ifdef USE_CUDA_EXP
+  std::unique_ptr<CUDAMetadata> cuda_metadata_;
+  #endif  // USE_CUDA_EXP
 };
 
 
@@ -253,6 +269,14 @@ class Metadata {
 class Parser {
  public:
   typedef const char* (*AtofFunc)(const char* p, double* out);
+
+  /*! \brief Default constructor */
+  Parser() {}
+
+  /*!
+  * \brief Constructor for customized parser. The constructor accepts content not path because need to save/load the config along with model string
+  */
+  explicit Parser(std::string) {}
 
   /*! \brief virtual destructor */
   virtual ~Parser() {}
@@ -271,12 +295,58 @@ class Parser {
   /*!
   * \brief Create an object of parser, will auto choose the format depend on file
   * \param filename One Filename of data
+  * \param header whether input file contains header
   * \param num_features Pass num_features of this data file if you know, <=0 means don't know
   * \param label_idx index of label column
   * \param precise_float_parser using precise floating point number parsing if true
   * \return Object of parser
   */
   static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser);
+
+  /*!
+  * \brief Create an object of parser, could use customized parser, or auto choose the format depend on file
+  * \param filename One Filename of data
+  * \param header whether input file contains header
+  * \param num_features Pass num_features of this data file if you know, <=0 means don't know
+  * \param label_idx index of label column
+  * \param precise_float_parser using precise floating point number parsing if true
+  * \param parser_config_str Customized parser config content
+  * \return Object of parser
+  */
+  static Parser* CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser,
+                              std::string parser_config_str);
+
+  /*!
+  * \brief Generate parser config str used for custom parser initialization, may save values of label id and header
+  * \param filename One Filename of data
+  * \param parser_config_filename One Filename of parser config
+  * \param header whether input file contains header
+  * \param label_idx index of label column
+  * \return Parser config str
+  */
+  static std::string GenerateParserConfigStr(const char* filename, const char* parser_config_filename, bool header, int label_idx);
+};
+
+/*! \brief Interface for parser factory, used by customized parser */
+class ParserFactory {
+ private:
+  ParserFactory() {}
+  std::map<std::string, std::function<Parser*(std::string)>> object_map_;
+
+ public:
+  ~ParserFactory() {}
+  static ParserFactory& getInstance();
+  void Register(std::string class_name, std::function<Parser*(std::string)> objc);
+  Parser* getObject(std::string class_name, std::string config_str);
+};
+
+/*! \brief Interface for parser reflector, used by customized parser */
+class ParserReflector {
+ public:
+  ParserReflector(std::string class_name, std::function<Parser*(std::string)> objc) {
+    ParserFactory::getInstance().Register(class_name, objc);
+  }
+  virtual ~ParserReflector() {}
 };
 
 /*! \brief The main class of data set,
@@ -568,6 +638,21 @@ class Dataset {
     return feature_groups_[group]->FeatureGroupData();
   }
 
+  const void* GetColWiseData(
+    const int feature_group_index,
+    const int sub_feature_index,
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const;
+
+  const void* GetColWiseData(
+    const int feature_group_index,
+    const int sub_feature_index,
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const;
+
   inline double RealThreshold(int i, uint32_t threshold) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
@@ -579,6 +664,12 @@ class Dataset {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];
     return feature_groups_[group]->bin_mappers_[sub_feature]->ValueToBin(threshold_double);
+  }
+
+  inline int MaxRealCatValue(int i) const {
+    const int group = feature2group_[i];
+    const int sub_feature = feature2subfeature_[i];
+    return feature_groups_[group]->bin_mappers_[sub_feature]->MaxCatValue();
   }
 
   /*!
@@ -604,6 +695,9 @@ class Dataset {
 
   /*! \brief Get names of current data set */
   inline const std::vector<std::string>& feature_names() const { return feature_names_; }
+
+  /*! \brief Get content of parser config file */
+  inline const std::string parser_config_str() const { return parser_config_str_; }
 
   inline void set_feature_names(const std::vector<std::string>& feature_names) {
     if (feature_names.size() != static_cast<size_t>(num_total_features_)) {
@@ -681,7 +775,29 @@ class Dataset {
     return raw_data_[numeric_feature_map_[feat_ind]].data();
   }
 
+  inline uint32_t feature_max_bin(const int inner_feature_index) const {
+    const int feature_group_index = Feature2Group(inner_feature_index);
+    const int sub_feature_index = feature2subfeature_[inner_feature_index];
+    return feature_groups_[feature_group_index]->feature_max_bin(sub_feature_index);
+  }
+
+  inline uint32_t feature_min_bin(const int inner_feature_index) const {
+    const int feature_group_index = Feature2Group(inner_feature_index);
+    const int sub_feature_index = feature2subfeature_[inner_feature_index];
+    return feature_groups_[feature_group_index]->feature_min_bin(sub_feature_index);
+  }
+
+  #ifdef USE_CUDA_EXP
+
+  const CUDAColumnData* cuda_column_data() const {
+    return cuda_column_data_.get();
+  }
+
+  #endif  // USE_CUDA_EXP
+
  private:
+  void CreateCUDAColumnData();
+
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
@@ -722,6 +838,14 @@ class Dataset {
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
+  std::string device_type_;
+  int gpu_device_id_;
+
+  #ifdef USE_CUDA_EXP
+  std::unique_ptr<CUDAColumnData> cuda_column_data_;
+  #endif  // USE_CUDA_EXP
+
+  std::string parser_config_str_;
 };
 
 }  // namespace LightGBM

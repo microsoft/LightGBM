@@ -53,6 +53,9 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
   }
+  #ifdef USE_CUDA_EXP
+  is_cuda_tree_ = false;
+  #endif  // USE_CUDA_EXP
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
@@ -337,11 +340,7 @@ std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
 
-  #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
-  using CommonLegacy::ArrayToString;  // Slower & unsafe regarding locale.
-  #else
   using CommonC::ArrayToString;
-  #endif
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
@@ -521,6 +520,7 @@ std::string Tree::NodeToJSON(int index) const {
 std::string Tree::NumericalDecisionIfElse(int node) const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
+  str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
   if (missing_type == MissingType::None
@@ -733,6 +733,10 @@ Tree::Tree(const char* str, size_t* used_len) {
   } else {
     is_linear_ = false;
   }
+
+  #ifdef USE_CUDA_EXP
+  is_cuda_tree_ = false;
+  #endif  // USE_CUDA_EXP
 
   if ((num_leaves_ <= 1) && !is_linear_) {
     return;

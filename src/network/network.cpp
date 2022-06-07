@@ -317,4 +317,12 @@ void Network::ReduceScatterRing(char* input, comm_size_t, int type_size,
   std::memcpy(output, input + block_start[rank_], block_len[rank_]);
 }
 
+int Network::rank() {
+  return rank_;
+}
+
+int Network::num_machines() {
+  return num_machines_;
+}
+
 }  // namespace LightGBM

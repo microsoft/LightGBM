@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: false
@@ -19,7 +19,6 @@ jobs:
         run: |
             workflows=(
                 "R valgrind tests;r-valgrind"
-                "Solaris CRAN check;r-solaris"
             )
             for i in "${workflows[@]}"; do
                 workflow_name=${i%;*}

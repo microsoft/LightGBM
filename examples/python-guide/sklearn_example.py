@@ -27,7 +27,7 @@ gbm = lgb.LGBMRegressor(num_leaves=31,
 gbm.fit(X_train, y_train,
         eval_set=[(X_test, y_test)],
         eval_metric='l1',
-        early_stopping_rounds=5)
+        callbacks=[lgb.early_stopping(5)])
 
 print('Starting predicting...')
 # predict
@@ -52,7 +52,7 @@ print('Starting training with custom eval function...')
 gbm.fit(X_train, y_train,
         eval_set=[(X_test, y_test)],
         eval_metric=rmsle,
-        early_stopping_rounds=5)
+        callbacks=[lgb.early_stopping(5)])
 
 
 # another self-defined eval metric
@@ -67,7 +67,7 @@ print('Starting training with multiple custom eval functions...')
 gbm.fit(X_train, y_train,
         eval_set=[(X_test, y_test)],
         eval_metric=[rmsle, rae],
-        early_stopping_rounds=5)
+        callbacks=[lgb.early_stopping(5)])
 
 print('Starting predicting...')
 # predict

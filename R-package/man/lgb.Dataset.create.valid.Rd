@@ -7,13 +7,11 @@
 lgb.Dataset.create.valid(
   dataset,
   data,
-  info = list(),
   label = NULL,
   weight = NULL,
   group = NULL,
   init_score = NULL,
-  params = list(),
-  ...
+  params = list()
 )
 }
 \arguments{
@@ -22,10 +20,6 @@ lgb.Dataset.create.valid(
 \item{data}{a \code{matrix} object, a \code{dgCMatrix} object,
 a character representing a path to a text file (CSV, TSV, or LibSVM),
 or a character representing a path to a binary \code{Dataset} file}
-
-\item{info}{a list of information of the \code{lgb.Dataset} object. NOTE: use of \code{info}
-is deprecated as of v3.3.0. Use keyword arguments (e.g. \code{init_score = init_score})
-directly.}
 
 \item{label}{vector of labels to use as the target variable}
 
@@ -45,9 +39,6 @@ second group, etc.}
 The "Dataset Parameters" section of the documentation} for a list of parameters
 and valid values. If this is an empty list (the default), the validation Dataset
 will have the same parameters as the Dataset passed to argument \code{dataset}.}
-
-\item{...}{additional \code{lgb.Dataset} parameters.
-NOTE: As of v3.3.0, use of \code{...} is deprecated. Add parameters to \code{params} directly.}
 }
 \value{
 constructed dataset
