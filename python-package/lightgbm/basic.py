@@ -2570,7 +2570,6 @@ class Booster:
         self.network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
-        self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
@@ -3652,7 +3651,6 @@ class Booster:
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
         new_booster.network = self.network
-        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
@@ -3956,42 +3954,3 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
-
-    def attr(self, key: str) -> Optional[str]:
-        """Get attribute string from the Booster.
-
-        Parameters
-        ----------
-        key : str
-            The name of the attribute.
-
-        Returns
-        -------
-        value : str or None
-            The attribute value.
-            Returns None if attribute does not exist.
-        """
-        return self.__attr.get(key, None)
-
-    def set_attr(self, **kwargs: Any) -> "Booster":
-        """Set attributes to the Booster.
-
-        Parameters
-        ----------
-        **kwargs
-            The attributes to set.
-            Setting a value to None deletes an attribute.
-
-        Returns
-        -------
-        self : Booster
-            Booster with set attributes.
-        """
-        for key, value in kwargs.items():
-            if value is not None:
-                if not isinstance(value, str):
-                    raise ValueError("Only string values are accepted")
-                self.__attr[key] = value
-            else:
-                self.__attr.pop(key, None)
-        return self
