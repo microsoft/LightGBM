@@ -89,7 +89,11 @@ NULL
 
 #' @name lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+#'              is focused on compatibility with other statistics and machine learning interfaces in R.
+#'              It is optimized for compatibility and usability, sometimes at the expense of efficiency or API stability.
+#'              For efficiency-sensitive applications, or for applications where breaking API changes across releases
+#'              is very expensive, use \code{\link{lgb.train}}.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
