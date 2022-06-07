@@ -3482,9 +3482,9 @@ def test_sample_strategy_with_boosting():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    ret1 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret1 == pytest.approx(3149.393862)
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret1)
 
     params = {
         'boosting': 'gbdt',
@@ -3497,9 +3497,9 @@ def test_sample_strategy_with_boosting():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    ret2 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret2 == pytest.approx(2547.715968)
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret2)
 
     params = {
         'boosting': 'goss',
@@ -3512,13 +3512,18 @@ def test_sample_strategy_with_boosting():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    ret3 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret3 == pytest.approx(2547.715968)
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret3)
+
+    assert ret1 != ret2
+    assert ret2 == ret3
 
     params = {
         'boosting': 'dart',
         'data_sample_strategy': 'bagging',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1
     }
@@ -3527,13 +3532,15 @@ def test_sample_strategy_with_boosting():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    ret4 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret4 == pytest.approx(3134.866931)
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret4)
 
     params = {
         'boosting': 'gbdt',
         'data_sample_strategy': 'bagging',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1
     }
@@ -3542,24 +3549,10 @@ def test_sample_strategy_with_boosting():
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
-
-    params = {
-        'boosting': 'goss',
-        'data_sample_strategy': 'bagging',
-        'metric': 'l2',
-        'verbose': -1
-    }
-    evals_result = {}
-    gbm = lgb.train(params, lgb_train,
-                    num_boost_round=10,
-                    valid_sets=lgb_eval,
-                    callbacks=[lgb.record_evaluation(evals_result)])
-    ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 4000
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
+    ret5 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert ret5 == pytest.approx(2539.792378)
+    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret5)
+    assert ret4 != ret5
 
 
 def test_record_evaluation_with_train():
