@@ -4,7 +4,7 @@ import collections
 import copy
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -290,7 +290,7 @@ class CVBooster:
         self.boosters = []
         self.best_iteration = -1
 
-    def _append(self, booster: Booster) -> None:
+    def _append(self, booster):
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
@@ -504,7 +504,6 @@ def cv(
         ...}.
         If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
     """
-
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
     params = copy.deepcopy(params)
