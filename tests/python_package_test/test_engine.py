@@ -13,11 +13,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-<<<<<<< HEAD
-from sklearn.datasets import load_svmlight_file, make_classification, make_multilabel_classification
-=======
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
->>>>>>> upstream/master
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -767,19 +763,6 @@ def test_early_stopping():
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
 
 
-<<<<<<< HEAD
-@pytest.mark.parametrize('first_only', [True, False])
-@pytest.mark.parametrize('single_metric', [True, False])
-@pytest.mark.parametrize('greater_is_better', [True, False])
-def test_early_stopping_threshold(first_only, single_metric, greater_is_better):
-    if single_metric and not first_only:
-        pytest.skip("first_metric_only doesn't affect single metric.")
-    metric2threshold = {
-        'auc': 0.001,
-        'binary_logloss': 0.01,
-        'average_precision': 0.001,
-        'mape': 0.001,
-=======
 @pytest.mark.parametrize('first_metric_only', [True, False])
 def test_early_stopping_via_global_params(first_metric_only):
     X, y = load_breast_cancer(return_X_y=True)
@@ -821,7 +804,6 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         'binary_logloss': 0.01,
         'average_precision': 0.001,
         'mape': 0.01,
->>>>>>> upstream/master
     }
     if single_metric:
         if greater_is_better:
@@ -840,32 +822,11 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
             else:
                 metric = ['binary_logloss', 'mape']
 
-<<<<<<< HEAD
-    X, y = make_classification(n_samples=1_000, n_features=2, n_redundant=0, n_classes=2, random_state=0)
-=======
     X, y = load_breast_cancer(return_X_y=True)
->>>>>>> upstream/master
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
     train_ds = lgb.Dataset(X_train, y_train)
     valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
 
-<<<<<<< HEAD
-    params = {'objective': 'binary', 'metric': metric, 'first_metric_only': first_only, 'verbose': -1}
-    if isinstance(metric, str):
-        threshold = metric2threshold[metric]
-    elif first_only:
-        threshold = metric2threshold[metric[0]]
-    else:
-        threshold = [metric2threshold[m] for m in metric]
-    train_kwargs = dict(
-        params=params,
-        train_set=train_ds,
-        num_boost_round=100,
-        valid_sets=[train_ds, valid_ds],
-        valid_names=['training', 'valid'],
-        early_stopping_rounds=10,
-        verbose_eval=0,
-=======
     params = {'objective': 'binary', 'metric': metric, 'verbose': -1}
     if isinstance(metric, str):
         min_delta = metric2min_delta[metric]
@@ -879,33 +840,10 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         num_boost_round=50,
         valid_sets=[train_ds, valid_ds],
         valid_names=['training', 'valid'],
->>>>>>> upstream/master
     )
 
     # regular early stopping
     evals_result = {}
-<<<<<<< HEAD
-    bst = lgb.train(evals_result=evals_result, **train_kwargs)
-    scores = np.vstack([res for res in evals_result['valid'].values()]).T
-
-    # positive threshold
-    threshold_result = {}
-    threshold_bst = lgb.train(early_stopping_threshold=threshold, evals_result=threshold_result, **train_kwargs)
-    threshold_scores = np.vstack([res for res in threshold_result['valid'].values()]).T
-
-    if first_only:
-        scores = scores[:, 0]
-        threshold_scores = threshold_scores[:, 0]
-
-    assert threshold_bst.num_trees() < bst.num_trees()
-    np.testing.assert_allclose(scores[:len(threshold_scores)], threshold_scores)
-    last_score = threshold_scores[-1]
-    best_score = threshold_scores[threshold_bst.num_trees() - 1]
-    if greater_is_better:
-        assert np.less_equal(last_score, best_score + threshold).any()
-    else:
-        assert np.greater_equal(last_score, best_score - threshold).any()
-=======
     train_kwargs['callbacks'] = [
         lgb.callback.early_stopping(10, first_only, verbose=False),
         lgb.record_evaluation(evals_result)
@@ -934,7 +872,6 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.less_equal(last_score, best_score + min_delta).any()
     else:
         assert np.greater_equal(last_score, best_score - min_delta).any()
->>>>>>> upstream/master
 
 
 def test_continue_train():
@@ -3641,3 +3578,48 @@ def test_boost_from_average_with_single_leaf_trees():
     preds = model.predict(X)
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
+
+
+def test_cegb_split_buffer_clean():
+    # modified from https://github.com/microsoft/LightGBM/issues/3679#issuecomment-938652811
+    # and https://github.com/microsoft/LightGBM/pull/5087
+    # test that the ``splits_per_leaf_`` of CEGB is cleaned before training a new tree
+    # which is done in the fix #5164
+    # without the fix:
+    #    Check failed: (best_split_info.left_count) > (0)
+
+    R, C = 1000, 100
+    seed = 29
+    np.random.seed(seed)
+    data = np.random.randn(R, C)
+    for i in range(1, C):
+        data[i] += data[0] * np.random.randn()
+
+    N = int(0.8 * len(data))
+    train_data = data[:N]
+    test_data = data[N:]
+    train_y = np.sum(train_data, axis=1)
+    test_y = np.sum(test_data, axis=1)
+
+    train = lgb.Dataset(train_data, train_y, free_raw_data=True)
+
+    params = {
+        'boosting_type': 'gbdt',
+        'objective': 'regression',
+        'max_bin': 255,
+        'num_leaves': 31,
+        'seed': 0,
+        'learning_rate': 0.1,
+        'min_data_in_leaf': 0,
+        'verbose': -1,
+        'min_split_gain': 1000.0,
+        'cegb_penalty_feature_coupled': 5 * np.arange(C),
+        'cegb_penalty_split': 0.0002,
+        'cegb_tradeoff': 10.0,
+        'force_col_wise': True,
+    }
+
+    model = lgb.train(params, train, num_boost_round=10)
+    predicts = model.predict(test_data)
+    rmse = np.sqrt(mean_squared_error(test_y, predicts))
+    assert rmse < 10.0
