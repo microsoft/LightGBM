@@ -179,16 +179,16 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu --opencl-include-dir="$AMDAPPSDK_PATH/include/" || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+        cmake -DUSE_GPU=ON ..
     fi
 elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
     if [[ $TASK == "cuda" ]]; then
