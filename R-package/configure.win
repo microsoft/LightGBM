@@ -87,6 +87,19 @@ int main() {
 }
 EOL
 
+echo "flags: ${CXX} ${CXXFLAGS} ${CPPFLAGS}"
+CFLAGS=`"${R_EXE}" CMD config CFLAGS`
+echo "CFLAGS: ${CFLAGS}"
+CPICFLAGS=`"${R_EXE}" CMD config CPICFLAGS`
+echo "CPICFLAGS: ${CPICFLAGS}"
+CXX11PICFLAGS=`"${R_EXE}" CMD config CXXPICFLAGS`
+echo "CXXPICFLAGS: ${CXXPICFLAGS}"
+LDFLAGS=`"${R_EXE}" CMD config LDFLAGS`
+echo "LDFLAGS: ${LDFLAGS}"
+SHLIBLD_FLAGS=`"${R_EXE}" CMD config SHLIB_LDFLAGS`
+echo "SHLIB_LDFLAGS: ${SHLIB_LDFLAGS}"
+exit 1
+
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
