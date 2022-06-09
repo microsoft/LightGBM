@@ -3518,7 +3518,7 @@ def test_sample_strategy_with_boosting():
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret3)
 
     assert ret1 != ret2
-    assert ret2 == ret3
+    assert np.testing.assert_allclose(ret1, ret2)
 
     params = {
         'boosting': 'dart',
