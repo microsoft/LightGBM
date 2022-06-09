@@ -3484,7 +3484,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret1 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret1 == pytest.approx(3149.393862)
+    assert ret1 == pytest.approx(3149.393862, abs=1.0)
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret1)
 
     params = {
@@ -3499,7 +3499,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret2 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret2 == pytest.approx(2547.715968)
+    assert ret2 == pytest.approx(2547.715968, abs=1.0)
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret2)
 
     params = {
@@ -3514,7 +3514,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret3 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret3 == pytest.approx(2547.715968)
+    assert ret3 == pytest.approx(2547.715968, abs=1.0)
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret3)
 
     assert ret1 != ret2
@@ -3534,7 +3534,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret4 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret4 == pytest.approx(3134.866931)
+    assert ret4 == pytest.approx(3134.866931, abs=1.0)
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret4)
 
     params = {
@@ -3551,7 +3551,7 @@ def test_sample_strategy_with_boosting():
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     ret5 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret5 == pytest.approx(2539.792378)
+    assert ret5 == pytest.approx(2539.792378, abs=1.0)
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret5)
     assert ret4 != ret5
 
