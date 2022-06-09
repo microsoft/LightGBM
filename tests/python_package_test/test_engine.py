@@ -3463,6 +3463,7 @@ def test_goss_boosting_and_strategy_equivalent():
               valid_sets=lgb_eval,
               callbacks=[lgb.record_evaluation(evals_result2)])
     np.testing.assert_equal(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
+    np.testing.assert_allclose(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'], atol=1e-5)
 
 
 def test_sample_strategy_with_boosting():
