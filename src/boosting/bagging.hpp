@@ -6,6 +6,8 @@
 #ifndef LIGHTGBM_BOOSTING_BAGGING_HPP_
 #define LIGHTGBM_BOOSTING_BAGGING_HPP_
 
+#include <string>
+
 namespace LightGBM {
 
 class BaggingSampleStrategy : public SampleStrategy {
