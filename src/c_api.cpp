@@ -1133,7 +1133,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (!p_dataset->is_for_load_only() && (start_row + nrow == p_dataset->num_data())) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1170,7 +1170,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
 
   PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
 
-  if (!p_dataset->is_for_load_only() && (start_row + nrow == p_dataset->num_data())) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1203,7 +1203,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1237,7 +1237,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
     if (start_row < 10) {
-      Log::Info("   Pushing batch row %d (overall row %d), nelem: %d", i, start_row + i, nelem);
+     // TODO  Log::Info("   Pushing batch row %d (overall row %d), nelem: %d", i, start_row + i, nelem);
     }
     p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
@@ -1246,9 +1246,9 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
 
   PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
 
-  /* TODO figure this out   if (!p_dataset->is_for_load_only() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
-  }*/
+  }
   API_END();
 }
 
@@ -1271,10 +1271,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetH
   API_END();
 }
 
-int LGBM_DatasetFinishStreaming(DatasetHandle dataset) {
+int LGBM_DataseSetWaitForManualFinish(DatasetHandle dataset, int wait) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
-  p_dataset->FinishStreaming();
+  p_dataset->set_wait_for_manual_finish(wait);
   API_END();
 }
 
@@ -1880,9 +1880,12 @@ int LGBM_BoosterMerge(BoosterHandle handle,
 int LGBM_BoosterAddValidData(BoosterHandle handle,
                              const DatasetHandle valid_data) {
   API_BEGIN();
+  Log::Warning("DEBUG Entering BoosterAddValidData");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
+  Log::Warning("DEBUG Entering BoosterAddValidData, num_data: %d", p_dataset->num_data());
   ref_booster->AddValidData(p_dataset);
+  Log::Warning("DEBUG Exiting BoosterAddValidData, num_data: %d", p_dataset->num_data());
   API_END();
 }
 

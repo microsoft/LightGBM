@@ -184,8 +184,6 @@ void load_metadata(Metadata* metadata,
       metadata->SetQueryAt(i, dataset_group->at(i));
     }
   }
-  Log::Info("    Finish streaming metadata...");
-  metadata->FinishStreaming();
 }
 
 void test_metadata_insertion(const std::vector<float>* dataset1_label,
@@ -254,7 +252,7 @@ void test_metadata_insertion(const std::vector<float>* dataset1_label,
   Log::Info("  Inserting from dataset2...");
   metadata_coalesced->AppendFrom(metadata2.get(), nDataset2);
   Log::Info("  Finish coalescing...");
-  metadata_coalesced->FinishCoalesce();
+  metadata_coalesced->FinishLoad();
 
   // Now assert the resulting coalesced values match the cumulative original arrays
   TestUtils::AssertMetadata(metadata_coalesced.get(),
@@ -427,7 +425,7 @@ TEST(Coalesce, EndToEndDense) {
   DatasetHandle ref_datset_handle = nullptr;
   DatasetHandle source_dataset1_handle = nullptr;
   DatasetHandle source_dataset2_handle = nullptr;
-  DatasetHandle ref_datset_handle = coalesced_dataset_handle;
+  DatasetHandle coalesced_dataset_handle = nullptr;
   try {
     // Load some test data
     const char* params = "max_bin=15";
@@ -490,7 +488,6 @@ TEST(Coalesce, EndToEndDense) {
     TestUtils::StreamDenseDataset(source_dataset2_handle, nDataset2, ncols, nclasses, batch_count, &features2, &labels2, &weights2, &init_scores2, &groups2);
 
     // Target coalesced Dataset
-    DatasetHandle coalesced_dataset_handle;
     result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset1 + nDataset2, &coalesced_dataset_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
@@ -513,21 +510,22 @@ TEST(Coalesce, EndToEndDense) {
                                 &weights2,
                                 &init_scores2,
                                 &groups2);
-  } finally {
+  } catch (...) {
+    int result;
     if (ref_datset_handle) {
-      LGBM_DatasetFree(ref_datset_handle);
+      result = LGBM_DatasetFree(ref_datset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (source_dataset1_handle) {
-      LGBM_DatasetFree(source_dataset1_handle);
+      result = LGBM_DatasetFree(source_dataset1_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (source_dataset2_handle) {
-      LGBM_DatasetFree(source_dataset2_handle);
+      result = LGBM_DatasetFree(source_dataset2_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (coalesced_dataset_handle) {
-      LGBM_DatasetFree(coalesced_dataset_handle);
+      result = LGBM_DatasetFree(coalesced_dataset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
   }
@@ -538,7 +536,7 @@ TEST(Coalesce, EndToEndSparse) {
   DatasetHandle ref_datset_handle = nullptr;
   DatasetHandle source_dataset1_handle = nullptr;
   DatasetHandle source_dataset2_handle = nullptr;
-  DatasetHandle ref_datset_handle = coalesced_dataset_handle;
+  DatasetHandle coalesced_dataset_handle = nullptr;
   try {
     // Load some test data
     const char* params = "max_bin=15";
@@ -633,21 +631,22 @@ TEST(Coalesce, EndToEndSparse) {
                                 &weights2,
                                 &init_scores2,
                                 &groups2);
-  } finally {
+  } catch (...) {
+    int result;
     if (ref_datset_handle) {
-      LGBM_DatasetFree(ref_datset_handle);
+      result = LGBM_DatasetFree(ref_datset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (source_dataset1_handle) {
-      LGBM_DatasetFree(source_dataset1_handle);
+      result = LGBM_DatasetFree(source_dataset1_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (source_dataset2_handle) {
-      LGBM_DatasetFree(source_dataset2_handle);
+      result = LGBM_DatasetFree(source_dataset2_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
     if (coalesced_dataset_handle) {
-      LGBM_DatasetFree(coalesced_dataset_handle);
+      result = LGBM_DatasetFree(coalesced_dataset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
   }

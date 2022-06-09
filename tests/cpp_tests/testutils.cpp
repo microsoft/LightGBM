@@ -155,6 +155,9 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                    const std::vector<double> *init_scores,
                                    const std::vector<int32_t> *groups) {
 
+  int result = LGBM_DataseSetWaitForManualFinish(dataset_handle, 1);
+  EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
+
   if ((nrows % batch_count) != 0) {
     Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
   }
@@ -209,12 +212,8 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
     }
   }
 
-  int result = LGBM_DatasetFinishStreaming(dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetFinishStreaming result code: " << result;
-
   auto cur_time = std::chrono::steady_clock::now();
   Log::Info(" Time: %d", cur_time - start_time);
-
 }
 
 void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
@@ -228,6 +227,9 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                     const std::vector<float> *weights,
                                     const std::vector<double> *init_scores,
                                     const std::vector<int32_t> *groups) {
+  int result = LGBM_DataseSetWaitForManualFinish(dataset_handle, 1);
+  EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
+
   Log::Info("     Begin StreamSparseDataset");
   if ((nrows % batch_count) != 0) {
     Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
@@ -265,9 +267,6 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
 
     int32_t nelem = indptr->at(i + batch_count - 1) - indptr->at(i);
 
-    if (i < 2 || i > nrows-2) {
-      Log::Info("     Calling LGBM_DatasetPushRowsByCSRWithMetadata %d", i);
-    }
     Log::Info("       Streaming %d batch_count with first value of %d", batch_count, indptr_ptr[0]);
     int result = LGBM_DatasetPushRowsByCSRWithMetadata(dataset_handle,
                                                        indptr_ptr,
@@ -282,9 +281,6 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                                        weights_ptr,
                                                        init_scores_ptr,
                                                        groups_ptr);
-    if (i < 2 || i > nrows - 2) {
-      Log::Info("     Finished calling LGBM_DatasetPushRowsByCSRWithMetadata");
-    }
     EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
 
     indptr_ptr += batch_count;
@@ -296,9 +292,6 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
       groups_ptr += batch_count;
     }
   }
-
-  int result = LGBM_DatasetFinishStreaming(dataset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetFinishStreaming result code: " << result;
 
   auto cur_time = std::chrono::steady_clock::now();
   Log::Info(" Time: %d", cur_time - start_time);

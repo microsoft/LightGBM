@@ -453,12 +453,12 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
   CHECK_EQ(num_data_, num_total_rows);
 
   for (int i = 0; i < nsources; ++i) {
+    Log::Info("  Coalescing dataset %d of %d: num_data_: %d, num_pushed: %d, index: %d.",i, nsources, sources[i]->num_data(), sources[i]->num_pushed_rows(), current_index);
     AppendOneDataset(sources[i], current_index);
     current_index += sources[i]->num_pushed_rows();
   }
 
   FinishLoad();
-  metadata_.FinishCoalesce();
   Log::Info("Finished Coalescing: num_data_: %d, num_total_features_: %d.", num_data_, num_total_features_);
 
   // TODO CUDA changes?
@@ -476,9 +476,8 @@ void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start
   }
   OMP_THROW_EX();
 
-  // Fix args to be refs
-  Log::Info("  Appending Metadata at %d.", source->num_pushed_rows());
-  metadata_.AppendFrom(&source->metadata_, source->num_pushed_rows());
+  // TODO Fix args to be refs
+  metadata_.AppendFrom(&source->metadata_, source_size);
 
   if (has_raw_) {
     // TODO
@@ -495,11 +494,14 @@ void Dataset::FinishLoad() {
   if (is_finish_load_) {
     return;
   }
+  Log::Info("   Finish load dataset: num_data_: %d,", num_data_);
   if (num_groups_ > 0) {
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->FinishLoad();
     }
   }
+  metadata_.FinishLoad();
+
   #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
@@ -509,14 +511,6 @@ void Dataset::FinishLoad() {
   }
   #endif  // USE_CUDA_EXP
   is_finish_load_ = true;
-}
-
-void Dataset::FinishStreaming() {
-  metadata_.FinishStreaming();
-}
-
-void Dataset::FinishMetadata() {
-  metadata_.FinishCoalesce();
 }
 
 void PushDataToMultiValBin(

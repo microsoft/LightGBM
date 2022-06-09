@@ -274,7 +274,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
                                                             const int32_t* query);
 
 /*!
- * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
+ * \brief Coalesce multiple Datasets into 1 merged dataset. Source Datasets are assumed to be streaming and have num_pushed_rows set.
+ *        The target Dataset should already have been set to have a num_data of the sum of the source num_pushed_rows.
  * \param dataset Handle of dataset to coalesce data into
  * \param sources Pointer to a list of Datasets to coalesce data from
  * \param nsources Number of coalesce sources
@@ -283,11 +284,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
 LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetHandle* sources, int32_t nsources);
 
 /*!
- * \brief Complete streaming of the Dataset by calling ``dataset->FinishStreaming``.
+ * \brief Set whether or not the Dataset waits for a manual MarkFinished call or calls FinishLoad on itself automatically.
  * \param dataset Handle of dataset
+ * \param wait Whether to wait or not (0 or 1)
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DatasetFinishStreaming(DatasetHandle dataset);
+LIGHTGBM_C_EXPORT int LGBM_DataseSetWaitForManualFinish(DatasetHandle dataset, int wait);
 
 /*!
  * \brief Mark the Dataset as complete by calling by calling ``dataset->FinishLoad``.

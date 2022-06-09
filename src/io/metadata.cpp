@@ -534,34 +534,6 @@ void Metadata::AppendQuery(const data_size_t* queries, data_size_t len) {
 #endif  // USE_CUDA_EXP
 }
 
-void Metadata::AppendQueryBoundaries(const data_size_t* query_boundaries, data_size_t len) {
-  // save to nullptr
-  if (query_boundaries == nullptr || len == 0) {
-    query_boundaries_.clear();
-    num_queries_ = 0;
-    return;
-  }
-  auto dest_index = num_queries_ + 1;
-  num_queries_ += len - 1; // Remove the initial zero
-  query_boundaries_.resize(num_queries_ + 1);
-  query_boundaries_[0] = 0;
-  for (data_size_t i = 1; i < len; ++i, ++dest_index) {
-    query_boundaries_[dest_index] = query_boundaries[i] + num_appended_data_;
-  }
-  query_load_from_file_ = false;
-#ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) { // TODO figure this out
-    if (query_weights_.size() > 0) {
-      CHECK_EQ(query_weights_.size(), static_cast<size_t>(num_queries_));
-      cuda_metadata_->SetQuery(query_boundaries_.data(), query_weights_.data(), num_queries_);
-    }
-    else {
-      cuda_metadata_->SetQuery(query_boundaries_.data(), nullptr, num_queries_);
-    }
-  }
-#endif  // USE_CUDA_EXP
-}
-
 void Metadata::LoadWeights() {
   num_weights_ = 0;
   std::string weight_filename(data_filename_);
@@ -676,20 +648,11 @@ void Metadata::AppendFrom(const Metadata* source, data_size_t count) {
   AppendWeights(source->weights_.data(), count);
   AppendInitScore(source->init_score_.data(), count);
   AppendQuery(source->queries_.data(), count);
-  // REMOVE AppendQueryBoundaries(source->query_boundaries_.data(), static_cast<data_size_t>(source->query_boundaries_.size()));
   num_appended_data_ += count;
 }
 
-void Metadata::FinishCoalesce() {
+void Metadata::FinishLoad() {
   CalculateQueryBoundaries();
-}
-
-void Metadata::FinishStreaming() {
-  // Append the last query boundary that is in progress
-  if (cur_boundary_ > 0) {
-    query_boundaries_.push_back(cur_boundary_);
-    num_queries_++;
-  }
 }
 
 #ifdef USE_CUDA_EXP

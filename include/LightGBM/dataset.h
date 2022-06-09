@@ -208,14 +208,9 @@ class Metadata {
   void AppendFrom(const Metadata* source, data_size_t count);
 
   /*!
-  * \brief Perform any extra operations after all data has been appended
+  * \brief Perform any extra operations after all data has been loaded
   */
-  void FinishCoalesce();
-
-  /*!
-  * \brief Perform any extra operations after all data has been streamed
-  */
-  void FinishStreaming();
+  void FinishLoad();
 
   /*!
   * \brief Get weights, if not exists, will return nullptr
@@ -314,7 +309,6 @@ class Metadata {
   void AppendWeights(const label_t* weights, data_size_t len);
   void AppendInitScore(const double* init_score, data_size_t len);
   void AppendQuery(const data_size_t* weights, data_size_t len);
-  void AppendQueryBoundaries(const data_size_t* query_boundaries, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -478,16 +472,20 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
+      Log::Info("     Mismatch num_features");
       return false;
     }
     if (num_total_features_ != other.num_total_features_) {
+      Log::Info("     Mismatch num_total_features");
       return false;
     }
     if (label_idx_ != other.label_idx_) {
+      Log::Info("     Mismatch label_idx");
       return false;
     }
     for (int i = 0; i < num_features_; ++i) {
       if (!FeatureBinMapper(i)->CheckAlign(*(other.FeatureBinMapper(i)))) {
+        Log::Info("     Mismatch bin mapper %d", i);
         return false;
       }
     }
@@ -626,10 +624,6 @@ class Dataset {
   LIGHTGBM_EXPORT void Coalesce(const Dataset** sources, int32_t nsources);
 
   LIGHTGBM_EXPORT void FinishLoad();
-
-  LIGHTGBM_EXPORT void FinishStreaming();
-
-  LIGHTGBM_EXPORT void FinishMetadata();
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
@@ -887,10 +881,10 @@ class Dataset {
   inline data_size_t num_pushed_rows() const { return num_pushed_rows_; }
 
   /*! \brief Get whether the Dataset is for loading only. It will be coalesced or finished later */
-  inline bool is_for_load_only() const { return is_for_load_only_; }
+  inline bool wait_for_manual_finish() const { return wait_for_manual_finish_; }
 
-  /*! \brief Set whether the Dataset is for loading only. It will be coalesced or finished later */
-  inline bool set_is_for_load_only(bool value) { is_for_load_only_ = value; } // TODO call this
+  /*! \brief Set whether the Dataset is finished automatically or with a manual FinishLoad() call */
+  inline void set_wait_for_manual_finish(bool value) { wait_for_manual_finish_ = value; }
 
   /*! \brief Disable copy */
   Dataset& operator=(const Dataset&) = delete;
@@ -991,7 +985,7 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<float>> raw_data_;
   bool has_raw_;
-  bool is_for_load_only_;
+  bool wait_for_manual_finish_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;

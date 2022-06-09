@@ -48,7 +48,7 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
                                   init_scores,
                                   groups);
 
-    dataset->FinishMetadata();  // TODO finalize design of this
+    dataset->FinishLoad();  // TODO finalize design of this
 
     // TODO we should assert actual feature data
 
@@ -57,10 +57,9 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
                               weights,
                               init_scores,
                               groups);
-
-  } finally {
+  } catch(...) {
     if (dataset_handle) {
-      result = LGBM_DatasetFree(dataset_handle);
+      int result = LGBM_DatasetFree(dataset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
   }
@@ -98,7 +97,7 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
                                    init_scores,
                                    groups);
 
-    dataset->FinishMetadata();  // TODO finalize design of this
+    dataset->FinishLoad();  // TODO finalize design of this
 
     // TODO we should assert actual feature data
 
@@ -108,9 +107,9 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
       init_scores,
       groups);
 
-  } finally {
+  } catch (...) {
     if (dataset_handle) {
-      result = LGBM_DatasetFree(dataset_handle);
+      int result = LGBM_DatasetFree(dataset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
   }
