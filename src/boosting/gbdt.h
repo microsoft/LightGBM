@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "cuda/cuda_score_updater.hpp"
 #include "score_updater.hpp"
 
 namespace LightGBM {
@@ -499,6 +500,16 @@ class GBDT : public GBDTBase {
   /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
 #endif
+  /*! \brief Pointer to gradient vector, can be on CPU or GPU */
+  score_t* gradients_pointer_;
+  /*! \brief Pointer to hessian vector, can be on CPU or GPU */
+  score_t* hessians_pointer_;
+  /*! \brief Buffer for scores when boosting is on GPU but evaluation is not, used only with cuda_exp */
+  mutable std::vector<double> host_score_;
+  /*! \brief Buffer for scores when boosting is not on GPU but evaluation is, used only with cuda_exp */
+  mutable CUDAVector<double> cuda_score_;
+  /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda_exp */
+  CUDAVector<data_size_t> cuda_bag_data_indices_;
 
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;

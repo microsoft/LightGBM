@@ -24,7 +24,7 @@ namespace LightGBM {
 
 class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  public:
-  explicit CUDASingleGPUTreeLearner(const Config* config);
+  explicit CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda);
 
   ~CUDASingleGPUTreeLearner();
 
@@ -118,6 +118,15 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   score_t* cuda_gradients_;
   /*! \brief hessians on CUDA */
   score_t* cuda_hessians_;
+  /*! \brief whether boosting is done on CUDA */
+  const bool boosting_on_cuda_;
+
+  #ifdef DEBUG
+  /*! \brief gradients on CPU */
+  std::vector<score_t> host_gradients_;
+  /*! \brief hessians on CPU */
+  std::vector<score_t> host_hessians_;
+  #endif  // DEBUG
 };
 
 }  // namespace LightGBM

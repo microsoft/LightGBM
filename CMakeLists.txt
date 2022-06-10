@@ -395,6 +395,8 @@ if(USE_CUDA OR USE_CUDA_EXP)
       src/treelearner/*.cu
 endif()
 if(USE_CUDA_EXP)
+      src/boosting/cuda/*.cpp
+      src/boosting/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
