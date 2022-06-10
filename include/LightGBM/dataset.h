@@ -78,19 +78,21 @@ class Metadata {
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
-  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query(if exists)
   * \param num_data Number of data
   * \param reference Reference metadata
   */
   void InitByReference(data_size_t num_data, const Metadata* reference);
 
-  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses);
-
   /*!
-  * \brief Initialize space for initial score
-  * \param num_class Number of classes with initial scores
+  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query(if exists)
+  * \param num_data Number of training data
+  * \param has_weights Whether the metadata has weights
+  * \param has_init_scores Whether the metadata has initial scores
+  * \param has_queries Whether the metadata has queries
+  * \param nclasses Number of classes for initial scores
   */
-  void InitInitScore(int32_t num_class);
+  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t nclasses);
 
   /*!
   * \brief Partition label by used indices
@@ -155,7 +157,7 @@ class Metadata {
   }
 
   /*!
-  * \brief Set Initial Scores for one record.  Note that init_score has multiple columns and is stored in column format.
+  * \brief Set Initial Scores for one record.  Note that init_score might have multiple columns and is stored in column format.
   * \param idx Index of this record
   * \param value Initial score values for this record, one per class
   */
@@ -165,26 +167,6 @@ class Metadata {
     for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr)
     {
       init_score_[i] = *val_ptr;
-    }
-  }
-
-  /*!
-  * \brief Append one query value by updating a running boundary calculation
-  *        we assume data will order by query, and records come in order.
-  * \param value Query Id value of this record
-  */
-  inline void AppendQueryToBoundaries(data_size_t value) {
-    // TODO switch to using SetQueryAt so we can parallelize
-    if (query_boundaries_.size() == 0) {
-      query_boundaries_.push_back(0);
-      cur_boundary_ = 1;
-      last_qid_ = value;
-    } else {
-      if (value != last_qid_) {
-        query_boundaries_.push_back(cur_boundary_);
-        last_qid_ = value;
-      }
-      cur_boundary_++;
     }
   }
 
@@ -334,9 +316,6 @@ class Metadata {
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
 
-  data_size_t last_qid_ = -1;
-  data_size_t cur_boundary_ = 0;
-
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;
@@ -472,20 +451,16 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
-      Log::Info("     Mismatch num_features");
       return false;
     }
     if (num_total_features_ != other.num_total_features_) {
-      Log::Info("     Mismatch num_total_features");
       return false;
     }
     if (label_idx_ != other.label_idx_) {
-      Log::Info("     Mismatch label_idx");
       return false;
     }
     for (int i = 0; i < num_features_; ++i) {
       if (!FeatureBinMapper(i)->CheckAlign(*(other.FeatureBinMapper(i)))) {
-        Log::Info("     Mismatch bin mapper %d", i);
         return false;
       }
     }
@@ -493,7 +468,7 @@ class Dataset {
   }
 
   inline void FinishOneRow(int tid, data_size_t row_idx, const std::vector<bool>& is_feature_added) {
-    if (is_finish_load_) { return; } // TODO fix this to not need calling after done?
+    if (is_finish_load_) { return; }
     for (auto fidx : feature_need_push_zeros_) {
       if (is_feature_added[fidx]) { continue; }
       const int group = feature2group_[fidx];
@@ -524,11 +499,7 @@ class Dataset {
   inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<std::pair<int, double>>& feature_values) {
     if (is_finish_load_) { return; }
     std::vector<bool> is_feature_added(num_features_, false);
-    /* if (feature_values.size() > 0) {
-      Log::Info("     Pushing %d feature values for row %d", feature_values.size(), row_idx);
-    } */
     for (auto& inner_data : feature_values) {
-      // Log::Info("       Pushing %f for feature %d", inner_data.second, inner_data.first);
       if (inner_data.first >= num_total_features_) { continue; }
       int feature_idx = used_feature_map_[inner_data.first];
       if (feature_idx >= 0) {

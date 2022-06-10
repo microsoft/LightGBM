@@ -60,27 +60,14 @@ void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
 }
 
 void Metadata::InitByReference(data_size_t num_data, const Metadata* reference) {
-  num_data_ = num_data;
-  label_ = std::vector<label_t>(num_data_);
-  if (reference->num_weights_ > 0) {
-    weights_ = std::vector<label_t>(num_data_, 0.0f);
-    num_weights_ = num_data_;
-    weight_load_from_file_ = false;
-  }
-  if (reference->num_init_score_ > 0) {
-    int num_class = static_cast<int>(reference->num_init_score_ / reference->num_data_);
-    num_init_score_ = static_cast<int64_t>(num_data) * num_class;
-    init_score_ = std::vector<double>(num_init_score_, 0);
-  }
-  if (reference->num_queries_ > 0) {
-    if (!query_weights_.empty()) { query_weights_.clear(); }
-    queries_ = std::vector<data_size_t>(num_data_, 0);
-    query_load_from_file_ = false;
-  }
+  int has_weights = reference->num_weights_ > 0;
+  int has_init_scores = reference->num_init_score_ > 0;
+  int has_queries = reference->num_queries_ > 0;
+  int nclasses = reference->num_classes();
+  Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
 }
 
-void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses) {
-  // Consolidate with above
+void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t nclasses) {
   num_data_ = num_data;
   label_ = std::vector<label_t>(num_data_);
   if (has_weights) {
@@ -92,19 +79,11 @@ void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_
     num_init_score_ = static_cast<int64_t>(num_data) * nclasses;
     init_score_ = std::vector<double>(num_init_score_, 0);
   }
-  if (has_groups) {
+  if (has_queries) {
     if (!query_weights_.empty()) { query_weights_.clear(); }
     queries_ = std::vector<data_size_t>(num_data_, 0);
     query_load_from_file_ = false;
   }
-}
-
-void Metadata::InitInitScore(int32_t num_class) {
-  if (!init_score_.empty()) {
-    Log::Fatal("Initial score already contains data");
-  }
-  num_init_score_ = static_cast<int64_t>(num_data_) * num_class;
-  init_score_ = std::vector<double>(num_init_score_, 0.0);
 }
 
 void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {

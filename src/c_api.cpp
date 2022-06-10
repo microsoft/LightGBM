@@ -1003,26 +1003,6 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
-                                        num_sample_row,
-                                        static_cast<data_size_t>(num_total_row));
-  API_END();
-}
-
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledData(double** sample_data,
-                                                        int** sample_indices,
-                                                        int32_t ncol,
-                                                        const int* num_per_col,
-                                                        int32_t num_sample_row,
-                                                        int32_t num_total_row,
-                                                        const char* parameters,
-                                                        DatasetHandle* out) {
-  API_BEGIN();
-  auto param = Config::Str2Map(parameters);
-  Config config;
-  config.Set(param);
-  OMP_SET_NUM_THREADS(config.num_threads);
-  DatasetLoader loader(config, nullptr, 1, nullptr);
   *out = loader.ConstructFromSampleData(sample_data,
                                         sample_indices,
                                         ncol,
@@ -1061,19 +1041,6 @@ int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
   *out = loader.LoadFromSerializedReference(static_cast<const char*>(buffer),
                                             static_cast<size_t>(buffer_size),
                                             static_cast<data_size_t>(num_row));
-  API_END();
-}
-
-int LGBM_DatasetInitMetadata(DatasetHandle reference,
-                             int64_t num_data,
-                             int has_weights,
-                             int has_init_scores,
-                             int has_groups,
-                             int nclasses) {
-  API_BEGIN();
-  data_size_t nrows = static_cast<data_size_t>(num_data);
-  Dataset* reference_dataset = reinterpret_cast<Dataset*>(reference);
-  reference_dataset->InitMetadata(nrows, has_weights, has_init_scores, has_groups, nclasses);
   API_END();
 }
 

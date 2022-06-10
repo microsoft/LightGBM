@@ -155,7 +155,7 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                    const std::vector<double> *init_scores,
                                    const std::vector<int32_t> *groups) {
 
-  int result = LGBM_DataseSetWaitForManualFinish(dataset_handle, 1);
+  int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
   EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
 
   if ((nrows % batch_count) != 0) {
@@ -190,7 +190,7 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
       init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
     }
 
-    int result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
+    result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
                                                   features_ptr,
                                                   1,
                                                   batch_count,
@@ -227,7 +227,7 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                     const std::vector<float> *weights,
                                     const std::vector<double> *init_scores,
                                     const std::vector<int32_t> *groups) {
-  int result = LGBM_DataseSetWaitForManualFinish(dataset_handle, 1);
+  int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
   EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
 
   Log::Info("     Begin StreamSparseDataset");
@@ -268,7 +268,7 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
     int32_t nelem = indptr->at(i + batch_count - 1) - indptr->at(i);
 
     Log::Info("       Streaming %d batch_count with first value of %d", batch_count, indptr_ptr[0]);
-    int result = LGBM_DatasetPushRowsByCSRWithMetadata(dataset_handle,
+    result = LGBM_DatasetPushRowsByCSRWithMetadata(dataset_handle,
                                                        indptr_ptr,
                                                        2,
                                                        indices_ptr,

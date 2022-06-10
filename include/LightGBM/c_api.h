@@ -47,10 +47,6 @@ typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 #define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
 
-#define C_API_SAMPLE_INDEXES_TYPE_INDEPENDENT (0)  /*!< \brief Each row has its own explicit sample indexes. */
-#define C_API_SAMPLE_INDEXES_TYPE_SHARED      (1)  /*!< \brief Each feature shares the same explicit indexes. */
-#define C_API_SAMPLE_INDEXES_TYPE_SEQUENTIAL  (2)  /*!< \brief All features have sample indexes 0...N-1. */
-
 /*!
  * \brief Get string message of the last error.
  * \return Error information
@@ -102,8 +98,10 @@ LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
                                          int32_t* out_len);
 
 /*!
- * \brief Free space for byte buffer.
- * \param handle Handle of byte buffer to be freed
+ * \brief Get a ByteBuffer value at an index.
+ * \param handle Handle of byte buffer to be read
+ * \param index index of value to return
+ * \param out_val Byte value at index o return
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val);
@@ -152,27 +150,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                                           DatasetHandle* out);
 
 /*!
- * \brief Allocate the space for dataset and bucket feature bins according to sampled data.
- * \param sample_data Sampled data, grouped by the column
- * \param sample_indices Indices of sampled data
- * \param ncol Number of columns
- * \param num_per_col Size of each sampling column
- * \param num_sample_row Number of sampled rows
- * \param num_total_row Number of total rows
- * \param parameters Additional parameters
- * \param[out] out Created dataset
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledData(double** sample_data,
-                                                        int** sample_indices,
-                                                        int32_t ncol,
-                                                        const int* num_per_col,
-                                                        int32_t num_sample_row,
-                                                        int32_t num_total_row,
-                                                        const char* parameters,
-                                                        DatasetHandle* out);
-
-/*!
  * \brief Allocate the space for dataset and bucket feature bins according to reference dataset.
  * \param reference Used to align bin mapper with other dataset
  * \param num_total_row Number of total rows
@@ -198,13 +175,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSerializedReference(const void* buff
                                                                 const char* parameters,
                                                                 DatasetHandle* out);
 
-LIGHTGBM_C_EXPORT int LGBM_DatasetInitMetadata(DatasetHandle reference,
-                                               int64_t num_data,
-                                               int has_weights,
-                                               int has_init_scores,
-                                               int has_groups,
-                                               int nclasses);
-
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
@@ -222,6 +192,20 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
                                            int32_t ncol,
                                            int32_t start_row);
 
+/*!
+ * \brief Push data to existing dataset.
+ * \param dataset Handle of dataset
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param start_row Row start index
+ * \param label Pointer to array with nindptr-1 labels
+ * \param weight Optional pointer to array with nindptr-1 weights
+ * \param init_score Optional pointer to array with (nindptr-1) initial scores, in column format
+ * \param query Optional pointer to array with nindptr-1 query values
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                                        const void* data,
                                                        int data_type,
@@ -245,7 +229,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
  * \param nelem Number of nonzero elements in the matrix
  * \param num_col Number of columns
  * \param start_row Row start index
- * \param mark_finished_if_last Mark the Dataset finished if the last row is pushed. If 0, make sure to call ``LGBM_DatasetMarkFinished`` when done.
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
@@ -259,6 +242,24 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                                                 int64_t num_col,
                                                 int64_t start_row);
 
+/*!
+ * \brief Push data to existing dataset.
+ * \param dataset Handle of dataset
+ * \param indptr Pointer to row headers
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param num_col Number of columns
+ * \param start_row Row start index
+ * \param label Pointer to array with nindptr-1 labels
+ * \param weight Optional pointer to array with nindptr-1 weights
+ * \param init_score Optional pointer to array with (nindptr-1) initial scores, in column format
+ * \param query Optional pointer to array with nindptr-1 query values
+* \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                                             const void* indptr,
                                                             int indptr_type,
@@ -1346,7 +1347,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
- * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT2`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param filename The name of the file
  * \return 0 when succeed, -1 when failure happens
  */
@@ -1361,7 +1362,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModel(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
  * \param num_iteration Index of the iteration that should be saved, <= 0 means save all
- * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT2`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str String of model, should pre-allocate memory
@@ -1380,7 +1381,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSaveModelToString(BoosterHandle handle,
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be dumped
  * \param num_iteration Index of the iteration that should be dumped, <= 0 means dump all
- * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT2`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
+ * \param feature_importance_type Type of feature importance, can be ``C_API_FEATURE_IMPORTANCE_SPLIT`` or ``C_API_FEATURE_IMPORTANCE_GAIN``
  * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
  * \param[out] out_len Actual output length
  * \param[out] out_str JSON format string of model, should pre-allocate memory
@@ -1425,7 +1426,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterSetLeafValue(BoosterHandle handle,
  * \param handle Handle of booster
  * \param num_iteration Number of iterations for which feature importance is calculated, <= 0 means use all
  * \param importance_type Method of importance calculation:
- *   - ``C_API_FEATURE_IMPORTANCE_SPLIT2``: result contains numbers of times the feature is used in a model;
+ *   - ``C_API_FEATURE_IMPORTANCE_SPLIT``: result contains numbers of times the feature is used in a model;
  *   - ``C_API_FEATURE_IMPORTANCE_GAIN``: result contains total gains of splits which use the feature
  * \param[out] out_results Result array with feature importance
  * \return 0 when succeed, -1 when failure happens

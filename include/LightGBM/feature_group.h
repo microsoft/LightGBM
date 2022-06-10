@@ -254,8 +254,8 @@ class FeatureGroup {
   }
 
   /*!
-   * \brief Append data from the equivalent feature group in another Dataset
-   * \param source The feature group to append data from
+   * \brief Insert data from the equivalent feature group in another Dataset
+   * \param source The feature group to insert data from
    * \param start_index Index to start inserting data
    * \param count number of records to insert
    */

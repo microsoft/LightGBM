@@ -267,7 +267,7 @@ class Bin {
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
   /*!
-  * \brief Coalesce data from a given source to the current data
+  * \brief Insert data from a given source to the current data
   * \pram source_bin data source
   * \param start_index Index to start inserting data
   * \param count number of records to insert

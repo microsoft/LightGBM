@@ -132,21 +132,14 @@ void init_metadata(Metadata* metadata,
                    const std::vector<double>* dataset_init_score,
                    const std::vector<int32_t>* dataset_group) {
   Log::Info("    Initializing metadata with size %d...", size);
-  int weight_idx = -1;
-  int group_idx = -1;
-  if (dataset_weight != nullptr) {
-    weight_idx = 0;
-  }
-  if (dataset_group != nullptr) {
-    group_idx = 0;
-  }
-  metadata->Init(size, weight_idx, group_idx);
+  int has_weight = dataset_weight != nullptr;
+  int has_group = dataset_group != nullptr;
+  int has_init_score = dataset_init_score != nullptr;
+  int32_t nclasses = 0;
   if (dataset_init_score) {
-    int32_t nclasses = static_cast<int32_t>(dataset_init_score->size()) / size;
-    Log::Info("    Initializing initial scores with %d classes...", nclasses);
-    metadata->InitInitScore(nclasses);
-    Log::Info("    Metadata reports %d classes...", metadata->num_classes());
+    nclasses = static_cast<int32_t>(dataset_init_score->size()) / size;
   }
+  metadata->Init(size, has_weight, has_init_score, has_group, nclasses);
 }
 
 void load_metadata(Metadata* metadata,
