@@ -85,8 +85,8 @@ class Metadata {
   void InitByReference(data_size_t num_data, const Metadata* reference);
 
   /*!
-  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query(if exists)
-  * \param num_data Number of training data
+  * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
+  * \param num_data Number of training data rows
   * \param has_weights Whether the metadata has weights
   * \param has_init_scores Whether the metadata has initial scores
   * \param has_queries Whether the metadata has queries
@@ -183,11 +183,12 @@ class Metadata {
   void LoadInitialScore(const std::string& data_filename);
 
   /*!
-  * \brief Coalesce data from a given source to the current data
-  * \pram source metadata source
-  * \param count number of records to insert
+  * \brief Insert data from a given source to the current data at a specified index
+  * \pram source Metadata source
+  * \pram start_index The index to begin the insertion
+  * \param count Number of records to insert
   */
-  void AppendFrom(const Metadata* source, data_size_t count);
+  void InsertFrom(const Metadata& source, data_size_t start_index, data_size_t count);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
@@ -287,16 +288,14 @@ class Metadata {
   /*! \brief Load query wights */
   void CalculateQueryWeights();
   void CalculateQueryBoundaries();
-  void AppendLabel(const label_t* label, data_size_t len);
-  void AppendWeights(const label_t* weights, data_size_t len);
-  void AppendInitScore(const double* init_score, data_size_t len);
-  void AppendQuery(const data_size_t* weights, data_size_t len);
+  void InsertLabels(const label_t* label, data_size_t start_index, data_size_t len);
+  void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
+  void InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size);
+  void InsertQueries(const data_size_t* weights, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
-  /*! \brief Number of appended data */
-  data_size_t num_appended_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
   /*! \brief Label data */
@@ -315,7 +314,6 @@ class Metadata {
   std::vector<double> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
-
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;

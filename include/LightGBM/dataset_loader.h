@@ -20,7 +20,7 @@ class DatasetLoader {
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
-  LIGHTGBM_EXPORT Dataset* LoadFromSerializedReference(const char* buffer, size_t buffer_size, data_size_t num_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromSerializedReference(const char* buffer, size_t buffer_size, data_size_t num_data, int32_t num_classes);
 
   LIGHTGBM_EXPORT Dataset* LoadFromFile(const char* filename, int rank, int num_machines);
 

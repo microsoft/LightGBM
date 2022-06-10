@@ -14,7 +14,6 @@ Metadata::Metadata() {
   num_weights_ = 0;
   num_init_score_ = 0;
   num_data_ = 0;
-  num_appended_data_ = 0;
   num_queries_ = 0;
   weight_load_from_file_ = false;
   query_load_from_file_ = false;
@@ -344,7 +343,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::AppendInitScore(const double* init_score, data_size_t len) {
+void Metadata::InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size) {
   if (init_score == nullptr || len == 0) {
     init_score_.clear();
     num_init_score_ = 0;
@@ -352,22 +351,19 @@ void Metadata::AppendInitScore(const double* init_score, data_size_t len) {
   }
   if (init_score_.empty()) { init_score_.resize(num_init_score_); }
 
-  int num_class = static_cast<int>(num_init_score_ / num_data_);
+  int nclasses = num_classes();
 
   #pragma omp parallel for schedule(static, 512) if (len >= 1024)
-  for (int32_t col = 0; col < num_class; ++col) {
-    int32_t dest_offset = num_data_ * col + num_appended_data_;
-    int32_t source_offset = len * col;
+  for (int32_t col = 0; col < nclasses; ++col) {
+    int32_t dest_offset = num_data_ * col + start_index;
+    // We need to use source_size here, because len might not equal size (due to a partially loaded dataset)
+    int32_t source_offset = source_size * col;
     for (int64_t i = 0; i < len; ++i) {
       init_score_[dest_offset + i] = init_score[i + source_offset];
     }
   }
   init_score_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetInitScore(init_score_.data(), len); // TODO what to do here?
-  }
-  #endif  // USE_CUDA_EXP
+  // CUDA is handled after all insertions are complete
 }
 
 void Metadata::SetLabel(const label_t* label, data_size_t len) {
@@ -391,7 +387,7 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::AppendLabel(const label_t* label, data_size_t len) {
+void Metadata::InsertLabels(const label_t* label, data_size_t start_index, data_size_t len) {
   if (label == nullptr) {
     Log::Fatal("label cannot be nullptr");
   }
@@ -399,13 +395,9 @@ void Metadata::AppendLabel(const label_t* label, data_size_t len) {
 
   #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
-    label_[num_appended_data_ + i] = label[i];
+    label_[start_index + i] = label[i];
   }
-  #ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetLabel(label_.data(), len); // TODO what to do here?
-  }
-  #endif  // USE_CUDA_EXP
+  // CUDA is handled after all insertions are complete
 }
 
 void Metadata::SetWeights(const label_t* weights, data_size_t len) {
@@ -435,7 +427,7 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::AppendWeights(const label_t* weights, data_size_t len) {
+void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
   // save to nullptr
   if (weights == nullptr || len == 0) {
     weights_.clear();
@@ -447,14 +439,10 @@ void Metadata::AppendWeights(const label_t* weights, data_size_t len) {
 
   #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
-    weights_[num_appended_data_ + i] = weights[i];
+    weights_[start_index + i] = weights[i];
   }
   weight_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetWeights(weights_.data(), len); // TODO what to do here?
-  }
-  #endif  // USE_CUDA_EXP
+  // CUDA is handled after all insertions are complete
 }
 
 void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
@@ -493,7 +481,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::AppendQuery(const data_size_t* queries, data_size_t len) {
+void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
   if (queries == nullptr || len == 0) {
     queries_.clear();
     num_queries_ = 0;
@@ -503,14 +491,10 @@ void Metadata::AppendQuery(const data_size_t* queries, data_size_t len) {
 
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
-    queries_[num_appended_data_ + i] = queries[i];
+    queries_[start_index + i] = queries[i];
   }
   query_load_from_file_ = false;
-#ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetWeights(weights_.data(), len); // TODO what to do here?
-  }
-#endif  // USE_CUDA_EXP
+  // CUDA is handled after all insertions are complete
 }
 
 void Metadata::LoadWeights() {
@@ -589,7 +573,7 @@ void Metadata::LoadQueryBoundaries() {
   if (reader.Lines().empty()) {
     return;
   }
-  Log::Info("Loading query boundaries...");
+  Log::Info("Calculating query boundaries...");
   query_boundaries_ = std::vector<data_size_t>(reader.Lines().size() + 1);
   num_queries_ = static_cast<data_size_t>(reader.Lines().size());
   query_boundaries_[0] = 0;
@@ -606,7 +590,7 @@ void Metadata::CalculateQueryWeights() {
     return;
   }
   query_weights_.clear();
-  Log::Info("Loading query weights...");
+  Log::Info("Calculating query weights...");
   query_weights_ = std::vector<label_t>(num_queries_);
   for (data_size_t i = 0; i < num_queries_; ++i) {
     query_weights_[i] = 0.0f;
@@ -617,17 +601,14 @@ void Metadata::CalculateQueryWeights() {
   }
 }
 
-void Metadata::AppendFrom(const Metadata* source, data_size_t count) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (num_data_ < count + num_appended_data_) {
+void Metadata::InsertFrom(const Metadata& source, data_size_t start_index, data_size_t count) {
+  if (num_data_ < count + start_index) {
     Log::Fatal("Length of metadata is too long to append #data");
   }
-  Log::Info("  Appending Metadata count of %d at %d.", count, num_appended_data_);
-  AppendLabel(source->label_.data(), count);
-  AppendWeights(source->weights_.data(), count);
-  AppendInitScore(source->init_score_.data(), count);
-  AppendQuery(source->queries_.data(), count);
-  num_appended_data_ += count;
+  InsertLabels(source.label_.data(), start_index, count);
+  InsertWeights(source.weights_.data(), start_index, count);
+  InsertInitScores(source.init_score_.data(), start_index, count, source.num_data_);
+  InsertQueries(source.queries_.data(), start_index, count);
 }
 
 void Metadata::FinishLoad() {

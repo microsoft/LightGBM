@@ -241,9 +241,9 @@ void test_metadata_insertion(const std::vector<float>* dataset1_label,
   init_metadata(metadata_coalesced.get(), nTotal, coalesced_data_weight_ptr, coalesced_data_init_score_ptr, coalesced_data_group_ptr);
 
   Log::Info("  Inserting from dataset1...");
-  metadata_coalesced->AppendFrom(metadata1.get(), nDataset1);
+  metadata_coalesced->InsertFrom(*metadata1.get(), 0, nDataset1);
   Log::Info("  Inserting from dataset2...");
-  metadata_coalesced->AppendFrom(metadata2.get(), nDataset2);
+  metadata_coalesced->InsertFrom(*metadata2.get(), nDataset1, nDataset2);
   Log::Info("  Finish coalescing...");
   metadata_coalesced->FinishLoad();
 

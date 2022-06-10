@@ -268,9 +268,9 @@ class Bin {
 
   /*!
   * \brief Insert data from a given source to the current data
-  * \pram source_bin data source
+  * \pram source_bin Data source
   * \param start_index Index to start inserting data
-  * \param count number of records to insert
+  * \param count Number of records to insert
   */
   virtual void InsertFrom(const Bin* source_bin, data_size_t start_index, data_size_t count) = 0;
 

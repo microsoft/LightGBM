@@ -462,27 +462,30 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
   Log::Info("Finished Coalescing: num_data_: %d, num_total_features_: %d.", num_data_, num_total_features_);
 
   // TODO CUDA changes?
+#ifdef USE_CUDA_EXP
+  if (cuda_metadata_ != nullptr) {
+    cuda_metadata_->SetInitScore(init_score_.data(), len);
+  }
+#endif  // USE_CUDA_EXP
 }
 
 void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start_index) {
-  data_size_t source_size = source->num_pushed_rows();
+  data_size_t source_row_count = source->num_pushed_rows();
 
   OMP_INIT_EX();
   #pragma omp parallel for schedule(static)
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
-    feature_groups_[group]->InsertFrom(source->feature_groups_[group].get(), start_index, source_size);
+    feature_groups_[group]->InsertFrom(source->feature_groups_[group].get(), start_index, source_row_count);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
 
-  // TODO Fix args to be refs
-  metadata_.AppendFrom(&source->metadata_, source_size);
+  metadata_.InsertFrom(source->metadata_, start_index, source_row_count);
 
   if (has_raw_) {
-    // TODO
     #pragma omp parallel for schedule(static)
-    for (int i = 0; i < source_size; ++i) {
+    for (int i = 0; i < source_row_count; ++i) {
       for (int j = 0; j < num_numeric_features_; ++j) {
         raw_data_[j][start_index + i] = source->raw_data_[j][i];
       }
@@ -502,14 +505,9 @@ void Dataset::FinishLoad() {
   }
   metadata_.FinishLoad();
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
-    CreateCUDAColumnData();
-    metadata_.CreateCUDAMetadata(gpu_device_id_);
-  } else {
-    cuda_column_data_.reset(nullptr);
-  }
-  #endif  // USE_CUDA_EXP
+#ifdef USE_CUDA_EXP
+  metadata_.CreateCUDAMetadata(gpu_device_id_);
+#endif  // USE_CUDA_EXP
   is_finish_load_ = true;
 }
 

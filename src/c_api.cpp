@@ -1027,9 +1027,10 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
   API_END();
 }
 
-int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
-                                              int32_t buffer_size,
+int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
+                                              int32_t ref_buffer_size,
                                               int64_t num_row,
+                                              int32_t num_classes,
                                               const char* parameters,
                                               DatasetHandle* out) {
   API_BEGIN();
@@ -1038,9 +1039,10 @@ int LGBM_DatasetCreateFromSerializedReference(const void* buffer,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  *out = loader.LoadFromSerializedReference(static_cast<const char*>(buffer),
-                                            static_cast<size_t>(buffer_size),
-                                            static_cast<data_size_t>(num_row));
+  *out = loader.LoadFromSerializedReference(static_cast<const char*>(ref_buffer),
+                                            static_cast<size_t>(ref_buffer_size),
+                                            static_cast<data_size_t>(num_row),
+                                            num_classes);
   API_END();
 }
 
