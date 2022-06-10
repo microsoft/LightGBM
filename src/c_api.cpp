@@ -1271,7 +1271,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetH
   API_END();
 }
 
-int LGBM_DataseSetWaitForManualFinish(DatasetHandle dataset, int wait) {
+int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, int wait) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   p_dataset->set_wait_for_manual_finish(wait);

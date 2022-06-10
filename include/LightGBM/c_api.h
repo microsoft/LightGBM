@@ -289,7 +289,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetH
  * \param wait Whether to wait or not (0 or 1)
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DataseSetWaitForManualFinish(DatasetHandle dataset, int wait);
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, int wait);
 
 /*!
  * \brief Mark the Dataset as complete by calling by calling ``dataset->FinishLoad``.
