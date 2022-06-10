@@ -290,25 +290,33 @@ void GBDT::Bagging(int iter) {
     Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
     // set bagging data to tree learner
     if (!is_use_subset_) {
+      #ifdef USE_CUDA_EXP
       if (config_->device_type == std::string("cuda_exp")) {
         CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
         tree_learner_->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
       } else {
+      #endif  // USE_CUDA_EXP
         tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
       }
+      #endif  // USE_CUDA_EXP
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
+      #ifdef USE_CUDA_EXP
       if (config_->device_type == std::string("cuda_exp")) {
         CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
         tree_learner_->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
                                       bag_data_cnt_);
       } else {
+      #endif  // USE_CUDA_EXP
         tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                       bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
       }
+      #endif  // USE_CUDA_EXP
     }
   }
 }
@@ -555,11 +563,15 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
     // we need to predict out-of-bag scores of data for boosting
     if (num_data_ - bag_data_cnt_ > 0) {
+      #ifdef USE_CUDA_EXP
       if (config_->device_type == std::string("cuda_exp")) {
         train_score_updater_->AddScore(tree, cuda_bag_data_indices_.RawData() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
       } else {
+      #endif  // USE_CUDA_EXP
         train_score_updater_->AddScore(tree, bag_data_indices_.data() + bag_data_cnt_, num_data_ - bag_data_cnt_, cur_tree_id);
+      #ifdef USE_CUDA_EXP
       }
+      #endif  // USE_CUDA_EXP
     }
 
   } else {
@@ -574,10 +586,13 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 }
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score) const {
+  #ifdef USE_CUDA_EXP
   const bool boosting_on_cuda = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
   const bool evaluation_on_cuda = metric->IsCUDAMetric();
   if ((boosting_on_cuda && evaluation_on_cuda) || (!boosting_on_cuda && !evaluation_on_cuda)) {
+  #endif  // USE_CUDA_EXP
     return metric->Eval(score, objective_function_);
+  #ifdef USE_CUDA_EXP
   } else if (boosting_on_cuda && !evaluation_on_cuda) {
     const size_t total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_tree_per_iteration_);
     if (total_size > host_score_.size()) {
@@ -593,6 +608,7 @@ std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* scor
     CopyFromHostToCUDADevice<double>(cuda_score_.RawData(), score, total_size, __FILE__, __LINE__);
     return metric->Eval(cuda_score_.RawData(), objective_function_);
   }
+  #endif  // USE_CUDA_EXP
 }
 
 std::string GBDT::OutputMetric(int iter) {
@@ -902,9 +918,11 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
       bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
     }
     bag_data_indices_.resize(num_data_);
+    #ifdef USE_CUDA_EXP
     if (config->device_type == std::string("cuda_exp")) {
       cuda_bag_data_indices_.Resize(num_data_);
     }
+    #endif  // USE_CUDA_EXP
     bagging_runner_.ReSize(num_data_);
     bagging_rands_.clear();
     for (int i = 0;
@@ -951,7 +969,9 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
   } else {
     bag_data_cnt_ = num_data_;
     bag_data_indices_.clear();
+    #ifdef USE_CUDA_EXP
     cuda_bag_data_indices_.Clear();
+    #endif  // USE_CUDA_EXP
     bagging_runner_.ReSize(0);
     is_use_subset_ = false;
   }
