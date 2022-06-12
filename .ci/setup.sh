@@ -83,7 +83,7 @@ else  # Linux
                 zlib1g-dev
             git clone --depth 1 --branch v1.8 https://github.com/pocl/pocl.git
             cmake -B pocl/build -S pocl -DCMAKE_BUILD_TYPE=release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-stdlib=libc++ -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors -DPOCL_DEBUG_MESSAGES=OFF -DSTATIC_LLVM=ON -DINSTALL_OPENCL_HEADERS=OFF -DENABLE_SPIR=OFF -DENABLE_POCLCC=OFF -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF
-            cmake --build pocl/build -j 4
+            cmake --build pocl/build -j4
             sudo cmake --install pocl/build
         fi
     fi
