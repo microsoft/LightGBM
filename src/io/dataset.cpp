@@ -473,7 +473,7 @@ void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start
   data_size_t source_row_count = source->num_pushed_rows();
 
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(dynamic)
   for (int group = 0; group < num_groups_; ++group) {
     OMP_LOOP_EX_BEGIN();
     feature_groups_[group]->InsertFrom(source->feature_groups_[group].get(), start_index, source_row_count);

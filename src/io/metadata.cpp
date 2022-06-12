@@ -344,20 +344,21 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
 }
 
 void Metadata::InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size) {
-  if (init_score == nullptr || len == 0) {
-    init_score_.clear();
-    num_init_score_ = 0;
-    return;
+  if (num_init_score_ <= 0) {
+    Log::Fatal("Inserting intiial score data into dataset with no initial scores");
+  }
+  if (start_index + len > num_data_) {
+    Log::Fatal("Inserted initial score data is too large for dataset");
   }
   if (init_score_.empty()) { init_score_.resize(num_init_score_); }
 
   int nclasses = num_classes();
 
-  #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (int32_t col = 0; col < nclasses; ++col) {
     int32_t dest_offset = num_data_ * col + start_index;
     // We need to use source_size here, because len might not equal size (due to a partially loaded dataset)
     int32_t source_offset = source_size * col;
+    #pragma omp parallel for schedule(static, 512) if (len >= 1024)
     for (int64_t i = 0; i < len; ++i) {
       init_score_[dest_offset + i] = init_score[i + source_offset];
     }
@@ -391,7 +392,10 @@ void Metadata::InsertLabels(const label_t* label, data_size_t start_index, data_
   if (label == nullptr) {
     Log::Fatal("label cannot be nullptr");
   }
-  if (label_.empty()) { label_.resize(num_data_); } // TODO check capacity initialization
+  if (start_index + len > num_data_) {
+    Log::Fatal("Inserted label data is too large for dataset");
+  }
+  if (label_.empty()) { label_.resize(num_data_); }
 
   #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
@@ -428,15 +432,15 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
 }
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
-  // save to nullptr
-  if (weights == nullptr || len == 0) {
-    weights_.clear();
-    num_weights_ = 0;
-    return;
+  if (num_weights_ <= 0) {
+    Log::Fatal("Inserting weight data into dataset with no weights");
   }
-  if (weights_.empty()) { weights_.resize(num_data_); }
-  num_weights_ = num_data_; // TODO how do we set these?  some Finalize step?
+  if (start_index + len > num_weights_) {
+    Log::Fatal("Inserted weight data is too large for dataset");
+  }
+  if (weights_.empty()) { weights_.resize(num_weights_); }
 
+  // TODO use memcpy instead for all InsertX methods?
   #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
     weights_[start_index + i] = weights[i];
@@ -482,12 +486,13 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
 }
 
 void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
-  if (queries == nullptr || len == 0) {
-    queries_.clear();
-    num_queries_ = 0;
-    return;
+  if (num_queries_ <= 0) {
+    Log::Fatal("Inserting query data into dataset with no queries");
   }
-  if (queries_.empty()) { queries_.resize(num_data_); }
+  if (start_index + len > num_queries_) {
+    Log::Fatal("Inserted query data is too large for dataset");
+  }
+  if (queries_.empty()) { queries_.resize(num_queries_); }
 
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {

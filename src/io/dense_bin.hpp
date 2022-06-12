@@ -462,42 +462,41 @@ class DenseBin : public Bin {
       if (is_dest_odd) {
         // Handle special case of leading half-byte merge
         idx = start_index - 1;
-        const auto last_old_bin = static_cast<uint8_t>(data_[idx >> 1]);
         const auto first_new_bin = static_cast<uint8_t>(other_bin->data_[0] & 0xf);
         const int merged_idx = idx >> 1;
-        data_[merged_idx] = (last_old_bin | (first_new_bin << 4));
+        buf_[merged_idx] = first_new_bin << 4;
 
-        // Shift every source index by 4 bits, swapping high and low positions
+        // Shift every source index by 4 bits, swapping high (_buf) and low (_data) positions
         const int source_idx_count = (count - 1) >> 1;
         int dest_idx = merged_idx + 1;
-        for (int i = 0; i < source_idx_count; ++i, ++dest_idx) {
-          idx = i;
-          const auto previous_high_bin = static_cast<uint8_t>(other_bin->buf_[idx] >> 4 & 0xf);
-          idx = i + 1;
-          const auto next_low_bin = static_cast<uint8_t>(other_bin->data_[idx] & 0xf);
-          data_[dest_idx] = (previous_high_bin | (next_low_bin << 4));
+        #pragma omp parallel for schedule(static, 512) if (source_idx_count >= 1024)
+        for (int i = 0; i < source_idx_count; ++i) {
+          data_[dest_idx + i] = static_cast<uint8_t>(other_bin->buf_[i] >> 4 & 0xf);
+          buf_[dest_idx + i] = static_cast<uint8_t>(other_bin->data_[i + 1] & 0xf) << 4;
         }
 
         // Handle special case of last leftover value moving to own byte index
         if (!is_source_odd) {
-          const auto last_high_bin = static_cast<uint8_t>( (other_bin->buf_[idx] >> 4) & 0xf);
-          data_[dest_idx] = last_high_bin;
+          data_[dest_idx] = static_cast<uint8_t>( (other_bin->buf_[source_idx_count] >> 4) & 0xf);
         }
       } else {
-        // We can just copy source data over since it byte-aligns.
+        // We can just copy source data (and buf) over since it byte-aligns.
         // Note that we copy a full last byte even though only first half is "real".
         // Order should be maintained by overall insertion flow.
         const int source_idx_count = (count + 1) >> 1;
         int dest_idx = start_index >> 1;
-        for (int i = 0; i < source_idx_count; ++i, ++dest_idx) {
-          data_[dest_idx] = other_bin->data_[i] | other_bin->buf_[i];
+        #pragma omp parallel for schedule(static, 512) if (source_idx_count >= 1024)
+        for (int i = 0; i < source_idx_count; ++i) {
+          buf_[dest_idx + i] = other_bin->buf_[i];
+          data_[dest_idx + i] = other_bin->data_[i];
         }
       }
     } else {
       // Just whole values, so insert directly
       data_size_t dest_index = start_index;
-      for (int i = 0; i < count; ++i, ++dest_index) {
-        data_[dest_index] = other_bin->data_[i];
+      #pragma omp parallel for schedule(static, 512) if (count >= 1024)
+      for (int i = 0; i < count; ++i) {
+        data_[dest_index + i] = other_bin->data_[i];
       }
     }
   }

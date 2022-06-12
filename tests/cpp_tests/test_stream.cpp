@@ -48,7 +48,7 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
                                   init_scores,
                                   groups);
 
-    dataset->FinishLoad();  // TODO finalize design of this
+    dataset->FinishLoad();
 
     // TODO we should assert actual feature data
 
@@ -97,7 +97,7 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
                                    init_scores,
                                    groups);
 
-    dataset->FinishLoad();  // TODO finalize design of this
+    dataset->FinishLoad();
 
     // TODO we should assert actual feature data
 
