@@ -6,9 +6,9 @@
 #include "cuda_score_updater.hpp"
 
 #ifdef USE_CUDA_EXP
- 
+
 namespace LightGBM {
- 
+
 __global__ void AddScoreConstantKernel(
   const double val,
   const size_t offset,
@@ -41,7 +41,7 @@ void CUDAScoreUpdater::LaunchMultiplyScoreConstantKernel(const double val, const
   const int num_blocks = (num_data_ + num_threads_per_block_) / num_threads_per_block_;
   MultiplyScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, offset, num_data_, cuda_score_);
 }
- 
+
 }  // namespace LightGBM
- 
+
 #endif  // USE_CUDA_EXP

@@ -37,7 +37,7 @@ class CUDAScoreUpdater: public ScoreUpdater {
     } else {
       return score_.data();
     }
-  } 
+  }
 
   /*! \brief Disable copy */
   CUDAScoreUpdater& operator=(const CUDAScoreUpdater&) = delete;
