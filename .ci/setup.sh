@@ -71,7 +71,10 @@ else  # Linux
         sudo apt-get install --no-install-recommends -y \
             libboost1.74-dev \
             ocl-icd-opencl-dev
+    fi
+    if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 pocl-opencl-icd
         fi

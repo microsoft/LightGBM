@@ -164,10 +164,12 @@ elif [[ $TASK == "bdist" ]]; then
         ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="manylinux1_x86_64"
+            # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+            export LIGHTGBM_TEST_DUAL_CPU_GPU=1
         else
             PLATFORM="manylinux2014_$ARCH"
         fi
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=$PLATFORM --python-tag py3 || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --integrated-opencl --plat-name=$PLATFORM --python-tag py3 || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
