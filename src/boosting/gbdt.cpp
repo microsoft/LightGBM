@@ -68,8 +68,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   if (config_->device_type == std::string("cuda") || config_->device_type == std::string("cuda_exp")) {
     LGBM_config_::current_learner = use_cuda_learner;
     #ifdef USE_CUDA_EXP
-    const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
-    CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+    if (config_->device_type == std::string("cuda_exp")) {
+      const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
+      CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
+    }
     #endif  // USE_CUDA_EXP
   }
 

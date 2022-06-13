@@ -68,6 +68,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return nullptr;
     }
   } else {
+  #endif  // USE_CUDA_EXP
     if (type == std::string("regression")) {
       return new RegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {
@@ -103,6 +104,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("custom")) {
       return nullptr;
     }
+  #ifdef USE_CUDA_EXP
   }
   #endif  // USE_CUDA_EXP
   Log::Fatal("Unknown objective type name: %s", type.c_str());

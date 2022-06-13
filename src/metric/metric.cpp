@@ -14,6 +14,7 @@
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
+  #ifdef USE_CUDA_EXP
   if (config.device_type == std::string("cuda_exp")) {
     if (type == std::string("l2")) {
       Log::Warning("Metric l2 is not implemented in cuda_exp version. Fall back to evaluation on CPU.");
@@ -86,6 +87,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new TweedieMetric(config);
     }
   } else {
+  #endif  // USE_CUDA_EXP
     if (type == std::string("l2")) {
       return new L2Metric(config);
     } else if (type == std::string("rmse")) {
@@ -133,7 +135,9 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("tweedie")) {
       return new TweedieMetric(config);
     }
+  #ifdef USE_CUDA_EXP
   }
+  #endif  // USE_CUDA_EXP
   return nullptr;
 }
 
