@@ -137,9 +137,10 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     #ifdef USE_CUDA_EXP
     }
     #endif  // USE_CUDA_EXP
+  #ifndef USE_CUDA_EXP
   }
-  #ifdef USE_CUDA_EXP
-  else {
+  #else  // USE_CUDA_EXP
+  } else {
     if (config_->device_type == std::string("cuda_exp")) {
       size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
       AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
@@ -439,9 +440,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     Boosting();
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
+  #ifndef USE_CUDA_EXP
   }
-  #ifdef USE_CUDA_EXP
-  else {
+  #else  // USE_CUDA_EXP
+  } else {
     if (config_->device_type == std::string("cuda_exp")) {
       const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
       CopyFromHostToCUDADevice<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);

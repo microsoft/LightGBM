@@ -61,7 +61,6 @@ CUDADataPartition::CUDADataPartition(
   cuda_out_data_indices_in_leaf_ = nullptr;
   cuda_split_info_buffer_ = nullptr;
   cuda_num_data_ = nullptr;
-  //cuda_add_train_score_ = nullptr;
 }
 
 CUDADataPartition::~CUDADataPartition() {
@@ -78,7 +77,6 @@ CUDADataPartition::~CUDADataPartition() {
   DeallocateCUDAMemory<data_size_t>(&cuda_out_data_indices_in_leaf_, __FILE__, __LINE__);
   DeallocateCUDAMemory<int>(&cuda_split_info_buffer_, __FILE__, __LINE__);
   DeallocateCUDAMemory<data_size_t>(&cuda_num_data_, __FILE__, __LINE__);
-  //DeallocateCUDAMemory<double>(&cuda_add_train_score_, __FILE__, __LINE__);
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[0]));
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[1]));
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[2]));
