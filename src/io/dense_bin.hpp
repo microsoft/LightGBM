@@ -459,6 +459,7 @@ class DenseBin : public Bin {
 
       data_size_t idx;
 
+      // If the destination has an odd number of elements, it means we have to shift all the source values by 4 bits.
       if (is_dest_odd) {
         // Handle special case of leading half-byte merge
         idx = start_index - 1;
@@ -477,7 +478,7 @@ class DenseBin : public Bin {
 
         // Handle special case of last leftover value moving to own byte index
         if (!is_source_odd) {
-          data_[dest_idx] = static_cast<uint8_t>( (other_bin->buf_[source_idx_count] >> 4) & 0xf);
+          data_[dest_idx + 1] = static_cast<uint8_t>( (other_bin->buf_[source_idx_count] >> 4) & 0xf);
         }
       } else {
         // We can just copy source data (and buf) over since it byte-aligns.

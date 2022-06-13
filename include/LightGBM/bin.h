@@ -260,14 +260,14 @@ class Bin {
   virtual ~Bin() {}
   /*!
   * \brief Push one record
-  * \pram tid Thread id
+  * \param tid Thread id
   * \param idx Index of record
   * \param value bin value of record
   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
   /*!
-  * \brief Insert data from a given source to the current data
+  * \brief Insert data from a given source to the current data. Target must already be allocated.
   * \pram source_bin Data source
   * \param start_index Index to start inserting data
   * \param count Number of records to insert

@@ -86,7 +86,7 @@ class Metadata {
 
   /*!
   * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
-  * \param num_data Number of training data rows
+  * \param num_data Number of data rows
   * \param has_weights Whether the metadata has weights
   * \param has_init_scores Whether the metadata has initial scores
   * \param has_queries Whether the metadata has queries
@@ -185,7 +185,7 @@ class Metadata {
   /*!
   * \brief Insert data from a given source to the current data at a specified index
   * \pram source Metadata source
-  * \pram start_index The index to begin the insertion
+  * \pram start_index The target index to begin the insertion
   * \param count Number of records to insert
   */
   void InsertFrom(const Metadata& source, data_size_t start_index, data_size_t count);
@@ -291,7 +291,7 @@ class Metadata {
   void InsertLabels(const label_t* label, data_size_t start_index, data_size_t len);
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
   void InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size);
-  void InsertQueries(const data_size_t* weights, data_size_t start_index, data_size_t len);
+  void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -443,7 +443,11 @@ class Dataset {
     metadata_.InitByReference(num_data, &reference->metadata());
   }
 
-  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_groups, int32_t nclasses) {
+  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data,
+                                    int32_t has_weights,
+                                    int32_t has_init_scores,
+                                    int32_t has_groups,
+                                    int32_t nclasses) {
     metadata_.Init(num_data, has_weights, has_init_scores, has_groups, nclasses);
   }
 
@@ -849,10 +853,12 @@ class Dataset {
   /*! \brief Get Number of pushed rows */
   inline data_size_t num_pushed_rows() const { return num_pushed_rows_; }
 
-  /*! \brief Get whether the Dataset is for loading only. It will be coalesced or finished later */
+  /*! \brief Get whether FinishLoad is automatically called when pushing last row. */
   inline bool wait_for_manual_finish() const { return wait_for_manual_finish_; }
 
-  /*! \brief Set whether the Dataset is finished automatically or with a manual FinishLoad() call */
+  /*! \brief Set whether the Dataset is finished automatically when last row is pushed or or with a
+   *         manual MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesce later.
+   *         FinishLoad should not be called on any Dataset that will be coalesced.  */
   inline void set_wait_for_manual_finish(bool value) { wait_for_manual_finish_ = value; }
 
   /*! \brief Disable copy */

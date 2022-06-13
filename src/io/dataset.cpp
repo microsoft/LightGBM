@@ -31,6 +31,7 @@ Dataset::Dataset() {
   num_data_ = 0;
   num_pushed_rows_ = 0;
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   has_raw_ = false;
 }
 
@@ -41,6 +42,7 @@ Dataset::Dataset(data_size_t num_data) {
   num_pushed_rows_ = 0;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   group_bin_boundaries_.push_back(0);
   has_raw_ = false;
 }
@@ -449,24 +451,14 @@ void Dataset::Coalesce(const Dataset** sources, int32_t nsources) {
   }
 
   // This Dataset should be sized as the total coalesced size
-  Log::Info("Coalescing: num_datasets: %d, num_data: %d, num_pushed: %d. num_features_ %d. num_total_features: %d", nsources, num_data_, num_total_rows, num_features_, num_total_features_);
   CHECK_EQ(num_data_, num_total_rows);
 
   for (int i = 0; i < nsources; ++i) {
-    Log::Info("  Coalescing dataset %d of %d: num_data_: %d, num_pushed: %d, index: %d.",i, nsources, sources[i]->num_data(), sources[i]->num_pushed_rows(), current_index);
     AppendOneDataset(sources[i], current_index);
     current_index += sources[i]->num_pushed_rows();
   }
 
   FinishLoad();
-  Log::Info("Finished Coalescing: num_data_: %d, num_total_features_: %d.", num_data_, num_total_features_);
-
-  // TODO CUDA changes?
-#ifdef USE_CUDA_EXP
-  if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetInitScore(init_score_.data(), len);
-  }
-#endif  // USE_CUDA_EXP
 }
 
 void Dataset::Dataset::AppendOneDataset(const Dataset* source, data_size_t start_index) {
@@ -497,7 +489,6 @@ void Dataset::FinishLoad() {
   if (is_finish_load_) {
     return;
   }
-  Log::Info("   Finish load dataset: num_data_: %d,", num_data_);
   if (num_groups_ > 0) {
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->FinishLoad();

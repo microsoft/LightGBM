@@ -1046,23 +1046,36 @@ int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
   API_END();
 }
 
-void PushMetadata(const float* label,
+int LGBM_DatasetInitMetadata(DatasetHandle reference,
+                             int64_t num_data,
+                             int has_weights,
+                             int has_init_scores,
+                             int has_groups,
+                             int nclasses) {
+  API_BEGIN();
+  data_size_t nrows = static_cast<data_size_t>(num_data);
+  Dataset* reference_dataset = reinterpret_cast<Dataset*>(reference);
+  reference_dataset->InitMetadata(nrows, has_weights, has_init_scores, has_groups, nclasses);
+  API_END();
+}
+
+void PushMetadata(Dataset& dataset,
+                  const data_size_t& nrow,                 
+                  const data_size_t& start_row,
+                  const float* label,
                   const float* weight,
                   const double* init_score,
-                  const int32_t* query,
-                  const data_size_t& nrow,
-                  Dataset* p_dataset,
-                  const data_size_t& start_row)
+                  const int32_t* query)
 {
   const float* label_ptr = label;
   const float* weight_ptr = weight;
   const double* init_score_ptr = init_score;
   const int32_t* query_ptr = query;
 
-  const int32_t nclasses = p_dataset->metadata().num_classes();
+  const int32_t nclasses = dataset.metadata().num_classes();
 
   for (int i = 0; i < nrow; ++i) {
-    p_dataset->PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
+    dataset.PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
     label_ptr++;
     if (weight != nullptr)
     {
@@ -1079,7 +1092,6 @@ void PushMetadata(const float* label,
   }
 }
 
-// Kept for back compat with old signature and old behavior of Finish
 int LGBM_DatasetPushRows(DatasetHandle dataset,
                          const void* data,
                          int data_type,
@@ -1093,7 +1105,7 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1127,7 +1139,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   }
 
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1137,7 +1149,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   }
   OMP_THROW_EX();
 
-  PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
+  PushMetadata(*p_dataset, nrow, static_cast<int32_t>(start_row), label, weight, init_score, query);
 
   if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
@@ -1163,7 +1175,7 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
   OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
@@ -1192,7 +1204,6 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                           const double* init_score,
                                           const int32_t* query) {
   API_BEGIN();
-  // Log::Info("   Entering LGBM_DatasetPushRowsByCSRWithMetadata, start_row: %d, batch size: %d", start_row, nindptr - 1);
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1205,15 +1216,12 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     auto one_row = get_row_fun(i);
-    if (start_row < 10) {
-     // TODO  Log::Info("   Pushing batch row %d (overall row %d), nelem: %d", i, start_row + i, nelem);
-    }
     p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
 
-  PushMetadata(label, weight, init_score, query, nrow, p_dataset, static_cast<int32_t>(start_row));
+  PushMetadata(*p_dataset, nrow, static_cast<int32_t>(start_row), label, weight, init_score, query);
 
   if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
@@ -1224,10 +1232,6 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
 LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetHandle* sources, int32_t nsources) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
-
-  // TODO do we need to optimize so that 1st dataset can be used as return and doesn't need to be coalesced if just 1?
-  // Even if more than 1, it would be better to avoid copying the first and coalesce 2..N into it. (would need to remove const)
-
   std::vector<const Dataset*> source_datasets;
   source_datasets.reserve(nsources);
   for (int i = 0; i < nsources; ++i) {
@@ -1849,12 +1853,9 @@ int LGBM_BoosterMerge(BoosterHandle handle,
 int LGBM_BoosterAddValidData(BoosterHandle handle,
                              const DatasetHandle valid_data) {
   API_BEGIN();
-  Log::Warning("DEBUG Entering BoosterAddValidData");
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   const Dataset* p_dataset = reinterpret_cast<const Dataset*>(valid_data);
-  Log::Warning("DEBUG Entering BoosterAddValidData, num_data: %d", p_dataset->num_data());
   ref_booster->AddValidData(p_dataset);
-  Log::Warning("DEBUG Exiting BoosterAddValidData, num_data: %d", p_dataset->num_data());
   API_END();
 }
 

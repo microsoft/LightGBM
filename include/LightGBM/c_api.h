@@ -162,8 +162,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
 
 /*!
  * \brief Allocate the space for dataset and bucket feature bins according to serialized reference dataset.
- * \param buffer A binary representation of the dataset schema
- * \param buffer_size The size of the reference array in bytes
+ * \param ref_buffer A binary representation of the dataset schema (feature groups, bins, etc)
+ * \param ref_buffer_size The size of the reference array in bytes
  * \param num_row Number of total rows teh dataset will contain
  * \param parameters Additional parameters
  * \param[out] out Created dataset
@@ -176,6 +176,22 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSerializedReference(const void* ref_
                                                                 const char* parameters,
                                                                 DatasetHandle* out);
 
+/*!
+ * \brief Initialize metadata.
+ * \param dataset Handle of dataset
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of columns
+ * \param start_row Row start index
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetInitMetadata(DatasetHandle reference,
+                                               int64_t num_data,
+                                               int has_weights,
+                                               int has_init_scores,
+                                               int has_groups,
+                                               int nclasses);
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
@@ -208,12 +224,12 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
  * \param data Pointer to the data space
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
- * \param ncol Number of columns
- * \param start_row Row start index
- * \param label Pointer to array with nindptr-1 labels
- * \param weight Optional pointer to array with nindptr-1 weights
- * \param init_score Optional pointer to array with (nindptr-1) initial scores, in column format
- * \param query Optional pointer to array with nindptr-1 query values
+ * \param ncol Number of feature columns
+ * \param start_row Row start index, i.e, the index at which to start inserting data
+ * \param label Pointer to array with nrow labels
+ * \param weight Optional pointer to array with nrow weights
+ * \param init_score Optional pointer to array with nrow*nclasses initial scores, in column format
+ * \param query Optional pointer to array with nrow query values
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
@@ -266,7 +282,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
  * \param start_row Row start index
  * \param label Pointer to array with nindptr-1 labels
  * \param weight Optional pointer to array with nindptr-1 weights
- * \param init_score Optional pointer to array with (nindptr-1) initial scores, in column format
+ * \param init_score Optional pointer to array with (nindptr-1)*nclasses initial scores, in column format
  * \param query Optional pointer to array with nindptr-1 query values
 * \return 0 when succeed, -1 when failure happens
  */
@@ -288,7 +304,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
  * \brief Coalesce multiple Datasets into 1 merged dataset. Source Datasets are assumed to be streaming and have num_pushed_rows set.
  *        The target Dataset should already have been set to have a num_data of the sum of the source num_pushed_rows().
  *        Note that the source Datasets should be marked as ``LGBM_DatasetSetWaitForManualFinish`` true, and Coalesce will
- *        automatically run ``dataset->FinishLoad`` on the final dataset.
+ *        automatically run ``dataset->FinishLoad`` on the final dataset. Note that ``LGBM_DatasetFree`` still needs to be run on input sources.
  * \param dataset Handle of dataset to coalesce data into
  * \param sources Pointer to a list of Datasets to coalesce data from
  * \param nsources Number of coalesce sources
@@ -490,7 +506,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
                                              const char* filename);
 
 /*!
- * \brief Get dataset definition as a binary byte array (excluding data).
+ * \brief Create a dataset schema representation as a binary byte array (excluding data).
  * \param handle Handle of dataset
  * \param out The output byte array
  * \param out_len The length of the output byte array (returned for convenience)

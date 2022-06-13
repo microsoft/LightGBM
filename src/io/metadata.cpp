@@ -486,13 +486,12 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
 }
 
 void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
-  if (num_queries_ <= 0) {
+  if (queries_.size() <= 0) {
     Log::Fatal("Inserting query data into dataset with no queries");
   }
-  if (start_index + len > num_queries_) {
+  if (start_index + len > queries_.size()) {
     Log::Fatal("Inserted query data is too large for dataset");
   }
-  if (queries_.empty()) { queries_.resize(num_queries_); }
 
 #pragma omp parallel for schedule(static, 512) if (len >= 1024)
   for (data_size_t i = 0; i < len; ++i) {
@@ -611,9 +610,15 @@ void Metadata::InsertFrom(const Metadata& source, data_size_t start_index, data_
     Log::Fatal("Length of metadata is too long to append #data");
   }
   InsertLabels(source.label_.data(), start_index, count);
-  InsertWeights(source.weights_.data(), start_index, count);
-  InsertInitScores(source.init_score_.data(), start_index, count, source.num_data_);
-  InsertQueries(source.queries_.data(), start_index, count);
+  if (num_weights_ > 0) {
+    InsertWeights(source.weights_.data(), start_index, count);
+  }
+  if (num_init_score_ > 0) {
+    InsertInitScores(source.init_score_.data(), start_index, count, source.num_data_);
+  }
+  if (queries_.size() > 0) {
+    InsertQueries(source.queries_.data(), start_index, count);
+  }
 }
 
 void Metadata::FinishLoad() {
