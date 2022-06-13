@@ -169,6 +169,6 @@ Known issues:
 
 .. _clinfo: https://github.com/Oblomov/clinfo
 
-.. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
+.. _GPUCapsViewer: https://www.ozone3d.net/gpu_caps_viewer/
 
 .. _PoCL: http://portablecl.org/
