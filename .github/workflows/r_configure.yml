@@ -9,7 +9,7 @@ jobs:
     name: r-configure
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: "ubuntu:20.04"
+    container: "ubuntu:22.04"
     steps:
       - name: Install essential software before checkout
         run: |
