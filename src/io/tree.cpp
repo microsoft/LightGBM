@@ -340,11 +340,7 @@ std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
 
-  #if ((defined(sun) || defined(__sun)) && (defined(__SVR4) || defined(__svr4__)))
-  using CommonLegacy::ArrayToString;  // Slower & unsafe regarding locale.
-  #else
   using CommonC::ArrayToString;
-  #endif
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';

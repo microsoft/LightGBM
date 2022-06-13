@@ -19,9 +19,6 @@ Authors@R: c(
     person("Yachen", "Yan", role = c("ctb")),
     person("Microsoft Corporation", role = c("cph")),
     person("Dropbox, Inc.", role = c("cph")),
-    person("Jay", "Loden", role = c("cph")),
-    person("Dave", "Daeschler", role = c("cph")),
-    person("Giampaolo", "Rodola", role = c("cph")),
     person("Alberto", "Ferreira", role = c("ctb")),
     person("Daniel", "Lemire", role = c("ctb")),
     person("Victor", "Zverovich", role = c("cph")),
@@ -66,4 +63,4 @@ Imports:
     utils
 SystemRequirements:
     C++11
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0

@@ -368,36 +368,6 @@ sh build-cran-package.sh
 R CMD check --as-cran lightgbm_*.tar.gz
 ```
 
-#### Solaris
-
-All packages uploaded to CRAN must pass `R CMD check` on Solaris 10. To test LightGBM on this operating system, you can use the free service [R Hub](https://builder.r-hub.io/), a free service generously provided by the R Consortium.
-
-```shell
-sh build-cran-package.sh
-```
-
-```r
-package_tarball <- paste0("lightgbm_", readLines("VERSION.txt")[1], ".tar.gz")
-rhub::check(
-    path = package_tarball
-    , email = "your_email_here"
-    , check_args = "--as-cran"
-    , platform = c(
-        "solaris-x86-patched"
-        , "solaris-x86-patched-ods"
-    )
-    , env_vars = c(
-        "R_COMPILE_AND_INSTALL_PACKAGES" = "always"
-    )
-)
-```
-
-Alternatively, GitHub Actions can run code above for you. On a pull request, create a comment with this phrase:
-
-> /gha run r-solaris
-
-**NOTE:** Please do this only once you see that other R tests on a pull request are passing. R Hub is a free resource with limited capacity, and we want to be respectful community members.
-
 #### <a id="UBSAN"></a>ASAN and UBSAN
 
 All packages uploaded to CRAN must pass builds using `gcc` and `clang`, instrumented with two sanitizers: the Address Sanitizer (ASAN) and the Undefined Behavior Sanitizer (UBSAN).
