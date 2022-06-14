@@ -102,7 +102,7 @@ a trained \code{lgb.Booster}
 High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
              is focused on compatibility with other statistics and machine learning interfaces in R.
              This focus on compatibility means that this interface may experience more frequent breaking API changes
-             than \code{link{lgb.train}}.
+             than \code{\link{lgb.train}}.
              For efficiency-sensitive applications, or for applications where breaking API changes across releases
              is very expensive, use \code{\link{lgb.train}}.
 }
