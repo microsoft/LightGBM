@@ -25,37 +25,40 @@ TEST(Serialization, JustWorks) {
   int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.train", params, &datset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
-  Dataset* dataset = static_cast<Dataset*>(datset_handle);
-  Log::Info("Row count: %d", dataset->num_data());
-  Log::Info("Feature group count: %d", dataset->num_feature_groups());
+  Dataset* dataset;
+  try {
+    dataset = static_cast<Dataset*>(datset_handle);
 
-  // Serialize the reference
-  ByteBufferHandle buffer_handle;
-  int32_t buffer_len;
-  result = LGBM_DatasetSerializeReferenceToBinary(datset_handle, &buffer_handle, &buffer_len);
-  EXPECT_EQ(0, result) << "LGBM_DatasetSerializeReferenceToBinary result code: " << result;
+    // Serialize the reference
+    ByteBufferHandle buffer_handle;
+    int32_t buffer_len;
+    result = LGBM_DatasetSerializeReferenceToBinary(datset_handle, &buffer_handle, &buffer_len);
+    EXPECT_EQ(0, result) << "LGBM_DatasetSerializeReferenceToBinary result code: " << result;
 
-  ByteBuffer* buffer = static_cast<ByteBuffer*>(buffer_handle);
-  Log::Info("Buffer size: %d", buffer->GetSize());
+    ByteBuffer* buffer;
+    try {
+      buffer = static_cast<ByteBuffer*>(buffer_handle);
 
-  // Deserialize the reference
-  DatasetHandle deserialized_datset_handle;
-  result = LGBM_DatasetCreateFromSerializedReference(buffer->Data(),
-    static_cast<int32_t>(buffer->GetSize()),
-    dataset->num_data(),
-    0, // num_classes
-    params,
-    &deserialized_datset_handle);
-  EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSerializedReference result code: " << result;
+      // Deserialize the reference
+      DatasetHandle deserialized_datset_handle;
+      result = LGBM_DatasetCreateFromSerializedReference(buffer->Data(),
+        static_cast<int32_t>(buffer->GetSize()),
+        dataset->num_data(),
+        0, // num_classes
+        params,
+        &deserialized_datset_handle);
+      EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSerializedReference result code: " << result;
 
-  Dataset* deserialized_dataset = static_cast<Dataset*>(deserialized_datset_handle);
-  Log::Info("Deserialized Row count: %d", deserialized_dataset->num_data());
-  Log::Info("Feture group count: %d", deserialized_dataset->num_feature_groups());
-
-  // Free memory
-  result = LGBM_ByteBufferFree(buffer);
-  EXPECT_EQ(0, result) << "LGBM_ByteBufferFree result code: " << result;
-
-  result = LGBM_DatasetFree(dataset);
-  EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+      // Confirm 1 successful API call
+      Dataset* deserialized_dataset = static_cast<Dataset*>(deserialized_datset_handle);
+      EXPECT_EQ(dataset->num_data(), deserialized_dataset->num_data());
+    } catch (...) {
+      // Free memory
+      result = LGBM_ByteBufferFree(buffer);
+      EXPECT_EQ(0, result) << "LGBM_ByteBufferFree result code: " << result;
+    }
+  } catch (...) {
+    result = LGBM_DatasetFree(dataset);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
 }

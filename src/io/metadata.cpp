@@ -308,7 +308,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         old_scores.clear();
       }
     }
-    // re-load query weight
+    // re-calculate query weights
     CalculateQueryWeights();
   }
   if (num_queries_ > 0) {
@@ -348,6 +348,7 @@ void Metadata::InsertInitScores(const double* init_score, data_size_t start_inde
     Log::Fatal("Inserting intiial score data into dataset with no initial scores");
   }
   if (start_index + len > num_data_) {
+    // Note that len here is row count, not num_init_score, so we compare against num_data
     Log::Fatal("Inserted initial score data is too large for dataset");
   }
   if (init_score_.empty()) { init_score_.resize(num_init_score_); }

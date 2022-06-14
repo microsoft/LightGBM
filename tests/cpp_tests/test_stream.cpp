@@ -50,7 +50,7 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
 
     dataset->FinishLoad();
 
-    // TODO we should assert actual feature data
+    // TODO we should assert actual feature data, but we would need to calculate bin values
 
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,

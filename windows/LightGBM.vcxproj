@@ -305,7 +305,6 @@
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
-    <ClInclude Include="file_io.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp" />
