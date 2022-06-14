@@ -442,7 +442,7 @@ test_that("predictions for multiclass classification are returned as matrix", {
     expect_equal(ncol(pred), 3L)
 })
 
-test_that("predict type='response' returns integers for classification objectives", {
+test_that("predict type='class' returns predicted class for classification objectives", {
     data(agaricus.train, package = "lightgbm")
     X <- as.matrix(agaricus.train$data)
     y <- agaricus.train$label
@@ -453,7 +453,7 @@ test_that("predict type='response' returns integers for classification objective
         , nrounds = 5L
         , verbose = VERBOSITY
     )
-    pred <- predict(bst, X, type = "response")
+    pred <- predict(bst, X, type = "class")
     expect_true(all(pred %in% c(0L, 1L)))
 
     data(iris)
@@ -467,11 +467,11 @@ test_that("predict type='response' returns integers for classification objective
       , verbose = VERBOSITY
       , params = list(num_class = 3L)
     )
-    pred <- predict(model, X, type = "response")
+    pred <- predict(model, X, type = "class")
     expect_true(all(pred %in% c(0L, 1L, 2L)))
 })
 
-test_that("predict type='response' returns decimals for regression objectives", {
+test_that("predict type='class' returns values in the target's range for regression objectives", {
     data(agaricus.train, package = "lightgbm")
     X <- as.matrix(agaricus.train$data)
     y <- agaricus.train$label
@@ -482,6 +482,6 @@ test_that("predict type='response' returns decimals for regression objectives", 
         , nrounds = 5L
         , verbose = VERBOSITY
     )
-    pred <- predict(bst, X, type = "response")
+    pred <- predict(bst, X, type = "class")
     expect_true(all(!(pred %in% c(0.0, 1.0))))
 })

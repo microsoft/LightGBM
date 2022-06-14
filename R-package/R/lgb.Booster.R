@@ -743,24 +743,24 @@ Booster <- R6::R6Class(
 #' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
 #'                a character representing a path to a text file (CSV, TSV, or LibSVM)
 #' @param type Type of prediction to output. Allowed types are:\itemize{
-#'             \item \code{"link"}: will output the predicted score according to the objective function being
+#'             \item \code{"response"}: will output the predicted score according to the objective function being
 #'                   optimized (depending on the link function that the objective uses), after applying any necessary
 #'                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
-#'             \item \code{"response"}: for classification objectives, will output the class with the highest predicted
-#'                   probability. For other objectives, will output the same as "link".
+#'             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+#'                   probability. For other objectives, will output the same as "response".
 #'             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
-#'                   results) from which the "link" number is produced for a given objective function - for example, for
-#'                   \code{objective="binary"}, this corresponds to log-odds. For many objectives such as "regression",
-#'                   since no transformation is applied, the output will be the same as for "link".
+#'                   results) from which the "response" number is produced for a given objective function - for example,
+#'                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+#'                   "regression", since no transformation is applied, the output will be the same as for "response".
 #'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
 #'                   in each tree in the model, outputted as integers, with one column per tree.
 #'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
 #'                   intercept (each feature will produce one column). If there are multiple classes, each class will
-#'                   have separate feature contributions (thus the number of columns is feaures+1 multiplied by the
+#'                   have separate feature contributions (thus the number of columns is features+1 multiplied by the
 #'                   number of classes).
 #'             }
 #'
-#'             Note that, if using custom objectives, types "link" and "response" will not be available and will
+#'             Note that, if using custom objectives, types "class" and "response" will not be available and will
 #'             default towards using "raw" instead.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
@@ -778,11 +778,11 @@ Booster <- R6::R6Class(
 #'               the values in \code{params} take precedence.
 #' @param ... ignored
 #' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
-#'         \code{type="link"} on a binary classification or regression objective), will return a vector with one
-#'         row per observation in \code{newdata}.
+#'         \code{type="response"} on a binary classification or regression objective), will return a vector with one
+#'         element per row in \code{newdata}.
 #'
 #'         For prediction types that are meant to return more than one output per observation (e.g. when predicting
-#'         \code{type="link"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
+#'         \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
 #'         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 #'
 #' @examples
@@ -821,7 +821,7 @@ Booster <- R6::R6Class(
 #' @export
 predict.lgb.Booster <- function(object,
                                 newdata,
-                                type = "link",
+                                type = "response",
                                 start_iteration = NULL,
                                 num_iteration = NULL,
                                 header = FALSE,
@@ -859,8 +859,8 @@ predict.lgb.Booster <- function(object,
     ))
   }
 
-  if (!is.null(object$params$objective) && object$params$objective == "none" && type %in% c("link", "response")) {
-    warning("Prediction types 'link' and 'response' are not supported for custom objectives.")
+  if (!is.null(object$params$objective) && object$params$objective == "none" && type %in% c("class", "response")) {
+    warning("Prediction types 'class' and 'response' are not supported for custom objectives.")
     type <- "raw"
   }
 
@@ -885,7 +885,7 @@ predict.lgb.Booster <- function(object,
     , header = header
     , params = params
   )
-  if (type == "response") {
+  if (type == "class") {
     if (object$params$objective == "binary") {
       pred <- as.integer(pred >= 0.5)
     } else if (object$params$objective %in% c("multiclass", "multiclassova")) {
