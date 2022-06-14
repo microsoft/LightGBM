@@ -17,7 +17,7 @@ _LGBM_CustomMetricFunction = Callable[
     Tuple[str, float, bool]
 ]
 
-_LGBM_PreprocCallable = Callable[
+_LGBM_PreprocFunction = Callable[
     [Dataset, Dataset, Dict[str, Any]],
     Tuple[Dataset, Dataset, Dict[str, Any]]
 ]
@@ -390,8 +390,8 @@ def cv(
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
     feature_name: Union[str, List[str]] = 'auto',
-    categorical_feature: Union[str, List[str]] = 'auto',
-    fpreproc: Optional[_LGBM_PreprocCallable] = None,
+    categorical_feature: Union[str, List[str], List[int]] = 'auto',
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
     seed: int = 0,
     callbacks: Optional[List[Callable]] = None,
     eval_train_metric: bool = False,
