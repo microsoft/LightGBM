@@ -177,22 +177,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSerializedReference(const void* ref_
                                                                 DatasetHandle* out);
 
 /*!
- * \brief Initialize metadata.
- * \param dataset Handle of dataset
- * \param data Pointer to the data space
- * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
- * \param nrow Number of rows
- * \param ncol Number of columns
- * \param start_row Row start index
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_DatasetInitMetadata(DatasetHandle reference,
-                                               int64_t num_data,
-                                               int has_weights,
-                                               int has_init_scores,
-                                               int has_groups,
-                                               int nclasses);
-/*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
  * \param data Pointer to the data space

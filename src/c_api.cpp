@@ -1046,19 +1046,6 @@ int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
   API_END();
 }
 
-int LGBM_DatasetInitMetadata(DatasetHandle reference,
-                             int64_t num_data,
-                             int has_weights,
-                             int has_init_scores,
-                             int has_groups,
-                             int nclasses) {
-  API_BEGIN();
-  data_size_t nrows = static_cast<data_size_t>(num_data);
-  Dataset* reference_dataset = reinterpret_cast<Dataset*>(reference);
-  reference_dataset->InitMetadata(nrows, has_weights, has_init_scores, has_groups, nclasses);
-  API_END();
-}
-
 void PushMetadata(Dataset& dataset,
                   const data_size_t& nrow,                 
                   const data_size_t& start_row,

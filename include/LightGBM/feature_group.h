@@ -213,18 +213,15 @@ class FeatureGroup {
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
           multi_bin_data_.emplace_back(Bin::CreateSparseBin(
             num_data, bin_mappers_[i]->num_bin() + addi));
-        }
-        else {
+        } else {
           multi_bin_data_.emplace_back(
             Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         }
       }
-    }
-    else {
+    } else {
       if (is_sparse_) {
         bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
-      }
-      else {
+      } else {
         bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
       }
     }

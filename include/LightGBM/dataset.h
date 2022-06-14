@@ -70,7 +70,7 @@ class Metadata {
   ~Metadata();
 
   /*!
-  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \brief Initial work, will allocate space for label, weight(if exists) and query (if exists)
   * \param num_data Number of training data
   * \param weight_idx Index of weight column, < 0 means doesn't exists
   * \param query_idx Index of query id column, < 0 means doesn't exists
@@ -78,7 +78,7 @@ class Metadata {
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
-  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query(if exists)
+  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query (if exists)
   * \param num_data Number of data
   * \param reference Reference metadata
   */
@@ -184,8 +184,8 @@ class Metadata {
 
   /*!
   * \brief Insert data from a given source to the current data at a specified index
-  * \pram source Metadata source
-  * \pram start_index The target index to begin the insertion
+  * \param source Metadata source
+  * \param start_index The target index to begin the insertion
   * \param count Number of records to insert
   */
   void InsertFrom(const Metadata& source, data_size_t start_index, data_size_t count);
@@ -435,7 +435,7 @@ class Dataset {
   LIGHTGBM_EXPORT ~Dataset();
 
   /*!
-  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \brief Initial work, will allocate space for label, weight (if exists) and query (if exists)
   * \param num_data Number of data
   * \param reference Reference metadata
   */
@@ -856,8 +856,8 @@ class Dataset {
   /*! \brief Get whether FinishLoad is automatically called when pushing last row. */
   inline bool wait_for_manual_finish() const { return wait_for_manual_finish_; }
 
-  /*! \brief Set whether the Dataset is finished automatically when last row is pushed or or with a
-   *         manual MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesce later.
+  /*! \brief Set whether the Dataset is finished automatically when last row is pushed or with a manual
+   *         MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesced later.
    *         FinishLoad should not be called on any Dataset that will be coalesced.  */
   inline void set_wait_for_manual_finish(bool value) { wait_for_manual_finish_ = value; }
 
