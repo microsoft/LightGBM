@@ -408,21 +408,27 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    # find a value, and remove other aliases with .pop()
-    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
-    found_value = None
+    aliases = set(_ConfigAliases.get(main_param_name)) - {main_param_name}
+
+    # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
-        found_value = params[main_param_name]
+        for param in aliases:
+            params.pop(param, None)
+        return params
 
-    for param in _ConfigAliases.get(main_param_name):
-        val = params.pop(param, None)
-        if found_value is None and val is not None:
-            found_value = val
+    # if main param name was not found, search for an alias
+    for param in aliases:
+        if param in params.keys():
+            params[main_param_name] = params[param]
+            break
 
-    if found_value is not None:
-        params[main_param_name] = found_value
-    else:
-        params[main_param_name] = default_value
+    if main_param_name in params.keys():
+        for param in aliases:
+            params.pop(param, None)
+        return params
+
+    # neither of main_param_name, aliases were found
+    params[main_param_name] = default_value
 
     return params
 
