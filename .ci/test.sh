@@ -75,7 +75,7 @@ if [[ $TASK == "lint" ]]; then
         mypy \
         pycodestyle \
         pydocstyle \
-        "r-lintr>=2.0"
+        "r-lintr>=2.0,<3.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
