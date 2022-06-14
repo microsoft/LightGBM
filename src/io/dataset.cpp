@@ -23,8 +23,8 @@ const float Dataset::kSerializedReferenceVersion = 1.0;
 
 const char* Dataset::binary_file_token =
     "______LightGBM_Binary_File_Token______\n";
-const char* Dataset::binary_reference_token =
-    "______LightGBM_Binary_Reference_Token______\n";
+const char* Dataset::binary_serialized_token =
+    "______LightGBM_Binary_Serialized_Token______\n";
 
 Dataset::Dataset() {
   data_filename_ = "noname";
@@ -496,10 +496,15 @@ void Dataset::FinishLoad() {
   }
   metadata_.FinishLoad();
 
-#ifdef USE_CUDA_EXP
-  metadata_.CreateCUDAMetadata(gpu_device_id_);
-#endif  // USE_CUDA_EXP
-  is_finish_load_ = true;
+  #ifdef USE_CUDA_EXP
+  if (device_type_ == std::string("cuda_exp")) {
+    CreateCUDAColumnData();
+    metadata_.CreateCUDAMetadata(gpu_device_id_);
+}
+  else {
+    cuda_column_data_.reset(nullptr);
+  }
+  #endif  // USE_CUDA_EXP  is_finish_load_ = true;
 }
 
 void PushDataToMultiValBin(
@@ -1071,7 +1076,7 @@ void Dataset::SerializeReference(ByteBuffer* buffer) {
   Log::Info("Saving data to binary buffer");
 
   // Calculate approximate size of output and reserve space
-  size_t size_of_token = std::strlen(binary_reference_token);
+  size_t size_of_token = std::strlen(binary_serialized_token);
   size_t initial_capacity = size_of_token + GetSerializedHeaderSize();
   // write feature group definitions
   for (int i = 0; i < num_groups_; ++i) {
@@ -1082,7 +1087,7 @@ void Dataset::SerializeReference(ByteBuffer* buffer) {
   buffer->Reserve(static_cast<size_t>(1.1 * static_cast<double>(initial_capacity))); 
 
   // Write token that marks the data as binary reference, and the version
-  buffer->AlignedWrite(binary_reference_token, size_of_token);
+  buffer->AlignedWrite(binary_serialized_token, size_of_token);
   buffer->AlignedWrite(&kSerializedReferenceVersion, sizeof(float));
 
   // Write the basic definition of the overall dataset

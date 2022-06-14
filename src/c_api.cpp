@@ -1193,8 +1193,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCoalesce(DatasetHandle dataset, const DatasetH
     source_datasets.push_back(p_source);
   }
 
-  auto dataset_ptr = reinterpret_cast<const Dataset**>(source_datasets.data());
-  p_dataset->Coalesce(dataset_ptr, nsources);
+  auto source_dataset_ptrs = reinterpret_cast<const Dataset**>(source_datasets.data());
+  p_dataset->Coalesce(source_dataset_ptrs, nsources);
   API_END();
 }
 

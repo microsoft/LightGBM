@@ -937,7 +937,7 @@ class Dataset {
   /*! \brief store feature names */
   static const float kSerializedReferenceVersion;
   static const char* binary_file_token;
-  static const char* binary_reference_token;
+  static const char* binary_serialized_token;
   int num_groups_;
   std::vector<int> real_feature_idx_;
   std::vector<int> feature2group_;

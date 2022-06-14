@@ -453,6 +453,8 @@ class DenseBin : public Bin {
 
   void InsertFrom(const Bin* source_bin, data_size_t start_index, data_size_t count) override {
     auto other_bin = dynamic_cast<const DenseBin<VAL_T, IS_4BIT>*>(source_bin);
+
+    // 4-bit insertion must be handled separately, since values are split between low bin (vals_) and high bins (buf_)
     if (IS_4BIT) {
       const int8_t is_source_odd = count & 1;
       const int8_t is_dest_odd = start_index & 1;
