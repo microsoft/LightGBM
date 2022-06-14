@@ -369,16 +369,16 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
 }
 
 const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_batch,
-                                     int32_t index,
-                                     int32_t nrows,
-                                     int32_t nclasses,
-                                     int32_t batch_count,
-                                     const std::vector<double>* original_init_scores) {
-  // Extract a set of rows from the column-based format
+                                              int32_t index,
+                                              int32_t nrows,
+                                              int32_t nclasses,
+                                              int32_t batch_count,
+                                              const std::vector<double>* original_init_scores) {
+  // Extract a set of rows from the column-based format (still maintaining column based format)
   init_score_batch.clear();
-  for (int32_t row = index; row < index + batch_count; row++)
+  for (int32_t c = 0; c < nclasses; c++)
   {
-    for (int32_t c = 0; c < nclasses; c++)
+    for (int32_t row = index; row < index + batch_count; row++)
     {
       init_score_batch.push_back(original_init_scores->at(row + nrows * c));
     }

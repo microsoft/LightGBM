@@ -343,7 +343,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size) {
+void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
   if (num_init_score_ <= 0) {
     Log::Fatal("Inserting intiial score data into dataset with no initial scores");
   }
@@ -359,10 +359,7 @@ void Metadata::InsertInitScores(const double* init_score, data_size_t start_inde
     int32_t dest_offset = num_data_ * col + start_index;
     // We need to use source_size here, because len might not equal size (due to a partially loaded dataset)
     int32_t source_offset = source_size * col;
-    #pragma omp parallel for schedule(static, 512) if (len >= 1024)
-    for (int64_t i = 0; i < len; ++i) {
-      init_score_[dest_offset + i] = init_score[i + source_offset];
-    }
+    memcpy(init_score_.data() + dest_offset, init_scores + source_offset, sizeof(double) * len);
   }
   init_score_load_from_file_ = false;
   // CUDA is handled after all insertions are complete
@@ -389,8 +386,8 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::InsertLabels(const label_t* label, data_size_t start_index, data_size_t len) {
-  if (label == nullptr) {
+void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {
+  if (labels == nullptr) {
     Log::Fatal("label cannot be nullptr");
   }
   if (start_index + len > num_data_) {
@@ -398,10 +395,8 @@ void Metadata::InsertLabels(const label_t* label, data_size_t start_index, data_
   }
   if (label_.empty()) { label_.resize(num_data_); }
 
-  #pragma omp parallel for schedule(static, 512) if (len >= 1024)
-  for (data_size_t i = 0; i < len; ++i) {
-    label_[start_index + i] = label[i];
-  }
+  memcpy(label_.data() + start_index, labels, sizeof(label_t) * len);
+
   // CUDA is handled after all insertions are complete
 }
 
@@ -433,6 +428,9 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
 }
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
+  if (!weights) {
+    Log::Fatal("Passed null weights");
+  }
   if (num_weights_ <= 0) {
     Log::Fatal("Inserting weight data into dataset with no weights");
   }
@@ -441,11 +439,8 @@ void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, da
   }
   if (weights_.empty()) { weights_.resize(num_weights_); }
 
-  // TODO use memcpy instead for all InsertX methods?
-  #pragma omp parallel for schedule(static, 512) if (len >= 1024)
-  for (data_size_t i = 0; i < len; ++i) {
-    weights_[start_index + i] = weights[i];
-  }
+  memcpy(weights_.data() + start_index, weights, sizeof(label_t) * len);
+
   weight_load_from_file_ = false;
   // CUDA is handled after all insertions are complete
 }
@@ -487,6 +482,9 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
 }
 
 void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
+  if (!queries) {
+    Log::Fatal("Passed null queries");
+  }
   if (queries_.size() <= 0) {
     Log::Fatal("Inserting query data into dataset with no queries");
   }
@@ -494,10 +492,8 @@ void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index
     Log::Fatal("Inserted query data is too large for dataset");
   }
 
-#pragma omp parallel for schedule(static, 512) if (len >= 1024)
-  for (data_size_t i = 0; i < len; ++i) {
-    queries_[start_index + i] = queries[i];
-  }
+  memcpy(queries_.data() + start_index, queries, sizeof(data_size_t) * len);
+
   query_load_from_file_ = false;
   // CUDA is handled after all insertions are complete
 }
@@ -619,6 +615,27 @@ void Metadata::InsertFrom(const Metadata& source, data_size_t start_index, data_
   }
   if (queries_.size() > 0) {
     InsertQueries(source.queries_.data(), start_index, count);
+  }
+}
+
+void Metadata::InsertAt(data_size_t start_index,
+                        data_size_t count,
+                        const float* labels,
+                        const float* weights,
+                        const double* init_scores,
+                        const int32_t* queries) {
+  if (num_data_ < count + start_index) {
+    Log::Fatal("Length of metadata is too long to append #data");
+  }
+  InsertLabels(labels, start_index, count);
+  if (weights) {
+    InsertWeights(weights, start_index, count);
+  }
+  if (init_scores) {
+    InsertInitScores(init_scores, start_index, count, count);
+}
+  if (queries) {
+    InsertQueries(queries, start_index, count);
   }
 }
 

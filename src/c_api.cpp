@@ -1046,39 +1046,6 @@ int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
   API_END();
 }
 
-void PushMetadata(Dataset& dataset,
-                  const data_size_t& nrow,                 
-                  const data_size_t& start_row,
-                  const float* label,
-                  const float* weight,
-                  const double* init_score,
-                  const int32_t* query)
-{
-  const float* label_ptr = label;
-  const float* weight_ptr = weight;
-  const double* init_score_ptr = init_score;
-  const int32_t* query_ptr = query;
-
-  const int32_t nclasses = dataset.metadata().num_classes();
-
-  for (int i = 0; i < nrow; ++i) {
-    dataset.PushOneRowMetadata(start_row + i, label_ptr, weight_ptr, init_score_ptr, query_ptr);
-    label_ptr++;
-    if (weight != nullptr)
-    {
-      weight_ptr++;
-    }
-    if (init_score != nullptr)
-    {
-      init_score_ptr += nclasses;
-    }
-    if (query != nullptr)
-    {
-      query_ptr++;
-    }
-  }
-}
-
 int LGBM_DatasetPushRows(DatasetHandle dataset,
                          const void* data,
                          int data_type,
@@ -1113,10 +1080,10 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                      int32_t nrow,
                                      int32_t ncol,
                                      int32_t start_row,
-                                     const float* label,
-                                     const float* weight,
-                                     const double* init_score,
-                                     const int32_t* query)
+                                     const float* labels,
+                                     const float* weights,
+                                     const double* init_scores,
+                                     const int32_t* queries)
 {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
@@ -1136,7 +1103,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   }
   OMP_THROW_EX();
 
-  PushMetadata(*p_dataset, nrow, static_cast<int32_t>(start_row), label, weight, init_score, query);
+  p_dataset->InsertMetadataAt(start_row, nrow, labels, weights, init_scores, queries);
 
   if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
@@ -1186,10 +1153,10 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                           int64_t nindptr,
                                           int64_t nelem,
                                           int64_t start_row,
-                                          const float* label,
-                                          const float* weight,
-                                          const double* init_score,
-                                          const int32_t* query) {
+                                          const float* labels,
+                                          const float* weights,
+                                          const double* init_scores,
+                                          const int32_t* queries) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
@@ -1208,7 +1175,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   }
   OMP_THROW_EX();
 
-  PushMetadata(*p_dataset, nrow, static_cast<int32_t>(start_row), label, weight, init_score, query);
+  p_dataset->InsertMetadataAt(static_cast<int32_t>(start_row), nrow, labels, weights, init_scores, queries);
 
   if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();

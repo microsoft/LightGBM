@@ -191,6 +191,22 @@ class Metadata {
   void InsertFrom(const Metadata& source, data_size_t start_index, data_size_t count);
 
   /*!
+  * \brief Insert data from a given data to the current data at a specified index
+  * \param start_index The target index to begin the insertion
+  * \param count Number of records to insert
+  * \param labels Pointer to label data
+  * \param weights Pointer to weight data, or null
+  * \param init_scores Pointer to init-score data, or null
+  * \param queries Pointer to query data, or null
+  */
+  void InsertAt(data_size_t start_index,
+                data_size_t count,
+                const float* labels,
+                const float* weights,
+                const double* init_scores,
+                const int32_t* queries);
+
+  /*!
   * \brief Perform any extra operations after all data has been loaded
   */
   void FinishLoad();
@@ -288,9 +304,9 @@ class Metadata {
   /*! \brief Load query wights */
   void CalculateQueryWeights();
   void CalculateQueryBoundaries();
-  void InsertLabels(const label_t* label, data_size_t start_index, data_size_t len);
+  void InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len);
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
-  void InsertInitScores(const double* init_score, data_size_t start_index, data_size_t len, data_size_t source_size);
+  void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
@@ -443,14 +459,6 @@ class Dataset {
     metadata_.InitByReference(num_data, &reference->metadata());
   }
 
-  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data,
-                                    int32_t has_weights,
-                                    int32_t has_init_scores,
-                                    int32_t has_groups,
-                                    int32_t nclasses) {
-    metadata_.Init(num_data, has_weights, has_init_scores, has_groups, nclasses);
-  }
-
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;
@@ -531,25 +539,13 @@ class Dataset {
     }
   }
 
-  inline void PushOneRowMetadata(data_size_t row_idx,
-                                 const label_t* label,
-                                 const label_t* weight,
-                                 const double* init_score,
-                                 const data_size_t* query) {
-    if (label == nullptr) {
-      Log::Fatal("Label must not be null");
-    } else {
-      metadata_.SetLabelAt(row_idx, *label);
-    }
-    if (weight) {
-      metadata_.SetWeightAt(row_idx, *weight);
-    }
-    if (init_score) {
-      metadata_.SetInitScoreAt(row_idx, init_score);
-    }
-    if (query) {
-      metadata_.SetQueryAt(row_idx, *query);
-    }
+  inline void InsertMetadataAt(data_size_t start_index,
+                               data_size_t count,
+                               const label_t* labels,
+                               const label_t* weights,
+                               const double* init_scores,
+                               const data_size_t* queries) {
+    metadata_.InsertAt(start_index, count, labels, weights, init_scores, queries);
   }
 
   inline int RealFeatureIndex(int fidx) const {

@@ -412,8 +412,6 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
 
   Log::Info("Loaded reference dataset: %d features, %d num_data", dataset->num_features_, num_data);
 
-// TODO need to get bin mappers?
-
   return dataset.release();
 }
 

@@ -100,8 +100,8 @@ LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
 /*!
  * \brief Get a ByteBuffer value at an index.
  * \param handle Handle of byte buffer to be read
- * \param index index of value to return
- * \param out_val Byte value at index to return
+ * \param index Index of value to return
+ * \param[out] out_val Byte value at index to return
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val);
@@ -253,7 +253,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                                                 int64_t start_row);
 
 /*!
- * \brief Push data to existing dataset. (see ``LGBM_DatasetPushRowsWithMetadata``)
+ * \brief Push CSR data to existing dataset. (see ``LGBM_DatasetPushRowsWithMetadata``)
  * \param dataset Handle of dataset
  * \param indptr Pointer to row headers
  * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
@@ -492,8 +492,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
 /*!
  * \brief Create a dataset schema representation as a binary byte array (excluding data).
  * \param handle Handle of dataset
- * \param out The output byte array
- * \param out_len The length of the output byte array (returned for convenience)
+ * \param[out] out The output byte array
+ * \param[out] out_len The length of the output byte array (returned for convenience)
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,

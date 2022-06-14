@@ -254,7 +254,7 @@ class FeatureGroup {
    * \brief Insert data from the equivalent feature group in another Dataset
    * \param source The feature group to insert data from
    * \param start_index Index to start inserting data
-   * \param count number of records to insert
+   * \param count Number of records to insert
    */
   inline void InsertFrom(const FeatureGroup* source, data_size_t start_index, data_size_t count) {
     if (is_multi_val_) {
