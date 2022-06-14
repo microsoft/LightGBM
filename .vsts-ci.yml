@@ -35,6 +35,7 @@ jobs:
     PRODUCES_ARTIFACTS: 'true'
   pool: sh-ubuntu
   container: ubuntu1404
+  timeoutInMinutes: 60
   strategy:
     matrix:
       regular:
@@ -55,6 +56,7 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
+        PYTHON_VERSION: '3.9'
       swig:
         TASK: swig
   steps:
@@ -87,6 +89,7 @@ jobs:
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
   container: ubuntu-latest
+  timeoutInMinutes: 60
   strategy:
     matrix:
       regular:
