@@ -1312,7 +1312,7 @@ def test_validate_features(task):
         model.fit(df, y, group=g)
     else:
         model.fit(df, y)
-    assert model.booster_.feature_name() == features
+    assert model.feature_name_ == features
 
     # try to predict with a different feature
     df2 = df.rename(columns={'x2': 'z'})

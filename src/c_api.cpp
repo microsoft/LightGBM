@@ -2137,7 +2137,7 @@ int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
   size_t out_buffer_len;
   LGBM_BoosterGetFeatureNames(handle, 0, &booster_num_features, 0, &out_buffer_len, nullptr);
   if (booster_num_features != data_num_features) {
-    Log::Fatal("Booster was trained on %d features, but got %d input features to predict.", booster_num_features, data_num_features);
+    Log::Fatal("Model was trained on %d features, but got %d input features to predict.", booster_num_features, data_num_features);
   }
   std::vector<std::vector<char>> tmp_names(booster_num_features);
   std::vector<char*> booster_names(booster_num_features);

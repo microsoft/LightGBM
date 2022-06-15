@@ -679,10 +679,10 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
                                                   char** out_strs);
 
 /*!
- * \brief Check that the feature names of the data match the ones used to train the booster
+ * \brief Check that the feature names of the data match the ones used to train the booster.
  * \param handle Handle of booster
- * \param data_names array with the feature names in the data
- * \param data_num_features number of features in the data
+ * \param data_names Array with the feature names in the data
+ * \param data_num_features Number of features in the data
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
