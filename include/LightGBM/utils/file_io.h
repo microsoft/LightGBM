@@ -5,6 +5,8 @@
 #ifndef LIGHTGBM_UTILS_FILE_IO_H_
 #define LIGHTGBM_UTILS_FILE_IO_H_
 
+#include <LightGBM/utils/serialize.h>
+
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -12,8 +14,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-
-#include <LightGBM/utils/serialize.h>
 
 namespace LightGBM {
 

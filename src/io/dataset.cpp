@@ -500,8 +500,7 @@ void Dataset::FinishLoad() {
   if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
-}
-  else {
+  } else {
     cuda_column_data_.reset(nullptr);
   }
   #endif  // USE_CUDA_EXP  is_finish_load_ = true;
@@ -1084,7 +1083,7 @@ void Dataset::SerializeReference(ByteBuffer* buffer) {
   }
 
   // Give a little extra just in case, to avoid unnecessary resizes
-  buffer->Reserve(static_cast<size_t>(1.1 * static_cast<double>(initial_capacity))); 
+  buffer->Reserve(static_cast<size_t>(1.1 * static_cast<double>(initial_capacity)));
 
   // Write token that marks the data as binary reference, and the version
   buffer->AlignedWrite(binary_serialized_token, size_of_token);

@@ -30,8 +30,7 @@ TEST(ByteBuffer, JustWorks) {
   EXPECT_EQ(cumulativeSize, buffer->GetSize());
   int16_t serializedInt16 = 0;
   char* int16Ptr = reinterpret_cast<char*>(&serializedInt16);
-  for (int i = 0; i < sizeof(int16_t); i++)
-  {
+  for (int i = 0; i < sizeof(int16_t); i++) {
     int16Ptr[i] = buffer->GetAt(cumulativeSize - (sizeof(int16_t) - i));
   }
   EXPECT_EQ(int16Val, serializedInt16);
@@ -42,8 +41,7 @@ TEST(ByteBuffer, JustWorks) {
   EXPECT_EQ(cumulativeSize, buffer->GetSize());
   int64_t serializedInt64 = 0;
   char* int64Ptr = reinterpret_cast<char*>(&serializedInt64);
-  for (int i = 0; i < sizeof(int64_t); i++)
-  {
+  for (int i = 0; i < sizeof(int64_t); i++) {
     int64Ptr[i] = buffer->GetAt(cumulativeSize - (sizeof(int64_t) - i));
   }
   EXPECT_EQ(int64Val, serializedInt64);
@@ -54,8 +52,7 @@ TEST(ByteBuffer, JustWorks) {
   EXPECT_EQ(cumulativeSize, buffer->GetSize());
   double serializedDouble = 0;
   char* doublePtr = reinterpret_cast<char*>(&serializedDouble);
-  for (int i = 0; i < sizeof(double); i++)
-  {
+  for (int i = 0; i < sizeof(double); i++) {
     doublePtr[i] = buffer->GetAt(cumulativeSize - (sizeof(double) - i));
   }
   EXPECT_EQ(doubleVal, serializedDouble);
@@ -65,8 +62,7 @@ TEST(ByteBuffer, JustWorks) {
   cumulativeSize += charSize;
   buffer->Write(charArrayVal, charSize);
   EXPECT_EQ(cumulativeSize, buffer->GetSize());
-  for (int i = 0; i < charSize; i++)
-  {
+  for (int i = 0; i < charSize; i++) {
     EXPECT_EQ(charArrayVal[i], buffer->GetAt(cumulativeSize - (charSize - i)));
   }
 

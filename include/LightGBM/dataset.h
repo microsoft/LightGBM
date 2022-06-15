@@ -164,8 +164,7 @@ class Metadata {
   inline void SetInitScoreAt(data_size_t idx, const double* values) {
     const auto nclasses = num_classes();
     const double* val_ptr = values;
-    for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr)
-    {
+    for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr) {
       init_score_[i] = *val_ptr;
     }
   }
@@ -910,10 +909,10 @@ class Dataset {
   #endif  // USE_CUDA_EXP
 
  private:
-   void SerializeHeader(BinaryWriter* serializer);
-   size_t GetSerializedHeaderSize();
-   void AppendOneDataset(const Dataset* dataset, data_size_t start_index);
-   void CreateCUDAColumnData();
+  void SerializeHeader(BinaryWriter* serializer);
+  size_t GetSerializedHeaderSize();
+  void AppendOneDataset(const Dataset* dataset, data_size_t start_index);
+  void CreateCUDAColumnData();
 
   std::string data_filename_;
   /*! \brief Store used features */

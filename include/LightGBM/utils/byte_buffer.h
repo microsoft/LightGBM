@@ -5,6 +5,9 @@
 #ifndef LIGHTGBM_UTILS_BYTE_BUFFER_H_
 #define LIGHTGBM_UTILS_BYTE_BUFFER_H_
 
+#include <LightGBM/export.h>
+#include <LightGBM/utils/serialize.h>
+
 #include <string>
 #include <cstdio>
 #include <cstdlib>
@@ -12,9 +15,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-
-#include <LightGBM/export.h>
-#include <LightGBM/utils/serialize.h>
 
 namespace LightGBM {
 
@@ -24,14 +24,13 @@ namespace LightGBM {
 struct ByteBuffer : public BinaryWriter {
   ByteBuffer() {}
 
-  ByteBuffer(size_t initial_size) {
+  explicit ByteBuffer(size_t initial_size) {
     buffer_.reserve(initial_size);
   }
 
   size_t Write(const void* data, size_t bytes) {
     const char* mem_ptr = static_cast<const char*>(data);
-    for (size_t i = 0; i < bytes; ++i)
-    {
+    for (size_t i = 0; i < bytes; ++i) {
       buffer_.push_back(mem_ptr[i]);
     }
 
@@ -54,7 +53,7 @@ struct ByteBuffer : public BinaryWriter {
     return buffer_.data();
   }
 
-  private:
+ private:
     std::vector<char> buffer_;
 };
 

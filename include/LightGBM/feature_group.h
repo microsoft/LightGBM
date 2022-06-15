@@ -261,8 +261,7 @@ class FeatureGroup {
       for (int i = 0; i < num_feature_; ++i) {
         multi_bin_data_[i]->InsertFrom(source->multi_bin_data_[i].get(), start_index, count);
       }
-    }
-    else {
+    } else {
       bin_data_->InsertFrom(source->bin_data_.get(), start_index, count);
     }
   }
@@ -466,8 +465,7 @@ class FeatureGroup {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }
 
-    if (include_data)
-    {
+    if (include_data) {
       if (is_multi_val_) {
         for (int i = 0; i < num_feature_; ++i) {
           multi_bin_data_[i]->SaveBinaryToFile(writer);
@@ -490,8 +488,7 @@ class FeatureGroup {
       ret += bin_mappers_[i]->SizesInByte();
     }
 
-    if (include_data)
-    {
+    if (include_data) {
       if (!is_multi_val_) {
         ret += bin_data_->SizesInByte();
       } else {

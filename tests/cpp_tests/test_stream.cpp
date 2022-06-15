@@ -16,7 +16,6 @@ using LightGBM::ByteBuffer;
 using LightGBM::Dataset;
 using LightGBM::Log;
 using LightGBM::TestUtils;
-using namespace std;
 
 void test_stream_dense(DatasetHandle ref_datset_handle,
                        int32_t nrows,
@@ -50,7 +49,7 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
 
     dataset->FinishLoad();
 
-    // TODO we should assert actual feature data, but we would need to calculate bin values
+    // TODO(svotaw) we should assert actual feature data, but we would need to calculate bin values
 
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,
@@ -99,14 +98,13 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
 
     dataset->FinishLoad();
 
-    // TODO we should assert actual feature data
+    // TODO(svotaw) we should assert actual feature data
 
     TestUtils::AssertMetadata(&dataset->metadata(),
       labels,
       weights,
       init_scores,
       groups);
-
   } catch (...) {
     if (dataset_handle) {
       int result = LGBM_DatasetFree(dataset_handle);
@@ -129,7 +127,7 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   Log::Info("Feature group count: %d", noriginalrows);
 
   // Add some fake initial_scores and groups so we can test streaming them
-  int nclasses = 2; // choose > 1 just to test multi-class handling
+  int nclasses = 2;  // choose > 1 just to test multi-class handling
   std::vector<double> unused_init_scores;
   unused_init_scores.resize(noriginalrows * nclasses);
   std::vector<int32_t> unused_groups;

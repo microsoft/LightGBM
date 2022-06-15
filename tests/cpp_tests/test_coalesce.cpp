@@ -20,7 +20,6 @@ using LightGBM::Dataset;
 using LightGBM::Log;
 using LightGBM::Metadata;
 using LightGBM::TestUtils;
-using namespace std;
 
 void test_dense_insertion(int num_bin, const std::vector<uint8_t>* dataset1, const std::vector<uint8_t>* dataset2) {
   std::unique_ptr<Bin> denseBin1;
@@ -61,8 +60,7 @@ void test_dense_insertion(int num_bin, const std::vector<uint8_t>* dataset1, con
   coalesced_data.reserve(nDataset1 + nDataset2);
   coalesced_data.insert(coalesced_data.end(), dataset1->begin(), dataset1->end());
   coalesced_data.insert(coalesced_data.end(), dataset2->begin(), dataset2->end());
-  for (auto i = 0; i < nTotal; i++)
-  {
+  for (auto i = 0; i < nTotal; i++) {
     EXPECT_EQ(coalesced_data[i], iterator->Get(i)) << "Coalesced data: " << coalesced_data[i];
     Log::Info("Row value: %d", iterator->Get(i));
   }
@@ -112,14 +110,12 @@ void test_sparse_insertion(int32_t count1,
   coalesced_data_val.insert(coalesced_data_val.end(), dataset1_val->begin(), dataset1_val->end());
   coalesced_data_val.insert(coalesced_data_val.end(), dataset2_val->begin(), dataset2_val->end());
   coalesced_data_ind.insert(coalesced_data_ind.end(), dataset1_ind->begin(), dataset1_ind->end());
-  for (auto i = 0; i < nDataset2; i++)
-  {
+  for (auto i = 0; i < nDataset2; i++) {
     coalesced_data_ind.push_back(dataset2_ind->at(i) + count1);
   }
   std::unique_ptr<BinIterator> iterator;
   iterator.reset(sparseBin_coalesced->GetIterator(1, 16, 0));
-  for (auto i = 0; i < nDataset1 + nDataset2; i++)
-  {
+  for (auto i = 0; i < nDataset1 + nDataset2; i++) {
     auto val = iterator->Get(coalesced_data_ind.at(i));
     EXPECT_EQ(coalesced_data_val[i], val) << "Coalesced data: " << coalesced_data_val[i];
     Log::Info("  Row value: %d", val);
@@ -316,10 +312,10 @@ void validate_coalesced_metadata(Dataset* coalesced_dataset,
 }
 
 TEST(Coalesce, DenseBinInsertion) {
-  const std::vector<uint8_t> dataset1_even = { 1,3,5,7 };
-  const std::vector<uint8_t> dataset2_even = { 9,11,13,15 };
-  const std::vector<uint8_t> dataset1_odd = { 1,3,5 };
-  const std::vector<uint8_t> dataset2_odd = { 7,9,11 };
+  const std::vector<uint8_t> dataset1_even = { 1, 3, 5, 7 };
+  const std::vector<uint8_t> dataset2_even = { 9, 11, 13, 15 };
+  const std::vector<uint8_t> dataset1_odd = { 1, 3, 5 };
+  const std::vector<uint8_t> dataset2_odd = { 7, 9, 11 };
 
   Log::Info("Testing even + even");
   test_dense_insertion(256, &dataset1_even, &dataset2_even);
@@ -464,7 +460,7 @@ TEST(Coalesce, EndToEndDense) {
     TestUtils::StreamDenseDataset(source_dataset1_handle, nDataset1, ncols, nclasses, batch_count, &features1, &labels1, &weights1, &init_scores1, &groups1);
 
     // Source Dataset 2
-    int32_t nDataset2 = 30; // TODO test partial loading?
+    int32_t nDataset2 = 30;  // TODO(svotaw) test partial loading?
     result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset2, &source_dataset2_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
@@ -578,7 +574,7 @@ TEST(Coalesce, EndToEndSparse) {
     TestUtils::StreamSparseDataset(source_dataset1_handle, nDataset1, nclasses, batch_count, &indptr1, &indices1, &vals1, &labels1, &weights1, &init_scores1, &groups1);
 
     // Source Dataset 2
-    int32_t nDataset2 = 30; // TODO test partial loading?
+    int32_t nDataset2 = 30;  // TODO(svotaw) test partial loading?
     result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset2, &source_dataset2_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 

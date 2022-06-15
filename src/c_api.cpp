@@ -1083,8 +1083,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                      const float* labels,
                                      const float* weights,
                                      const double* init_scores,
-                                     const int32_t* queries)
-{
+                                     const int32_t* queries) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);

@@ -3,12 +3,12 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#include <string>
-#include <gtest/gtest.h>
-
 #include <testutils.h>
 #include <LightGBM/c_api.h>
 #include <LightGBM/utils/random.h>
+
+#include <string>
+#include <gtest/gtest.h>
 
 using LightGBM::Log;
 using LightGBM::Random;
@@ -21,20 +21,11 @@ namespace LightGBM {
 int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle *out) {
   std::string fullPath("..\\examples\\");
   fullPath += filename;
-  // TODO check file exists
   return LGBM_DatasetCreateFromFile(
     fullPath.c_str(),
     config,
     nullptr,
     out);
-
-    /*print(LIB.LGBM_GetLastError())
-    num_data = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumData(handle, ctypes.byref(num_data))
-    num_feature = ctypes.c_int(0)
-    LIB.LGBM_DatasetGetNumFeature(handle, ctypes.byref(num_feature))
-    print(f'#data: {num_data.value} #feature: {num_feature.value}')
-    return handle*/
 }
 
 /*!
@@ -51,10 +42,8 @@ void TestUtils::CreateRandomDenseData(int32_t nrows,
   Random rand(42);
   features->reserve(nrows * ncols);
 
-  for (int32_t row = 0; row < nrows; row++)
-  {
-    for (int32_t col = 0; col < ncols; col++)
-    {
+  for (int32_t row = 0; row < nrows; row++) {
+    for (int32_t col = 0; col < ncols; col++) {
       features->push_back(rand.NextFloat());
     }
   }
@@ -83,13 +72,10 @@ void TestUtils::CreateRandomSparseData(int32_t nrows,
   values->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
 
   indptr->push_back(0);
-  for (int32_t row = 0; row < nrows; row++)
-  {
-    for (int32_t col = 0; col < ncols; col++)
-    {
+  for (int32_t row = 0; row < nrows; row++) {
+    for (int32_t col = 0; col < ncols; col++) {
       float rnd = rand.NextFloat();
-      if (rnd < sparse_percent)
-      {
+      if (rnd < sparse_percent) {
         indices->push_back(col);
         values->push_back(rand.NextFloat());
       }
@@ -123,15 +109,13 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
 
   int32_t group = 0;
 
-  for (int32_t row = 0; row < nrows; row++)
-  {
+  for (int32_t row = 0; row < nrows; row++) {
     labels->push_back(rand.NextFloat());
     if (weights) {
       weights->push_back(rand.NextFloat());
     }
     if (init_scores) {
-      for (int32_t i = 0; i < nclasses; i++)
-      {
+      for (int32_t i = 0; i < nclasses; i++) {
         init_scores->push_back(rand.NextFloat());
       }
     }
@@ -154,7 +138,6 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                    const std::vector<float> *weights,
                                    const std::vector<double> *init_scores,
                                    const std::vector<int32_t> *groups) {
-
   int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
   EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
 
@@ -184,8 +167,7 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
 
   auto start_time = std::chrono::steady_clock::now();
 
-  for (int32_t i = 0; i < nrows; i += batch_count)
-  {
+  for (int32_t i = 0; i < nrows; i += batch_count) {
     if (init_scores) {
       init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
     }
@@ -259,8 +241,7 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
 
   auto start_time = std::chrono::steady_clock::now();
 
-  for (int32_t i = 0; i < nrows; i += batch_count)
-  {
+  for (int32_t i = 0; i < nrows; i += batch_count) {
     if (init_scores) {
       init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
     }
@@ -302,22 +283,18 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
                                const std::vector<float>* ref_weights,
                                const std::vector<double>* ref_init_scores,
                                const std::vector<int32_t>* ref_groups) {
-
   const float* labels = metadata->label();
   auto nTotal = static_cast<int32_t>(ref_labels->size());
-  for (auto i = 0; i < nTotal; i++)
-  {
+  for (auto i = 0; i < nTotal; i++) {
     EXPECT_EQ(ref_labels->at(i), labels[i]) << "Coalesced data: " << ref_labels->at(i);
   }
 
   const float* weights = metadata->weights();
-  if (weights)
-  {
+  if (weights) {
     if (!ref_weights) {
       FAIL() << "Expected null weights";
     }
-    for (auto i = 0; i < nTotal; i++)
-    {
+    for (auto i = 0; i < nTotal; i++) {
       EXPECT_EQ(ref_weights->at(i), weights[i]) << "Coalesced data: " << ref_weights->at(i);
     }
   } else if (ref_weights) {
@@ -325,13 +302,11 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
   }
 
   const double* init_scores = metadata->init_score();
-  if (init_scores)
-  {
+  if (init_scores) {
     if (!ref_init_scores) {
       FAIL() << "Expected null init_scores";
     }
-    for (auto i = 0; i < ref_init_scores->size(); i++)
-    {
+    for (auto i = 0; i < ref_init_scores->size(); i++) {
       EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Coalesced data: " << ref_init_scores->at(i) << " Index: " << i;
       if (ref_init_scores->at(i) != init_scores[i]) {
         FAIL() << "Mismatched init_scores";
@@ -350,8 +325,7 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     std::vector<int32_t> ref_query_boundaries;
     ref_query_boundaries.push_back(0);
     int group_val = ref_groups->at(0);
-    for (auto i = 1; i < nTotal; i++)
-    {
+    for (auto i = 1; i < nTotal; i++) {
       if (ref_groups->at(i) != group_val) {
         ref_query_boundaries.push_back(i);
         group_val = ref_groups->at(i);
@@ -359,8 +333,7 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     }
     ref_query_boundaries.push_back(nTotal);
 
-    for (auto i = 0; i < ref_query_boundaries.size(); i++)
-    {
+    for (auto i = 0; i < ref_query_boundaries.size(); i++) {
       EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Coalesced data group: " << ref_query_boundaries[i];
     }
   } else if (ref_groups) {
@@ -376,14 +349,12 @@ const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_ba
                                               const std::vector<double>* original_init_scores) {
   // Extract a set of rows from the column-based format (still maintaining column based format)
   init_score_batch.clear();
-  for (int32_t c = 0; c < nclasses; c++)
-  {
-    for (int32_t row = index; row < index + batch_count; row++)
-    {
+  for (int32_t c = 0; c < nclasses; c++) {
+    for (int32_t row = index; row < index + batch_count; row++) {
       init_score_batch.push_back(original_init_scores->at(row + nrows * c));
     }
   }
   return init_score_batch.data();
 }
 
-} // LightGBM
+}  // namespace LightGBM

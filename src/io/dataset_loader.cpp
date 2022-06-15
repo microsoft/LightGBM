@@ -380,7 +380,7 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   mem_ptr += sizeof(size_t);
 
   LoadHeaderFromMemory(dataset.get(), mem_ptr);
-  dataset->num_data_ = num_data; // update to the given num_data
+  dataset->num_data_ = num_data;  // update to the given num_data
   mem_ptr += size_of_header;
 
   // read feature group definitions
@@ -398,8 +398,7 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   for (int i = 0; i < dataset->num_features_; ++i) {
     if (dataset->FeatureBinMapper(i)->bin_type() == BinType::CategoricalBin) {
       dataset->numeric_feature_map_[i] = -1;
-    }
-    else {
+    } else {
       dataset->numeric_feature_map_[i] = dataset->num_numeric_features_;
       ++dataset->num_numeric_features_;
     }
@@ -837,8 +836,7 @@ void DatasetLoader::LoadHeaderFromMemory(Dataset* dataset,  const char* buffer) 
     CHECK_GT(*(std::min_element(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end())), 1);
     dataset->max_bin_by_feature_.resize(dataset->num_total_features_);
     dataset->max_bin_by_feature_.assign(config_.max_bin_by_feature.begin(), config_.max_bin_by_feature.end());
-  }
-  else {
+  } else {
     const int32_t* tmp_ptr_max_bin_by_feature = reinterpret_cast<const int32_t*>(mem_ptr);
     dataset->max_bin_by_feature_.clear();
     for (int i = 0; i < dataset->num_total_features_; ++i) {

@@ -16,7 +16,6 @@ using LightGBM::ByteBuffer;
 using LightGBM::Dataset;
 using LightGBM::Log;
 using LightGBM::TestUtils;
-using namespace std;
 
 TEST(Serialization, JustWorks) {
   // Load some test data
@@ -44,7 +43,7 @@ TEST(Serialization, JustWorks) {
       result = LGBM_DatasetCreateFromSerializedReference(buffer->Data(),
         static_cast<int32_t>(buffer->GetSize()),
         dataset->num_data(),
-        0, // num_classes
+        0,  // num_classes
         params,
         &deserialized_datset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSerializedReference result code: " << result;

@@ -11,13 +11,11 @@
 #include <vector>
 
 using LightGBM::Metadata;
-using namespace std;
 
 namespace LightGBM {
 
 class TestUtils {
-  public:
-
+ public:
     /*!
     * Creates a Dataset from the internal repository examples.
     */
@@ -106,6 +104,6 @@ class TestUtils {
                                                 int32_t batch_count,
                                                 const std::vector<double>* original_init_scores);
 };
-}
+}  // namespace LightGBM
 #endif  // LIGHTGBM_TESTS_UTILS_H_
 

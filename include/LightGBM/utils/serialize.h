@@ -5,12 +5,6 @@
 #ifndef LIGHTGBM_UTILS_SERIALIZE_H_
 #define LIGHTGBM_UTILS_SERIALIZE_H_
 
-#include <string>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>  // TODO check these includes
-#include <memory>
 #include <vector>
 
 namespace LightGBM {
@@ -33,8 +27,7 @@ struct BinaryWriter {
   static size_t AlignedSize(size_t bytes, size_t alignment = 8) {
     if (bytes % alignment == 0) {
       return bytes;
-    }
-    else {
+    } else {
       return bytes / alignment * alignment + alignment;
     }
   }
