@@ -263,7 +263,6 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nindptr Number of rows in the matrix + 1
  * \param nelem Number of nonzero elements in the matrix
- * \param num_col Number of columns
  * \param start_row Row start index
  * \param label Pointer to array with nindptr-1 labels
  * \param weight Optional pointer to array with nindptr-1 weights
