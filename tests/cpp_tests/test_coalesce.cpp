@@ -337,15 +337,15 @@ TEST(Coalesce, DenseBinInsertion) {
 }
 
 TEST(Coalesce, SparseBinInsertion) {
-  const std::vector<int32_t> dataset1_ind = { 100,200,300,400,500,600 };  // less sparse
-  const std::vector<int32_t> dataset2_ind = { 100,900 };                  // more sparse (> 255 gap)
-  const std::vector<int32_t> dataset3_ind = { 0,500,999 };                // 0 and N-1
-  const std::vector<int32_t> dataset4_ind = { 100,101,102,103,104 };      // sequential
+  const std::vector<int32_t> dataset1_ind = { 100, 200, 300, 400, 500, 600 };  // less sparse
+  const std::vector<int32_t> dataset2_ind = { 100, 900 };                  // more sparse (> 255 gap)
+  const std::vector<int32_t> dataset3_ind = { 0, 500, 999 };                // 0 and N-1
+  const std::vector<int32_t> dataset4_ind = { 100, 101, 102, 103, 104 };      // sequential
   const std::vector<int32_t> dataset5_ind = { };                          // empty
-  const std::vector<uint8_t> dataset1_val = { 1,3,5,7,9,11 };
-  const std::vector<uint8_t> dataset2_val = { 13,15 };
-  const std::vector<uint8_t> dataset3_val = { 2,2,2 };
-  const std::vector<uint8_t> dataset4_val = { 1,2,1,2,1 };
+  const std::vector<uint8_t> dataset1_val = { 1, 3, 5, 7, 9, 11 };
+  const std::vector<uint8_t> dataset2_val = { 13, 15 };
+  const std::vector<uint8_t> dataset3_val = { 2, 2, 2 };
+  const std::vector<uint8_t> dataset4_val = { 1, 2, 1, 2, 1 };
   const std::vector<uint8_t> dataset5_val = { };
 
   Log::Info("Testing 1 & 2");
@@ -361,14 +361,14 @@ TEST(Coalesce, SparseBinInsertion) {
 }
 
 TEST(Coalesce, MetadataInsertion) {
-  const std::vector<float> dataset1_label = { 1.0,3.0,5.0 };
-  const std::vector<float> dataset1_weight = { 1.5,3.5,5.5 };
-  const std::vector<double> dataset1_init_score = { 1.0,1.5,2.0 };
+  const std::vector<float> dataset1_label = { 1.0, 3.0, 5.0 };
+  const std::vector<float> dataset1_weight = { 1.5, 3.5, 5.5 };
+  const std::vector<double> dataset1_init_score = { 1.0, 1.5, 2.0 };
   const std::vector<int32_t> dataset1_group = { 1, 1, 1 };
 
-  const std::vector<float> dataset2_label = { 2.0,4.0,6.0,8.0 };
-  const std::vector<float> dataset2_weight = { 2.5,4.5,6.5,8.5 };
-  const std::vector<double> dataset2_init_score = { 1.5,2.5,3.5,4.5 };
+  const std::vector<float> dataset2_label = { 2.0, 4.0, 6.0, 8.0 };
+  const std::vector<float> dataset2_weight = { 2.5, 4.5, 6.5, 8.5 };
+  const std::vector<double> dataset2_init_score = { 1.5, 2.5, 3.5, 4.5 };
   const std::vector<int32_t> dataset2_group = { 2, 3, 3, 3 };
 
   // Test all coalesced properties, plus the null version of optional ones
