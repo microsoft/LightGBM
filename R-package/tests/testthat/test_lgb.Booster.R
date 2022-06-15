@@ -749,7 +749,11 @@ test_that("Saving a model with unknown importance type fails", {
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
-        model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
+        capture.output({
+          model_string <- bst$save_model_to_string(
+            feature_importance_type = UNSUPPORTED_IMPORTANCE
+          )
+        }, type = "message")
     }, "Unknown importance type")
 })
 
@@ -964,10 +968,12 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
 
   # unrecognized objective
   expect_error({
-    Booster$new(
-      params = list(objective = "not_a_real_objective")
-      , train_set = dtrain
-    )
+    capture.output({
+      Booster$new(
+        params = list(objective = "not_a_real_objective")
+        , train_set = dtrain
+      )
+    }, type = "message")
   }, regexp = "Unknown objective type name: not_a_real_objective")
 
   # train_set is not a Dataset
@@ -986,10 +992,12 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
 
   # model file doesn't exist
   expect_error({
-    Booster$new(
-      params = list()
-      , modelfile = "file-that-does-not-exist.model"
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , modelfile = "file-that-does-not-exist.model"
+      )
+    }, type = "message")
   }, regexp = "Could not open file-that-does-not-exist.model")
 
   # model file doesn't contain a valid LightGBM model
@@ -999,18 +1007,22 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
     , con = model_file
   )
   expect_error({
-    Booster$new(
-      params = list()
-      , modelfile = model_file
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , modelfile = model_file
+      )
+    }, type = "message")
   }, regexp = "Unknown model format or submodel type in model file")
 
   # malformed model string
   expect_error({
-    Booster$new(
-      params = list()
-      , model_str = "a\nb\n"
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , model_str = "a\nb\n"
+      )
+    }, type = "message")
   }, regexp = "Model file doesn't specify the number of classes")
 
   # model string isn't character or raw

@@ -107,7 +107,9 @@ original datasets}
 a trained booster model \code{lgb.Booster}.
 }
 \description{
-Logic to train with LightGBM
+Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+             this function is focused on performance (e.g. speed, memory efficiency). It is also
+             less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 }
 \section{Early Stopping}{
 

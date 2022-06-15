@@ -48,7 +48,7 @@ class UnpicklableCallback:
         raise Exception("This class in not picklable")
 
     def __call__(self, env):
-        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+        env.model.attr_set_inside_callback = env.iteration * 10
 
 
 def custom_asymmetric_obj(y_true, y_pred):
@@ -499,7 +499,7 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
-    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
+    assert gbm.booster_.attr_set_inside_callback == 40
 
 
 def test_random_state_object():

@@ -537,7 +537,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str)
+            data = data.rename(columns=str, copy=False)
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -2584,7 +2584,6 @@ class Booster:
         self.network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
-        self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
@@ -3670,7 +3669,6 @@ class Booster:
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
         new_booster.network = self.network
-        new_booster.__attr = self.__attr.copy()
         return new_booster
 
     def get_leaf_output(self, tree_id, leaf_id):
@@ -3702,7 +3700,7 @@ class Booster:
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
-    def num_feature(self):
+    def num_feature(self) -> int:
         """Get number of features.
 
         Returns
@@ -3716,7 +3714,7 @@ class Booster:
             ctypes.byref(out_num_feature)))
         return out_num_feature.value
 
-    def feature_name(self):
+    def feature_name(self) -> List[str]:
         """Get names of features.
 
         Returns
@@ -3754,7 +3752,11 @@ class Booster:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def feature_importance(self, importance_type='split', iteration=None):
+    def feature_importance(
+        self,
+        importance_type: str = 'split',
+        iteration: Optional[int] = None
+    ) -> np.ndarray:
         """Get feature importances.
 
         Parameters
@@ -3894,7 +3896,7 @@ class Booster:
                     ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
-    def __inner_predict(self, data_idx):
+    def __inner_predict(self, data_idx: int):
         """Predict for training and validation dataset."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -3922,7 +3924,7 @@ class Booster:
             result = result.reshape(num_data, self.__num_class, order='F')
         return result
 
-    def __get_eval_info(self):
+    def __get_eval_info(self) -> None:
         """Get inner evaluation count and names."""
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
@@ -3970,42 +3972,3 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
-
-    def attr(self, key):
-        """Get attribute string from the Booster.
-
-        Parameters
-        ----------
-        key : str
-            The name of the attribute.
-
-        Returns
-        -------
-        value : str or None
-            The attribute value.
-            Returns None if attribute does not exist.
-        """
-        return self.__attr.get(key, None)
-
-    def set_attr(self, **kwargs):
-        """Set attributes to the Booster.
-
-        Parameters
-        ----------
-        **kwargs
-            The attributes to set.
-            Setting a value to None deletes an attribute.
-
-        Returns
-        -------
-        self : Booster
-            Booster with set attributes.
-        """
-        for key, value in kwargs.items():
-            if value is not None:
-                if not isinstance(value, str):
-                    raise ValueError("Only string values are accepted")
-                self.__attr[key] = value
-            else:
-                self.__attr.pop(key, None)
-        return self
