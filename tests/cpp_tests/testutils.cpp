@@ -12,6 +12,7 @@
 
 using LightGBM::Log;
 using LightGBM::Random;
+using ::testing::UnitTest;
 
 namespace LightGBM {
 
@@ -19,8 +20,12 @@ namespace LightGBM {
 * Creates a Dataset from the internal repository examples.
 */
 int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle *out) {
-  std::string fullPath("..\\examples\\");
+  static UnitTest* unitTestInstance = UnitTest::GetInstance();
+  const char* path = unitTestInstance->original_working_dir();
+  std::string fullPath(path);
+  fullPath += "\\..\\examples\\";
   fullPath += filename;
+  Log::Info("Debug Path: %s", fullPath.c_str());
   return LGBM_DatasetCreateFromFile(
     fullPath.c_str(),
     config,
@@ -248,7 +253,6 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
 
     int32_t nelem = indptr->at(i + batch_count - 1) - indptr->at(i);
 
-    Log::Info("       Streaming %d batch_count with first value of %d", batch_count, indptr_ptr[0]);
     result = LGBM_DatasetPushRowsByCSRWithMetadata(dataset_handle,
                                                        indptr_ptr,
                                                        2,
