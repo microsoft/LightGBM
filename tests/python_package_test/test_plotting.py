@@ -1,4 +1,5 @@
 # coding: utf-8
+from matplotlib import use
 import numpy as np
 import pytest
 from sklearn.model_selection import train_test_split
@@ -190,6 +191,48 @@ def test_create_tree_digraph(breast_cancer_split):
     assert 'count' not in graph_body
 
 
+@pytest.mark.parametrize('use_missing', [True, False])
+@pytest.mark.parametrize('zero_as_missing', [True, False])
+def test_numeric_split_direction(use_missing, zero_as_missing):
+    if use_missing and zero_as_missing:
+        pytest.skip('use_missing and zero_as_missing both set to True')
+    X, y = make_synthetic_regression()
+    rng = np.random.RandomState(0)
+    zero_mask = rng.rand(X.shape[0]) < 0.05
+    X[zero_mask, :] = 0
+    if use_missing:
+        nan_mask = ~zero_mask & (rng.rand(X.shape[0]) < 0.1)
+        X[nan_mask, :] = np.nan
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 31,
+        'use_missing': use_missing,
+        'zero_as_missing': zero_as_missing,
+    }
+    bst = lgb.train(params, ds, num_boost_round=1)
+
+    case_with_zero = X[zero_mask][[0]]
+    expected_leaf_zero = bst.predict(case_with_zero, pred_leaf=True)[0]
+    node = bst.dump_model()['tree_info'][0]['tree_structure']
+    while 'decision_type' in node:
+        direction = lgb.plotting._determine_direction_for_numeric_split(
+            case_with_zero[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left']
+        )
+        node = node['left_child'] if direction == 'left' else node['right_child']
+    assert node['leaf_index'] == expected_leaf_zero
+
+    if use_missing:
+        case_with_nan = X[nan_mask][[0]]
+        expected_leaf_nan = bst.predict(case_with_nan, pred_leaf=True)[0]
+        node = bst.dump_model()['tree_info'][0]['tree_structure']
+        while 'decision_type' in node:
+            direction = lgb.plotting._determine_direction_for_numeric_split(
+                case_with_nan[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left']
+            )
+            node = node['left_child'] if direction == 'left' else node['right_child']
+        assert node['leaf_index'] == expected_leaf_nan
+
+
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
 def test_example_case_in_tree_digraph():
     X, y = make_synthetic_regression()
@@ -219,10 +262,9 @@ def test_example_case_in_tree_digraph():
 
             edge_to_node = [e for e in gbody if f'-> split{split_index}' in e]
             if node['decision_type'] == '<=':
-                if example_case[0][node['split_feature']] <= node['threshold']:
-                    node = node['left_child']
-                else:
-                    node = node['right_child']
+                direction = lgb.plotting._determine_direction_for_numeric_split(
+                    example_case[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left'])
+                node = node['left_child'] if direction == 'left' else node['right_child']
             else:
                 makes_categorical_splits = True
                 if example_case[0][node['split_feature']] in {int(t) for t in node['threshold'].split('||')}:

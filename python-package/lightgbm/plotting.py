@@ -1,12 +1,13 @@
 # coding: utf-8
 """Plotting library."""
+import math
 from copy import deepcopy
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Booster, _data_from_pandas, _log_warning
+from .basic import Booster, ZERO_THRESHOLD, _data_from_pandas, _is_zero, _log_warning
 from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
@@ -414,6 +415,23 @@ def plot_metric(
     return ax
 
 
+def _determine_direction_for_numeric_split(fval: float, threshold: float, missing_type: str, default_left: bool) -> Literal['left', 'right']:
+    le_threshold = fval <= threshold
+    if missing_type == 'None' or (missing_type == 'Zero' and default_left and ZERO_THRESHOLD < threshold):
+        direction = 'left' if le_threshold else 'right'
+    elif missing_type == 'Zero':
+        if default_left:
+            direction = 'left' if le_threshold or _is_zero(fval) or math.isnan(fval) else 'right'
+        else:
+            direction = 'left' if le_threshold and not _is_zero(fval) and not math.isnan(fval) else 'right'
+    else:
+        if default_left:
+            direction = 'left' if le_threshold or math.isnan(fval) else 'right'
+        else:
+            direction = 'left' if le_threshold and not math.isnan(fval) else 'right'
+    return direction
+
+
 def _to_graphviz(
     tree_info: Dict[str, Any],
     show_info: List[str],
@@ -469,7 +487,9 @@ def _to_graphviz(
                     else:
                         direction = 'right'
                 else:
-                    direction = 'left' if example_case[split_feature] <= root['threshold'] else 'right'
+                    direction = _determine_direction_for_numeric_split(
+                        example_case[split_feature], root['threshold'], root['missing_type'], root['default_left']
+                    )
             label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:

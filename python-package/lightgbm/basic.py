@@ -23,6 +23,10 @@ from .libpath import find_lib_path
 ZERO_THRESHOLD = 1e-35
 
 
+def _is_zero(x: float) -> bool:
+    return (x >= -ZERO_THRESHOLD) and (x <= ZERO_THRESHOLD)
+
+
 def _get_sample_count(total_nrow: int, params: str):
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
