@@ -169,19 +169,19 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
 
   for (int32_t i = 0; i < nrows; i += batch_count) {
     if (init_scores) {
-      init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
+      init_scores_ptr = CreateInitScoreBatch(&init_score_batch, i, nrows, nclasses, batch_count, init_scores);
     }
 
     result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
-                                                  features_ptr,
-                                                  1,
-                                                  batch_count,
-                                                  ncols,
-                                                  i,
-                                                  labels_ptr,
-                                                  weights_ptr,
-                                                  init_scores_ptr,
-                                                  groups_ptr);
+                                              features_ptr,
+                                              1,
+                                              batch_count,
+                                              ncols,
+                                              i,
+                                              labels_ptr,
+                                              weights_ptr,
+                                              init_scores_ptr,
+                                              groups_ptr);
     EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
 
     features_ptr += batch_count * ncols;
@@ -243,7 +243,7 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
 
   for (int32_t i = 0; i < nrows; i += batch_count) {
     if (init_scores) {
-      init_scores_ptr = CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, batch_count, init_scores);
+      init_scores_ptr = CreateInitScoreBatch(&init_score_batch, i, nrows, nclasses, batch_count, init_scores);
     }
 
     int32_t nelem = indptr->at(i + batch_count - 1) - indptr->at(i);
@@ -341,20 +341,20 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
   }
 }
 
-const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_batch,
+const double* TestUtils::CreateInitScoreBatch(std::vector<double>* init_score_batch,
                                               int32_t index,
                                               int32_t nrows,
                                               int32_t nclasses,
                                               int32_t batch_count,
                                               const std::vector<double>* original_init_scores) {
   // Extract a set of rows from the column-based format (still maintaining column based format)
-  init_score_batch.clear();
+  init_score_batch->clear();
   for (int32_t c = 0; c < nclasses; c++) {
     for (int32_t row = index; row < index + batch_count; row++) {
-      init_score_batch.push_back(original_init_scores->at(row + nrows * c));
+      init_score_batch->push_back(original_init_scores->at(row + nrows * c));
     }
   }
-  return init_score_batch.data();
+  return init_score_batch->data();
 }
 
 }  // namespace LightGBM

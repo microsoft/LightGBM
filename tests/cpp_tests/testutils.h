@@ -97,12 +97,12 @@ class TestUtils {
                                const std::vector<double>* init_scores,
                                const std::vector<int32_t>* groups);
 
-    static const double* CreateInitScoreBatch(std::vector<double>& init_score_batch,
-                                                int32_t index,
-                                                int32_t nrows,
-                                                int32_t nclasses,
-                                                int32_t batch_count,
-                                                const std::vector<double>* original_init_scores);
+    static const double* CreateInitScoreBatch(std::vector<double>* init_score_batch,
+                                              int32_t index,
+                                              int32_t nrows,
+                                              int32_t nclasses,
+                                              int32_t batch_count,
+                                              const std::vector<double>* original_init_scores);
 };
 }  // namespace LightGBM
 #endif  // LIGHTGBM_TESTS_UTILS_H_

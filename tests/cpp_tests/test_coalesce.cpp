@@ -162,7 +162,7 @@ void load_metadata(Metadata* metadata,
     auto nclasses = metadata->num_classes();
     Log::Info("    Loading init_score...");
     for (int i = 0; i < nrows; ++i) {
-      init_scores_ptr = TestUtils::CreateInitScoreBatch(init_score_batch, i, nrows, nclasses, 1, dataset_init_score);
+      init_scores_ptr = TestUtils::CreateInitScoreBatch(&init_score_batch, i, nrows, nclasses, 1, dataset_init_score);
       Log::Info("      init_score at %d is %f", i, *init_scores_ptr);
       metadata->SetInitScoreAt(i, init_scores_ptr);
     }
