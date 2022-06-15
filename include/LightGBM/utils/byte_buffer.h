@@ -21,7 +21,7 @@ namespace LightGBM {
 /*!
  * \brief An implementation for serializing binary data to an auto-expanding memory buffer
  */
-struct ByteBuffer : public BinaryWriter {
+struct ByteBuffer final : public BinaryWriter {
   ByteBuffer() {}
 
   explicit ByteBuffer(size_t initial_size) {

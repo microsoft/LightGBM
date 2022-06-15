@@ -206,7 +206,7 @@ class FeatureGroup {
    * \brief Allocate the bins
    * \param num_all_data Number of global data
    */
-  const void AllocateBins(data_size_t num_data) {
+  inline void AllocateBins(data_size_t num_data) {
     if (is_multi_val_) {
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;

@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_UTILS_SERIALIZE_H_
 #define LIGHTGBM_UTILS_SERIALIZE_H_
 
+#include <cstdlib>
 #include <vector>
 
 namespace LightGBM {

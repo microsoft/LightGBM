@@ -37,7 +37,7 @@ class TestUtils {
     /*!
     * Creates a CSR sparse Dataset of random values.
     */
-    static void TestUtils::CreateRandomSparseData(int32_t nrows,
+    static void CreateRandomSparseData(int32_t nrows,
                                                   int32_t ncols,
                                                   int32_t nclasses,
                                                  float sparse_percent,
@@ -52,7 +52,7 @@ class TestUtils {
     /*!
     * Creates a CSR sparse Dataset of random values.
     */
-    static void TestUtils::CreateRandomMetadata(int32_t nrows,
+    static void CreateRandomMetadata(int32_t nrows,
                                                 int32_t nclasses,
                                                 std::vector<float>* labels,
                                                 std::vector<float>* weights,
@@ -97,7 +97,7 @@ class TestUtils {
                                const std::vector<double>* init_scores,
                                const std::vector<int32_t>* groups);
 
-    static const double* TestUtils::CreateInitScoreBatch(std::vector<double>& init_score_batch,
+    static const double* CreateInitScoreBatch(std::vector<double>& init_score_batch,
                                                 int32_t index,
                                                 int32_t nrows,
                                                 int32_t nclasses,
