@@ -7,8 +7,8 @@
 #include <LightGBM/c_api.h>
 #include <LightGBM/utils/random.h>
 
-#include <string>
 #include <gtest/gtest.h>
+#include <string>
 
 using LightGBM::Log;
 using LightGBM::Random;
