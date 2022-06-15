@@ -602,7 +602,7 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
-    example_case : numpy 2-D array or pandas DataFrame, optional (default=None)
+    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
@@ -644,7 +644,7 @@ def create_tree_digraph(
         elif isinstance(example_case, np.ndarray) and example_case.ndim == 2:
             example_case = example_case[0]
         else:
-            raise ValueError('example_case must be a numpy 2-D array or a pandas Dataframe')
+            raise ValueError('example_case must be a numpy 2-D array or a pandas DataFrame')
 
     graph = _to_graphviz(tree_info, show_info, feature_names, precision,
                          orientation, monotone_constraints, example_case=example_case, **kwargs)
@@ -709,7 +709,7 @@ def plot_tree(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
-    example_case : numpy 2-D array or pandas DataFrame, optional (default=None)
+    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
