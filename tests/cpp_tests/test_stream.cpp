@@ -185,7 +185,6 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   int32_t nclasses = 2;
   std::vector<double> unused_init_scores;
   unused_init_scores.resize(noriginalrows * nclasses);
-  unused_init_scores.assign(noriginalrows, 1.0);
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
   result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
