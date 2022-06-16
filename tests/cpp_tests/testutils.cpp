@@ -23,7 +23,11 @@ int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config,
   static UnitTest* unitTestInstance = UnitTest::GetInstance();
   const char* path = unitTestInstance->original_working_dir();
   std::string fullPath(path);
+#if defined(_WIN32)
   fullPath += "\\..\\examples\\";
+#else
+  fullPath += "/../examples/";
+#endif
   fullPath += filename;
   Log::Info("Debug Path: %s", fullPath.c_str());
   return LGBM_DatasetCreateFromFile(
