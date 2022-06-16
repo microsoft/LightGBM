@@ -1,9 +1,5 @@
 /*!
-<<<<<<< HEAD
  * Copyright (c) 2022 Microsoft Corporation. All rights reserved.
-=======
- * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
->>>>>>> 1cd64b72 (Extract streaming to own PR)
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
@@ -36,12 +32,8 @@ namespace LightGBM {
   /*!
   * Creates fake data in the passed vectors.
   */
-<<<<<<< HEAD
   void TestUtils::CreateRandomDenseData(
     int32_t nrows,
-=======
-  void TestUtils::CreateRandomDenseData(int32_t nrows,
->>>>>>> 1cd64b72 (Extract streaming to own PR)
     int32_t ncols,
     int32_t nclasses,
     std::vector<double>* features,
@@ -61,19 +53,11 @@ namespace LightGBM {
     CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
   }
 
-<<<<<<< HEAD
   /*!
   * Creates fake data in the passed vectors.
   */
   void TestUtils::CreateRandomSparseData(
     int32_t nrows,
-=======
-
-  /*!
-  * Creates fake data in the passed vectors.
-  */
-  void TestUtils::CreateRandomSparseData(int32_t nrows,
->>>>>>> 1cd64b72 (Extract streaming to own PR)
     int32_t ncols,
     int32_t nclasses,
     float sparse_percent,
@@ -157,11 +141,7 @@ namespace LightGBM {
     const std::vector<double>* init_scores,
     const std::vector<int32_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
-<<<<<<< HEAD
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
-=======
-    EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
->>>>>>> 1cd64b72 (Extract streaming to own PR)
 
     if ((nrows % batch_count) != 0) {
       Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
@@ -195,7 +175,6 @@ namespace LightGBM {
       }
 
       result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
-<<<<<<< HEAD
                                                 features_ptr,
                                                 1,
                                                 batch_count,
@@ -210,18 +189,6 @@ namespace LightGBM {
       if (result != 0) {
         FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";  // This forces an immediate failure, which EXPECT_EQ does not
       }
-=======
-        features_ptr,
-        1,
-        batch_count,
-        ncols,
-        i,
-        labels_ptr,
-        weights_ptr,
-        init_scores_ptr,
-        groups_ptr);
-      EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
->>>>>>> 1cd64b72 (Extract streaming to own PR)
 
       features_ptr += batch_count * ncols;
       labels_ptr += batch_count;
@@ -249,11 +216,7 @@ namespace LightGBM {
     const std::vector<double>* init_scores,
     const std::vector<int32_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
-<<<<<<< HEAD
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
-=======
-    EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
->>>>>>> 1cd64b72 (Extract streaming to own PR)
 
     Log::Info("     Begin StreamSparseDataset");
     if ((nrows % batch_count) != 0) {
@@ -303,12 +266,8 @@ namespace LightGBM {
         labels_ptr,
         weights_ptr,
         init_scores_ptr,
-<<<<<<< HEAD
         groups_ptr,
         0);
-=======
-        groups_ptr);
->>>>>>> 1cd64b72 (Extract streaming to own PR)
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
 
       indptr_ptr += batch_count;
@@ -333,14 +292,10 @@ namespace LightGBM {
     const float* labels = metadata->label();
     auto nTotal = static_cast<int32_t>(ref_labels->size());
     for (auto i = 0; i < nTotal; i++) {
-<<<<<<< HEAD
       EXPECT_EQ(ref_labels->at(i), labels[i]) << "Inserted data: " << ref_labels->at(i);
       if (ref_labels->at(i) != labels[i]) {
         FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";;  // This forces an immediate failure, which EXPECT_EQ does not
       }
-=======
-      EXPECT_EQ(ref_labels->at(i), labels[i]) << "Coalesced data: " << ref_labels->at(i);
->>>>>>> 1cd64b72 (Extract streaming to own PR)
     }
 
     const float* weights = metadata->weights();
@@ -349,16 +304,9 @@ namespace LightGBM {
         FAIL() << "Expected null weights";
       }
       for (auto i = 0; i < nTotal; i++) {
-<<<<<<< HEAD
         EXPECT_EQ(ref_weights->at(i), weights[i]) << "Inserted data: " << ref_weights->at(i);
       }
     } else if (ref_weights) {
-=======
-        EXPECT_EQ(ref_weights->at(i), weights[i]) << "Coalesced data: " << ref_weights->at(i);
-      }
-    }
-    else if (ref_weights) {
->>>>>>> 1cd64b72 (Extract streaming to own PR)
       FAIL() << "Expected non-null weights";
     }
 
@@ -368,22 +316,12 @@ namespace LightGBM {
         FAIL() << "Expected null init_scores";
       }
       for (auto i = 0; i < ref_init_scores->size(); i++) {
-<<<<<<< HEAD
         EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Inserted data: " << ref_init_scores->at(i) << " Index: " << i;
         if (ref_init_scores->at(i) != init_scores[i]) {
           FAIL() << "Mismatched init_scores";;  // This forces an immediate failure, which EXPECT_EQ does not
         }
       }
     } else if (ref_init_scores) {
-=======
-        EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Coalesced data: " << ref_init_scores->at(i) << " Index: " << i;
-        if (ref_init_scores->at(i) != init_scores[i]) {
-          FAIL() << "Mismatched init_scores";
-        }
-      }
-    }
-    else if (ref_init_scores) {
->>>>>>> 1cd64b72 (Extract streaming to own PR)
       FAIL() << "Expected non-null init_scores";
     }
 
@@ -407,12 +345,7 @@ namespace LightGBM {
       for (auto i = 0; i < ref_query_boundaries.size(); i++) {
         EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Coalesced data group: " << ref_query_boundaries[i];
       }
-<<<<<<< HEAD
     } else if (ref_groups) {
-=======
-    }
-    else if (ref_groups) {
->>>>>>> 1cd64b72 (Extract streaming to own PR)
       FAIL() << "Expected non-null query_boundaries";
     }
   }
