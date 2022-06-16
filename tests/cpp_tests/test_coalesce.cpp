@@ -418,7 +418,7 @@ TEST(Coalesce, EndToEndDense) {
   try {
     // Load some test data
     const char* params = "max_bin=15";
-    int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.test", params, &ref_datset_handle);
+    int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_datset_handle);
     EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
     Dataset* ref_dataset = static_cast<Dataset*>(ref_datset_handle);
@@ -529,7 +529,7 @@ TEST(Coalesce, EndToEndSparse) {
   try {
     // Load some test data
     const char* params = "max_bin=15";
-    int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.test", params, &ref_datset_handle);
+    int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_datset_handle);
     EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
     Dataset* ref_dataset = static_cast<Dataset*>(ref_datset_handle);

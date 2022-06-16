@@ -118,7 +118,7 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   DatasetHandle ref_datset_handle;
   const char* params = "max_bin=15";
   // Use the smaller ".test" data because we don't care about the actual data and it's smaller
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.test", params, &ref_datset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_datset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* ref_dataset = static_cast<Dataset*>(ref_datset_handle);
@@ -171,7 +171,7 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   DatasetHandle ref_datset_handle;
   const char* params = "max_bin=15";
   // Use the smaller ".test" data because we don't care about the actual data and it's smaller
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.test", params, &ref_datset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_datset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* ref_dataset = static_cast<Dataset*>(ref_datset_handle);

@@ -21,7 +21,7 @@ TEST(Serialization, JustWorks) {
   // Load some test data
   DatasetHandle datset_handle;
   const char* params = "max_bin=15";
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification\\binary.train", params, &datset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.train", params, &datset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* dataset;

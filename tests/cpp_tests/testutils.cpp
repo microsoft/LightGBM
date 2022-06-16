@@ -24,7 +24,7 @@ int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config,
   const char* path = unitTestInstance->original_working_dir();
   std::string fullPath(path);
 #if defined(_WIN32)
-  fullPath += "\\..\\examples\\";
+  fullPath += "/../examples/";
 #else
   fullPath += "/../examples/";
 #endif
