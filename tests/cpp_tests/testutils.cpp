@@ -296,8 +296,7 @@ namespace LightGBM {
       for (auto i = 0; i < nTotal; i++) {
         EXPECT_EQ(ref_weights->at(i), weights[i]) << "Coalesced data: " << ref_weights->at(i);
       }
-    }
-    else if (ref_weights) {
+    } else if (ref_weights) {
       FAIL() << "Expected non-null weights";
     }
 
@@ -312,8 +311,7 @@ namespace LightGBM {
           FAIL() << "Mismatched init_scores";
         }
       }
-    }
-    else if (ref_init_scores) {
+    } else if (ref_init_scores) {
       FAIL() << "Expected non-null init_scores";
     }
 
@@ -337,8 +335,7 @@ namespace LightGBM {
       for (auto i = 0; i < ref_query_boundaries.size(); i++) {
         EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Coalesced data group: " << ref_query_boundaries[i];
       }
-    }
-    else if (ref_groups) {
+    } else if (ref_groups) {
       FAIL() << "Expected non-null query_boundaries";
     }
   }

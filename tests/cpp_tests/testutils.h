@@ -14,8 +14,8 @@ using LightGBM::Metadata;
 
 namespace LightGBM {
 
-  class TestUtils {
-  public:
+class TestUtils {
+ public:
     /*!
     * Creates a Dataset from the internal repository examples.
     */
