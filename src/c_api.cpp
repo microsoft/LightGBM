@@ -1004,9 +1004,11 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   DatasetHandle* out) {
   API_BEGIN();
   std::unique_ptr<Dataset> ret;
-  ret.reset(new Dataset(static_cast<data_size_t>(num_total_row)));
-  ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
-  *out = ret.release();
+  data_size_t nrows = static_cast<data_size_t>(num_total_row);
+  ret.reset(new Dataset(nrows));
+  const Dataset* reference_dataset = reinterpret_cast<const Dataset*>(reference);
+  ret->CreateValid(reference_dataset);
+  ret->InitByReference(nrows, reference_dataset);  *out = ret.release();
   API_END();
 }
 
@@ -1032,7 +1034,43 @@ int LGBM_DatasetPushRows(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (start_row + nrow == p_dataset->num_data()) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
+int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
+  const void* data,
+  int data_type,
+  int32_t nrow,
+  int32_t ncol,
+  int32_t start_row,
+  const float* labels,
+  const float* weights,
+  const double* init_scores,
+  const int32_t* queries) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
+
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, start_row + i, one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  p_dataset->InsertMetadataAt(start_row, nrow, labels, weights, init_scores, queries);
+
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == p_dataset->num_data())) {
     p_dataset->FinishLoad();
   }
   API_END();
@@ -1065,9 +1103,62 @@ int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
-  if (start_row + nrow == static_cast<int64_t>(p_dataset->num_data())) {
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
     p_dataset->FinishLoad();
   }
+  API_END();
+}
+
+int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
+  const void* indptr,
+  int indptr_type,
+  const int32_t* indices,
+  const void* data,
+  int data_type,
+  int64_t nindptr,
+  int64_t nelem,
+  int64_t start_row,
+  const float* labels,
+  const float* weights,
+  const double* init_scores,
+  const int32_t* queries) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
+  int32_t nrow = static_cast<int32_t>(nindptr - 1);
+  if (p_dataset->has_raw()) {
+    p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
+  }
+  OMP_INIT_EX();
+#pragma omp parallel for schedule(static)
+  for (int i = 0; i < nrow; ++i) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    auto one_row = get_row_fun(i);
+    p_dataset->PushOneRow(tid, static_cast<data_size_t>(start_row + i), one_row);
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  p_dataset->InsertMetadataAt(static_cast<int32_t>(start_row), nrow, labels, weights, init_scores, queries);
+
+  if (!p_dataset->wait_for_manual_finish() && (start_row + nrow == static_cast<int64_t>(p_dataset->num_data()))) {
+    p_dataset->FinishLoad();
+  }
+  API_END();
+}
+
+int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, int wait) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  p_dataset->set_wait_for_manual_finish(wait);
+  API_END();
+}
+
+int LGBM_DatasetMarkFinished(DatasetHandle dataset) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  p_dataset->FinishLoad();
   API_END();
 }
 
