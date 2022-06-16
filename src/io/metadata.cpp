@@ -200,9 +200,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
   if (used_data_indices.empty()) {
     if (!queries_.empty()) {
       // need convert query_id to boundaries
-      if (used_data_indices.empty()) {
-        CalculateQueryBoundaries();
-      }
+      CalculateQueryBoundaries();
     }
     // check weights
     if (!weights_.empty() && num_weights_ != num_data_) {

@@ -52,7 +52,6 @@ namespace LightGBM {
     CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
   }
 
-
   /*!
   * Creates fake data in the passed vectors.
   */

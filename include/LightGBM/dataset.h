@@ -445,9 +445,9 @@ class Dataset {
   LIGHTGBM_EXPORT ~Dataset();
 
   /*!
-  * \brief Initial work, will allocate space for label, weight (if exists) and query (if exists)
+  * \brief Initialize from the given reference
   * \param num_data Number of data
-  * \param reference Reference metadata
+  * \param reference Reference dataset
   */
   LIGHTGBM_EXPORT void InitByReference(data_size_t num_data, const Dataset* reference) {
     metadata_.InitByReference(num_data, &reference->metadata());
