@@ -43,7 +43,7 @@
 #'                     These should follow the requirements from the descriptions above.
 #'                 }
 #'             }
-#' @param eval_freq evaluation output frequency, only effect when verbose > 0
+#' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
 #' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
@@ -51,7 +51,8 @@
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
+#' @param verbose verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+#'                printing of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
 #'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
@@ -88,7 +89,12 @@ NULL
 
 #' @name lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+#'              is focused on compatibility with other statistics and machine learning interfaces in R.
+#'              This focus on compatibility means that this interface may experience more frequent breaking API changes
+#'              than \code{\link{lgb.train}}.
+#'              For efficiency-sensitive applications, or for applications where breaking API changes across releases
+#'              is very expensive, use \code{\link{lgb.train}}.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
@@ -191,11 +197,6 @@ lightgbm <- function(data,
 
   if (! "valids" %in% names(train_args)) {
     train_args[["valids"]] <- list()
-  }
-
-  # Set validation as oneself
-  if (params[["verbosity"]] > 0L) {
-    train_args[["valids"]][["train"]] <- dtrain
   }
 
   # Train a model using the regular way

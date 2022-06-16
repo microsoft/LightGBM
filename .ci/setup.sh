@@ -71,14 +71,21 @@ else  # Linux
         sudo apt-get install --no-install-recommends -y \
             libboost1.74-dev \
             ocl-icd-opencl-dev
-        cd $BUILD_DIRECTORY  # to avoid permission errors
-        curl -sL -o AMD-APP-SDKInstaller.tar.bz2 https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.136-GA-linux64.tar.bz2
-        tar -xjf AMD-APP-SDKInstaller.tar.bz2
-        mkdir -p $OPENCL_VENDOR_PATH
-        mkdir -p $AMDAPPSDK_PATH
-        sh AMD-APP-SDK*.sh --tar -xf -C $AMDAPPSDK_PATH
-        mv $AMDAPPSDK_PATH/lib/x86_64/sdk/* $AMDAPPSDK_PATH/lib/x86_64/
-        echo libamdocl64.so > $OPENCL_VENDOR_PATH/amdocl64.icd
+        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                pocl-opencl-icd
+        else
+            sudo apt-get install --no-install-recommends -y \
+                libhwloc-dev \
+                libtinfo-dev \
+                ocl-icd-dev \
+                pkg-config \
+                zlib1g-dev
+            git clone --depth 1 --branch v1.8 https://github.com/pocl/pocl.git
+            cmake -B pocl/build -S pocl -DCMAKE_BUILD_TYPE=release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-stdlib=libc++ -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors -DPOCL_DEBUG_MESSAGES=OFF -DSTATIC_LLVM=ON -DINSTALL_OPENCL_HEADERS=OFF -DENABLE_SPIR=OFF -DENABLE_POCLCC=OFF -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF
+            cmake --build pocl/build -j4
+            sudo cmake --install pocl/build
+        fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections

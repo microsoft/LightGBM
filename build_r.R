@@ -24,7 +24,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
     , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("^\\-j[0-9]+", arg))) {
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
         out_list[["make_args"]] <- arg
     } else if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
