@@ -34,7 +34,8 @@ TEST(Serialization, JustWorks) {
     result = LGBM_DatasetSerializeReferenceToBinary(datset_handle, &buffer_handle, &buffer_len);
     EXPECT_EQ(0, result) << "LGBM_DatasetSerializeReferenceToBinary result code: " << result;
 
-    ByteBuffer* buffer;
+    ByteBuffer* buffer = nullptr;
+    Dataset* deserialized_dataset = nullptr;
     try {
       buffer = static_cast<ByteBuffer*>(buffer_handle);
 
@@ -49,7 +50,7 @@ TEST(Serialization, JustWorks) {
       EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSerializedReference result code: " << result;
 
       // Confirm 1 successful API call
-      Dataset* deserialized_dataset = static_cast<Dataset*>(deserialized_datset_handle);
+      deserialized_dataset = static_cast<Dataset*>(deserialized_datset_handle);
       EXPECT_EQ(dataset->num_data(), deserialized_dataset->num_data());
     } catch (...) {
     }
@@ -58,6 +59,10 @@ TEST(Serialization, JustWorks) {
     if (buffer) {
       result = LGBM_ByteBufferFree(buffer);
       EXPECT_EQ(0, result) << "LGBM_ByteBufferFree result code: " << result;
+    }
+    if (deserialized_dataset) {
+      result = LGBM_DatasetFree(deserialized_dataset);
+      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
     }
   } catch (...) {
   }

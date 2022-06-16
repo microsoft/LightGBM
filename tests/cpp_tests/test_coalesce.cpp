@@ -523,17 +523,17 @@ TEST(Coalesce, EndToEndDense) {
 
 
 TEST(Coalesce, EndToEndSparse) {
-  DatasetHandle ref_datset_handle = nullptr;
+  DatasetHandle ref_dataset_handle = nullptr;
   DatasetHandle source_dataset1_handle = nullptr;
   DatasetHandle source_dataset2_handle = nullptr;
   DatasetHandle coalesced_dataset_handle = nullptr;
   try {
     // Load some test data
     const char* params = "max_bin=15";
-    int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_datset_handle);
+    int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_dataset_handle);
     EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
-    Dataset* ref_dataset = static_cast<Dataset*>(ref_datset_handle);
+    Dataset* ref_dataset = static_cast<Dataset*>(ref_dataset_handle);
     Log::Info("Row count: %d", ref_dataset->num_data());
     Log::Info("Feature group count: %d", ref_dataset->num_feature_groups());
 
@@ -544,9 +544,9 @@ TEST(Coalesce, EndToEndSparse) {
     unused_init_scores.resize(noriginalrows * nclasses);
     std::vector<int32_t> unused_groups;
     unused_groups.assign(noriginalrows, 1);
-    result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
+    result = LGBM_DatasetSetField(ref_dataset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
-    result = LGBM_DatasetSetField(ref_datset_handle, "group", unused_groups.data(), noriginalrows, 2);
+    result = LGBM_DatasetSetField(ref_dataset_handle, "group", unused_groups.data(), noriginalrows, 2);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
 
     // Get 2 Datasets with the same schema and push data to them
@@ -557,7 +557,7 @@ TEST(Coalesce, EndToEndSparse) {
 
     // Source Dataset 1
     int32_t nDataset1 = 20;
-    result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset1, &source_dataset1_handle);
+    result = LGBM_DatasetCreateByReference(ref_dataset_handle, nDataset1, &source_dataset1_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
     std::vector<int32_t> indptr1;
@@ -576,7 +576,7 @@ TEST(Coalesce, EndToEndSparse) {
 
     // Source Dataset 2
     int32_t nDataset2 = 30;  // TODO(svotaw) test partial loading?
-    result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset2, &source_dataset2_handle);
+    result = LGBM_DatasetCreateByReference(ref_dataset_handle, nDataset2, &source_dataset2_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
     std::vector<int32_t> indptr2;
@@ -594,7 +594,7 @@ TEST(Coalesce, EndToEndSparse) {
     TestUtils::StreamSparseDataset(source_dataset2_handle, nDataset2, nclasses, batch_count, &indptr2, &indices2, &vals2, &labels2, &weights2, &init_scores2, &groups2);
 
     // Target coalesced Dataset
-    result = LGBM_DatasetCreateByReference(ref_datset_handle, nDataset1 + nDataset2, &coalesced_dataset_handle);
+    result = LGBM_DatasetCreateByReference(ref_dataset_handle, nDataset1 + nDataset2, &coalesced_dataset_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
 
     Dataset* coalesced_dataset = static_cast<Dataset*>(coalesced_dataset_handle);
@@ -620,8 +620,8 @@ TEST(Coalesce, EndToEndSparse) {
   }
 
   int result;
-  if (ref_datset_handle) {
-    result = LGBM_DatasetFree(ref_datset_handle);
+  if (ref_dataset_handle) {
+    result = LGBM_DatasetFree(ref_dataset_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }
   if (source_dataset1_handle) {
