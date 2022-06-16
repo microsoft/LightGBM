@@ -52,11 +52,17 @@ TEST(Serialization, JustWorks) {
       Dataset* deserialized_dataset = static_cast<Dataset*>(deserialized_datset_handle);
       EXPECT_EQ(dataset->num_data(), deserialized_dataset->num_data());
     } catch (...) {
-      // Free memory
+    }
+
+    // Free memory
+    if (buffer) {
       result = LGBM_ByteBufferFree(buffer);
       EXPECT_EQ(0, result) << "LGBM_ByteBufferFree result code: " << result;
     }
   } catch (...) {
+  }
+
+  if (dataset) {
     result = LGBM_DatasetFree(dataset);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }

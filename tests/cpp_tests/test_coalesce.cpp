@@ -500,23 +500,24 @@ TEST(Coalesce, EndToEndDense) {
                                 &init_scores2,
                                 &groups2);
   } catch (...) {
-    int result;
-    if (ref_datset_handle) {
-      result = LGBM_DatasetFree(ref_datset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (source_dataset1_handle) {
-      result = LGBM_DatasetFree(source_dataset1_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (source_dataset2_handle) {
-      result = LGBM_DatasetFree(source_dataset2_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (coalesced_dataset_handle) {
-      result = LGBM_DatasetFree(coalesced_dataset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
+  }
+
+  int result;
+  if (ref_datset_handle) {
+    result = LGBM_DatasetFree(ref_datset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (source_dataset1_handle) {
+    result = LGBM_DatasetFree(source_dataset1_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (source_dataset2_handle) {
+    result = LGBM_DatasetFree(source_dataset2_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (coalesced_dataset_handle) {
+    result = LGBM_DatasetFree(coalesced_dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }
 }
 
@@ -605,11 +606,6 @@ TEST(Coalesce, EndToEndSparse) {
     result = LGBM_DatasetCoalesce(coalesced_dataset_handle, sources.data(), 2);
     EXPECT_EQ(0, result) << "LGBM_DatasetCoalesce result code: " << result;
 
-    LGBM_DatasetFree(source_dataset1_handle);
-    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    LGBM_DatasetFree(source_dataset2_handle);
-    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-
     validate_coalesced_metadata(coalesced_dataset,
                                 nclasses,
                                 &labels1,
@@ -621,22 +617,23 @@ TEST(Coalesce, EndToEndSparse) {
                                 &init_scores2,
                                 &groups2);
   } catch (...) {
-    int result;
-    if (ref_datset_handle) {
-      result = LGBM_DatasetFree(ref_datset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (source_dataset1_handle) {
-      result = LGBM_DatasetFree(source_dataset1_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (source_dataset2_handle) {
-      result = LGBM_DatasetFree(source_dataset2_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
-    if (coalesced_dataset_handle) {
-      result = LGBM_DatasetFree(coalesced_dataset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
+  }
+
+  int result;
+  if (ref_datset_handle) {
+    result = LGBM_DatasetFree(ref_datset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (source_dataset1_handle) {
+    result = LGBM_DatasetFree(source_dataset1_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (source_dataset2_handle) {
+    result = LGBM_DatasetFree(source_dataset2_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+  if (coalesced_dataset_handle) {
+    result = LGBM_DatasetFree(coalesced_dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }
 }

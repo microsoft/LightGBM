@@ -12,7 +12,6 @@
 
 using LightGBM::Log;
 using LightGBM::Random;
-using ::testing::UnitTest;
 
 namespace LightGBM {
 
@@ -20,16 +19,9 @@ namespace LightGBM {
 * Creates a Dataset from the internal repository examples.
 */
 int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle *out) {
-  static UnitTest* unitTestInstance = UnitTest::GetInstance();
-  const char* path = unitTestInstance->original_working_dir();
-  std::string fullPath(path);
-#if defined(_WIN32)
-  fullPath += "/../examples/";
-#else
-  fullPath += "/../examples/";
-#endif
+  std::string fullPath("/../examples/");
   fullPath += filename;
-  Log::Info("Debug Path: %s", fullPath.c_str());
+  Log::Info("Debug sample data path: %s", fullPath.c_str());
   return LGBM_DatasetCreateFromFile(
     fullPath.c_str(),
     config,

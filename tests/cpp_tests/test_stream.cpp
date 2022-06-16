@@ -57,10 +57,11 @@ void test_stream_dense(DatasetHandle ref_datset_handle,
                               init_scores,
                               groups);
   } catch(...) {
-    if (dataset_handle) {
-      int result = LGBM_DatasetFree(dataset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
+  }
+
+  if (dataset_handle) {
+    int result = LGBM_DatasetFree(dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }
 }
 
@@ -106,10 +107,11 @@ void test_stream_sparse(DatasetHandle ref_datset_handle,
       init_scores,
       groups);
   } catch (...) {
-    if (dataset_handle) {
-      int result = LGBM_DatasetFree(dataset_handle);
-      EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-    }
+  }
+
+  if (dataset_handle) {
+    int result = LGBM_DatasetFree(dataset_handle);
+    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
   }
 }
 
