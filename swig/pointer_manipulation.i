@@ -143,6 +143,10 @@ void NAME##_setitem(TYPE **ary, int64_t index, TYPE *value);
 %ptr_array_functions(double, doublePtrArray)
 %ptr_array_functions(int, intPtrArray)
 
+%ptr_array_functions(void, voidPtrArray)
+%ptr_array_functions(double, doublePtrArray)
+%ptr_array_functions(int, intPtrArray)
+
 %pointer_manipulation(void*, voidpp)
 
 /* Allow dereferencing of void** to void* */

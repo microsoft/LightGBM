@@ -300,6 +300,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetMarkFinished(DatasetHandle dataset);
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
  */
+
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromCSR(const void* indptr,
                                                 int indptr_type,
                                                 const int32_t* indices,
