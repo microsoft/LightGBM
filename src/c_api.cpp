@@ -1008,7 +1008,8 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
   ret.reset(new Dataset(nrows));
   const Dataset* reference_dataset = reinterpret_cast<const Dataset*>(reference);
   ret->CreateValid(reference_dataset);
-  ret->InitByReference(nrows, reference_dataset);  *out = ret.release();
+  ret->InitByReference(nrows, reference_dataset);
+  *out = ret.release();
   API_END();
 }
 

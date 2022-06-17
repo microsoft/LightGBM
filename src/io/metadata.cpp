@@ -198,10 +198,7 @@ void Metadata::CalculateQueryBoundaries() {
 
 void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data_size_t>& used_data_indices) {
   if (used_data_indices.empty()) {
-    if (!queries_.empty()) {
-      // need convert query_id to boundaries
-      CalculateQueryBoundaries();
-    }
+     CalculateQueryBoundaries();
     // check weights
     if (!weights_.empty() && num_weights_ != num_data_) {
       weights_.clear();
@@ -671,6 +668,8 @@ void Metadata::LoadFromMemory(const void* memory) {
 }
 
 void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  writer->AlignedWrite(&num_data_, sizeof(num_data_));
+  writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
   writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
   writer->AlignedWrite(label_.data(), sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
