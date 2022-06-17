@@ -668,6 +668,8 @@ void Metadata::LoadFromMemory(const void* memory) {
 }
 
 void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  writer->AlignedWrite(&num_data_, sizeof(num_data_));
+  writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
   writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
   writer->AlignedWrite(label_.data(), sizeof(label_t) * num_data_);
   if (!weights_.empty()) {
