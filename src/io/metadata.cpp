@@ -491,7 +491,7 @@ void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index
   if (queries_.size() <= 0) {
     Log::Fatal("Inserting query data into dataset with no queries");
   }
-  if (start_index + len > queries_.size()) {
+  if (static_cast<size_t>(start_index + len) > queries_.size()) {
     Log::Fatal("Inserted query data is too large for dataset");
   }
 

@@ -103,6 +103,6 @@ class TestUtils {
       int32_t nclasses,
       int32_t batch_count,
       const std::vector<double>* original_init_scores);
-  };
+};
 }  // namespace LightGBM
 #endif  // LIGHTGBM_TESTS_UTILS_H_
