@@ -71,7 +71,7 @@ invisible(file.remove(OBJDUMP_FILE))
 # see https://www.cs.colorado.edu/~main/cs1300/doc/mingwfaq.html
 start_index <- which(
     grepl(
-        pattern = "[Ordinal/Name Pointer] Table"  # nolint
+        pattern = "[Ordinal/Name Pointer] Table"  # nolint: non_portable_path
         , x = objdump_results
         , fixed = TRUE
     )
