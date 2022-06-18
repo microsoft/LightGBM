@@ -24,7 +24,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 .pipe_shell_command_to_stdout <- function(command, args, out_file) {
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx) {
