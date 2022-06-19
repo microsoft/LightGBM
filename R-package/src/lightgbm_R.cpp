@@ -65,6 +65,14 @@ SEXP wrapped_R_raw(void *len) {
   return Rf_allocVector(RAWSXP, *(reinterpret_cast<R_xlen_t*>(len)));
 }
 
+SEXP wrapped_R_int(void *len) {
+  return Rf_allocVector(INTSXP, *(reinterpret_cast<R_xlen_t*>(len)));
+}
+
+SEXP wrapped_R_real(void *len) {
+  return Rf_allocVector(REALSXP, *(reinterpret_cast<R_xlen_t*>(len)));
+}
+
 SEXP wrapped_Rf_mkChar(void *txt) {
   return Rf_mkChar(reinterpret_cast<char*>(txt));
 }
@@ -82,6 +90,14 @@ SEXP safe_R_string(R_xlen_t len, SEXP *cont_token) {
 
 SEXP safe_R_raw(R_xlen_t len, SEXP *cont_token) {
   return R_UnwindProtect(wrapped_R_raw, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
+}
+
+SEXP safe_R_int(R_xlen_t len, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_R_int, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
+}
+
+SEXP safe_R_real(R_xlen_t len, SEXP *cont_token) {
+  return R_UnwindProtect(wrapped_R_real, reinterpret_cast<void*>(&len), throw_R_memerr, cont_token, *cont_token);
 }
 
 SEXP safe_R_mkChar(char *txt, SEXP *cont_token) {
@@ -851,6 +867,76 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   R_API_END();
 }
 
+struct SparseOutputPointers {
+  void* indptr;
+  int32_t* indices;
+  void* data;
+  int indptr_type;
+  int data_type;
+  SparseOutputPointers(void* indptr, int32_t* indices, void* data)
+  : indptr(indptr), indices(indices), data(data) {}
+};
+
+void delete_SparseOutputPointers(SparseOutputPointers *ptr) {
+  LGBM_BoosterFreePredictSparse(ptr->indptr, ptr->indices, ptr->data, C_API_DTYPE_INT32, C_API_DTYPE_FLOAT64);
+  delete ptr;
+}
+
+SEXP LGBM_BoosterPredictSparseOutput_R(SEXP handle,
+  SEXP indptr,
+  SEXP indices,
+  SEXP data,
+  SEXP is_csr,
+  SEXP nrows,
+  SEXP ncols,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  const char* out_names[] = {"indptr", "indices", "data", ""};
+  SEXP out = PROTECT(Rf_mkNamed(VECSXP, out_names));
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+
+  int64_t out_len[2];
+  void *out_indptr;
+  int32_t *out_indices;
+  void *out_data;
+
+  CHECK_CALL(LGBM_BoosterPredictSparseOutput(R_ExternalPtrAddr(handle),
+    INTEGER(indptr), C_API_DTYPE_INT32, INTEGER(indices),
+    REAL(data), C_API_DTYPE_FLOAT64,
+    Rf_xlength(indptr), Rf_xlength(data),
+    Rf_asLogical(is_csr)? Rf_asInteger(ncols) : Rf_asInteger(nrows),
+    C_API_PREDICT_CONTRIB, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    parameter_ptr,
+    Rf_asLogical(is_csr)? C_API_MATRIX_TYPE_CSR : C_API_MATRIX_TYPE_CSC,
+    out_len, &out_indptr, &out_indices, &out_data));
+
+  std::unique_ptr<SparseOutputPointers, decltype(&delete_SparseOutputPointers)> pointers_struct = {
+    new SparseOutputPointers(
+      out_indptr,
+      out_indices,
+      out_data),
+    &delete_SparseOutputPointers
+  };
+
+  SEXP out_indptr_R = safe_R_int(out_len[1], &cont_token);
+  SET_VECTOR_ELT(out, 0, out_indptr_R);
+  SEXP out_indices_R = safe_R_int(out_len[0], &cont_token);
+  SET_VECTOR_ELT(out, 1, out_indices_R);
+  SEXP out_data_R = safe_R_real(out_len[0], &cont_token);
+  SET_VECTOR_ELT(out, 2, out_data_R);
+  std::memcpy(INTEGER(out_indptr_R), out_indptr, out_len[1]*sizeof(int));
+  std::memcpy(INTEGER(out_indices_R), out_indices, out_len[0]*sizeof(int));
+  std::memcpy(REAL(out_data_R), out_data, out_len[0]*sizeof(double));
+
+  UNPROTECT(3);
+  return out;
+  R_API_END();
+}
+
 SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
@@ -975,6 +1061,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 8},
   {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
   {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
+  {"LGBM_BoosterPredictSparseOutput_R", (DL_FUNC) &LGBM_BoosterPredictSparseOutput_R, 10},
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
