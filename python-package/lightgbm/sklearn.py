@@ -849,11 +849,8 @@ class LGBMModel(_LGBMModelBase):
 
         # number of threads can have values with special meaning which is only applied
         # in the scikit-learn interface, these should not reach the c++ side as-is
-        n_jobs = self.n_jobs
-        for alias in _ConfigAliases.get("num_threads"):
-            if alias in predict_params:
-                n_jobs = predict_params.pop(alias)
-        predict_params["num_threads"] = self._process_n_jobs(n_jobs)
+        predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
+        predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
