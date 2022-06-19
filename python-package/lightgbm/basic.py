@@ -408,7 +408,7 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    aliases = set(_ConfigAliases.get(main_param_name)) - {main_param_name}
+    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
 
     # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
