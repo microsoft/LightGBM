@@ -1,6 +1,7 @@
 # coding: utf-8
 import itertools
 import math
+import re
 from os import getenv
 from pathlib import Path
 
@@ -1288,3 +1289,29 @@ def test_multiclass_custom_objective():
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
     assert not callable(builtin_obj_model.objective_)
     assert callable(custom_obj_model.objective_)
+
+
+def test_negative_n_jobs(tmp_path):
+    n_threads = joblib.cpu_count()
+    if n_threads <= 1:
+        return None
+    # 'val_minus_two' here is the expected number of threads for n_jobs=-2
+    val_minus_two = n_threads - 1
+    X, y = load_breast_cancer(return_X_y=True)
+    # Note: according to joblib's formula, a value of n_jobs=-2 means
+    # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
+
+
+def test_default_n_jobs(tmp_path):
+    n_cores = joblib.cpu_count(only_physical_cores=True)
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
