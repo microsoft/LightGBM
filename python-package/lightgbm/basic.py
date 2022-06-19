@@ -2558,7 +2558,13 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
+    def __init__(
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        train_set: Optional[Dataset] = None,
+        model_file: Optional[Union[str, Path]] = None,
+        model_str: Optional[str] = None
+    ):
         """Initialize the Booster.
 
         Parameters
@@ -2670,7 +2676,7 @@ class Booster:
                             'to create Booster instance')
         self.params = params
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.network:
                 self.free_network()
@@ -2682,10 +2688,10 @@ class Booster:
         except AttributeError:
             pass
 
-    def __copy__(self):
+    def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _):
+    def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         booster = Booster(model_str=model_str)
         return booster
@@ -2711,7 +2717,7 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def free_dataset(self):
+    def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
 
         Returns
@@ -2724,7 +2730,7 @@ class Booster:
         self.__num_dataset = 0
         return self
 
-    def _free_buffer(self):
+    def _free_buffer(self) -> "Booster":
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
         return self
@@ -2763,7 +2769,7 @@ class Booster:
         self.network = True
         return self
 
-    def free_network(self):
+    def free_network(self) -> "Booster":
         """Free Booster's network.
 
         Returns
