@@ -30,6 +30,7 @@ interactive_text <- paste0(
 
 LINTERS_TO_USE <- list(
     "absolute_path"          = lintr::absolute_path_linter()
+    , "any_is_na_linter"     = lintr::any_is_na_linter()
     , "assignment"           = lintr::assignment_linter()
     , "braces"               = lintr::brace_linter()
     , "commas"               = lintr::commas_linter()

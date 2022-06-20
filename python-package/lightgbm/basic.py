@@ -408,21 +408,27 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    # find a value, and remove other aliases with .pop()
-    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
-    found_value = None
+    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+
+    # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
-        found_value = params[main_param_name]
+        for param in aliases:
+            params.pop(param, None)
+        return params
 
-    for param in _ConfigAliases.get(main_param_name):
-        val = params.pop(param, None)
-        if found_value is None and val is not None:
-            found_value = val
+    # if main param name was not found, search for an alias
+    for param in aliases:
+        if param in params.keys():
+            params[main_param_name] = params[param]
+            break
 
-    if found_value is not None:
-        params[main_param_name] = found_value
-    else:
-        params[main_param_name] = default_value
+    if main_param_name in params.keys():
+        for param in aliases:
+            params.pop(param, None)
+        return params
+
+    # neither of main_param_name, aliases were found
+    params[main_param_name] = default_value
 
     return params
 
@@ -2552,7 +2558,13 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
+    def __init__(
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        train_set: Optional[Dataset] = None,
+        model_file: Optional[Union[str, Path]] = None,
+        model_str: Optional[str] = None
+    ):
         """Initialize the Booster.
 
         Parameters
@@ -2664,7 +2676,7 @@ class Booster:
                             'to create Booster instance')
         self.params = params
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.network:
                 self.free_network()
@@ -2676,10 +2688,10 @@ class Booster:
         except AttributeError:
             pass
 
-    def __copy__(self):
+    def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _):
+    def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         booster = Booster(model_str=model_str)
         return booster
@@ -2705,7 +2717,7 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def free_dataset(self):
+    def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
 
         Returns
@@ -2718,7 +2730,7 @@ class Booster:
         self.__num_dataset = 0
         return self
 
-    def _free_buffer(self):
+    def _free_buffer(self) -> "Booster":
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
         return self
@@ -2757,7 +2769,7 @@ class Booster:
         self.network = True
         return self
 
-    def free_network(self):
+    def free_network(self) -> "Booster":
         """Free Booster's network.
 
         Returns
