@@ -528,7 +528,7 @@ test_that("predictions for multiclass classification are returned as matrix", {
     expect_true(is.matrix(pred))
     expect_equal(nrow(pred), nrow(X))
     expect_equal(ncol(pred), 3L)
-}
+})
 
 test_that("Single-row predictions are identical to multi-row ones", {
     data(mtcars)
