@@ -18,6 +18,7 @@
 
 #include <string>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <utility>
@@ -839,6 +840,109 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
   R_API_END();
 }
 
+SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
+  SEXP indptr,
+  SEXP indices,
+  SEXP data,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterPredictForCSR(R_ExternalPtrAddr(handle),
+    INTEGER(indptr), C_API_DTYPE_INT32, INTEGER(indices),
+    REAL(data), C_API_DTYPE_FLOAT64,
+    Rf_xlength(indptr), Rf_xlength(data), Rf_asInteger(ncols),
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    parameter_ptr, &out_len, REAL(out_result)));
+  UNPROTECT(1);
+  return R_NilValue;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterPredictForCSRSingleRow_R(SEXP handle,
+  SEXP indices,
+  SEXP data,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+  int nnz = static_cast<int>(Rf_xlength(data));
+  const int indptr[] = {0, nnz};
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterPredictForCSRSingleRow(R_ExternalPtrAddr(handle),
+    indptr, C_API_DTYPE_INT32, INTEGER(indices),
+    REAL(data), C_API_DTYPE_FLOAT64,
+    2, nnz, Rf_asInteger(ncols),
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    parameter_ptr, &out_len, REAL(out_result)));
+  UNPROTECT(1);
+  return R_NilValue;
+  R_API_END();
+}
+
+void LGBM_FastConfigFree_wrapped(SEXP handle) {
+  LGBM_FastConfigFree(static_cast<FastConfigHandle*>(R_ExternalPtrAddr(handle)));
+}
+
+SEXP LGBM_BoosterPredictForCSRSingleRowFastInit_R(SEXP handle,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
+  SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+  FastConfigHandle out_fastConfig;
+  CHECK_CALL(LGBM_BoosterPredictForCSRSingleRowFastInit(R_ExternalPtrAddr(handle),
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    C_API_DTYPE_FLOAT64, Rf_asInteger(ncols),
+    parameter_ptr, &out_fastConfig));
+  R_SetExternalPtrAddr(ret, out_fastConfig);
+  R_RegisterCFinalizerEx(ret, LGBM_FastConfigFree_wrapped, TRUE);
+  UNPROTECT(2);
+  return ret;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterPredictForCSRSingleRowFast_R(SEXP handle_fastConfig,
+  SEXP indices,
+  SEXP data,
+  SEXP out_result) {
+  R_API_BEGIN();
+  int nnz = static_cast<int>(Rf_xlength(data));
+  const int indptr[] = {0, nnz};
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterPredictForCSRSingleRowFast(R_ExternalPtrAddr(handle_fastConfig),
+    indptr, C_API_DTYPE_INT32, INTEGER(indices),
+    REAL(data),
+    2, nnz,
+    &out_len, REAL(out_result)));
+  return R_NilValue;
+  R_API_END();
+}
+
 SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   SEXP data,
   SEXP num_row,
@@ -934,6 +1038,66 @@ SEXP LGBM_BoosterPredictSparseOutput_R(SEXP handle,
 
   UNPROTECT(3);
   return out;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterPredictForMatSingleRow_R(SEXP handle,
+  SEXP data,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+  double* ptr_ret = REAL(out_result);
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterPredictForMatSingleRow(R_ExternalPtrAddr(handle),
+    REAL(data), C_API_DTYPE_FLOAT64, Rf_xlength(data), 1,
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    parameter_ptr, &out_len, ptr_ret));
+  UNPROTECT(1);
+  return R_NilValue;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterPredictForMatSingleRowFastInit_R(SEXP handle,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int pred_type = GetPredictType(is_rawscore, is_leafidx, is_predcontrib);
+  SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
+  const char* parameter_ptr = CHAR(PROTECT(Rf_asChar(parameter)));
+  FastConfigHandle out_fastConfig;
+  CHECK_CALL(LGBM_BoosterPredictForMatSingleRowFastInit(R_ExternalPtrAddr(handle),
+    pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
+    C_API_DTYPE_FLOAT64, Rf_asInteger(ncols),
+    parameter_ptr, &out_fastConfig));
+  R_SetExternalPtrAddr(ret, out_fastConfig);
+  R_RegisterCFinalizerEx(ret, LGBM_FastConfigFree_wrapped, TRUE);
+  UNPROTECT(2);
+  return ret;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterPredictForMatSingleRowFast_R(SEXP handle_fastConfig,
+  SEXP data,
+  SEXP out_result) {
+  R_API_BEGIN();
+  int64_t out_len;
+  CHECK_CALL(LGBM_BoosterPredictForMatSingleRowFast(R_ExternalPtrAddr(handle_fastConfig),
+    REAL(data), &out_len, REAL(out_result)));
+  return R_NilValue;
   R_API_END();
 }
 
@@ -1060,8 +1224,15 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterPredictForFile_R"     , (DL_FUNC) &LGBM_BoosterPredictForFile_R     , 10},
   {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 8},
   {"LGBM_BoosterPredictForCSC_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSC_R      , 14},
-  {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
+  {"LGBM_BoosterPredictForCSR_R"      , (DL_FUNC) &LGBM_BoosterPredictForCSR_R      , 12},
+  {"LGBM_BoosterPredictForCSRSingleRow_R", (DL_FUNC) &LGBM_BoosterPredictForCSRSingleRow_R, 11},
+  {"LGBM_BoosterPredictForCSRSingleRowFastInit_R", (DL_FUNC) &LGBM_BoosterPredictForCSRSingleRowFastInit_R, 8},
+  {"LGBM_BoosterPredictForCSRSingleRowFast_R", (DL_FUNC) &LGBM_BoosterPredictForCSRSingleRowFast_R, 4},
   {"LGBM_BoosterPredictSparseOutput_R", (DL_FUNC) &LGBM_BoosterPredictSparseOutput_R, 10},
+  {"LGBM_BoosterPredictForMat_R"      , (DL_FUNC) &LGBM_BoosterPredictForMat_R      , 11},
+  {"LGBM_BoosterPredictForMatSingleRow_R", (DL_FUNC) &LGBM_BoosterPredictForMatSingleRow_R, 9},
+  {"LGBM_BoosterPredictForMatSingleRowFastInit_R", (DL_FUNC) &LGBM_BoosterPredictForMatSingleRowFastInit_R, 8},
+  {"LGBM_BoosterPredictForMatSingleRowFast_R", (DL_FUNC) &LGBM_BoosterPredictForMatSingleRowFast_R, 3},
   {"LGBM_BoosterSaveModel_R"          , (DL_FUNC) &LGBM_BoosterSaveModel_R          , 4},
   {"LGBM_BoosterSaveModelToString_R"  , (DL_FUNC) &LGBM_BoosterSaveModelToString_R  , 3},
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},

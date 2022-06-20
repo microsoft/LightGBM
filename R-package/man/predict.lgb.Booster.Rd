@@ -20,8 +20,17 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+               or a character representing a path to a text file (CSV, TSV, or LibSVM).
+
+               For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+               use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+               `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
+               package `Matrix`).
+
+               If single-row predictions are going to be performed frequently, it is recommended to
+               pre-configure the model object for fast single-row sparse predictions through function
+               \link{lgb.configure_fast_predict}.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -55,11 +64,20 @@ the values in \code{params} take precedence.}
 For regression or binary classification, it returns a vector of length \code{nrows(data)}.
         For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
 
-        When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
-        returned as a matrix.
+        When \code{predleaf = TRUE}, the output is a matrix object with the
+        number of columns corresponding to the number of trees.
+
+        If using `predcontrib=TRUE` and the input data is a sparse matrix or sparse vector,
+        the output will also be a sparse matrix or vector of the same class.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
+}
+\details{
+If the model object has been configured for fast single-row predictions through
+         \link{lgb.configure_fast_predict}, this function will use the prediction parameters
+         that were configured for it - as such, extra prediction parameters should not be passed
+         here, otherwise the configuration will be ignored and the slow route will be taken.
 }
 \examples{
 \donttest{
