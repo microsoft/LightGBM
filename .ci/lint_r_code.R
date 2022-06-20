@@ -30,6 +30,7 @@ interactive_text <- paste0(
 
 LINTERS_TO_USE <- list(
     "absolute_path"          = lintr::absolute_path_linter()
+    , "any_duplicated"       = lintr::any_duplicated_linter()
     , "any_is_na"            = lintr::any_is_na_linter()
     , "assignment"           = lintr::assignment_linter()
     , "braces"               = lintr::brace_linter()
@@ -38,18 +39,28 @@ LINTERS_TO_USE <- list(
     , "function_left"        = lintr::function_left_parentheses_linter()
     , "implicit_integers"    = lintr::implicit_integer_linter()
     , "infix_spaces"         = lintr::infix_spaces_linter()
+    , "inner_combine"        = lintr::inner_combine_linter()
+    , "literal_coercion"     = lintr::literal_coercion_linter()
     , "long_lines"           = lintr::line_length_linter(length = 120L)
+    , "missing_argument"     = lintr::missing_argument_linter()
     , "no_tabs"              = lintr::no_tab_linter()
     , "non_portable_path"    = lintr::nonportable_path_linter()
+    , "numeric_leading_zero" = lintr::numeric_leading_zero_linter()
+    , "outer_negation"       = lintr::outer_negation_linter()
+    , "package_hooks"        = lintr::package_hooks_linter()
+    , "regex_subset"         = lintr::regex_subset_linter()
     , "semicolon"            = lintr::semicolon_linter()
     , "seq"                  = lintr::seq_linter()
     , "single_quotes"        = lintr::single_quotes_linter()
     , "spaces_inside"        = lintr::spaces_inside_linter()
     , "spaces_left_parens"   = lintr::spaces_left_parentheses_linter()
+    , "sprintf"              = lintr::sprintf_linter()
     , "todo_comments"        = lintr::todo_comment_linter(c("todo", "fixme", "to-do"))
     , "trailing_blank"       = lintr::trailing_blank_lines_linter()
     , "trailing_white"       = lintr::trailing_whitespace_linter()
     , "true_false"           = lintr::T_and_F_symbol_linter()
+    , "unreachable_code"     = lintr::unreachable_code_linter()
+    , "vector_logic"         = lintr::vector_logic_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
             "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
