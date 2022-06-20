@@ -375,7 +375,7 @@ def _make_n_folds(
 
 
 def _agg_cv_result(
-    raw_results: List[Tuple[str, str, float, bool]]
+    raw_results: List[List[Tuple[str, str, float, bool]]]
 ) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
     cvmap = collections.OrderedDict()
