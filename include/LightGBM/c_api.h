@@ -262,8 +262,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, 
  * \param dataset Handle of dataset
  * \return 0 when succeed, -1 when failure happens
  */
-
 LIGHTGBM_C_EXPORT int LGBM_DatasetMarkFinished(DatasetHandle dataset);
+
 /*!
  * \brief Create a dataset from CSR format.
  * \param indptr Pointer to row headers
