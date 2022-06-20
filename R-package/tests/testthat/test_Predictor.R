@@ -1,3 +1,5 @@
+library(Matrix)
+
 VERBOSITY <- as.integer(
   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
 )
@@ -114,6 +116,84 @@ test_that("start_iteration works correctly", {
     pred_leaf1 <- predict(bst, test$data, type = "leaf")
     pred_leaf2 <- predict(bst, test$data, start_iteration = 0L, num_iteration = end_iter + 1L, type = "leaf")
     expect_equal(pred_leaf1, pred_leaf2)
+})
+
+test_that("Feature contributions from sparse inputs produce sparse outputs", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
+    )
+
+    pred_dense <- predict(bst, X, predcontrib = TRUE)
+
+    Xcsc <- as(X, "CsparseMatrix")
+    pred_csc <- predict(bst, Xcsc, predcontrib = TRUE)
+    expect_s4_class(pred_csc, "dgCMatrix")
+    expect_equal(unname(pred_dense), unname(as.matrix(pred_csc)))
+
+    Xcsr <- as(X, "RsparseMatrix")
+    pred_csr <- predict(bst, Xcsr, predcontrib = TRUE)
+    expect_s4_class(pred_csr, "dgRMatrix")
+    expect_equal(as(pred_csr, "CsparseMatrix"), pred_csc)
+
+    Xspv <- as(X[1L, , drop = FALSE], "sparseVector")
+    pred_spv <- predict(bst, Xspv, predcontrib = TRUE)
+    expect_s4_class(pred_spv, "dsparseVector")
+    expect_equal(Matrix::t(as(pred_spv, "CsparseMatrix")), unname(pred_csc[1L, , drop = FALSE]))
+})
+
+test_that("Sparse feature contribution predictions do not take inputs with wrong number of columns", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- as.numeric(mtcars[, 1L])
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
+    )
+
+    X_wrong <- X[, c(1L:10L, 1L:10L)]
+    X_wrong <- as(X_wrong, "CsparseMatrix")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 20 columns")
+
+    X_wrong <- as(X_wrong, "RsparseMatrix")
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 20 columns")
+
+    X_wrong <- as(X_wrong, "CsparseMatrix")
+    X_wrong <- X_wrong[, 1L:3L]
+    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 3 columns")
+})
+
+test_that("Feature contribution predictions do not take non-general CSR or CSC inputs", {
+    set.seed(123L)
+    y <- runif(25L)
+    Dmat <- matrix(runif(625L), nrow = 25L, ncol = 25L)
+    Dmat <- crossprod(Dmat)
+    Dmat <- as(Dmat, "symmetricMatrix")
+    SmatC <- as(Dmat, "sparseMatrix")
+    SmatR <- as(SmatC, "RsparseMatrix")
+
+    dtrain <- lgb.Dataset(as.matrix(Dmat), label = y, params = list(max_bins = 5L))
+    bst <- lgb.train(
+      data = dtrain
+      , obj = "regression"
+      , nrounds = 5L
+      , verbose = VERBOSITY
+      , params = list(min_data_in_leaf = 5L)
+    )
+
+    expect_error(predict(bst, SmatC, predcontrib = TRUE))
+    expect_error(predict(bst, SmatR, predcontrib = TRUE))
 })
 
 test_that("predict() params should override keyword argument for raw-score predictions", {
@@ -314,6 +394,8 @@ test_that("predict() params should override keyword argument for feature contrib
     pred <- predict(bst, Xcsc, type = "leaf")
     .expect_has_row_names(pred, Xcsc)
     pred <- predict(bst, Xcsc, type = "contrib")
+    .expect_has_row_names(pred, Xcsc)
+    pred <- predict(bst, as(Xcsc, "RsparseMatrix"), predcontrib = TRUE)
     .expect_has_row_names(pred, Xcsc)
 
     # sparse matrix without row names

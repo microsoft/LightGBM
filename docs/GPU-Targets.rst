@@ -19,6 +19,8 @@ You can find below a table of correspondence:
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 | AMD APP SDK \*            | Supported       | Not Supported   | Supported       | Not Supported|
 +---------------------------+-----------------+-----------------+-----------------+--------------+
+| `PoCL`_                   | Supported       | Not Supported   | Supported       | Not Supported|
++---------------------------+-----------------+-----------------+-----------------+--------------+
 | `NVIDIA CUDA Toolkit`_    | Not Supported   | Not Supported   | Not Supported   | Supported    |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 
@@ -167,4 +169,6 @@ Known issues:
 
 .. _clinfo: https://github.com/Oblomov/clinfo
 
-.. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
+.. _GPUCapsViewer: https://www.ozone3d.net/gpu_caps_viewer/
+
+.. _PoCL: http://portablecl.org/
