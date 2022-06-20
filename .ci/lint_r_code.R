@@ -36,6 +36,7 @@ LINTERS_TO_USE <- list(
     , "braces"               = lintr::brace_linter()
     , "class_equals_linter"  = lintr::class_equals_linter()
     , "commas"               = lintr::commas_linter()
+    , "duplicate_argument"   = lintr::duplicate_argument_linter()
     , "equals_na"            = lintr::equals_na_linter()
     , "function_left"        = lintr::function_left_parentheses_linter()
     , "implicit_integers"    = lintr::implicit_integer_linter()
