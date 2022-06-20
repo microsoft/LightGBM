@@ -131,20 +131,20 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
       , params = list(min_data_in_leaf = 5L)
     )
 
-    pred_dense <- predict(bst, X, predcontrib = TRUE)
+    pred_dense <- predict(bst, X, type = "contrib")
 
     Xcsc <- as(X, "CsparseMatrix")
-    pred_csc <- predict(bst, Xcsc, predcontrib = TRUE)
+    pred_csc <- predict(bst, Xcsc, type = "contrib")
     expect_s4_class(pred_csc, "dgCMatrix")
     expect_equal(unname(pred_dense), unname(as.matrix(pred_csc)))
 
     Xcsr <- as(X, "RsparseMatrix")
-    pred_csr <- predict(bst, Xcsr, predcontrib = TRUE)
+    pred_csr <- predict(bst, Xcsr, type = "contrib")
     expect_s4_class(pred_csr, "dgRMatrix")
     expect_equal(as(pred_csr, "CsparseMatrix"), pred_csc)
 
     Xspv <- as(X[1L, , drop = FALSE], "sparseVector")
-    pred_spv <- predict(bst, Xspv, predcontrib = TRUE)
+    pred_spv <- predict(bst, Xspv, type = "contrib")
     expect_s4_class(pred_spv, "dsparseVector")
     expect_equal(Matrix::t(as(pred_spv, "CsparseMatrix")), unname(pred_csc[1L, , drop = FALSE]))
 })
@@ -164,14 +164,14 @@ test_that("Sparse feature contribution predictions do not take inputs with wrong
 
     X_wrong <- X[, c(1L:10L, 1L:10L)]
     X_wrong <- as(X_wrong, "CsparseMatrix")
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 20 columns")
+    expect_error(predict(bst, X_wrong, type = "contrib"), regexp = "input data has 20 columns")
 
     X_wrong <- as(X_wrong, "RsparseMatrix")
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 20 columns")
+    expect_error(predict(bst, X_wrong, type = "contrib"), regexp = "input data has 20 columns")
 
     X_wrong <- as(X_wrong, "CsparseMatrix")
     X_wrong <- X_wrong[, 1L:3L]
-    expect_error(predict(bst, X_wrong, predcontrib = TRUE), regexp = "input data has 3 columns")
+    expect_error(predict(bst, X_wrong, type = "contrib"), regexp = "input data has 3 columns")
 })
 
 test_that("Feature contribution predictions do not take non-general CSR or CSC inputs", {
@@ -192,8 +192,8 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
       , params = list(min_data_in_leaf = 5L)
     )
 
-    expect_error(predict(bst, SmatC, predcontrib = TRUE))
-    expect_error(predict(bst, SmatR, predcontrib = TRUE))
+    expect_error(predict(bst, SmatC, type = "contrib"))
+    expect_error(predict(bst, SmatR, type = "contrib"))
 })
 
 test_that("predict() params should override keyword argument for raw-score predictions", {
@@ -395,7 +395,7 @@ test_that("predict() params should override keyword argument for feature contrib
     .expect_has_row_names(pred, Xcsc)
     pred <- predict(bst, Xcsc, type = "contrib")
     .expect_has_row_names(pred, Xcsc)
-    pred <- predict(bst, as(Xcsc, "RsparseMatrix"), predcontrib = TRUE)
+    pred <- predict(bst, as(Xcsc, "RsparseMatrix"), type = "contrib")
     .expect_has_row_names(pred, Xcsc)
 
     # sparse matrix without row names
