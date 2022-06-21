@@ -437,7 +437,7 @@ test_that("predict() keeps row names from data (binary classification)", {
     data(agaricus.train, package = "lightgbm")
     X <- as.matrix(agaricus.train$data)
     y <- agaricus.train$label
-    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "")
+    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "") #nolint: paste
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
     bst <- lgb.train(
         data = dtrain
@@ -452,7 +452,7 @@ test_that("predict() keeps row names from data (multi-class classification)", {
     data(iris)
     y <- as.numeric(iris$Species) - 1.0
     X <- as.matrix(iris[, names(iris) != "Species"])
-    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "")
+    row.names(X) <- paste("rname", seq(1L, nrow(X)), sep = "") #nolint: paste
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bins = 5L))
     bst <- lgb.train(
         data = dtrain

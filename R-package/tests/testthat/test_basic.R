@@ -5,7 +5,7 @@ VERBOSITY <- as.integer(
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
 UTF8_LOCALE <- all(grepl(
-  pattern = "UTF-8$"
+  pattern = "UTF-8$"  # nolint: string_boundary
   , x = Sys.getlocale(category = "LC_CTYPE")
 ))
 

@@ -471,7 +471,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$get_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , paste0(sQuote(.INFO_KEYS()), collapse = ", ") #nolint: paste
         )
       }
 
@@ -523,7 +523,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$set_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , paste0(sQuote(.INFO_KEYS()), collapse = ", ") #nolint: paste
         )
       }
 

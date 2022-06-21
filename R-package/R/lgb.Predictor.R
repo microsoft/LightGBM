@@ -224,7 +224,7 @@ Predictor <- R6::R6Class(
                        , "dsparseVector"
                        , "dgRMatrix"
                        , "dgCMatrix"
-                       , paste(class(data)
+                       , paste(class(data) #nolint: paste
                        , collapse = ", ")))
 
         }

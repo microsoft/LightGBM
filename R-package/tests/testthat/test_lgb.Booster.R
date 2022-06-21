@@ -787,20 +787,20 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     params_in_file <- .params_from_model_string(model_str = model_str)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(grepl(pattern = "^\\[metric\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[metric\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[objective\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[objective\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[verbosity\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[verbosity\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", VERBOSITY)), 1L)
 
     # early stopping should be off by default
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
 })
 
@@ -851,15 +851,15 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
     # parameters should match what was passed from the R package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L) # nolint: string_boundary
     expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
     # none of the aliases shouold have been written to the model file
-    expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+    expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L) # nolint: string_boundary
+    expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L) # nolint: string_boundary
+    expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L) # nolint: string_boundary
 
 })
 
@@ -1079,15 +1079,15 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
         # parameters should match what was passed from the R package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
-        expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+        expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L) # nolint: string_boundary
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-        expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+        expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L) # nolint: string_boundary
         expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
         # none of the aliases shouold have been written to the model file
-        expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+        expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L) # nolint: string_boundary
+        expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L) # nolint: string_boundary
+        expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L) # nolint: string_boundary
     }
 
 })
@@ -1268,8 +1268,8 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .has_expected_content_for_fitted_model <- function(printed_txt) {
-      expect_true(any(grepl("^LightGBM Model", printed_txt)))
-      expect_true(any(grepl("^Fitted to dataset", printed_txt)))
+      expect_true(any(grepl("^LightGBM Model", printed_txt))) # nolint: string_boundary
+      expect_true(any(grepl("^Fitted to dataset", printed_txt))) # nolint: string_boundary
     }
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {

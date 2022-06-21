@@ -70,7 +70,7 @@ unrecognized_args <- setdiff(given_args, recognized_args)
 if (length(unrecognized_args) > 0L) {
   msg <- paste0(
     "Unrecognized arguments: "
-    , paste0(unrecognized_args, collapse = ", ")
+    , paste0(unrecognized_args, collapse = ", ") #nolint: paste
   )
   stop(msg)
 }
@@ -404,7 +404,7 @@ dynlib_line <- grep(
 )
 
 c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
-c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
+c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)] # nolint: string_boundary
 c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
@@ -417,7 +417,7 @@ c_api_symbols <- gsub(
 )
 dynlib_statement <- paste0(
   "useDynLib(lib_lightgbm, "
-  , paste0(c_api_symbols, collapse = ", ")
+  , paste0(c_api_symbols, collapse = ", ") #nolint: paste
   , ")"
 )
 namespace_contents[dynlib_line] <- dynlib_statement

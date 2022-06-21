@@ -20,7 +20,7 @@
     column_classes <- .get_column_classes(df = df)
     unconverted_columns <- column_classes[!(column_classes %in% c("numeric", "integer"))]
     if (length(unconverted_columns) > 0L) {
-        col_detail_string <- paste0(
+        col_detail_string <- paste0(  #nolint: paste
             paste0(
                 names(unconverted_columns)
                 , " ("
