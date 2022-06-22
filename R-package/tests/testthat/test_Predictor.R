@@ -569,5 +569,5 @@ test_that("predict type='class' returns values in the target's range for regress
         , verbose = VERBOSITY
     )
     pred <- predict(bst, X, type = "class")
-    expect_true(all(!(pred %in% c(0.0, 1.0))))
+    expect_true(!any(pred %in% c(0.0, 1.0)))
 })
