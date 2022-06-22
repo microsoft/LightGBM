@@ -6,8 +6,6 @@ VERBOSITY <- as.integer(
 
 TOLERANCE <- 1e-6
 
-library(Matrix)
-
 test_that("Predictor$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
@@ -240,7 +238,9 @@ test_that("predict() params should override keyword argument for raw-score predi
         , nm = rawscore_alias
       )
     )
+    preds_raw_s3_param <- predict(bst, X, params = params)
     preds_raw_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_raw_s3_keyword, preds_raw_s3_param)
     expect_equal(preds_raw_s3_keyword, preds_raw_r6_param)
   }
 })
@@ -291,7 +291,9 @@ test_that("predict() params should override keyword argument for leaf-index pred
         , nm = predleaf_alias
       )
     )
+    preds_leaf_s3_param <- predict(bst, X, params = params)
     preds_leaf_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_leaf_s3_keyword, preds_leaf_s3_param)
     expect_equal(preds_leaf_s3_keyword, preds_leaf_r6_param)
   }
 })
@@ -342,7 +344,9 @@ test_that("predict() params should override keyword argument for feature contrib
         , nm = predcontrib_alias
       )
     )
+    preds_contrib_s3_param <- predict(bst, X, params = params)
     preds_contrib_r6_param <- bst$predict(X, params = params)
+    expect_equal(preds_contrib_s3_keyword, preds_contrib_s3_param)
     expect_equal(preds_contrib_s3_keyword, preds_contrib_r6_param)
   }
 })
