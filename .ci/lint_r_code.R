@@ -50,6 +50,7 @@ LINTERS_TO_USE <- list(
     , "numeric_leading_zero" = lintr::numeric_leading_zero_linter()
     , "outer_negation"       = lintr::outer_negation_linter()
     , "package_hooks"        = lintr::package_hooks_linter()
+    , "paste"                = lintr::paste_linter()
     , "regex_subset"         = lintr::regex_subset_linter()
     , "semicolon"            = lintr::semicolon_linter()
     , "seq"                  = lintr::seq_linter()
