@@ -997,13 +997,13 @@ lgb.configure_fast_predict <- function(model,
     stop("'lgb.configure_fast_predict' does not support feature contributions for CSR data.")
   }
   model$configure_fast_predict(
-    csr
-    , start_iteration
-    , num_iteration
-    , rawscore
-    , predleaf
-    , predcontrib
-    , params
+    csr = csr
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf = FALSE
+    , predcontrib = FALSE
+    , params = params
   )
   return(invisible(model))
 }
