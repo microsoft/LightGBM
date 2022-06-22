@@ -274,7 +274,7 @@ Predictor <- R6::R6Class(
 
           if (nrow(data) == 1L) {
 
-            use_fast_config <- self$check_can_use_fast_predict_config(
+            use_fast_config <- private$check_can_use_fast_predict_config(
               FALSE
               , rawscore
               , predleaf
@@ -326,7 +326,7 @@ Predictor <- R6::R6Class(
 
           if (length(self$fast_predict_config)) {
             ncols <- self$fast_predict_config$ncols
-            use_fast_config <- self$check_can_use_fast_predict_config(
+            use_fast_config <- private$check_can_use_fast_predict_config(
                 TRUE
                 , rawscore
                 , predleaf
@@ -383,7 +383,7 @@ Predictor <- R6::R6Class(
 
             if (length(self$fast_predict_config)) {
               ncols <- self$fast_predict_config$ncols
-              use_fast_config <- self$check_can_use_fast_predict_config(
+              use_fast_config <- private$check_can_use_fast_predict_config(
                 TRUE
                 , rawscore
                 , predleaf
@@ -500,9 +500,14 @@ Predictor <- R6::R6Class(
 
       return(preds)
 
-    },
+    }
 
-    check_can_use_fast_predict_config = function(csr,
+  ),
+  private = list(
+    handle = NULL
+    , need_free_handle = FALSE
+    , params = ""
+    , check_can_use_fast_predict_config = function(csr,
                                                  rawscore,
                                                  predleaf,
                                                  predcontrib,
@@ -531,11 +536,5 @@ Predictor <- R6::R6Class(
         lgb.equal.or.both.null(self$fast_predict_config$num_iteration, num_iteration)
       )
     }
-
-  ),
-  private = list(
-    handle = NULL
-    , need_free_handle = FALSE
-    , params = ""
   )
 )
