@@ -1001,8 +1001,8 @@ lgb.configure_fast_predict <- function(model,
     , start_iteration = start_iteration
     , num_iteration = num_iteration
     , rawscore = rawscore
-    , predleaf = FALSE
-    , predcontrib = FALSE
+    , predleaf = predleaf
+    , predcontrib = predcontrib
     , params = params
   )
   return(invisible(model))
