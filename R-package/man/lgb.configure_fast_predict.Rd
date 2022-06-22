@@ -21,7 +21,7 @@ lgb.configure_fast_predict(
              \bold{The object will be modified in-place}.}
 
 \item{csr}{Whether the prediction function is going to be called on sparse CSR inputs.
-If `FALSE`, will be assumed that predictions are going to be called on single-row
+If \code{FALSE}, will be assumed that predictions are going to be called on single-row
 regular R matrices.}
 
 \item{start_iteration}{int or None, optional (default=None)
