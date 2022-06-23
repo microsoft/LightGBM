@@ -70,7 +70,7 @@ unrecognized_args <- setdiff(given_args, recognized_args)
 if (length(unrecognized_args) > 0L) {
   msg <- paste0(
     "Unrecognized arguments: "
-    , paste0(unrecognized_args, collapse = ", ")
+    , toString(unrecognized_args)
   )
   stop(msg)
 }
@@ -417,7 +417,7 @@ c_api_symbols <- gsub(
 )
 dynlib_statement <- paste0(
   "useDynLib(lib_lightgbm, "
-  , paste0(c_api_symbols, collapse = ", ")
+  , toString(c_api_symbols)
   , ")"
 )
 namespace_contents[dynlib_line] <- dynlib_statement
