@@ -58,6 +58,7 @@ LINTERS_TO_USE <- list(
     , "spaces_inside"        = lintr::spaces_inside_linter()
     , "spaces_left_parens"   = lintr::spaces_left_parentheses_linter()
     , "sprintf"              = lintr::sprintf_linter()
+    , "string_boundary"      = lintr::string_boundary_linter()
     , "todo_comments"        = lintr::todo_comment_linter(c("todo", "fixme", "to-do"))
     , "trailing_blank"       = lintr::trailing_blank_lines_linter()
     , "trailing_white"       = lintr::trailing_whitespace_linter()
