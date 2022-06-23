@@ -787,20 +787,20 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     params_in_file <- .params_from_model_string(model_str = model_str)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(startsWith(params_in_file, "\\[metric\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
     expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
 
-    expect_equal(sum(startsWith(params_in_file, "\\[num_iterations\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
 
-    expect_equal(sum(startsWith(params_in_file, "\\[objective\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
     expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
 
-    expect_equal(sum(startsWith(params_in_file, "\\[verbosity\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", VERBOSITY)), 1L)
 
     # early stopping should be off by default
-    expect_equal(sum(startsWith(params_in_file, "\\[early_stopping_round\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
 })
 
@@ -851,15 +851,15 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
     # parameters should match what was passed from the R package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
-    expect_equal(sum(startsWith(params_in_file, "\\[num_iterations\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-    expect_equal(sum(startsWith(params_in_file, "\\[early_stopping_round\\:")), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
     # none of the aliases shouold have been written to the model file
-    expect_equal(sum(startsWith(params_in_file, "\\[num_boost_round\\:")), 0L)
-    expect_equal(sum(startsWith(params_in_file, "\\[n_iter\\:")), 0L)
-    expect_equal(sum(startsWith(params_in_file, "\\[n_iter_no_change\\:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
 
 })
 
@@ -1079,15 +1079,15 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
         # parameters should match what was passed from the R package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
-        expect_equal(sum(startsWith(params_in_file, "\\[num_iterations\\:")), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-        expect_equal(sum(startsWith(params_in_file, "\\[early_stopping_round\\:")), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
         # none of the aliases shouold have been written to the model file
-        expect_equal(sum(startsWith(params_in_file, "\\[num_boost_round\\:")), 0L)
-        expect_equal(sum(startsWith(params_in_file, "\\[n_iter\\:")), 0L)
-        expect_equal(sum(startsWith(params_in_file, "\\[n_iter_no_change\\:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
     }
 
 })
