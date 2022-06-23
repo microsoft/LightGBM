@@ -404,7 +404,7 @@ dynlib_line <- grep(
 )
 
 c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
-c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
+c_api_contents <- c_api_contents[startsWith(c_api_contents, "LIGHTGBM_C_EXPORT")]
 c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
