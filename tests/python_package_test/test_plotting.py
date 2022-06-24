@@ -1,5 +1,4 @@
 # coding: utf-8
-from matplotlib import use
 import numpy as np
 import pytest
 from sklearn.model_selection import train_test_split
@@ -7,15 +6,13 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import make_synthetic_regression
-
 if MATPLOTLIB_INSTALLED:
     import matplotlib
     matplotlib.use('Agg')
 if GRAPHVIZ_INSTALLED:
     import graphviz
 
-from .utils import load_breast_cancer
+from .utils import load_breast_cancer, make_synthetic_regression
 
 
 @pytest.fixture(scope="module")
@@ -205,7 +202,8 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
         X[nan_mask, :] = np.nan
     ds = lgb.Dataset(X, y)
     params = {
-        'num_leaves': 31,
+        'num_leaves': 127,
+        'min_child_samples': 1,
         'use_missing': use_missing,
         'zero_as_missing': zero_as_missing,
     }
@@ -231,6 +229,7 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
             )
             node = node['left_child'] if direction == 'left' else node['right_child']
         assert node['leaf_index'] == expected_leaf_nan
+        assert expected_leaf_zero != expected_leaf_nan
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
@@ -264,13 +263,12 @@ def test_example_case_in_tree_digraph():
             if node['decision_type'] == '<=':
                 direction = lgb.plotting._determine_direction_for_numeric_split(
                     example_case[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left'])
-                node = node['left_child'] if direction == 'left' else node['right_child']
             else:
                 makes_categorical_splits = True
-                if example_case[0][node['split_feature']] in {int(t) for t in node['threshold'].split('||')}:
-                    node = node['left_child']
-                else:
-                    node = node['right_child']
+                direction = lgb.plotting._determine_direction_for_categorical_split(
+                    example_case[0][node['split_feature']], node['threshold'], node['missing_type']
+                )
+            node = node['left_child'] if direction == 'left' else node['right_child']
             assert 'color=blue' in node_in_graph[0]
             if edge_to_node:
                 assert len(edge_to_node) == 1
@@ -289,6 +287,10 @@ def test_example_case_in_tree_digraph():
         # check that the rest of the elements have black color
         remaining_elements = [e for i, e in enumerate(graph.body) if i not in seen_indices and 'graph' not in e]
         assert all('color=black' in e for e in remaining_elements)
+
+        # check that we got to the expected leaf
+        expected_leaf = bst.predict(example_case, start_iteration=i, num_iteration=1, pred_leaf=True)[0]
+        assert leaf_index == expected_leaf
     assert makes_categorical_splits
 
 

@@ -3,7 +3,7 @@
 import math
 from copy import deepcopy
 from io import BytesIO
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -415,7 +415,7 @@ def plot_metric(
     return ax
 
 
-def _determine_direction_for_numeric_split(fval: float, threshold: float, missing_type: str, default_left: bool) -> Literal['left', 'right']:
+def _determine_direction_for_numeric_split(fval: float, threshold: float, missing_type: str, default_left: bool) -> str:
     le_threshold = fval <= threshold
     if missing_type == 'None' or (missing_type == 'Zero' and default_left and ZERO_THRESHOLD < threshold):
         direction = 'left' if le_threshold else 'right'
@@ -430,6 +430,15 @@ def _determine_direction_for_numeric_split(fval: float, threshold: float, missin
         else:
             direction = 'left' if le_threshold and not math.isnan(fval) else 'right'
     return direction
+
+
+def _determine_direction_for_categorical_split(fval: float, thresholds: str, missing_type: str) -> str:
+    if missing_type == 'None':
+        int_fval = -1 if math.isnan(fval) else int(fval)
+    else:
+        int_fval = 0 if math.isnan(fval) else int(fval)
+    int_thresholds = {int(t) for t in thresholds.split('||')}
+    return 'left' if int_fval in int_thresholds else 'right'
 
 
 def _to_graphviz(
@@ -481,11 +490,9 @@ def _to_graphviz(
             direction = None
             if example_case is not None:
                 if root['decision_type'] == '==':
-                    thresholds = {int(x) for x in root['threshold'].split('||')}
-                    if example_case[split_feature] in thresholds:
-                        direction = 'left'
-                    else:
-                        direction = 'right'
+                    direction = _determine_direction_for_categorical_split(
+                        example_case[split_feature], root['threshold'], root['missing_type']
+                    )
                 else:
                     direction = _determine_direction_for_numeric_split(
                         example_case[split_feature], root['threshold'], root['missing_type'], root['default_left']
