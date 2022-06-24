@@ -234,13 +234,13 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
 def test_example_case_in_tree_digraph():
-    X, y = make_synthetic_regression()
     rng = np.random.RandomState(0)
-    cat = rng.randint(1, 4, X.shape[0])
-    y *= cat
-    X = np.hstack([X, cat.reshape(-1, 1)])
-    feature_name = [f'x{i}' for i in range(X.shape[1] - 1)] + ['cat']
-    ds = lgb.Dataset(X, y, feature_name=feature_name, categorical_feature=[X.shape[1] - 1])
+    x1 = rng.rand(100)
+    cat = rng.randint(1, 3, size=x1.size)
+    X = np.vstack([x1, cat]).T
+    y = x1 + 2 * cat
+    feature_name = ['x1', 'cat']
+    ds = lgb.Dataset(X, y, feature_name=feature_name, categorical_feature=['cat'])
 
     num_round = 3
     bst = lgb.train({'num_leaves': 7}, ds, num_boost_round=num_round)
