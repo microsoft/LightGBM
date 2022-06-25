@@ -48,15 +48,14 @@ Application::~Application() {
 }
 
 void Application::LoadParameters(int argc, char** argv) {
-  std::unordered_map<std::string, std::string> params;
+  std::unordered_multimap<std::string, std::string> multi_params;
   for (int i = 1; i < argc; ++i) {
-    Config::KV2Map(&params, argv[i]);
+    Config::KV2Map(&multi_params, argv[i]);
   }
-  // check for alias
-  ParameterAlias::KeyAliasTransform(&params);
   // read parameters from config file
-  if (params.count("config") > 0) {
-    TextReader<size_t> config_reader(params["config"].c_str(), false);
+  if (multi_params.count("config") > 0) {
+    auto config_fname = multi_params.find("config")->second.c_str();
+    TextReader<size_t> config_reader(config_fname, false);
     config_reader.ReadAllLines();
     if (!config_reader.Lines().empty()) {
       for (auto& line : config_reader.Lines()) {
@@ -68,14 +67,31 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        Config::KV2Map(&params, line.c_str());
+        Config::KV2Map(&multi_params, line.c_str());
       }
     } else {
-      Log::Warning("Config file %s doesn't exist, will ignore",
-                   params["config"].c_str());
+      Log::Warning("Config file %s doesn't exist, will ignore", config_fname);
     }
   }
-  // check for alias again
+  // define verbosity and set logging level
+  int verbosity = Config().verbosity;
+  Config::GetInt(multi_params, "verbose", &verbosity);
+  Config::GetInt(multi_params, "verbosity", &verbosity);
+  multi_params.erase("verbose");
+  multi_params.erase("verbosity");
+  if (verbosity < 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  } else if (verbosity == 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
+  } else if (verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  } else {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  }
+  // de-duplicate params
+  std::unordered_map<std::string, std::string> params;
+  Config::Multi2Map(multi_params, params);
+  // check for alias
   ParameterAlias::KeyAliasTransform(&params);
   // load configs
   config_.Set(params);
