@@ -75,11 +75,9 @@ void Application::LoadParameters(int argc, char** argv) {
   }
   // define verbosity and set logging level
   Config::SetVerbosity(multi_params);
-  multi_params.erase("verbose");
-  multi_params.erase("verbosity");
   // de-duplicate params
   std::unordered_map<std::string, std::string> params;
-  Config::Multi2Map(multi_params, params);
+  Config::Multi2Map(multi_params, &params);
   // check for alias
   ParameterAlias::KeyAliasTransform(&params);
   // load configs

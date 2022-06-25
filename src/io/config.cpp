@@ -44,11 +44,11 @@ void Config::SetVerbosity(const std::unordered_multimap<std::string, std::string
   }
 }
 
-void Config::Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string,std::string>& params) {
+void Config::Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string, std::string>* params) {
   for (auto it = multi.begin(); it != multi.end(); ++it) {
-    auto value_search = params.find(it->first);
-    if (value_search == params.end()) {  // not set
-      params.emplace(it->first, it->second);
+    auto value_search = params->find(it->first);
+    if (value_search == params->end()) {  // not set
+      params->emplace(it->first, it->second);
     } else {
       Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
         it->first.c_str(), value_search->second.c_str(),
@@ -65,10 +65,8 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
     KV2Map(&multi_params, Common::Trim(arg).c_str());
   }
   SetVerbosity(multi_params);
-  multi_params.erase("verbose");
-  multi_params.erase("verbosity");
   std::unordered_map<std::string, std::string> params;
-  Multi2Map(multi_params, params);
+  Multi2Map(multi_params, &params);
   ParameterAlias::KeyAliasTransform(&params);
   return params;
 }

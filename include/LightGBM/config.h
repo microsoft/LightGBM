@@ -90,7 +90,7 @@ struct Config {
     const std::string& name, bool* out);
 
   static void KV2Map(std::unordered_multimap<std::string, std::string>* params, const char* kv);
-  static void Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string,std::string>& params);
+  static void Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string, std::string>* params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
   static void SetVerbosity(const std::unordered_multimap<std::string, std::string>& params);
 
@@ -1126,8 +1126,7 @@ inline bool Config::GetInt(
     Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
       name_range.first->first.c_str(), name_range.first->second.c_str(),
       it->first.c_str(), it->second.c_str(),
-      name_range.first->first.c_str(), name_range.first->second.c_str()
-    );
+      name_range.first->first.c_str(), name_range.first->second.c_str());
   }
   return true;
 }
