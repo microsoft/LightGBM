@@ -63,7 +63,6 @@ LINTERS_TO_USE <- list(
     , "trailing_blank"       = lintr::trailing_blank_lines_linter()
     , "trailing_white"       = lintr::trailing_whitespace_linter()
     , "true_false"           = lintr::T_and_F_symbol_linter()
-    , "unreachable_code"     = lintr::unreachable_code_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
             "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
@@ -97,6 +96,7 @@ LINTERS_TO_USE <- list(
         )
     )
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
+    , "unreachable_code"     = lintr::unreachable_code_linter()
     , "vector_logic"           = lintr::vector_logic_linter()
 )
 
