@@ -3160,7 +3160,7 @@ class Booster:
 
         Returns
         -------
-        upper_bound : double
+        upper_bound : float
             Upper bound value of the model.
         """
         ret = ctypes.c_double(0)
@@ -3174,7 +3174,7 @@ class Booster:
 
         Returns
         -------
-        lower_bound : double
+        lower_bound : float
             Lower bound value of the model.
         """
         ret = ctypes.c_double(0)
