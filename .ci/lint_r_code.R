@@ -64,7 +64,6 @@ LINTERS_TO_USE <- list(
     , "trailing_white"       = lintr::trailing_whitespace_linter()
     , "true_false"           = lintr::T_and_F_symbol_linter()
     , "unreachable_code"     = lintr::unreachable_code_linter()
-    , "vector_logic"         = lintr::vector_logic_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
             "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
@@ -98,6 +97,7 @@ LINTERS_TO_USE <- list(
         )
     )
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
+    , "vector_logic"           = lintr::vector_logic_linter()
 )
 
 noquote(paste0(length(FILES_TO_LINT), " R files need linting"))
