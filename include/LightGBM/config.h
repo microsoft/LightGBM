@@ -92,6 +92,7 @@ struct Config {
   static void KV2Map(std::unordered_multimap<std::string, std::string>* params, const char* kv);
   static void Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string,std::string>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
+  static void SetVerbosity(const std::unordered_multimap<std::string, std::string>& params);
 
   #ifndef __NVCC__
   #pragma region Parameters

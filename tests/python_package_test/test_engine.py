@@ -3626,6 +3626,23 @@ def test_cegb_split_buffer_clean():
     assert rmse < 10.0
 
 
+def test_verbosity_and_verbose(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'verbose': 1,
+        'verbosity': 0,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. '
+        'Current value: verbosity=0'
+    )
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
+
+
 @pytest.mark.parametrize('verbosity_param', lgb.basic._ConfigAliases.get("verbosity"))
 @pytest.mark.parametrize('verbosity', [-1, 0])
 def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosity):
@@ -3644,7 +3661,7 @@ def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosit
         'Current value: bagging_fraction=0.8'
     )
     stdout = capsys.readouterr().out
-    if verbosity == -1:
-        assert re.search(r'\[LightGBM\]', stdout) is None
-    else:
+    if verbosity >= 0:
         assert expected_msg in stdout
+    else:
+        assert re.search(r'\[LightGBM\]', stdout) is None

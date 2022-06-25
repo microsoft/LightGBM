@@ -74,20 +74,9 @@ void Application::LoadParameters(int argc, char** argv) {
     }
   }
   // define verbosity and set logging level
-  int verbosity = Config().verbosity;
-  Config::GetInt(multi_params, "verbose", &verbosity);
-  Config::GetInt(multi_params, "verbosity", &verbosity);
+  Config::SetVerbosity(multi_params);
   multi_params.erase("verbose");
   multi_params.erase("verbosity");
-  if (verbosity < 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
-  } else if (verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  }
   // de-duplicate params
   std::unordered_map<std::string, std::string> params;
   Config::Multi2Map(multi_params, params);

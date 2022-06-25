@@ -29,6 +29,21 @@ void Config::KV2Map(std::unordered_multimap<std::string, std::string>* params, c
   }
 }
 
+void Config::SetVerbosity(const std::unordered_multimap<std::string, std::string>& params) {
+  int verbosity = Config().verbosity;
+  GetInt(params, "verbose", &verbosity);
+  GetInt(params, "verbosity", &verbosity);
+  if (verbosity < 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  } else if (verbosity == 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
+  } else if (verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  } else {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  }
+}
+
 void Config::Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string,std::string>& params) {
   for (auto it = multi.begin(); it != multi.end(); ++it) {
     auto value_search = params.find(it->first);
@@ -42,27 +57,16 @@ void Config::Multi2Map(const std::unordered_multimap<std::string, std::string>& 
     }
   }
 }
+
 std::unordered_map<std::string, std::string> Config::Str2Map(const char* parameters) {
   std::unordered_multimap<std::string, std::string> multi_params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
     KV2Map(&multi_params, Common::Trim(arg).c_str());
   }
-  // define verbosity and set logging level
-  int verbosity = Config().verbosity;
-  GetInt(multi_params, "verbose", &verbosity);
-  GetInt(multi_params, "verbosity", &verbosity);
+  SetVerbosity(multi_params);
   multi_params.erase("verbose");
   multi_params.erase("verbosity");
-  if (verbosity < 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
-  } else if (verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  }
   std::unordered_map<std::string, std::string> params;
   Multi2Map(multi_params, params);
   ParameterAlias::KeyAliasTransform(&params);
