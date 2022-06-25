@@ -749,7 +749,11 @@ test_that("Saving a model with unknown importance type fails", {
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
-        model_string <- bst$save_model_to_string(feature_importance_type = UNSUPPORTED_IMPORTANCE)
+        capture.output({
+          model_string <- bst$save_model_to_string(
+            feature_importance_type = UNSUPPORTED_IMPORTANCE
+          )
+        }, type = "message")
     }, "Unknown importance type")
 })
 
@@ -783,20 +787,20 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     params_in_file <- .params_from_model_string(model_str = model_str)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(grepl(pattern = "^\\[metric\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
     expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[objective\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
     expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[verbosity\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", VERBOSITY)), 1L)
 
     # early stopping should be off by default
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
 })
 
@@ -847,15 +851,15 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
     # parameters should match what was passed from the R package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
     # none of the aliases shouold have been written to the model file
-    expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
 
 })
 
@@ -964,10 +968,12 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
 
   # unrecognized objective
   expect_error({
-    Booster$new(
-      params = list(objective = "not_a_real_objective")
-      , train_set = dtrain
-    )
+    capture.output({
+      Booster$new(
+        params = list(objective = "not_a_real_objective")
+        , train_set = dtrain
+      )
+    }, type = "message")
   }, regexp = "Unknown objective type name: not_a_real_objective")
 
   # train_set is not a Dataset
@@ -986,10 +992,12 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
 
   # model file doesn't exist
   expect_error({
-    Booster$new(
-      params = list()
-      , modelfile = "file-that-does-not-exist.model"
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , modelfile = "file-that-does-not-exist.model"
+      )
+    }, type = "message")
   }, regexp = "Could not open file-that-does-not-exist.model")
 
   # model file doesn't contain a valid LightGBM model
@@ -999,18 +1007,22 @@ test_that("Booster$new() raises informative errors for malformed inputs", {
     , con = model_file
   )
   expect_error({
-    Booster$new(
-      params = list()
-      , modelfile = model_file
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , modelfile = model_file
+      )
+    }, type = "message")
   }, regexp = "Unknown model format or submodel type in model file")
 
   # malformed model string
   expect_error({
-    Booster$new(
-      params = list()
-      , model_str = "a\nb\n"
-    )
+    capture.output({
+      Booster$new(
+        params = list()
+        , model_str = "a\nb\n"
+      )
+    }, type = "message")
   }, regexp = "Model file doesn't specify the number of classes")
 
   # model string isn't character or raw
@@ -1067,15 +1079,15 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
         # parameters should match what was passed from the R package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
-        expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-        expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
         # none of the aliases shouold have been written to the model file
-        expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
     }
 
 })
@@ -1256,8 +1268,8 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .has_expected_content_for_fitted_model <- function(printed_txt) {
-      expect_true(any(grepl("^LightGBM Model", printed_txt)))
-      expect_true(any(grepl("^Fitted to dataset", printed_txt)))
+      expect_true(any(startsWith(printed_txt, "LightGBM Model")))
+      expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
     }
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {

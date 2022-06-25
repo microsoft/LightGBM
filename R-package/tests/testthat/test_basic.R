@@ -4,9 +4,9 @@ VERBOSITY <- as.integer(
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
-UTF8_LOCALE <- all(grepl(
-  pattern = "UTF-8$"
-  , x = Sys.getlocale(category = "LC_CTYPE")
+UTF8_LOCALE <- all(endsWith(
+  Sys.getlocale(category = "LC_CTYPE")
+  , "UTF-8"
 ))
 
 data(agaricus.train, package = "lightgbm")
@@ -561,13 +561,15 @@ test_that("lgb.cv() raises an informative error for unrecognized objectives", {
     , label = train$label
   )
   expect_error({
-    bst <- lgb.cv(
-      data = dtrain
-      , params = list(
-        objective_type = "not_a_real_objective"
-        , verbosity = VERBOSITY
+    capture.output({
+      bst <- lgb.cv(
+        data = dtrain
+        , params = list(
+          objective_type = "not_a_real_objective"
+          , verbosity = VERBOSITY
+        )
       )
-    )
+    }, type = "message")
   }, regexp = "Unknown objective type name: not_a_real_objective")
 })
 
@@ -723,13 +725,15 @@ test_that("lgb.train() raises an informative error for unrecognized objectives",
     , label = train$label
   )
   expect_error({
-    bst <- lgb.train(
-      data = dtrain
-      , params = list(
-        objective_type = "not_a_real_objective"
-        , verbosity = VERBOSITY
+    capture.output({
+      bst <- lgb.train(
+        data = dtrain
+        , params = list(
+          objective_type = "not_a_real_objective"
+          , verbosity = VERBOSITY
+        )
       )
-    )
+    }, type = "message")
   }, regexp = "Unknown objective type name: not_a_real_objective")
 })
 
@@ -2425,7 +2429,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
 })
 
 
-test_that("lgb.train() w/ linear learner fails already-constructed dataset with linear=false", {
+test_that("lgb.train() with linear learner fails already-constructed dataset with linear=false", {
   set.seed(708L)
   params <- list(
     objective = "regression"
@@ -2441,11 +2445,13 @@ test_that("lgb.train() w/ linear learner fails already-constructed dataset with 
   )
   dtrain$construct()
   expect_error({
-    bst_linear <- lgb.train(
-      data = dtrain
-      , nrounds = 10L
-      , params = utils::modifyList(params, list(linear_tree = TRUE))
-    )
+    capture.output({
+      bst_linear <- lgb.train(
+        data = dtrain
+        , nrounds = 10L
+        , params = utils::modifyList(params, list(linear_tree = TRUE))
+      )
+    }, type = "message")
   }, regexp = "Cannot change linear_tree after constructed Dataset handle")
 })
 

@@ -1,13 +1,13 @@
 lgb.is.Booster <- function(x) {
-  return(all(c("R6", "lgb.Booster") %in% class(x)))
+  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals_linter
 }
 
 lgb.is.Dataset <- function(x) {
-  return(all(c("R6", "lgb.Dataset") %in% class(x)))
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals_linter
 }
 
 lgb.is.Predictor <- function(x) {
-  return(all(c("R6", "lgb.Predictor") %in% class(x)))
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals_linter
 }
 
 lgb.is.null.handle <- function(x) {
@@ -226,7 +226,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 
 #' @importFrom parallel detectCores
 lgb.get.default.num.threads <- function() {
-  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) { # nolint
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {  # nolint: undesirable_function
     return(RhpcBLASctl::get_num_cores())
   } else {
     msg <- "Optional package 'RhpcBLASctl' not found."

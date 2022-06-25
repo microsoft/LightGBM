@@ -10,8 +10,8 @@ from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _Config
 from .callback import record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
-                     _LGBMComputeSampleWeight, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase, dt_DataTable,
-                     pd_DataFrame)
+                     _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
+                     dt_DataTable, pd_DataFrame)
 from .engine import train
 
 _EvalResultType = Tuple[str, float, bool]
@@ -362,7 +362,7 @@ class LGBMModel(_LGBMModelBase):
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
-        n_jobs: int = -1,
+        n_jobs: Optional[int] = None,
         importance_type: str = 'split',
         **kwargs
     ):
@@ -425,8 +425,18 @@ class LGBMModel(_LGBMModelBase):
             If int, this number is used to seed the C++ code.
             If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
-        n_jobs : int, optional (default=-1)
-            Number of parallel threads to use for training (can be changed at prediction time).
+        n_jobs : int or None, optional (default=None)
+            Number of parallel threads to use for training (can be changed at prediction time by
+            passing it as an extra keyword argument).
+
+            For better performance, it is recommended to set this to the number of physical cores
+            in the CPU.
+
+            Negative integers are interpreted as following joblib's formula (n_cpus + 1 + n_jobs), just like
+            scikit-learn (so e.g. -1 means using all threads). A value of zero corresponds the default number of
+            threads configured for OpenMP in the system. A value of ``None`` (the default) corresponds
+            to using the number of physical cores in the system (its correct detection requires
+            either the ``joblib`` or the ``psutil`` util libraries to be installed).
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -505,7 +515,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes = None
         self.set_params(**kwargs)
 
-    def _more_tags(self):
+    def _more_tags(self) -> Dict[str, Any]:
         return {
             'allow_nan': True,
             'X_types': ['2darray', 'sparse', '1dlabels'],
@@ -520,7 +530,7 @@ class LGBMModel(_LGBMModelBase):
     def __sklearn_is_fitted__(self) -> bool:
         return getattr(self, "fitted_", False)
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
         """Get parameters for this estimator.
 
         Parameters
@@ -538,7 +548,7 @@ class LGBMModel(_LGBMModelBase):
         params.update(self._other_params)
         return params
 
-    def set_params(self, **params):
+    def set_params(self, **params: Any) -> "LGBMModel":
         """Set the parameters of this estimator.
 
         Parameters
@@ -634,7 +644,33 @@ class LGBMModel(_LGBMModelBase):
         # overwrite default metric by explicitly set metric
         params = _choose_param_value("metric", params, original_metric)
 
+        # use joblib conventions for negative n_jobs, just like scikit-learn
+        # at predict time, this is handled later due to the order of parameter updates
+        if stage == "fit":
+            params = _choose_param_value("num_threads", params, self.n_jobs)
+            params["num_threads"] = self._process_n_jobs(params["num_threads"])
+
         return params
+
+    def _process_n_jobs(self, n_jobs: Optional[int]) -> int:
+        """Convert special values of n_jobs to their actual values according to the formulas that apply.
+
+        Parameters
+        ----------
+        n_jobs : int or None
+            The original value of n_jobs, potentially having special values such as 'None' or
+            negative integers.
+
+        Returns
+        -------
+        n_jobs : int
+            The value of n_jobs with special values converted to actual number of threads.
+        """
+        if n_jobs is None:
+            n_jobs = _LGBMCpuCount(only_physical_cores=True)
+        elif n_jobs < 0:
+            n_jobs = max(_LGBMCpuCount(only_physical_cores=False) + 1 + n_jobs, 1)
+        return n_jobs
 
     def fit(
         self,
@@ -810,6 +846,12 @@ class LGBMModel(_LGBMModelBase):
         ):
             predict_params.pop(alias, None)
         predict_params.update(kwargs)
+
+        # number of threads can have values with special meaning which is only applied
+        # in the scikit-learn interface, these should not reach the c++ side as-is
+        predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
+        predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
+
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
                                      pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
 
@@ -823,14 +865,14 @@ class LGBMModel(_LGBMModelBase):
     )
 
     @property
-    def n_features_(self):
+    def n_features_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
         return self._n_features
 
     @property
-    def n_features_in_(self):
+    def n_features_in_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
@@ -844,14 +886,14 @@ class LGBMModel(_LGBMModelBase):
         return self._best_score
 
     @property
-    def best_iteration_(self):
+    def best_iteration_(self) -> int:
         """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
         return self._best_iteration
 
     @property
-    def objective_(self):
+    def objective_(self) -> Union[str, _LGBM_ScikitCustomObjectiveFunction]:
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
@@ -1088,7 +1130,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return self._classes
 
     @property
-    def n_classes_(self):
+    def n_classes_(self) -> int:
         """:obj:`int`: The number of classes."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')

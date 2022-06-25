@@ -408,21 +408,27 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    # find a value, and remove other aliases with .pop()
-    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
-    found_value = None
+    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+
+    # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
-        found_value = params[main_param_name]
+        for param in aliases:
+            params.pop(param, None)
+        return params
 
-    for param in _ConfigAliases.get(main_param_name):
-        val = params.pop(param, None)
-        if found_value is None and val is not None:
-            found_value = val
+    # if main param name was not found, search for an alias
+    for param in aliases:
+        if param in params.keys():
+            params[main_param_name] = params[param]
+            break
 
-    if found_value is not None:
-        params[main_param_name] = found_value
-    else:
-        params[main_param_name] = default_value
+    if main_param_name in params.keys():
+        for param in aliases:
+            params.pop(param, None)
+        return params
+
+    # neither of main_param_name, aliases were found
+    params[main_param_name] = default_value
 
     return params
 
@@ -537,7 +543,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str)
+            data = data.rename(columns=str, copy=False)
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -2552,7 +2558,13 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
+    def __init__(
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        train_set: Optional[Dataset] = None,
+        model_file: Optional[Union[str, Path]] = None,
+        model_str: Optional[str] = None
+    ):
         """Initialize the Booster.
 
         Parameters
@@ -2570,7 +2582,6 @@ class Booster:
         self.network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
-        self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
@@ -2665,7 +2676,7 @@ class Booster:
                             'to create Booster instance')
         self.params = params
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.network:
                 self.free_network()
@@ -2677,10 +2688,10 @@ class Booster:
         except AttributeError:
             pass
 
-    def __copy__(self):
+    def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _):
+    def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         booster = Booster(model_str=model_str)
         return booster
@@ -2706,7 +2717,7 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def free_dataset(self):
+    def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
 
         Returns
@@ -2719,7 +2730,7 @@ class Booster:
         self.__num_dataset = 0
         return self
 
-    def _free_buffer(self):
+    def _free_buffer(self) -> "Booster":
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
         return self
@@ -2758,7 +2769,7 @@ class Booster:
         self.network = True
         return self
 
-    def free_network(self):
+    def free_network(self) -> "Booster":
         """Free Booster's network.
 
         Returns
@@ -2770,7 +2781,7 @@ class Booster:
         self.network = False
         return self
 
-    def trees_to_dataframe(self):
+    def trees_to_dataframe(self) -> pd_DataFrame:
         """Parse the fitted model and return in an easy-to-read pandas DataFrame.
 
         The returned DataFrame has the following columns.
@@ -2906,7 +2917,7 @@ class Booster:
 
         return pd_DataFrame(model_list, columns=model_list[0].keys())
 
-    def set_train_data_name(self, name):
+    def set_train_data_name(self, name: str) -> "Booster":
         """Set the name to the training Dataset.
 
         Parameters
@@ -2922,7 +2933,7 @@ class Booster:
         self._train_data_name = name
         return self
 
-    def add_valid(self, data, name):
+    def add_valid(self, data: Dataset, name: str) -> "Booster":
         """Add validation data.
 
         Parameters
@@ -2952,7 +2963,7 @@ class Booster:
         self.__is_predicted_cur_iter.append(False)
         return self
 
-    def reset_parameter(self, params):
+    def reset_parameter(self, params: Dict[str, Any]) -> "Booster":
         """Reset parameters of Booster.
 
         Parameters
@@ -3089,7 +3100,7 @@ class Booster:
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
-    def rollback_one_iter(self):
+    def rollback_one_iter(self) -> "Booster":
         """Rollback one iteration.
 
         Returns
@@ -3102,7 +3113,7 @@ class Booster:
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
 
-    def current_iteration(self):
+    def current_iteration(self) -> int:
         """Get the index of the current iteration.
 
         Returns
@@ -3116,7 +3127,7 @@ class Booster:
             ctypes.byref(out_cur_iter)))
         return out_cur_iter.value
 
-    def num_model_per_iteration(self):
+    def num_model_per_iteration(self) -> int:
         """Get number of models per iteration.
 
         Returns
@@ -3130,7 +3141,7 @@ class Booster:
             ctypes.byref(model_per_iter)))
         return model_per_iter.value
 
-    def num_trees(self):
+    def num_trees(self) -> int:
         """Get number of weak sub-models.
 
         Returns
@@ -3144,7 +3155,7 @@ class Booster:
             ctypes.byref(num_trees)))
         return num_trees.value
 
-    def upper_bound(self):
+    def upper_bound(self) -> float:
         """Get upper bound value of a model.
 
         Returns
@@ -3158,7 +3169,7 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def lower_bound(self):
+    def lower_bound(self) -> float:
         """Get lower bound value of a model.
 
         Returns
@@ -3342,7 +3353,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str):
+    def model_from_string(self, model_str: str) -> "Booster":
         """Load Booster from a string.
 
         Parameters
@@ -3652,10 +3663,9 @@ class Booster:
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
         new_booster.network = self.network
-        new_booster.__attr = self.__attr.copy()
         return new_booster
 
-    def get_leaf_output(self, tree_id, leaf_id):
+    def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
         """Get the output of a leaf.
 
         Parameters
@@ -3684,7 +3694,7 @@ class Booster:
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
-    def num_feature(self):
+    def num_feature(self) -> int:
         """Get number of features.
 
         Returns
@@ -3698,7 +3708,7 @@ class Booster:
             ctypes.byref(out_num_feature)))
         return out_num_feature.value
 
-    def feature_name(self):
+    def feature_name(self) -> List[str]:
         """Get names of features.
 
         Returns
@@ -3736,7 +3746,11 @@ class Booster:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def feature_importance(self, importance_type='split', iteration=None):
+    def feature_importance(
+        self,
+        importance_type: str = 'split',
+        iteration: Optional[int] = None
+    ) -> np.ndarray:
         """Get feature importances.
 
         Parameters
@@ -3876,7 +3890,7 @@ class Booster:
                     ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
-    def __inner_predict(self, data_idx):
+    def __inner_predict(self, data_idx: int):
         """Predict for training and validation dataset."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -3904,7 +3918,7 @@ class Booster:
             result = result.reshape(num_data, self.__num_class, order='F')
         return result
 
-    def __get_eval_info(self):
+    def __get_eval_info(self) -> None:
         """Get inner evaluation count and names."""
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
@@ -3952,42 +3966,3 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
-
-    def attr(self, key):
-        """Get attribute string from the Booster.
-
-        Parameters
-        ----------
-        key : str
-            The name of the attribute.
-
-        Returns
-        -------
-        value : str or None
-            The attribute value.
-            Returns None if attribute does not exist.
-        """
-        return self.__attr.get(key, None)
-
-    def set_attr(self, **kwargs):
-        """Set attributes to the Booster.
-
-        Parameters
-        ----------
-        **kwargs
-            The attributes to set.
-            Setting a value to None deletes an attribute.
-
-        Returns
-        -------
-        self : Booster
-            Booster with set attributes.
-        """
-        for key, value in kwargs.items():
-            if value is not None:
-                if not isinstance(value, str):
-                    raise ValueError("Only string values are accepted")
-                self.__attr[key] = value
-            else:
-                self.__attr.pop(key, None)
-        return self

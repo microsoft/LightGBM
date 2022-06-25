@@ -513,6 +513,42 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+def test_choose_param_value_preserves_nones():
+
+    # preserves None found for main param and still removes aliases
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "num_threads": None,
+            "n_jobs": 4,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # correctly chooses value when only an alias is provided
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "n_jobs": None,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # adds None if that's given as the default and param not found
+    params = lgb.basic._choose_param_value(
+        main_param_name="min_data_in_leaf",
+        params={
+            "objective": "regression"
+        },
+        default_value=None
+    )
+    assert params == {"objective": "regression", "min_data_in_leaf": None}
+
+
 @pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
 def test_choose_param_value_objective(objective_alias):
     # If callable is found in objective
@@ -644,26 +680,27 @@ def test_custom_objective_safety():
 
 
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_no_copy_when_single_float_dtype_dataframe(dtype):
+@pytest.mark.parametrize('feature_name', [['x1', 'x2'], 'auto'])
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.rand(10, 2).astype(dtype)
     df = pd.DataFrame(X)
-    # feature names are required to not make a copy (rename makes a copy)
-    feature_name = ['x1', 'x2']
     built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
 
 
-def test_categorical_code_conversion_doesnt_modify_original_data():
+@pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
-    df = pd.DataFrame(X.copy(), columns=['x1'], dtype='category')
-    data = lgb.basic._data_from_pandas(df, ['x1'], None, None)[0]
+    column_name = 'a' if feature_name == 'auto' else feature_name[0]
+    df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
+    data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     # check that the original data wasn't modified
-    np.testing.assert_equal(df['x1'], X[:, 0])
+    np.testing.assert_equal(df[column_name], X[:, 0])
     # check that the built data has the codes
-    np.testing.assert_equal(df['x1'].cat.codes, data[:, 0])
+    np.testing.assert_equal(df[column_name].cat.codes, data[:, 0])
 
 
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])
