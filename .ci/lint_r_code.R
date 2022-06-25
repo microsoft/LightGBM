@@ -96,7 +96,7 @@ LINTERS_TO_USE <- list(
         )
     )
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
-    , "unreachable_code"     = lintr::unreachable_code_linter()
+    , "unreachable_code"       = lintr::unreachable_code_linter()
     , "vector_logic"           = lintr::vector_logic_linter()
 )
 
