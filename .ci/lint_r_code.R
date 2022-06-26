@@ -34,7 +34,7 @@ LINTERS_TO_USE <- list(
     , "any_is_na"            = lintr::any_is_na_linter()
     , "assignment"           = lintr::assignment_linter()
     , "braces"               = lintr::brace_linter()
-    , "class_equals_linter"  = lintr::class_equals_linter()
+    , "class_equals"         = lintr::class_equals_linter()
     , "commas"               = lintr::commas_linter()
     , "duplicate_argument"   = lintr::duplicate_argument_linter()
     , "equals_na"            = lintr::equals_na_linter()
@@ -63,8 +63,6 @@ LINTERS_TO_USE <- list(
     , "trailing_blank"       = lintr::trailing_blank_lines_linter()
     , "trailing_white"       = lintr::trailing_whitespace_linter()
     , "true_false"           = lintr::T_and_F_symbol_linter()
-    , "unreachable_code"     = lintr::unreachable_code_linter()
-    , "vector_logic"         = lintr::vector_logic_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
             "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
@@ -98,6 +96,8 @@ LINTERS_TO_USE <- list(
         )
     )
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
+    , "unreachable_code"       = lintr::unreachable_code_linter()
+    , "vector_logic"           = lintr::vector_logic_linter()
 )
 
 noquote(paste0(length(FILES_TO_LINT), " R files need linting"))
