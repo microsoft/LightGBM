@@ -74,12 +74,12 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
 
 test_that("using a custom objective that returns wrong shape grad or hess raises an informative error", {
   bad_grads <- function(preds, dtrain) {
-    return(list(grad = numeric(0), hess = rep(1.0, length(preds))))
+    return(list(grad = numeric(0L), hess = rep(1.0, length(preds))))
   }
   bad_hess <- function(preds, dtrain) {
-    return(list(grad = rep(1.0, length(preds)), hess = numeric(0)))
+    return(list(grad = rep(1.0, length(preds)), hess = numeric(0L)))
   }
-  params = list(num_leaves = 3)
+  params <- list(num_leaves = 3L)
   expect_error({
     lgb.train(params = params, data = dtrain, obj = bad_grads)
   }, sprintf("grad should have length %d, got 0", nrow(dtrain)))
