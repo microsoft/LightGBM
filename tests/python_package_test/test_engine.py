@@ -3642,3 +3642,10 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.predict(df2, validate_features=False)
+
+    # try to refit with a different feature
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x3' at position 2 but found 'z'"):
+        bst.refit(df2, y, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    bst.refit(df2, y, validate_features=False)
