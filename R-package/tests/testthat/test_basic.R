@@ -2969,7 +2969,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , nrounds = 5L
     , verbose = VERBOSITY
   )
-  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+  pred1 <- predict(bst1, train$data, type = "raw")
 
   bst2 <- lightgbm(
     data = train$data
@@ -2979,7 +2979,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , nrounds = 5L
     , verbose = VERBOSITY
   )
-  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+  pred2 <- predict(bst2, train$data, type = "raw")
 
   expect_true(any(pred1 != pred2))
 })
