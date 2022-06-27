@@ -290,13 +290,13 @@ class CVBooster:
         self.boosters = []
         self.best_iteration = -1
 
-    def _append(self, booster):
+    def _append(self, booster: Booster) -> None:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable[[Any, Any], List[Any]]:
         """Redirect methods call of CVBooster."""
-        def handler_function(*args, **kwargs):
+        def handler_function(*args: Any, **kwargs: Any) -> List[Any]:
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
@@ -305,8 +305,17 @@ class CVBooster:
         return handler_function
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+def _make_n_folds(
+    full_data: Dataset,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
+    nfold: int,
+    params: Dict[str, Any],
+    seed: int,
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    stratified: bool = True,
+    shuffle: bool = True,
+    eval_train_metric: bool = False
+) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -365,7 +374,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(
+    raw_results: List[List[Tuple[str, str, float, bool]]]
+) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
     cvmap = collections.OrderedDict()
     metric_type = {}

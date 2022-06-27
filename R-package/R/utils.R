@@ -1,13 +1,13 @@
 lgb.is.Booster <- function(x) {
-  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals_linter
+  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.Dataset <- function(x) {
-  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals_linter
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.Predictor <- function(x) {
-  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals_linter
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.null.handle <- function(x) {

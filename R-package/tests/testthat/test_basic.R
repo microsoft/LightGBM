@@ -4,9 +4,9 @@ VERBOSITY <- as.integer(
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
-UTF8_LOCALE <- all(grepl(
-  pattern = "UTF-8$"
-  , x = Sys.getlocale(category = "LC_CTYPE")
+UTF8_LOCALE <- all(endsWith(
+  Sys.getlocale(category = "LC_CTYPE")
+  , "UTF-8"
 ))
 
 data(agaricus.train, package = "lightgbm")

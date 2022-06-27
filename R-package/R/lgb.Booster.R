@@ -854,7 +854,7 @@ predict.lgb.Booster <- function(object,
 
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
-      , paste(additional_params_names, collapse = ", ")
+      , toString(names(additional_params))
       , ". These are ignored. Use argument 'params' instead."
     ))
   }
@@ -1183,7 +1183,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       "lgb.get.eval.result: data_name "
       , shQuote(data_name)
       , " not found. Only the following datasets exist in record evals: ["
-      , paste(data_names, collapse = ", ")
+      , toString(data_names)
       , "]"
     ))
   }
@@ -1197,7 +1197,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       , " not found. Only the following eval_names exist for dataset "
       , shQuote(data_name)
       , ": ["
-      , paste(eval_names, collapse = ", ")
+      , toString(eval_names)
       , "]"
     ))
     stop("lgb.get.eval.result: wrong eval name")
