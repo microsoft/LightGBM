@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cloud.r-project.org/"
+CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
@@ -17,12 +17,12 @@ fi
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
-    export R_MAC_PKG_URL=https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.1.3
-    export R_MAC_PKG_URL=https://cran.r-project.org/bin/macosx/base/R-${R_MAC_VERSION}.pkg
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="4.1.3-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
@@ -40,7 +40,7 @@ if [[ $OS_NAME == "linux" ]]; then
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \

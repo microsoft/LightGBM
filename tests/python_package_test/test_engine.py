@@ -18,6 +18,7 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
@@ -1479,6 +1480,18 @@ def test_init_with_subset():
     assert lgb_train_from_file.get_data() == "lgb_train_data.bin"
     assert subset_data_3.get_data() == "lgb_train_data.bin"
     assert subset_data_4.get_data() == "lgb_train_data.bin"
+
+
+def test_training_on_constructed_subset_without_params():
+    X = np.random.random((100, 10))
+    y = np.random.random(100)
+    lgb_data = lgb.Dataset(X, y)
+    subset_indices = [1, 2, 3, 4]
+    subset = lgb_data.subset(subset_indices).construct()
+    bst = lgb.train({}, subset, num_boost_round=1)
+    assert subset.get_params() == {}
+    assert subset.num_data() == len(subset_indices)
+    assert bst.current_iteration() == 1
 
 
 def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
@@ -3581,3 +3594,66 @@ def test_boost_from_average_with_single_leaf_trees():
     preds = model.predict(X)
     mean_preds = np.mean(preds)
     assert y.min() <= mean_preds <= y.max()
+
+
+def test_cegb_split_buffer_clean():
+    # modified from https://github.com/microsoft/LightGBM/issues/3679#issuecomment-938652811
+    # and https://github.com/microsoft/LightGBM/pull/5087
+    # test that the ``splits_per_leaf_`` of CEGB is cleaned before training a new tree
+    # which is done in the fix #5164
+    # without the fix:
+    #    Check failed: (best_split_info.left_count) > (0)
+
+    R, C = 1000, 100
+    seed = 29
+    np.random.seed(seed)
+    data = np.random.randn(R, C)
+    for i in range(1, C):
+        data[i] += data[0] * np.random.randn()
+
+    N = int(0.8 * len(data))
+    train_data = data[:N]
+    test_data = data[N:]
+    train_y = np.sum(train_data, axis=1)
+    test_y = np.sum(test_data, axis=1)
+
+    train = lgb.Dataset(train_data, train_y, free_raw_data=True)
+
+    params = {
+        'boosting_type': 'gbdt',
+        'objective': 'regression',
+        'max_bin': 255,
+        'num_leaves': 31,
+        'seed': 0,
+        'learning_rate': 0.1,
+        'min_data_in_leaf': 0,
+        'verbose': -1,
+        'min_split_gain': 1000.0,
+        'cegb_penalty_feature_coupled': 5 * np.arange(C),
+        'cegb_penalty_split': 0.0002,
+        'cegb_tradeoff': 10.0,
+        'force_col_wise': True,
+    }
+
+    model = lgb.train(params, train, num_boost_round=10)
+    predicts = model.predict(test_data)
+    rmse = np.sqrt(mean_squared_error(test_y, predicts))
+    assert rmse < 10.0
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+def test_validate_features():
+    X, y = make_synthetic_regression()
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    ds = lgb.Dataset(df, y)
+    bst = lgb.train({'num_leaves': 15, 'verbose': -1}, ds, num_boost_round=10)
+    assert bst.feature_name() == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x3': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x3' at position 2 but found 'z'"):
+        bst.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    bst.predict(df2, validate_features=False)
