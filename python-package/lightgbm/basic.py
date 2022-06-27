@@ -22,7 +22,7 @@ from .libpath import find_lib_path
 ZERO_THRESHOLD = 1e-35
 
 
-def _get_sample_count(total_nrow: int, params: str):
+def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
         ctypes.c_int32(total_nrow),
@@ -108,7 +108,7 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib():
+def _load_lib() -> Optional[ctypes.CDLL]:
     """Load LightGBM library."""
     lib_path = find_lib_path()
     if len(lib_path) == 0:
@@ -141,7 +141,7 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def is_numeric(obj):
+def is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
         float(obj)
@@ -289,7 +289,7 @@ def json_default_with_numpy(obj):
         return obj
 
 
-def param_dict_to_str(data):
+def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
     """Convert Python dictionary to string, which is passed to C API."""
     if data is None or not data:
         return ""
