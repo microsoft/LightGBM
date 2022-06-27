@@ -18,11 +18,30 @@ from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
                     make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
+task_to_model_factory = {
+    'ranking': lgb.LGBMRanker,
+    'classification': lgb.LGBMClassifier,
+    'regression': lgb.LGBMRegressor,
+}
+
+
+def _create_data(task):
+    if task == 'ranking':
+        X, y, g = make_ranking(n_features=4)
+        g = np.bincount(g)
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        g = None
+    elif task == 'regression':
+        X, y = make_synthetic_regression()
+        g = None
+    return X, y, g
 
 
 class UnpicklableCallback:
@@ -1244,16 +1263,7 @@ def test_sklearn_integration(estimator, check):
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    if task == 'ranking':
-        X, y, g = make_ranking()
-        g = np.bincount(g)
-        model_factory = lgb.LGBMRanker
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
-        model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = make_synthetic_regression()
-        model_factory = lgb.LGBMRegressor
+    X, y, g = _create_data(task)
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {
@@ -1261,6 +1271,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         'num_leaves': 3,
         'random_state': 0
     }
+    model_factory = task_to_model_factory[task]
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
             model_1d = model_factory(**params).fit(X, y, group=g)
@@ -1315,3 +1326,25 @@ def test_default_n_jobs(tmp_path):
     with open(tmp_path / "model.txt", "r") as f:
         model_txt = f.read()
     assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_validate_features(task):
+    X, y, g = _create_data(task)
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
+    if task == 'ranking':
+        model.fit(df, y, group=g)
+    else:
+        model.fit(df, y)
+    assert model.feature_name_ == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x2': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x2' at position 1 but found 'z'"):
+        model.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    model.predict(df2, validate_features=False)
