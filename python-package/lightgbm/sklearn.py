@@ -773,7 +773,7 @@ class LGBMModel(_LGBMModelBase):
                     valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
                     valid_group = _get_meta_data(eval_group, 'eval_group', i)
                     valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
-                                        init_score=valid_init_score, group=valid_group,
+                                        group=valid_group, init_score=valid_init_score,
                                         categorical_feature='auto', params=params)
 
                 valid_sets.append(valid_set)
