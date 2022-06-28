@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import ZERO_THRESHOLD, Booster, _data_from_pandas, _is_zero, _log_warning
+from .basic import ZERO_THRESHOLD, Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
 from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
@@ -417,9 +417,9 @@ def plot_metric(
 
 def _determine_direction_for_numeric_split(fval: float, threshold: float, missing_type: str, default_left: bool) -> str:
     le_threshold = fval <= threshold
-    if missing_type == 'None' or (missing_type == 'Zero' and default_left and ZERO_THRESHOLD < threshold):
+    if missing_type == _MissingType.NONE or (missing_type == _MissingType.ZERO and default_left and ZERO_THRESHOLD < threshold):
         direction = 'left' if le_threshold else 'right'
-    elif missing_type == 'Zero':
+    elif missing_type == _MissingType.ZERO:
         if default_left:
             direction = 'left' if le_threshold or _is_zero(fval) or math.isnan(fval) else 'right'
         else:
@@ -432,13 +432,11 @@ def _determine_direction_for_numeric_split(fval: float, threshold: float, missin
     return direction
 
 
-def _determine_direction_for_categorical_split(fval: float, thresholds: str, missing_type: str) -> str:
-    if missing_type == 'None':
-        int_fval = -1 if math.isnan(fval) else int(fval)
-    else:
-        int_fval = 0 if math.isnan(fval) else int(fval)
+def _determine_direction_for_categorical_split(fval: float, thresholds: str) -> str:
+    if math.isnan(fval):
+        return 'right'
     int_thresholds = {int(t) for t in thresholds.split('||')}
-    return 'left' if int_fval in int_thresholds else 'right'
+    return 'left' if int(fval) in int_thresholds else 'right'
 
 
 def _to_graphviz(
@@ -490,9 +488,7 @@ def _to_graphviz(
             direction = None
             if example_case is not None:
                 if root['decision_type'] == '==':
-                    direction = _determine_direction_for_categorical_split(
-                        example_case[split_feature], root['threshold'], root['missing_type']
-                    )
+                    direction = _determine_direction_for_categorical_split(example_case[split_feature], root['threshold'])
                 else:
                     direction = _determine_direction_for_numeric_split(
                         example_case[split_feature], root['threshold'], root['missing_type'], root['default_left']
@@ -644,14 +640,13 @@ def create_tree_digraph(
         show_info = []
 
     if example_case is not None:
+        if not isinstance(example_case, (np.ndarray, pd_DataFrame)) or example_case.ndim != 2:
+            raise ValueError('example_case must be a numpy 2-D array or a pandas DataFrame')
         if example_case.shape[0] != 1:
             raise ValueError('example_case must have a single row.')
         if isinstance(example_case, pd_DataFrame):
-            example_case = _data_from_pandas(example_case, None, None, booster.pandas_categorical)[0][0]
-        elif isinstance(example_case, np.ndarray) and example_case.ndim == 2:
-            example_case = example_case[0]
-        else:
-            raise ValueError('example_case must be a numpy 2-D array or a pandas DataFrame')
+            example_case = _data_from_pandas(example_case, None, None, booster.pandas_categorical)[0]
+        example_case = example_case[0]
 
     graph = _to_graphviz(tree_info, show_info, feature_names, precision,
                          orientation, monotone_constraints, example_case=example_case, **kwargs)

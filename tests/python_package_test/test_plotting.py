@@ -266,7 +266,7 @@ def test_example_case_in_tree_digraph():
             else:
                 makes_categorical_splits = True
                 direction = lgb.plotting._determine_direction_for_categorical_split(
-                    example_case[0][node['split_feature']], node['threshold'], node['missing_type']
+                    example_case[0][node['split_feature']], node['threshold']
                 )
             node = node['left_child'] if direction == 'left' else node['right_child']
             assert 'color=blue' in node_in_graph[0]
