@@ -5,7 +5,6 @@ VERBOSITY <- as.integer(
 # numerical tolerance to use when checking metric values
 TOLERANCE <- 1e-06
 
-ON_SOLARIS <- Sys.info()["sysname"] == "SunOS"
 ON_32_BIT_WINDOWS <- .Platform$OS.type == "windows" && .Machine$sizeof.pointer != 8L
 
 test_that("learning-to-rank with lgb.train() works as expected", {
@@ -50,9 +49,17 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         expect_true(result[["higher_better"]])
         expect_identical(result[["data_name"]], "training")
     }
-    expect_identical(sapply(eval_results, function(x) {x$name}), eval_names)
+    expect_identical(
+        sapply(
+            X = eval_results
+            , FUN = function(x) {
+                x$name
+            }
+        )
+        , eval_names
+    )
     expect_equal(eval_results[[1L]][["value"]], 0.775)
-    if (!(ON_SOLARIS || ON_32_BIT_WINDOWS)) {
+    if (!ON_32_BIT_WINDOWS) {
         expect_true(abs(eval_results[[2L]][["value"]] - 0.745986) < TOLERANCE)
         expect_true(abs(eval_results[[3L]][["value"]] - 0.7351959) < TOLERANCE)
     }
@@ -60,8 +67,8 @@ test_that("learning-to-rank with lgb.train() works as expected", {
 
 test_that("learning-to-rank with lgb.cv() works as expected", {
     testthat::skip_if(
-        ON_SOLARIS || ON_32_BIT_WINDOWS
-        , message = "Skipping on Solaris and 32-bit Windows"
+        ON_32_BIT_WINDOWS
+        , message = "Skipping on 32-bit Windows"
     )
     set.seed(708L)
     data(agaricus.train, package = "lightgbm")
@@ -83,6 +90,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , label_gain = "0,1,3"
         , min_data = 1L
         , learning_rate = 0.01
+        , verbose = VERBOSITY
     )
     nfold <- 4L
     nrounds <- 10L

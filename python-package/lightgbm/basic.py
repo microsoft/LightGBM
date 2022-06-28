@@ -8,7 +8,6 @@ from collections import OrderedDict
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
-from logging import Logger
 from os import SEEK_END
 from os.path import getsize
 from pathlib import Path
@@ -28,7 +27,7 @@ def _is_zero(x: float) -> bool:
     return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
 
 
-def _get_sample_count(total_nrow: int, params: str):
+def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
         ctypes.c_int32(total_nrow),
@@ -120,7 +119,7 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib():
+def _load_lib() -> Optional[ctypes.CDLL]:
     """Load LightGBM library."""
     lib_path = find_lib_path()
     if len(lib_path) == 0:
@@ -153,7 +152,7 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def is_numeric(obj):
+def is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
         float(obj)
@@ -301,7 +300,7 @@ def json_default_with_numpy(obj):
         return obj
 
 
-def param_dict_to_str(data):
+def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
     """Convert Python dictionary to string, which is passed to C API."""
     if data is None or not data:
         return ""
@@ -420,21 +419,27 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    # find a value, and remove other aliases with .pop()
-    # prefer the value of 'main_param_name' if it exists, otherwise search the aliases
-    found_value = None
+    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+
+    # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
-        found_value = params[main_param_name]
+        for param in aliases:
+            params.pop(param, None)
+        return params
 
-    for param in _ConfigAliases.get(main_param_name):
-        val = params.pop(param, None)
-        if found_value is None and val is not None:
-            found_value = val
+    # if main param name was not found, search for an alias
+    for param in aliases:
+        if param in params.keys():
+            params[main_param_name] = params[param]
+            break
 
-    if found_value is not None:
-        params[main_param_name] = found_value
-    else:
-        params[main_param_name] = default_value
+    if main_param_name in params.keys():
+        for param in aliases:
+            params.pop(param, None)
+        return params
+
+    # neither of main_param_name, aliases were found
+    params[main_param_name] = default_value
 
     return params
 
@@ -549,7 +554,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
         if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str)
+            data = data.rename(columns=str, copy=False)
         cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
         cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
         if pandas_categorical is None:  # train dataset
@@ -561,7 +566,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
                 if list(data[col].cat.categories) != list(category):
                     data[col] = data[col].cat.set_categories(category)
         if len(cat_cols):  # cat_cols is list
-            data = data.copy()  # not alter origin DataFrame
+            data = data.copy(deep=False)  # not alter origin DataFrame
             data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
         if categorical_feature is not None:
             if feature_name is None:
@@ -763,8 +768,7 @@ class _InnerPredictor:
         return this
 
     def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False,
-                is_reshape=True):
+                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False, validate_features=False):
         """Predict logic.
 
         Parameters
@@ -785,8 +789,9 @@ class _InnerPredictor:
         data_has_header : bool, optional (default=False)
             Whether data has header.
             Used only for txt data.
-        is_reshape : bool, optional (default=True)
-            Whether to reshape to (nrow, ncol).
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
 
         Returns
         -------
@@ -796,6 +801,17 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+        elif isinstance(data, pd_DataFrame) and validate_features:
+            data_names = [str(x) for x in data.columns]
+            ptr_names = (ctypes.c_char_p * len(data_names))()
+            ptr_names[:] = [x.encode('utf-8') for x in data_names]
+            _safe_call(
+                _LIB.LGBM_BoosterValidateFeatureNames(
+                    self.handle,
+                    ptr_names,
+                    ctypes.c_int(len(data_names)),
+                )
+            )
         data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
@@ -843,7 +859,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
-        if is_reshape and not is_sparse and preds.size != nrow:
+        if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -1363,12 +1379,12 @@ class Dataset:
         self._start_row += nrow
         return self
 
-    def get_params(self):
+    def get_params(self) -> Dict[str, Any]:
         """Get the used parameters in the Dataset.
 
         Returns
         -------
-        params : dict or None
+        params : dict
             The used parameters in this Dataset object.
         """
         if self.params is not None:
@@ -1395,6 +1411,8 @@ class Dataset:
                                                 "weight_column",
                                                 "zero_as_missing")
             return {k: v for k, v in self.params.items() if k in dataset_params}
+        else:
+            return {}
 
     def _free_handle(self):
         if self.handle is not None:
@@ -1414,8 +1432,8 @@ class Dataset:
         if predictor is not None:
             init_score = predictor.predict(data,
                                            raw_score=True,
-                                           data_has_header=data_has_header,
-                                           is_reshape=False)
+                                           data_has_header=data_has_header)
+            init_score = init_score.ravel()
             if used_indices is not None:
                 assert not self.need_slice
                 if isinstance(data, (str, Path)):
@@ -1832,6 +1850,7 @@ class Dataset:
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
             if self.free_raw_data:
                 self.data = None
+            self.feature_name = self.get_feature_name()
         return self
 
     def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
@@ -2397,13 +2416,13 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get num_feature before construct dataset")
 
-    def feature_num_bin(self, feature: int) -> int:
+    def feature_num_bin(self, feature: Union[int, str]) -> int:
         """Get the number of bins for a feature.
 
         Parameters
         ----------
-        feature : int
-            Index of the feature.
+        feature : int or str
+            Index or name of the feature.
 
         Returns
         -------
@@ -2411,6 +2430,8 @@ class Dataset:
             The number of constructed bins for the feature in the Dataset.
         """
         if self.handle is not None:
+            if isinstance(feature, str):
+                feature = self.feature_name.index(feature)
             ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
                                                          ctypes.c_int(feature),
@@ -2562,7 +2583,13 @@ class Dataset:
 class Booster:
     """Booster in LightGBM."""
 
-    def __init__(self, params=None, train_set=None, model_file=None, model_str=None):
+    def __init__(
+        self,
+        params: Optional[Dict[str, Any]] = None,
+        train_set: Optional[Dataset] = None,
+        model_file: Optional[Union[str, Path]] = None,
+        model_str: Optional[str] = None
+    ):
         """Initialize the Booster.
 
         Parameters
@@ -2580,7 +2607,6 @@ class Booster:
         self.network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
-        self.__attr = {}
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
@@ -2675,7 +2701,7 @@ class Booster:
                             'to create Booster instance')
         self.params = params
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.network:
                 self.free_network()
@@ -2687,10 +2713,10 @@ class Booster:
         except AttributeError:
             pass
 
-    def __copy__(self):
+    def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _):
+    def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         booster = Booster(model_str=model_str)
         return booster
@@ -2716,7 +2742,7 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def free_dataset(self):
+    def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
 
         Returns
@@ -2729,7 +2755,7 @@ class Booster:
         self.__num_dataset = 0
         return self
 
-    def _free_buffer(self):
+    def _free_buffer(self) -> "Booster":
         self.__inner_predict_buffer = []
         self.__is_predicted_cur_iter = []
         return self
@@ -2768,7 +2794,7 @@ class Booster:
         self.network = True
         return self
 
-    def free_network(self):
+    def free_network(self) -> "Booster":
         """Free Booster's network.
 
         Returns
@@ -2780,7 +2806,7 @@ class Booster:
         self.network = False
         return self
 
-    def trees_to_dataframe(self):
+    def trees_to_dataframe(self) -> pd_DataFrame:
         """Parse the fitted model and return in an easy-to-read pandas DataFrame.
 
         The returned DataFrame has the following columns.
@@ -2916,7 +2942,7 @@ class Booster:
 
         return pd_DataFrame(model_list, columns=model_list[0].keys())
 
-    def set_train_data_name(self, name):
+    def set_train_data_name(self, name: str) -> "Booster":
         """Set the name to the training Dataset.
 
         Parameters
@@ -2932,7 +2958,7 @@ class Booster:
         self._train_data_name = name
         return self
 
-    def add_valid(self, data, name):
+    def add_valid(self, data: Dataset, name: str) -> "Booster":
         """Add validation data.
 
         Parameters
@@ -2962,7 +2988,7 @@ class Booster:
         self.__is_predicted_cur_iter.append(False)
         return self
 
-    def reset_parameter(self, params):
+    def reset_parameter(self, params: Dict[str, Any]) -> "Booster":
         """Reset parameters of Booster.
 
         Parameters
@@ -3099,7 +3125,7 @@ class Booster:
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return is_finished.value == 1
 
-    def rollback_one_iter(self):
+    def rollback_one_iter(self) -> "Booster":
         """Rollback one iteration.
 
         Returns
@@ -3112,7 +3138,7 @@ class Booster:
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
 
-    def current_iteration(self):
+    def current_iteration(self) -> int:
         """Get the index of the current iteration.
 
         Returns
@@ -3126,7 +3152,7 @@ class Booster:
             ctypes.byref(out_cur_iter)))
         return out_cur_iter.value
 
-    def num_model_per_iteration(self):
+    def num_model_per_iteration(self) -> int:
         """Get number of models per iteration.
 
         Returns
@@ -3140,7 +3166,7 @@ class Booster:
             ctypes.byref(model_per_iter)))
         return model_per_iter.value
 
-    def num_trees(self):
+    def num_trees(self) -> int:
         """Get number of weak sub-models.
 
         Returns
@@ -3154,12 +3180,12 @@ class Booster:
             ctypes.byref(num_trees)))
         return num_trees.value
 
-    def upper_bound(self):
+    def upper_bound(self) -> float:
         """Get upper bound value of a model.
 
         Returns
         -------
-        upper_bound : double
+        upper_bound : float
             Upper bound value of the model.
         """
         ret = ctypes.c_double(0)
@@ -3168,12 +3194,12 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def lower_bound(self):
+    def lower_bound(self) -> float:
         """Get lower bound value of a model.
 
         Returns
         -------
-        lower_bound : double
+        lower_bound : float
             Lower bound value of the model.
         """
         ret = ctypes.c_double(0)
@@ -3199,7 +3225,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     A ``Dataset`` to evaluate.
@@ -3245,7 +3271,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The training dataset.
@@ -3276,7 +3302,7 @@ class Booster:
                 preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                     The predicted values.
                     For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                    If ``fobj`` is specified, predicted values are returned before any transformation,
+                    If custom objective function is used, predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task in this case.
                 eval_data : Dataset
                     The validation dataset.
@@ -3352,7 +3378,7 @@ class Booster:
             ctypes.c_int(end_iteration)))
         return self
 
-    def model_from_string(self, model_str):
+    def model_from_string(self, model_str: str) -> "Booster":
         """Load Booster from a string.
 
         Parameters
@@ -3500,7 +3526,8 @@ class Booster:
 
     def predict(self, data, start_iteration=0, num_iteration=None,
                 raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, is_reshape=True, **kwargs):
+                data_has_header=False, validate_features=False,
+                **kwargs):
         """Make a prediction.
 
         Parameters
@@ -3534,8 +3561,9 @@ class Booster:
         data_has_header : bool, optional (default=False)
             Whether the data has header.
             Used only if data is str.
-        is_reshape : bool, optional (default=True)
-            If True, result is reshaped to [nrow, ncol].
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
         **kwargs
             Other parameters for the prediction.
 
@@ -3553,7 +3581,7 @@ class Booster:
                 num_iteration = -1
         return predictor.predict(data, start_iteration, num_iteration,
                                  raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, is_reshape)
+                                 data_has_header, validate_features)
 
     def refit(
         self,
@@ -3664,10 +3692,9 @@ class Booster:
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
         new_booster.network = self.network
-        new_booster.__attr = self.__attr.copy()
         return new_booster
 
-    def get_leaf_output(self, tree_id, leaf_id):
+    def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
         """Get the output of a leaf.
 
         Parameters
@@ -3696,7 +3723,7 @@ class Booster:
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
-    def num_feature(self):
+    def num_feature(self) -> int:
         """Get number of features.
 
         Returns
@@ -3710,7 +3737,7 @@ class Booster:
             ctypes.byref(out_num_feature)))
         return out_num_feature.value
 
-    def feature_name(self):
+    def feature_name(self) -> List[str]:
         """Get names of features.
 
         Returns
@@ -3748,7 +3775,11 @@ class Booster:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def feature_importance(self, importance_type='split', iteration=None):
+    def feature_importance(
+        self,
+        importance_type: str = 'split',
+        iteration: Optional[int] = None
+    ) -> np.ndarray:
         """Get feature importances.
 
         Parameters
@@ -3776,7 +3807,7 @@ class Booster:
             ctypes.c_int(iteration),
             ctypes.c_int(importance_type_int),
             result.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
-        if importance_type_int == 0:
+        if importance_type_int == C_API_FEATURE_IMPORTANCE_SPLIT:
             return result.astype(np.int32)
         else:
             return result
@@ -3888,7 +3919,7 @@ class Booster:
                     ret.append((data_name, eval_name, val, is_higher_better))
         return ret
 
-    def __inner_predict(self, data_idx):
+    def __inner_predict(self, data_idx: int):
         """Predict for training and validation dataset."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
@@ -3916,7 +3947,7 @@ class Booster:
             result = result.reshape(num_data, self.__num_class, order='F')
         return result
 
-    def __get_eval_info(self):
+    def __get_eval_info(self) -> None:
         """Get inner evaluation count and names."""
         if self.__need_reload_eval_info:
             self.__need_reload_eval_info = False
@@ -3964,42 +3995,3 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
-
-    def attr(self, key):
-        """Get attribute string from the Booster.
-
-        Parameters
-        ----------
-        key : str
-            The name of the attribute.
-
-        Returns
-        -------
-        value : str or None
-            The attribute value.
-            Returns None if attribute does not exist.
-        """
-        return self.__attr.get(key, None)
-
-    def set_attr(self, **kwargs):
-        """Set attributes to the Booster.
-
-        Parameters
-        ----------
-        **kwargs
-            The attributes to set.
-            Setting a value to None deletes an attribute.
-
-        Returns
-        -------
-        self : Booster
-            Booster with set attributes.
-        """
-        for key, value in kwargs.items():
-            if value is not None:
-                if not isinstance(value, str):
-                    raise ValueError("Only string values are accepted")
-                self.__attr[key] = value
-            else:
-                self.__attr.pop(key, None)
-        return self

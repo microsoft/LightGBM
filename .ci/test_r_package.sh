@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cloud.r-project.org/"
+CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
@@ -17,11 +17,13 @@ fi
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.2
-    export R_LINUX_VERSION="4.1.2-1.2004.0"
+    export R_MAC_VERSION=4.1.3
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
+    export R_LINUX_VERSION="4.1.3-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -38,7 +40,7 @@ if [[ $OS_NAME == "linux" ]]; then
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}"
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
@@ -66,20 +68,20 @@ fi
 if [[ $OS_NAME == "macos" ]]; then
     brew update-reset && brew update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install automake
+        brew install automake || exit -1
     fi
     brew install \
         checkbashisms \
-        qpdf
-    brew install --cask basictex
+        qpdf || exit -1
+    brew install --cask basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr --verify-repo=none update --self
-    sudo tlmgr --verify-repo=none install inconsolata helvetic
+    sudo tlmgr --verify-repo=none update --self || exit -1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic || exit -1
 
-    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
+    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
         -pkg $(pwd)/R.pkg \
-        -target /
+        -target / || exit -1
 
     # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
     # See https://github.com/r-lib/actions/issues/412.

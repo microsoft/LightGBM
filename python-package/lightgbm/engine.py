@@ -4,21 +4,22 @@ import collections
 import copy
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
 from . import callback
 from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
-from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
+from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
-_LGBM_CustomObjectiveFunction = Callable[
-    [np.ndarray, Dataset],
-    Tuple[np.ndarray, np.ndarray]
-]
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[str, float, bool]
+]
+
+_LGBM_PreprocFunction = Callable[
+    [Dataset, Dataset, Dict[str, Any]],
+    Tuple[Dataset, Dataset, Dict[str, Any]]
 ]
 
 
@@ -28,7 +29,6 @@ def train(
     num_boost_round: int = 100,
     valid_sets: Optional[List[Dataset]] = None,
     valid_names: Optional[List[str]] = None,
-    fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
     feature_name: Union[List[str], str] = 'auto',
@@ -41,7 +41,8 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for training.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -50,27 +51,6 @@ def train(
         List of data to be evaluated on during training.
     valid_names : list of str, or None, optional (default=None)
         Names of ``valid_sets``.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -79,7 +59,7 @@ def train(
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -118,6 +98,27 @@ def train(
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
     booster : Booster
@@ -125,10 +126,15 @@ def train(
     """
     # create predictor first
     params = copy.deepcopy(params)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=None
+    )
+    fobj = None
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
@@ -284,13 +290,13 @@ class CVBooster:
         self.boosters = []
         self.best_iteration = -1
 
-    def _append(self, booster):
+    def _append(self, booster: Booster) -> None:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable[[Any, Any], List[Any]]:
         """Redirect methods call of CVBooster."""
-        def handler_function(*args, **kwargs):
+        def handler_function(*args: Any, **kwargs: Any) -> List[Any]:
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
@@ -299,8 +305,17 @@ class CVBooster:
         return handler_function
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+def _make_n_folds(
+    full_data: Dataset,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
+    nfold: int,
+    params: Dict[str, Any],
+    seed: int,
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    stratified: bool = True,
+    shuffle: bool = True,
+    eval_train_metric: bool = False
+) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -359,7 +374,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(
+    raw_results: List[List[Tuple[str, str, float, bool]]]
+) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
     cvmap = collections.OrderedDict()
     metric_type = {}
@@ -372,18 +389,32 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=100,
-       folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
-       fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+def cv(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]] = None,
+    nfold: int = 5,
+    stratified: bool = True,
+    shuffle: bool = True,
+    metrics: Optional[Union[str, List[str]]] = None,
+    feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: Union[str, List[str]] = 'auto',
+    categorical_feature: Union[str, List[str], List[int]] = 'auto',
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    seed: int = 0,
+    callbacks: Optional[List[Callable]] = None,
+    eval_train_metric: bool = False,
+    return_cvbooster: bool = False
+) -> Dict[str, Any]:
     """Perform the cross-validation with given parameters.
 
     Parameters
     ----------
     params : dict
-        Parameters for Booster.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -403,27 +434,6 @@ def cv(params, train_set, num_boost_round=100,
     metrics : str, list of str, or None, optional (default=None)
         Evaluation metrics to be monitored while CV.
         If not None, the metric in ``params`` will be overridden.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -432,7 +442,7 @@ def cv(params, train_set, num_boost_round=100,
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -474,6 +484,27 @@ def cv(params, train_set, num_boost_round=100,
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
     eval_hist : dict
@@ -486,12 +517,16 @@ def cv(params, train_set, num_boost_round=100,
     """
     if not isinstance(train_set, Dataset):
         raise TypeError("Training only accepts Dataset object")
-
     params = copy.deepcopy(params)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=None
+    )
+    fobj = None
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")

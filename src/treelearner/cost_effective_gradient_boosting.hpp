@@ -10,6 +10,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
+#include <LightGBM/utils/threading.h>
 
 #include <vector>
 
@@ -32,6 +33,7 @@ class CostEfficientGradientBoosting {
       return true;
     }
   }
+
   void Init() {
     auto train_data = tree_learner_->train_data_;
     if (!init_) {
@@ -63,7 +65,18 @@ class CostEfficientGradientBoosting {
     }
     init_ = true;
   }
-  double DetlaGain(int feature_index, int real_fidx, int leaf_index,
+
+  void BeforeTrain() {
+    // clear the splits in splits_per_leaf_
+    Threading::For<size_t>(0, splits_per_leaf_.size(), 1024,
+      [this] (int /*thread_index*/, size_t start, size_t end) {
+      for (size_t i = start; i < end; ++i) {
+        splits_per_leaf_[i].Reset();
+      }
+    });
+  }
+
+  double DeltaGain(int feature_index, int real_fidx, int leaf_index,
                    int num_data_in_leaf, SplitInfo split_info) {
     auto config = tree_learner_->config_;
     double delta =
@@ -82,6 +95,7 @@ class CostEfficientGradientBoosting {
                      feature_index] = split_info;
     return delta;
   }
+
   void UpdateLeafBestSplits(Tree* tree, int best_leaf,
                             const SplitInfo* best_split_info,
                             std::vector<SplitInfo>* best_split_per_leaf) {
