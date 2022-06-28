@@ -1132,7 +1132,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
-        pred_leaf: bool =False,
+        pred_leaf: bool = False,
         pred_contrib: bool = False,
         validate_features: bool = False,
         **kwargs: Any

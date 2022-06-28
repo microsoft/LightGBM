@@ -763,7 +763,7 @@ class _InnerPredictor:
         num_iteration: int = -1,
         raw_score: bool = False,
         pred_leaf: bool = False,
-        pred_contrib: bool =False,
+        pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False
     ):
@@ -3530,7 +3530,7 @@ class Booster:
         raw_score: bool = False,
         pred_leaf: bool = False,
         pred_contrib: bool = False,
-        data_has_header: bool =False,
+        data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any
     ):
