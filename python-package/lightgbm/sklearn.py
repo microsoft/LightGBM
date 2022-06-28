@@ -736,14 +736,9 @@ class LGBMModel(_LGBMModelBase):
         # copy for consistency
         self._n_features_in = self._n_features
 
-        def _construct_dataset(X, y, sample_weight, init_score, group, params,
-                               categorical_feature='auto'):
-            return Dataset(X, label=y, weight=sample_weight, group=group,
-                           init_score=init_score, params=params,
-                           categorical_feature=categorical_feature)
-
-        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
-                                       categorical_feature=categorical_feature)
+        train_set = Dataset(data=_X, label=_y, weight=sample_weight, group=group,
+                            init_score=init_score, categorical_feature=categorical_feature,
+                            params=params)
 
         valid_sets = []
         if eval_set is not None:
@@ -777,8 +772,10 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
                     valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1],
-                                                   valid_weight, valid_init_score, valid_group, params)
+                    valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
+                                        init_score=valid_init_score, group=valid_group,
+                                        categorical_feature='auto', params=params)
+
                 valid_sets.append(valid_set)
 
         if isinstance(init_model, LGBMModel):
