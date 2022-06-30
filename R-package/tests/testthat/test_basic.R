@@ -3517,7 +3517,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
   expect_equal(model$params$objective, "regression")
   model_txt_lines <- strsplit(
-    x = bst1$save_model_to_string()
+    x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression"))
@@ -3529,7 +3529,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
   expect_equal(model$params$objective, "binary")
   model_txt_lines <- strsplit(
-    x = bst1$save_model_to_string()
+    x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=binary"))
@@ -3542,7 +3542,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   expect_equal(model$params$objective, "multiclass")
   expect_equal(model$params$num_class, 3L)
   model_txt_lines <- strsplit(
-    x = bst1$save_model_to_string()
+    x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=multiclass"))
@@ -3556,7 +3556,7 @@ test_that("lightgbm() determines number of classes for non-default multiclass ob
   expect_equal(model$params$objective, "multiclassova")
   expect_equal(model$params$num_class, 3L)
   model_txt_lines <- strsplit(
-    x = bst1$save_model_to_string()
+    x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=multiclassova"))
