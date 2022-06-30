@@ -40,7 +40,11 @@ a character representing a path to a text file (CSV, TSV, or LibSVM)}
             }
 
             Note that, if using custom objectives, types "class" and "response" will not be available and will
-            default towards using "raw" instead.}
+            default towards using "raw" instead.
+
+            If the model was fit through function \link{lightgbm}, passing the prediction type through \code{params}
+            instead of through this argument might result in factor levels (for classification objectives) not being
+            applied correctly to the resulting output.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -70,6 +74,12 @@ For prediction types that are meant to always return one output per observation 
         For prediction types that are meant to return more than one output per observation (e.g. when predicting
         \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
+
+        If the model was fit through function \link{lightgbm} and it was passed a factor as labels, predictions
+        returned from this function will retain the factor levels (either as values for \code{type="class"}, or
+        as column names for \code{type="response"} and \code{type="raw"} for multi-class objectives). Note that
+        passing the requested prediction type under \code{params} instead of through \code{type} might result in
+        the factor levels not being present in the output.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}

@@ -9,6 +9,7 @@ Booster <- R6::R6Class(
     best_score = NA_real_,
     params = list(),
     record_evals = list(),
+    data_processor = NULL,
 
     # Finalize will free up the handles
     finalize = function() {
@@ -762,6 +763,10 @@ Booster <- R6::R6Class(
 #'
 #'             Note that, if using custom objectives, types "class" and "response" will not be available and will
 #'             default towards using "raw" instead.
+#'
+#'             If the model was fit through function \link{lightgbm}, passing the prediction type through \code{params}
+#'             instead of through this argument might result in factor levels (for classification objectives) not being
+#'             applied correctly to the resulting output.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -785,6 +790,11 @@ Booster <- R6::R6Class(
 #'         \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
 #'         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 #'
+#'         If the model was fit through function \link{lightgbm} and it was passed a factor as labels, predictions
+#'         returned from this function will retain the factor levels (either as values for \code{type="class"}, or
+#'         as column names for \code{type="response"} and \code{type="raw"} for multi-class objectives). Note that
+#'         passing the requested prediction type under \code{params} instead of through \code{type} might result in
+#'         the factor levels not being present in the output.
 #' @examples
 #' \donttest{
 #' data(agaricus.train, package = "lightgbm")
@@ -888,9 +898,12 @@ predict.lgb.Booster <- function(object,
   if (type == "class") {
     if (object$params$objective == "binary") {
       pred <- as.integer(pred >= 0.5)
-    } else if (object$params$objective %in% c("multiclass", "multiclassova")) {
+    } else if (object$params$objective %in% .MULTICLASS_OBJECTIVES) {
       pred <- max.col(pred) - 1L
     }
+  }
+  if (!is.null(object$data_processor)) {
+    pred <- object$data_processor$process_predictions(pred, type)
   }
   return(pred)
 }

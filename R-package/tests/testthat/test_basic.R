@@ -3508,3 +3508,112 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     fitted_model = out[["booster"]]
   )
 })
+
+test_that("lightgbm() changes objective='auto' appropriately", {
+  # Regression
+  data("mtcars")
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  expect_equal(model$params$objective, "regression")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=regression"))
+  expect_false(any(model_txt_lines == "objective=regression_l1"))
+
+  # Binary classification
+  x <- train$data
+  y <- factor(train$label)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  expect_equal(model$params$objective, "binary")
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=binary"))
+
+  # Multi-class classification
+  data("iris")
+  y <- factor(iris$Species)
+  x <- as.matrix(iris[, -5L])
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  expect_equal(model$params$objective, "multiclass")
+  expect_equal(model$params$num_class, 3L)
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=multiclass"))
+})
+
+test_that("lightgbm() determines number of classes for non-default multiclass objectives", {
+  data("iris")
+  y <- factor(iris$Species)
+  x <- as.matrix(iris[, -5L])
+  model <- lightgbm(x, y, objective = "multiclassova", verbose = VERBOSITY, nrounds = 5L)
+  expect_equal(model$params$objective, "multiclassova")
+  expect_equal(model$params$num_class, 3L)
+  model_txt_lines <- strsplit(
+    x = bst1$save_model_to_string()
+    , split = "\n"
+  )[[1L]]
+  expect_true(any(model_txt_lines == "objective=multiclassova"))
+})
+
+test_that("lightgbm() doesn't accept binary classification with non-binary factors", {
+  data("iris")
+  y <- factor(iris$Species)
+  x <- as.matrix(iris[, -5L])
+  expect_error({lightgbm(x, y, objective = "binary", verbose = VERBOSITY, nrounds = 5L)})
+})
+
+test_that("lightgbm() doesn't accept multi-class classification with binary factors", {
+  data("iris")
+  y <- as.character(iris$Species)
+  y[y == "setosa"] <- "versicolor"
+  y <- factor(y)
+  x <- as.matrix(iris[, -5L])
+  expect_error({lightgbm(x, y, objective = "multiclass", verbose = VERBOSITY, nrounds = 5L)})
+})
+
+test_that("lightgbm() model predictions retain factor levels for multiclass classification", {
+  data("iris")
+  y <- factor(iris$Species)
+  x <- as.matrix(iris[, -5L])
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+
+  pred <- predict(model, x, type = "class")
+  expect_true(is.factor(pred))
+  expect_equal(levels(pred), levels(y))
+
+  pred <- predict(model, x, type = "response")
+  expect_equal(colnames(pred), levels(y))
+
+  pred <- predict(model, x, type = "raw")
+  expect_equal(colnames(pred), levels(y))
+})
+
+test_that("lightgbm() model predictions retain factor levels for binary classification", {
+  data("iris")
+  y <- as.character(iris$Species)
+  y[y == "setosa"] <- "versicolor"
+  y <- factor(y)
+  x <- as.matrix(iris[, -5L])
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+
+  pred <- predict(model, x, type = "class")
+  expect_true(is.factor(pred))
+  expect_equal(levels(pred), levels(y))
+
+  pred <- predict(model, x, type = "response")
+  expect_true(is.vector(pred))
+  expect_true(is.numeric(pred))
+  expect_true(all(!(pred %in% y)))
+
+  pred <- predict(model, x, type = "raw")
+  expect_true(is.vector(pred))
+  expect_true(is.numeric(pred))
+  expect_true(all(!(pred %in% y)))
+})
