@@ -2,15 +2,15 @@ DataProcessor <- R6::R6Class(
   classname = "lgb.DataProcessor",
   public = list(
     factor_levels = NULL,
-    
+
     process_y = function(y, objective, params) {
-      
+
       if (is.character(y)) {
         y <- factor(y)
       }
-      
+
       if (is.factor(y)) {
-        
+
         if (is.ordered(y)) {
           warning("Passed labels as ordered factor. Order of levels is ignored.")
         }
@@ -38,7 +38,7 @@ DataProcessor <- R6::R6Class(
               sprintf(
                 "Factors with >2 levels as labels only allowed for multi-class objectives. Got: %s (allowed: %s)"
                 , objective
-                , paste(.MULTICLASS_OBJECTIVES, collapse = ", ")
+                , toString(.MULTICLASS_OBJECTIVES)
               )
             )
           }
@@ -51,7 +51,7 @@ DataProcessor <- R6::R6Class(
         out$objective <- objective
         out$params <- params
         return(out)
-      
+
       } else {
 
         y <- as.numeric(y)
@@ -64,7 +64,7 @@ DataProcessor <- R6::R6Class(
           params = params
         )
         return(out)
-      
+
       }
     },
 
