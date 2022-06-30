@@ -415,17 +415,16 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     params = deepcopy(params)
 
     aliases = _ConfigAliases.get_sorted(main_param_name)
-    found = False
-    for alias in aliases:
-        if not found and alias in params.keys():
-            found = True
-            params[main_param_name] = params[alias]
-            if alias == main_param_name:
-                continue
-        if found:
-            params.pop(alias, None)
-
-    if not found:
+    aliases_provided = [a for a in aliases if a in params.keys()]
+    if aliases_provided:
+        # set the first alias (has the highest priority) and could be the main param
+        params[main_param_name] = params[aliases_provided[0]]
+        # remove the aliases
+        for alias in aliases_provided:
+            if alias != main_param_name:
+                params.pop(alias, None)
+    else:
+        # if no alias was provided in params we fallback to the default value
         params[main_param_name] = default_value
 
     return params
