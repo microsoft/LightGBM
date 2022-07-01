@@ -756,8 +756,17 @@ class _InnerPredictor:
         this.pop('handle', None)
         return this
 
-    def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False, validate_features=False):
+    def predict(
+        self,
+        data,
+        start_iteration: int = 0,
+        num_iteration: int = -1,
+        raw_score: bool = False,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        data_has_header: bool = False,
+        validate_features: bool = False
+    ):
         """Predict logic.
 
         Parameters
@@ -3513,10 +3522,18 @@ class Booster:
                                                           default=json_default_with_numpy))
         return ret
 
-    def predict(self, data, start_iteration=0, num_iteration=None,
-                raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, validate_features=False,
-                **kwargs):
+    def predict(
+        self,
+        data,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        raw_score: bool = False,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        data_has_header: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Make a prediction.
 
         Parameters
