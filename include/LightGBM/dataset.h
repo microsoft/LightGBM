@@ -453,6 +453,14 @@ class Dataset {
     metadata_.InitByReference(num_data, &reference->metadata());
   }
 
+  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data,
+                                    int32_t has_weights,
+                                    int32_t has_init_scores,
+                                    int32_t has_queries,
+                                    int32_t nclasses) {
+      metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
+  }
+
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;

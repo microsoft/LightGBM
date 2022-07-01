@@ -32,7 +32,8 @@ namespace LightGBM {
   /*!
   * Creates fake data in the passed vectors.
   */
-  void TestUtils::CreateRandomDenseData(int32_t nrows,
+  void TestUtils::CreateRandomDenseData(
+    int32_t nrows,
     int32_t ncols,
     int32_t nclasses,
     std::vector<double>* features,
@@ -55,7 +56,8 @@ namespace LightGBM {
   /*!
   * Creates fake data in the passed vectors.
   */
-  void TestUtils::CreateRandomSparseData(int32_t nrows,
+  void TestUtils::CreateRandomSparseData(
+    int32_t nrows,
     int32_t ncols,
     int32_t nclasses,
     float sparse_percent,
@@ -183,6 +185,9 @@ namespace LightGBM {
         init_scores_ptr,
         groups_ptr);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
+      if (result != 0) {
+        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
+      }
 
       features_ptr += batch_count * ncols;
       labels_ptr += batch_count;
@@ -285,7 +290,10 @@ namespace LightGBM {
     const float* labels = metadata->label();
     auto nTotal = static_cast<int32_t>(ref_labels->size());
     for (auto i = 0; i < nTotal; i++) {
-      EXPECT_EQ(ref_labels->at(i), labels[i]) << "Coalesced data: " << ref_labels->at(i);
+      EXPECT_EQ(ref_labels->at(i), labels[i]) << "Inserted data: " << ref_labels->at(i);
+      if (ref_labels->at(i) != labels[i]) {
+        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
+      }
     }
 
     const float* weights = metadata->weights();
@@ -294,7 +302,7 @@ namespace LightGBM {
         FAIL() << "Expected null weights";
       }
       for (auto i = 0; i < nTotal; i++) {
-        EXPECT_EQ(ref_weights->at(i), weights[i]) << "Coalesced data: " << ref_weights->at(i);
+        EXPECT_EQ(ref_weights->at(i), weights[i]) << "Inserted data: " << ref_weights->at(i);
       }
     } else if (ref_weights) {
       FAIL() << "Expected non-null weights";
@@ -306,7 +314,7 @@ namespace LightGBM {
         FAIL() << "Expected null init_scores";
       }
       for (auto i = 0; i < ref_init_scores->size(); i++) {
-        EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Coalesced data: " << ref_init_scores->at(i) << " Index: " << i;
+        EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Inserted data: " << ref_init_scores->at(i) << " Index: " << i;
         if (ref_init_scores->at(i) != init_scores[i]) {
           FAIL() << "Mismatched init_scores";
         }

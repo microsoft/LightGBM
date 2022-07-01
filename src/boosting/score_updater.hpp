@@ -35,7 +35,7 @@ class ScoreUpdater {
     // if exists initial score, will start from it
     if (init_score != nullptr) {
       if ((data->metadata().num_init_score() % num_data_) != 0
-        || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
+          || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
         Log::Fatal("Number of class for initial score error");
       }
       has_init_score_ = true;

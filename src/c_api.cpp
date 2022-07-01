@@ -1013,6 +1013,19 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
   API_END();
 }
 
+int LGBM_DatasetInitStreaming(DatasetHandle dataset,
+                              int32_t has_weights,
+                              int32_t has_init_scores,
+                              int32_t has_queries,
+                              int32_t nclasses) {
+  API_BEGIN();
+  auto p_dataset = reinterpret_cast<Dataset*>(dataset);
+  auto num_data = p_dataset->num_data();
+  p_dataset->InitMetadata(num_data, has_weights, has_init_scores, has_queries, nclasses);
+  p_dataset->set_wait_for_manual_finish(true);
+  API_END();
+}
+
 int LGBM_DatasetPushRows(DatasetHandle dataset,
                          const void* data,
                          int data_type,
