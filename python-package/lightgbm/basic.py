@@ -341,7 +341,7 @@ class _ConfigAliases:
     aliases = None
 
     @staticmethod
-    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+    def _get_all_param_aliases() -> Dict[str, List[str]]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -415,18 +415,24 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     params = deepcopy(params)
 
     aliases = _ConfigAliases.get_sorted(main_param_name)
-    aliases_provided = [a for a in aliases if a in params.keys()]
-    if aliases_provided:
-        # set the first alias (has the highest priority) and could be the main param
-        params[main_param_name] = params[aliases_provided[0]]
-        # remove the aliases
-        for alias in aliases_provided:
-            if alias != main_param_name:
-                params.pop(alias, None)
-    else:
-        # if no alias was provided in params we fallback to the default value
-        params[main_param_name] = default_value
+    aliases_provided = [a for a in aliases if a in params.keys() and a != main_param_name]
 
+    # prefer the main parameter
+    if main_param_name in params:
+        for alias in aliases_provided:
+            params.pop(alias, None)
+        return params
+
+    # if the main parameter wasn't provided, prefer the first alias
+    if aliases_provided:
+        first_param = aliases_provided[0]
+        params[main_param_name] = params[first_param]
+        for param in aliases_provided:
+            params.pop(param, None)
+        return params
+
+    # if no alias was provided in params we fallback to the default valu
+    params[main_param_name] = default_value
     return params
 
 

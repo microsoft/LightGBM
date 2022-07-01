@@ -198,21 +198,29 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 
   aliases <- .PARAMETER_ALIASES()[[main_param_name]]
   aliases_provided <- aliases[aliases %in% names(params)]
+  aliases_provided <- aliases[aliases != main_param_name]
 
-  if (length(aliases_provided) > 0L) {
-    # set the first alias (has the highest priority) and could be the main param
-    params[[main_param_name]] <- params[[aliases_provided[[1L]]]]
-    # remove the aliases
-    for (alias in aliases_provided) {
-      if (alias != main_param_name) {
-        params[[alias]] <- NULL
-      }
+  # prefer the main parameter
+  if (!is.null(params[[main_param_name]])) {
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
     }
-  } else {
-    # if not provided in params at all, use the alternative value provided
-    # through a keyword argument from lgb.train(), lgb.cv(), etc.
-    params[[main_param_name]] <- alternative_kwarg_value
+    return(params)
   }
+
+  # if the main parameter wasn't provided, prefer the first alias
+  if (length(aliases_provided) > 0L) {
+    first_param <- aliases_provided[1L]
+    params[[main_param_name]] <- params[[first_param]]
+    for (param in aliases_provided) {
+      params[[param]] <- NULL
+    }
+    return(params)
+  }
+
+  # if not provided in params at all, use the alternative value provided
+  # through a keyword argument from lgb.train(), lgb.cv(), etc.
+  params[[main_param_name]] <- alternative_kwarg_value
   return(params)
 }
 

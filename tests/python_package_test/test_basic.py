@@ -474,7 +474,7 @@ def test_choose_param_value():
         "port": 2222,
         "metric": "auc",
         "num_trees": 81,
-        "n_iter": 10,
+        "n_iter": 13,
     }
 
     # should resolve duplicate aliases, and prefer the main parameter
@@ -493,7 +493,7 @@ def test_choose_param_value():
         params=params,
         default_value=17
     )
-    assert params["num_iterations"] == 10
+    assert params["num_iterations"] == 13
     assert "num_trees" not in params
     assert "n_iter" not in params
 
@@ -511,7 +511,7 @@ def test_choose_param_value():
         "port": 2222,
         "metric": "auc",
         "num_trees": 81,
-        "n_iter": 10,
+        "n_iter": 13,
     }
     assert original_params == expected_params
 
