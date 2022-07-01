@@ -32,6 +32,10 @@ class DatasetLoader {
     int** sample_indices, int num_col, const int* num_per_col,
     size_t total_sample_size, data_size_t num_data);
 
+  LIGHTGBM_EXPORT Dataset* DistConstructFromSampleData(double** sample_values,
+    int** sample_indices, int num_col, const int* num_per_col,
+    size_t total_sample_size, data_size_t num_local_data, int64_t num_dist_data);
+
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
   /*! \brief Disable copy */

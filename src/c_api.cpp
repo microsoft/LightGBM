@@ -995,6 +995,30 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   API_END();
 }
 
+int LGBM_DatasetDistCreateFromSampledColumn(double** sample_data,
+                                            int** sample_indices,
+                                            int32_t ncol,
+                                            const int* num_per_col,
+                                            int32_t num_sample_row,
+                                            int32_t num_local_row,
+                                            int64_t num_dist_row,
+                                            const char* parameters,
+                                            DatasetHandle* out) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+  DatasetLoader loader(config, nullptr, 1, nullptr);
+  *out = loader.DistConstructFromSampleData(sample_data,
+                                            sample_indices,
+                                            ncol,
+                                            num_per_col,
+                                            num_sample_row,
+                                            static_cast<data_size_t>(num_local_row),
+                                            num_dist_row);
+  API_END();
+}
 
 int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   int64_t num_total_row,
