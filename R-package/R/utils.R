@@ -198,7 +198,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 
   aliases <- .PARAMETER_ALIASES()[[main_param_name]]
   aliases_provided <- aliases[aliases %in% names(params)]
-  aliases_provided <- aliases[aliases != main_param_name]
+  aliases_provided <- aliases_provided[aliases_provided != main_param_name]
 
   # prefer the main parameter
   if (!is.null(params[[main_param_name]])) {

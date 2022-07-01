@@ -84,8 +84,7 @@ struct Config {
   * \param y Alias 2
   * \return true if x has higher priority than y
   */
-  inline static bool SortAlias(
-    const std::string& x, const std::string& y);
+  inline static bool SortAlias(const std::string& x, const std::string& y);
 
 
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
