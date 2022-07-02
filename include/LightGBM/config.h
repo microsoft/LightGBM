@@ -86,7 +86,6 @@ struct Config {
   */
   inline static bool SortAlias(const std::string& x, const std::string& y);
 
-
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
