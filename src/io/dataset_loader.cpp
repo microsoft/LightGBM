@@ -662,13 +662,13 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices, int num_col, const int* num_per_col,
                                                 size_t total_sample_size, data_size_t num_data) {
   // Use the same values for num_dist_data and num_local_data
- return DistConstructFromSampleData(sample_values,
-                                    sample_indices,
-                                    num_col,
-                                    num_per_col,
-                                    total_sample_size,
-                                    num_data,
-                                    num_data);
+  return DistConstructFromSampleData(sample_values,
+                                     sample_indices,
+                                     num_col,
+                                     num_per_col,
+                                     total_sample_size,
+                                     num_data,
+                                     num_data);
 }
 
 Dataset* DatasetLoader::DistConstructFromSampleData(double** sample_values,
