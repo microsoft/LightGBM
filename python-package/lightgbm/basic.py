@@ -3602,6 +3602,7 @@ class Booster:
         categorical_feature='auto',
         dataset_params=None,
         free_raw_data=True,
+        validate_features=False,
         **kwargs
     ):
         """Refit the existing Booster by new data.
@@ -3645,6 +3646,9 @@ class Booster:
             Other parameters for Dataset ``data``.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset for ``data``.
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to refit the model match the original ones.
+            Used only if data is pandas DataFrame.
         **kwargs
             Other parameters for refit.
             These parameters will be passed to ``predict`` method.
@@ -3659,7 +3663,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True)
+        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
