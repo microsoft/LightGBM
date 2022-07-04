@@ -415,7 +415,7 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     params = deepcopy(params)
 
     aliases = _ConfigAliases.get_sorted(main_param_name)
-    aliases = [a for a in aliases if a in params.keys() and a != main_param_name]
+    aliases = [a for a in aliases if a != main_param_name]
 
     # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
