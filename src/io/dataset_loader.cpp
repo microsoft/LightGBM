@@ -657,23 +657,13 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   return dataset.release();
 }
 
-
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
-                                                int** sample_indices, int num_col, const int* num_per_col,
-                                                size_t total_sample_size, data_size_t num_data) {
-  // Use the same values for num_dist_data and num_local_data
-  return DistConstructFromSampleData(sample_values,
-                                     sample_indices,
-                                     num_col,
-                                     num_per_col,
-                                     total_sample_size,
-                                     num_data,
-                                     num_data);
-}
-
-Dataset* DatasetLoader::DistConstructFromSampleData(double** sample_values,
-    int** sample_indices, int num_col, const int* num_per_col,
-    size_t total_sample_size, data_size_t num_local_data, int64_t num_dist_data) {
+                                                int** sample_indices,
+                                                int num_col,
+                                                const int* num_per_col,
+                                                size_t total_sample_size,
+                                                data_size_t num_local_data,
+                                                int64_t num_dist_data) {
   CheckSampleSize(total_sample_size, static_cast<size_t>(num_dist_data));
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
