@@ -111,8 +111,6 @@ def _log_callback(msg: bytes) -> None:
 def _load_lib() -> ctypes.CDLL:
     """Load LightGBM library."""
     lib_path = find_lib_path()
-    if not lib_path:
-        raise RuntimeError("Could not find LightGBM library")
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
