@@ -7,7 +7,7 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from os import environ, SEEK_END
+from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
