@@ -152,12 +152,12 @@ def is_numeric(obj: Any) -> bool:
         return False
 
 
-def is_numpy_1d_array(data):
+def is_numpy_1d_array(data: Any) -> bool:
     """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
-def is_numpy_column_array(data):
+def is_numpy_column_array(data: Any) -> bool:
     """Check whether data is a column numpy array."""
     if not isinstance(data, np.ndarray):
         return False
@@ -172,7 +172,7 @@ def cast_numpy_array_to_dtype(array, dtype):
     return array.astype(dtype=dtype, copy=False)
 
 
-def is_1d_list(data):
+def is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
@@ -279,7 +279,7 @@ def c_array(ctype, values):
     return (ctype * len(values))(*values)
 
 
-def json_default_with_numpy(obj):
+def json_default_with_numpy(obj: Any) -> Any:
     """Convert numpy classes to JSON serializable objects."""
     if isinstance(obj, (np.integer, np.floating, np.bool_)):
         return obj.item()
@@ -744,7 +744,7 @@ class _InnerPredictor:
         pred_parameter = {} if pred_parameter is None else pred_parameter
         self.pred_parameter = param_dict_to_str(pred_parameter)
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.__is_manage_handle:
                 _safe_call(_LIB.LGBM_BoosterFree(self.handle))
@@ -1145,7 +1145,7 @@ class _InnerPredictor:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
 
-    def current_iteration(self):
+    def current_iteration(self) -> int:
         """Get the index of the current iteration.
 
         Returns
