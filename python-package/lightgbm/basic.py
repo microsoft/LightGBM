@@ -7,7 +7,7 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from os import SEEK_END
+from os import environ, SEEK_END
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -108,11 +108,11 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib() -> Optional[ctypes.CDLL]:
+def _load_lib() -> ctypes.CDLL:
     """Load LightGBM library."""
     lib_path = find_lib_path()
-    if len(lib_path) == 0:
-        return None
+    if not lib_path:
+        raise RuntimeError("Could not find LightGBM library")
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
@@ -122,7 +122,16 @@ def _load_lib() -> Optional[ctypes.CDLL]:
     return lib
 
 
-_LIB = _load_lib()
+# we don't need lib_lightgbm while building docs
+if environ.get('LIGHTGBM_BUILD_DOC', False):
+    class _MockCDLL:
+        def __getattr__(self, name):
+            def _catchall(*args, **kwargs):
+                return None
+            return _catchall
+    _LIB = _MockCDLL()
+else:
+    _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
