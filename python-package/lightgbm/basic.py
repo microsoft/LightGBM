@@ -121,13 +121,14 @@ def _load_lib() -> ctypes.CDLL:
 
 
 # we don't need lib_lightgbm while building docs
+_LIB: ctypes.CDLL
 if environ.get('LIGHTGBM_BUILD_DOC', False):
     class _MockCDLL:
         def __getattr__(self, name):
             def _catchall(*args, **kwargs):
                 return None
             return _catchall
-    _LIB = _MockCDLL()
+    _LIB = _MockCDLL()  # type: ignore
 else:
     _LIB = _load_lib()
 
