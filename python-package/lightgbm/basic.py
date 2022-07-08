@@ -3091,7 +3091,11 @@ class Booster:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
-    def __boost(self, grad, hess):
+    def __boost(
+        self,
+        grad: np.ndarray,
+        hess: np.ndarray
+    ) -> bool:
         """Boost Booster for one iteration with customized gradient statistics.
 
         .. note::
