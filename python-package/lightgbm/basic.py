@@ -2585,6 +2585,12 @@ class Dataset:
         return self
 
 
+_LGBM_CustomObjectiveFunction = Callable[
+    [np.ndarray, Dataset],
+    Tuple[np.ndarray, np.ndarray]
+]
+
+
 class Booster:
     """Booster in LightGBM."""
 
@@ -3014,7 +3020,11 @@ class Booster:
         self.params.update(params)
         return self
 
-    def update(self, train_set=None, fobj=None):
+    def update(
+        self,
+        train_set: Optional[Dataset] = None,
+        fobj: Optional[_LGBM_CustomObjectiveFunction] = None
+    ) -> bool:
         """Update Booster for one iteration.
 
         Parameters

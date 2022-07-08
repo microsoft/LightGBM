@@ -9,7 +9,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
+                    _LGBM_CustomObjectiveFunction, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomMetricFunction = Callable[
@@ -131,7 +132,7 @@ def train(
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
@@ -523,7 +524,7 @@ def cv(
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
