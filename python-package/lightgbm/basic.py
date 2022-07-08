@@ -3361,7 +3361,11 @@ class Booster:
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
-    def shuffle_models(self, start_iteration=0, end_iteration=-1):
+    def shuffle_models(
+        self,
+        start_iteration: int = 0,
+        end_iteration: int = -1
+    ) -> "Booster":
         """Shuffle models.
 
         Parameters
@@ -3413,7 +3417,12 @@ class Booster:
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: Optional[int] = 0,
+        importance_type: str = 'split'
+    ) -> str:
         """Save Booster to string.
 
         Parameters
@@ -3466,7 +3475,13 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
+    def dump_model(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: Optional[int] = 0,
+        importance_type: str = 'split',
+        object_hook: Optional[Callable[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         """Dump Booster to JSON format.
 
         Parameters
