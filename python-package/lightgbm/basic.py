@@ -3480,7 +3480,7 @@ class Booster:
         num_iteration: Optional[int] = None,
         start_iteration: Optional[int] = 0,
         importance_type: str = 'split',
-        object_hook: Optional[Callable[Dict[str, Any]]] = None
+        object_hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
         """Dump Booster to JSON format.
 
