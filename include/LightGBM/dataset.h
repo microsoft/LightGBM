@@ -266,10 +266,10 @@ class Metadata {
   * \brief Get number of classes
   */
   inline int32_t num_classes() const {
-    if (num_data_) {
+    if (num_data_ && num_init_score_) {
       return static_cast<int>(num_init_score_ / num_data_);
     }
-    return 0;
+    return 1;
   }
 
   /*! \brief Disable copy */
@@ -845,7 +845,10 @@ class Dataset {
   /*! \brief Set whether the Dataset is finished automatically when last row is pushed or with a manual
    *         MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesced later.
    *         FinishLoad should not be called on any Dataset that will be coalesced.  */
-  inline void set_wait_for_manual_finish(bool value) { wait_for_manual_finish_ = value; }
+  inline void set_wait_for_manual_finish(bool value) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    wait_for_manual_finish_ = value;
+  }
 
   /*! \brief Disable copy */
   Dataset& operator=(const Dataset&) = delete;
@@ -945,6 +948,8 @@ class Dataset {
   int num_numeric_features_;
   std::string device_type_;
   int gpu_device_id_;
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
 
   #ifdef USE_CUDA_EXP
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
