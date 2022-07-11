@@ -245,10 +245,10 @@ Booster <- R6::R6Class(
         n_hess <- length(gpair$hess)
         n_preds <- length(preds)
         if (n_grad != n_preds) {
-          stop(sprintf("grad should have length %d, got %d", n_preds, n_grad))
+          stop(sprintf("Expected custom objective function to return grad with length %d, got %d.", n_preds, n_grad))
         }
         if (n_hess != n_preds) {
-          stop(sprintf("hess should have length %d, got %d", n_preds, n_hess))
+          stop(sprintf("Expected custom objective function to return hess with length %d, got %d.", n_preds, n_hess))
         }
 
         # Return custom boosting gradient/hessian
