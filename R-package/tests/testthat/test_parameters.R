@@ -55,6 +55,7 @@ test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where
   expect_true(length(names(param_aliases)) == length(param_aliases))
   expect_true(all(sapply(param_aliases, is.character)))
   expect_true(length(unique(names(param_aliases))) == length(param_aliases))
+  expect_equal(sort(param_aliases[["task"]]), c("task", "task_type"))
   expect_equal(param_aliases[["bagging_fraction"]], c("bagging_fraction", "bagging", "sub_row", "subsample"))
 })
 
