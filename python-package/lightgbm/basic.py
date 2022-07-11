@@ -2585,6 +2585,12 @@ class Dataset:
         return self
 
 
+_LGBM_CustomObjectiveFunction = Callable[
+    [np.ndarray, Dataset],
+    Tuple[np.ndarray, np.ndarray]
+]
+
+
 class Booster:
     """Booster in LightGBM."""
 
@@ -3014,7 +3020,11 @@ class Booster:
         self.params.update(params)
         return self
 
-    def update(self, train_set=None, fobj=None):
+    def update(
+        self,
+        train_set: Optional[Dataset] = None,
+        fobj: Optional[_LGBM_CustomObjectiveFunction] = None
+    ) -> bool:
         """Update Booster for one iteration.
 
         Parameters
@@ -3081,7 +3091,11 @@ class Booster:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
-    def __boost(self, grad, hess):
+    def __boost(
+        self,
+        grad: np.ndarray,
+        hess: np.ndarray
+    ) -> bool:
         """Boost Booster for one iteration with customized gradient statistics.
 
         .. note::
