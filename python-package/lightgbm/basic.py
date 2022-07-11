@@ -123,7 +123,7 @@ def _load_lib() -> ctypes.CDLL:
 # we don't need lib_lightgbm while building docs
 _LIB: ctypes.CDLL
 if environ.get('LIGHTGBM_BUILD_DOC', False):
-    from unnittest.mock import Mock  # isort: skip
+    from unittest.mock import Mock  # isort: skip
     _LIB = Mock(ctypes.CDLL)  # type: ignore
 else:
     _LIB = _load_lib()
