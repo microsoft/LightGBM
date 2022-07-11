@@ -3434,7 +3434,7 @@ class Booster:
     def model_to_string(
         self,
         num_iteration: Optional[int] = None,
-        start_iteration: Optional[int] = 0,
+        start_iteration: int = 0,
         importance_type: str = 'split'
     ) -> str:
         """Save Booster to string.
@@ -3492,7 +3492,7 @@ class Booster:
     def dump_model(
         self,
         num_iteration: Optional[int] = None,
-        start_iteration: Optional[int] = 0,
+        start_iteration: int = 0,
         importance_type: str = 'split',
         object_hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
     ) -> Dict[str, Any]:
