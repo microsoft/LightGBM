@@ -34,7 +34,7 @@ RUN chmod +x /tini
 # update: downloads the package lists from the repositories and "updates" them to get information on the newest versions of packages and their
 # dependencies. It will do this for all repositories and PPAs.
 
-RUN apt-get update && \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC && apt-get update && \
 apt-get install -y --no-install-recommends \
 build-essential \
 curl \
@@ -73,8 +73,8 @@ RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh
 
-RUN conda config --set always_yes yes --set changeps1 no && \
-    conda create -y -q -n py3 numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
+RUN conda config --set changeps1 no && \
+    conda create -y -n py3 numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
 
 #################################################################################################################
 #           LightGBM
