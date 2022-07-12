@@ -20,6 +20,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
+from .test_consistency import EXAMPLES_DIR, FileLoader
 from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
 
@@ -3044,6 +3045,26 @@ def test_interaction_constraints():
     est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                           [1] + list(range(2, num_features))]),
                     train_data, num_boost_round=10)
+
+
+def test_linear_trees_num_threads(tmp_path):
+    # check that number of threads does not affect result
+    fd = FileLoader(EXAMPLES_DIR / 'binary_classification', 'binary',
+                    'train_linear.conf')
+    X_train, y_train, _ = fd.load_dataset('.train')
+    X_test, _, _ = fd.load_dataset('.test')
+    lgb_train = lgb.Dataset(X_train, label=y_train)
+    params = {'verbose': -1,
+              'metric': 'mse',
+              'seed': 0,
+              'linear_tree': True,
+              'num_threads': 2}
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred1 = est.predict(X_train)
+    params["num_threads"] = 4
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred2 = est.predict(X_train)
+    np.testing.assert_allclose(pred1, pred2)
 
 
 def test_linear_trees(tmp_path):
