@@ -231,12 +231,24 @@ Booster <- R6::R6Class(
           private$set_objective_to_none <- TRUE
         }
         # Perform objective calculation
-        gpair <- fobj(private$inner_predict(1L), private$train_set)
+        preds <- private$inner_predict(1L)
+        gpair <- fobj(preds, private$train_set)
 
         # Check for gradient and hessian as list
         if (is.null(gpair$grad) || is.null(gpair$hess)) {
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
+        }
+
+        # Check grad and hess have the right shape
+        n_grad <- length(gpair$grad)
+        n_hess <- length(gpair$hess)
+        n_preds <- length(preds)
+        if (n_grad != n_preds) {
+          stop(sprintf("Expected custom objective function to return grad with length %d, got %d.", n_preds, n_grad))
+        }
+        if (n_hess != n_preds) {
+          stop(sprintf("Expected custom objective function to return hess with length %d, got %d.", n_preds, n_hess))
         }
 
         # Return custom boosting gradient/hessian
@@ -245,7 +257,7 @@ Booster <- R6::R6Class(
           , private$handle
           , gpair$grad
           , gpair$hess
-          , length(gpair$grad)
+          , n_preds
         )
 
       }
