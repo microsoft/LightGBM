@@ -3047,6 +3047,7 @@ def test_interaction_constraints():
 
 
 def test_linear_trees_num_threads():
+    # check that number of threads does not affect result
     x = np.arange(0, 1000, 0.1)
     y = 2 * x + np.random.normal(0, 0.1, len(x))
     x = x[:, np.newaxis]
