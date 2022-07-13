@@ -274,23 +274,8 @@ def c_str(string: str) -> ctypes.c_char_p:
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype:Union[ctypes.c_char_p,ctypes.c_int], values:List[Union[str,int]])->np.ndarray:
-    """_summary_
-
-    Parameters
-    ----------
-    ctype : Union[ctypes.c_char_p,ctypes.c_int]
-        cast one of the availible ctypes for array creation
-    values : List[Union[str,int]]
-        list of values used to fill the C array
-
-    Returns
-    -------
-    np.ndarray
-        np.ndarray.ctypes:
-        https://numpy.org/doc/stable/reference/generated/numpy.ndarray.ctypes.html
-    """
-    # Convert a Python array to C array.
+def c_array(ctype: type, values: List[ctypes.c_char_p]) -> ctypes.Array:
+    """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
 
