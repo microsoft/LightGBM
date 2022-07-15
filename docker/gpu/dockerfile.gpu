@@ -123,4 +123,4 @@ WORKDIR /home
 EXPOSE 8888
 
 ENTRYPOINT [ "/tini", "--" ]
-CMD /bin/bash -c "conda activate py3 && jupyter notebook --allow-root --NotebookApp.iopub_data_rate_limit=1.0e10 --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && conda deactivate"
+CMD /bin/bash -c "conda activate py3 && jupyter notebook --allow-root --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && conda deactivate"
