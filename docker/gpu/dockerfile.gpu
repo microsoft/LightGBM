@@ -34,11 +34,12 @@ RUN chmod +x /tini
 # update: downloads the package lists from the repositories and "updates" them to get information on the newest versions of packages and their
 # dependencies. It will do this for all repositories and PPAs.
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC && apt-get update && \
+RUN apt-get update && \
 apt-get install -y --no-install-recommends \
 build-essential \
 curl \
 bzip2 \
+wget \
 ca-certificates \
 libglib2.0-0 \
 libxext6 \
@@ -54,6 +55,9 @@ libboost-system-dev \
 libboost-filesystem-dev \
 gcc \
 g++
+
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-keyring_1.0-1_all.deb && \
+    dpkg -i cuda-keyring_1.0-1_all.deb
 
 # Add OpenCL ICD files for LightGBM
 RUN mkdir -p /etc/OpenCL/vendors && \
@@ -119,4 +123,4 @@ WORKDIR /home
 EXPOSE 8888
 
 ENTRYPOINT [ "/tini", "--" ]
-CMD /bin/bash -c "conda activate py3 && jupyter notebook --allow-root --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && conda deactivate"
+CMD /bin/bash -c "conda activate py3 && jupyter notebook --allow-root --NotebookApp.iopub_data_rate_limit=1.0e10 --no-browser --NotebookApp.password='sha1:98b767162d34:8da1bc3c75a0f29145769edc977375a373407824' && conda deactivate"
