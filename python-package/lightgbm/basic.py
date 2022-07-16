@@ -2584,6 +2584,7 @@ class Dataset:
             c_str(str(filename))))
         return self
 
+
 class Booster:
     """Booster in LightGBM."""
 
