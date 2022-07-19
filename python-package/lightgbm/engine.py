@@ -5,17 +5,23 @@ import copy
 import json
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
-from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
+                    _LGBM_CustomObjectiveFunction, _log_warning)
+from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[str, float, bool]
+]
+
+_LGBM_PreprocFunction = Callable[
+    [Dataset, Dataset, Dict[str, Any]],
+    Tuple[Dataset, Dataset, Dict[str, Any]]
 ]
 
 
@@ -127,7 +133,7 @@ def train(
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
@@ -303,7 +309,7 @@ class CVBooster:
             with open(str(model_file), "r") as file:
                 self._from_dict(json.load(file))
 
-    def _append(self, booster):
+    def _append(self, booster: Booster) -> None:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
@@ -322,9 +328,9 @@ class CVBooster:
                                                       importance_type=importance_type))
         return {"boosters": models_str, "best_iteration": self.best_iteration}
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable[[Any, Any], List[Any]]:
         """Redirect methods call of CVBooster."""
-        def handler_function(*args, **kwargs):
+        def handler_function(*args: Any, **kwargs: Any) -> List[Any]:
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
@@ -417,8 +423,17 @@ class CVBooster:
         return self
 
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+def _make_n_folds(
+    full_data: Dataset,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
+    nfold: int,
+    params: Dict[str, Any],
+    seed: int,
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    stratified: bool = True,
+    shuffle: bool = True,
+    eval_train_metric: bool = False
+) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -477,7 +492,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(
+    raw_results: List[List[Tuple[str, str, float, bool]]]
+) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
     cvmap = collections.OrderedDict()
     metric_type = {}
@@ -490,12 +507,25 @@ def _agg_cv_result(raw_results):
     return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=100,
-       folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
-       fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+def cv(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]] = None,
+    nfold: int = 5,
+    stratified: bool = True,
+    shuffle: bool = True,
+    metrics: Optional[Union[str, List[str]]] = None,
+    feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: Union[str, List[str]] = 'auto',
+    categorical_feature: Union[str, List[str], List[int]] = 'auto',
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    seed: int = 0,
+    callbacks: Optional[List[Callable]] = None,
+    eval_train_metric: bool = False,
+    return_cvbooster: bool = False
+) -> Dict[str, Any]:
     """Perform the cross-validation with given parameters.
 
     Parameters
@@ -611,7 +641,7 @@ def cv(params, train_set, num_boost_round=100,
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'

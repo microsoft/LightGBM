@@ -21,7 +21,7 @@ class FileLoader:
                 if line and not line.startswith('#'):
                     key, value = [token.strip() for token in line.split('=')]
                     if 'early_stopping' not in key:  # disable early_stopping
-                        self.params[key] = value if key != 'num_trees' else int(value)
+                        self.params[key] = value if key not in {'num_trees', 'num_threads'} else int(value)
 
     def load_dataset(self, suffix, is_sparse=False):
         filename = str(self.path(suffix))
@@ -84,7 +84,7 @@ def test_binary_linear():
     X_test, _, X_test_fn = fd.load_dataset('.test')
     weight_train = fd.load_field('.train.weight')
     lgb_train = lgb.Dataset(X_train, y_train, params=fd.params, weight=weight_train)
-    gbm = lgb.LGBMClassifier(**fd.params)
+    gbm = lgb.LGBMClassifier(**fd.params, n_jobs=0)
     gbm.fit(X_train, y_train, sample_weight=weight_train)
     sk_pred = gbm.predict_proba(X_test)[:, 1]
     fd.train_predict_check(lgb_train, X_test, X_test_fn, sk_pred)
