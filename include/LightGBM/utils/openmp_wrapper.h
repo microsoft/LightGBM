@@ -43,8 +43,7 @@ inline void OMP_SET_NUM_THREADS(int num_threads) {
   static const int lgbm_default_num_threads = LGBM_DEFAULT_NUM_THREADS();
   if (lgbm_default_num_threads > 0) {
     omp_set_num_threads(lgbm_default_num_threads);
-  }
-  else if (num_threads > 0) {
+  } else if (num_threads > 0) {
     omp_set_num_threads(num_threads);
   } else {
     omp_set_num_threads(default_omp_num_threads);
