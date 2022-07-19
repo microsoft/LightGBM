@@ -23,7 +23,7 @@ inline int OMP_NUM_THREADS() {
   const char* val = std::getenv("OMP_NUM_THREADS");
   if (val) {
     char* end;
-    long int ans = strtol(val, &end, 10);
+    int32_t ans = strtol(val, &end, 10);
     if (ans > 0) {  // strtol returns 0 if no valid conversion could be performed
       return static_cast<int>(ans);
     }
