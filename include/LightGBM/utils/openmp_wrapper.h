@@ -10,6 +10,7 @@
 #include <LightGBM/utils/log.h>
 
 #include <omp.h>
+#include <stdlib.h>
 
 #include <exception>
 #include <memory>
@@ -19,6 +20,14 @@
 
 inline int OMP_NUM_THREADS() {
   int ret = 1;
+  const char* val = std::getenv("OMP_NUM_THREADS");
+  if (val) {
+    char* end;
+    long int ans = strtol(val, &end, 10);
+    if (ans > 0) {  // strtol returns 0 if no valid conversion could be performed
+      return static_cast<int>(ans);
+    }
+  }
 #pragma omp parallel
 #pragma omp master
   { ret = omp_get_num_threads(); }
