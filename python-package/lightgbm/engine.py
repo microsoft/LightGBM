@@ -272,14 +272,14 @@ def train(
 class CVBooster:
     """CVBooster in LightGBM.
 
-    Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
+    Auxiliary data structure to hold and redirect all boosters of ``cv()`` function.
     This class has the same methods as Booster class.
     All method calls, except for the following methods, are actually performed for underlying Boosters and
     then all returned results are returned in a list.
 
-    - model_from_string
-    - model_to_string
-    - save_model
+    - ``model_from_string()``
+    - ``model_to_string()``
+    - ``save_model()``
 
     Attributes
     ----------
@@ -306,7 +306,7 @@ class CVBooster:
         self.best_iteration = -1
 
         if model_file is not None:
-            with open(str(model_file), "r") as file:
+            with open(model_file, "r") as file:
                 self._from_dict(json.load(file))
 
     def _append(self, booster: Booster) -> None:
@@ -318,9 +318,9 @@ class CVBooster:
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
-            self.boosters.append(Booster(model_str=model_str))
+            self._append(Booster(model_str=model_str))
 
-    def _to_dict(self, num_iteration: int, start_iteration: int, importance_type: str) -> Dict[str, Any]:
+    def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
         models_str = []
         for booster in self.boosters:
@@ -400,7 +400,7 @@ class CVBooster:
         Parameters
         ----------
         filename : str or pathlib.Path
-            Filename to save Booster.
+            Filename to save CVBooster.
         num_iteration : int or None, optional (default=None)
             Index of the iteration that should be saved.
             If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
