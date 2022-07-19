@@ -1,4 +1,4 @@
-Sys.setenv(OMP_NUM_THREADS = "2")
+Sys.setenv(LGBM_DEFAULT_NUM_THREADS = "2")
 library(testthat)
 library(lightgbm)
 

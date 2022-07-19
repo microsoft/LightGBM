@@ -20,7 +20,14 @@
 
 inline int OMP_NUM_THREADS() {
   int ret = 1;
-  const char* val = std::getenv("OMP_NUM_THREADS");
+#pragma omp parallel
+#pragma omp master
+  { ret = omp_get_num_threads(); }
+  return ret;
+}
+
+inline int LGBM_DEFAULT_NUM_THREADS() {
+  const char* val = std::getenv("LGBM_DEFAULT_NUM_THREADS");
   if (val) {
     char* end;
     int32_t ans = strtol(val, &end, 10);
@@ -28,15 +35,16 @@ inline int OMP_NUM_THREADS() {
       return static_cast<int>(ans);
     }
   }
-#pragma omp parallel
-#pragma omp master
-  { ret = omp_get_num_threads(); }
-  return ret;
+  return -1;
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
   static const int default_omp_num_threads = OMP_NUM_THREADS();
-  if (num_threads > 0) {
+  static const int lgbm_default_num_threads = LGBM_DEFAULT_NUM_THREADS();
+  if (lgbm_default_num_threads > 0) {
+    omp_set_num_threads(lgbm_default_num_threads);
+  }
+  else if (num_threads > 0) {
     omp_set_num_threads(num_threads);
   } else {
     omp_set_num_threads(default_omp_num_threads);
