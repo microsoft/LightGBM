@@ -198,11 +198,10 @@ class FeatureGroup {
       for (int i = 0; i < num_feature_; ++i) {
         multi_bin_data_[i]->InitStreaming(num_thread);
       }
-    }
-    else {
+    } else {
       bin_data_->InitStreaming(num_thread);
     }
-  };
+  }
 
   /*!
    * \brief Push one record, will auto convert to bin and push to bin data
