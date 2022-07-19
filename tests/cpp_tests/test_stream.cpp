@@ -75,7 +75,7 @@ void test_stream_dense(
           &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
-        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores, has_queries, nclasses);
+        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores, has_queries, nclasses, 1);
         EXPECT_EQ(0, result) << "LGBM_DatasetInitStreaming result code: " << result;
         break;
       }
@@ -185,7 +185,7 @@ void test_stream_sparse(
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
         dataset = static_cast<Dataset*>(dataset_handle);
-        dataset->InitMetadata(nrows, has_weights, has_init_scores, has_queries, nclasses);
+        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 1);
         break;
       }
 

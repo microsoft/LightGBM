@@ -453,12 +453,16 @@ class Dataset {
     metadata_.InitByReference(num_data, &reference->metadata());
   }
 
-  LIGHTGBM_EXPORT void InitMetadata(data_size_t num_data,
-                                    int32_t has_weights,
-                                    int32_t has_init_scores,
-                                    int32_t has_queries,
-                                    int32_t nclasses) {
-      metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
+  LIGHTGBM_EXPORT void InitStreaming(data_size_t num_data,
+                                     int32_t has_weights,
+                                     int32_t has_init_scores,
+                                     int32_t has_queries,
+                                     int32_t nclasses,
+                                     int32_t nthreads) {
+    metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
+    for (int i = 0; i < num_groups_; ++i) {
+      feature_groups_[i]->InitStreaming(nthreads);
+    }
   }
 
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {

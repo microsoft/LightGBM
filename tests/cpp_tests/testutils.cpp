@@ -183,7 +183,8 @@ namespace LightGBM {
         labels_ptr,
         weights_ptr,
         init_scores_ptr,
-        groups_ptr);
+        groups_ptr,
+        0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
       if (result != 0) {
         FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
@@ -265,7 +266,8 @@ namespace LightGBM {
         labels_ptr,
         weights_ptr,
         init_scores_ptr,
-        groups_ptr);
+        groups_ptr,
+        0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
 
       indptr_ptr += batch_count;

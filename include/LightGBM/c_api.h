@@ -152,13 +152,15 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
  * \param has_init_scores Whether the dataset has Metadata initial scores
  * \param has_queries Whether the dataset has Metadata queries/groups
  * \param nclasses Number of initial score classes
+ * \param nclasses Number of external threads that will use the P
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                                                 int32_t has_weights,
                                                 int32_t has_init_scores,
                                                 int32_t has_queries,
-                                                int32_t nclasses);
+                                                int32_t nclasses,
+                                                int32_t nthreads);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -181,7 +183,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
  * \brief Push data to existing dataset.
  *        The general flow for a streaming scenario is:
  *        1. create Dataset "schema" (e.g. ``LGBM_DatasetCreateFromSampledColumn``)
- *        2. mark them as manual finish (``LGBM_DatasetSetWaitForManualFinish``)
+ *        2. init them for thread-safe streaming (``LGBM_DatasetSetInitStreaming``)
  *        3. push data (``LGBM_DatasetPushRowsWithMetadata`` or ``LGBM_DatasetPushRowsByCSRWithMetadata``)
  *        4. call ``LGBM_DatasetMarkFinished``
  * \param dataset Handle of dataset
@@ -194,6 +196,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
  * \param weight Optional pointer to array with nrow weights
  * \param init_score Optional pointer to array with nrow*nclasses initial scores, in column format
  * \param query Optional pointer to array with nrow query values
+ * \param tid The id of the calling thread, from 0...N-1 threads
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
@@ -205,7 +208,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                                        const float* label,
                                                        const float* weight,
                                                        const double* init_score,
-                                                       const int32_t* query);
+                                                       const int32_t* query,
+                                                       int32_t tid);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -247,7 +251,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
  * \param weight Optional pointer to array with nindptr-1 weights
  * \param init_score Optional pointer to array with (nindptr-1)*nclasses initial scores, in column format
  * \param query Optional pointer to array with nindptr-1 query values
-* \return 0 when succeed, -1 when failure happens
+ * \param tid The id of the calling thread, from 0...N-1 threads
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                                             const void* indptr,
@@ -261,7 +266,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
                                                             const float* label,
                                                             const float* weight,
                                                             const double* init_score,
-                                                            const int32_t* query);
+                                                            const int32_t* query,
+                                                            int32_t tid);
 
 /*!
  * \brief Set whether or not the Dataset waits for a manual MarkFinished call or calls FinishLoad on itself automatically.
