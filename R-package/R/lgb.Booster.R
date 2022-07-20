@@ -800,10 +800,10 @@ Booster <- R6::R6Class(
 #'         that, for example, for a multiclass model with 3 classes, the leaf predictions for the first class can be found
 #'         in columns 1, 4, 7, 10, etc.
 #'
-#'         For \code{type="predcontrib"} predictions, will return a matrix with one row per observation in \code{newdata}
+#'         For \code{type="contrib"}, will return a matrix of SHAP values with one row per observation in \code{newdata}
 #'         and columns corresponding to features. For regression, ranking, and binary classification objectives, this matrix
 #'         contains one column per feature plus a final column containing the Shapley base value. For multiclass objectives,
-#'         this matrix will hold \code{num_classes} such matrices, in the order "feature contributions for first class, feature
+#'         this matrix will represent \code{num_classes} such matrices, in the order "feature contributions for first class, feature
 #'         contributions for second class, feature contributions for third class, etc.".
 #'
 #' @examples
