@@ -767,9 +767,7 @@ Booster <- R6::R6Class(
 #'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
 #'                   in each tree in the model, outputted as integers, with one column per tree.
 #'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
-#'                   intercept (each feature will produce one column). If there are multiple classes, each class will
-#'                   have separate feature contributions (thus the number of columns is features+1 multiplied by the
-#'                   number of classes).
+#'                   intercept (each feature will produce one column).
 #'             }
 #'
 #'             Note that, if using custom objectives, types "class" and "response" will not be available and will
@@ -790,12 +788,23 @@ Booster <- R6::R6Class(
 #'               the values in \code{params} take precedence.
 #' @param ... ignored
 #' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
-#'         \code{type="response"} on a binary classification or regression objective), will return a vector with one
-#'         element per row in \code{newdata}.
+#'         \code{type="response"} or \code{type="raw"} on a binary classification or regression objective), will
+#'         return a vector with one element per row in \code{newdata}.
 #'
 #'         For prediction types that are meant to return more than one output per observation (e.g. when predicting
-#'         \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
-#'         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
+#'         \code{type="response"} or \code{type="raw"} on a multi-class objective, or when predicting \code{type="leaf"},
+#'         regardless of objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
+#'
+#'         For \code{type="leaf"} predictions, will return a matrix with one row per observation in \code{newdata}
+#'         and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class. That means
+#'         that, for example, for a multiclass model with 3 classes, the leaf predictions for the first class can be found
+#'         in columns 1, 4, 7, 10, etc.
+#'
+#'         For \code{type="predcontrib"} predictions, will return a matrix with one row per observation in \code{newdata}
+#'         and columns corresponding to features. For regression, ranking, and binary classification objectives, this matrix
+#'         contains one column per feature plus a final column containing the Shapley base value. For multiclass objectives,
+#'         this matrix will hold \code{num_classes} such matrices, in the order "feature contributions for first class, feature
+#'         contributions for second class, feature contributions for third class, etc.".
 #'
 #' @examples
 #' \donttest{
