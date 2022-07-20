@@ -1,6 +1,8 @@
 #' @name lgb.train
 #' @title Main training logic for LightGBM
-#' @description Logic to train with LightGBM
+#' @description Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+#'              this function is focused on performance (e.g. speed, memory efficiency). It is also
+#'              less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
