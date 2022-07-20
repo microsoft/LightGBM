@@ -78,7 +78,9 @@ fi
 ac_inet_pton="no"
 
 cat > conftest.cpp <<EOL
+#include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
 int main() {
   #ifdef inet_pton
   return 0;
@@ -101,7 +103,8 @@ EOL
 # echo "SHLIB_LDFLAGS: ${SHLIB_LDFLAGS}"
 # exit 1
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
+#${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether INET_PTON works...${ac_inet_pton}"
