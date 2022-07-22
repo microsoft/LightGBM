@@ -425,7 +425,7 @@ def _determine_direction_for_numeric_split(
     if math.isnan(fval) and missing_type != _MissingType.NAN:
         fval = 0.0
     if ((missing_type == _MissingType.ZERO and _is_zero(fval))
-        or (missing_type == _MissingType.NAN and math.isnan(fval))):
+            or (missing_type == _MissingType.NAN and math.isnan(fval))):
         direction = 'left' if default_left else 'right'
     else:
         direction = 'left' if fval <= threshold else 'right'
