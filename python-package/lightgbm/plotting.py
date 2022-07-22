@@ -415,20 +415,20 @@ def plot_metric(
     return ax
 
 
-def _determine_direction_for_numeric_split(fval: float, threshold: float, missing_type: str, default_left: bool) -> str:
-    le_threshold = fval <= threshold
-    if missing_type == _MissingType.NONE or (missing_type == _MissingType.ZERO and default_left and ZERO_THRESHOLD < threshold):
-        direction = 'left' if le_threshold else 'right'
-    elif missing_type == _MissingType.ZERO:
-        if default_left:
-            direction = 'left' if le_threshold or _is_zero(fval) or math.isnan(fval) else 'right'
-        else:
-            direction = 'left' if le_threshold and not _is_zero(fval) and not math.isnan(fval) else 'right'
+def _determine_direction_for_numeric_split(
+    fval: float,
+    threshold: float,
+    missing_type_str: str,
+    default_left: bool,
+) -> str:
+    missing_type = _MissingType(missing_type_str)
+    if math.isnan(fval) and missing_type != _MissingType.NAN:
+        fval = 0.0
+    if ((missing_type == _MissingType.ZERO and _is_zero(fval))
+        or (missing_type == _MissingType.NAN and math.isnan(fval))):
+        direction = 'left' if default_left else 'right'
     else:
-        if default_left:
-            direction = 'left' if le_threshold or math.isnan(fval) else 'right'
-        else:
-            direction = 'left' if le_threshold and not math.isnan(fval) else 'right'
+        direction = 'left' if fval <= threshold else 'right'
     return direction
 
 
