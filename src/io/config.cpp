@@ -34,7 +34,7 @@ void RetrieveFirstValueFromKey(const std::unordered_map<std::string, std::vector
   if (pair != params.end()) {
     auto candidate = pair->second[0].c_str();
     if (!Common::AtoiAndCheck(candidate, out)) {
-      Log::Fatal("Parameter %s should be of type int, got \"%s\"", key, candidate);
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"", key.c_str(), candidate);
     }
   }
 }
