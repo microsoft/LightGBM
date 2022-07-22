@@ -132,8 +132,8 @@ void NAME##_setitem(TYPE **ary, int64_t index, TYPE *value);
 %long_array_functions(uint8_t, byteArray)
 %long_array_functions(double, doubleArray)
 %long_array_functions(float, floatArray)
-%long_array_functions(int, intArray)
-%long_array_functions(long, longArray)
+%long_array_functions(int32_t, intArray)
+%long_array_functions(int64_t, longArray)
 
 %ptr_array_functions(void, voidPtrArray)
 %ptr_array_functions(double, doublePtrArray)
