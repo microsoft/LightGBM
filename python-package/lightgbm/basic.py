@@ -22,7 +22,7 @@ from .libpath import find_lib_path
 ZERO_THRESHOLD = 1e-35
 
 
-def _get_sample_count(total_nrow: int, params: str):
+def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
         ctypes.c_int32(total_nrow),
@@ -108,7 +108,7 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib():
+def _load_lib() -> Optional[ctypes.CDLL]:
     """Load LightGBM library."""
     lib_path = find_lib_path()
     if len(lib_path) == 0:
@@ -141,7 +141,7 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def is_numeric(obj):
+def is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
         float(obj)
@@ -152,12 +152,12 @@ def is_numeric(obj):
         return False
 
 
-def is_numpy_1d_array(data):
+def is_numpy_1d_array(data: Any) -> bool:
     """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
-def is_numpy_column_array(data):
+def is_numpy_column_array(data: Any) -> bool:
     """Check whether data is a column numpy array."""
     if not isinstance(data, np.ndarray):
         return False
@@ -172,7 +172,7 @@ def cast_numpy_array_to_dtype(array, dtype):
     return array.astype(dtype=dtype, copy=False)
 
 
-def is_1d_list(data):
+def is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or is_numeric(data[0]))
 
@@ -279,7 +279,7 @@ def c_array(ctype, values):
     return (ctype * len(values))(*values)
 
 
-def json_default_with_numpy(obj):
+def json_default_with_numpy(obj: Any) -> Any:
     """Convert numpy classes to JSON serializable objects."""
     if isinstance(obj, (np.integer, np.floating, np.bool_)):
         return obj.item()
@@ -289,7 +289,7 @@ def json_default_with_numpy(obj):
         return obj
 
 
-def param_dict_to_str(data):
+def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
     """Convert Python dictionary to string, which is passed to C API."""
     if data is None or not data:
         return ""
@@ -744,7 +744,7 @@ class _InnerPredictor:
         pred_parameter = {} if pred_parameter is None else pred_parameter
         self.pred_parameter = param_dict_to_str(pred_parameter)
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if self.__is_manage_handle:
                 _safe_call(_LIB.LGBM_BoosterFree(self.handle))
@@ -756,8 +756,17 @@ class _InnerPredictor:
         this.pop('handle', None)
         return this
 
-    def predict(self, data, start_iteration=0, num_iteration=-1,
-                raw_score=False, pred_leaf=False, pred_contrib=False, data_has_header=False):
+    def predict(
+        self,
+        data,
+        start_iteration: int = 0,
+        num_iteration: int = -1,
+        raw_score: bool = False,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        data_has_header: bool = False,
+        validate_features: bool = False
+    ):
         """Predict logic.
 
         Parameters
@@ -778,6 +787,9 @@ class _InnerPredictor:
         data_has_header : bool, optional (default=False)
             Whether data has header.
             Used only for txt data.
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
 
         Returns
         -------
@@ -787,6 +799,17 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
+        elif isinstance(data, pd_DataFrame) and validate_features:
+            data_names = [str(x) for x in data.columns]
+            ptr_names = (ctypes.c_char_p * len(data_names))()
+            ptr_names[:] = [x.encode('utf-8') for x in data_names]
+            _safe_call(
+                _LIB.LGBM_BoosterValidateFeatureNames(
+                    self.handle,
+                    ptr_names,
+                    ctypes.c_int(len(data_names)),
+                )
+            )
         data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
         predict_type = C_API_PREDICT_NORMAL
         if raw_score:
@@ -1122,7 +1145,7 @@ class _InnerPredictor:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
 
-    def current_iteration(self):
+    def current_iteration(self) -> int:
         """Get the index of the current iteration.
 
         Returns
@@ -1204,7 +1227,7 @@ class Dataset:
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             self._free_handle()
         except AttributeError:
@@ -1321,6 +1344,7 @@ class Dataset:
             num_per_col_ptr,
             ctypes.c_int32(sample_cnt),
             ctypes.c_int32(total_nrow),
+            ctypes.c_int64(total_nrow),
             c_str(params_str),
             ctypes.byref(self.handle),
         ))
@@ -1389,7 +1413,7 @@ class Dataset:
         else:
             return {}
 
-    def _free_handle(self):
+    def _free_handle(self) -> "Dataset":
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
@@ -1766,7 +1790,7 @@ class Dataset:
                     return False
         return True
 
-    def construct(self):
+    def construct(self) -> "Dataset":
         """Lazy init.
 
         Returns
@@ -1863,7 +1887,11 @@ class Dataset:
         ret.pandas_categorical = self.pandas_categorical
         return ret
 
-    def subset(self, used_indices, params=None):
+    def subset(
+        self,
+        used_indices: List[int],
+        params: Optional[Dict[str, Any]] = None
+    ) -> "Dataset":
         """Get subset of current Dataset.
 
         Parameters
@@ -1888,7 +1916,7 @@ class Dataset:
         ret.used_indices = sorted(used_indices)
         return ret
 
-    def save_binary(self, filename):
+    def save_binary(self, filename: Union[str, Path]) -> "Dataset":
         """Save Dataset to a binary file.
 
         .. note::
@@ -1938,7 +1966,7 @@ class Dataset:
                     raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
         return self
 
-    def _reverse_update_params(self):
+    def _reverse_update_params(self) -> "Dataset":
         if self.handle is None:
             self.params = deepcopy(self.params_back_up)
             self.params_back_up = None
@@ -2003,7 +2031,7 @@ class Dataset:
         self.version += 1
         return self
 
-    def get_field(self, field_name):
+    def get_field(self, field_name: str) -> Optional[np.ndarray]:
         """Get property from the Dataset.
 
         Parameters
@@ -2046,7 +2074,10 @@ class Dataset:
                 arr = arr.reshape((num_data, num_classes), order='F')
         return arr
 
-    def set_categorical_feature(self, categorical_feature):
+    def set_categorical_feature(
+        self,
+        categorical_feature: Union[List[int], List[str]]
+    ) -> "Dataset":
         """Set categorical features.
 
         Parameters
@@ -2124,7 +2155,7 @@ class Dataset:
             raise LightGBMError("Cannot set reference after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_feature_name(self, feature_name):
+    def set_feature_name(self, feature_name: List[str]) -> "Dataset":
         """Set feature name.
 
         Parameters
@@ -2233,7 +2264,7 @@ class Dataset:
             self.set_field('group', group)
         return self
 
-    def get_feature_name(self):
+    def get_feature_name(self) -> List[str]:
         """Get the names of columns (features) in the Dataset.
 
         Returns
@@ -2359,7 +2390,7 @@ class Dataset:
                 self.group = np.diff(self.group)
         return self.group
 
-    def num_data(self):
+    def num_data(self) -> int:
         """Get the number of rows in the Dataset.
 
         Returns
@@ -2375,7 +2406,7 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get num_data before construct dataset")
 
-    def num_feature(self):
+    def num_feature(self) -> int:
         """Get the number of columns (features) in the Dataset.
 
         Returns
@@ -2445,7 +2476,7 @@ class Dataset:
                 break
         return ref_chain
 
-    def add_features_from(self, other):
+    def add_features_from(self, other: "Dataset") -> "Dataset":
         """Add features from other Dataset to the current Dataset.
 
         Both Datasets must be constructed before calling this method.
@@ -2534,7 +2565,7 @@ class Dataset:
         self.pandas_categorical = None
         return self
 
-    def _dump_text(self, filename):
+    def _dump_text(self, filename: Union[str, Path]) -> "Dataset":
         """Save Dataset to a text file.
 
         This format cannot be loaded back in by LightGBM, but is useful for debugging purposes.
@@ -2553,6 +2584,12 @@ class Dataset:
             self.construct().handle,
             c_str(str(filename))))
         return self
+
+
+_LGBM_CustomObjectiveFunction = Callable[
+    [np.ndarray, Dataset],
+    Tuple[np.ndarray, np.ndarray]
+]
 
 
 class Booster:
@@ -2984,7 +3021,11 @@ class Booster:
         self.params.update(params)
         return self
 
-    def update(self, train_set=None, fobj=None):
+    def update(
+        self,
+        train_set: Optional[Dataset] = None,
+        fobj: Optional[_LGBM_CustomObjectiveFunction] = None
+    ) -> bool:
         """Update Booster for one iteration.
 
         Parameters
@@ -3051,7 +3092,11 @@ class Booster:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
-    def __boost(self, grad, hess):
+    def __boost(
+        self,
+        grad: np.ndarray,
+        hess: np.ndarray
+    ) -> bool:
         """Boost Booster for one iteration with customized gradient statistics.
 
         .. note::
@@ -3160,7 +3205,7 @@ class Booster:
 
         Returns
         -------
-        upper_bound : double
+        upper_bound : float
             Upper bound value of the model.
         """
         ret = ctypes.c_double(0)
@@ -3174,7 +3219,7 @@ class Booster:
 
         Returns
         -------
-        lower_bound : double
+        lower_bound : float
             Lower bound value of the model.
         """
         ret = ctypes.c_double(0)
@@ -3499,9 +3544,18 @@ class Booster:
                                                           default=json_default_with_numpy))
         return ret
 
-    def predict(self, data, start_iteration=0, num_iteration=None,
-                raw_score=False, pred_leaf=False, pred_contrib=False,
-                data_has_header=False, **kwargs):
+    def predict(
+        self,
+        data,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        raw_score: bool = False,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        data_has_header: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Make a prediction.
 
         Parameters
@@ -3535,6 +3589,9 @@ class Booster:
         data_has_header : bool, optional (default=False)
             Whether the data has header.
             Used only if data is str.
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to predict match the ones used to train.
+            Used only if data is pandas DataFrame.
         **kwargs
             Other parameters for the prediction.
 
@@ -3552,7 +3609,7 @@ class Booster:
                 num_iteration = -1
         return predictor.predict(data, start_iteration, num_iteration,
                                  raw_score, pred_leaf, pred_contrib,
-                                 data_has_header)
+                                 data_has_header, validate_features)
 
     def refit(
         self,
@@ -3567,6 +3624,7 @@ class Booster:
         categorical_feature='auto',
         dataset_params=None,
         free_raw_data=True,
+        validate_features=False,
         **kwargs
     ):
         """Refit the existing Booster by new data.
@@ -3610,6 +3668,9 @@ class Booster:
             Other parameters for Dataset ``data``.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset for ``data``.
+        validate_features : bool, optional (default=False)
+            If True, ensure that the features used to refit the model match the original ones.
+            Used only if data is pandas DataFrame.
         **kwargs
             Other parameters for refit.
             These parameters will be passed to ``predict`` method.
@@ -3624,7 +3685,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True)
+        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(

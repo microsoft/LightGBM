@@ -25,6 +25,10 @@ _LGBM_ScikitCustomObjectiveFunction = Union[
         [np.ndarray, np.ndarray, np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
+    Callable[
+        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        Tuple[np.ndarray, np.ndarray]
+    ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     Callable[
@@ -54,7 +58,10 @@ class _ObjectiveFunctionWrapper:
         Parameters
         ----------
         func : callable
-            Expects a callable with signature ``func(y_true, y_pred)`` or ``func(y_true, y_pred, group)``
+            Expects a callable with following signatures:
+            ``func(y_true, y_pred)``,
+            ``func(y_true, y_pred, weight)``
+            or ``func(y_true, y_pred, weight, group)``
             and returns (grad, hess):
 
                 y_true : numpy 1-D array of shape = [n_samples]
@@ -63,6 +70,8 @@ class _ObjectiveFunctionWrapper:
                     The predicted values.
                     Predicted values are returned before any transformation,
                     e.g. they are raw margin instead of probability of positive class for binary task.
+                weight : numpy 1-D array of shape = [n_samples]
+                    The weight of samples. Weights should be non-negative.
                 group : numpy 1-D array
                     Group/query data.
                     Only used in the learning-to-rank task.
@@ -107,19 +116,11 @@ class _ObjectiveFunctionWrapper:
         if argc == 2:
             grad, hess = self.func(labels, preds)
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_weight())
+        elif argc == 4:
+            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())
         else:
-            raise TypeError(f"Self-defined objective function should have 2 or 3 arguments, got {argc}")
-        """weighted for objective"""
-        weight = dataset.get_weight()
-        if weight is not None:
-            if grad.ndim == 2:  # multi-class
-                num_data = grad.shape[0]
-                if weight.size != num_data:
-                    raise ValueError("grad and hess should be of shape [n_samples, n_classes]")
-                weight = weight.reshape(num_data, 1)
-            grad *= weight
-            hess *= weight
+            raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
 
 
@@ -325,6 +326,9 @@ _lgbmmodel_doc_predict = (
             Note that unlike the shap package, with ``pred_contrib`` we return a matrix with an extra
             column, where the last column is the expected value.
 
+    validate_features : bool, optional (default=False)
+        If True, ensure that the features used to predict match the ones used to train.
+        Used only if data is pandas DataFrame.
     **kwargs
         Other parameters for the prediction.
 
@@ -453,8 +457,9 @@ class LGBMModel(_LGBMModelBase):
         ----
         A custom objective function can be provided for the ``objective`` parameter.
         In this case, it should have the signature
-        ``objective(y_true, y_pred) -> grad, hess`` or
-        ``objective(y_true, y_pred, group) -> grad, hess``:
+        ``objective(y_true, y_pred) -> grad, hess``,
+        ``objective(y_true, y_pred, weight) -> grad, hess``
+        or ``objective(y_true, y_pred, weight, group) -> grad, hess``:
 
             y_true : numpy 1-D array of shape = [n_samples]
                 The target values.
@@ -462,6 +467,8 @@ class LGBMModel(_LGBMModelBase):
                 The predicted values.
                 Predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task.
+            weight : numpy 1-D array of shape = [n_samples]
+                The weight of samples. Weights should be non-negative.
             group : numpy 1-D array
                 Group/query data.
                 Only used in the learning-to-rank task.
@@ -729,14 +736,9 @@ class LGBMModel(_LGBMModelBase):
         # copy for consistency
         self._n_features_in = self._n_features
 
-        def _construct_dataset(X, y, sample_weight, init_score, group, params,
-                               categorical_feature='auto'):
-            return Dataset(X, label=y, weight=sample_weight, group=group,
-                           init_score=init_score, params=params,
-                           categorical_feature=categorical_feature)
-
-        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
-                                       categorical_feature=categorical_feature)
+        train_set = Dataset(data=_X, label=_y, weight=sample_weight, group=group,
+                            init_score=init_score, categorical_feature=categorical_feature,
+                            params=params)
 
         valid_sets = []
         if eval_set is not None:
@@ -770,8 +772,10 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
                     valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1],
-                                                   valid_weight, valid_init_score, valid_group, params)
+                    valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
+                                        group=valid_group, init_score=valid_init_score,
+                                        categorical_feature='auto', params=params)
+
                 valid_sets.append(valid_set)
 
         if isinstance(init_model, LGBMModel):
@@ -819,8 +823,17 @@ class LGBMModel(_LGBMModelBase):
         eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
-    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, **kwargs):
+    def predict(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
@@ -853,7 +866,8 @@ class LGBMModel(_LGBMModelBase):
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
         return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, **predict_params)
+                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
+                                     **predict_params)
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
@@ -1086,11 +1100,21 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
-    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, **kwargs):
+    def predict(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
-                                    pred_leaf, pred_contrib, **kwargs)
+                                    pred_leaf, pred_contrib, validate_features,
+                                    **kwargs)
         if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
         else:
@@ -1099,10 +1123,19 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict.__doc__ = LGBMModel.predict.__doc__
 
-    def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                      pred_leaf=False, pred_contrib=False, **kwargs):
+    def predict_proba(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is set after definition, using a template."""
-        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, **kwargs)
+        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, validate_features, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             _log_warning("Cannot compute class probabilities or labels "
                          "due to the usage of customized objective function.\n"

@@ -64,7 +64,7 @@ my_preds <- predict(model, test[, 1L:4L])
 my_preds <- predict(model, test[, 1L:4L])
 
 # We can also get the predicted scores before the Sigmoid/Softmax application
-my_preds <- predict(model, test[, 1L:4L], rawscore = TRUE)
+my_preds <- predict(model, test[, 1L:4L], type = "raw")
 
 # We can also get the leaf index
-my_preds <- predict(model, test[, 1L:4L], predleaf = TRUE)
+my_preds <- predict(model, test[, 1L:4L], type = "leaf")
