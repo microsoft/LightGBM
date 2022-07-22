@@ -48,14 +48,14 @@ Application::~Application() {
 }
 
 void Application::LoadParameters(int argc, char** argv) {
-  std::unordered_multimap<std::string, std::string> multi_params;
+  std::unordered_map<std::string, std::vector<std::string>> all_params;
+  std::unordered_map<std::string, std::string> params;
   for (int i = 1; i < argc; ++i) {
-    Config::KV2Map(&multi_params, argv[i]);
+    Config::KV2Map(&all_params, argv[i]);
   }
   // read parameters from config file
-  if (multi_params.count("config") > 0) {
-    auto config_fname = multi_params.find("config")->second.c_str();
-    TextReader<size_t> config_reader(config_fname, false);
+  if (all_params.count("config") > 0) {
+    TextReader<size_t> config_reader(all_params["config"][0].c_str(), false);
     config_reader.ReadAllLines();
     if (!config_reader.Lines().empty()) {
       for (auto& line : config_reader.Lines()) {
@@ -67,20 +67,16 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        Config::KV2Map(&multi_params, line.c_str());
+        Config::KV2Map(&all_params, line.c_str());
       }
     } else {
-      Log::Warning("Config file %s doesn't exist, will ignore", config_fname);
+      Log::Warning("Config file %s doesn't exist, will ignore", all_params["config"][0].c_str());
     }
   }
-  // define verbosity and set logging level
-  Config::SetVerbosity(multi_params);
+  Config::SetVerbosity(all_params);
   // de-duplicate params
-  std::unordered_map<std::string, std::string> params;
-  Config::Multi2Map(multi_params, &params);
-  // check for alias
+  Config::KeepFirstValueFromKeys(all_params, &params);
   ParameterAlias::KeyAliasTransform(&params);
-  // load configs
   config_.Set(params);
   Log::Info("Finished loading parameters");
 }

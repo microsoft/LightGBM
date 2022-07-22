@@ -13,7 +13,7 @@
 
 namespace LightGBM {
 
-void Config::KV2Map(std::unordered_multimap<std::string, std::string>* params, const char* kv) {
+void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -22,17 +22,27 @@ void Config::KV2Map(std::unordered_multimap<std::string, std::string>* params, c
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
     if (key.size() > 0) {
-      params->emplace(key, value);
+      params->operator[](key).emplace_back(value);
     }
   } else {
     Log::Warning("Unknown parameter %s", kv);
   }
 }
 
-void Config::SetVerbosity(const std::unordered_multimap<std::string, std::string>& params) {
+void RetrieveFirstValueFromKey(const std::unordered_map<std::string, std::vector<std::string>>& params, std::string key, int* out) {
+  const auto pair = params.find(key);
+  if (pair != params.end()) {
+    auto candidate = pair->second[0].c_str();
+    if (!Common::AtoiAndCheck(candidate, out)) {
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"", key, candidate);
+    }
+  }
+}
+
+void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
   int verbosity = Config().verbosity;
-  GetInt(params, "verbose", &verbosity);
-  GetInt(params, "verbosity", &verbosity);
+  RetrieveFirstValueFromKey(params, "verbose", &verbosity);
+  RetrieveFirstValueFromKey(params, "verbosity", &verbosity);
   if (verbosity < 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   } else if (verbosity == 0) {
@@ -44,29 +54,29 @@ void Config::SetVerbosity(const std::unordered_multimap<std::string, std::string
   }
 }
 
-void Config::Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string, std::string>* params) {
-  for (auto it = multi.begin(); it != multi.end(); ++it) {
-    auto value_search = params->find(it->first);
-    if (value_search == params->end()) {  // not set
-      params->emplace(it->first, it->second);
-    } else {
+void Config::KeepFirstValueFromKeys(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out) {
+  for (auto pair = params.begin(); pair != params.end(); ++pair) {
+    auto name = pair->first.c_str();
+    auto values = pair->second;
+    out->emplace(name, values[0]);
+    for (size_t i = 1; i < pair->second.size(); ++i) {
       Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
-        it->first.c_str(), value_search->second.c_str(),
-        it->first.c_str(), it->second.c_str(),
-        it->first.c_str(), value_search->second.c_str());
+        name, values[0].c_str(),
+        name, values[i].c_str(),
+        name, values[0].c_str());
     }
   }
 }
 
 std::unordered_map<std::string, std::string> Config::Str2Map(const char* parameters) {
-  std::unordered_multimap<std::string, std::string> multi_params;
+  std::unordered_map<std::string, std::vector<std::string>> all_params;
+  std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    KV2Map(&multi_params, Common::Trim(arg).c_str());
+    KV2Map(&all_params, Common::Trim(arg).c_str());
   }
-  SetVerbosity(multi_params);
-  std::unordered_map<std::string, std::string> params;
-  Multi2Map(multi_params, &params);
+  SetVerbosity(all_params);
+  KeepFirstValueFromKeys(all_params, &params);
   ParameterAlias::KeyAliasTransform(&params);
   return params;
 }

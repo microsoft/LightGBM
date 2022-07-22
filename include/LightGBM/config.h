@@ -89,8 +89,9 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_multimap<std::string, std::string>* params, const char* kv);
-  static void Multi2Map(const std::unordered_multimap<std::string, std::string>& multi, std::unordered_map<std::string, std::string>* params);
+  static void KeepFirstValueFromKeys(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
+  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
+  static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
   static void SetVerbosity(const std::unordered_multimap<std::string, std::string>& params);
 
