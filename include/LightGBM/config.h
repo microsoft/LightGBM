@@ -57,17 +57,6 @@ struct Config {
     const std::string& name, int* out);
 
   /*!
-  * \brief Get int value by specific name of key
-  * \param params Store the key and value for params
-  * \param name Name of key
-  * \param out Value will assign to out if key exists
-  * \return True if key exists
-  */
-  inline static bool GetInt(
-    const std::unordered_multimap<std::string, std::string>& params,
-    const std::string& name, int* out);
-
-  /*!
   * \brief Get double value by specific name of key
   * \param params Store the key and value for params
   * \param name Name of key
@@ -93,7 +82,6 @@ struct Config {
   static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
   static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
-  static void SetVerbosity(const std::unordered_multimap<std::string, std::string>& params);
 
   #ifndef __NVCC__
   #pragma region Parameters
@@ -1111,25 +1099,6 @@ inline bool Config::GetInt(
     return true;
   }
   return false;
-}
-
-inline bool Config::GetInt(
-  const std::unordered_multimap<std::string, std::string>& params,
-  const std::string& name, int* out) {
-  auto count = params.count(name);
-  if (count == 0) return false;
-  auto name_range = params.equal_range(name);
-  if (!Common::AtoiAndCheck(name_range.first->second.c_str(), out)) {  // set the first match
-      Log::Fatal("Parameter %s should be of type int, got \"%s\"",
-                name.c_str(), name_range.first->second.c_str());
-  }
-  for (auto it = std::next(name_range.first); it != name_range.second; ++it) {  // warn about rest
-    Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
-      name_range.first->first.c_str(), name_range.first->second.c_str(),
-      it->first.c_str(), it->second.c_str(),
-      name_range.first->first.c_str(), name_range.first->second.c_str());
-  }
-  return true;
 }
 
 inline bool Config::GetDouble(
