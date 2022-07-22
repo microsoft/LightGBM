@@ -11,6 +11,8 @@ CXX11STD=`"${R_EXE}" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
+LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+CXXLDFLAGS=`"${R_HOME}/bin/R" CMD config CXXLDFLAGS`
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
@@ -37,7 +39,7 @@ int main() {
 }
 EOL
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXLDFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
@@ -61,7 +63,7 @@ int main() {
 }
 EOL
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXLDFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
@@ -103,8 +105,8 @@ EOL
 # echo "SHLIB_LDFLAGS: ${SHLIB_LDFLAGS}"
 # exit 1
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
-#${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXLDFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
+#${CXX} ${CXXFLAGS} ${CPPFLAGS} ${CXXLDFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether INET_PTON works...${ac_inet_pton}"
