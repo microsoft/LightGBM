@@ -175,16 +175,16 @@ namespace LightGBM {
       }
 
       result = LGBM_DatasetPushRowsWithMetadata(dataset_handle,
-        features_ptr,
-        1,
-        batch_count,
-        ncols,
-        i,
-        labels_ptr,
-        weights_ptr,
-        init_scores_ptr,
-        groups_ptr,
-        0);
+                                                features_ptr,
+                                                1,
+                                                batch_count,
+                                                ncols,
+                                                i,
+                                                labels_ptr,
+                                                weights_ptr,
+                                                init_scores_ptr,
+                                                groups_ptr,
+                                                0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
       if (result != 0) {
         FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
