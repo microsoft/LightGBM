@@ -71,6 +71,7 @@ void test_stream_dense(
           sample_sizes.data(),
           nrows,
           nrows,
+          nrows,
           "max_bin=15",
           &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
@@ -178,6 +179,7 @@ void test_stream_sparse(
           sample_idx_ptrs.data(),
           ncols,
           sample_sizes.data(),
+          nrows,
           nrows,
           nrows,
           "max_bin=15",
