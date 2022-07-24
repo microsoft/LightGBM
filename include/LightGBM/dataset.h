@@ -77,7 +77,7 @@ class Metadata {
   void Init(data_size_t num_data, int weight_idx, int query_idx);
 
   /*!
-  * \brief Allocate space for label, weight(if exists), init_score (if exists) and query (if exists)
+  * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
   * \param num_data Number of data
   * \param reference Reference metadata
   */
@@ -156,9 +156,9 @@ class Metadata {
   }
 
   /*!
-  * \brief Set Initial Scores for one record.  Note that init_score might have multiple columns and is stored in column format.
+  * \brief Set initial scores for one record.  Note that init_score might have multiple columns and is stored in column format.
   * \param idx Index of this record
-  * \param value Initial score values for this record, one per class
+  * \param values Initial score values for this record, one per class
   */
   inline void SetInitScoreAt(data_size_t idx, const double* values) {
     const auto nclasses = num_classes();
@@ -848,7 +848,8 @@ class Dataset {
 
   /*! \brief Set whether the Dataset is finished automatically when last row is pushed or with a manual
    *         MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesced later.
-   *         FinishLoad should not be called on any Dataset that will be coalesced.  */
+   *         FinishLoad should not be called on any Dataset that will be coalesced.
+   */
   inline void set_wait_for_manual_finish(bool value) {
     std::lock_guard<std::mutex> lock(mutex_);
     wait_for_manual_finish_ = value;

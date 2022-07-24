@@ -107,10 +107,10 @@ void test_stream_dense(
     // TODO(svotaw) we should assert actual feature data, but we would need to calculate bin values
 
     TestUtils::AssertMetadata(&dataset->metadata(),
-      labels,
-      weights,
-      init_scores,
-      groups);
+                              labels,
+                              weights,
+                              init_scores,
+                              groups);
   }
   catch (...) {
   }
@@ -190,7 +190,7 @@ void test_stream_sparse(
       }
 
       case 1:
-        Log::Info("Creating Dataset using LGBM_DatasetCreateByReference, %d rows desparsense data with a batch size of %d", nrows, batch_count);
+        Log::Info("Creating Dataset using LGBM_DatasetCreateByReference, %d rows sparse data with a batch size of %d", nrows, batch_count);
         result = LGBM_DatasetCreateByReference(ref_datset_handle, nrows, &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
         break;
@@ -215,12 +215,12 @@ void test_stream_sparse(
 
     // TODO(svotaw) we should assert actual feature data
 
-    Log::Info("Streaming sparse dataset, %d rows dense data with a batch size of %d", nrows, batch_count);
+    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::AssertMetadata(&dataset->metadata(),
-      labels,
-      weights,
-      init_scores,
-      groups);
+                              labels,
+                              weights,
+                              init_scores,
+                              groups);
   }
   catch (...) {
   }
@@ -302,9 +302,9 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
   result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
-  EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
+  EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;
   result = LGBM_DatasetSetField(ref_datset_handle, "group", unused_groups.data(), noriginalrows, 2);
-  EXPECT_EQ(0, result) << "LGBM_DatasetSetField result code: " << result;
+  EXPECT_EQ(0, result) << "LGBM_DatasetSetField group result code: " << result;
 
   // Now use the reference dataset schema to make some testable Datasets with N rows each
   int32_t nrows = 1000;

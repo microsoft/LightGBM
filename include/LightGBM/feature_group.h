@@ -191,7 +191,7 @@ class FeatureGroup {
 
   /*!
   * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
-  * \pram num_thread The number of external threads that will be calling the push APIs
+  * \param num_thread The number of external threads that will be calling the push APIs
   */
   void InitStreaming(int32_t num_thread) {
     if (is_multi_val_) {

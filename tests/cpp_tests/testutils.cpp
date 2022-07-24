@@ -141,7 +141,7 @@ namespace LightGBM {
     const std::vector<double>* init_scores,
     const std::vector<int32_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
-    EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
+    EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
     if ((nrows % batch_count) != 0) {
       Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
@@ -187,7 +187,7 @@ namespace LightGBM {
                                                 0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
       if (result != 0) {
-        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
+        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";  // This forces an immediate failure, which EXPECT_EQ does not
       }
 
       features_ptr += batch_count * ncols;
@@ -216,7 +216,7 @@ namespace LightGBM {
     const std::vector<double>* init_scores,
     const std::vector<int32_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
-    EXPECT_EQ(0, result) << "LGBM_DataseSetWaitForManualFinish result code: " << result;
+    EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
     Log::Info("     Begin StreamSparseDataset");
     if ((nrows % batch_count) != 0) {
@@ -294,7 +294,7 @@ namespace LightGBM {
     for (auto i = 0; i < nTotal; i++) {
       EXPECT_EQ(ref_labels->at(i), labels[i]) << "Inserted data: " << ref_labels->at(i);
       if (ref_labels->at(i) != labels[i]) {
-        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";
+        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";;  // This forces an immediate failure, which EXPECT_EQ does not
       }
     }
 
@@ -318,7 +318,7 @@ namespace LightGBM {
       for (auto i = 0; i < ref_init_scores->size(); i++) {
         EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Inserted data: " << ref_init_scores->at(i) << " Index: " << i;
         if (ref_init_scores->at(i) != init_scores[i]) {
-          FAIL() << "Mismatched init_scores";
+          FAIL() << "Mismatched init_scores";;  // This forces an immediate failure, which EXPECT_EQ does not
         }
       }
     } else if (ref_init_scores) {

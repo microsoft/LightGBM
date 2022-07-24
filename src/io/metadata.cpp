@@ -345,7 +345,7 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
   if (num_init_score_ <= 0) {
-    Log::Fatal("Inserting intiial score data into dataset with no initial scores");
+    Log::Fatal("Inserting initial score data into dataset with no initial scores");
   }
   if (start_index + len > num_data_) {
     // Note that len here is row count, not num_init_score, so we compare against num_data

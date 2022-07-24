@@ -265,7 +265,7 @@ class Bin {
   virtual void InitStreaming(uint32_t /*num_thread*/) { }
   /*!
   * \brief Push one record
-  * \pram tid Thread id
+  * \param tid Thread id
   * \param idx Index of record
   * \param value bin value of record
   */

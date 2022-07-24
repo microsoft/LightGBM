@@ -152,7 +152,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
  * \param has_init_scores Whether the dataset has Metadata initial scores
  * \param has_queries Whether the dataset has Metadata queries/groups
  * \param nclasses Number of initial score classes
- * \param nthreads Number of external threads that will use the P
+ * \param nthreads Number of external threads that will use the PushRows APIs
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
@@ -183,7 +183,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
  * \brief Push data to existing dataset.
  *        The general flow for a streaming scenario is:
  *        1. create Dataset "schema" (e.g. ``LGBM_DatasetCreateFromSampledColumn``)
- *        2. init them for thread-safe streaming (``LGBM_DatasetSetInitStreaming``)
+ *        2. init them for thread-safe streaming (``LGBM_DatasetInitStreaming``)
  *        3. push data (``LGBM_DatasetPushRowsWithMetadata`` or ``LGBM_DatasetPushRowsByCSRWithMetadata``)
  *        4. call ``LGBM_DatasetMarkFinished``
  * \param dataset Handle of dataset
@@ -191,7 +191,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of feature columns
- * \param start_row Row start index, i.e, the index at which to start inserting data
+ * \param start_row Row start index, i.e., the index at which to start inserting data
  * \param label Pointer to array with nrow labels
  * \param weight Optional pointer to array with nrow weights
  * \param init_score Optional pointer to array with nrow*nclasses initial scores, in column format
@@ -237,7 +237,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                                                 int64_t start_row);
 
 /*!
- * \brief Push CSR data to existing dataset. (see ``LGBM_DatasetPushRowsWithMetadata``)
+ * \brief Push CSR data to existing dataset. (See ``LGBM_DatasetPushRowsWithMetadata`` for more details.)
  * \param dataset Handle of dataset
  * \param indptr Pointer to row headers
  * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
@@ -271,15 +271,15 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle datase
 
 /*!
  * \brief Set whether or not the Dataset waits for a manual MarkFinished call or calls FinishLoad on itself automatically.
- *        Set to 1 for streaming scenario, and use ``LGBM_DatasetSetWaitForManualFinish`` to manually finish the Dataset.
+ *        Set to 1 for streaming scenario, and use ``LGBM_DatasetMarkFinished`` to manually finish the Dataset.
  * \param dataset Handle of dataset
- * \param wait Whether to wait or not (0 or 1)
+ * \param wait Whether to wait or not (1 or 0)
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, int wait);
 
 /*!
- * \brief Mark the Dataset as complete by calling by calling ``dataset->FinishLoad``.
+ * \brief Mark the Dataset as complete by calling ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
  * \return 0 when succeed, -1 when failure happens
  */

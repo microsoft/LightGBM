@@ -2,8 +2,8 @@
  * Copyright (c) 2022 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_TESTS_UTILS_H_
-#define LIGHTGBM_TESTS_UTILS_H_
+#ifndef LIGHTGBM_TESTUTILS_H_
+#define LIGHTGBM_TESTUTILS_H_
 
 #include <LightGBM/c_api.h>
 #include <LightGBM/dataset.h>
@@ -50,7 +50,7 @@ class TestUtils {
       std::vector<int32_t>* groups);
 
     /*!
-    * Creates a CSR sparse Dataset of random values.
+    * Creates a batch of Metadata of random values.
     */
     static void CreateRandomMetadata(int32_t nrows,
       int32_t nclasses,
@@ -105,4 +105,4 @@ class TestUtils {
       const std::vector<double>* original_init_scores);
 };
 }  // namespace LightGBM
-#endif  // LIGHTGBM_TESTS_UTILS_H_
+#endif  // LIGHTGBM_TESTUTILS_H_
