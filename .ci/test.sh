@@ -44,12 +44,12 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -y \
         -n $CONDA_ENV \
             doxygen \
-            rstcheck || exit -1
+            'rstcheck>=6.0.0' || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
