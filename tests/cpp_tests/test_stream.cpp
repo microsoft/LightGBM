@@ -105,8 +105,6 @@ void test_stream_dense(
 
     dataset->FinishLoad();
 
-    // TODO(svotaw) we should assert actual feature data, but we would need to calculate bin values
-
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,
                               weights,
@@ -214,8 +212,6 @@ void test_stream_sparse(
       groups);
 
     dataset->FinishLoad();
-
-    // TODO(svotaw) we should assert actual feature data
 
     Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::AssertMetadata(&dataset->metadata(),
