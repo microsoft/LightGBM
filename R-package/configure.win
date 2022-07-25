@@ -105,7 +105,6 @@ echo "SHLIB_LDFLAGS: ${SHLIB_LDFLAGS}"
 SHLIB_CXXLDFLAGS=`"${R_EXE}" CMD config SHLIB_CXXLDFLAGS`
 echo "SHLIB_CXXLDFLAGS: ${SHLIB_CXXLDFLAGS}"
 R CMD config
-exit 1
 
 ${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
 #${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
