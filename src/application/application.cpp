@@ -54,6 +54,7 @@ void Application::LoadParameters(int argc, char** argv) {
     Config::KV2Map(&all_params, argv[i]);
   }
   // read parameters from config file
+  bool config_file_ok = true;
   if (all_params.count("config") > 0) {
     TextReader<size_t> config_reader(all_params["config"][0].c_str(), false);
     config_reader.ReadAllLines();
@@ -70,12 +71,15 @@ void Application::LoadParameters(int argc, char** argv) {
         Config::KV2Map(&all_params, line.c_str());
       }
     } else {
-      Log::Warning("Config file %s doesn't exist, will ignore", all_params["config"][0].c_str());
+      config_file_ok = false;
     }
   }
   Config::SetVerbosity(all_params);
   // de-duplicate params
   Config::KeepFirstValueFromKeys(all_params, &params);
+  if (!config_file_ok) {
+    Log::Warning("Config file %s doesn't exist, will ignore", params["config"].c_str());
+  }
   ParameterAlias::KeyAliasTransform(&params);
   config_.Set(params);
   Log::Info("Finished loading parameters");
