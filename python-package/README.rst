@@ -37,7 +37,7 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
 
 Build from Sources
-''''''''''''''''''
+******************
 
 .. code:: sh
 
