@@ -245,7 +245,7 @@ lgb.cv <- function(params = list()
   }
 
   # Add printing log callback
-  if (verbose > 0L && eval_freq > 0L) {
+  if (params[["verbosity"]] > 0L && eval_freq > 0L) {
     callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
@@ -288,7 +288,7 @@ lgb.cv <- function(params = list()
       , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
-        , verbose = verbose
+        , verbose = params[["verbosity"]] > 0L
       )
     )
   }

@@ -34,7 +34,7 @@ class BinaryLogloss: public ObjectiveFunction {
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
-      is_pos_ = [](label_t label) {return label > 0; };
+      is_pos_ = [](label_t label) { return label > 0; };
     }
   }
 

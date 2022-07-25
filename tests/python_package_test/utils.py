@@ -119,13 +119,28 @@ def make_synthetic_regression(n_samples=100):
     return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
 
 
+def dummy_obj(preds, train_data):
+    return np.ones(preds.shape), np.ones(preds.shape)
+
+
+def mse_obj(y_pred, dtrain):
+    y_true = dtrain.get_label()
+    grad = (y_pred - y_true)
+    hess = np.ones(len(grad))
+    return grad, hess
+
+
 def softmax(x):
     row_wise_max = np.max(x, axis=1).reshape(-1, 1)
     exp_x = np.exp(x - row_wise_max)
     return exp_x / np.sum(exp_x, axis=1).reshape(-1, 1)
 
 
-def sklearn_multiclass_custom_objective(y_true, y_pred):
+def logistic_sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
     num_rows, num_class = y_pred.shape
     prob = softmax(y_pred)
     grad_update = np.zeros_like(prob)
@@ -133,6 +148,10 @@ def sklearn_multiclass_custom_objective(y_true, y_pred):
     grad = prob + grad_update
     factor = num_class / (num_class - 1)
     hess = factor * prob * (1 - prob)
+    if weight is not None:
+        weight2d = weight.reshape(-1, 1)
+        grad *= weight2d
+        hess *= weight2d
     return grad, hess
 
 

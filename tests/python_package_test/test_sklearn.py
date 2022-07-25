@@ -1,6 +1,8 @@
 # coding: utf-8
 import itertools
 import math
+import re
+from functools import partial
 from os import getenv
 from pathlib import Path
 
@@ -17,11 +19,30 @@ from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
                     make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
+task_to_model_factory = {
+    'ranking': lgb.LGBMRanker,
+    'classification': lgb.LGBMClassifier,
+    'regression': lgb.LGBMRegressor,
+}
+
+
+def _create_data(task):
+    if task == 'ranking':
+        X, y, g = make_ranking(n_features=4)
+        g = np.bincount(g)
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        g = None
+    elif task == 'regression':
+        X, y = make_synthetic_regression()
+        g = None
+    return X, y, g
 
 
 class UnpicklableCallback:
@@ -29,7 +50,7 @@ class UnpicklableCallback:
         raise Exception("This class in not picklable")
 
     def __call__(self, env):
-        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+        env.model.attr_set_inside_callback = env.iteration * 10
 
 
 def custom_asymmetric_obj(y_true, y_pred):
@@ -480,7 +501,7 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
-    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
+    assert gbm.booster_.attr_set_inside_callback == 40
 
 
 def test_random_state_object():
@@ -1045,19 +1066,6 @@ def test_multiple_eval_metrics():
     assert 'binary_logloss' in gbm.evals_result_['training']
 
 
-def test_inf_handle():
-    nrows = 100
-    ncols = 10
-    X = np.random.randn(nrows, ncols)
-    y = np.random.randn(nrows) + np.full(nrows, 1e30)
-    weight = np.full(nrows, 1e10)
-    params = {'n_estimators': 20, 'verbose': -1}
-    params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
-                  'callbacks': [lgb.early_stopping(5)]}
-    gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-    np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
-
-
 def test_nan_handle():
     nrows = 100
     ncols = 10
@@ -1256,16 +1264,7 @@ def test_sklearn_integration(estimator, check):
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    if task == 'ranking':
-        X, y, g = make_ranking()
-        g = np.bincount(g)
-        model_factory = lgb.LGBMRanker
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
-        model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = make_synthetic_regression()
-        model_factory = lgb.LGBMRegressor
+    X, y, g = _create_data(task)
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {
@@ -1273,6 +1272,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         'num_leaves': 3,
         'random_state': 0
     }
+    model_factory = task_to_model_factory[task]
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
             model_1d = model_factory(**params).fit(X, y, group=g)
@@ -1286,18 +1286,107 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     np.testing.assert_array_equal(preds_1d, preds_2d)
 
 
-def test_multiclass_custom_objective():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2) if use_weight else None
     params = {'n_estimators': 10, 'num_leaves': 7}
     builtin_obj_model = lgb.LGBMClassifier(**params)
-    builtin_obj_model.fit(X, y)
+    builtin_obj_model.fit(X, y, sample_weight=weight)
     builtin_obj_preds = builtin_obj_model.predict_proba(X)
 
     custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
-    custom_obj_model.fit(X, y)
+    custom_obj_model.fit(X, y, sample_weight=weight)
     custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
 
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
     assert not callable(builtin_obj_model.objective_)
     assert callable(custom_obj_model.objective_)
+
+
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
+    def custom_eval(y_true, y_pred, weight):
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    train_test_split_func = partial(train_test_split, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split_func(X, y)
+    if use_weight:
+        weight = np.full_like(y, 2)
+        weight_train, weight_valid = train_test_split_func(weight)
+    else:
+        weight_train = None
+        weight_valid = None
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    model = lgb.LGBMClassifier(**params)
+    model.fit(
+        X_train,
+        y_train,
+        sample_weight=weight_train,
+        eval_set=[(X_train, y_train), (X_valid, y_valid)],
+        eval_names=['train', 'valid'],
+        eval_sample_weight=[weight_train, weight_valid],
+        eval_metric=custom_eval,
+    )
+    eval_result = model.evals_result_
+    train_ds = (X_train, y_train, weight_train)
+    valid_ds = (X_valid, y_valid, weight_valid)
+    for key, (X, y_true, weight) in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(
+            eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss']
+        )
+        y_pred = model.predict_proba(X)
+        _, metric_value, _ = custom_eval(y_true, y_pred, weight)
+        np.testing.assert_allclose(metric_value, eval_result[key]['custom_logloss'][-1])
+
+
+def test_negative_n_jobs(tmp_path):
+    n_threads = joblib.cpu_count()
+    if n_threads <= 1:
+        return None
+    # 'val_minus_two' here is the expected number of threads for n_jobs=-2
+    val_minus_two = n_threads - 1
+    X, y = load_breast_cancer(return_X_y=True)
+    # Note: according to joblib's formula, a value of n_jobs=-2 means
+    # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
+
+
+def test_default_n_jobs(tmp_path):
+    n_cores = joblib.cpu_count(only_physical_cores=True)
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_validate_features(task):
+    X, y, g = _create_data(task)
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
+    if task == 'ranking':
+        model.fit(df, y, group=g)
+    else:
+        model.fit(df, y)
+    assert model.feature_name_ == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x2': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x2' at position 1 but found 'z'"):
+        model.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    model.predict(df2, validate_features=False)

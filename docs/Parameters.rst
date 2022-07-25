@@ -594,7 +594,7 @@ Learning Control Parameters
 
    -  larger values give stronger regularization
 
-      -  the weight of each node is ``(n / path_smooth) * w + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
+      -  the weight of each node is ``w * (n / path_smooth) / (n / path_smooth + 1) + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
 
       -  note that the parent output ``w_p`` itself has smoothing applied, unless it is the root node, so that the smoothing effect accumulates with the tree depth
 

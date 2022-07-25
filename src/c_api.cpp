@@ -974,13 +974,13 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   API_END();
 }
 
-
 int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                         int** sample_indices,
                                         int32_t ncol,
                                         const int* num_per_col,
                                         int32_t num_sample_row,
-                                        int32_t num_total_row,
+                                        int32_t num_local_row,
+                                        int64_t num_dist_row,
                                         const char* parameters,
                                         DatasetHandle* out) {
   API_BEGIN();
@@ -989,12 +989,15 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+  *out = loader.ConstructFromSampleData(sample_data,
+                                        sample_indices,
+                                        ncol,
+                                        num_per_col,
                                         num_sample_row,
-                                        static_cast<data_size_t>(num_total_row));
+                                        static_cast<data_size_t>(num_local_row),
+                                        num_dist_row);
   API_END();
 }
-
 
 int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   int64_t num_total_row,
@@ -1141,7 +1144,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow));
+                                             sample_cnt,
+                                             total_nrow,
+                                             total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1216,7 +1221,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1283,7 +1290,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1355,7 +1364,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1555,6 +1566,11 @@ int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
                                  int* out) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
+  int num_features = dataset->num_total_features();
+  if (feature < 0 || feature >= num_features) {
+    Log::Fatal("Tried to retrieve number of bins for feature index %d, "
+               "but the valid feature indices are [0, %d].", feature, num_features - 1);
+  }
   int inner_idx = dataset->InnerFeatureIndex(feature);
   if (inner_idx >= 0) {
     *out = dataset->FeatureNumBin(inner_idx);
@@ -2121,6 +2137,27 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
       };
   ref_booster->Predict(start_iteration, num_iteration, predict_type, static_cast<int>(num_row), ncol, get_row_fun, config,
                        out_result, out_len);
+  API_END();
+}
+
+int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
+                                     const char** data_names,
+                                     int data_num_features) {
+  API_BEGIN();
+  int booster_num_features;
+  size_t out_buffer_len;
+  LGBM_BoosterGetFeatureNames(handle, 0, &booster_num_features, 0, &out_buffer_len, nullptr);
+  if (booster_num_features != data_num_features) {
+    Log::Fatal("Model was trained on %d features, but got %d input features to predict.", booster_num_features, data_num_features);
+  }
+  std::vector<std::vector<char>> tmp_names(booster_num_features, std::vector<char>(out_buffer_len));
+  std::vector<char*> booster_names = Vector2Ptr(&tmp_names);
+  LGBM_BoosterGetFeatureNames(handle, data_num_features, &booster_num_features, out_buffer_len, &out_buffer_len, booster_names.data());
+  for (int i = 0; i < booster_num_features; ++i) {
+    if (strcmp(data_names[i], booster_names[i]) != 0) {
+      Log::Fatal("Expected '%s' at position %d but found '%s'", booster_names[i], i, data_names[i]);
+    }
+  }
   API_END();
 }
 

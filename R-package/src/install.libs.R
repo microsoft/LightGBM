@@ -23,6 +23,11 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
   warning("Warning: unmatched R_INTERNALS_UUID, may not run normally.")
 }
 
+# Get some paths
+source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
+build_dir <- file.path(source_dir, "build", fsep = "/")
+inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
+
 # system() will not raise an R exception if the process called
 # fails. Wrapping it here to get that behavior.
 #
@@ -32,7 +37,7 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx && on_windows) {
@@ -96,17 +101,13 @@ if (!(R_int_UUID == "0310d4b8-ccb1-4bb8-ba94-d36a55f60262"
 
 # Move in CMakeLists.txt
 write_succeeded <- file.copy(
-  "../inst/bin/CMakeLists.txt"
+  file.path(inst_dir, "bin", "CMakeLists.txt")
   , "CMakeLists.txt"
   , overwrite = TRUE
 )
 if (!write_succeeded) {
   stop("Copying CMakeLists.txt failed")
 }
-
-# Get some paths
-source_dir <- file.path(R_PACKAGE_SOURCE, "src", fsep = "/")
-build_dir <- file.path(source_dir, "build", fsep = "/")
 
 # Prepare building package
 dir.create(
@@ -122,7 +123,7 @@ use_visual_studio <- !(use_mingw || use_msys2)
 # to create R.def from R.dll
 if (WINDOWS && use_visual_studio) {
   write_succeeded <- file.copy(
-    "../../inst/make-r-def.R"
+    file.path(inst_dir, "make-r-def.R")
     , file.path(build_dir, "make-r-def.R")
     , overwrite = TRUE
   )

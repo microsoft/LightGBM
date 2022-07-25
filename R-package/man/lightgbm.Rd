@@ -37,9 +37,10 @@ the "Parameters" section of the documentation} for a list of parameters and vali
 
 \item{nrounds}{number of training rounds}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
@@ -98,7 +99,12 @@ the "objective" item of the "Parameters" section of the documentation}.}
 a trained \code{lgb.Booster}
 }
 \description{
-Simple interface for training a LightGBM model.
+High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+             is focused on compatibility with other statistics and machine learning interfaces in R.
+             This focus on compatibility means that this interface may experience more frequent breaking API changes
+             than \code{\link{lgb.train}}.
+             For efficiency-sensitive applications, or for applications where breaking API changes across releases
+             is very expensive, use \code{\link{lgb.train}}.
 }
 \section{Early Stopping}{
 
