@@ -152,7 +152,7 @@ if ($env:COMPILER -ne "MSVC") {
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   Write-Output "--- where R thinks the compiler is ---"
-  R CMD config CXX11
+  R.exe CMD config CXX11
   Write-Output "--- where our config thinks the compiler is ---"
   Write-Output $env:CXX
   Write-Output $env:CC
