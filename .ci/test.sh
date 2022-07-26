@@ -120,8 +120,8 @@ fi
 
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask \
-    distributed \
+    'dask==2022.7.0' \
+    'distributed==2022.7.0' \
     joblib \
     matplotlib \
     numpy \
