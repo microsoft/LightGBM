@@ -151,13 +151,19 @@ if ($env:COMPILER -ne "MSVC") {
   $PKG_FILE_NAME = "lightgbm_*.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
+  Write-Output "--- where R thinks the compiler is ---"
+  R CMD config CXX11
+  Write-Output "--- where our config thinks the compiler is ---"
+  Write-Output $env:CXX
+  Write-Output $env:CC
+
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
+      $env:BUILD_R_FLAGS = "c('--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
-      $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
+      $env:BUILD_R_FLAGS = "c('--use-msys2', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
     } else {
@@ -192,7 +198,10 @@ if ($env:COMPILER -ne "MSVC") {
   } else {
     $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
-  R.exe CMD INSTALL "$PKG_FILE_NAME"
+  R.exe CMD INSTALL "D:/a/LightGBM/LightGBM/lightgbm_3.3.2.99.tar.gz"
+  Write-Output "done installing"
+  Check-Output $false
+
   $check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
