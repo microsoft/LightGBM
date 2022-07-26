@@ -192,7 +192,7 @@ if ($env:COMPILER -ne "MSVC") {
   } else {
     $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
-  R.exe CMD INSTALL --with-keep.source $PKG_FILE_NAME
+  R.exe CMD INSTALL "$PKG_FILE_NAME"
   $check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
