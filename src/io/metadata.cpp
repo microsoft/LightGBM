@@ -70,17 +70,25 @@ void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_
   num_data_ = num_data;
   label_ = std::vector<label_t>(num_data_);
   if (has_weights) {
-    weights_ = std::vector<label_t>(num_data_, 0.0f);
+    if (!weights_.empty()) {
+      Log::Fatal("Calling Init() on Metadata weights that have already been initialized");
+    }
+    weights_.resize(num_data_, 0.0f);
     num_weights_ = num_data_;
     weight_load_from_file_ = false;
   }
   if (has_init_scores) {
+    if (!init_score_.empty()) {
+      Log::Fatal("Calling Init() on Metadata initial scores that have already been initialized");
+    }
     num_init_score_ = static_cast<int64_t>(num_data) * nclasses;
-    init_score_ = std::vector<double>(num_init_score_, 0);
+    init_score_.resize(num_init_score_, 0);
   }
   if (has_queries) {
-    if (!query_weights_.empty()) { query_weights_.clear(); }
-    queries_ = std::vector<data_size_t>(num_data_, 0);
+    if (!query_weights_.empty()) {
+      Log::Fatal("Calling Init() on Metadata queries that have already been initialized");
+    }
+    queries_.resize(num_data_, 0);
     query_load_from_file_ = false;
   }
 }

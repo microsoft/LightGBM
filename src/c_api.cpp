@@ -1067,6 +1067,9 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                      const int32_t* queries,
                                      int32_t tid) {
   API_BEGIN();
+#ifdef LABEL_T_USE_DOUBLE
+  Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
+#endif
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
@@ -1145,6 +1148,9 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
                                           const int32_t* queries,
                                           int32_t tid) {
   API_BEGIN();
+#ifdef LABEL_T_USE_DOUBLE
+  Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
+#endif
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
