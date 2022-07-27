@@ -3476,7 +3476,8 @@ def test_sample_strategy_with_boosting():
         'boosting': 'dart',
         'data_sample_strategy': 'goss',
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'gpu_use_dp': True
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3491,7 +3492,8 @@ def test_sample_strategy_with_boosting():
         'boosting': 'gbdt',
         'data_sample_strategy': 'goss',
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'gpu_use_dp': True
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3506,7 +3508,8 @@ def test_sample_strategy_with_boosting():
         'boosting': 'goss',
         'data_sample_strategy': 'goss',
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'gpu_use_dp': True
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3518,7 +3521,7 @@ def test_sample_strategy_with_boosting():
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret3)
 
     assert ret1 != ret2
-    np.testing.assert_allclose(ret2, ret3)
+    assert ret2 == ret3
 
     params = {
         'boosting': 'dart',
@@ -3526,7 +3529,8 @@ def test_sample_strategy_with_boosting():
         'bagging_freq': 1,
         'bagging_fraction': 0.5,
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'gpu_use_dp': True
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3543,7 +3547,8 @@ def test_sample_strategy_with_boosting():
         'bagging_freq': 1,
         'bagging_fraction': 0.5,
         'metric': 'l2',
-        'verbose': -1
+        'verbose': -1,
+        'gpu_use_dp': True
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
