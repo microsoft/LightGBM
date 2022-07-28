@@ -1344,6 +1344,7 @@ class Dataset:
             num_per_col_ptr,
             ctypes.c_int32(sample_cnt),
             ctypes.c_int32(total_nrow),
+            ctypes.c_int64(total_nrow),
             c_str(params_str),
             ctypes.byref(self.handle),
         ))

@@ -657,11 +657,14 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
   return dataset.release();
 }
 
-
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
-                                                int** sample_indices, int num_col, const int* num_per_col,
-                                                size_t total_sample_size, data_size_t num_data) {
-  CheckSampleSize(total_sample_size, static_cast<size_t>(num_data));
+                                                int** sample_indices,
+                                                int num_col,
+                                                const int* num_per_col,
+                                                size_t total_sample_size,
+                                                data_size_t num_local_data,
+                                                int64_t num_dist_data) {
+  CheckSampleSize(total_sample_size, static_cast<size_t>(num_dist_data));
   int num_total_features = num_col;
   if (Network::num_machines() > 1) {
     num_total_features = Network::GlobalSyncUpByMax(num_total_features);
@@ -685,7 +688,7 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
   std::vector<std::vector<double>> forced_bin_bounds = DatasetLoader::GetForcedBins(forced_bins_path, num_col, categorical_features_);
 
   const data_size_t filter_cnt = static_cast<data_size_t>(
-    static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_data);
+    static_cast<double>(config_.min_data_in_leaf * total_sample_size) / num_dist_data);
   if (Network::num_machines() == 1) {
     // if only one machine, find bin locally
     OMP_INIT_EX();
@@ -806,10 +809,10 @@ Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
     }
   }
   CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
-  auto dataset = std::unique_ptr<Dataset>(new Dataset(num_data));
+  auto dataset = std::unique_ptr<Dataset>(new Dataset(num_local_data));
   dataset->Construct(&bin_mappers, num_total_features, forced_bin_bounds, sample_indices, sample_values, num_per_col, num_col, total_sample_size, config_);
   if (dataset->has_raw()) {
-    dataset->ResizeRaw(num_data);
+    dataset->ResizeRaw(num_local_data);
   }
   dataset->set_feature_names(feature_names_);
   return dataset.release();
