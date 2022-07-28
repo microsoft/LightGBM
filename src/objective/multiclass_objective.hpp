@@ -121,7 +121,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>((p) * weights_[i]);
+            gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
           hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
         }

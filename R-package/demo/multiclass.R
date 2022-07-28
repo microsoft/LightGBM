@@ -56,21 +56,15 @@ model <- lgb.train(
 # We can predict on test data, identical
 my_preds <- predict(model, test[, 1L:4L])
 
-# A (30x3) matrix with the predictions, use parameter reshape
+# A (30x3) matrix with the predictions
 # class1 class2 class3
 #   obs1   obs1   obs1
 #   obs2   obs2   obs2
 #   ....   ....   ....
-my_preds <- predict(model, test[, 1L:4L], reshape = TRUE)
+my_preds <- predict(model, test[, 1L:4L])
 
 # We can also get the predicted scores before the Sigmoid/Softmax application
-my_preds <- predict(model, test[, 1L:4L], rawscore = TRUE)
-
-# Raw score predictions as matrix instead of vector
-my_preds <- predict(model, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
+my_preds <- predict(model, test[, 1L:4L], type = "raw")
 
 # We can also get the leaf index
-my_preds <- predict(model, test[, 1L:4L], predleaf = TRUE)
-
-# Predict leaf index as matrix instead of vector
-my_preds <- predict(model, test[, 1L:4L], predleaf = TRUE, reshape = TRUE)
+my_preds <- predict(model, test[, 1L:4L], type = "leaf")

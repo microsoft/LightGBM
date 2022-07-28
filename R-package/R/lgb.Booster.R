@@ -26,107 +26,89 @@ Booster <- R6::R6Class(
                           modelfile = NULL,
                           model_str = NULL) {
 
-      # Create parameters and handle
       handle <- NULL
 
-      # Attempts to create a handle for the dataset
-      try({
+      if (!is.null(train_set)) {
 
-        # Check if training dataset is not null
-        if (!is.null(train_set)) {
-          # Check if training dataset is lgb.Dataset or not
-          if (!lgb.is.Dataset(train_set)) {
-            stop("lgb.Booster: Can only use lgb.Dataset as training data")
-          }
-          train_set_handle <- train_set$.__enclos_env__$private$get_handle()
-          params <- utils::modifyList(params, train_set$get_params())
-          params_str <- lgb.params2str(params = params)
-          # Store booster handle
-          handle <- .Call(
-            LGBM_BoosterCreate_R
-            , train_set_handle
-            , params_str
-          )
+        if (!lgb.is.Dataset(train_set)) {
+          stop("lgb.Booster: Can only use lgb.Dataset as training data")
+        }
+        train_set_handle <- train_set$.__enclos_env__$private$get_handle()
+        params <- utils::modifyList(params, train_set$get_params())
+        params_str <- lgb.params2str(params = params)
+        # Store booster handle
+        handle <- .Call(
+          LGBM_BoosterCreate_R
+          , train_set_handle
+          , params_str
+        )
 
-          # Create private booster information
-          private$train_set <- train_set
-          private$train_set_version <- train_set$.__enclos_env__$private$version
-          private$num_dataset <- 1L
-          private$init_predictor <- train_set$.__enclos_env__$private$predictor
+        # Create private booster information
+        private$train_set <- train_set
+        private$train_set_version <- train_set$.__enclos_env__$private$version
+        private$num_dataset <- 1L
+        private$init_predictor <- train_set$.__enclos_env__$private$predictor
 
-          # Check if predictor is existing
-          if (!is.null(private$init_predictor)) {
+        if (!is.null(private$init_predictor)) {
 
-            # Merge booster
-            .Call(
-              LGBM_BoosterMerge_R
-              , handle
-              , private$init_predictor$.__enclos_env__$private$handle
-            )
-
-          }
-
-          # Check current iteration
-          private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
-
-        } else if (!is.null(modelfile)) {
-
-          # Do we have a model file as character?
-          if (!is.character(modelfile)) {
-            stop("lgb.Booster: Can only use a string as model file path")
-          }
-
-          modelfile <- path.expand(modelfile)
-
-          # Create booster from model
-          handle <- .Call(
-            LGBM_BoosterCreateFromModelfile_R
-            , modelfile
-          )
-
-        } else if (!is.null(model_str)) {
-
-          # Do we have a model_str as character/raw?
-          if (!is.raw(model_str) && !is.character(model_str)) {
-            stop("lgb.Booster: Can only use a character/raw vector as model_str")
-          }
-
-          # Create booster from model
-          handle <- .Call(
-            LGBM_BoosterLoadModelFromString_R
-            , model_str
-          )
-
-        } else {
-
-          # Booster non existent
-          stop(
-            "lgb.Booster: Need at least either training dataset, "
-            , "model file, or model_str to create booster instance"
+          # Merge booster
+          .Call(
+            LGBM_BoosterMerge_R
+            , handle
+            , private$init_predictor$.__enclos_env__$private$handle
           )
 
         }
 
-      })
+        # Check current iteration
+        private$is_predicted_cur_iter <- c(private$is_predicted_cur_iter, FALSE)
 
-      # Check whether the handle was created properly if it was not stopped earlier by a stop call
-      if (isTRUE(lgb.is.null.handle(x = handle))) {
+      } else if (!is.null(modelfile)) {
 
-        stop("lgb.Booster: cannot create Booster handle")
+        # Do we have a model file as character?
+        if (!is.character(modelfile)) {
+          stop("lgb.Booster: Can only use a string as model file path")
+        }
+
+        modelfile <- path.expand(modelfile)
+
+        # Create booster from model
+        handle <- .Call(
+          LGBM_BoosterCreateFromModelfile_R
+          , modelfile
+        )
+
+      } else if (!is.null(model_str)) {
+
+        # Do we have a model_str as character/raw?
+        if (!is.raw(model_str) && !is.character(model_str)) {
+          stop("lgb.Booster: Can only use a character/raw vector as model_str")
+        }
+
+        # Create booster from model
+        handle <- .Call(
+          LGBM_BoosterLoadModelFromString_R
+          , model_str
+        )
 
       } else {
 
-        # Create class
-        class(handle) <- "lgb.Booster.handle"
-        private$handle <- handle
-        private$num_class <- 1L
-        .Call(
-          LGBM_BoosterGetNumClasses_R
-          , private$handle
-          , private$num_class
+        # Booster non existent
+        stop(
+          "lgb.Booster: Need at least either training dataset, "
+          , "model file, or model_str to create booster instance"
         )
 
       }
+
+      class(handle) <- "lgb.Booster.handle"
+      private$handle <- handle
+      private$num_class <- 1L
+      .Call(
+        LGBM_BoosterGetNumClasses_R
+        , private$handle
+        , private$num_class
+      )
 
       self$params <- params
 
@@ -249,12 +231,24 @@ Booster <- R6::R6Class(
           private$set_objective_to_none <- TRUE
         }
         # Perform objective calculation
-        gpair <- fobj(private$inner_predict(1L), private$train_set)
+        preds <- private$inner_predict(1L)
+        gpair <- fobj(preds, private$train_set)
 
         # Check for gradient and hessian as list
         if (is.null(gpair$grad) || is.null(gpair$hess)) {
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
+        }
+
+        # Check grad and hess have the right shape
+        n_grad <- length(gpair$grad)
+        n_hess <- length(gpair$hess)
+        n_preds <- length(preds)
+        if (n_grad != n_preds) {
+          stop(sprintf("Expected custom objective function to return grad with length %d, got %d.", n_preds, n_grad))
+        }
+        if (n_hess != n_preds) {
+          stop(sprintf("Expected custom objective function to return hess with length %d, got %d.", n_preds, n_hess))
         }
 
         # Return custom boosting gradient/hessian
@@ -263,7 +257,7 @@ Booster <- R6::R6Class(
           , private$handle
           , gpair$grad
           , gpair$hess
-          , length(gpair$grad)
+          , n_preds
         )
 
       }
@@ -492,7 +486,6 @@ Booster <- R6::R6Class(
                        predleaf = FALSE,
                        predcontrib = FALSE,
                        header = FALSE,
-                       reshape = FALSE,
                        params = list()) {
 
       self$restore_handle()
@@ -503,6 +496,34 @@ Booster <- R6::R6Class(
 
       if (is.null(start_iteration)) {
         start_iteration <- 0L
+      }
+
+      # possibly override keyword arguments with parameters
+      #
+      # NOTE: this length() check minimizes the latency introduced by these checks,
+      #       for the common case where params is empty
+      #
+      # NOTE: doing this here instead of in Predictor$predict() to keep
+      #       Predictor$predict() as fast as possible
+      if (length(params) > 0L) {
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_raw_score"
+          , params = params
+          , alternative_kwarg_value = rawscore
+        )
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_leaf_index"
+          , params = params
+          , alternative_kwarg_value = predleaf
+        )
+        params <- lgb.check.wrapper_param(
+          main_param_name = "predict_contrib"
+          , params = params
+          , alternative_kwarg_value = predcontrib
+        )
+        rawscore <- params[["predict_raw_score"]]
+        predleaf <- params[["predict_leaf_index"]]
+        predcontrib <- params[["predict_contrib"]]
       }
 
       # Predict on new data
@@ -519,7 +540,6 @@ Booster <- R6::R6Class(
           , predleaf = predleaf
           , predcontrib = predcontrib
           , header = header
-          , reshape = reshape
         )
       )
 
@@ -711,8 +731,9 @@ Booster <- R6::R6Class(
         res <- feval(private$inner_predict(data_idx), data)
 
         if (is.null(res$name) || is.null(res$value) ||  is.null(res$higher_better)) {
-          stop("lgb.Booster.eval: custom eval function should return a
-            list with attribute (name, value, higher_better)");
+          stop(
+            "lgb.Booster.eval: custom eval function should return a list with attribute (name, value, higher_better)"
+          )
         }
 
         # Append names and evaluation
@@ -731,8 +752,28 @@ Booster <- R6::R6Class(
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
 #' @param object Object of class \code{lgb.Booster}
-#' @param data a \code{matrix} object, a \code{dgCMatrix} object or
-#'             a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
+#'                a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param type Type of prediction to output. Allowed types are:\itemize{
+#'             \item \code{"response"}: will output the predicted score according to the objective function being
+#'                   optimized (depending on the link function that the objective uses), after applying any necessary
+#'                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+#'             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+#'                   probability. For other objectives, will output the same as "response".
+#'             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+#'                   results) from which the "response" number is produced for a given objective function - for example,
+#'                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+#'                   "regression", since no transformation is applied, the output will be the same as for "response".
+#'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+#'                   in each tree in the model, outputted as integers, with one column per tree.
+#'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+#'                   intercept (each feature will produce one column). If there are multiple classes, each class will
+#'                   have separate feature contributions (thus the number of columns is features+1 multiplied by the
+#'                   number of classes).
+#'             }
+#'
+#'             Note that, if using custom objectives, types "class" and "response" will not be available and will
+#'             default towards using "raw" instead.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -741,26 +782,20 @@ Booster <- R6::R6Class(
 #'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
 #'                      best iteration is used; otherwise, all iterations from start_iteration are used.
 #'                      If <= 0, all iterations from start_iteration are used (no limits).
-#' @param rawscore whether the prediction should be returned in the for of original untransformed
-#'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-#'                 for logistic regression would result in predictions for log-odds instead of probabilities.
-#' @param predleaf whether predict leaf index instead.
-#' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
-#' @param reshape whether to reshape the vector of predictions to a matrix form when there are several
-#'                prediction outputs per case.
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 #'               the "Predict Parameters" section of the documentation} for a list of parameters and
-#'               valid values.
+#'               valid values. Where these conflict with the values of keyword arguments to this function,
+#'               the values in \code{params} take precedence.
 #' @param ... ignored
-#' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#'         For multiclass classification, either a \code{num_class * nrows(data)} vector or
-#'         a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-#'         the \code{reshape} value.
+#' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
+#'         \code{type="response"} on a binary classification or regression objective), will return a vector with one
+#'         element per row in \code{newdata}.
 #'
-#'         When \code{predleaf = TRUE}, the output is a matrix object with the
-#'         number of columns corresponding to the number of trees.
+#'         For prediction types that are meant to return more than one output per observation (e.g. when predicting
+#'         \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
+#'         objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 #'
 #' @examples
 #' \donttest{
@@ -797,14 +832,11 @@ Booster <- R6::R6Class(
 #' @importFrom utils modifyList
 #' @export
 predict.lgb.Booster <- function(object,
-                                data,
+                                newdata,
+                                type = "response",
                                 start_iteration = NULL,
                                 num_iteration = NULL,
-                                rawscore = FALSE,
-                                predleaf = FALSE,
-                                predcontrib = FALSE,
                                 header = FALSE,
-                                reshape = FALSE,
                                 params = list(),
                                 ...) {
 
@@ -814,26 +846,65 @@ predict.lgb.Booster <- function(object,
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
+    additional_params_names <- names(additional_params)
+    if ("reshape" %in% additional_params_names) {
+      stop("'reshape' argument is no longer supported.")
+    }
+
+    old_args_for_type <- list(
+      "rawscore" = "raw"
+      , "predleaf" = "leaf"
+      , "predcontrib" = "contrib"
+    )
+    for (arg in names(old_args_for_type)) {
+      if (arg %in% additional_params_names) {
+        stop(sprintf("Argument '%s' is no longer supported. Use type='%s' instead."
+                     , arg
+                     , old_args_for_type[[arg]]))
+      }
+    }
+
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
+      , toString(names(additional_params))
       , ". These are ignored. Use argument 'params' instead."
     ))
   }
 
-  return(
-    object$predict(
-      data = data
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , reshape = reshape
-      , params = params
-    )
+  if (!is.null(object$params$objective) && object$params$objective == "none" && type %in% c("class", "response")) {
+    warning("Prediction types 'class' and 'response' are not supported for custom objectives.")
+    type <- "raw"
+  }
+
+  rawscore <- FALSE
+  predleaf <- FALSE
+  predcontrib <- FALSE
+  if (type == "raw") {
+    rawscore <- TRUE
+  } else if (type == "leaf") {
+    predleaf <- TRUE
+  } else if (type == "contrib") {
+    predcontrib <- TRUE
+  }
+
+  pred <- object$predict(
+    data = newdata
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , params = params
   )
+  if (type == "class") {
+    if (object$params$objective == "binary") {
+      pred <- as.integer(pred >= 0.5)
+    } else if (object$params$objective %in% c("multiclass", "multiclassova")) {
+      pred <- max.col(pred) - 1L
+    }
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster
@@ -864,12 +935,13 @@ print.lgb.Booster <- function(x, ...) {
     if (obj == "none") {
       obj <- "custom"
     }
-    if (x$.__enclos_env__$private$num_class == 1L) {
+    num_class <- x$.__enclos_env__$private$num_class
+    if (num_class == 1L) {
       cat(sprintf("Objective: %s\n", obj))
     } else {
       cat(sprintf("Objective: %s (%d classes)\n"
           , obj
-          , x$.__enclos_env__$private$num_class))
+          , num_class))
     }
   } else {
     cat("(Booster handle is invalid)\n")
@@ -1123,7 +1195,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       "lgb.get.eval.result: data_name "
       , shQuote(data_name)
       , " not found. Only the following datasets exist in record evals: ["
-      , paste(data_names, collapse = ", ")
+      , toString(data_names)
       , "]"
     ))
   }
@@ -1137,7 +1209,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       , " not found. Only the following eval_names exist for dataset "
       , shQuote(data_name)
       , ": ["
-      , paste(eval_names, collapse = ", ")
+      , toString(eval_names)
       , "]"
     ))
     stop("lgb.get.eval.result: wrong eval name")

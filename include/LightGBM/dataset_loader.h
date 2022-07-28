@@ -7,6 +7,7 @@
 
 #include <LightGBM/dataset.h>
 
+#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -28,8 +29,12 @@ class DatasetLoader {
   LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
 
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
-    int** sample_indices, int num_col, const int* num_per_col,
-    size_t total_sample_size, data_size_t num_data);
+                                                   int** sample_indices,
+                                                   int num_col,
+                                                   const int* num_per_col,
+                                                   size_t total_sample_size,
+                                                   data_size_t num_local_data,
+                                                   int64_t num_dist_data);
 
   /*! \brief Disable copy */
   DatasetLoader& operator=(const DatasetLoader&) = delete;
@@ -62,6 +67,16 @@ class DatasetLoader {
 
   /*! \brief Check can load from binary file */
   std::string CheckCanLoadFromBin(const char* filename);
+
+  /*! \brief Check the number of bins for categorical features.
+   * The number of bins for categorical features may exceed the configured maximum value.
+   * Log warnings when such cases happen.
+   *
+   * \param bin_mappers the bin_mappers of all features
+   * \param max_bin max_bin from Config
+   * \param max_bin_by_feature max_bin_by_feature from Config
+   */
+  void CheckCategoricalFeatureNumBin(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers, const int max_bin, const std::vector<int>& max_bin_by_feature) const;
 
   const Config& config_;
   /*! \brief Random generator*/

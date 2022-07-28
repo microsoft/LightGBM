@@ -15,7 +15,7 @@ env:
   CONDA_ENV: test-env
   GITHUB_ACTIONS: 'true'
   OS_NAME: 'linux'
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: '3.10'
 
 jobs:
   test:
@@ -39,7 +39,7 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=${HOME}/miniconda
+          export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
@@ -49,6 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     container: rocker/verse
     steps:
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v2.4.0
         with:
@@ -57,7 +60,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'rmarkdown', 'roxygen2', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'roxygen2', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh || exit -1
           R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
       - name: Test documentation

@@ -36,14 +36,18 @@ evals_result = {}  # to record eval results for plotting
 
 print('Starting training...')
 # train
-gbm = lgb.train(params,
-                lgb_train,
-                num_boost_round=100,
-                valid_sets=[lgb_train, lgb_test],
-                feature_name=[f'f{i + 1}' for i in range(X_train.shape[-1])],
-                categorical_feature=[21],
-                evals_result=evals_result,
-                callbacks=[lgb.log_evaluation(10)])
+gbm = lgb.train(
+    params,
+    lgb_train,
+    num_boost_round=100,
+    valid_sets=[lgb_train, lgb_test],
+    feature_name=[f'f{i + 1}' for i in range(X_train.shape[-1])],
+    categorical_feature=[21],
+    callbacks=[
+        lgb.log_evaluation(10),
+        lgb.record_evaluation(evals_result)
+    ]
+)
 
 print('Plotting metrics recorded during training...')
 ax = lgb.plot_metric(evals_result, metric='l1')

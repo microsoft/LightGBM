@@ -278,6 +278,10 @@ void SerialTreeLearner::BeforeTrain() {
   }
 
   larger_leaf_splits_->Init();
+
+  if (cegb_ != nullptr) {
+    cegb_->BeforeTrain();
+  }
 }
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
@@ -772,7 +776,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   new_split.feature = real_fidx;
   if (cegb_ != nullptr) {
     new_split.gain -=
-        cegb_->DetlaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
+        cegb_->DeltaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
                          num_data, new_split);
   }
   if (new_split.monotone_type != 0) {

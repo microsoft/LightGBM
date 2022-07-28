@@ -109,7 +109,7 @@ Dataset <- R6::R6Class(
                             params = list()) {
 
       # the Dataset's existing parameters should be overwritten by any passed in to this call
-      params <- modifyList(self$get_params(), params)
+      params <- modifyList(private$params, params)
 
       # Create new dataset
       ret <- Dataset$new(
@@ -169,12 +169,13 @@ Dataset <- R6::R6Class(
           } else {
 
             # Check if more categorical features were output over the feature space
-            if (max(private$categorical_feature) > length(private$colnames)) {
+            data_is_not_filename <- !is.character(private$raw_data)
+            if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
               stop(
                 "lgb.self.get.handle: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
                 , " but only "
-                , length(private$colnames)
+                , ncol(private$raw_data)
                 , " features"
               )
             }
@@ -236,7 +237,7 @@ Dataset <- R6::R6Class(
           if (length(private$raw_data@p) > 2147483647L) {
             stop("Cannot support large CSC matrix")
           }
-          # Are we using a dgCMatrix (sparsed matrix column compressed)
+          # Are we using a dgCMatrix (sparse matrix column compressed)
           handle <- .Call(
             LGBM_DatasetCreateFromCSC_R
             , private$raw_data@p
@@ -288,6 +289,13 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
+      # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
+      # in cases like constructing from a file or from a matrix with no column names.
+      private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
+      )
+
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 
@@ -295,7 +303,6 @@ Dataset <- R6::R6Class(
         init_score <- private$predictor$predict(
           data = private$raw_data
           , rawscore = TRUE
-          , reshape = TRUE
         )
 
         # Not needed to transpose, for is col_marjor
@@ -376,6 +383,28 @@ Dataset <- R6::R6Class(
 
     },
 
+    # Get number of bins for feature
+    get_feature_num_bin = function(feature) {
+      if (lgb.is.null.handle(x = private$handle)) {
+        stop("Cannot get number of bins in feature before constructing Dataset.")
+      }
+      if (is.character(feature)) {
+        feature_name <- feature
+        feature <- which(private$colnames == feature_name)
+        if (length(feature) == 0L) {
+          stop(sprintf("feature '%s' not found", feature_name))
+        }
+      }
+      num_bin <- integer(1L)
+      .Call(
+        LGBM_DatasetGetFeatureNumBin_R
+        , private$handle
+        , feature - 1L
+        , num_bin
+      )
+      return(num_bin)
+    },
+
     # Get column names
     get_colnames = function() {
 
@@ -442,7 +471,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$get_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , toString(sQuote(.INFO_KEYS()))
         )
       }
 
@@ -462,15 +491,14 @@ Dataset <- R6::R6Class(
           , info_len
         )
 
-        # Check if info is not empty
         if (info_len > 0L) {
 
           # Get back fields
           ret <- NULL
           ret <- if (field_name == "group") {
-            integer(info_len) # Integer
+            integer(info_len)
           } else {
-            numeric(info_len) # Numeric
+            numeric(info_len)
           }
 
           .Call(
@@ -495,15 +523,15 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$set_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , toString(sQuote(.INFO_KEYS()))
         )
       }
 
       # Check for type of information
       data <- if (field_name == "group") {
-        as.integer(data) # Integer
+        as.integer(data)
       } else {
-        as.numeric(data) # Numeric
+        as.numeric(data)
       }
 
       # Store information privately
@@ -531,14 +559,12 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Slice dataset
     slice = function(idxset) {
 
-      # Perform slicing
       return(
         Dataset$new(
           data = NULL
-          , params = self$get_params()
+          , params = private$params
           , reference = self
           , colnames = private$colnames
           , categorical_feature = private$categorical_feature
@@ -557,15 +583,17 @@ Dataset <- R6::R6Class(
       if (length(params) == 0L) {
         return(invisible(self))
       }
+      new_params <- utils::modifyList(private$params, params)
       if (lgb.is.null.handle(x = private$handle)) {
-        private$params <- utils::modifyList(private$params, params)
+        private$params <- new_params
       } else {
         tryCatch({
           .Call(
             LGBM_DatasetUpdateParamChecking_R
             , lgb.params2str(params = private$params)
-            , lgb.params2str(params = params)
+            , lgb.params2str(params = new_params)
           )
+          private$params <- new_params
         }, error = function(e) {
           # If updating failed but raw data is not available, raise an error because
           # achieving what the user asked for is not possible
@@ -575,7 +603,7 @@ Dataset <- R6::R6Class(
 
           # If updating failed but raw data is available, modify the params
           # on the R side and re-set ("deconstruct") the Dataset
-          private$params <- utils::modifyList(private$params, params)
+          private$params <- new_params
           self$finalize()
         })
       }
@@ -583,6 +611,11 @@ Dataset <- R6::R6Class(
 
     },
 
+    # [description] Get only Dataset-specific parameters. This is primarily used by
+    #               Booster to update its parameters based on the characteristics of
+    #               a Dataset. It should not be used by other methods in this class,
+    #               since "verbose" is not a Dataset parameter and needs to be passed
+    #               through to avoid globally re-setting verbosity.
     get_params = function() {
       dataset_params <- unname(unlist(.DATASET_PARAMETERS()))
       ret <- list()
@@ -617,7 +650,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set reference
     set_reference = function(reference) {
 
       # setting reference to this same Dataset object doesn't require any changes
@@ -677,7 +709,6 @@ Dataset <- R6::R6Class(
     info = NULL,
     version = 0L,
 
-    # Get handle
     get_handle = function() {
 
       # Get handle and construct if needed
@@ -688,7 +719,6 @@ Dataset <- R6::R6Class(
 
     },
 
-    # Set predictor
     set_predictor = function(predictor) {
 
       if (identical(private$predictor, predictor)) {

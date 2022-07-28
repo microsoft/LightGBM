@@ -6,14 +6,11 @@
 \usage{
 \method{predict}{lgb.Booster}(
   object,
-  data,
+  newdata,
+  type = "response",
   start_iteration = NULL,
   num_iteration = NULL,
-  rawscore = FALSE,
-  predleaf = FALSE,
-  predcontrib = FALSE,
   header = FALSE,
-  reshape = FALSE,
   params = list(),
   ...
 )
@@ -21,8 +18,29 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{data}{a \code{matrix} object, a \code{dgCMatrix} object or
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
 a character representing a path to a text file (CSV, TSV, or LibSVM)}
+
+\item{type}{Type of prediction to output. Allowed types are:\itemize{
+            \item \code{"response"}: will output the predicted score according to the objective function being
+                  optimized (depending on the link function that the objective uses), after applying any necessary
+                  transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+            \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+                  probability. For other objectives, will output the same as "response".
+            \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+                  results) from which the "response" number is produced for a given objective function - for example,
+                  for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+                  "regression", since no transformation is applied, the output will be the same as for "response".
+            \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+                  in each tree in the model, outputted as integers, with one column per tree.
+            \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+                  intercept (each feature will produce one column). If there are multiple classes, each class will
+                  have separate feature contributions (thus the number of columns is features+1 multiplied by the
+                  number of classes).
+            }
+
+            Note that, if using custom objectives, types "class" and "response" will not be available and will
+            default towards using "raw" instead.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -34,34 +52,24 @@ If None, if the best iteration exists and start_iteration is None or <= 0, the
 best iteration is used; otherwise, all iterations from start_iteration are used.
 If <= 0, all iterations from start_iteration are used (no limits).}
 
-\item{rawscore}{whether the prediction should be returned in the for of original untransformed
-sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-for logistic regression would result in predictions for log-odds instead of probabilities.}
-
-\item{predleaf}{whether predict leaf index instead.}
-
-\item{predcontrib}{return per-feature contributions for each record.}
-
 \item{header}{only used for prediction for text file. True if text file has header}
-
-\item{reshape}{whether to reshape the vector of predictions to a matrix form when there are several
-prediction outputs per case.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
 the "Predict Parameters" section of the documentation} for a list of parameters and
-valid values.}
+valid values. Where these conflict with the values of keyword arguments to this function,
+the values in \code{params} take precedence.}
 
 \item{...}{ignored}
 }
 \value{
-For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-        For multiclass classification, either a \code{num_class * nrows(data)} vector or
-        a \code{(nrows(data), num_class)} dimension matrix is returned, depending on
-        the \code{reshape} value.
+For prediction types that are meant to always return one output per observation (e.g. when predicting
+        \code{type="response"} on a binary classification or regression objective), will return a vector with one
+        element per row in \code{newdata}.
 
-        When \code{predleaf = TRUE}, the output is a matrix object with the
-        number of columns corresponding to the number of trees.
+        For prediction types that are meant to return more than one output per observation (e.g. when predicting
+        \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
+        objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}

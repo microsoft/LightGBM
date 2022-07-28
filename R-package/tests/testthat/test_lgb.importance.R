@@ -1,5 +1,3 @@
-context("lgb.importance")
-
 test_that("lgb.importance() should reject bad inputs", {
     bad_inputs <- list(
         .Machine$integer.max

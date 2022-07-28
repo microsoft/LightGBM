@@ -1,6 +1,8 @@
 #' @name lgb.train
 #' @title Main training logic for LightGBM
-#' @description Logic to train with LightGBM
+#' @description Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+#'              this function is focused on performance (e.g. speed, memory efficiency). It is also
+#'              less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
@@ -73,21 +75,29 @@ lgb.train <- function(params = list(),
     }
   }
 
-  # Setup temporary variables
-  params$verbose <- verbose
-  params <- lgb.check.obj(params = params, obj = obj)
-  params <- lgb.check.eval(params = params, eval = eval)
-  fobj <- NULL
-  eval_functions <- list(NULL)
-
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
   params <- lgb.check.wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
+  params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
     , alternative_kwarg_value = nrounds
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "metric"
+    , params = params
+    , alternative_kwarg_value = NULL
+  )
+  params <- lgb.check.wrapper_param(
+    main_param_name = "objective"
+    , params = params
+    , alternative_kwarg_value = obj
   )
   params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
@@ -96,16 +106,19 @@ lgb.train <- function(params = list(),
   )
   early_stopping_rounds <- params[["early_stopping_round"]]
 
-  # Check for objective (function or not)
+  # extract any function objects passed for objective or metric
+  fobj <- NULL
   if (is.function(params$objective)) {
     fobj <- params$objective
-    params$objective <- "NONE"
+    params$objective <- "none"
   }
 
   # If eval is a single function, store it as a 1-element list
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
+  params <- lgb.check.eval(params = params, eval = eval)
+  eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
   }
@@ -199,13 +212,13 @@ lgb.train <- function(params = list(),
   }
 
   # Add printing log callback
-  if (verbose > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.print.evaluation(period = eval_freq))
+  if (params[["verbosity"]] > 0L && eval_freq > 0L) {
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record && length(valids) > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb.record.evaluation())
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_record_evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -226,10 +239,10 @@ lgb.train <- function(params = list(),
     warning("Early stopping is not available in 'dart' mode.")
     using_early_stopping <- FALSE
 
-    # Remove the cb.early.stop() function if it was passed in to callbacks
+    # Remove the cb_early_stop() function if it was passed in to callbacks
     callbacks <- Filter(
       f = function(cb_func) {
-        !identical(attr(cb_func, "name"), "cb.early.stop")
+        !identical(attr(cb_func, "name"), "cb_early_stop")
       }
       , x = callbacks
     )
@@ -239,10 +252,10 @@ lgb.train <- function(params = list(),
   if (using_early_stopping) {
     callbacks <- add.cb(
       cb_list = callbacks
-      , cb = cb.early.stop(
+      , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
-        , verbose = verbose
+        , verbose = params[["verbosity"]] > 0L
       )
     )
   }

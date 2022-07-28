@@ -213,6 +213,19 @@ LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetNumFeature_R(
   SEXP out
 );
 
+/*!
+* \brief get number of bins for feature
+* \param handle the handle to the Dataset
+* \param feature the index of the feature
+* \param out The output of number of bins
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_DatasetGetFeatureNumBin_R(
+  SEXP handle,
+  SEXP feature,
+  SEXP out
+);
+
 // --- start Booster interfaces
 
 /*!
@@ -559,6 +572,35 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
   SEXP num_iteration,
   SEXP parameter,
   SEXP out_result
+);
+
+/*!
+* \brief make feature contribution prediction for a new Dataset
+* \param handle Booster handle
+* \param indptr array with the index pointer of the data in CSR or CSC format
+* \param indices array with the non-zero indices of the data in CSR or CSC format
+* \param data array with the non-zero values of the data in CSR or CSC format
+* \param is_csr whether the input data is in CSR format or not (pass FALSE for CSC)
+* \param nrows number of rows in the data
+* \param ncols number of columns in the data
+* \param start_iteration Start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \return An R list with entries "indptr", "indices", "data", constituting the
+*         feature contributions in sparse format, in the same storage order as
+*         the input data.
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictSparseOutput_R(
+  SEXP handle,
+  SEXP indptr,
+  SEXP indices,
+  SEXP data,
+  SEXP is_csr,
+  SEXP nrows,
+  SEXP ncols,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter
 );
 
 /*!

@@ -1,36 +1,48 @@
 # coding: utf-8
 import itertools
 import math
+import re
+from functools import partial
+from os import getenv
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pytest
-from pkg_resources import parse_version
-from sklearn import __version__ as sk_version
 from sklearn.base import clone
-from sklearn.datasets import load_svmlight_file, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
+from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import check_parameters_default_constructible
+from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
 from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression)
-
-sk_version = parse_version(sk_version)
-if sk_version < parse_version("0.23"):
-    import warnings
-
-    from sklearn.exceptions import SkipTestWarning
-    from sklearn.utils.estimator_checks import SkipTest, _yield_all_checks
-else:
-    from sklearn.utils.estimator_checks import parametrize_with_checks
+                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
+task_to_model_factory = {
+    'ranking': lgb.LGBMRanker,
+    'classification': lgb.LGBMClassifier,
+    'regression': lgb.LGBMRegressor,
+}
+
+
+def _create_data(task):
+    if task == 'ranking':
+        X, y, g = make_ranking(n_features=4)
+        g = np.bincount(g)
+    elif task == 'classification':
+        X, y = load_iris(return_X_y=True)
+        g = None
+    elif task == 'regression':
+        X, y = make_synthetic_regression()
+        g = None
+    return X, y, g
 
 
 class UnpicklableCallback:
@@ -38,7 +50,7 @@ class UnpicklableCallback:
         raise Exception("This class in not picklable")
 
     def __call__(self, env):
-        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+        env.model.attr_set_inside_callback = env.iteration * 10
 
 
 def custom_asymmetric_obj(y_true, y_pred):
@@ -109,6 +121,7 @@ def test_regression():
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_multiclass():
     X, y = load_digits(n_class=10, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -121,6 +134,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -259,11 +273,7 @@ def test_dart():
     assert score <= 1.
 
 
-# sklearn <0.23 does not have a stacking classifier and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version("0.23"), reason='scikit-learn version is less than 0.23')
 def test_stacking_classifier():
-    from sklearn.ensemble import StackingClassifier
-
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     classifiers = [('gbm1', lgb.LGBMClassifier(n_estimators=3)),
@@ -284,11 +294,7 @@ def test_stacking_classifier():
     assert all(clf.classes_ == clf.named_estimators_['gbm1'].classes_)
 
 
-# sklearn <0.23 does not have a stacking regressor and n_features_in_ property
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_stacking_regressor():
-    from sklearn.ensemble import StackingRegressor
-
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
@@ -373,8 +379,6 @@ def test_random_search():
     assert score <= 1.
 
 
-# sklearn < 0.22 does not have the post fit attribute: classes_
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_multioutput_classifier():
     n_outputs = 3
     X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -394,8 +398,6 @@ def test_multioutput_classifier():
         assert isinstance(classifier.booster_, lgb.Booster)
 
 
-# sklearn < 0.23 does not have as_frame parameter
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_multioutput_regressor():
     bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
     X, y = bunch['data'], bunch['target']
@@ -412,8 +414,6 @@ def test_multioutput_regressor():
         assert isinstance(regressor.booster_, lgb.Booster)
 
 
-# sklearn < 0.22 does not have the post fit attribute: classes_
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_classifier_chain():
     n_outputs = 3
     X, y = make_multilabel_classification(n_samples=100, n_features=20,
@@ -435,8 +435,6 @@ def test_classifier_chain():
         assert isinstance(classifier.booster_, lgb.Booster)
 
 
-# sklearn < 0.23 does not have as_frame parameter
-@pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_regressor_chain():
     bunch = load_linnerud(as_frame=True)  # returns a Bunch instance
     X, y = bunch['data'], bunch['target']
@@ -518,7 +516,7 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
-    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
+    assert gbm.booster_.attr_set_inside_callback == 40
 
 
 def test_random_state_object():
@@ -634,20 +632,15 @@ def test_pandas_categorical():
 
 def test_pandas_sparse():
     pd = pytest.importorskip("pandas")
-    try:
-        from pandas.arrays import SparseArray
-    except ImportError:  # support old versions
-        from pandas import SparseArray
-    X = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 1, 2] * 100)),
-                      "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-                      "C": SparseArray(np.random.permutation([True, False] * 150))})
-    y = pd.Series(SparseArray(np.random.permutation([0, 1] * 150)))
-    X_test = pd.DataFrame({"A": SparseArray(np.random.permutation([0, 2] * 30)),
-                           "B": SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-                           "C": SparseArray(np.random.permutation([True, False] * 30))})
-    if pd.__version__ >= '0.24.0':
-        for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-            assert pd.api.types.is_sparse(dtype)
+    X = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
+                      "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+                      "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150))})
+    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    X_test = pd.DataFrame({"A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
+                           "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+                           "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30))})
+    for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
+        assert pd.api.types.is_sparse(dtype)
     gbm = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
     pred_sparse = gbm.predict(X_test, raw_score=True)
     if hasattr(X_test, 'sparse'):
@@ -1088,19 +1081,6 @@ def test_multiple_eval_metrics():
     assert 'binary_logloss' in gbm.evals_result_['training']
 
 
-def test_inf_handle():
-    nrows = 100
-    ncols = 10
-    X = np.random.randn(nrows, ncols)
-    y = np.random.randn(nrows) + np.full(nrows, 1e30)
-    weight = np.full(nrows, 1e10)
-    params = {'n_estimators': 20, 'verbose': -1}
-    params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
-                  'callbacks': [lgb.early_stopping(5)]}
-    gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-    np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
-
-
 def test_nan_handle():
     nrows = 100
     ncols = 10
@@ -1114,6 +1094,7 @@ def test_nan_handle():
     np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
 def test_first_metric_only():
 
     def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
@@ -1271,8 +1252,6 @@ def test_actual_number_of_trees():
     np.testing.assert_array_equal(gbm.predict(np.array(X) * 10), y)
 
 
-# sklearn < 0.22 requires passing "attributes" argument
-@pytest.mark.skipif(sk_version < parse_version('0.22'), reason='scikit-learn version is less than 0.22')
 def test_check_is_fitted():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
@@ -1291,65 +1270,16 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
-def _tested_estimators():
-    for Estimator in [lgb.sklearn.LGBMClassifier, lgb.sklearn.LGBMRegressor]:
-        yield Estimator()
-
-
-if sk_version < parse_version("0.23"):
-    def _generate_checks_per_estimator(check_generator, estimators):
-        for estimator in estimators:
-            name = estimator.__class__.__name__
-            for check in check_generator(name, estimator):
-                yield estimator, check
-
-    @pytest.mark.skipif(
-        sk_version < parse_version("0.21"), reason="scikit-learn version is less than 0.21"
-    )
-    @pytest.mark.parametrize(
-        "estimator, check",
-        _generate_checks_per_estimator(_yield_all_checks, _tested_estimators()),
-    )
-    def test_sklearn_integration(estimator, check):
-        xfail_checks = estimator._get_tags()["_xfail_checks"]
-        check_name = check.__name__ if hasattr(check, "__name__") else check.func.__name__
-        if xfail_checks and check_name in xfail_checks:
-            warnings.warn(xfail_checks[check_name], SkipTestWarning)
-            raise SkipTest
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        name = estimator.__class__.__name__
-        check(name, estimator)
-else:
-    @parametrize_with_checks(list(_tested_estimators()))
-    def test_sklearn_integration(estimator, check, request):
-        estimator.set_params(min_child_samples=1, min_data_in_bin=1)
-        check(estimator)
-
-
-@pytest.mark.skipif(
-    sk_version >= parse_version("0.24"),
-    reason="Default constructible check included in common check from 0.24"
-)
-@pytest.mark.parametrize("estimator", list(_tested_estimators()))
-def test_parameters_default_constructible(estimator):
-    name, Estimator = estimator.__class__.__name__, estimator.__class__
-    # Test that estimators are default-constructible
-    check_parameters_default_constructible(name, Estimator)
+@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
+def test_sklearn_integration(estimator, check):
+    estimator.set_params(min_child_samples=1, min_data_in_bin=1)
+    check(estimator)
 
 
 @pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    if task == 'ranking':
-        X, y, g = make_ranking()
-        g = np.bincount(g)
-        model_factory = lgb.LGBMRanker
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
-        model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = make_synthetic_regression()
-        model_factory = lgb.LGBMRegressor
+    X, y, g = _create_data(task)
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {
@@ -1357,6 +1287,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         'num_leaves': 3,
         'random_state': 0
     }
+    model_factory = task_to_model_factory[task]
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
             model_1d = model_factory(**params).fit(X, y, group=g)
@@ -1368,3 +1299,109 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
     np.testing.assert_array_equal(preds_1d, preds_2d)
+
+
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2) if use_weight else None
+    params = {'n_estimators': 10, 'num_leaves': 7}
+    builtin_obj_model = lgb.LGBMClassifier(**params)
+    builtin_obj_model.fit(X, y, sample_weight=weight)
+    builtin_obj_preds = builtin_obj_model.predict_proba(X)
+
+    custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
+    custom_obj_model.fit(X, y, sample_weight=weight)
+    custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
+
+    np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
+    assert not callable(builtin_obj_model.objective_)
+    assert callable(custom_obj_model.objective_)
+
+
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
+    def custom_eval(y_true, y_pred, weight):
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    train_test_split_func = partial(train_test_split, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split_func(X, y)
+    if use_weight:
+        weight = np.full_like(y, 2)
+        weight_train, weight_valid = train_test_split_func(weight)
+    else:
+        weight_train = None
+        weight_valid = None
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    model = lgb.LGBMClassifier(**params)
+    model.fit(
+        X_train,
+        y_train,
+        sample_weight=weight_train,
+        eval_set=[(X_train, y_train), (X_valid, y_valid)],
+        eval_names=['train', 'valid'],
+        eval_sample_weight=[weight_train, weight_valid],
+        eval_metric=custom_eval,
+    )
+    eval_result = model.evals_result_
+    train_ds = (X_train, y_train, weight_train)
+    valid_ds = (X_valid, y_valid, weight_valid)
+    for key, (X, y_true, weight) in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(
+            eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss']
+        )
+        y_pred = model.predict_proba(X)
+        _, metric_value, _ = custom_eval(y_true, y_pred, weight)
+        np.testing.assert_allclose(metric_value, eval_result[key]['custom_logloss'][-1])
+
+
+def test_negative_n_jobs(tmp_path):
+    n_threads = joblib.cpu_count()
+    if n_threads <= 1:
+        return None
+    # 'val_minus_two' here is the expected number of threads for n_jobs=-2
+    val_minus_two = n_threads - 1
+    X, y = load_breast_cancer(return_X_y=True)
+    # Note: according to joblib's formula, a value of n_jobs=-2 means
+    # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
+
+
+def test_default_n_jobs(tmp_path):
+    n_cores = joblib.cpu_count(only_physical_cores=True)
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+def test_validate_features(task):
+    X, y, g = _create_data(task)
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
+    if task == 'ranking':
+        model.fit(df, y, group=g)
+    else:
+        model.fit(df, y)
+    assert model.feature_name_ == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x2': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x2' at position 1 but found 'z'"):
+        model.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    model.predict(df2, validate_features=False)

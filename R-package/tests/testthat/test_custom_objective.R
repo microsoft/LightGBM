@@ -1,4 +1,6 @@
-context("Test models with custom objective")
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
 
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
@@ -36,6 +38,7 @@ param <- list(
   , learning_rate = 1.0
   , objective = logregobj
   , metric = "auc"
+  , verbose = VERBOSITY
 )
 num_round <- 10L
 
@@ -50,6 +53,7 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
     params = list(
       num_leaves = 8L
       , learning_rate = 1.0
+      , verbose = VERBOSITY
     )
     , data = dtrain
     , nrounds = 4L
@@ -66,4 +70,20 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
   expect_true(abs(eval_results[["value"]] - 0.0006207325) < TOLERANCE)
   expect_true(eval_results[["name"]] == "error")
   expect_false(eval_results[["higher_better"]])
+})
+
+test_that("using a custom objective that returns wrong shape grad or hess raises an informative error", {
+  bad_grad <- function(preds, dtrain) {
+    return(list(grad = numeric(0L), hess = rep(1.0, length(preds))))
+  }
+  bad_hess <- function(preds, dtrain) {
+    return(list(grad = rep(1.0, length(preds)), hess = numeric(0L)))
+  }
+  params <- list(num_leaves = 3L, verbose = VERBOSITY)
+  expect_error({
+    lgb.train(params = params, data = dtrain, obj = bad_grad)
+  }, sprintf("Expected custom objective function to return grad with length %d, got 0.", nrow(dtrain)))
+  expect_error({
+    lgb.train(params = params, data = dtrain, obj = bad_hess)
+  }, sprintf("Expected custom objective function to return hess with length %d, got 0.", nrow(dtrain)))
 })

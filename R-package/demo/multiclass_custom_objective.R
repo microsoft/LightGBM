@@ -36,7 +36,7 @@ model_builtin <- lgb.train(
     , obj = "multiclass"
 )
 
-preds_builtin <- predict(model_builtin, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
+preds_builtin <- predict(model_builtin, test[, 1L:4L], type = "raw")
 probs_builtin <- exp(preds_builtin) / rowSums(exp(preds_builtin))
 
 # Method 2 of training with custom objective function
@@ -109,7 +109,7 @@ model_custom <- lgb.train(
     , eval = custom_multiclass_metric
 )
 
-preds_custom <- predict(model_custom, test[, 1L:4L], rawscore = TRUE, reshape = TRUE)
+preds_custom <- predict(model_custom, test[, 1L:4L], type = "raw")
 probs_custom <- exp(preds_custom) / rowSums(exp(preds_custom))
 
 # compare predictions

@@ -1,6 +1,8 @@
 # coding: utf-8
 import filecmp
 import numbers
+import re
+from os import getenv
 from pathlib import Path
 
 import numpy as np
@@ -12,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import load_breast_cancer
+from .utils import dummy_obj, load_breast_cancer, mse_obj
 
 
 def test_basic(tmp_path):
@@ -46,8 +48,9 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
-    assert bst.upper_bound() == pytest.approx(3.3182142872462883)
+    if getenv('TASK', '') != 'cuda_exp':
+        assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
+        assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
     tname = tmp_path / "svm_light.dat"
     model_file = tmp_path / "model.txt"
@@ -510,6 +513,72 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+def test_choose_param_value_preserves_nones():
+
+    # preserves None found for main param and still removes aliases
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "num_threads": None,
+            "n_jobs": 4,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # correctly chooses value when only an alias is provided
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "n_jobs": None,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # adds None if that's given as the default and param not found
+    params = lgb.basic._choose_param_value(
+        main_param_name="min_data_in_leaf",
+        params={
+            "objective": "regression"
+        },
+        default_value=None
+    )
+    assert params == {"objective": "regression", "min_data_in_leaf": None}
+
+
+@pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
+def test_choose_param_value_objective(objective_alias):
+    # If callable is found in objective
+    params = {objective_alias: dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=None
+    )
+    assert params['objective'] == dummy_obj
+
+    # Value in params should be preferred to the default_value passed from keyword arguments
+    params = {objective_alias: dummy_obj}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == dummy_obj
+
+    # None of objective or its aliases in params, but default_value is callable.
+    params = {}
+    params = lgb.basic._choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=mse_obj
+    )
+    assert params['objective'] == mse_obj
+
+
 @pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
 def test_list_to_1d_numpy(collection, dtype):
@@ -579,3 +648,111 @@ def test_param_aliases():
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
+
+
+def _bad_gradients(preds, _):
+    return np.random.randn(len(preds) + 1), np.random.rand(len(preds) + 1)
+
+
+def _good_gradients(preds, _):
+    return np.random.randn(*preds.shape), np.random.rand(*preds.shape)
+
+
+def test_custom_objective_safety():
+    nrows = 100
+    X = np.random.randn(nrows, 5)
+    y_binary = np.arange(nrows) % 2
+    classes = [0, 1, 2]
+    nclass = len(classes)
+    y_multiclass = np.arange(nrows) % nclass
+    ds_binary = lgb.Dataset(X, y_binary).construct()
+    ds_multiclass = lgb.Dataset(X, y_multiclass).construct()
+    bad_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    good_bst_binary = lgb.Booster({'objective': "none"}, ds_binary)
+    bad_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
+    good_bst_multi = lgb.Booster({'objective': "none", "num_class": nclass}, ds_multiclass)
+    good_bst_binary.update(fobj=_good_gradients)
+    with pytest.raises(ValueError, match=re.escape("number of models per one iteration (1)")):
+        bad_bst_binary.update(fobj=_bad_gradients)
+    good_bst_multi.update(fobj=_good_gradients)
+    with pytest.raises(ValueError, match=re.escape(f"number of models per one iteration ({nclass})")):
+        bad_bst_multi.update(fobj=_bad_gradients)
+
+
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+@pytest.mark.parametrize('feature_name', [['x1', 'x2'], 'auto'])
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
+    pd = pytest.importorskip('pandas')
+    X = np.random.rand(10, 2).astype(dtype)
+    df = pd.DataFrame(X)
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    assert built_data.dtype == dtype
+    assert np.shares_memory(X, built_data)
+
+
+@pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
+    pd = pytest.importorskip('pandas')
+    X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
+    column_name = 'a' if feature_name == 'auto' else feature_name[0]
+    df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
+    data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    # check that the original data wasn't modified
+    np.testing.assert_equal(df[column_name], X[:, 0])
+    # check that the built data has the codes
+    np.testing.assert_equal(df[column_name].cat.codes, data[:, 0])
+
+
+@pytest.mark.parametrize('min_data_in_bin', [2, 10])
+def test_feature_num_bin(min_data_in_bin):
+    X = np.vstack([
+        np.random.rand(100),
+        np.array([1, 2] * 50),
+        np.array([0, 1, 2] * 33 + [0]),
+        np.array([1, 2] * 49 + 2 * [np.nan]),
+        np.zeros(100),
+        np.random.choice([0, 1], 100),
+    ]).T
+    n_continuous = X.shape[1] - 1
+    feature_name = [f'x{i}' for i in range(n_continuous)] + ['cat1']
+    ds_kwargs = dict(
+        params={'min_data_in_bin': min_data_in_bin},
+        categorical_feature=[n_continuous],  # last feature
+    )
+    ds = lgb.Dataset(X, feature_name=feature_name, **ds_kwargs).construct()
+    expected_num_bins = [
+        100 // min_data_in_bin + 1,  # extra bin for zero
+        3,  # 0, 1, 2
+        3,  # 0, 1, 2
+        4,  # 0, 1, 2 + nan
+        0,  # unused
+        3,  # 0, 1 + nan
+    ]
+    actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
+    assert actual_num_bins == expected_num_bins
+    # test using defined feature names
+    bins_by_name = [ds.feature_num_bin(name) for name in feature_name]
+    assert bins_by_name == expected_num_bins
+    # test using default feature names
+    ds_no_names = lgb.Dataset(X, **ds_kwargs).construct()
+    default_names = [f'Column_{i}' for i in range(X.shape[1])]
+    bins_by_default_name = [ds_no_names.feature_num_bin(name) for name in default_names]
+    assert bins_by_default_name == expected_num_bins
+    # check for feature indices outside of range
+    num_features = X.shape[1]
+    with pytest.raises(
+        lgb.basic.LightGBMError,
+        match=(
+            f'Tried to retrieve number of bins for feature index {num_features}, '
+            f'but the valid feature indices are \\[0, {num_features - 1}\\].'
+        )
+    ):
+        ds.feature_num_bin(num_features)
+
+
+def test_feature_num_bin_with_max_bin_by_feature():
+    X = np.random.rand(100, 3)
+    max_bin_by_feature = np.random.randint(3, 30, size=X.shape[1])
+    ds = lgb.Dataset(X, params={'max_bin_by_feature': max_bin_by_feature}).construct()
+    actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
+    np.testing.assert_equal(actual_num_bins, max_bin_by_feature)

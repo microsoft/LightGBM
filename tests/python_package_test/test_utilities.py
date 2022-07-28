@@ -2,6 +2,7 @@
 import logging
 
 import numpy as np
+import pytest
 
 import lightgbm as lgb
 
@@ -43,7 +44,7 @@ def test_register_logger(tmp_path):
     lgb.plot_metric(eval_records)
 
     expected_log = r"""
-INFO | [LightGBM] [Warning] There are no meaningful features, as all feature values are constant.
+INFO | [LightGBM] [Warning] There are no meaningful features which satisfy the provided configuration. Decreasing Dataset parameters min_data_in_bin or min_data_in_leaf and re-constructing Dataset might resolve this warning.
 INFO | [LightGBM] [Info] Number of positive: 2, number of negative: 2
 INFO | [LightGBM] [Info] Total Bins 0
 INFO | [LightGBM] [Info] Number of data points in the train set: 4, number of used features: 0
@@ -97,3 +98,70 @@ WARNING | More than one metric available, picking one to plot.
                 actual_log_wo_gpu_stuff.append(line)
 
     assert "\n".join(actual_log_wo_gpu_stuff) == expected_log
+
+
+def test_register_invalid_logger():
+    class LoggerWithoutInfoMethod:
+        def warning(self, msg: str) -> None:
+            print(msg)
+
+    class LoggerWithoutWarningMethod:
+        def info(self, msg: str) -> None:
+            print(msg)
+
+    class LoggerWithAttributeNotCallable:
+        def __init__(self):
+            self.info = 1
+            self.warning = 2
+
+    expected_error_message = "Logger must provide 'info' and 'warning' method"
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithoutInfoMethod())
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithoutWarningMethod())
+
+    with pytest.raises(TypeError, match=expected_error_message):
+        lgb.register_logger(LoggerWithAttributeNotCallable())
+
+
+def test_register_custom_logger():
+    logged_messages = []
+
+    class CustomLogger:
+        def custom_info(self, msg: str) -> None:
+            logged_messages.append(msg)
+
+        def custom_warning(self, msg: str) -> None:
+            logged_messages.append(msg)
+
+    custom_logger = CustomLogger()
+    lgb.register_logger(
+        custom_logger,
+        info_method_name="custom_info",
+        warning_method_name="custom_warning"
+    )
+
+    lgb.basic._log_info("info message")
+    lgb.basic._log_warning("warning message")
+
+    expected_log = ["info message", "warning message"]
+    assert logged_messages == expected_log
+
+    logged_messages = []
+    X = np.array([[1, 2, 3],
+                  [1, 2, 4],
+                  [1, 2, 4],
+                  [1, 2, 3]],
+                 dtype=np.float32)
+    y = np.array([0, 1, 1, 0])
+    lgb_data = lgb.Dataset(X, y)
+    lgb.train(
+        {'objective': 'binary', 'metric': 'auc'},
+        lgb_data,
+        num_boost_round=10,
+        valid_sets=[lgb_data],
+        categorical_feature=[1]
+    )
+    assert logged_messages, "custom logger was not called"
