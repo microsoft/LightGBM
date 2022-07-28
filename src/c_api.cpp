@@ -974,13 +974,13 @@ int LGBM_DatasetCreateFromFile(const char* filename,
   API_END();
 }
 
-
 int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                         int** sample_indices,
                                         int32_t ncol,
                                         const int* num_per_col,
                                         int32_t num_sample_row,
-                                        int32_t num_total_row,
+                                        int32_t num_local_row,
+                                        int64_t num_dist_row,
                                         const char* parameters,
                                         DatasetHandle* out) {
   API_BEGIN();
@@ -989,12 +989,15 @@ int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
   config.Set(param);
   OMP_SET_NUM_THREADS(config.num_threads);
   DatasetLoader loader(config, nullptr, 1, nullptr);
-  *out = loader.ConstructFromSampleData(sample_data, sample_indices, ncol, num_per_col,
+  *out = loader.ConstructFromSampleData(sample_data,
+                                        sample_indices,
+                                        ncol,
+                                        num_per_col,
                                         num_sample_row,
-                                        static_cast<data_size_t>(num_total_row));
+                                        static_cast<data_size_t>(num_local_row),
+                                        num_dist_row);
   API_END();
 }
-
 
 int LGBM_DatasetCreateByReference(const DatasetHandle reference,
                                   int64_t num_total_row,
@@ -1141,7 +1144,9 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              ncol,
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, total_nrow));
+                                             sample_cnt,
+                                             total_nrow,
+                                             total_nrow));
   } else {
     ret.reset(new Dataset(total_nrow));
     ret->CreateValid(
@@ -1216,7 +1221,9 @@ int LGBM_DatasetCreateFromCSR(const void* indptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1283,7 +1290,9 @@ int LGBM_DatasetCreateFromCSRFunc(void* get_row_funptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(num_col),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
@@ -1355,7 +1364,9 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
                                              Vector2Ptr<int>(&sample_idx).data(),
                                              static_cast<int>(sample_values.size()),
                                              VectorSize<double>(sample_values).data(),
-                                             sample_cnt, nrow));
+                                             sample_cnt,
+                                             nrow,
+                                             nrow));
   } else {
     ret.reset(new Dataset(nrow));
     ret->CreateValid(
