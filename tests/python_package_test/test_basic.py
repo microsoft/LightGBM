@@ -513,6 +513,42 @@ def test_choose_param_value():
     assert original_params == expected_params
 
 
+def test_choose_param_value_preserves_nones():
+
+    # preserves None found for main param and still removes aliases
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "num_threads": None,
+            "n_jobs": 4,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # correctly chooses value when only an alias is provided
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "n_jobs": None,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # adds None if that's given as the default and param not found
+    params = lgb.basic._choose_param_value(
+        main_param_name="min_data_in_leaf",
+        params={
+            "objective": "regression"
+        },
+        default_value=None
+    )
+    assert params == {"objective": "regression", "min_data_in_leaf": None}
+
+
 @pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
 def test_choose_param_value_objective(objective_alias):
     # If callable is found in objective
