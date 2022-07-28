@@ -274,7 +274,7 @@ def c_str(string: str) -> ctypes.c_char_p:
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype: type, values: List[ctypes.c_char_p]) -> ctypes.Array:
+def c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
