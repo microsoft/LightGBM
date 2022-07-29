@@ -14,7 +14,7 @@
 namespace LightGBM {
 
 TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type,
-                                            const Config* config) {
+                                            const Config* config, const bool boosting_on_cuda) {
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       if (config->linear_tree) {
@@ -52,7 +52,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
   } else if (device_type == std::string("cuda_exp")) {
     if (learner_type == std::string("serial")) {
       if (config->num_gpu == 1) {
-        return new CUDASingleGPUTreeLearner(config);
+        return new CUDASingleGPUTreeLearner(config, boosting_on_cuda);
       } else {
         Log::Fatal("cuda_exp only supports training on a single GPU.");
       }
