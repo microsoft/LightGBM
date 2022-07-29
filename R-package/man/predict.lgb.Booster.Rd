@@ -70,13 +70,13 @@ For prediction types that are meant to always return one output per observation 
         regardless of objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
 
         For \code{type="leaf"} predictions, will return a matrix with one row per observation in \code{newdata}
-        and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class. That means
-        that, for example, for a multiclass model with 3 classes, the leaf predictions for the first class can be found
-        in columns 1, 4, 7, 10, etc.
+        and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class at each boosting
+        iteration. That means that, for example, for a multiclass model with 3 classes, the leaf predictions for the
+        first class can be found in columns 1, 4, 7, 10, etc.
 
         For \code{type="contrib"}, will return a matrix of SHAP values with one row per observation in \code{newdata}
-        and columns corresponding to features. For regression, ranking, and binary classification objectives, this matrix
-        contains one column per feature plus a final column containing the Shapley base value. For multiclass objectives,
+        and columns corresponding to features. For regression, ranking, cross-entropy, and binary classification objectives,
+        this matrix contains one column per feature plus a final column containing the Shapley base value. For multiclass objectives,
         this matrix will represent \code{num_classes} such matrices, in the order "feature contributions for first class, feature
         contributions for second class, feature contributions for third class, etc.".
 }
