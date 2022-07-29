@@ -48,7 +48,7 @@ fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
 If training stops early, the returned model will have attribute \code{best_iter}
 set to the iteration number of the best iteration.}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
@@ -99,7 +99,12 @@ the "objective" item of the "Parameters" section of the documentation}.}
 a trained \code{lgb.Booster}
 }
 \description{
-Simple interface for training a LightGBM model.
+High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+             is focused on compatibility with other statistics and machine learning interfaces in R.
+             This focus on compatibility means that this interface may experience more frequent breaking API changes
+             than \code{\link{lgb.train}}.
+             For efficiency-sensitive applications, or for applications where breaking API changes across releases
+             is very expensive, use \code{\link{lgb.train}}.
 }
 \section{Early Stopping}{
 
