@@ -7,7 +7,7 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from os import SEEK_END
+from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -108,11 +108,9 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib() -> Optional[ctypes.CDLL]:
+def _load_lib() -> ctypes.CDLL:
     """Load LightGBM library."""
     lib_path = find_lib_path()
-    if len(lib_path) == 0:
-        return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
@@ -122,7 +120,13 @@ def _load_lib() -> Optional[ctypes.CDLL]:
     return lib
 
 
-_LIB = _load_lib()
+# we don't need lib_lightgbm while building docs
+_LIB: ctypes.CDLL
+if environ.get('LIGHTGBM_BUILD_DOC', False):
+    from unittest.mock import Mock  # isort: skip
+    _LIB = Mock(ctypes.CDLL)  # type: ignore
+else:
+    _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
@@ -1344,6 +1348,7 @@ class Dataset:
             num_per_col_ptr,
             ctypes.c_int32(sample_cnt),
             ctypes.c_int32(total_nrow),
+            ctypes.c_int64(total_nrow),
             c_str(params_str),
             ctypes.byref(self.handle),
         ))
@@ -3375,7 +3380,11 @@ class Booster:
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
-    def shuffle_models(self, start_iteration=0, end_iteration=-1):
+    def shuffle_models(
+        self,
+        start_iteration: int = 0,
+        end_iteration: int = -1
+    ) -> "Booster":
         """Shuffle models.
 
         Parameters
@@ -3427,7 +3436,12 @@ class Booster:
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
         """Save Booster to string.
 
         Parameters
@@ -3480,7 +3494,13 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
+    def dump_model(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split',
+        object_hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         """Dump Booster to JSON format.
 
         Parameters
