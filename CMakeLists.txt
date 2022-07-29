@@ -109,6 +109,7 @@ include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
+add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
