@@ -1089,7 +1089,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_é›¶', u'F_ä¸€', u'F_äºŒ', u'F_ä¸‰']
+    feature_names = [u'F_é›?', u'F_ä¸€', u'F_äº?', u'F_ä¸?']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -3442,6 +3442,7 @@ def test_goss_boosting_and_strategy_equivalent():
         'learning_rate': 0.05,
         'num_threads': 1,
         'force_row_wise': True,
+        'gpu_use_dp': True,
     }
     evals_result1 = {}
     lgb.train(params1, lgb_train,
@@ -3456,6 +3457,7 @@ def test_goss_boosting_and_strategy_equivalent():
         'learning_rate': 0.05,
         'num_threads': 1,
         'force_row_wise': True,
+        'gpu_use_dp': True,
     }
     evals_result2 = {}
     lgb.train(params2, lgb_train,
@@ -3463,7 +3465,6 @@ def test_goss_boosting_and_strategy_equivalent():
               valid_sets=lgb_eval,
               callbacks=[lgb.record_evaluation(evals_result2)])
     np.testing.assert_equal(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'])
-    np.testing.assert_allclose(evals_result1['valid_0']['l2'], evals_result2['valid_0']['l2'], atol=1e-5)
 
 
 def test_sample_strategy_with_boosting():
@@ -3477,7 +3478,7 @@ def test_sample_strategy_with_boosting():
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
-        'gpu_use_dp': True
+        'gpu_use_dp': True,
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3493,7 +3494,7 @@ def test_sample_strategy_with_boosting():
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
-        'gpu_use_dp': True
+        'gpu_use_dp': True,
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3509,7 +3510,7 @@ def test_sample_strategy_with_boosting():
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
-        'gpu_use_dp': True
+        'gpu_use_dp': True,
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3530,7 +3531,7 @@ def test_sample_strategy_with_boosting():
         'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1,
-        'gpu_use_dp': True
+        'gpu_use_dp': True,
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3548,7 +3549,7 @@ def test_sample_strategy_with_boosting():
         'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1,
-        'gpu_use_dp': True
+        'gpu_use_dp': True,
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
