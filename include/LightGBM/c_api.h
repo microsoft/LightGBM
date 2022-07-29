@@ -118,7 +118,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
  * \param ncol Number of columns
  * \param num_per_col Size of each sampling column
  * \param num_sample_row Number of sampled rows
- * \param num_total_row Number of total rows
+ * \param num_local_row Total number of rows local to machine
+ * \param num_dist_row Number of total distributed rows
  * \param parameters Additional parameters
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens
@@ -128,7 +129,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                                           int32_t ncol,
                                                           const int* num_per_col,
                                                           int32_t num_sample_row,
-                                                          int32_t num_total_row,
+                                                          int32_t num_local_row,
+                                                          int64_t num_dist_row,
                                                           const char* parameters,
                                                           DatasetHandle* out);
 
@@ -677,6 +679,17 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetFeatureNames(BoosterHandle handle,
                                                   const size_t buffer_len,
                                                   size_t* out_buffer_len,
                                                   char** out_strs);
+
+/*!
+ * \brief Check that the feature names of the data match the ones used to train the booster.
+ * \param handle Handle of booster
+ * \param data_names Array with the feature names in the data
+ * \param data_num_features Number of features in the data
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterValidateFeatureNames(BoosterHandle handle,
+                                                       const char** data_names,
+                                                       int data_num_features);
 
 /*!
  * \brief Get number of features.

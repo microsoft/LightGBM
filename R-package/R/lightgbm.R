@@ -44,7 +44,7 @@
 #'                 }
 #'             }
 #' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
-#' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
+#' @param init_model path of model file or \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
@@ -89,7 +89,12 @@ NULL
 
 #' @name lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+#'              is focused on compatibility with other statistics and machine learning interfaces in R.
+#'              This focus on compatibility means that this interface may experience more frequent breaking API changes
+#'              than \code{\link{lgb.train}}.
+#'              For efficiency-sensitive applications, or for applications where breaking API changes across releases
+#'              is very expensive, use \code{\link{lgb.train}}.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
