@@ -121,7 +121,7 @@ class LambdarankNDCG : public RankingObjective {
       num_threads_ = omp_get_num_threads();
     }
 
-    position_bias_regularizer = 1.0f / (1.0f + bias_p_norm_);
+    position_bias_regularizer_ = 1.0f / (1.0f + bias_p_norm_);
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>& strs)
@@ -229,8 +229,8 @@ class LambdarankNDCG : public RankingObjective {
         double p_lambda = GetSigmoid(delta_score);
         double p_hessian = p_lambda * (1.0f - p_lambda);
 
-        int debias_high_rank = static_cast<int>(std::min(high, truncation_level_ - 1));
-        int debias_low_rank = static_cast<int>(std::min(low, truncation_level_ - 1));
+        int debias_high_rank = static_cast<int>(std::min(high_rank, truncation_level_ - 1));
+        int debias_low_rank = static_cast<int>(std::min(low_rank, truncation_level_ - 1));
 
         if (unbiased_) {
           double p_cost = log(1.0f / (1.0f - p_lambda)) * delta_pair_NDCG;
@@ -329,11 +329,13 @@ class LambdarankNDCG : public RankingObjective {
 
     for (int i = 0; i < truncation_level_; i++) {
       // Update bias
-      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], position_bias_regularizer);
-      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], position_bias_regularizer);
+      i_biases_pow_[i] = pow(i_costs_[i] / i_costs_[0], position_bias_regularizer_);
+      j_biases_pow_[i] = pow(j_costs_[i] / j_costs_[0], position_bias_regularizer_);
     }
 
+    #ifdef DEBUG
     LogDebugPositionBiases();
+    #endif  // DEBUG
 
     for (int i = 0; i < truncation_level_; i++) {
       // Clear position info
@@ -412,7 +414,7 @@ class LambdarankNDCG : public RankingObjective {
   double bias_p_norm_;
 
   /*! \brief Position bias regularizer exponent, 1 / (1 + bias_p_norm_) */
-  double position_bias_regularizer;
+  double position_bias_regularizer_;
 
   /*! \brief Number of threads */
   int num_threads_;
