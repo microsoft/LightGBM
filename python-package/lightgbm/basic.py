@@ -345,7 +345,7 @@ class _ConfigAliases:
     aliases = None
 
     @staticmethod
-    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+    def _get_all_param_aliases() -> Dict[str, List[str]]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -365,7 +365,7 @@ class _ConfigAliases:
                 ptr_string_buffer))
         aliases = json.loads(
             string_buffer.value.decode('utf-8'),
-            object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+            object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
         return aliases
 
@@ -375,8 +375,14 @@ class _ConfigAliases:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, {i})
+            ret.update(cls.get_sorted(i))
         return ret
+
+    @classmethod
+    def get_sorted(cls, name: str) -> List[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
+        return cls.aliases.get(name, [name])
 
     @classmethod
     def get_by_alias(cls, *args) -> Set[str]:
@@ -386,7 +392,7 @@ class _ConfigAliases:
         for arg in args:
             for aliases in cls.aliases.values():
                 if arg in aliases:
-                    ret |= aliases
+                    ret.update(aliases)
                     break
         return ret
 
@@ -412,7 +418,8 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+    aliases = _ConfigAliases.get_sorted(main_param_name)
+    aliases = [a for a in aliases if a != main_param_name]
 
     # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
