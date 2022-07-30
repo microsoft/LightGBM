@@ -282,10 +282,10 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       int j = 0;
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
         float f1_val = curr_row[feat1];
-        XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
+        XTg_by_thread_[tid][leaf_num][feat1] += static_cast<double>(f1_val) * g;
         f1_val *= h;
         for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {
-          XTHX_by_thread_[tid][leaf_num][j] += f1_val * curr_row[feat2];
+          XTHX_by_thread_[tid][leaf_num][j] += static_cast<double>(f1_val) * curr_row[feat2];
           ++j;
         }
       }
