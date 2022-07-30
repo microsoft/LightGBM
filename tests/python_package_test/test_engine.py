@@ -1092,6 +1092,7 @@ def test_cvbooster_save_load(tmp_path):
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
     preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
 
     model_path_txt = str(tmp_path / 'lgb.model')
 
@@ -1099,10 +1100,11 @@ def test_cvbooster_save_load(tmp_path):
     model_string = cvbooster.model_to_string()
     del cvbooster
 
-    preds_from_txt_file = lgb.CVBooster(model_file=model_path_txt).predict(X_test)
-    preds_from_string = lgb.CVBooster().model_from_string(model_string).predict(X_test)
-    np.testing.assert_array_equal(preds, preds_from_txt_file)
-    np.testing.assert_array_equal(preds, preds_from_string)
+    cvbooster_from_txt_file = lgb.CVBooster(model_file=model_path_txt)
+    cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
+    for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
+        assert best_iteration == cvbooster_loaded.best_iteration
+        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
 
 
 @pytest.mark.parametrize('serializer', SERIALIZERS)
