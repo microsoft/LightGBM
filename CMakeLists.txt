@@ -109,6 +109,7 @@ include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
+add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -395,6 +396,8 @@ if(USE_CUDA OR USE_CUDA_EXP)
       src/treelearner/*.cu
 endif()
 if(USE_CUDA_EXP)
+      src/boosting/cuda/*.cpp
+      src/boosting/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
