@@ -295,8 +295,6 @@ class CVBooster:
     ):
         """Initialize the CVBooster.
 
-        Generally, no need to instantiate manually.
-
         Parameters
         ----------
         model_file : str, pathlib.Path or None, optional (default=None)
