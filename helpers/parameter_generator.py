@@ -359,20 +359,20 @@ def gen_parameter_code(
     str_to_write += "  return str_buf.str();\n"
     str_to_write += "}\n\n"
 
-    str_to_write += "const std::string Config::DumpAliases() {\n"
-    str_to_write += "  std::stringstream str_buf;\n"
-    str_to_write += '  str_buf << "{";\n'
-    for idx, name in enumerate(names):
-        if idx > 0:
-            str_to_write += ', ";\n'
-        aliases = '\\", \\"'.join([alias for alias in names_with_aliases[name]])
-        aliases = f'[\\"{aliases}\\"]' if aliases else '[]'
-        str_to_write += f'  str_buf << "\\"{name}\\": {aliases}'
-    str_to_write += '";\n'
-    str_to_write += '  str_buf << "}";\n'
-    str_to_write += "  return str_buf.str();\n"
-    str_to_write += "}\n\n"
+    str_to_write += """const std::unordered_map<std::string, std::vector<std::string>>& Config::parameter2aliases() {
+  static std::unordered_map<std::string, std::vector<std::string>> map({"""
+    for name in names:
+        str_to_write += '\n    {"' + name + '", '
+        if names_with_aliases[name]:
+            str_to_write += '{"' + '", "'.join(names_with_aliases[name]) + '"}},'
+        else:
+            str_to_write += '{}},'
+    str_to_write += """
+  });
+  return map;
+}
 
+"""
     str_to_write += "}  // namespace LightGBM\n"
     with open(config_out_cpp, "w") as config_out_cpp_file:
         config_out_cpp_file.write(str_to_write)

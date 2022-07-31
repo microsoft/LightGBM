@@ -736,14 +736,9 @@ class LGBMModel(_LGBMModelBase):
         # copy for consistency
         self._n_features_in = self._n_features
 
-        def _construct_dataset(X, y, sample_weight, init_score, group, params,
-                               categorical_feature='auto'):
-            return Dataset(X, label=y, weight=sample_weight, group=group,
-                           init_score=init_score, params=params,
-                           categorical_feature=categorical_feature)
-
-        train_set = _construct_dataset(_X, _y, sample_weight, init_score, group, params,
-                                       categorical_feature=categorical_feature)
+        train_set = Dataset(data=_X, label=_y, weight=sample_weight, group=group,
+                            init_score=init_score, categorical_feature=categorical_feature,
+                            params=params)
 
         valid_sets = []
         if eval_set is not None:
@@ -777,8 +772,10 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
                     valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
                     valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    valid_set = _construct_dataset(valid_data[0], valid_data[1],
-                                                   valid_weight, valid_init_score, valid_group, params)
+                    valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
+                                        group=valid_group, init_score=valid_init_score,
+                                        categorical_feature='auto', params=params)
+
                 valid_sets.append(valid_set)
 
         if isinstance(init_model, LGBMModel):
@@ -826,8 +823,17 @@ class LGBMModel(_LGBMModelBase):
         eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
-    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, validate_features=False, **kwargs):
+    def predict(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
@@ -1094,9 +1100,17 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
-    def predict(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                pred_leaf=False, pred_contrib=False, validate_features=False,
-                **kwargs):
+    def predict(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
                                     pred_leaf, pred_contrib, validate_features,
@@ -1109,8 +1123,17 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict.__doc__ = LGBMModel.predict.__doc__
 
-    def predict_proba(self, X, raw_score=False, start_iteration=0, num_iteration=None,
-                      pred_leaf=False, pred_contrib=False, validate_features=False, **kwargs):
+    def predict_proba(
+        self,
+        X,
+        raw_score: bool = False,
+        start_iteration: int = 0,
+        num_iteration: Optional[int] = None,
+        pred_leaf: bool = False,
+        pred_contrib: bool = False,
+        validate_features: bool = False,
+        **kwargs: Any
+    ):
         """Docstring is set after definition, using a template."""
         result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, validate_features, **kwargs)
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):

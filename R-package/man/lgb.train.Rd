@@ -80,7 +80,7 @@ printing of evaluation during training}
 
 \item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
 
