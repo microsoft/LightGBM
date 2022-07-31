@@ -45,8 +45,8 @@ void test_stream_dense(
         std::vector<std::vector<double>> sample_values(ncols);
         std::vector<std::vector<int>> sample_idx(ncols);
         const double* current_val = features->data();
-        for (size_t idx = 0; idx < nrows; ++idx) {
-          for (size_t k = 0; k < ncols; ++k) {
+        for (int32_t idx = 0; idx < nrows; ++idx) {
+          for (int32_t k = 0; k < ncols; ++k) {
             if (std::fabs(*current_val) > 1e-35f || std::isnan(*current_val)) {
               sample_values[k].emplace_back(*current_val);
               sample_idx[k].emplace_back(static_cast<int>(idx));
@@ -58,7 +58,7 @@ void test_stream_dense(
         std::vector<int> sample_sizes;
         std::vector<double*> sample_values_ptrs;
         std::vector<int*> sample_idx_ptrs;
-        for (size_t i = 0; i < ncols; ++i) {
+        for (int32_t i = 0; i < ncols; ++i) {
           sample_values_ptrs.push_back(sample_values[i].data());
           sample_idx_ptrs.push_back(sample_idx[i].data());
           sample_sizes.push_back(static_cast<int>(sample_values[i].size()));
@@ -153,7 +153,7 @@ void test_stream_sparse(
         for (size_t i = 0; i < indptr->size() - 1; ++i) {
           int start_index = indptr->at(i);
           int stop_index = indptr->at(i + 1);
-          for (size_t j = start_index; j < stop_index; ++j) {
+          for (int32_t j = start_index; j < stop_index; ++j) {
             auto val = vals->at(j);
             auto idx = indices->at(j);
             if (std::fabs(val) > 1e-35f || std::isnan(val)) {
@@ -166,7 +166,7 @@ void test_stream_sparse(
         std::vector<int> sample_sizes;
         std::vector<double*> sample_values_ptrs;
         std::vector<int*> sample_idx_ptrs;
-        for (size_t i = 0; i < ncols; ++i) {
+        for (int32_t i = 0; i < ncols; ++i) {
           sample_values_ptrs.push_back(sample_values[i].data());
           sample_idx_ptrs.push_back(sample_idx[i].data());
           sample_sizes.push_back(static_cast<int>(sample_values[i].size()));
@@ -268,8 +268,8 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
   const std::vector<int8_t> creation_types = { 0, 1 };
 
-  for (int i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
-    for (int j = 0; j < batch_counts.size(); ++j) {
+  for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
+    for (size_t j = 0; j < batch_counts.size(); ++j) {
       auto type = creation_types[i];
       auto batch_count = batch_counts[j];
       test_stream_dense(type, ref_datset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
@@ -322,8 +322,8 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
   const std::vector<int8_t> creation_types = { 0, 1 };
 
-  for (int i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
-    for (int j = 0; j < batch_counts.size(); ++j) {
+  for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
+    for (size_t j = 0; j < batch_counts.size(); ++j) {
       auto type = creation_types[i];
       auto batch_count = batch_counts[j];
       test_stream_sparse(type, ref_datset_handle, nrows, ncols, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);

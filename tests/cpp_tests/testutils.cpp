@@ -106,7 +106,7 @@ namespace LightGBM {
       init_scores->reserve(nrows * nclasses);
     }
     if (groups) {
-      weights->reserve(nrows);
+      groups->reserve(nrows);
     }
 
     int32_t group = 0;
@@ -143,6 +143,7 @@ namespace LightGBM {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
+    Log::Info("     Begin StreamDenseDataset");
     if ((nrows % batch_count) != 0) {
       Log::Fatal("This utility method only handles nrows that are a multiple of batch_count");
     }
@@ -269,6 +270,9 @@ namespace LightGBM {
         groups_ptr,
         0);
       EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
+      if (result != 0) {
+        FAIL() << "LGBM_DatasetPushRowsByCSRWithMetadata failed";  // This forces an immediate failure, which EXPECT_EQ does not
+      }
 
       indptr_ptr += batch_count;
       labels_ptr += batch_count;
@@ -294,7 +298,7 @@ namespace LightGBM {
     for (auto i = 0; i < nTotal; i++) {
       EXPECT_EQ(ref_labels->at(i), labels[i]) << "Inserted data: " << ref_labels->at(i);
       if (ref_labels->at(i) != labels[i]) {
-        FAIL() << "LGBM_DatasetPushRowsWithMetadata failed";;  // This forces an immediate failure, which EXPECT_EQ does not
+        FAIL() << "Mismatched labels";;  // This forces an immediate failure, which EXPECT_EQ does not
       }
     }
 
@@ -305,6 +309,9 @@ namespace LightGBM {
       }
       for (auto i = 0; i < nTotal; i++) {
         EXPECT_EQ(ref_weights->at(i), weights[i]) << "Inserted data: " << ref_weights->at(i);
+        if (ref_weights->at(i) != weights[i]) {
+          FAIL() << "Mismatched weights";  // This forces an immediate failure, which EXPECT_EQ does not
+        }
       }
     } else if (ref_weights) {
       FAIL() << "Expected non-null weights";
@@ -315,10 +322,10 @@ namespace LightGBM {
       if (!ref_init_scores) {
         FAIL() << "Expected null init_scores";
       }
-      for (auto i = 0; i < ref_init_scores->size(); i++) {
+      for (size_t i = 0; i < ref_init_scores->size(); i++) {
         EXPECT_EQ(ref_init_scores->at(i), init_scores[i]) << "Inserted data: " << ref_init_scores->at(i) << " Index: " << i;
         if (ref_init_scores->at(i) != init_scores[i]) {
-          FAIL() << "Mismatched init_scores";;  // This forces an immediate failure, which EXPECT_EQ does not
+          FAIL() << "Mismatched init_scores";  // This forces an immediate failure, which EXPECT_EQ does not
         }
       }
     } else if (ref_init_scores) {
@@ -343,7 +350,7 @@ namespace LightGBM {
       ref_query_boundaries.push_back(nTotal);
 
       for (auto i = 0; i < ref_query_boundaries.size(); i++) {
-        EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Coalesced data group: " << ref_query_boundaries[i];
+        EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Inserted data: " << ref_query_boundaries[i];
       }
     } else if (ref_groups) {
       FAIL() << "Expected non-null query_boundaries";
