@@ -103,7 +103,8 @@ class TreeLearner {
   */
   static TreeLearner* CreateTreeLearner(const std::string& learner_type,
                                         const std::string& device_type,
-                                        const Config* config);
+                                        const Config* config,
+                                        const bool boosting_on_cuda);
 };
 
 }  // namespace LightGBM

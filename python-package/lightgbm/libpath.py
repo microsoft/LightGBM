@@ -1,6 +1,5 @@
 # coding: utf-8
 """Find the path to LightGBM dynamic library files."""
-from os import environ
 from pathlib import Path
 from platform import system
 from typing import List
@@ -14,10 +13,6 @@ def find_lib_path() -> List[str]:
     lib_path: list of str
        List of all found library paths to LightGBM.
     """
-    if environ.get('LIGHTGBM_BUILD_DOC', False):
-        # we don't need lib_lightgbm while building docs
-        return []
-
     curr_path = Path(__file__).absolute().parent
     dll_path = [curr_path,
                 curr_path.parents[1],
