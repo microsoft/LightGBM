@@ -127,7 +127,7 @@ fi
 
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    ${DASK_DEPENDENCIES} \
+    ${DEPENDENCIES} \
     joblib \
     matplotlib \
     numpy \
