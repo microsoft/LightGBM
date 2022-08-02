@@ -298,7 +298,7 @@ namespace LightGBM {
     for (auto i = 0; i < nTotal; i++) {
       EXPECT_EQ(ref_labels->at(i), labels[i]) << "Inserted data: " << ref_labels->at(i);
       if (ref_labels->at(i) != labels[i]) {
-        FAIL() << "Mismatched labels";;  // This forces an immediate failure, which EXPECT_EQ does not
+        FAIL() << "Mismatched labels";  // This forces an immediate failure, which EXPECT_EQ does not
       }
     }
 
@@ -349,8 +349,11 @@ namespace LightGBM {
       }
       ref_query_boundaries.push_back(nTotal);
 
-      for (auto i = 0; i < ref_query_boundaries.size(); i++) {
+      for (size_t i = 0; i < ref_query_boundaries.size(); i++) {
         EXPECT_EQ(ref_query_boundaries[i], query_boundaries[i]) << "Inserted data: " << ref_query_boundaries[i];
+        if (ref_query_boundaries[i] != query_boundaries[i]) {
+          FAIL() << "Mismatched query_boundaries";  // This forces an immediate failure, which EXPECT_EQ does not
+        }
       }
     } else if (ref_groups) {
       FAIL() << "Expected non-null query_boundaries";
