@@ -1507,7 +1507,7 @@ class Dataset:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
                         # If the params[cat_alias] is equal to categorical_indices, do not report the warning.
-                        if not(isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
+                        if not (isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
                             _log_warning(f'{cat_alias} in param dict is overridden.')
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
