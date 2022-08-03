@@ -241,7 +241,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr, length):
+def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -249,7 +249,7 @@ def cfloat32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr, length):
+def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -257,7 +257,7 @@ def cfloat64_array_to_numpy(cptr, length):
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr, length):
+def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -265,7 +265,7 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr, length):
+def cint64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -273,12 +273,12 @@ def cint64_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int64 pointer')
 
 
-def c_str(string):
+def c_str(string: str) -> ctypes.c_char_p:
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype, values):
+def c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
@@ -345,7 +345,7 @@ class _ConfigAliases:
     aliases = None
 
     @staticmethod
-    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+    def _get_all_param_aliases() -> Dict[str, List[str]]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -365,7 +365,7 @@ class _ConfigAliases:
                 ptr_string_buffer))
         aliases = json.loads(
             string_buffer.value.decode('utf-8'),
-            object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+            object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
         return aliases
 
@@ -375,8 +375,14 @@ class _ConfigAliases:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, {i})
+            ret.update(cls.get_sorted(i))
         return ret
+
+    @classmethod
+    def get_sorted(cls, name: str) -> List[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
+        return cls.aliases.get(name, [name])
 
     @classmethod
     def get_by_alias(cls, *args) -> Set[str]:
@@ -386,7 +392,7 @@ class _ConfigAliases:
         for arg in args:
             for aliases in cls.aliases.values():
                 if arg in aliases:
-                    ret |= aliases
+                    ret.update(aliases)
                     break
         return ret
 
@@ -412,7 +418,8 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+    aliases = _ConfigAliases.get_sorted(main_param_name)
+    aliases = [a for a in aliases if a != main_param_name]
 
     # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
@@ -1500,7 +1507,7 @@ class Dataset:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
                         # If the params[cat_alias] is equal to categorical_indices, do not report the warning.
-                        if not(isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
+                        if not (isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
                             _log_warning(f'{cat_alias} in param dict is overridden.')
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)

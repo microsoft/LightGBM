@@ -411,4 +411,29 @@ std::string Config::ToString() const {
   return str_buf.str();
 }
 
+const std::string Config::DumpAliases() {
+  auto map = Config::parameter2aliases();
+  for (auto& pair : map) {
+    std::sort(pair.second.begin(), pair.second.end(), SortAlias);
+  }
+  std::stringstream str_buf;
+  str_buf << "{\n";
+  bool first = true;
+  for (const auto& pair : map) {
+    if (first) {
+      str_buf << "   \"";
+      first = false;
+    } else {
+      str_buf << "   , \"";
+    }
+    str_buf << pair.first << "\": [";
+    if (pair.second.size() > 0) {
+      str_buf << "\"" << CommonC::Join(pair.second, "\", \"") << "\"";
+    }
+    str_buf << "]\n";
+  }
+  str_buf << "}\n";
+  return str_buf.str();
+}
+
 }  // namespace LightGBM
