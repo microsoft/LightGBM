@@ -101,7 +101,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>EIGEN_MPL2_ONLY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EIGEN_MPL2_ONLY;EIGEN_DONT_PARALLELIZE</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
