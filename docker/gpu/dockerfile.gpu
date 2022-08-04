@@ -77,8 +77,8 @@ RUN echo "export PATH=$CONDA_DIR/bin:"'$PATH' > /etc/profile.d/conda.sh && \
     /bin/bash ~/miniforge.sh -b -p $CONDA_DIR && \
     rm ~/miniforge.sh
 
-RUN conda config --set changeps1 no && \
-    conda create -y -n py3 numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
+RUN conda config --set always_yes yes --set changeps1 no && \
+    conda create -y -q -n py3 numpy scipy scikit-learn jupyter notebook ipython pandas matplotlib
 
 #################################################################################################################
 #           LightGBM
