@@ -1076,7 +1076,7 @@ def test_cvbooster():
 
 def test_cvbooster_save_load(tmp_path):
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
         'objective': 'binary',
         'metric': 'binary_logloss',
@@ -1110,7 +1110,7 @@ def test_cvbooster_save_load(tmp_path):
 @pytest.mark.parametrize('serializer', SERIALIZERS)
 def test_cvbooster_picklable(serializer):
     X, y = load_breast_cancer(return_X_y=True)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
         'objective': 'binary',
         'metric': 'binary_logloss',
@@ -1126,9 +1126,12 @@ def test_cvbooster_picklable(serializer):
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
     preds = cvbooster.predict(X_test)
+best_iteration = cvbooster.best_iteration
 
     cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
     del cvbooster
+
+    assert best_iteration == cvbooster_from_disk.best_iteration
 
     preds_from_disk = cvbooster_from_disk.predict(X_test)
     np.testing.assert_array_equal(preds, preds_from_disk)

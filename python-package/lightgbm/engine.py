@@ -393,7 +393,7 @@ class CVBooster:
         start_iteration: int = 0,
         importance_type: str = 'split'
     ) -> "CVBooster":
-        """Save CVBoosters to a file as JSON text.
+        """Save CVBooster to a file as JSON text.
 
         Parameters
         ----------
