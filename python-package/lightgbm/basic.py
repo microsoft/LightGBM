@@ -714,7 +714,7 @@ class _InnerPredictor:
     def __init__(
         self,
         model_file: Optional[Union[str, Path]] = None,
-        booster_handle: Optional["Booster"] = None,
+        booster_handle: Optional[ctypes.c_void_p] = None,
         pred_parameter: Optional[Dict[str, Any]] = None
     ):
         """Initialize the _InnerPredictor.
