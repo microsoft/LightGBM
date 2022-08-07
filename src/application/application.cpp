@@ -76,7 +76,7 @@ void Application::LoadParameters(int argc, char** argv) {
   }
   Config::SetVerbosity(all_params);
   // de-duplicate params
-  Config::KeepFirstValueFromKeys(all_params, &params);
+  Config::KeepFirstValues(all_params, &params);
   if (!config_file_ok) {
     Log::Warning("Config file %s doesn't exist, will ignore", params["config"].c_str());
   }
