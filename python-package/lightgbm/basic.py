@@ -3352,7 +3352,13 @@ class Booster:
         return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
-    def save_model(self, filename, num_iteration=None, start_iteration=0, importance_type='split'):
+    def save_model(
+        self,
+        filename: Union[str, Path],
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> "Booster":
         """Save Booster to file.
 
         Parameters
