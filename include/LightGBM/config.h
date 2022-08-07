@@ -86,7 +86,7 @@ struct Config {
   */
   inline static bool SortAlias(const std::string& x, const std::string& y);
 
-  static void KeepFirstValueFromKeys(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
+  static void KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
   static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
   static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);

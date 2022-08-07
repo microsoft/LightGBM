@@ -29,7 +29,7 @@ void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* p
   }
 }
 
-void RetrieveFirstValueFromKey(const std::unordered_map<std::string, std::vector<std::string>>& params, std::string key, int* out) {
+void GetFirstValue(const std::unordered_map<std::string, std::vector<std::string>>& params, std::string key, int* out) {
   const auto pair = params.find(key);
   if (pair != params.end()) {
     auto candidate = pair->second[0].c_str();
@@ -41,8 +41,8 @@ void RetrieveFirstValueFromKey(const std::unordered_map<std::string, std::vector
 
 void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
   int verbosity = Config().verbosity;
-  RetrieveFirstValueFromKey(params, "verbose", &verbosity);
-  RetrieveFirstValueFromKey(params, "verbosity", &verbosity);
+  GetFirstValue(params, "verbose", &verbosity);
+  GetFirstValue(params, "verbosity", &verbosity);
   if (verbosity < 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   } else if (verbosity == 0) {
@@ -54,7 +54,7 @@ void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std:
   }
 }
 
-void Config::KeepFirstValueFromKeys(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out) {
+void Config::KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out) {
   for (auto pair = params.begin(); pair != params.end(); ++pair) {
     auto name = pair->first.c_str();
     auto values = pair->second;
@@ -76,7 +76,7 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
     KV2Map(&all_params, Common::Trim(arg).c_str());
   }
   SetVerbosity(all_params);
-  KeepFirstValueFromKeys(all_params, &params);
+  KeepFirstValues(all_params, &params);
   ParameterAlias::KeyAliasTransform(&params);
   return params;
 }
