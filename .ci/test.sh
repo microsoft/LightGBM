@@ -120,22 +120,21 @@ fi
 
 # temporary fix for https://github.com/microsoft/LightGBM/issues/5390
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    DASK_DEPENDENCIES="dask distributed"
+    DEPENDENCIES="dask distributed"
 else
-    DASK_DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0"
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
 fi
 
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    ${DASK_DEPENDENCIES} \
+    ${DEPENDENCIES} \
     joblib \
     matplotlib \
     numpy \
     pandas \
     psutil \
     pytest \
-    scikit-learn \
-    scipy || exit -1
+    scikit-learn || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
 conda install -q -y -n $CONDA_ENV \

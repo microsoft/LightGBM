@@ -22,7 +22,7 @@ __global__ void AddScoreConstantKernel(
 
 void CUDAScoreUpdater::LaunchAddScoreConstantKernel(const double val, const size_t offset) {
   const int num_blocks = (num_data_ + num_threads_per_block_) / num_threads_per_block_;
-  Log::Warning("adding init score = %f", val);
+  Log::Debug("Adding init score = %lf", val);
   AddScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, offset, num_data_, cuda_score_);
 }
 
