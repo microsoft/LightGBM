@@ -129,7 +129,7 @@ else:
     _LIB = _load_lib()
 
 
-NUMERIC_TYPES = (int, float, bool)
+_NUMERIC_TYPES = (int, float, bool)
 _ArrayLike = Union[List, np.ndarray, pd_Series]
 
 
@@ -306,7 +306,7 @@ def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
                 else:
                     return str(x)
             pairs.append(f"{key}={','.join(map(to_string, val))}")
-        elif isinstance(val, (str, Path, NUMERIC_TYPES)) or is_numeric(val):
+        elif isinstance(val, (str, Path, _NUMERIC_TYPES)) or is_numeric(val):
             pairs.append(f"{key}={val}")
         elif val is not None:
             raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
