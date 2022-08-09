@@ -1126,7 +1126,7 @@ def test_cvbooster_picklable(serializer):
                     return_cvbooster=True)
     cvbooster = cv_res['cvbooster']
     preds = cvbooster.predict(X_test)
-best_iteration = cvbooster.best_iteration
+    best_iteration = cvbooster.best_iteration
 
     cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
     del cvbooster
