@@ -6,6 +6,7 @@ import json
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
+from enum import Enum
 from functools import wraps
 from os import SEEK_END, environ
 from os.path import getsize
@@ -22,6 +23,10 @@ from .libpath import find_lib_path
 ZERO_THRESHOLD = 1e-35
 
 
+def _is_zero(x: float) -> bool:
+    return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
+
+
 def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
@@ -30,6 +35,12 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
         ctypes.byref(sample_cnt),
     ))
     return sample_cnt.value
+
+
+class _MissingType(Enum):
+    NONE = 'None'
+    NAN = 'NaN'
+    ZERO = 'Zero'
 
 
 class _DummyLogger:
