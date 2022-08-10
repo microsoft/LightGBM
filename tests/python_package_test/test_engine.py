@@ -764,6 +764,39 @@ def test_early_stopping():
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize('use_valid', [True, False])
+def test_early_stopping_ignores_training_set(use_valid):
+    x = np.linspace(-1, 1, 100)
+    X = x.reshape(-1, 1)
+    y = x**2
+    X_train, X_valid = X[:80], X[80:]
+    y_train, y_valid = y[:80], y[80:]
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid)
+    valid_sets = [train_ds]
+    valid_names = ['train']
+    if use_valid:
+        valid_sets.append(valid_ds)
+        valid_names.append('valid')
+    eval_result = {}
+    train_fn = lambda: lgb.train(
+        {'num_leaves': 5},
+        train_ds,
+        num_boost_round=2,
+        valid_sets=valid_sets,
+        valid_names=valid_names,
+        callbacks=[lgb.early_stopping(1), lgb.record_evaluation(eval_result)]
+    )
+    if use_valid:
+        bst = train_fn()
+        assert bst.best_iteration == 1
+        assert eval_result['train']['l2'][1] < eval_result['train']['l2'][0]  # train improved
+        assert eval_result['valid']['l2'][1] > eval_result['valid']['l2'][0]  # valid didn't
+    else:
+        with pytest.warns(UserWarning, match='Only training set found, disabling early stopping.'):
+            train_fn()
+
+
 @pytest.mark.parametrize('first_metric_only', [True, False])
 def test_early_stopping_via_global_params(first_metric_only):
     X, y = load_breast_cancer(return_X_y=True)
