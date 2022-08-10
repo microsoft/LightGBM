@@ -584,6 +584,10 @@ if(BUILD_CPP_TEST)
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
+
+  set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
+  include_directories(${LightGBM_TEST_HEADER_DIR})
+
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
     set(
@@ -600,7 +604,7 @@ if(BUILD_CPP_TEST)
     endforeach()
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
 endif()
 
 install(

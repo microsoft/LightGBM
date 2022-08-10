@@ -69,12 +69,29 @@ class Metadata {
   ~Metadata();
 
   /*!
-  * \brief Initial work, will allocate space for label, weight(if exists) and query(if exists)
+  * \brief Initial work, will allocate space for label, weight (if exists) and query (if exists)
   * \param num_data Number of training data
   * \param weight_idx Index of weight column, < 0 means doesn't exists
   * \param query_idx Index of query id column, < 0 means doesn't exists
   */
   void Init(data_size_t num_data, int weight_idx, int query_idx);
+
+  /*!
+  * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
+  * \param num_data Number of data
+  * \param reference Reference metadata
+  */
+  void InitByReference(data_size_t num_data, const Metadata* reference);
+
+  /*!
+  * \brief Allocate space for label, weight (if exists), initial score (if exists) and query (if exists)
+  * \param num_data Number of data rows
+  * \param has_weights Whether the metadata has weights
+  * \param has_init_scores Whether the metadata has initial scores
+  * \param has_queries Whether the metadata has queries
+  * \param nclasses Number of classes for initial scores
+  */
+  void Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t nclasses);
 
   /*!
   * \brief Partition label by used indices
@@ -139,6 +156,19 @@ class Metadata {
   }
 
   /*!
+  * \brief Set initial scores for one record.  Note that init_score might have multiple columns and is stored in column format.
+  * \param idx Index of this record
+  * \param values Initial score values for this record, one per class
+  */
+  inline void SetInitScoreAt(data_size_t idx, const double* values) {
+    const auto nclasses = num_classes();
+    const double* val_ptr = values;
+    for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr) {
+      init_score_[i] = *val_ptr;
+    }
+  }
+
+  /*!
   * \brief Set Query Id for one record
   * \param idx Index of this record
   * \param value Query Id value of this record
@@ -150,6 +180,26 @@ class Metadata {
   /*! \brief Load initial scores from file */
   void LoadInitialScore(const std::string& data_filename);
 
+  /*!
+  * \brief Insert data from a given data to the current data at a specified index
+  * \param start_index The target index to begin the insertion
+  * \param count Number of records to insert
+  * \param labels Pointer to label data
+  * \param weights Pointer to weight data, or null
+  * \param init_scores Pointer to init-score data, or null
+  * \param queries Pointer to query data, or null
+  */
+  void InsertAt(data_size_t start_index,
+    data_size_t count,
+    const float* labels,
+    const float* weights,
+    const double* init_scores,
+    const int32_t* queries);
+
+  /*!
+  * \brief Perform any extra operations after all data has been loaded
+  */
+  void FinishLoad();
   /*!
   * \brief Get weights, if not exists, will return nullptr
   * \return Pointer of weights
@@ -212,6 +262,16 @@ class Metadata {
   */
   inline int64_t num_init_score() const { return num_init_score_; }
 
+  /*!
+  * \brief Get number of classes
+  */
+  inline int32_t num_classes() const {
+    if (num_data_ && num_init_score_) {
+      return static_cast<int>(num_init_score_ / num_data_);
+    }
+    return 1;
+  }
+
   /*! \brief Disable copy */
   Metadata& operator=(const Metadata&) = delete;
   /*! \brief Disable copy */
@@ -230,8 +290,18 @@ class Metadata {
   void LoadWeights();
   /*! \brief Load query boundaries from file */
   void LoadQueryBoundaries();
-  /*! \brief Load query wights */
-  void LoadQueryWeights();
+  /*! \brief Calculate query weights from queries */
+  void CalculateQueryWeights();
+  /*! \brief Calculate query boundaries from queries */
+  void CalculateQueryBoundaries();
+  /*! \brief Insert labels at the given index */
+  void InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len);
+  /*! \brief Insert weights at the given index */
+  void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
+  /*! \brief Insert initial scores at the given index */
+  void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
+  /*! \brief Insert queries at the given index */
+  void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -374,6 +444,27 @@ class Dataset {
   /*! \brief Destructor */
   LIGHTGBM_EXPORT ~Dataset();
 
+  /*!
+  * \brief Initialize from the given reference
+  * \param num_data Number of data
+  * \param reference Reference dataset
+  */
+  LIGHTGBM_EXPORT void InitByReference(data_size_t num_data, const Dataset* reference) {
+    metadata_.InitByReference(num_data, &reference->metadata());
+  }
+
+  LIGHTGBM_EXPORT void InitStreaming(data_size_t num_data,
+                                     int32_t has_weights,
+                                     int32_t has_init_scores,
+                                     int32_t has_queries,
+                                     int32_t nclasses,
+                                     int32_t nthreads) {
+    metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
+    for (int i = 0; i < num_groups_; ++i) {
+      feature_groups_[i]->InitStreaming(nthreads);
+    }
+  }
+
   LIGHTGBM_EXPORT bool CheckAlign(const Dataset& other) const {
     if (num_features_ != other.num_features_) {
       return false;
@@ -450,6 +541,15 @@ class Dataset {
         raw_data_[feat_ind][row_idx] = static_cast<float>(value);
       }
     }
+  }
+
+  inline void InsertMetadataAt(data_size_t start_index,
+    data_size_t count,
+    const label_t* labels,
+    const label_t* weights,
+    const double* init_scores,
+    const data_size_t* queries) {
+    metadata_.InsertAt(start_index, count, labels, weights, init_scores, queries);
   }
 
   inline int RealFeatureIndex(int fidx) const {
@@ -743,6 +843,18 @@ class Dataset {
   /*! \brief Get Number of data */
   inline data_size_t num_data() const { return num_data_; }
 
+  /*! \brief Get whether FinishLoad is automatically called when pushing last row. */
+  inline bool wait_for_manual_finish() const { return wait_for_manual_finish_; }
+
+  /*! \brief Set whether the Dataset is finished automatically when last row is pushed or with a manual
+   *         MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesced later.
+   *         FinishLoad should not be called on any Dataset that will be coalesced.
+   */
+  inline void set_wait_for_manual_finish(bool value) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    wait_for_manual_finish_ = value;
+  }
+
   /*! \brief Disable copy */
   Dataset& operator=(const Dataset&) = delete;
   /*! \brief Disable copy */
@@ -834,12 +946,15 @@ class Dataset {
   bool zero_as_missing_;
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<float>> raw_data_;
+  bool wait_for_manual_finish_;
   bool has_raw_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
   int num_numeric_features_;
   std::string device_type_;
   int gpu_device_id_;
+  /*! \brief mutex for threading safe call */
+  std::mutex mutex_;
 
   #ifdef USE_CUDA_EXP
   std::unique_ptr<CUDAColumnData> cuda_column_data_;
