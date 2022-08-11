@@ -88,6 +88,11 @@ class ObjectiveFunction {
   * \brief Load objective function from string object
   */
   LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunction(const std::string& str);
+
+  /*!
+  * \brief Whether boosting is done on CUDA
+  */
+  virtual bool IsCUDAObjective() const { return false; }
 };
 
 }  // namespace LightGBM

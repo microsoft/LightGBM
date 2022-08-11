@@ -78,6 +78,14 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
+  /*!
+  * \brief Sort aliases by length and then alphabetically
+  * \param x Alias 1
+  * \param y Alias 2
+  * \return true if x has higher priority than y
+  */
+  inline static bool SortAlias(const std::string& x, const std::string& y);
+
   static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
@@ -1063,6 +1071,7 @@ struct Config {
   bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_map<std::string, std::vector<std::string>>& parameter2aliases();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
@@ -1131,6 +1140,10 @@ inline bool Config::GetBool(
   return false;
 }
 
+inline bool Config::SortAlias(const std::string& x, const std::string& y) {
+  return x.size() < y.size() || (x.size() == y.size() && x < y);
+}
+
 struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
@@ -1139,9 +1152,7 @@ struct ParameterAlias {
       if (alias != Config::alias_table().end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
         if (alias_set != tmp_map.end()) {  // alias already set
-                                           // set priority by length & alphabetically to ensure reproducible behavior
-          if (alias_set->second.size() < pair.first.size() ||
-            (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
+          if (Config::SortAlias(alias_set->second, pair.first)) {
             Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
                          alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
                          pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());

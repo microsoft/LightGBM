@@ -7,7 +7,7 @@ import warnings
 from collections import OrderedDict
 from copy import deepcopy
 from functools import wraps
-from os import SEEK_END
+from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -108,11 +108,9 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode('utf-8')))
 
 
-def _load_lib() -> Optional[ctypes.CDLL]:
+def _load_lib() -> ctypes.CDLL:
     """Load LightGBM library."""
     lib_path = find_lib_path()
-    if len(lib_path) == 0:
-        return None
     lib = ctypes.cdll.LoadLibrary(lib_path[0])
     lib.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
@@ -122,7 +120,13 @@ def _load_lib() -> Optional[ctypes.CDLL]:
     return lib
 
 
-_LIB = _load_lib()
+# we don't need lib_lightgbm while building docs
+_LIB: ctypes.CDLL
+if environ.get('LIGHTGBM_BUILD_DOC', False):
+    from unittest.mock import Mock  # isort: skip
+    _LIB = Mock(ctypes.CDLL)  # type: ignore
+else:
+    _LIB = _load_lib()
 
 
 NUMERIC_TYPES = (int, float, bool)
@@ -237,7 +241,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr, length):
+def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -245,7 +249,7 @@ def cfloat32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr, length):
+def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -253,7 +257,7 @@ def cfloat64_array_to_numpy(cptr, length):
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr, length):
+def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -261,7 +265,7 @@ def cint32_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr, length):
+def cint64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -269,12 +273,12 @@ def cint64_array_to_numpy(cptr, length):
         raise RuntimeError('Expected int64 pointer')
 
 
-def c_str(string):
+def c_str(string: str) -> ctypes.c_char_p:
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype, values):
+def c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
@@ -341,7 +345,7 @@ class _ConfigAliases:
     aliases = None
 
     @staticmethod
-    def _get_all_param_aliases() -> Dict[str, Set[str]]:
+    def _get_all_param_aliases() -> Dict[str, List[str]]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
@@ -361,7 +365,7 @@ class _ConfigAliases:
                 ptr_string_buffer))
         aliases = json.loads(
             string_buffer.value.decode('utf-8'),
-            object_hook=lambda obj: {k: set(v) | {k} for k, v in obj.items()}
+            object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
         return aliases
 
@@ -371,8 +375,14 @@ class _ConfigAliases:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
         for i in args:
-            ret |= cls.aliases.get(i, {i})
+            ret.update(cls.get_sorted(i))
         return ret
+
+    @classmethod
+    def get_sorted(cls, name: str) -> List[str]:
+        if cls.aliases is None:
+            cls.aliases = cls._get_all_param_aliases()
+        return cls.aliases.get(name, [name])
 
     @classmethod
     def get_by_alias(cls, *args) -> Set[str]:
@@ -382,7 +392,7 @@ class _ConfigAliases:
         for arg in args:
             for aliases in cls.aliases.values():
                 if arg in aliases:
-                    ret |= aliases
+                    ret.update(aliases)
                     break
         return ret
 
@@ -408,7 +418,8 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     # avoid side effects on passed-in parameters
     params = deepcopy(params)
 
-    aliases = _ConfigAliases.get(main_param_name) - {main_param_name}
+    aliases = _ConfigAliases.get_sorted(main_param_name)
+    aliases = [a for a in aliases if a != main_param_name]
 
     # if main_param_name was provided, keep that value and remove all aliases
     if main_param_name in params.keys():
@@ -1496,7 +1507,7 @@ class Dataset:
                 for cat_alias in _ConfigAliases.get("categorical_feature"):
                     if cat_alias in params:
                         # If the params[cat_alias] is equal to categorical_indices, do not report the warning.
-                        if not(isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
+                        if not (isinstance(params[cat_alias], list) and set(params[cat_alias]) == categorical_indices):
                             _log_warning(f'{cat_alias} in param dict is overridden.')
                         params.pop(cat_alias, None)
                 params['categorical_column'] = sorted(categorical_indices)
@@ -3376,7 +3387,11 @@ class Booster:
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
-    def shuffle_models(self, start_iteration=0, end_iteration=-1):
+    def shuffle_models(
+        self,
+        start_iteration: int = 0,
+        end_iteration: int = -1
+    ) -> "Booster":
         """Shuffle models.
 
         Parameters
@@ -3428,7 +3443,12 @@ class Booster:
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
 
-    def model_to_string(self, num_iteration=None, start_iteration=0, importance_type='split'):
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
         """Save Booster to string.
 
         Parameters
@@ -3481,7 +3501,13 @@ class Booster:
         ret += _dump_pandas_categorical(self.pandas_categorical)
         return ret
 
-    def dump_model(self, num_iteration=None, start_iteration=0, importance_type='split', object_hook=None):
+    def dump_model(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split',
+        object_hook: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         """Dump Booster to JSON format.
 
         Parameters

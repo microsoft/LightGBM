@@ -756,143 +756,142 @@ std::string Config::SaveMembersToString() const {
   return str_buf.str();
 }
 
-const std::string Config::DumpAliases() {
-  std::stringstream str_buf;
-  str_buf << "{";
-  str_buf << "\"config\": [\"config_file\"], ";
-  str_buf << "\"task\": [\"task_type\"], ";
-  str_buf << "\"objective\": [\"objective_type\", \"app\", \"application\", \"loss\"], ";
-  str_buf << "\"boosting\": [\"boosting_type\", \"boost\"], ";
-  str_buf << "\"data\": [\"train\", \"train_data\", \"train_data_file\", \"data_filename\"], ";
-  str_buf << "\"valid\": [\"test\", \"valid_data\", \"valid_data_file\", \"test_data\", \"test_data_file\", \"valid_filenames\"], ";
-  str_buf << "\"num_iterations\": [\"num_iteration\", \"n_iter\", \"num_tree\", \"num_trees\", \"num_round\", \"num_rounds\", \"nrounds\", \"num_boost_round\", \"n_estimators\", \"max_iter\"], ";
-  str_buf << "\"learning_rate\": [\"shrinkage_rate\", \"eta\"], ";
-  str_buf << "\"num_leaves\": [\"num_leaf\", \"max_leaves\", \"max_leaf\", \"max_leaf_nodes\"], ";
-  str_buf << "\"tree_learner\": [\"tree\", \"tree_type\", \"tree_learner_type\"], ";
-  str_buf << "\"num_threads\": [\"num_thread\", \"nthread\", \"nthreads\", \"n_jobs\"], ";
-  str_buf << "\"device_type\": [\"device\"], ";
-  str_buf << "\"seed\": [\"random_seed\", \"random_state\"], ";
-  str_buf << "\"deterministic\": [], ";
-  str_buf << "\"force_col_wise\": [], ";
-  str_buf << "\"force_row_wise\": [], ";
-  str_buf << "\"histogram_pool_size\": [\"hist_pool_size\"], ";
-  str_buf << "\"max_depth\": [], ";
-  str_buf << "\"min_data_in_leaf\": [\"min_data_per_leaf\", \"min_data\", \"min_child_samples\", \"min_samples_leaf\"], ";
-  str_buf << "\"min_sum_hessian_in_leaf\": [\"min_sum_hessian_per_leaf\", \"min_sum_hessian\", \"min_hessian\", \"min_child_weight\"], ";
-  str_buf << "\"bagging_fraction\": [\"sub_row\", \"subsample\", \"bagging\"], ";
-  str_buf << "\"pos_bagging_fraction\": [\"pos_sub_row\", \"pos_subsample\", \"pos_bagging\"], ";
-  str_buf << "\"neg_bagging_fraction\": [\"neg_sub_row\", \"neg_subsample\", \"neg_bagging\"], ";
-  str_buf << "\"bagging_freq\": [\"subsample_freq\"], ";
-  str_buf << "\"bagging_seed\": [\"bagging_fraction_seed\"], ";
-  str_buf << "\"feature_fraction\": [\"sub_feature\", \"colsample_bytree\"], ";
-  str_buf << "\"feature_fraction_bynode\": [\"sub_feature_bynode\", \"colsample_bynode\"], ";
-  str_buf << "\"feature_fraction_seed\": [], ";
-  str_buf << "\"extra_trees\": [\"extra_tree\"], ";
-  str_buf << "\"extra_seed\": [], ";
-  str_buf << "\"early_stopping_round\": [\"early_stopping_rounds\", \"early_stopping\", \"n_iter_no_change\"], ";
-  str_buf << "\"first_metric_only\": [], ";
-  str_buf << "\"max_delta_step\": [\"max_tree_output\", \"max_leaf_output\"], ";
-  str_buf << "\"lambda_l1\": [\"reg_alpha\", \"l1_regularization\"], ";
-  str_buf << "\"lambda_l2\": [\"reg_lambda\", \"lambda\", \"l2_regularization\"], ";
-  str_buf << "\"linear_lambda\": [], ";
-  str_buf << "\"min_gain_to_split\": [\"min_split_gain\"], ";
-  str_buf << "\"drop_rate\": [\"rate_drop\"], ";
-  str_buf << "\"max_drop\": [], ";
-  str_buf << "\"skip_drop\": [], ";
-  str_buf << "\"xgboost_dart_mode\": [], ";
-  str_buf << "\"uniform_drop\": [], ";
-  str_buf << "\"drop_seed\": [], ";
-  str_buf << "\"top_rate\": [], ";
-  str_buf << "\"other_rate\": [], ";
-  str_buf << "\"min_data_per_group\": [], ";
-  str_buf << "\"max_cat_threshold\": [], ";
-  str_buf << "\"cat_l2\": [], ";
-  str_buf << "\"cat_smooth\": [], ";
-  str_buf << "\"max_cat_to_onehot\": [], ";
-  str_buf << "\"top_k\": [\"topk\"], ";
-  str_buf << "\"monotone_constraints\": [\"mc\", \"monotone_constraint\", \"monotonic_cst\"], ";
-  str_buf << "\"monotone_constraints_method\": [\"monotone_constraining_method\", \"mc_method\"], ";
-  str_buf << "\"monotone_penalty\": [\"monotone_splits_penalty\", \"ms_penalty\", \"mc_penalty\"], ";
-  str_buf << "\"feature_contri\": [\"feature_contrib\", \"fc\", \"fp\", \"feature_penalty\"], ";
-  str_buf << "\"forcedsplits_filename\": [\"fs\", \"forced_splits_filename\", \"forced_splits_file\", \"forced_splits\"], ";
-  str_buf << "\"refit_decay_rate\": [], ";
-  str_buf << "\"cegb_tradeoff\": [], ";
-  str_buf << "\"cegb_penalty_split\": [], ";
-  str_buf << "\"cegb_penalty_feature_lazy\": [], ";
-  str_buf << "\"cegb_penalty_feature_coupled\": [], ";
-  str_buf << "\"path_smooth\": [], ";
-  str_buf << "\"interaction_constraints\": [], ";
-  str_buf << "\"verbosity\": [\"verbose\"], ";
-  str_buf << "\"input_model\": [\"model_input\", \"model_in\"], ";
-  str_buf << "\"output_model\": [\"model_output\", \"model_out\"], ";
-  str_buf << "\"saved_feature_importance_type\": [], ";
-  str_buf << "\"snapshot_freq\": [\"save_period\"], ";
-  str_buf << "\"linear_tree\": [\"linear_trees\"], ";
-  str_buf << "\"max_bin\": [\"max_bins\"], ";
-  str_buf << "\"max_bin_by_feature\": [], ";
-  str_buf << "\"min_data_in_bin\": [], ";
-  str_buf << "\"bin_construct_sample_cnt\": [\"subsample_for_bin\"], ";
-  str_buf << "\"data_random_seed\": [\"data_seed\"], ";
-  str_buf << "\"is_enable_sparse\": [\"is_sparse\", \"enable_sparse\", \"sparse\"], ";
-  str_buf << "\"enable_bundle\": [\"is_enable_bundle\", \"bundle\"], ";
-  str_buf << "\"use_missing\": [], ";
-  str_buf << "\"zero_as_missing\": [], ";
-  str_buf << "\"feature_pre_filter\": [], ";
-  str_buf << "\"pre_partition\": [\"is_pre_partition\"], ";
-  str_buf << "\"two_round\": [\"two_round_loading\", \"use_two_round_loading\"], ";
-  str_buf << "\"header\": [\"has_header\"], ";
-  str_buf << "\"label_column\": [\"label\"], ";
-  str_buf << "\"weight_column\": [\"weight\"], ";
-  str_buf << "\"group_column\": [\"group\", \"group_id\", \"query_column\", \"query\", \"query_id\"], ";
-  str_buf << "\"ignore_column\": [\"ignore_feature\", \"blacklist\"], ";
-  str_buf << "\"categorical_feature\": [\"cat_feature\", \"categorical_column\", \"cat_column\", \"categorical_features\"], ";
-  str_buf << "\"forcedbins_filename\": [], ";
-  str_buf << "\"save_binary\": [\"is_save_binary\", \"is_save_binary_file\"], ";
-  str_buf << "\"precise_float_parser\": [], ";
-  str_buf << "\"parser_config_file\": [], ";
-  str_buf << "\"start_iteration_predict\": [], ";
-  str_buf << "\"num_iteration_predict\": [], ";
-  str_buf << "\"predict_raw_score\": [\"is_predict_raw_score\", \"predict_rawscore\", \"raw_score\"], ";
-  str_buf << "\"predict_leaf_index\": [\"is_predict_leaf_index\", \"leaf_index\"], ";
-  str_buf << "\"predict_contrib\": [\"is_predict_contrib\", \"contrib\"], ";
-  str_buf << "\"predict_disable_shape_check\": [], ";
-  str_buf << "\"pred_early_stop\": [], ";
-  str_buf << "\"pred_early_stop_freq\": [], ";
-  str_buf << "\"pred_early_stop_margin\": [], ";
-  str_buf << "\"output_result\": [\"predict_result\", \"prediction_result\", \"predict_name\", \"prediction_name\", \"pred_name\", \"name_pred\"], ";
-  str_buf << "\"convert_model_language\": [], ";
-  str_buf << "\"convert_model\": [\"convert_model_file\"], ";
-  str_buf << "\"objective_seed\": [], ";
-  str_buf << "\"num_class\": [\"num_classes\"], ";
-  str_buf << "\"is_unbalance\": [\"unbalance\", \"unbalanced_sets\"], ";
-  str_buf << "\"scale_pos_weight\": [], ";
-  str_buf << "\"sigmoid\": [], ";
-  str_buf << "\"boost_from_average\": [], ";
-  str_buf << "\"reg_sqrt\": [], ";
-  str_buf << "\"alpha\": [], ";
-  str_buf << "\"fair_c\": [], ";
-  str_buf << "\"poisson_max_delta_step\": [], ";
-  str_buf << "\"tweedie_variance_power\": [], ";
-  str_buf << "\"lambdarank_truncation_level\": [], ";
-  str_buf << "\"lambdarank_norm\": [], ";
-  str_buf << "\"label_gain\": [], ";
-  str_buf << "\"metric\": [\"metrics\", \"metric_types\"], ";
-  str_buf << "\"metric_freq\": [\"output_freq\"], ";
-  str_buf << "\"is_provide_training_metric\": [\"training_metric\", \"is_training_metric\", \"train_metric\"], ";
-  str_buf << "\"eval_at\": [\"ndcg_eval_at\", \"ndcg_at\", \"map_eval_at\", \"map_at\"], ";
-  str_buf << "\"multi_error_top_k\": [], ";
-  str_buf << "\"auc_mu_weights\": [], ";
-  str_buf << "\"num_machines\": [\"num_machine\"], ";
-  str_buf << "\"local_listen_port\": [\"local_port\", \"port\"], ";
-  str_buf << "\"time_out\": [], ";
-  str_buf << "\"machine_list_filename\": [\"machine_list_file\", \"machine_list\", \"mlist\"], ";
-  str_buf << "\"machines\": [\"workers\", \"nodes\"], ";
-  str_buf << "\"gpu_platform_id\": [], ";
-  str_buf << "\"gpu_device_id\": [], ";
-  str_buf << "\"gpu_use_dp\": [], ";
-  str_buf << "\"num_gpu\": []";
-  str_buf << "}";
-  return str_buf.str();
+const std::unordered_map<std::string, std::vector<std::string>>& Config::parameter2aliases() {
+  static std::unordered_map<std::string, std::vector<std::string>> map({
+    {"config", {"config_file"}},
+    {"task", {"task_type"}},
+    {"objective", {"objective_type", "app", "application", "loss"}},
+    {"boosting", {"boosting_type", "boost"}},
+    {"data", {"train", "train_data", "train_data_file", "data_filename"}},
+    {"valid", {"test", "valid_data", "valid_data_file", "test_data", "test_data_file", "valid_filenames"}},
+    {"num_iterations", {"num_iteration", "n_iter", "num_tree", "num_trees", "num_round", "num_rounds", "nrounds", "num_boost_round", "n_estimators", "max_iter"}},
+    {"learning_rate", {"shrinkage_rate", "eta"}},
+    {"num_leaves", {"num_leaf", "max_leaves", "max_leaf", "max_leaf_nodes"}},
+    {"tree_learner", {"tree", "tree_type", "tree_learner_type"}},
+    {"num_threads", {"num_thread", "nthread", "nthreads", "n_jobs"}},
+    {"device_type", {"device"}},
+    {"seed", {"random_seed", "random_state"}},
+    {"deterministic", {}},
+    {"force_col_wise", {}},
+    {"force_row_wise", {}},
+    {"histogram_pool_size", {"hist_pool_size"}},
+    {"max_depth", {}},
+    {"min_data_in_leaf", {"min_data_per_leaf", "min_data", "min_child_samples", "min_samples_leaf"}},
+    {"min_sum_hessian_in_leaf", {"min_sum_hessian_per_leaf", "min_sum_hessian", "min_hessian", "min_child_weight"}},
+    {"bagging_fraction", {"sub_row", "subsample", "bagging"}},
+    {"pos_bagging_fraction", {"pos_sub_row", "pos_subsample", "pos_bagging"}},
+    {"neg_bagging_fraction", {"neg_sub_row", "neg_subsample", "neg_bagging"}},
+    {"bagging_freq", {"subsample_freq"}},
+    {"bagging_seed", {"bagging_fraction_seed"}},
+    {"feature_fraction", {"sub_feature", "colsample_bytree"}},
+    {"feature_fraction_bynode", {"sub_feature_bynode", "colsample_bynode"}},
+    {"feature_fraction_seed", {}},
+    {"extra_trees", {"extra_tree"}},
+    {"extra_seed", {}},
+    {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
+    {"first_metric_only", {}},
+    {"max_delta_step", {"max_tree_output", "max_leaf_output"}},
+    {"lambda_l1", {"reg_alpha", "l1_regularization"}},
+    {"lambda_l2", {"reg_lambda", "lambda", "l2_regularization"}},
+    {"linear_lambda", {}},
+    {"min_gain_to_split", {"min_split_gain"}},
+    {"drop_rate", {"rate_drop"}},
+    {"max_drop", {}},
+    {"skip_drop", {}},
+    {"xgboost_dart_mode", {}},
+    {"uniform_drop", {}},
+    {"drop_seed", {}},
+    {"top_rate", {}},
+    {"other_rate", {}},
+    {"min_data_per_group", {}},
+    {"max_cat_threshold", {}},
+    {"cat_l2", {}},
+    {"cat_smooth", {}},
+    {"max_cat_to_onehot", {}},
+    {"top_k", {"topk"}},
+    {"monotone_constraints", {"mc", "monotone_constraint", "monotonic_cst"}},
+    {"monotone_constraints_method", {"monotone_constraining_method", "mc_method"}},
+    {"monotone_penalty", {"monotone_splits_penalty", "ms_penalty", "mc_penalty"}},
+    {"feature_contri", {"feature_contrib", "fc", "fp", "feature_penalty"}},
+    {"forcedsplits_filename", {"fs", "forced_splits_filename", "forced_splits_file", "forced_splits"}},
+    {"refit_decay_rate", {}},
+    {"cegb_tradeoff", {}},
+    {"cegb_penalty_split", {}},
+    {"cegb_penalty_feature_lazy", {}},
+    {"cegb_penalty_feature_coupled", {}},
+    {"path_smooth", {}},
+    {"interaction_constraints", {}},
+    {"verbosity", {"verbose"}},
+    {"input_model", {"model_input", "model_in"}},
+    {"output_model", {"model_output", "model_out"}},
+    {"saved_feature_importance_type", {}},
+    {"snapshot_freq", {"save_period"}},
+    {"linear_tree", {"linear_trees"}},
+    {"max_bin", {"max_bins"}},
+    {"max_bin_by_feature", {}},
+    {"min_data_in_bin", {}},
+    {"bin_construct_sample_cnt", {"subsample_for_bin"}},
+    {"data_random_seed", {"data_seed"}},
+    {"is_enable_sparse", {"is_sparse", "enable_sparse", "sparse"}},
+    {"enable_bundle", {"is_enable_bundle", "bundle"}},
+    {"use_missing", {}},
+    {"zero_as_missing", {}},
+    {"feature_pre_filter", {}},
+    {"pre_partition", {"is_pre_partition"}},
+    {"two_round", {"two_round_loading", "use_two_round_loading"}},
+    {"header", {"has_header"}},
+    {"label_column", {"label"}},
+    {"weight_column", {"weight"}},
+    {"group_column", {"group", "group_id", "query_column", "query", "query_id"}},
+    {"ignore_column", {"ignore_feature", "blacklist"}},
+    {"categorical_feature", {"cat_feature", "categorical_column", "cat_column", "categorical_features"}},
+    {"forcedbins_filename", {}},
+    {"save_binary", {"is_save_binary", "is_save_binary_file"}},
+    {"precise_float_parser", {}},
+    {"parser_config_file", {}},
+    {"start_iteration_predict", {}},
+    {"num_iteration_predict", {}},
+    {"predict_raw_score", {"is_predict_raw_score", "predict_rawscore", "raw_score"}},
+    {"predict_leaf_index", {"is_predict_leaf_index", "leaf_index"}},
+    {"predict_contrib", {"is_predict_contrib", "contrib"}},
+    {"predict_disable_shape_check", {}},
+    {"pred_early_stop", {}},
+    {"pred_early_stop_freq", {}},
+    {"pred_early_stop_margin", {}},
+    {"output_result", {"predict_result", "prediction_result", "predict_name", "prediction_name", "pred_name", "name_pred"}},
+    {"convert_model_language", {}},
+    {"convert_model", {"convert_model_file"}},
+    {"objective_seed", {}},
+    {"num_class", {"num_classes"}},
+    {"is_unbalance", {"unbalance", "unbalanced_sets"}},
+    {"scale_pos_weight", {}},
+    {"sigmoid", {}},
+    {"boost_from_average", {}},
+    {"reg_sqrt", {}},
+    {"alpha", {}},
+    {"fair_c", {}},
+    {"poisson_max_delta_step", {}},
+    {"tweedie_variance_power", {}},
+    {"lambdarank_truncation_level", {}},
+    {"lambdarank_norm", {}},
+    {"label_gain", {}},
+    {"metric", {"metrics", "metric_types"}},
+    {"metric_freq", {"output_freq"}},
+    {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
+    {"eval_at", {"ndcg_eval_at", "ndcg_at", "map_eval_at", "map_at"}},
+    {"multi_error_top_k", {}},
+    {"auc_mu_weights", {}},
+    {"num_machines", {"num_machine"}},
+    {"local_listen_port", {"local_port", "port"}},
+    {"time_out", {}},
+    {"machine_list_filename", {"machine_list_file", "machine_list", "mlist"}},
+    {"machines", {"workers", "nodes"}},
+    {"gpu_platform_id", {}},
+    {"gpu_device_id", {}},
+    {"gpu_use_dp", {}},
+    {"num_gpu", {}},
+  });
+  return map;
 }
 
 }  // namespace LightGBM
