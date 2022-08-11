@@ -779,6 +779,7 @@ def test_early_stopping_ignores_training_set(use_valid):
         valid_sets.append(valid_ds)
         valid_names.append('valid')
     eval_result = {}
+
     def train_fn():
         return lgb.train(
             {'num_leaves': 5},
