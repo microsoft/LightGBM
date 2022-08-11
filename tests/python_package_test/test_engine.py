@@ -779,14 +779,15 @@ def test_early_stopping_ignores_training_set(use_valid):
         valid_sets.append(valid_ds)
         valid_names.append('valid')
     eval_result = {}
-    train_fn = lambda: lgb.train(
-        {'num_leaves': 5},
-        train_ds,
-        num_boost_round=2,
-        valid_sets=valid_sets,
-        valid_names=valid_names,
-        callbacks=[lgb.early_stopping(1), lgb.record_evaluation(eval_result)]
-    )
+    def train_fn():
+        return lgb.train(
+            {'num_leaves': 5},
+            train_ds,
+            num_boost_round=2,
+            valid_sets=valid_sets,
+            valid_names=valid_names,
+            callbacks=[lgb.early_stopping(1), lgb.record_evaluation(eval_result)]
+        )
     if use_valid:
         bst = train_fn()
         assert bst.best_iteration == 1
