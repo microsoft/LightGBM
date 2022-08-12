@@ -158,6 +158,22 @@ class GBDT : public GBDTBase {
   int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
 
   /*!
+  * \brief Get parameters as a JSON string
+  */
+  std::string GetParameters() const override {
+    std::stringstream str_buf;
+    auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
+    for (auto line : lines) {
+      auto pair = Common::Split(line.c_str(), "[:]");
+      if (pair[1] != " ") {
+        str_buf << pair[0] << "=" << Common::Trim(pair[1]) << "\n";
+      }
+    }
+    auto map = Config::Str2Map(str_buf.str().c_str());
+    return Json(map).dump();
+  }
+
+  /*!
   * \brief Can use early stopping for prediction or not
   * \return True if cannot use early stopping for prediction
   */
