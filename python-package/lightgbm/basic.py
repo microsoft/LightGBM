@@ -156,7 +156,7 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def is_numeric(obj: Any) -> bool:
+def _is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
         float(obj)
@@ -189,7 +189,7 @@ def cast_numpy_array_to_dtype(array, dtype):
 
 def is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
-    return isinstance(data, list) and (not data or is_numeric(data[0]))
+    return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
 
 def _is_1d_collection(data: Any) -> bool:
@@ -317,7 +317,7 @@ def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
                 else:
                     return str(x)
             pairs.append(f"{key}={','.join(map(to_string, val))}")
-        elif isinstance(val, (str, Path, _NUMERIC_TYPES)) or is_numeric(val):
+        elif isinstance(val, (str, Path, _NUMERIC_TYPES)) or _is_numeric(val):
             pairs.append(f"{key}={val}")
         elif val is not None:
             raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
