@@ -539,7 +539,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
       str_buf << "if (!std::isnan(fval)) {";
     }
   } else {
-    str_buf << "if (fval <= " << threshold_[node] << "{";
+    str_buf << "if (fval <= " << threshold_[node] << ") {";
   }
   return str_buf.str();
 }
