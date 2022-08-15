@@ -63,6 +63,11 @@ LIGHTGBM_C_EXPORT int LGBM_DumpParamAliases(int64_t buffer_len,
                                             int64_t* out_len,
                                             char* out_str);
 
+
+LIGHTGBM_C_EXPORT int LGBM_DumpParameterTypes(int64_t buffer_len,
+                                              int64_t* out_len,
+                                              char* out_str);
+
 /*!
  * \brief Register a callback function for log redirecting.
  * \param callback The callback function to register

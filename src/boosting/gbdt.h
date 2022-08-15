@@ -161,6 +161,9 @@ class GBDT : public GBDTBase {
   * \brief Get parameters as a JSON string
   */
   std::string GetParameters() const override {
+    if (loaded_parameter_.empty()) {
+      return std::string("{}");
+    }
     std::stringstream str_buf;
     auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
     for (auto line : lines) {

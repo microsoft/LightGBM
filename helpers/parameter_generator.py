@@ -6,6 +6,7 @@ with list of all parameters, aliases table and other routines
 along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -373,6 +374,30 @@ def gen_parameter_code(
 }
 
 """
+    str_to_write += """const std::string Config::ParameterTypes() {
+  std::stringstream str_buf;
+  str_buf << "{";"""
+    int_t_pat = re.compile(r'int\d+_t')
+    first = True
+    for x in infos:
+        for y in x:
+            if "[doc-only]" in y:
+                continue
+            param_type = int_t_pat.sub('int', y["inner_type"][0]).replace('std::', '')
+            name = y["name"][0]
+            prefix = f'\n  str_buf << "'
+            if first:
+                first = False
+            else:
+                prefix += ','
+            str_to_write += f'{prefix}\\"{name}\\": \\"{param_type}\\"";'
+    str_to_write += """
+  str_buf << "}";
+  return str_buf.str();
+}
+
+"""
+
     str_to_write += "}  // namespace LightGBM\n"
     with open(config_out_cpp, "w") as config_out_cpp_file:
         config_out_cpp_file.write(str_to_write)
