@@ -528,7 +528,7 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   }
   if (missing_type == MissingType::Zero) {
     if (default_left) {
-      str_buf << "if (Tree::isZero(fval)) {";
+      str_buf << "if (Tree::IsZero(fval)) {";
     } else {
       str_buf << "if (!Tree::IsZero(fval)) {";
     }
