@@ -273,12 +273,12 @@ Predictor <- R6::R6Class(
           if (nrow(data) == 1L) {
 
             use_fast_config <- private$check_can_use_fast_predict_config(
-              FALSE
-              , rawscore
-              , predleaf
-              , predcontrib
-              , start_iteration
-              , num_iteration
+              csr = FALSE
+              , rawscore = rawscore
+              , predleaf = predleaf
+              , predcontrib = predcontrib
+              , start_iteration = start_iteration
+              , num_iteration = num_iteration
             )
 
             if (use_fast_config) {
@@ -382,12 +382,12 @@ Predictor <- R6::R6Class(
             if (length(self$fast_predict_config)) {
               ncols <- self$fast_predict_config$ncols
               use_fast_config <- private$check_can_use_fast_predict_config(
-                TRUE
-                , rawscore
-                , predleaf
-                , predcontrib
-                , start_iteration
-                , num_iteration
+                csr = TRUE
+                , rawscore = rawscore
+                , predleaf = predleaf
+                , predcontrib = predcontrib
+                , start_iteration = start_iteration
+                , num_iteration = num_iteration
               )
             } else {
               ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
@@ -521,7 +521,7 @@ Predictor <- R6::R6Class(
         return(FALSE)
       }
 
-      if (as.logical(csr) != self$fast_predict_config$csr) {
+      if (isTRUE(csr) != self$fast_predict_config$csr) {
         return(FALSE)
       }
 
