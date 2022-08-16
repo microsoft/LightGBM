@@ -23,8 +23,8 @@
 
                For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
                use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
-               `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
-               package `Matrix`).
+               \code{dgRMatrix} from package \code{Matrix}) or as a sparse numeric vector (class
+               \code{dsparseVector} from package \code{Matrix}).
 
                If single-row predictions are going to be performed frequently, it is recommended to
                pre-configure the model object for fast single-row sparse predictions through function

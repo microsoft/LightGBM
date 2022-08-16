@@ -58,7 +58,7 @@ valid values. Where these conflict with the values of keyword arguments to this 
 the values in \code{params} take precedence.}
 }
 \value{
-The same `model` that was passed as input, as invisible, with the desired
+The same \code{model} that was passed as input, invisibly, with the desired
         configuration stored inside it and available to be used in future calls to
         \link{predict.lgb.Booster}.
 }
@@ -79,7 +79,7 @@ Calling this function multiple times with different parameters might not overrid
 
          The configuration does not survive de-serializations, so it has to be generated
          anew in every R process that is going to use it (e.g. if loading a model object
-         through `readRDS`, whatever configuration was there previously will be lost).
+         through \code{readRDS}, whatever configuration was there previously will be lost).
 
          Requesting a different prediction type or passing parameters to \link{predict.lgb.Booster}
          will cause it to ignore the fast-predict configuration and take the slow route instead
@@ -90,14 +90,15 @@ Calling this function multiple times with different parameters might not overrid
 
          Note that, if configuring a non-default prediction type (such as leaf indices),
          then that type must also be passed in the call to \link{predict.lgb.Booster} in
-         order for it to use the configuration. This also applies for `start_iteration`
-         and `num_iteration`, but \bold{the `params` list must be empty} in the call to `predict`.
+         order for it to use the configuration. This also applies for \code{start_iteration}
+         and \code{num_iteration}, but \bold{the \code{params} list must be empty} in the call to \code{predict}.
 
          Predictions about feature contributions do not allow a fast route for CSR inputs,
-         and as such, this function will produce an error if passing `csr=TRUE` and
-         `predcontrib=TRUE` together.
+         and as such, this function will produce an error if passing \code{csr=TRUE} and
+         \code{type = "contrib"} together.
 }
 \examples{
+\donttest{
 library(lightgbm)
 data(mtcars)
 X <- as.matrix(mtcars[, -1L])
@@ -119,4 +120,5 @@ predict(model, x_single)
 # Will not use it if the prediction to be made
 # is different from what was configured
 predict(model, x_single, predleaf = TRUE)
+}
 }

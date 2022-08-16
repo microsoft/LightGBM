@@ -21,7 +21,8 @@ used to forcibly restore it beforehand. Note that the object will be modified in
 }
 \details{
 Be aware that fast single-row prediction configurations are not restored through this
-function - instead, they have to be generated anew with the desired parameters.
+function. If you wish to make fast single-row predictions using a \code{lgb.Booster} loaded this way,
+call \link{lgb.configure_fast_predict} on the loaded \code{lgb.Booster} object.
 }
 \examples{
 library(lightgbm)
