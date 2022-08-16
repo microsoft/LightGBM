@@ -37,7 +37,9 @@ If <= 0, all iterations from start_iteration are used (no limits).}
                   optimized (depending on the link function that the objective uses), after applying any necessary
                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
-                  probability. For other objectives, will output the same as "response".
+                  probability. For other objectives, will output the same as "response". Note that \code{"class"} is
+                  not a supported type for \link{lgb.configure_fast_predict} (see the documentation of that function
+                  for more details).
             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
                   results) from which the "response" number is produced for a given objective function - for example,
                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
@@ -71,11 +73,17 @@ Calling this function multiple times with different parameters might not overrid
          the previous configuration and might trigger undefined behavior.
 
          Any saved configuration for fast predictions might be lost after making a single-row
-         prediction of a different type than what was configured.
+         prediction of a different type than what was configured (except for types "response" and
+         "class", which can be switched between each other at any time without losing the configuration).
 
          In some situations, setting a fast prediction configuration for one type of prediction
          might cause the prediction function to keep using that configuration for single-row
          predictions even if the requested type of prediction is different from what was configured.
+
+         Note that this function will not accept argument \code{type="class"} - for such cases, one
+         can pass \code{type="response"} to this function and then \code{type="class"} to the
+         \code{predict} function - the fast configuration will not be lost or altered if the switch
+         is between "response" and "class".
 
          The configuration does not survive de-serializations, so it has to be generated
          anew in every R process that is going to use it (e.g. if loading a model object

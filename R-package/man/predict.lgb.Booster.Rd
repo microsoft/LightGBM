@@ -35,7 +35,9 @@
                   optimized (depending on the link function that the objective uses), after applying any necessary
                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
-                  probability. For other objectives, will output the same as "response".
+                  probability. For other objectives, will output the same as "response". Note that \code{"class"} is
+                  not a supported type for \link{lgb.configure_fast_predict} (see the documentation of that function
+                  for more details).
             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
                   results) from which the "response" number is produced for a given objective function - for example,
                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as

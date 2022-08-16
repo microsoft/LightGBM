@@ -504,11 +504,11 @@ Predictor <- R6::R6Class(
     , params = ""
     , fast_predict_config = list()
     , check_can_use_fast_predict_config = function(csr,
-                                                 rawscore,
-                                                 predleaf,
-                                                 predcontrib,
-                                                 start_iteration,
-                                                 num_iteration) {
+                                                   rawscore,
+                                                   predleaf,
+                                                   predcontrib,
+                                                   start_iteration,
+                                                   num_iteration) {
 
       if (!NROW(private$fast_predict_config)) {
         return(FALSE)
