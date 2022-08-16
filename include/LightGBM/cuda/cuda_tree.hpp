@@ -56,6 +56,27 @@ class CUDATree : public Tree {
     uint32_t* cuda_bitset_inner,
     size_t cuda_bitset_inner_len);
 
+  /*!
+  * \brief Adding prediction value of this tree model to scores
+  * \param data The dataset
+  * \param num_data Number of total data
+  * \param score Will add prediction to score
+  */
+  void AddPredictionToScore(const Dataset* data,
+                            data_size_t num_data,
+                            double* score) const override;
+
+  /*!
+  * \brief Adding prediction value of this tree model to scores
+  * \param data The dataset
+  * \param used_data_indices Indices of used data
+  * \param num_data Number of total data
+  * \param score Will add prediction to score
+  */
+  void AddPredictionToScore(const Dataset* data,
+                            const data_size_t* used_data_indices,
+                            data_size_t num_data, double* score) const override;
+
   const int* cuda_leaf_parent() const { return cuda_leaf_parent_; }
 
   const int* cuda_left_child() const { return cuda_left_child_; }
@@ -104,6 +125,10 @@ class CUDATree : public Tree {
     const CUDASplitInfo* cuda_split_info,
     size_t cuda_bitset_len,
     size_t cuda_bitset_inner_len);
+
+  void LaunchAddPredictionToScoreKernel(const Dataset* data,
+                                        const data_size_t* used_data_indices,
+                                        data_size_t num_data, double* score) const;
 
   void LaunchShrinkageKernel(const double rate);
 

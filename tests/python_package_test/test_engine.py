@@ -18,9 +18,11 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
-                    make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
+from .utils import (SERIALIZERS, dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
+                    softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -1070,6 +1072,69 @@ def test_cvbooster():
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)
     assert ret < 0.15
+
+
+def test_cvbooster_save_load(tmp_path):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    model_path_txt = str(tmp_path / 'lgb.model')
+
+    cvbooster.save_model(model_path_txt)
+    model_string = cvbooster.model_to_string()
+    del cvbooster
+
+    cvbooster_from_txt_file = lgb.CVBooster(model_file=model_path_txt)
+    cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
+    for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
+        assert best_iteration == cvbooster_loaded.best_iteration
+        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
+
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_cvbooster_picklable(serializer):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
+    del cvbooster
+
+    assert best_iteration == cvbooster_from_disk.best_iteration
+
+    preds_from_disk = cvbooster_from_disk.predict(X_test)
+    np.testing.assert_array_equal(preds, preds_from_disk)
 
 
 def test_feature_name():
@@ -2432,14 +2497,20 @@ def test_default_objective_and_metric():
     assert len(evals_result['valid_0']['l2']) == 5
 
 
-def test_multiclass_custom_objective():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
     def custom_obj(y_pred, ds):
         y_true = ds.get_label()
-        return sklearn_multiclass_custom_objective(y_true, y_pred)
+        weight = ds.get_weight()
+        grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
+        return grad, hess
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2)
     ds = lgb.Dataset(X, y)
+    if use_weight:
+        ds.set_weight(weight)
     params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
     builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
     builtin_obj_preds = builtin_obj_bst.predict(X)
@@ -2451,16 +2522,25 @@ def test_multiclass_custom_objective():
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
 
 
-def test_multiclass_custom_eval():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
     def custom_eval(y_pred, ds):
         y_true = ds.get_label()
-        return 'custom_logloss', log_loss(y_true, y_pred), False
+        weight = ds.get_weight()  # weight is None when not set
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
 
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=0)
+    weight = np.full_like(y, 2)
+    X_train, X_valid, y_train, y_valid, weight_train, weight_valid = train_test_split(
+        X, y, weight, test_size=0.2, random_state=0
+    )
     train_ds = lgb.Dataset(X_train, y_train)
     valid_ds = lgb.Dataset(X_valid, y_valid, reference=train_ds)
+    if use_weight:
+        train_ds.set_weight(weight_train)
+        valid_ds.set_weight(weight_valid)
     params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
     eval_result = {}
     bst = lgb.train(
@@ -3028,6 +3108,26 @@ def test_interaction_constraints():
     est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                           [1] + list(range(2, num_features))]),
                     train_data, num_boost_round=10)
+
+
+def test_linear_trees_num_threads():
+    # check that number of threads does not affect result
+    np.random.seed(0)
+    x = np.arange(0, 1000, 0.1)
+    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    x = x[:, np.newaxis]
+    lgb_train = lgb.Dataset(x, label=y)
+    params = {'verbose': -1,
+              'objective': 'regression',
+              'seed': 0,
+              'linear_tree': True,
+              'num_threads': 2}
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred1 = est.predict(x)
+    params["num_threads"] = 4
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred2 = est.predict(x)
+    np.testing.assert_allclose(pred1, pred2)
 
 
 def test_linear_trees(tmp_path):
@@ -3623,3 +3723,28 @@ def test_cegb_split_buffer_clean():
     predicts = model.predict(test_data)
     rmse = np.sqrt(mean_squared_error(test_y, predicts))
     assert rmse < 10.0
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+def test_validate_features():
+    X, y = make_synthetic_regression()
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    ds = lgb.Dataset(df, y)
+    bst = lgb.train({'num_leaves': 15, 'verbose': -1}, ds, num_boost_round=10)
+    assert bst.feature_name() == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x3': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x3' at position 2 but found 'z'"):
+        bst.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    bst.predict(df2, validate_features=False)
+
+    # try to refit with a different feature
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x3' at position 2 but found 'z'"):
+        bst.refit(df2, y, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    bst.refit(df2, y, validate_features=False)

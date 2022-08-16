@@ -118,10 +118,10 @@ class LinearTreeLearner: public SerialTreeLearner {
   /*! \brief map dataset to leaves */
   mutable std::vector<int> leaf_map_;
   /*! \brief temporary storage for calculating linear model coefficients */
-  mutable std::vector<std::vector<float>> XTHX_;
-  mutable std::vector<std::vector<float>> XTg_;
-  mutable std::vector<std::vector<std::vector<float>>> XTHX_by_thread_;
-  mutable std::vector<std::vector<std::vector<float>>> XTg_by_thread_;
+  mutable std::vector<std::vector<double>> XTHX_;
+  mutable std::vector<std::vector<double>> XTg_;
+  mutable std::vector<std::vector<std::vector<double>>> XTHX_by_thread_;
+  mutable std::vector<std::vector<std::vector<double>>> XTg_by_thread_;
 };
 
 }  // namespace LightGBM

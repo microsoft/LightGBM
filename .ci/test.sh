@@ -44,12 +44,12 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -y \
         -n $CONDA_ENV \
             doxygen \
-            rstcheck || exit -1
+            'rstcheck>=6.0.0' || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
@@ -118,18 +118,23 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    DEPENDENCIES="dask distributed"
+else
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
+fi
+
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask \
-    distributed \
+    ${DEPENDENCIES} \
     joblib \
     matplotlib \
     numpy \
     pandas \
     psutil \
     pytest \
-    scikit-learn \
-    scipy || exit -1
+    scikit-learn || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
 conda install -q -y -n $CONDA_ENV \

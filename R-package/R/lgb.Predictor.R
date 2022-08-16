@@ -228,9 +228,7 @@ Predictor <- R6::R6Class(
                        , "dsparseVector"
                        , "dgRMatrix"
                        , "dgCMatrix"
-                       , paste(class(data)
-                       , collapse = ", ")))
-
+                       , toString(class(data))))
         }
 
         if (NROW(row.names(data))) {

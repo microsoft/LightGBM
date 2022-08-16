@@ -2,6 +2,7 @@
 """Library with training routines of LightGBM."""
 import collections
 import copy
+import json
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -9,7 +10,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
+                    _LGBM_CustomObjectiveFunction, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomMetricFunction = Callable[
@@ -131,7 +133,7 @@ def train(
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'
@@ -270,9 +272,14 @@ def train(
 class CVBooster:
     """CVBooster in LightGBM.
 
-    Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
+    Auxiliary data structure to hold and redirect all boosters of ``cv()`` function.
     This class has the same methods as Booster class.
-    All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
+    All method calls, except for the following methods, are actually performed for underlying Boosters and
+    then all returned results are returned in a list.
+
+    - ``model_from_string()``
+    - ``model_to_string()``
+    - ``save_model()``
 
     Attributes
     ----------
@@ -282,21 +289,46 @@ class CVBooster:
         The best iteration of fitted model.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        model_file: Optional[Union[str, Path]] = None
+    ):
         """Initialize the CVBooster.
 
-        Generally, no need to instantiate manually.
+        Parameters
+        ----------
+        model_file : str, pathlib.Path or None, optional (default=None)
+            Path to the CVBooster model file.
         """
         self.boosters = []
         self.best_iteration = -1
 
-    def _append(self, booster):
+        if model_file is not None:
+            with open(model_file, "r") as file:
+                self._from_dict(json.load(file))
+
+    def _append(self, booster: Booster) -> None:
         """Add a booster to CVBooster."""
         self.boosters.append(booster)
 
-    def __getattr__(self, name):
+    def _from_dict(self, models: Dict[str, Any]) -> None:
+        """Load CVBooster from dict."""
+        self.best_iteration = models["best_iteration"]
+        self.boosters = []
+        for model_str in models["boosters"]:
+            self._append(Booster(model_str=model_str))
+
+    def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
+        """Serialize CVBooster to dict."""
+        models_str = []
+        for booster in self.boosters:
+            models_str.append(booster.model_to_string(num_iteration=num_iteration, start_iteration=start_iteration,
+                                                      importance_type=importance_type))
+        return {"boosters": models_str, "best_iteration": self.best_iteration}
+
+    def __getattr__(self, name: str) -> Callable[[Any, Any], List[Any]]:
         """Redirect methods call of CVBooster."""
-        def handler_function(*args, **kwargs):
+        def handler_function(*args: Any, **kwargs: Any) -> List[Any]:
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
@@ -304,9 +336,102 @@ class CVBooster:
             return ret
         return handler_function
 
+    def __getstate__(self) -> Dict[str, Any]:
+        return vars(self)
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        vars(self).update(state)
+
+    def model_from_string(self, model_str: str) -> "CVBooster":
+        """Load CVBooster from a string.
+
+        Parameters
+        ----------
+        model_str : str
+            Model will be loaded from this string.
+
+        Returns
+        -------
+        self : CVBooster
+            Loaded CVBooster object.
+        """
+        self._from_dict(json.loads(model_str))
+        return self
+
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
+        """Save CVBooster to JSON string.
+
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        str_repr : str
+            JSON string representation of CVBooster.
+        """
+        return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
+
+    def save_model(
+        self,
+        filename: Union[str, Path],
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> "CVBooster":
+        """Save CVBooster to a file as JSON text.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            Filename to save CVBooster.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        self : CVBooster
+            Returns self.
+        """
+        with open(filename, "w") as file:
+            json.dump(self._to_dict(num_iteration, start_iteration, importance_type), file)
+
+        return self
+
+
+def _make_n_folds(
+    full_data: Dataset,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
+    nfold: int,
+    params: Dict[str, Any],
+    seed: int,
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    stratified: bool = True,
+    shuffle: bool = True,
+    eval_train_metric: bool = False
+) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -365,7 +490,9 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(
+    raw_results: List[List[Tuple[str, str, float, bool]]]
+) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
     cvmap = collections.OrderedDict()
     metric_type = {}
@@ -512,7 +639,7 @@ def cv(
         params=params,
         default_value=None
     )
-    fobj = None
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = 'none'

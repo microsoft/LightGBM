@@ -1,9 +1,10 @@
 # coding: utf-8
+import numpy as np
 import pytest
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
+from lightgbm.compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, PANDAS_INSTALLED, pd_DataFrame
 
 if MATPLOTLIB_INSTALLED:
     import matplotlib
@@ -11,7 +12,7 @@ if MATPLOTLIB_INSTALLED:
 if GRAPHVIZ_INSTALLED:
     import graphviz
 
-from .utils import load_breast_cancer
+from .utils import load_breast_cancer, make_synthetic_regression
 
 
 @pytest.fixture(scope="module")
@@ -185,6 +186,129 @@ def test_create_tree_digraph(breast_cancer_split):
     assert '#ddffdd' in graph_body
     assert 'data' not in graph_body
     assert 'count' not in graph_body
+
+
+@pytest.mark.parametrize('use_missing', [True, False])
+@pytest.mark.parametrize('zero_as_missing', [True, False])
+def test_numeric_split_direction(use_missing, zero_as_missing):
+    if use_missing and zero_as_missing:
+        pytest.skip('use_missing and zero_as_missing both set to True')
+    X, y = make_synthetic_regression()
+    rng = np.random.RandomState(0)
+    zero_mask = rng.rand(X.shape[0]) < 0.05
+    X[zero_mask, :] = 0
+    if use_missing:
+        nan_mask = ~zero_mask & (rng.rand(X.shape[0]) < 0.1)
+        X[nan_mask, :] = np.nan
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 127,
+        'min_child_samples': 1,
+        'use_missing': use_missing,
+        'zero_as_missing': zero_as_missing,
+    }
+    bst = lgb.train(params, ds, num_boost_round=1)
+
+    case_with_zero = X[zero_mask][[0]]
+    expected_leaf_zero = bst.predict(case_with_zero, pred_leaf=True)[0]
+    node = bst.dump_model()['tree_info'][0]['tree_structure']
+    while 'decision_type' in node:
+        direction = lgb.plotting._determine_direction_for_numeric_split(
+            case_with_zero[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left']
+        )
+        node = node['left_child'] if direction == 'left' else node['right_child']
+    assert node['leaf_index'] == expected_leaf_zero
+
+    if use_missing:
+        case_with_nan = X[nan_mask][[0]]
+        expected_leaf_nan = bst.predict(case_with_nan, pred_leaf=True)[0]
+        node = bst.dump_model()['tree_info'][0]['tree_structure']
+        while 'decision_type' in node:
+            direction = lgb.plotting._determine_direction_for_numeric_split(
+                case_with_nan[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left']
+            )
+            node = node['left_child'] if direction == 'left' else node['right_child']
+        assert node['leaf_index'] == expected_leaf_nan
+        assert expected_leaf_zero != expected_leaf_nan
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
+def test_example_case_in_tree_digraph():
+    rng = np.random.RandomState(0)
+    x1 = rng.rand(100)
+    cat = rng.randint(1, 3, size=x1.size)
+    X = np.vstack([x1, cat]).T
+    y = x1 + 2 * cat
+    feature_name = ['x1', 'cat']
+    ds = lgb.Dataset(X, y, feature_name=feature_name, categorical_feature=['cat'])
+
+    num_round = 3
+    bst = lgb.train({'num_leaves': 7}, ds, num_boost_round=num_round)
+    mod = bst.dump_model()
+    example_case = X[[0]]
+    makes_categorical_splits = False
+    seen_indices = set()
+    for i in range(num_round):
+        graph = lgb.create_tree_digraph(bst, example_case=example_case, tree_index=i)
+        gbody = graph.body
+        node = mod['tree_info'][i]['tree_structure']
+        while 'decision_type' in node:  # iterate through the splits
+            split_index = node['split_index']
+
+            node_in_graph = [n for n in gbody if f'split{split_index}' in n and '->' not in n]
+            assert len(node_in_graph) == 1
+            seen_indices.add(gbody.index(node_in_graph[0]))
+
+            edge_to_node = [e for e in gbody if f'-> split{split_index}' in e]
+            if node['decision_type'] == '<=':
+                direction = lgb.plotting._determine_direction_for_numeric_split(
+                    example_case[0][node['split_feature']], node['threshold'], node['missing_type'], node['default_left'])
+            else:
+                makes_categorical_splits = True
+                direction = lgb.plotting._determine_direction_for_categorical_split(
+                    example_case[0][node['split_feature']], node['threshold']
+                )
+            node = node['left_child'] if direction == 'left' else node['right_child']
+            assert 'color=blue' in node_in_graph[0]
+            if edge_to_node:
+                assert len(edge_to_node) == 1
+                assert 'color=blue' in edge_to_node[0]
+                seen_indices.add(gbody.index(edge_to_node[0]))
+        # we're in a leaf now
+        leaf_index = node['leaf_index']
+        leaf_in_graph = [n for n in gbody if f'leaf{leaf_index}' in n and '->' not in n]
+        edge_to_leaf = [e for e in gbody if f'-> leaf{leaf_index}' in e]
+        assert len(leaf_in_graph) == 1
+        assert 'color=blue' in leaf_in_graph[0]
+        assert len(edge_to_leaf) == 1
+        assert 'color=blue' in edge_to_leaf[0]
+        seen_indices.update([gbody.index(leaf_in_graph[0]), gbody.index(edge_to_leaf[0])])
+
+        # check that the rest of the elements have black color
+        remaining_elements = [e for i, e in enumerate(graph.body) if i not in seen_indices and 'graph' not in e]
+        assert all('color=black' in e for e in remaining_elements)
+
+        # check that we got to the expected leaf
+        expected_leaf = bst.predict(example_case, start_iteration=i, num_iteration=1, pred_leaf=True)[0]
+        assert leaf_index == expected_leaf
+    assert makes_categorical_splits
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
+@pytest.mark.parametrize('input_type', ['array', 'dataframe'])
+def test_empty_example_case_on_tree_digraph_raises_error(input_type):
+    X, y = make_synthetic_regression()
+    if input_type == 'dataframe':
+        if not PANDAS_INSTALLED:
+            pytest.skip(reason='pandas is not installed')
+        X = pd_DataFrame(X)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.train({'num_leaves': 3}, ds, num_boost_round=1)
+    example_case = X[:0]
+    if input_type == 'dataframe':
+        example_case = pd_DataFrame(example_case)
+    with pytest.raises(ValueError, match='example_case must have a single row.'):
+        lgb.create_tree_digraph(bst, tree_index=0, example_case=example_case)
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason='matplotlib is not installed')

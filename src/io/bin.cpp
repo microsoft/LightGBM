@@ -719,4 +719,368 @@ namespace LightGBM {
     }
   }
 
+  template <>
+  const void* DenseBin<uint8_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int /*num_threads*/) const {
+    *is_sparse = false;
+    *bit_type = 8;
+    bin_iterator->clear();
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint16_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int /*num_threads*/) const {
+    *is_sparse = false;
+    *bit_type = 16;
+    bin_iterator->clear();
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint32_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int /*num_threads*/) const {
+    *is_sparse = false;
+    *bit_type = 32;
+    bin_iterator->clear();
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint8_t, true>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int /*num_threads*/) const {
+    *is_sparse = false;
+    *bit_type = 4;
+    bin_iterator->clear();
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint8_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = false;
+    *bit_type = 8;
+    *bin_iterator = nullptr;
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint16_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = false;
+    *bit_type = 16;
+    *bin_iterator = nullptr;
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint32_t, false>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = false;
+    *bit_type = 32;
+    *bin_iterator = nullptr;
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* DenseBin<uint8_t, true>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = false;
+    *bit_type = 4;
+    *bin_iterator = nullptr;
+    return reinterpret_cast<const void*>(data_.data());
+  }
+
+  template <>
+  const void* SparseBin<uint8_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const {
+    *is_sparse = true;
+    *bit_type = 8;
+    for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+      bin_iterator->emplace_back(new SparseBinIterator<uint8_t>(this, 0));
+    }
+    return nullptr;
+  }
+
+  template <>
+  const void* SparseBin<uint16_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const {
+    *is_sparse = true;
+    *bit_type = 16;
+    for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+      bin_iterator->emplace_back(new SparseBinIterator<uint16_t>(this, 0));
+    }
+    return nullptr;
+  }
+
+  template <>
+  const void* SparseBin<uint32_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    std::vector<BinIterator*>* bin_iterator,
+    const int num_threads) const {
+    *is_sparse = true;
+    *bit_type = 32;
+    for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
+      bin_iterator->emplace_back(new SparseBinIterator<uint32_t>(this, 0));
+    }
+    return nullptr;
+  }
+
+  template <>
+  const void* SparseBin<uint8_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = true;
+    *bit_type = 8;
+    *bin_iterator = new SparseBinIterator<uint8_t>(this, 0);
+    return nullptr;
+  }
+
+  template <>
+  const void* SparseBin<uint16_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = true;
+    *bit_type = 16;
+    *bin_iterator = new SparseBinIterator<uint16_t>(this, 0);
+    return nullptr;
+  }
+
+  template <>
+  const void* SparseBin<uint32_t>::GetColWiseData(
+    uint8_t* bit_type,
+    bool* is_sparse,
+    BinIterator** bin_iterator) const {
+    *is_sparse = true;
+    *bit_type = 32;
+    *bin_iterator = new SparseBinIterator<uint32_t>(this, 0);
+    return nullptr;
+  }
+
+  #ifdef USE_CUDA_EXP
+  template <>
+  const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
+      size_t* total_size,
+      bool* is_sparse,
+      const void** out_data_ptr,
+      uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = data_.data();
+    *bit_type = 8;
+    *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+    CHECK_EQ(*total_size, data_.size());
+    *is_sparse = false;
+    *out_data_ptr = nullptr;
+    *data_ptr_bit_type = 0;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValDenseBin<uint16_t>::GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint16_t* data_ptr = data_.data();
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);
+    *bit_type = 16;
+    *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+    CHECK_EQ(*total_size, data_.size());
+    *is_sparse = false;
+    *out_data_ptr = nullptr;
+    *data_ptr_bit_type = 0;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValDenseBin<uint32_t>::GetRowWiseData(uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint32_t* data_ptr = data_.data();
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_ptr);
+    *bit_type = 32;
+    *total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_feature_);
+    CHECK_EQ(*total_size, data_.size());
+    *is_sparse = false;
+    *out_data_ptr = nullptr;
+    *data_ptr_bit_type = 0;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint16_t, uint8_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = data_.data();
+    *bit_type = 8;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 16;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint16_t, uint16_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 16;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 16;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint16_t, uint32_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 32;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 16;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint32_t, uint8_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = data_.data();
+    *bit_type = 8;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 32;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint32_t, uint16_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 16;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 32;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint32_t, uint32_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 32;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 32;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint64_t, uint8_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = data_.data();
+    *bit_type = 8;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 64;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint64_t, uint16_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 16;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 64;
+    return to_return;
+  }
+
+  template <>
+  const void* MultiValSparseBin<uint64_t, uint32_t>::GetRowWiseData(
+    uint8_t* bit_type,
+    size_t* total_size,
+    bool* is_sparse,
+    const void** out_data_ptr,
+    uint8_t* data_ptr_bit_type) const {
+    const uint8_t* to_return = reinterpret_cast<const uint8_t*>(data_.data());
+    *bit_type = 32;
+    *total_size = data_.size();
+    *is_sparse = true;
+    *out_data_ptr = reinterpret_cast<const uint8_t*>(row_ptr_.data());
+    *data_ptr_bit_type = 64;
+    return to_return;
+  }
+
+  #endif  // USE_CUDA_EXP
+
 }  // namespace LightGBM

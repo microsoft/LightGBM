@@ -34,8 +34,9 @@ LINTERS_TO_USE <- list(
     , "any_is_na"            = lintr::any_is_na_linter()
     , "assignment"           = lintr::assignment_linter()
     , "braces"               = lintr::brace_linter()
-    , "class_equals_linter"  = lintr::class_equals_linter()
+    , "class_equals"         = lintr::class_equals_linter()
     , "commas"               = lintr::commas_linter()
+    , "duplicate_argument"   = lintr::duplicate_argument_linter()
     , "equals_na"            = lintr::equals_na_linter()
     , "function_left"        = lintr::function_left_parentheses_linter()
     , "implicit_integers"    = lintr::implicit_integer_linter()
@@ -49,6 +50,7 @@ LINTERS_TO_USE <- list(
     , "numeric_leading_zero" = lintr::numeric_leading_zero_linter()
     , "outer_negation"       = lintr::outer_negation_linter()
     , "package_hooks"        = lintr::package_hooks_linter()
+    , "paste"                = lintr::paste_linter()
     , "regex_subset"         = lintr::regex_subset_linter()
     , "semicolon"            = lintr::semicolon_linter()
     , "seq"                  = lintr::seq_linter()
@@ -56,12 +58,11 @@ LINTERS_TO_USE <- list(
     , "spaces_inside"        = lintr::spaces_inside_linter()
     , "spaces_left_parens"   = lintr::spaces_left_parentheses_linter()
     , "sprintf"              = lintr::sprintf_linter()
+    , "string_boundary"      = lintr::string_boundary_linter()
     , "todo_comments"        = lintr::todo_comment_linter(c("todo", "fixme", "to-do"))
     , "trailing_blank"       = lintr::trailing_blank_lines_linter()
     , "trailing_white"       = lintr::trailing_whitespace_linter()
     , "true_false"           = lintr::T_and_F_symbol_linter()
-    , "unreachable_code"     = lintr::unreachable_code_linter()
-    , "vector_logic"         = lintr::vector_logic_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
             "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
@@ -95,6 +96,8 @@ LINTERS_TO_USE <- list(
         )
     )
     , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
+    , "unreachable_code"       = lintr::unreachable_code_linter()
+    , "vector_logic"           = lintr::vector_logic_linter()
 )
 
 noquote(paste0(length(FILES_TO_LINT), " R files need linting"))

@@ -9,9 +9,7 @@ lgb.configure_fast_predict(
   csr = FALSE,
   start_iteration = NULL,
   num_iteration = NULL,
-  rawscore = FALSE,
-  predleaf = FALSE,
-  predcontrib = FALSE,
+  type = "response",
   params = list()
 )
 }
@@ -34,13 +32,24 @@ If None, if the best iteration exists and start_iteration is None or <= 0, the
 best iteration is used; otherwise, all iterations from start_iteration are used.
 If <= 0, all iterations from start_iteration are used (no limits).}
 
-\item{rawscore}{whether the prediction should be returned in the for of original untransformed
-sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-for logistic regression would result in predictions for log-odds instead of probabilities.}
+\item{type}{Type of prediction to output. Allowed types are:\itemize{
+            \item \code{"response"}: will output the predicted score according to the objective function being
+                  optimized (depending on the link function that the objective uses), after applying any necessary
+                  transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+            \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+                  probability. For other objectives, will output the same as "response".
+            \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+                  results) from which the "response" number is produced for a given objective function - for example,
+                  for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+                  "regression", since no transformation is applied, the output will be the same as for "response".
+            \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+                  in each tree in the model, outputted as integers, with one column per tree.
+            \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+                  intercept (each feature will produce one column).
+            }
 
-\item{predleaf}{whether predict leaf index instead.}
-
-\item{predcontrib}{return per-feature contributions for each record.}
+            Note that, if using custom objectives, types "class" and "response" will not be available and will
+            default towards using "raw" instead.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
