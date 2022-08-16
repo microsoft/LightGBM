@@ -6,6 +6,7 @@ import json
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
+from enum import Enum
 from functools import lru_cache, wraps
 from os import SEEK_END, environ
 from os.path import getsize
@@ -22,6 +23,10 @@ from .libpath import find_lib_path
 ZERO_THRESHOLD = 1e-35
 
 
+def _is_zero(x: float) -> bool:
+    return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
+
+
 def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
@@ -30,6 +35,12 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
         ctypes.byref(sample_cnt),
     ))
     return sample_cnt.value
+
+
+class _MissingType(Enum):
+    NONE = 'None'
+    NAN = 'NaN'
+    ZERO = 'Zero'
 
 
 class _DummyLogger:
@@ -145,7 +156,7 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def is_numeric(obj: Any) -> bool:
+def _is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
         float(obj)
@@ -178,7 +189,7 @@ def cast_numpy_array_to_dtype(array, dtype):
 
 def is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
-    return isinstance(data, list) and (not data or is_numeric(data[0]))
+    return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
 
 def _is_1d_collection(data: Any) -> bool:
@@ -306,7 +317,7 @@ def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
                 else:
                     return str(x)
             pairs.append(f"{key}={','.join(map(to_string, val))}")
-        elif isinstance(val, (str, Path, _NUMERIC_TYPES)) or is_numeric(val):
+        elif isinstance(val, (str, Path, _NUMERIC_TYPES)) or _is_numeric(val):
             pairs.append(f"{key}={val}")
         elif val is not None:
             raise TypeError(f'Unknown type of parameter:{key}, got:{type(val).__name__}')
@@ -735,7 +746,12 @@ class _InnerPredictor:
         Can be converted from Booster, but cannot be converted to Booster.
     """
 
-    def __init__(self, model_file=None, booster_handle=None, pred_parameter=None):
+    def __init__(
+        self,
+        model_file: Optional[Union[str, Path]] = None,
+        booster_handle: Optional[ctypes.c_void_p] = None,
+        pred_parameter: Optional[Dict[str, Any]] = None
+    ):
         """Initialize the _InnerPredictor.
 
         Parameters
@@ -786,7 +802,7 @@ class _InnerPredictor:
         except AttributeError:
             pass
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
         this.pop('handle', None)
         return this
@@ -3844,7 +3860,10 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def _to_predictor(self, pred_parameter=None):
+    def _to_predictor(
+        self,
+        pred_parameter: Optional[Dict[str, Any]] = None
+    ) -> _InnerPredictor:
         """Convert to predictor."""
         predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
         predictor.pandas_categorical = self.pandas_categorical
@@ -3939,7 +3958,12 @@ class Booster:
         else:
             return result
 
-    def get_split_value_histogram(self, feature, bins=None, xgboost_style=False):
+    def get_split_value_histogram(
+        self,
+        feature: Union[int, str],
+        bins: Optional[Union[int, str]] = None,
+        xgboost_style: bool = False
+    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray, pd_DataFrame]:
         """Get split value histogram for the specified feature.
 
         Parameters
