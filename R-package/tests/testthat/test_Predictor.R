@@ -606,15 +606,15 @@ test_that("Fast-predict configuration accepts non-default prediction types", {
     x1 <- X[1L, , drop = FALSE]
     x11 <- X[11L, , drop = FALSE]
 
-    pred_all <- predict(model, X, predleaf = TRUE)
-    pred1_wo_config <- predict(model, x1, predleaf = TRUE)
-    pred11_wo_config <- predict(model, x11, predleaf = TRUE)
+    pred_all <- predict(model, X, type = "leaf")
+    pred1_wo_config <- predict(model, x1, type = "leaf")
+    pred11_wo_config <- predict(model, x11, type = "leaf")
     expect_equal(pred1_wo_config, pred_all[1L, , drop = FALSE])
     expect_equal(pred11_wo_config, pred_all[11L, , drop = FALSE])
 
-    lgb.configure_fast_predict(model, predleaf = TRUE)
-    pred1_w_config <- predict(model, x1, predleaf = TRUE)
-    pred11_w_config <- predict(model, x11, predleaf = TRUE)
+    lgb.configure_fast_predict(model, type = "leaf")
+    pred1_w_config <- predict(model, x1, type = "leaf")
+    pred11_w_config <- predict(model, x11, type = "leaf")
     expect_equal(pred1_w_config, pred_all[1L, , drop = FALSE])
     expect_equal(pred11_w_config, pred_all[11L, , drop = FALSE])
 })
@@ -637,13 +637,13 @@ test_that("Fast-predict configuration does not block other prediction types", {
     x11 <- X[11L, , drop = FALSE]
 
     pred_all <- predict(model, X)
-    pred_all_leaf <- predict(model, X, predleaf = TRUE)
+    pred_all_leaf <- predict(model, X, type = "leaf")
 
     lgb.configure_fast_predict(model)
     pred1_w_config <- predict(model, x1)
     pred11_w_config <- predict(model, x11)
-    pred1_leaf_w_config <- predict(model, x1, predleaf = TRUE)
-    pred11_leaf_w_config <- predict(model, x11, predleaf = TRUE)
+    pred1_leaf_w_config <- predict(model, x1, type = "leaf")
+    pred11_leaf_w_config <- predict(model, x11, type = "leaf")
 
     expect_equal(pred1_w_config, pred_all[1L])
     expect_equal(pred11_w_config, pred_all[11L])
