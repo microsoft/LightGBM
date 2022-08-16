@@ -948,7 +948,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          Predictions about feature contributions do not allow a fast route for CSR inputs,
 #'          and as such, this function will produce an error if passing `csr=TRUE` and
-#'          `predcontrib=TRUE` together.
+#'          \code{predcontrib = TRUE} together.
 #' @inheritParams lgb_predict_shared_params
 #' @param model LighGBM model object (class \code{lgb.Booster}).
 #'
