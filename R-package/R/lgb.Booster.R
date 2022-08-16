@@ -1015,7 +1015,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          Note that, if configuring a non-default prediction type (such as leaf indices),
 #'          then that type must also be passed in the call to \link{predict.lgb.Booster} in
-#'          order for it to use the configuration. This also applies for `start_iteration`
+#'          order for it to use the configuration. This also applies for \code{start_iteration}
 #'          and \code{num_iteration|, but \bold{the \code{params} list must be empty} in the call to \code{predict}.
 #'
 #'          Predictions about feature contributions do not allow a fast route for CSR inputs,
