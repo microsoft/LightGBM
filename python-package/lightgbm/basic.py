@@ -2829,7 +2829,7 @@ class Booster:
                 ptr_string_buffer))
         params = json.loads(ptr_string_buffer.value.decode('utf-8'))
         ptypes = _get_param_types()
-        types_dict = {'string': str, 'int': int, 'double': float, 'bool': bool}
+        types_dict = {'string': str, 'int': int, 'double': float, 'bool': lambda x: x == '1'}
 
         def parse_param(value: str, type_name: str) -> Union[Any, List[Any]]:
             if 'vector' in type_name:
