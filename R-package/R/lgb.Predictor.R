@@ -517,7 +517,8 @@ Predictor <- R6::R6Class(
       }
 
       if (lgb.is.null.handle(self$fast_predict_config$handle)) {
-        warning("Model had fast CSR predict configuration, but it is inactive.")
+        warning(paste0("Model had fast CSR predict configuration, but it is inactive."
+                       , " Try re-generating it through 'lgb.configure_fast_predict'."))
         return(FALSE)
       }
 
