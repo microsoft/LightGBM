@@ -1102,6 +1102,25 @@ def test_feature_name_with_non_ascii():
     assert feature_names == gbm2.feature_name()
 
 
+def test_parameters_are_loaded_from_model_file(tmp_path):
+    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
+    y = np.random.rand(100)
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 5,
+        'bagging_fraction': 0.8,
+        'bagging_freq': 2,
+        'feature_fraction': 0.7,
+        'force_col_wise': True,
+        'num_threads': 1,
+    }
+    model_file = tmp_path / 'model.txt'
+    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    bst = lgb.Booster(model_file=model_file)
+    assert all(bst.params[k] == params[k] for k in params)  # bst.params has all parameters
+    assert bst.params['categorical_feature'] == [1, 2]
+
+
 def test_save_load_copy_pickle():
     def train_and_predict(init_model=None, return_model=False):
         X, y = make_synthetic_regression()

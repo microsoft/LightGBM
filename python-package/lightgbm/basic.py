@@ -6,7 +6,7 @@ import json
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
-from functools import wraps
+from functools import lru_cache, wraps
 from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
@@ -442,6 +442,30 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     params[main_param_name] = default_value
 
     return params
+
+
+@lru_cache
+def _get_param_types() -> Dict[str, str]:
+    buffer_len = 1 << 20
+    tmp_out_len = ctypes.c_int64(0)
+    string_buffer = ctypes.create_string_buffer(buffer_len)
+    ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+    _safe_call(_LIB.LGBM_DumpParameterTypes(
+        ctypes.c_int64(buffer_len),
+        ctypes.byref(tmp_out_len),
+        ptr_string_buffer))
+    actual_len = tmp_out_len.value
+    # if buffer length is not long enough, re-allocate a buffer
+    if actual_len > buffer_len:
+        string_buffer = ctypes.create_string_buffer(actual_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParameterTypes(
+            ctypes.c_int64(actual_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+    res = json.loads(ptr_string_buffer.value.decode('utf-8'))
+    res['categorical_feature'] = 'vector<int>'
+    return res
 
 
 MAX_INT32 = (1 << 31) - 1
@@ -2722,6 +2746,8 @@ class Booster:
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
+        if model_file is not None or model_str is not None:
+            params = self._get_params()
         self.params = params
 
     def __del__(self) -> None:
@@ -2765,27 +2791,6 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def _get_param_types(self) -> Dict[str, Any]:
-        buffer_len = 1 << 20
-        tmp_out_len = ctypes.c_int64(0)
-        string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_DumpParameterTypes(
-            ctypes.c_int64(buffer_len),
-            ctypes.byref(tmp_out_len),
-            ptr_string_buffer))
-        actual_len = tmp_out_len.value
-        # if buffer length is not long enough, re-allocate a buffer
-        if actual_len > buffer_len:
-            string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-            _safe_call(_LIB.LGBM_DumpParameterTypes(
-                ctypes.c_int64(actual_len),
-                ctypes.byref(tmp_out_len),
-                ptr_string_buffer))
-        return json.loads(ptr_string_buffer.value.decode('utf-8'))
-
-
     def _get_params(self) -> Dict[str, Any]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
@@ -2807,7 +2812,7 @@ class Booster:
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
         params = json.loads(ptr_string_buffer.value.decode('utf-8'))
-        ptypes = self._get_param_types()
+        ptypes = _get_param_types()
         types_dict = {'string': str, 'int': int, 'double': float, 'bool': bool}
 
         def parse_param(value: str, type_name: str) -> Union[Any, List[Any]]:
