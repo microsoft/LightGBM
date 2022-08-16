@@ -523,7 +523,7 @@ Predictor <- R6::R6Class(
         return(FALSE)
       }
 
-      if (as.logical(csr) != self$fast_predict_config$csr) {
+      if (isTRUE(csr) != self$fast_predict_config$csr) {
         return(FALSE)
       }
 
