@@ -1004,7 +1004,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          The configuration does not survive de-serializations, so it has to be generated
 #'          anew in every R process that is going to use it (e.g. if loading a model object
-#'          through `readRDS`, whatever configuration was there previously will be lost).
+#'          through \code{readRDS}, whatever configuration was there previously will be lost).
 #'
 #'          Requesting a different prediction type or passing parameters to \link{predict.lgb.Booster}
 #'          will cause it to ignore the fast-predict configuration and take the slow route instead
