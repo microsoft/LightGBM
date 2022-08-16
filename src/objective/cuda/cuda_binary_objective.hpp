@@ -14,10 +14,11 @@
 #define NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY (6)
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
-#include "../binary_objective.hpp"
 
 #include <string>
 #include <vector>
+
+#include "../binary_objective.hpp"
 
 namespace LightGBM {
 
