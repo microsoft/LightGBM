@@ -7,7 +7,7 @@ on:
 jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
-    timeout-minutes: 240
+    timeout-minutes: 300
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:

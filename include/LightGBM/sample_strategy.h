@@ -6,6 +6,7 @@
 #ifndef LIGHTGBM_SAMPLE_STRATEGY_H_
 #define LIGHTGBM_SAMPLE_STRATEGY_H_
 
+#include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/threading.h>
@@ -37,6 +38,10 @@ class SampleStrategy {
 
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() { return bag_data_indices_; }
 
+  #ifdef USE_CUDA_EXP
+  CUDAVector<data_size_t>& cuda_bag_data_indices() { return cuda_bag_data_indices_; }
+  #endif  // USE_CUDA_EXP
+
   void UpdateObjectiveFunction(const ObjectiveFunction* objective_function) {
     objective_function_ = objective_function;
   }
@@ -66,6 +71,11 @@ class SampleStrategy {
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   /*! \brief whether need to resize the gradient vectors */
   bool need_resize_gradients_;
+
+  #ifdef USE_CUDA_EXP
+  /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda_exp */
+  CUDAVector<data_size_t> cuda_bag_data_indices_;
+  #endif  // USE_CUDA_EXP
 };
 
 }  // namespace LightGBM

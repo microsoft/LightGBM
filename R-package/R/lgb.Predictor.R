@@ -1,4 +1,5 @@
-#' @importFrom methods is
+#' @importFrom methods is new
+#' @importClassesFrom Matrix dsparseMatrix dsparseVector dgCMatrix dgRMatrix
 #' @importFrom R6 R6Class
 #' @importFrom utils read.delim
 Predictor <- R6::R6Class(
@@ -125,6 +126,111 @@ Predictor <- R6::R6Class(
         preds <- utils::read.delim(tmp_filename, header = FALSE, sep = "\t")
         num_row <- nrow(preds)
         preds <- as.vector(t(preds))
+
+      } else if (predcontrib && inherits(data, c("dsparseMatrix", "dsparseVector"))) {
+
+        ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
+        ncols_out <- integer(1L)
+        .Call(LGBM_BoosterGetNumClasses_R, private$handle, ncols_out)
+        ncols_out <- (ncols + 1L) * max(ncols_out, 1L)
+        if (is.na(ncols_out)) {
+          ncols_out <- as.numeric(ncols + 1L) * as.numeric(max(ncols_out, 1L))
+        }
+        if (!inherits(data, "dsparseVector") && ncols_out > .Machine$integer.max) {
+          stop("Resulting matrix of feature contributions is too large for R to handle.")
+        }
+
+        if (inherits(data, "dsparseVector")) {
+
+          if (length(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , length(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , c(0L, as.integer(length(data@x)))
+            , data@i - 1L
+            , data@x
+            , TRUE
+            , 1L
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dsparseVector")
+          out@i <- res$indices + 1L
+          out@x <- res$data
+          out@length <- ncols_out
+          return(out)
+
+        } else if (inherits(data, "dgRMatrix")) {
+
+          if (ncol(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , ncol(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , data@p
+            , data@j
+            , data@x
+            , TRUE
+            , nrow(data)
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dgRMatrix")
+          out@p <- res$indptr
+          out@j <- res$indices
+          out@x <- res$data
+          out@Dim <- as.integer(c(nrow(data), ncols_out))
+
+        } else if (inherits(data, "dgCMatrix")) {
+
+          if (ncol(data) != ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , ncol(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , data@p
+            , data@i
+            , data@x
+            , FALSE
+            , nrow(data)
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dgCMatrix")
+          out@p <- res$indptr
+          out@i <- res$indices
+          out@x <- res$data
+          out@Dim <- as.integer(c(nrow(data), length(res$indptr) - 1L))
+
+        } else {
+
+          stop(sprintf("Predictions on sparse inputs are only allowed for '%s', '%s', '%s' - got: %s"
+                       , "dsparseVector"
+                       , "dgRMatrix"
+                       , "dgCMatrix"
+                       , toString(class(data))))
+        }
+
+        if (NROW(row.names(data))) {
+          out@Dimnames[[1L]] <- row.names(data)
+        }
+        return(out)
 
       } else {
 

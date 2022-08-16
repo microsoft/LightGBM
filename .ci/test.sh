@@ -44,12 +44,12 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -y \
         -n $CONDA_ENV \
             doxygen \
-            rstcheck || exit -1
+            'rstcheck>=6.0.0' || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
@@ -75,7 +75,7 @@ if [[ $TASK == "lint" ]]; then
         mypy \
         pycodestyle \
         pydocstyle \
-        "r-lintr>=2.0"
+        "r-lintr>=3.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -118,18 +118,23 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    DEPENDENCIES="dask distributed"
+else
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
+fi
+
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask \
-    distributed \
+    ${DEPENDENCIES} \
     joblib \
     matplotlib \
     numpy \
     pandas \
     psutil \
     pytest \
-    scikit-learn \
-    scipy || exit -1
+    scikit-learn || exit -1
 
 # python-graphviz has to be installed separately to prevent conda from downgrading to pypy
 conda install -q -y -n $CONDA_ENV \
@@ -179,16 +184,16 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu --opencl-include-dir="$AMDAPPSDK_PATH/include/" || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+        cmake -DUSE_GPU=ON ..
     fi
 elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
     if [[ $TASK == "cuda" ]]; then

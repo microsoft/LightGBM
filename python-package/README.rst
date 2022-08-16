@@ -123,7 +123,9 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 **CUDA** library (version 9.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
 
-Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``--cuda`` with ``--cuda-exp`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries.
+Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``--cuda`` with ``--cuda-exp`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries. Note that this new version uses twice the memory, since it stores data row-wise as well as column-wise in memory to improve performance (see this `issue <https://github.com/microsoft/LightGBM/issues/5318>`__ for discussion). 
+
+To use the regular or experimental CUDA versions within Python, pass ``{"device": "cuda"}`` or ``{"device": "cuda_exp"}`` respectively as parameters.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~

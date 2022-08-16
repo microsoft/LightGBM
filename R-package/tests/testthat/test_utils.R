@@ -29,7 +29,7 @@ test_that("lgb.params2str() passes through duplicated params", {
         params = list(
             objective = "regression"
             , bagging_fraction = 0.8
-            , bagging_fraction = 0.5
+            , bagging_fraction = 0.5  # nolint: duplicate_argument
         )
     )
     expect_equal(out_str, "objective=regression bagging_fraction=0.8 bagging_fraction=0.5")
@@ -123,7 +123,7 @@ test_that("lgb.check.wrapper_param() prefers alias to keyword arg", {
     expect_equal(params[["num_iterations"]], num_tree)
     expect_identical(params, list(num_iterations = num_tree))
 
-    # switching the order should switch which one is chosen
+    # switching the order shouldn't switch which one is chosen
     params2 <- lgb.check.wrapper_param(
         main_param_name = "num_iterations"
         , params = list(
@@ -132,6 +132,6 @@ test_that("lgb.check.wrapper_param() prefers alias to keyword arg", {
         )
         , alternative_kwarg_value = kwarg_val
     )
-    expect_equal(params2[["num_iterations"]], n_estimators)
-    expect_identical(params2, list(num_iterations = n_estimators))
+    expect_equal(params2[["num_iterations"]], num_tree)
+    expect_identical(params2, list(num_iterations = num_tree))
 })

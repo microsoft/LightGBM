@@ -307,8 +307,6 @@ class CUDADataPartition {
   int grid_dim_;
   /*! \brief block dimension when splitting one leaf */
   int block_dim_;
-  /*! \brief add train score buffer in host */
-  mutable std::vector<double> add_train_score_;
   /*! \brief data indices used in this iteration */
   const data_size_t* used_indices_;
   /*! \brief marks whether a feature is a categorical feature */
@@ -375,10 +373,6 @@ class CUDADataPartition {
   // dataset information
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
-
-  // for train score update
-  /*! \brief added train score buffer in CUDA */
-  double* cuda_add_train_score_;
 
 
   // CUDA memory, held by other object

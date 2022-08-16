@@ -231,12 +231,24 @@ Booster <- R6::R6Class(
           private$set_objective_to_none <- TRUE
         }
         # Perform objective calculation
-        gpair <- fobj(private$inner_predict(1L), private$train_set)
+        preds <- private$inner_predict(1L)
+        gpair <- fobj(preds, private$train_set)
 
         # Check for gradient and hessian as list
         if (is.null(gpair$grad) || is.null(gpair$hess)) {
           stop("lgb.Booster.update: custom objective should
             return a list with attributes (hess, grad)")
+        }
+
+        # Check grad and hess have the right shape
+        n_grad <- length(gpair$grad)
+        n_hess <- length(gpair$hess)
+        n_preds <- length(preds)
+        if (n_grad != n_preds) {
+          stop(sprintf("Expected custom objective function to return grad with length %d, got %d.", n_preds, n_grad))
+        }
+        if (n_hess != n_preds) {
+          stop(sprintf("Expected custom objective function to return hess with length %d, got %d.", n_preds, n_hess))
         }
 
         # Return custom boosting gradient/hessian
@@ -245,7 +257,7 @@ Booster <- R6::R6Class(
           , private$handle
           , gpair$grad
           , gpair$hess
-          , length(gpair$grad)
+          , n_preds
         )
 
       }
@@ -742,6 +754,24 @@ Booster <- R6::R6Class(
 #' @param object Object of class \code{lgb.Booster}
 #' @param newdata a \code{matrix} object, a \code{dgCMatrix} object or
 #'                a character representing a path to a text file (CSV, TSV, or LibSVM)
+#' @param type Type of prediction to output. Allowed types are:\itemize{
+#'             \item \code{"response"}: will output the predicted score according to the objective function being
+#'                   optimized (depending on the link function that the objective uses), after applying any necessary
+#'                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+#'             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+#'                   probability. For other objectives, will output the same as "response".
+#'             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+#'                   results) from which the "response" number is produced for a given objective function - for example,
+#'                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+#'                   "regression", since no transformation is applied, the output will be the same as for "response".
+#'             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+#'                   in each tree in the model, outputted as integers, with one column per tree.
+#'             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+#'                   intercept (each feature will produce one column).
+#'             }
+#'
+#'             Note that, if using custom objectives, types "class" and "response" will not be available and will
+#'             default towards using "raw" instead.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -750,11 +780,6 @@ Booster <- R6::R6Class(
 #'                      If None, if the best iteration exists and start_iteration is None or <= 0, the
 #'                      best iteration is used; otherwise, all iterations from start_iteration are used.
 #'                      If <= 0, all iterations from start_iteration are used (no limits).
-#' @param rawscore whether the prediction should be returned in the for of original untransformed
-#'                 sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-#'                 for logistic regression would result in predictions for log-odds instead of probabilities.
-#' @param predleaf whether predict leaf index instead.
-#' @param predcontrib return per-feature contributions for each record.
 #' @param header only used for prediction for text file. True if text file has header
 #' @param params a list of additional named parameters. See
 #'               \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
@@ -762,11 +787,26 @@ Booster <- R6::R6Class(
 #'               valid values. Where these conflict with the values of keyword arguments to this function,
 #'               the values in \code{params} take precedence.
 #' @param ... ignored
-#' @return For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-#'         For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
+#' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
+#'         \code{type="response"} or \code{type="raw"} on a binary classification or regression objective), will
+#'         return a vector with one element per row in \code{newdata}.
 #'
-#'         When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
-#'         returned as a matrix.
+#'         For prediction types that are meant to return more than one output per observation (e.g. when predicting
+#'         \code{type="response"} or \code{type="raw"} on a multi-class objective, or when predicting
+#'         \code{type="leaf"}, regardless of objective), will return a matrix with one row per observation in
+#'         \code{newdata} and one column per output.
+#'
+#'         For \code{type="leaf"} predictions, will return a matrix with one row per observation in \code{newdata}
+#'         and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class at each
+#'         boosting iteration. That means that, for example, for a multiclass model with 3 classes, the leaf
+#'         predictions for the first class can be found in columns 1, 4, 7, 10, etc.
+#'
+#'         For \code{type="contrib"}, will return a matrix of SHAP values with one row per observation in
+#'         \code{newdata} and columns corresponding to features. For regression, ranking, cross-entropy, and binary
+#'         classification objectives, this matrix contains one column per feature plus a final column containing the
+#'         Shapley base value. For multiclass objectives, this matrix will represent \code{num_classes} such matrices,
+#'         in the order "feature contributions for first class, feature contributions for second class, feature
+#'         contributions for third class, etc.".
 #'
 #' @examples
 #' \donttest{
@@ -804,11 +844,9 @@ Booster <- R6::R6Class(
 #' @export
 predict.lgb.Booster <- function(object,
                                 newdata,
+                                type = "response",
                                 start_iteration = NULL,
                                 num_iteration = NULL,
-                                rawscore = FALSE,
-                                predleaf = FALSE,
-                                predcontrib = FALSE,
                                 header = FALSE,
                                 params = list(),
                                 ...) {
@@ -819,28 +857,65 @@ predict.lgb.Booster <- function(object,
 
   additional_params <- list(...)
   if (length(additional_params) > 0L) {
-    if ("reshape" %in% names(additional_params)) {
+    additional_params_names <- names(additional_params)
+    if ("reshape" %in% additional_params_names) {
       stop("'reshape' argument is no longer supported.")
     }
+
+    old_args_for_type <- list(
+      "rawscore" = "raw"
+      , "predleaf" = "leaf"
+      , "predcontrib" = "contrib"
+    )
+    for (arg in names(old_args_for_type)) {
+      if (arg %in% additional_params_names) {
+        stop(sprintf("Argument '%s' is no longer supported. Use type='%s' instead."
+                     , arg
+                     , old_args_for_type[[arg]]))
+      }
+    }
+
     warning(paste0(
       "predict.lgb.Booster: Found the following passed through '...': "
-      , paste(names(additional_params), collapse = ", ")
+      , toString(names(additional_params))
       , ". These are ignored. Use argument 'params' instead."
     ))
   }
 
-  return(
-    object$predict(
-      data = newdata
-      , start_iteration = start_iteration
-      , num_iteration = num_iteration
-      , rawscore = rawscore
-      , predleaf =  predleaf
-      , predcontrib =  predcontrib
-      , header = header
-      , params = params
-    )
+  if (!is.null(object$params$objective) && object$params$objective == "none" && type %in% c("class", "response")) {
+    warning("Prediction types 'class' and 'response' are not supported for custom objectives.")
+    type <- "raw"
+  }
+
+  rawscore <- FALSE
+  predleaf <- FALSE
+  predcontrib <- FALSE
+  if (type == "raw") {
+    rawscore <- TRUE
+  } else if (type == "leaf") {
+    predleaf <- TRUE
+  } else if (type == "contrib") {
+    predcontrib <- TRUE
+  }
+
+  pred <- object$predict(
+    data = newdata
+    , start_iteration = start_iteration
+    , num_iteration = num_iteration
+    , rawscore = rawscore
+    , predleaf =  predleaf
+    , predcontrib =  predcontrib
+    , header = header
+    , params = params
   )
+  if (type == "class") {
+    if (object$params$objective == "binary") {
+      pred <- as.integer(pred >= 0.5)
+    } else if (object$params$objective %in% c("multiclass", "multiclassova")) {
+      pred <- max.col(pred) - 1L
+    }
+  }
+  return(pred)
 }
 
 #' @name print.lgb.Booster
@@ -1131,7 +1206,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       "lgb.get.eval.result: data_name "
       , shQuote(data_name)
       , " not found. Only the following datasets exist in record evals: ["
-      , paste(data_names, collapse = ", ")
+      , toString(data_names)
       , "]"
     ))
   }
@@ -1145,7 +1220,7 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       , " not found. Only the following eval_names exist for dataset "
       , shQuote(data_name)
       , ": ["
-      , paste(eval_names, collapse = ", ")
+      , toString(eval_names)
       , "]"
     ))
     stop("lgb.get.eval.result: wrong eval name")

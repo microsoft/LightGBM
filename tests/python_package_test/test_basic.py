@@ -473,7 +473,8 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
+        "n_iter": 13,
     }
 
     # should resolve duplicate aliases, and prefer the main parameter
@@ -485,15 +486,16 @@ def test_choose_param_value():
     assert params["local_listen_port"] == 1234
     assert "port" not in params
 
-    # should choose a value from an alias and set that value on main param
-    # if only an alias is used
+    # should choose the highest priority alias and set that value on main param
+    # if only aliases are used
     params = lgb.basic._choose_param_value(
         main_param_name="num_iterations",
         params=params,
         default_value=17
     )
-    assert params["num_iterations"] == 81
+    assert params["num_iterations"] == 13
     assert "num_trees" not in params
+    assert "n_iter" not in params
 
     # should use the default if main param and aliases are missing
     params = lgb.basic._choose_param_value(
@@ -508,9 +510,46 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
+        "n_iter": 13,
     }
     assert original_params == expected_params
+
+
+def test_choose_param_value_preserves_nones():
+
+    # preserves None found for main param and still removes aliases
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "num_threads": None,
+            "n_jobs": 4,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # correctly chooses value when only an alias is provided
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "n_jobs": None,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # adds None if that's given as the default and param not found
+    params = lgb.basic._choose_param_value(
+        main_param_name="min_data_in_leaf",
+        params={
+            "objective": "regression"
+        },
+        default_value=None
+    )
+    assert params == {"objective": "regression", "min_data_in_leaf": None}
 
 
 @pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
@@ -608,10 +647,13 @@ def test_param_aliases():
     aliases = lgb.basic._ConfigAliases.aliases
     assert isinstance(aliases, dict)
     assert len(aliases) > 100
-    assert all(isinstance(i, set) for i in aliases.values())
+    assert all(isinstance(i, list) for i in aliases.values())
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
+    assert lgb.basic._ConfigAliases.get_sorted('min_data_in_leaf') == [
+        'min_data_in_leaf', 'min_data', 'min_samples_leaf', 'min_child_samples', 'min_data_per_leaf'
+    ]
 
 
 def _bad_gradients(preds, _):
