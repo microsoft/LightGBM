@@ -10,8 +10,6 @@ Booster <- R6::R6Class(
     params = list(),
     record_evals = list(),
 
-    fast_predict_config = list(),
-
     # Finalize will free up the handles
     finalize = function() {
       .Call(
@@ -532,7 +530,7 @@ Booster <- R6::R6Class(
       predictor <- Predictor$new(
         modelfile = private$handle
         , params = params
-        , fast_predict_config = self$fast_predict_config
+        , fast_predict_config = private$fast_predict_config
       )
       return(
         predictor$predict(
@@ -589,7 +587,7 @@ Booster <- R6::R6Class(
         , lgb.params2str(params = params)
       )
 
-      self$fast_predict_config <- list(
+      private$fast_predict_config <- list(
         handle = fast_handle
         , csr = as.logical(csr)
         , ncols = ncols
@@ -655,6 +653,7 @@ Booster <- R6::R6Class(
     higher_better_inner_eval = NULL,
     set_objective_to_none = FALSE,
     train_set_version = 0L,
+    fast_predict_config = list(),
     # Predict data
     inner_predict = function(idx) {
 
