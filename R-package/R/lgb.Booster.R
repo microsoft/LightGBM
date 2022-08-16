@@ -850,8 +850,8 @@ NULL
 #'
 #'                For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
 #'                use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
-#'                `dgRMatrix` from package `Matrix`) or as a sparse numeric vector (class `dsparseVector` from
-#'                package `Matrix`).
+#'                \code{dgRMatrix} from package \code{Matrix}) or as a sparse numeric vector (class
+#'                \code{dsparseVector} from package \code{Matrix}).
 #'
 #'                If single-row predictions are going to be performed frequently, it is recommended to
 #'                pre-configure the model object for fast single-row sparse predictions through function
@@ -1004,7 +1004,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          The configuration does not survive de-serializations, so it has to be generated
 #'          anew in every R process that is going to use it (e.g. if loading a model object
-#'          through `readRDS`, whatever configuration was there previously will be lost).
+#'          through \code{readRDS}, whatever configuration was there previously will be lost).
 #'
 #'          Requesting a different prediction type or passing parameters to \link{predict.lgb.Booster}
 #'          will cause it to ignore the fast-predict configuration and take the slow route instead
@@ -1015,12 +1015,12 @@ predict.lgb.Booster <- function(object,
 #'
 #'          Note that, if configuring a non-default prediction type (such as leaf indices),
 #'          then that type must also be passed in the call to \link{predict.lgb.Booster} in
-#'          order for it to use the configuration. This also applies for `start_iteration`
-#'          and `num_iteration`, but \bold{the `params` list must be empty} in the call to `predict`.
+#'          order for it to use the configuration. This also applies for \code{start_iteration}
+#'          and \code{num_iteration}, but \bold{the \code{params} list must be empty} in the call to \code{predict}.
 #'
 #'          Predictions about feature contributions do not allow a fast route for CSR inputs,
-#'          and as such, this function will produce an error if passing `csr=TRUE` and
-#'          \code{predcontrib = TRUE} together.
+#'          and as such, this function will produce an error if passing \code{csr=TRUE} and
+#'          \code{type = "contrib"} together.
 #' @inheritParams lgb_predict_shared_params
 #' @param model LighGBM model object (class \code{lgb.Booster}).
 #'
@@ -1095,7 +1095,7 @@ lgb.configure_fast_predict <- function(model,
 #' @description Show summary information about a LightGBM model object (same as \code{summary}).
 #' @param x Object of class \code{lgb.Booster}
 #' @param ... Not used
-#' @return The same input `x`, returned as invisible.
+#' @return The same input \code{x}, returned as invisible.
 #' @export
 print.lgb.Booster <- function(x, ...) {
   # nolint start
@@ -1144,7 +1144,7 @@ print.lgb.Booster <- function(x, ...) {
 #' @description Show summary information about a LightGBM model object (same as \code{print}).
 #' @param object Object of class \code{lgb.Booster}
 #' @param ... Not used
-#' @return The same input `object`, returned as invisible.
+#' @return The same input \code{object}, returned as invisible.
 #' @export
 summary.lgb.Booster <- function(object, ...) {
   print(object)
@@ -1155,7 +1155,7 @@ summary.lgb.Booster <- function(object, ...) {
 #' @description Load LightGBM takes in either a file path or model string.
 #'              If both are provided, Load will default to loading from file
 #' @param filename path of model file
-#' @param model_str a str containing the model (as a `character` or `raw` vector)
+#' @param model_str a str containing the model (as a \code{character} or \code{raw} vector)
 #'
 #' @return lgb.Booster
 #'
