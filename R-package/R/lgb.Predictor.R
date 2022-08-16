@@ -8,8 +8,6 @@ Predictor <- R6::R6Class(
   cloneable = FALSE,
   public = list(
 
-    fast_predict_config = list(),
-
     # Finalize will free up the handles
     finalize = function() {
 
@@ -59,7 +57,7 @@ Predictor <- R6::R6Class(
 
       }
 
-      self$fast_predict_config <- fast_predict_config
+      private$fast_predict_config <- fast_predict_config
 
       # Override class and store it
       class(handle) <- "lgb.Booster.handle"
@@ -284,7 +282,7 @@ Predictor <- R6::R6Class(
             if (use_fast_config) {
               .Call(
                 LGBM_BoosterPredictForMatSingleRowFast_R
-                , self$fast_predict_config$handle
+                , private$fast_predict_config$handle
                 , data
                 , preds
               )
@@ -504,6 +502,7 @@ Predictor <- R6::R6Class(
     handle = NULL
     , need_free_handle = FALSE
     , params = ""
+    , fast_predict_config = list()
     , check_can_use_fast_predict_config = function(csr,
                                                  rawscore,
                                                  predleaf,
@@ -511,27 +510,27 @@ Predictor <- R6::R6Class(
                                                  start_iteration,
                                                  num_iteration) {
 
-      if (!NROW(self$fast_predict_config)) {
+      if (!NROW(private$fast_predict_config)) {
         return(FALSE)
       }
 
-      if (lgb.is.null.handle(self$fast_predict_config$handle)) {
+      if (lgb.is.null.handle(private$fast_predict_config$handle)) {
         warning(paste0("Model had fast CSR predict configuration, but it is inactive."
                        , " Try re-generating it through 'lgb.configure_fast_predict'."))
         return(FALSE)
       }
 
-      if (isTRUE(csr) != self$fast_predict_config$csr) {
+      if (isTRUE(csr) != private$fast_predict_config$csr) {
         return(FALSE)
       }
 
       return(
         private$params == "" &&
-        self$fast_predict_config$rawscore == rawscore &&
-        self$fast_predict_config$predleaf == predleaf &&
-        self$fast_predict_config$predcontrib == predcontrib &&
-        lgb.equal.or.both.null(self$fast_predict_config$start_iteration, start_iteration) &&
-        lgb.equal.or.both.null(self$fast_predict_config$num_iteration, num_iteration)
+        private$fast_predict_config$rawscore == rawscore &&
+        private$fast_predict_config$predleaf == predleaf &&
+        private$fast_predict_config$predcontrib == predcontrib &&
+        lgb.equal.or.both.null(private$fast_predict_config$start_iteration, start_iteration) &&
+        lgb.equal.or.both.null(private$fast_predict_config$num_iteration, num_iteration)
       )
     }
   )
