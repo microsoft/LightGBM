@@ -1032,6 +1032,7 @@ predict.lgb.Booster <- function(object,
 #'         configuration stored inside it and available to be used in future calls to
 #'         \link{predict.lgb.Booster}.
 #' @examples
+#' \donttest{
 #' library(lightgbm)
 #' data(mtcars)
 #' X <- as.matrix(mtcars[, -1L])
@@ -1053,6 +1054,7 @@ predict.lgb.Booster <- function(object,
 #' # Will not use it if the prediction to be made
 #' # is different from what was configured
 #' predict(model, x_single, predleaf = TRUE)
+#' }
 #' @export
 lgb.configure_fast_predict <- function(model,
                                        csr = FALSE,
