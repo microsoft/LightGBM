@@ -8,6 +8,9 @@
 
 #include "cuda_binary_objective.hpp"
 
+#include <string>
+#include <vector>
+
 namespace LightGBM {
 
 CUDABinaryLogloss::CUDABinaryLogloss(const Config& config):

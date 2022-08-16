@@ -16,6 +16,9 @@
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 #include "../binary_objective.hpp"
 
+#include <string>
+#include <vector>
+
 namespace LightGBM {
 
 class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
