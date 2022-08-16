@@ -956,7 +956,7 @@ predict.lgb.Booster <- function(object,
 #' @param csr Whether the prediction function is going to be called on sparse CSR inputs.
 #'            If \code{FALSE}, will be assumed that predictions are going to be called on single-row
 #'            regular R matrices.
-#' @return The same `model` that was passed as input, as invisible, with the desired
+#' @return The same \code{model} that was passed as input, invisibly, with the desired
 #'         configuration stored inside it and available to be used in future calls to
 #'         \link{predict.lgb.Booster}.
 #' @examples
