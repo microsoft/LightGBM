@@ -10,6 +10,7 @@
 #include <LightGBM/sample_strategy.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 namespace LightGBM {
