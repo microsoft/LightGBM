@@ -508,7 +508,7 @@ class SparseBin : public Bin {
     fast_index_.shrink_to_fit();
   }
 
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
+  void SaveBinaryToFile(BinaryWriter* writer) const override {
     writer->AlignedWrite(&num_vals_, sizeof(num_vals_));
     writer->AlignedWrite(deltas_.data(), sizeof(uint8_t) * (num_vals_ + 1));
     writer->AlignedWrite(vals_.data(), sizeof(VAL_T) * num_vals_);
