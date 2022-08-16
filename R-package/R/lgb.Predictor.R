@@ -275,12 +275,12 @@ Predictor <- R6::R6Class(
           if (nrow(data) == 1L) {
 
             use_fast_config <- private$check_can_use_fast_predict_config(
-              FALSE
-              , rawscore
-              , predleaf
-              , predcontrib
-              , start_iteration
-              , num_iteration
+              csr = FALSE
+              , rawscore = rawscore
+              , predleaf = predleaf
+              , predcontrib = predcontrib
+              , start_iteration = start_iteration
+              , num_iteration = num_iteration
             )
 
             if (use_fast_config) {
