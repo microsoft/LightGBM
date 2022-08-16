@@ -398,6 +398,8 @@ endif()
 if(USE_CUDA_EXP)
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
+      src/objective/cuda/*.cpp
+      src/objective/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu

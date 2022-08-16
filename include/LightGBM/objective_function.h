@@ -93,6 +93,15 @@ class ObjectiveFunction {
   * \brief Whether boosting is done on CUDA
   */
   virtual bool IsCUDAObjective() const { return false; }
+
+  #ifdef USE_CUDA_EXP
+  /*!
+  * \brief Get output convert function for CUDA version
+  */
+  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const {
+    return [] (data_size_t, const double*, double*) {};
+  }
+  #endif  // USE_CUDA_EXP
 };
 
 }  // namespace LightGBM
