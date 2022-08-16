@@ -455,7 +455,7 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     return params
 
 
-@lru_cache
+@lru_cache(maxsize=None)
 def _get_param_types() -> Dict[str, str]:
     buffer_len = 1 << 20
     tmp_out_len = ctypes.c_int64(0)
