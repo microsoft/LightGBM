@@ -119,6 +119,6 @@ predict(model, x_single)
 
 # Will not use it if the prediction to be made
 # is different from what was configured
-predict(model, x_single, predleaf = TRUE)
+predict(model, x_single, type = "leaf")
 }
 }

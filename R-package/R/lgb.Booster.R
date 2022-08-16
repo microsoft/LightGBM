@@ -1052,7 +1052,7 @@ predict.lgb.Booster <- function(object,
 #'
 #' # Will not use it if the prediction to be made
 #' # is different from what was configured
-#' predict(model, x_single, predleaf = TRUE)
+#' predict(model, x_single, type = "leaf")
 #' }
 #' @export
 lgb.configure_fast_predict <- function(model,
