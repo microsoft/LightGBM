@@ -600,6 +600,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(const char* model_str,
                                                       int* out_num_iterations,
                                                       BoosterHandle* out);
 
+/*!
+ * \brief Get parameters as JSON string.
+ * \param handle Handle of booster.
+ * \param buffer_len Allocated space for string.
+ * \param[out] out_len Actual size of string.
+ * \param[out] out_str JSON string containing parameters.
+ * \return 0 when succeed, -1 when failure happens
+ */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetParameters(BoosterHandle handle,
                                                int64_t buffer_len,
                                                int64_t* out_len,
