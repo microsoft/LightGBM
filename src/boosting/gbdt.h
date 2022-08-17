@@ -165,25 +165,20 @@ class GBDT : public GBDTBase {
       return std::string("{}");
     }
     std::stringstream str_buf;
+    str_buf << "{";
     auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
+    bool first = true;
     for (auto line : lines) {
       auto pair = Common::Split(line.c_str(), "[:]");
       if (pair[1] != " ") {
-        str_buf << pair[0] << "=" << Common::Trim(pair[1]) << "\n";
+        if (first) {
+          first = false;
+          str_buf << "\"";
+        } else {
+          str_buf << ",\"";
+        }
+        str_buf << pair[0] << "\": \"" << Common::Trim(pair[1]) << "\"";
       }
-    }
-    auto map = Config::Str2Map(str_buf.str().c_str());
-    str_buf.str("");
-    str_buf << "{";
-    bool first = true;
-    for (auto it = map.cbegin(); it != map.cend(); ++it) {
-      if (first) {
-        first = false;
-        str_buf << "\"";
-      } else {
-        str_buf << ",\"";
-      }
-      str_buf << it->first << "\": \"" << it->second << "\"";
     }
     str_buf << "}";
     return str_buf.str();

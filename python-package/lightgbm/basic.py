@@ -2807,14 +2807,13 @@ class Booster:
             if 'vector' in type_name:
                 if not value:
                     return []
-                eltype_name = type_name[type_name.find('<') + 1 : type_name.find('>')]
+                eltype_name = type_name[type_name.find('<') + 1:type_name.find('>')]
                 eltype = types_dict[eltype_name]
                 return [eltype(v) for v in value.split(',')]
             eltype = types_dict[type_name]
             return eltype(value)
 
         return {param: parse_param(value, ptypes.get(param, 'string')) for param, value in params.items()}
-
 
     def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
