@@ -173,7 +173,20 @@ class GBDT : public GBDTBase {
       }
     }
     auto map = Config::Str2Map(str_buf.str().c_str());
-    return Json(map).dump();
+    str_buf.str("");
+    str_buf << "{";
+    bool first = true;
+    for (auto it = map.cbegin(); it != map.cend(); ++it) {
+      if (first) {
+        first = false;
+        str_buf << "\"";
+      } else {
+        str_buf << ",\"";
+      }
+      str_buf << it->first << "\": \"" << it->second << "\"";
+    }
+    str_buf << "}";
+    return str_buf.str();
   }
 
   /*!
