@@ -461,7 +461,7 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
     return params
 
 
-@lru_cache
+@lru_cache(maxsize=None)
 def _get_parameter_types() -> Dict[str, str]:
     types_str = _get_string_from_c_api(_LIB.LGBM_DumpParameterTypes)
     res = json.loads(types_str)
@@ -2801,7 +2801,7 @@ class Booster:
         params_str = _get_string_from_c_api(_LIB.LGBM_BoosterGetParameters, self.handle)
         params = json.loads(params_str)
         ptypes = _get_parameter_types()
-        types_dict = {'string': str, 'int': int, 'double': float, 'bool': bool}
+        types_dict = {'string': str, 'int': int, 'double': float, 'bool': lambda x: x == '1'}
 
         def parse_param(value: str, type_name: str) -> Union[Any, List[Any]]:
             if 'vector' in type_name:
