@@ -46,6 +46,8 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
     };
   }
 
+  bool IsCUDAObjective() const override { return true; }
+
  private:
   void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const;
 
