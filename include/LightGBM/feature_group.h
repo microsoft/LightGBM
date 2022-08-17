@@ -136,8 +136,7 @@ class FeatureGroup {
         multi_bin_data_.back()->LoadFromMemory(memory_ptr, local_used_indices);
         memory_ptr += multi_bin_data_.back()->SizesInByte();
       }
-    }
-    else {
+    } else {
       bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
     }
   }

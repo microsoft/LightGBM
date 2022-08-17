@@ -914,9 +914,9 @@ LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
   #endif  // USE_CUDA_EXP
 
  private:
-   void SerializeHeader(BinaryWriter* serializer);
-   size_t GetSerializedHeaderSize();
-   void CreateCUDAColumnData();
+  void SerializeHeader(BinaryWriter* serializer);
+  size_t GetSerializedHeaderSize();
+  void CreateCUDAColumnData();
 
   std::string data_filename_;
   /*! \brief Store used features */
