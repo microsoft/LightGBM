@@ -643,8 +643,8 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSRSingleRowFastInit_R(
 *               for leaf index, its length is equal to num_class * num_iteration
 *               for feature contributions, its length is equal to num_class * (num_features + 1)
 * \param handle_fastConfig Fast configuration handle
-* \param indices array correspoinding to the indices of the columns with non-zero values of the row to predict on
-* \param data array correspoinding to the non-zero values of row to predict on
+* \param indices array corresponding to the indices of the columns with non-zero values of the row to predict on
+* \param data array corresponding to the non-zero values of row to predict on
 * \param out_result prediction result
 * \return R NULL value
 */
