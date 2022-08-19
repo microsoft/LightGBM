@@ -725,7 +725,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
 *               for leaf index, its length is equal to num_class * num_iteration
 *               for feature contributions, its length is equal to num_class * (num_features + 1)
 * \param handle Booster handle
-* \param data array correspoinding to the row to predict on
+* \param data array corresponding to the row to predict on
 * \param is_rawscore 1 to get raw predictions, before transformations like
 *                    converting to probabilities, 0 otherwise
 * \param is_leafidx 1 to get record of which leaf in each tree
