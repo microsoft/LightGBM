@@ -46,7 +46,7 @@ class ScoreUpdater {
     }
   }
   /*! \brief Destructor */
-  ~ScoreUpdater() {
+  virtual ~ScoreUpdater() {
   }
 
   inline bool has_init_score() const { return has_init_score_; }
