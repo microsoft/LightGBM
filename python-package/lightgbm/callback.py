@@ -4,10 +4,10 @@ import collections
 from functools import partial
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from .basic import _ConfigAliases, _log_info, _log_warning
+from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
 _EvalResultTuple = Union[
-    List[Tuple[str, str, float, bool]],
+    List[_LGBM_BoosterEvalMethodResultType],
     List[Tuple[str, str, float, bool, float]]
 ]
 

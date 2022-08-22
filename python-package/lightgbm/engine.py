@@ -11,7 +11,7 @@ import numpy as np
 
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_CustomObjectiveFunction, _log_warning)
+                    _LGBM_CustomObjectiveFunction, _LGBM_BoosterEvalMethodResultType, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 _LGBM_CustomMetricFunction = Callable[
@@ -243,7 +243,7 @@ def train(
 
         booster.update(fobj=fobj)
 
-        evaluation_result_list = []
+        evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:

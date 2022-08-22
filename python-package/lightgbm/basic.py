@@ -20,6 +20,9 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
+_LGBM_EvalFunctionResultType = Tuple[str, float, bool]
+_LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+
 ZERO_THRESHOLD = 1e-35
 
 
@@ -2617,6 +2620,16 @@ _LGBM_CustomObjectiveFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[np.ndarray, np.ndarray]
 ]
+_LGBM_CustomEvalFunction = Union[
+    Callable[
+        [np.ndarray, Dataset],
+        _LGBM_EvalResultType
+    ],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalResultType]
+    ]
+]
 
 
 class Booster:
@@ -3255,7 +3268,12 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def eval(self, data, name, feval=None):
+    def eval(
+        self,
+        data: Dataset,
+        name: str,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for data.
 
         Parameters
@@ -3286,7 +3304,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -3305,7 +3323,10 @@ class Booster:
 
         return self.__inner_eval(name, data_idx, feval)
 
-    def eval_train(self, feval=None):
+    def eval_train(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for training data.
 
         Parameters
@@ -3332,11 +3353,14 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return self.__inner_eval(self._train_data_name, 0, feval)
 
-    def eval_valid(self, feval=None):
+    def eval_valid(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for validation data.
 
         Parameters
@@ -3363,7 +3387,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (validation_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
@@ -3969,7 +3993,12 @@ class Booster:
         else:
             return hist, bin_edges
 
-    def __inner_eval(self, data_name, data_idx, feval=None):
+    def __inner_eval(
+        self,
+        data_name: str,
+        data_idx: int,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[Tuple[str, str, float, bool]]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
