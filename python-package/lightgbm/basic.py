@@ -2623,11 +2623,11 @@ _LGBM_CustomObjectiveFunction = Callable[
 _LGBM_CustomEvalFunction = Union[
     Callable[
         [np.ndarray, Dataset],
-        _LGBM_EvalResultType
+        _LGBM_EvalFunctionResultType
     ],
     Callable[
         [np.ndarray, Dataset],
-        List[_LGBM_EvalResultType]
+        List[_LGBM_EvalFunctionResultType]
     ]
 ]
 
@@ -3998,7 +3998,7 @@ class Booster:
         data_name: str,
         data_idx: int,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
-    ) -> List[Tuple[str, str, float, bool]]:
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
