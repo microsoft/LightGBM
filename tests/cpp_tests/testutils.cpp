@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <thread>
+#include <utility>
 
 using LightGBM::Log;
 using LightGBM::Random;
@@ -244,7 +245,7 @@ namespace LightGBM {
     // Use multiple threads to test concurrency
     int thread_count = 2;
     if (nrows == batch_count) {
-      thread_count = 1; // If pushing all rows in 1 batch, we cannot have multiple threads
+      thread_count = 1;  // If pushing all rows in 1 batch, we cannot have multiple threads
     }
     std::vector<std::thread> threads;
     threads.reserve(thread_count);
@@ -267,7 +268,7 @@ namespace LightGBM {
       threads.push_back(move(th));
     }
 
-    for (auto& t: threads) t.join();
+    for (auto& t : threads) t.join();
 
     auto cur_time = std::chrono::steady_clock::now();
     Log::Info(" Time: %d", cur_time - start_time);
