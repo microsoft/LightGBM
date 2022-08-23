@@ -198,6 +198,7 @@ void test_stream_sparse(
 
     dataset = static_cast<Dataset*>(dataset_handle);
 
+    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::StreamSparseDataset(
       dataset_handle,
       nrows,
@@ -213,7 +214,6 @@ void test_stream_sparse(
 
     dataset->FinishLoad();
 
-    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,
                               weights,
