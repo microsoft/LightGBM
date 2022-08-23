@@ -2760,7 +2760,7 @@ class Booster:
         booster = Booster(model_str=model_str)
         return booster
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
         handle = this['handle']
         this.pop('train_set', None)
@@ -2769,7 +2769,7 @@ class Booster:
             this["handle"] = self.model_to_string(num_iteration=-1)
         return this
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         model_str = state.get('handle', None)
         if model_str is not None:
             handle = ctypes.c_void_p()
@@ -3663,16 +3663,16 @@ class Booster:
         self,
         data,
         label,
-        decay_rate=0.9,
-        reference=None,
+        decay_rate: float = 0.9,
+        reference: Optional[Dataset] = None,
         weight=None,
         group=None,
         init_score=None,
-        feature_name='auto',
-        categorical_feature='auto',
-        dataset_params=None,
-        free_raw_data=True,
-        validate_features=False,
+        feature_name: Union[str, List[str]] = 'auto',
+        categorical_feature: Union[str, List[str], List[int]] = 'auto',
+        dataset_params: Optional[Dict[str, Any]] = None,
+        free_raw_data: bool = True,
+        validate_features: bool = False,
         **kwargs
     ):
         """Refit the existing Booster by new data.
