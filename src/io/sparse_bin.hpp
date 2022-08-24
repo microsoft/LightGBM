@@ -91,11 +91,12 @@ class SparseBin : public Bin {
 
   void Push(int tid, data_size_t idx, uint32_t value) override {
     auto cur_bin = static_cast<VAL_T>(value);
-    if (push_buffers_.size() <= tid) {
-      push_buffers_.resize(tid + 1);
-    }
     if (cur_bin != 0) {
-      push_buffers_[tid].emplace_back(idx, cur_bin);
+      if (push_buffers_.size() <= tid) {
+        push_buffers_.resize(tid + 1);
+      }
+      auto buffer = push_buffers_[tid];
+      buffer.emplace_back(idx, cur_bin);
     }
   }
 
