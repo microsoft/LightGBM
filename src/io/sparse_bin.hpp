@@ -92,9 +92,6 @@ class SparseBin : public Bin {
   void Push(int tid, data_size_t idx, uint32_t value) override {
     auto cur_bin = static_cast<VAL_T>(value);
     if (cur_bin != 0) {
-      if (push_buffers_.size() <= tid) {
-        push_buffers_.resize(tid + 1);
-      }
       // Splitting this operation into separate calls avoids a concurrency exception. Do not simplify.
       auto buffer = push_buffers_[tid];
       buffer.emplace_back(idx, cur_bin);

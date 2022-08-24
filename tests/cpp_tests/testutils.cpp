@@ -251,20 +251,20 @@ namespace LightGBM {
     threads.reserve(thread_count);
     for (int32_t t = 0; t < thread_count; ++t) {
       std::thread th(TestUtils::PushSparseBatch,
-                          dataset_handle,
-                          nrows,
-                          nclasses,
-                          batch_count,
-                          indptr,
-                          indptr_ptr,
-                          indices_ptr,
-                          values_ptr,
-                          labels_ptr,
-                          weights_ptr,
-                          init_scores,
-                          groups_ptr,
-                          thread_count,
-                          t);
+                     dataset_handle,
+                     nrows,
+                     nclasses,
+                     batch_count,
+                     indptr,
+                     indptr_ptr,
+                     indices_ptr,
+                     values_ptr,
+                     labels_ptr,
+                     weights_ptr,
+                     init_scores,
+                     groups_ptr,
+                     thread_count,
+                     t);
       threads.push_back(move(th));
     }
 
