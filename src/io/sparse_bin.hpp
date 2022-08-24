@@ -95,6 +95,7 @@ class SparseBin : public Bin {
       if (push_buffers_.size() <= tid) {
         push_buffers_.resize(tid + 1);
       }
+      // Splitting this operation into separate calls avoids a concurrency exception. Do not simplify.
       auto buffer = push_buffers_[tid];
       buffer.emplace_back(idx, cur_bin);
     }
