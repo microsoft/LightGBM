@@ -99,7 +99,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
-                               !data_sample_strategy_->IsHessianChange(); // for sample strategy with Hessian change, fall back to boosting on CPU
+                               !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
                                                                               config_.get(), boosting_on_gpu_));
 
@@ -727,7 +727,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
   #ifdef USE_CUDA_EXP
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
-                    !data_sample_strategy_->IsHessianChange(); // for sample strategy with Hessian change, fall back to boosting on CPU
+                    !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
   tree_learner_->ResetBoostingOnGPU(boosting_on_gpu_);
   #endif  // USE_CUDA_EXP
 
@@ -826,7 +826,7 @@ void GBDT::ResetConfig(const Config* config) {
 
   #ifdef USE_CUDA_EXP
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
-                    !data_sample_strategy_->IsHessianChange(); // for sample strategy with Hessian change, fall back to boosting on CPU
+                    !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
   tree_learner_->ResetBoostingOnGPU(boosting_on_gpu_);
   #endif  // USE_CUDA_EXP
 
