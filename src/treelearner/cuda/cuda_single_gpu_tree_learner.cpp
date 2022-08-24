@@ -447,6 +447,16 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
   cuda_bitset_inner_len_ = 0;
 }
 
+void CUDASingleGPUTreeLearner::ResetBoostingOnGPU(const bool boosting_on_cuda) {
+  boosting_on_cuda_ = boosting_on_cuda;
+  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  }
+}
+
 #ifdef DEBUG
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int left_leaf,

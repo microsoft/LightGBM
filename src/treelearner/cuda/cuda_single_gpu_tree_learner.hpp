@@ -49,6 +49,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) const override;
 
+  virtual void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
+
  protected:
   void BeforeTrain() override;
 
@@ -119,7 +121,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   /*! \brief hessians on CUDA */
   score_t* cuda_hessians_;
   /*! \brief whether boosting is done on CUDA */
-  const bool boosting_on_cuda_;
+  bool boosting_on_cuda_;
 
   #ifdef DEBUG
   /*! \brief gradients on CPU */

@@ -50,7 +50,7 @@ class BaggingSampleStrategy : public SampleStrategy {
         #ifdef USE_CUDA_EXP
         if (config_->device_type == std::string("cuda_exp")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
-          tree_learner_->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
+          tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
         } else {
         #endif  // USE_CUDA_EXP
           tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
@@ -65,8 +65,8 @@ class BaggingSampleStrategy : public SampleStrategy {
         #ifdef USE_CUDA_EXP
         if (config_->device_type == std::string("cuda_exp")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
-          tree_learner_->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
-                                        bag_data_cnt_);
+          tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
+                                       bag_data_cnt_);
         } else {
         #endif  // USE_CUDA_EXP
           tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
