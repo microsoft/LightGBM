@@ -49,7 +49,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) const override;
 
-  virtual void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
+  void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
 
  protected:
   void BeforeTrain() override;
