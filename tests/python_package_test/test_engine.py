@@ -796,7 +796,9 @@ def test_early_stopping_ignores_training_set(use_valid):
         assert eval_result['valid']['l2'][1] > eval_result['valid']['l2'][0]  # valid didn't
     else:
         with pytest.warns(UserWarning, match='Only training set found, disabling early stopping.'):
-            train_fn()
+            bst = train_fn()
+        assert bst.current_iteration() == 2
+        assert bst.best_iteration == 0
 
 
 @pytest.mark.parametrize('first_metric_only', [True, False])

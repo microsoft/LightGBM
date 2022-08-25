@@ -266,9 +266,9 @@ class _EarlyStoppingCallback:
         only_train_set = (
             len(env.evaluation_result_list) == 1
             and self._is_train_set(
-                env.evaluation_result_list[0][0],
-                env.evaluation_result_list[0][1].split(" ")[0],
-                env.model._train_data_name)
+                ds_name=env.evaluation_result_list[0][0],
+                eval_name=env.evaluation_result_list[0][1].split(" ")[0],
+                train_name=env.model._train_data_name)
         )
         self.enabled = not is_dart and not only_train_set
         if not self.enabled:
