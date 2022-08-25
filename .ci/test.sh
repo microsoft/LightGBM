@@ -164,8 +164,6 @@ elif [[ $TASK == "bdist" ]]; then
         ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="manylinux1_x86_64"
-            # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-            export LIGHTGBM_TEST_DUAL_CPU_GPU=1
         else
             PLATFORM="manylinux2014_$ARCH"
         fi
@@ -173,6 +171,8 @@ elif [[ $TASK == "bdist" ]]; then
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
+        # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+        export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
     pytest $BUILD_DIRECTORY/tests || exit -1
