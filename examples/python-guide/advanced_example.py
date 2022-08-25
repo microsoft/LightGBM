@@ -97,7 +97,7 @@ with open('model.pkl', 'rb') as fin:
 # can predict with any iteration when loaded in pickle way
 y_pred = pkl_bst.predict(X_test, num_iteration=7)
 # eval with loaded model
-auc_pickled_model = roc_auc_score(y_test, y_pred) ** 0.5
+auc_pickled_model = roc_auc_score(y_test, y_pred)
 print(f"The auc of pickled model's prediction is: {auc_loaded_model}")
 
 # continue training
