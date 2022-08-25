@@ -196,10 +196,10 @@ if [[ $TASK == "gpu" ]]; then
         cmake -DUSE_GPU=ON ..
     fi
 elif [[ $TASK == "cuda" ]]; then
-    if [[ $DEVICE == "cuda" ]]; then
+    if [[ $TASK == "cuda" ]]; then
         sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
         grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
-    elif [[ $DEVICE == "cuda_exp" ]]; then
+    elif [[ $TASK == "cuda_exp" ]]; then
         sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda_exp";/' $BUILD_DIRECTORY/include/LightGBM/config.h
         grep -q 'std::string device_type = "cuda_exp"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
         # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
@@ -210,9 +210,9 @@ elif [[ $TASK == "cuda" ]]; then
     fi
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        if [[ $DEVICE == "cuda" ]]; then
+        if [[ $TASK == "cuda" ]]; then
             pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
-        elif [[ $DEVICE == "cuda_exp" ]]; then
+        elif [[ $TASK == "cuda_exp" ]]; then
             pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda-exp || exit -1
         else
             exit -1
@@ -220,9 +220,9 @@ elif [[ $TASK == "cuda" ]]; then
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        if [[ $DEVICE == "cuda" ]]; then
+        if [[ $TASK == "cuda" ]]; then
             cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
-        elif [[ $DEVICE == "cuda_exp" ]]; then
+        elif [[ $TASK == "cuda_exp" ]]; then
             cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda-exp || exit -1
         else
             exit -1
@@ -231,9 +231,9 @@ elif [[ $TASK == "cuda" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        if [[ $DEVICE == "cuda" ]]; then
+        if [[ $TASK == "cuda" ]]; then
             cmake -DUSE_CUDA=ON ..
-        elif [[ $DEVICE == "cuda_exp" ]]; then
+        elif [[ $TASK == "cuda_exp" ]]; then
             cmake -DUSE_CUDA_EXP=ON ..
         else
             exit -1
