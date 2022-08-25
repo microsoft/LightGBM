@@ -25,7 +25,7 @@ CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iterati
     has_init_score_ = true;
     CopyFromHostToCUDADevice<double>(cuda_score_, init_score, total_size, __FILE__, __LINE__);
   } else {
-    SetCUDAMemory<double>(cuda_score_, 0, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    SetCUDAMemory<double>(cuda_score_, 0, static_cast<size_t>(total_size), __FILE__, __LINE__);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   if (boosting_on_cuda_) {
