@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error,roc_auc_score
+from sklearn.metrics import mean_squared_error, roc_auc_score
 
 import lightgbm as lgb
 
@@ -210,6 +210,7 @@ def reset_metrics():
         if env.iteration - env.begin_iteration == 5:
             print('Add a new valid dataset at iteration 5...')
             env.model.add_valid(lgb_eval_new, 'new_valid')
+
     callback.before_iteration = True
     callback.order = 0
     return callback
