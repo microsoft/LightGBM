@@ -1107,6 +1107,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
     y = np.random.rand(100)
     ds = lgb.Dataset(X, y)
     params = {
+        'boosting': 'rf',
         'num_leaves': 5,
         'bagging_fraction': 0.8,
         'bagging_freq': 2,

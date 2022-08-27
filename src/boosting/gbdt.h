@@ -166,10 +166,10 @@ class GBDT : public GBDTBase {
     }
     std::stringstream str_buf;
     str_buf << "{";
-    auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
+    const auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
     bool first = true;
-    for (auto line : lines) {
-      auto pair = Common::Split(line.c_str(), "[:]");
+    for (const auto& line : lines) {
+      const auto pair = Common::Split(line.c_str(), "[:]");
       if (pair[1] != " ") {
         if (first) {
           first = false;
