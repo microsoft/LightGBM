@@ -26,7 +26,7 @@ jobs:
           - method: source
             compiler: gcc
             python_version: "3.8"
-            cuda_version: "11.7.0"
+            cuda_version: "11.7.1"
             tree_learner: cuda
           - method: pip
             compiler: clang
@@ -41,7 +41,7 @@ jobs:
           - method: source
             compiler: gcc
             python_version: "3.8"
-            cuda_version: "11.7.0"
+            cuda_version: "11.7.1"
             tree_learner: cuda_exp
           - method: pip
             compiler: clang
