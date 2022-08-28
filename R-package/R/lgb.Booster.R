@@ -77,6 +77,7 @@ Booster <- R6::R6Class(
           LGBM_BoosterCreateFromModelfile_R
           , modelfile
         )
+        params <- private$get_params(handle)
 
       } else if (!is.null(model_str)) {
 
@@ -671,6 +672,46 @@ Booster <- R6::R6Class(
       }
 
       return(private$eval_names)
+
+    },
+
+    get_params = function(handle) {
+      params_str <- .Call(
+        LGBM_BoosterGetParameters_R
+        , handle
+      )
+      params <- jsonlite::fromJSON(params_str)
+      param_types <- .PARAMETER_TYPES()
+
+      type_name_to_fn <- c(
+        "string" = as.character
+        , "int" = as.integer
+        , "double" = as.numeric
+        , "bool" = function(x) x == "1"
+      )
+
+      parse_param <- function(value, type_name) {
+        if (grepl("vector", type_name)) {
+          eltype_name <- sub("vector<(.*)>", "\\1", type_name)
+          parse_fn <- type_name_to_fn[[eltype_name]]
+          values <- strsplit(value, ",")
+          return(lapply(values, parse_fn))
+        }
+        parse_fn <- type_name_to_fn[[type_name]]
+        parse_fn(value)
+      }
+
+      res <- list()
+      for (param_name in names(params)) {
+        if (param_name %in% names(param_types)) {
+          type_name <- param_types[[param_name]]
+        } else {
+          type_name <- "string"
+        }
+        res[param_name] <- parse_param(params[[param_name]], type_name)
+      }
+
+      return(res)
 
     },
 

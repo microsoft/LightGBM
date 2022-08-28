@@ -172,15 +172,21 @@ test_that("Loading a Booster from a text file works", {
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
+    params <- list(
+        num_leaves = 4L
+        , boosting = "rf"
+        , bagging_fraction = 0.8
+        , bagging_freq = 1L
+        , force_col_wise = TRUE
+        , categorical_feature = c(1L, 2L)
+        , learning_rate = 1.0
+        , objective = "binary"
+        , verbosity = VERBOSITY
+    )
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
+        , params = params
         , nrounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
@@ -199,6 +205,9 @@ test_that("Loading a Booster from a text file works", {
     )
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
+
+    # check that the parameters are loaded correctly
+    expect_identical(bst2$params[names(params)], params)
 })
 
 test_that("boosters with linear models at leaves can be written to text file and re-loaded successfully", {

@@ -1019,6 +1019,47 @@ SEXP LGBM_DumpParamAliases_R() {
   R_API_END();
 }
 
+SEXP LGBM_BoosterGetParameters_R(SEXP handle) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  SEXP params_str;
+  int64_t out_len = 0;
+  int64_t buf_len = 1024 * 1024;
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_BoosterGetParameters(R_ExternalPtrAddr(handle), buf_len, &out_len, inner_char_buf.data()));
+  // if aliases string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterGetParameters(R_ExternalPtrAddr(handle), out_len, &out_len, inner_char_buf.data()));
+  }
+  params_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(params_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  UNPROTECT(2);
+  return params_str;
+  R_API_END();
+}
+
+SEXP LGBM_DumpParamTypes_R() {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  SEXP types_str;
+  int64_t out_len = 0;
+  int64_t buf_len = 1024 * 1024;
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_DumpParamTypes(buf_len, &out_len, inner_char_buf.data()));
+  // if aliases string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_DumpParamTypes(out_len, &out_len, inner_char_buf.data()));
+  }
+  types_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(types_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  UNPROTECT(2);
+  return types_str;
+  R_API_END();
+}
+
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_HandleIsNull_R"              , (DL_FUNC) &LGBM_HandleIsNull_R              , 1},
@@ -1056,6 +1097,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterGetEvalNames_R"       , (DL_FUNC) &LGBM_BoosterGetEvalNames_R       , 1},
   {"LGBM_BoosterGetEval_R"            , (DL_FUNC) &LGBM_BoosterGetEval_R            , 3},
   {"LGBM_BoosterGetNumPredict_R"      , (DL_FUNC) &LGBM_BoosterGetNumPredict_R      , 3},
+  {"LGBM_BoosterGetParameters_R"      , (DL_FUNC) &LGBM_BoosterGetParameters_R      , 1},
   {"LGBM_BoosterGetPredict_R"         , (DL_FUNC) &LGBM_BoosterGetPredict_R         , 3},
   {"LGBM_BoosterPredictForFile_R"     , (DL_FUNC) &LGBM_BoosterPredictForFile_R     , 10},
   {"LGBM_BoosterCalcNumPredict_R"     , (DL_FUNC) &LGBM_BoosterCalcNumPredict_R     , 8},
@@ -1067,6 +1109,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterDumpModel_R"          , (DL_FUNC) &LGBM_BoosterDumpModel_R          , 3},
   {"LGBM_NullBoosterHandleError_R"    , (DL_FUNC) &LGBM_NullBoosterHandleError_R    , 0},
   {"LGBM_DumpParamAliases_R"          , (DL_FUNC) &LGBM_DumpParamAliases_R          , 0},
+  {"LGBM_DumpParamTypes_R"            , (DL_FUNC) &LGBM_DumpParamTypes_R            , 0},
   {NULL, NULL, 0}
 };
 
