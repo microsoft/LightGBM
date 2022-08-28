@@ -900,7 +900,7 @@ int LGBM_DumpParamAliases(int64_t buffer_len,
   API_END();
 }
 
-int LGBM_DumpParameterTypes(int64_t buffer_len,
+int LGBM_DumpParamTypes(int64_t buffer_len,
                             int64_t* out_len,
                             char* out_str) {
   API_BEGIN();

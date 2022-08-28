@@ -70,7 +70,7 @@ LIGHTGBM_C_EXPORT int LGBM_DumpParamAliases(int64_t buffer_len,
  * \param[out] out_str JSON format string of parameters, should pre-allocate memory
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_DumpParameterTypes(int64_t buffer_len,
+LIGHTGBM_C_EXPORT int LGBM_DumpParamTypes(int64_t buffer_len,
                                               int64_t* out_len,
                                               char* out_str);
 

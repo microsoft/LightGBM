@@ -156,28 +156,6 @@ def _safe_call(ret: int) -> None:
         raise LightGBMError(_LIB.LGBM_GetLastError().decode('utf-8'))
 
 
-def _get_string_from_c_api(func: Callable, booster_handle: Optional[ctypes.c_void_p] = None) -> str:
-    def c_api_call(buffer_len: int, out_len: ctypes.c_int64):
-        string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        args = (ctypes.c_int64(buffer_len), ctypes.byref(out_len), ptr_string_buffer)
-        if booster_handle is None:
-            f = func(*args)
-        else:
-            f = func(booster_handle, *args)
-        _safe_call(f)
-        return ptr_string_buffer.value.decode('utf-8')
-
-    buffer_len = 1 << 20
-    tmp_out_len = ctypes.c_int64(0)
-    res = c_api_call(buffer_len, tmp_out_len)
-    actual_len = tmp_out_len.value
-    # if buffer length is not long enough, re-allocate a buffer
-    if actual_len > buffer_len:
-        res = c_api_call(actual_len, tmp_out_len)
-    return res
-
-
 def _is_numeric(obj: Any) -> bool:
     """Check whether object is a number or not, include numpy number, etc."""
     try:
@@ -379,9 +357,25 @@ class _ConfigAliases:
 
     @staticmethod
     def _get_all_param_aliases() -> Dict[str, List[str]]:
-        aliases_str = _get_string_from_c_api(_LIB.LGBM_DumpParamAliases)
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParamAliases(
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_DumpParamAliases(
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
         aliases = json.loads(
-            aliases_str,
+            string_buffer.value.decode('utf-8'),
             object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
         return aliases
@@ -462,10 +456,28 @@ def _choose_param_value(main_param_name: str, params: Dict[str, Any], default_va
 
 
 @lru_cache(maxsize=None)
-def _get_parameter_types() -> Dict[str, str]:
-    types_str = _get_string_from_c_api(_LIB.LGBM_DumpParameterTypes)
-    res = json.loads(types_str)
+def _get_param_types() -> Dict[str, str]:
+    buffer_len = 1 << 20
+    tmp_out_len = ctypes.c_int64(0)
+    string_buffer = ctypes.create_string_buffer(buffer_len)
+    ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+    _safe_call(_LIB.LGBM_DumpParamTypes(
+        ctypes.c_int64(buffer_len),
+        ctypes.byref(tmp_out_len),
+        ptr_string_buffer))
+    actual_len = tmp_out_len.value
+    # if buffer length is not long enough, re-allocate a buffer
+    if actual_len > buffer_len:
+        string_buffer = ctypes.create_string_buffer(actual_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_DumpParamTypes(
+            ctypes.c_int64(actual_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+    res = json.loads(string_buffer.value.decode('utf-8'))
     res['categorical_feature'] = 'vector<int>'
+    res['monotone_constraints'] = 'vector<int>'
+    res['max_bin_by_feature'] = 'vector<int>'
     return res
 
 
@@ -2747,13 +2759,12 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
+            params = self._get_params()
         elif model_str is not None:
             self.model_from_string(model_str)
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
-        if model_file is not None or model_str is not None:
-            params = self._get_parameters()
         self.params = params
 
     def __del__(self) -> None:
@@ -2797,10 +2808,28 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def _get_parameters(self) -> Dict[str, Any]:
-        params_str = _get_string_from_c_api(_LIB.LGBM_BoosterGetParameters, self.handle)
-        params = json.loads(params_str)
-        ptypes = _get_parameter_types()
+    def _get_params(self) -> Dict[str, Any]:
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterGetParameters(
+            self.handle,
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterGetParameters(
+                self.handle,
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        params = json.loads(string_buffer.value.decode('utf-8'))
+        ptypes = _get_param_types()
         types_dict = {'string': str, 'int': int, 'double': float, 'bool': lambda x: x == '1'}
 
         def parse_param(value: str, type_name: str) -> Union[Any, List[Any]]:
