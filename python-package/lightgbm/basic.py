@@ -20,6 +20,9 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
+_LGBM_EvalFunctionResultType = Tuple[str, float, bool]
+_LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+
 ZERO_THRESHOLD = 1e-35
 
 
@@ -645,7 +648,10 @@ def _dump_pandas_categorical(pandas_categorical, file_name=None):
     return pandas_str
 
 
-def _load_pandas_categorical(file_name=None, model_str=None):
+def _load_pandas_categorical(
+    file_name: Optional[Union[str, Path]] = None,
+    model_str: Optional[str] = None
+) -> Optional[str]:
     pandas_key = 'pandas_categorical:'
     offset = -len(pandas_key)
     if file_name is not None:
@@ -1905,7 +1911,15 @@ class Dataset:
             self.feature_name = self.get_feature_name()
         return self
 
-    def create_valid(self, data, label=None, weight=None, group=None, init_score=None, params=None):
+    def create_valid(
+        self,
+        data,
+        label=None,
+        weight=None,
+        group=None,
+        init_score=None,
+        params: Optional[Dict[str, Any]] = None
+    ) -> "Dataset":
         """Create validation data align with current Dataset.
 
         Parameters
@@ -1992,7 +2006,7 @@ class Dataset:
             c_str(str(filename))))
         return self
 
-    def _update_params(self, params):
+    def _update_params(self, params: Optional[Dict[str, Any]]) -> "Dataset":
         if not params:
             return self
         params = deepcopy(params)
@@ -2025,7 +2039,11 @@ class Dataset:
             self.params_back_up = None
         return self
 
-    def set_field(self, field_name, data):
+    def set_field(
+        self,
+        field_name: str,
+        data
+    ) -> "Dataset":
         """Set property into the Dataset.
 
         Parameters
@@ -2161,7 +2179,10 @@ class Dataset:
             raise LightGBMError("Cannot set categorical feature after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def _set_predictor(self, predictor):
+    def _set_predictor(
+        self,
+        predictor: Optional[_InnerPredictor]
+    ) -> "Dataset":
         """Set predictor for continued training.
 
         It is not recommended for user to call this function.
@@ -2182,7 +2203,7 @@ class Dataset:
                                 "set free_raw_data=False when construct Dataset to avoid this.")
         return self
 
-    def set_reference(self, reference):
+    def set_reference(self, reference: "Dataset") -> "Dataset":
         """Set reference Dataset.
 
         Parameters
@@ -2233,7 +2254,7 @@ class Dataset:
                 ctypes.c_int(len(feature_name))))
         return self
 
-    def set_label(self, label):
+    def set_label(self, label) -> "Dataset":
         """Set label of Dataset.
 
         Parameters
@@ -2253,7 +2274,7 @@ class Dataset:
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
-    def set_weight(self, weight):
+    def set_weight(self, weight) -> "Dataset":
         """Set weight of each instance.
 
         Parameters
@@ -2275,7 +2296,7 @@ class Dataset:
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
-    def set_init_score(self, init_score):
+    def set_init_score(self, init_score) -> "Dataset":
         """Set init score of Booster to start from.
 
         Parameters
@@ -2294,7 +2315,7 @@ class Dataset:
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
-    def set_group(self, group):
+    def set_group(self, group) -> "Dataset":
         """Set group size of Dataset (used for ranking).
 
         Parameters
@@ -2356,7 +2377,7 @@ class Dataset:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def get_label(self):
+    def get_label(self) -> Optional[np.ndarray]:
         """Get the label of the Dataset.
 
         Returns
@@ -2368,7 +2389,7 @@ class Dataset:
             self.label = self.get_field('label')
         return self.label
 
-    def get_weight(self):
+    def get_weight(self) -> Optional[np.ndarray]:
         """Get the weight of the Dataset.
 
         Returns
@@ -2380,7 +2401,7 @@ class Dataset:
             self.weight = self.get_field('weight')
         return self.weight
 
-    def get_init_score(self):
+    def get_init_score(self) -> Optional[np.ndarray]:
         """Get the initial score of the Dataset.
 
         Returns
@@ -2499,7 +2520,7 @@ class Dataset:
         else:
             raise LightGBMError("Cannot get feature_num_bin before construct dataset")
 
-    def get_ref_chain(self, ref_limit=100):
+    def get_ref_chain(self, ref_limit: int = 100) -> Set["Dataset"]:
         """Get a chain of Dataset objects.
 
         Starts with r, then goes to r.reference (if exists),
@@ -2642,6 +2663,16 @@ class Dataset:
 _LGBM_CustomObjectiveFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[np.ndarray, np.ndarray]
+]
+_LGBM_CustomEvalFunction = Union[
+    Callable[
+        [np.ndarray, Dataset],
+        _LGBM_EvalFunctionResultType
+    ],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalFunctionResultType]
+    ]
 ]
 
 
@@ -2787,7 +2818,7 @@ class Booster:
         booster = Booster(model_str=model_str)
         return booster
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
         handle = this['handle']
         this.pop('train_set', None)
@@ -2796,7 +2827,7 @@ class Booster:
             this["handle"] = self.model_to_string(num_iteration=-1)
         return this
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         model_str = state.get('handle', None)
         if model_str is not None:
             handle = ctypes.c_void_p()
@@ -3318,7 +3349,12 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def eval(self, data, name, feval=None):
+    def eval(
+        self,
+        data: Dataset,
+        name: str,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for data.
 
         Parameters
@@ -3349,7 +3385,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -3368,7 +3404,10 @@ class Booster:
 
         return self.__inner_eval(name, data_idx, feval)
 
-    def eval_train(self, feval=None):
+    def eval_train(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for training data.
 
         Parameters
@@ -3395,11 +3434,14 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return self.__inner_eval(self._train_data_name, 0, feval)
 
-    def eval_valid(self, feval=None):
+    def eval_valid(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for validation data.
 
         Parameters
@@ -3426,7 +3468,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (validation_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
@@ -3726,16 +3768,16 @@ class Booster:
         self,
         data,
         label,
-        decay_rate=0.9,
-        reference=None,
+        decay_rate: float = 0.9,
+        reference: Optional[Dataset] = None,
         weight=None,
         group=None,
         init_score=None,
-        feature_name='auto',
-        categorical_feature='auto',
-        dataset_params=None,
-        free_raw_data=True,
-        validate_features=False,
+        feature_name: Union[str, List[str]] = 'auto',
+        categorical_feature: Union[str, List[str], List[int]] = 'auto',
+        dataset_params: Optional[Dict[str, Any]] = None,
+        free_raw_data: bool = True,
+        validate_features: bool = False,
         **kwargs
     ):
         """Refit the existing Booster by new data.
@@ -4032,7 +4074,12 @@ class Booster:
         else:
             return hist, bin_edges
 
-    def __inner_eval(self, data_name, data_idx, feval=None):
+    def __inner_eval(
+        self,
+        data_name: str,
+        data_idx: int,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")
