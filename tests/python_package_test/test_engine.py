@@ -3618,7 +3618,6 @@ def test_sample_strategy_with_boosting():
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
-        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3638,7 +3637,6 @@ def test_sample_strategy_with_boosting():
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
-        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3658,7 +3656,6 @@ def test_sample_strategy_with_boosting():
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
-        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3685,7 +3682,6 @@ def test_sample_strategy_with_boosting():
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
-        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
@@ -3707,7 +3703,6 @@ def test_sample_strategy_with_boosting():
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
-        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
