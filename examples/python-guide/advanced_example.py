@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, roc_auc_score
+from sklearn.metrics import roc_auc_score
 
 import lightgbm as lgb
 
@@ -85,7 +85,7 @@ bst = lgb.Booster(model_file='model.txt')
 y_pred = bst.predict(X_test)
 # eval with loaded model
 auc_loaded_model = roc_auc_score(y_test, y_pred)
-print(f"The auc of loaded model's prediction is: {auc_loaded_model}")
+print(f"The ROC AUC of loaded model's prediction is: {auc_loaded_model}")
 
 print('Dumping and loading model with pickle...')
 # dump model with pickle
@@ -98,7 +98,7 @@ with open('model.pkl', 'rb') as fin:
 y_pred = pkl_bst.predict(X_test, num_iteration=7)
 # eval with loaded model
 auc_pickled_model = roc_auc_score(y_test, y_pred)
-print(f"The auc of pickled model's prediction is: {auc_loaded_model}")
+print(f"The ROC AUC of pickled model's prediction is: {auc_loaded_model}")
 
 # continue training
 # init_model accepts:
@@ -210,7 +210,6 @@ def reset_metrics():
         if env.iteration - env.begin_iteration == 5:
             print('Add a new valid dataset at iteration 5...')
             env.model.add_valid(lgb_eval_new, 'new_valid')
-
     callback.before_iteration = True
     callback.order = 0
     return callback
