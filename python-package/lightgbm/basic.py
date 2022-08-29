@@ -255,7 +255,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -263,7 +263,7 @@ def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -271,7 +271,7 @@ def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -279,7 +279,7 @@ def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
