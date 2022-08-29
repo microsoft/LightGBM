@@ -2485,10 +2485,12 @@ class Dataset:
         """
         if self.handle is not None:
             if isinstance(feature, str):
-                feature = self.feature_name.index(feature)
+                feature_index = self.feature_name.index(feature)
+            else:
+                feature_index = feature
             ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
-                                                         ctypes.c_int(feature),
+                                                         ctypes.c_int(feature_index),
                                                          ctypes.byref(ret)))
             return ret.value
         else:
