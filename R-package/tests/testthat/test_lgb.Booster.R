@@ -179,6 +179,7 @@ test_that("Loading a Booster from a text file works", {
         , bagging_freq = 1L
         , force_col_wise = TRUE
         , categorical_feature = c(1L, 2L)
+        , interaction_constraints = list(c(1L, 2L), 1L)
         , learning_rate = 1.0
         , objective = "binary"
         , verbosity = VERBOSITY
@@ -207,7 +208,7 @@ test_that("Loading a Booster from a text file works", {
     expect_identical(pred, pred2)
 
     # check that the parameters are loaded correctly
-    expect_identical(bst2$params[names(params)], params)
+    expect_equal(bst2$params[names(params)], params)
 })
 
 test_that("boosters with linear models at leaves can be written to text file and re-loaded successfully", {

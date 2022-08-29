@@ -77,7 +77,7 @@ Booster <- R6::R6Class(
           LGBM_BoosterCreateFromModelfile_R
           , modelfile
         )
-        params <- private$get_params(handle)
+        params <- private$get_loaded_param(handle)
 
       } else if (!is.null(model_str)) {
 
@@ -728,9 +728,9 @@ Booster <- R6::R6Class(
 
     },
 
-    get_params = function(handle) {
+    get_loaded_param = function(handle) {
       params_str <- .Call(
-        LGBM_BoosterGetParameters_R
+        LGBM_BoosterGetLoadedParam_R
         , handle
       )
       params <- jsonlite::fromJSON(params_str)
@@ -744,24 +744,31 @@ Booster <- R6::R6Class(
       )
 
       parse_param <- function(value, type_name) {
-        if (grepl("vector", type_name)) {
-          eltype_name <- sub("vector<(.*)>", "\\1", type_name)
-          parse_fn <- type_name_to_fn[[eltype_name]]
-          values <- strsplit(value, ",")
-          return(lapply(values, parse_fn))
-        }
-        parse_fn <- type_name_to_fn[[type_name]]
-        parse_fn(value)
+          if (grepl("vector", type_name)) {
+            eltype_name <- sub("vector<(.*)>", "\\1", type_name)
+            if (grepl("vector", eltype_name)) {
+              arr_pat <- "\\[(.*?)\\]"
+              matches <- regmatches(value, gregexpr(arr_pat, value))[[1L]]
+              # the previous returns the matches with the square brackets
+              matches <- sapply(matches, function(x) gsub(arr_pat, "\\1", x))
+              values <- unname(sapply(matches, parse_param, eltype_name))
+            } else {
+              parse_fn <- type_name_to_fn[[eltype_name]]
+              values <- parse_fn(strsplit(value, ",")[[1L]])
+            }
+            return(values)
+          }
+          parse_fn <- type_name_to_fn[[type_name]]
+          parse_fn(value)
       }
 
       res <- list()
       for (param_name in names(params)) {
-        if (param_name %in% names(param_types)) {
-          type_name <- param_types[[param_name]]
-        } else {
-          type_name <- "string"
+        value <- parse_param(params[[param_name]], param_types[[param_name]])
+        if (param_name == "interaction_constraints") {
+          value <- lapply(value, function(x) x + 1L)
         }
-        res[param_name] <- parse_param(params[[param_name]], type_name)
+        res[[param_name]] <- value
       }
 
       return(res)

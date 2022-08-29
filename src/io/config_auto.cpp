@@ -897,12 +897,18 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
 const std::string Config::ParameterTypes() {
   std::stringstream str_buf;
   str_buf << "{";
-  str_buf << "\"data\": \"string\"";
+  str_buf << "\"config\": \"string\"";
+  str_buf << ",\"objective\": \"string\"";
+  str_buf << ",\"boosting\": \"string\"";
+  str_buf << ",\"data\": \"string\"";
   str_buf << ",\"valid\": \"vector<string>\"";
   str_buf << ",\"num_iterations\": \"int\"";
   str_buf << ",\"learning_rate\": \"double\"";
   str_buf << ",\"num_leaves\": \"int\"";
+  str_buf << ",\"tree_learner\": \"string\"";
   str_buf << ",\"num_threads\": \"int\"";
+  str_buf << ",\"device_type\": \"string\"";
+  str_buf << ",\"seed\": \"int\"";
   str_buf << ",\"deterministic\": \"bool\"";
   str_buf << ",\"force_col_wise\": \"bool\"";
   str_buf << ",\"force_row_wise\": \"bool\"";
@@ -952,7 +958,7 @@ const std::string Config::ParameterTypes() {
   str_buf << ",\"cegb_penalty_feature_lazy\": \"vector<double>\"";
   str_buf << ",\"cegb_penalty_feature_coupled\": \"vector<double>\"";
   str_buf << ",\"path_smooth\": \"double\"";
-  str_buf << ",\"interaction_constraints\": \"string\"";
+  str_buf << ",\"interaction_constraints\": \"vector<vector<int>>\"";
   str_buf << ",\"verbosity\": \"int\"";
   str_buf << ",\"input_model\": \"string\"";
   str_buf << ",\"output_model\": \"string\"";
@@ -975,8 +981,8 @@ const std::string Config::ParameterTypes() {
   str_buf << ",\"label_column\": \"string\"";
   str_buf << ",\"weight_column\": \"string\"";
   str_buf << ",\"group_column\": \"string\"";
-  str_buf << ",\"ignore_column\": \"string\"";
-  str_buf << ",\"categorical_feature\": \"string\"";
+  str_buf << ",\"ignore_column\": \"vector<int>\"";
+  str_buf << ",\"categorical_feature\": \"vector<int>\"";
   str_buf << ",\"forcedbins_filename\": \"string\"";
   str_buf << ",\"save_binary\": \"bool\"";
   str_buf << ",\"precise_float_parser\": \"bool\"";
@@ -1007,6 +1013,7 @@ const std::string Config::ParameterTypes() {
   str_buf << ",\"lambdarank_truncation_level\": \"int\"";
   str_buf << ",\"lambdarank_norm\": \"bool\"";
   str_buf << ",\"label_gain\": \"vector<double>\"";
+  str_buf << ",\"metric\": \"vector<string>\"";
   str_buf << ",\"metric_freq\": \"int\"";
   str_buf << ",\"is_provide_training_metric\": \"bool\"";
   str_buf << ",\"eval_at\": \"vector<int>\"";

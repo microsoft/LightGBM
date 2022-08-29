@@ -72,9 +72,6 @@
       LGBM_DumpParamTypes_R
     )
     param_types <- jsonlite::fromJSON(json_str)
-    param_types["categorical_feature"] <- "vector<int>"
-    param_types["monotone_constraints"] <- "vector<int>"
-    param_types["max_bin_by_feature"] <- "vector<int>"
     # store in cache so the next call to `.PARAMETER_TYPES()` doesn't need to recompute this
     assign(
         x = "PARAMETER_TYPES"

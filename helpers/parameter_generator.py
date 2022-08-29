@@ -379,12 +379,21 @@ def gen_parameter_code(
   str_buf << "{";"""
     int_t_pat = re.compile(r'int\d+_t')
     first = True
+    # the following are stored as comma separated strings but are arrays in the wrappers
+    overrides = {
+        'categorical_feature': 'vector<int>',
+        'ignore_column': 'vector<int>',
+        'interaction_constraints': 'vector<vector<int>>',
+    }
     for x in infos:
         for y in x:
-            if "[doc-only]" in y:
-                continue
-            param_type = int_t_pat.sub('int', y["inner_type"][0]).replace('std::', '')
             name = y["name"][0]
+            if name == 'task':
+                continue
+            if name in overrides:
+                param_type = overrides[name]
+            else:
+                param_type = int_t_pat.sub('int', y["inner_type"][0]).replace('std::', '')
             prefix = f'\n  str_buf << "'
             if first:
                 first = False

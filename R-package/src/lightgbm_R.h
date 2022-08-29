@@ -271,7 +271,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(
 * \param handle Booster handle
 * \return R character vector (length=1) with parameters in JSON format
 */
-LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetParameters_R(
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLoadedParam_R(
   SEXP handle
 );
 

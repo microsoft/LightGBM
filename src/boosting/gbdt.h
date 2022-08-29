@@ -160,7 +160,7 @@ class GBDT : public GBDTBase {
   /*!
   * \brief Get parameters as a JSON string
   */
-  std::string GetParameters() const override {
+  std::string GetLoadedParam() const override {
     if (loaded_parameter_.empty()) {
       return std::string("{}");
     }
@@ -169,15 +169,15 @@ class GBDT : public GBDTBase {
     const auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
     bool first = true;
     for (const auto& line : lines) {
-      const auto pair = Common::Split(line.c_str(), "[:]");
-      if (pair[1] != " ") {
+      const auto pair = Common::Split(line.c_str(), ":");
+      if (pair[1] != " ]") {
         if (first) {
           first = false;
           str_buf << "\"";
         } else {
           str_buf << ",\"";
         }
-        str_buf << pair[0] << "\": \"" << Common::Trim(pair[1]) << "\"";
+        str_buf << pair[0].substr(1) << "\": \"" << pair[1].substr(1, pair[1].size() - 2) << "\"";
       }
     }
     str_buf << "}";

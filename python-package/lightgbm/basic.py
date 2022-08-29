@@ -3,6 +3,7 @@
 import abc
 import ctypes
 import json
+import re
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
@@ -478,9 +479,6 @@ def _get_param_types() -> Dict[str, str]:
             ctypes.byref(tmp_out_len),
             ptr_string_buffer))
     res = json.loads(string_buffer.value.decode('utf-8'))
-    res['categorical_feature'] = 'vector<int>'
-    res['monotone_constraints'] = 'vector<int>'
-    res['max_bin_by_feature'] = 'vector<int>'
     return res
 
 
@@ -2790,7 +2788,7 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-            params = self._get_params()
+            params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
         else:
@@ -2839,12 +2837,12 @@ class Booster:
             state['handle'] = handle
         self.__dict__.update(state)
 
-    def _get_params(self) -> Dict[str, Any]:
+    def _get_loaded_param(self) -> Dict[str, Any]:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
         ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-        _safe_call(_LIB.LGBM_BoosterGetParameters(
+        _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
             self.handle,
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -2854,7 +2852,7 @@ class Booster:
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
             ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
-            _safe_call(_LIB.LGBM_BoosterGetParameters(
+            _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
                 self.handle,
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
@@ -2865,15 +2863,17 @@ class Booster:
 
         def parse_param(value: str, type_name: str) -> Union[Any, List[Any]]:
             if 'vector' in type_name:
-                if not value:
-                    return []
-                eltype_name = type_name[type_name.find('<') + 1:type_name.find('>')]
-                eltype = types_dict[eltype_name]
-                return [eltype(v) for v in value.split(',')]
+                eltype_name = type_name[type_name.find('<') + 1:type_name.rfind('>')]
+                if 'vector' in eltype_name:
+                    values = [parse_param(v, eltype_name) for v in re.findall(r'\[(.*?)\]', value)]
+                else:
+                    eltype = types_dict[eltype_name]
+                    values = [eltype(v) for v in value.split(',')]
+                return values
             eltype = types_dict[type_name]
             return eltype(value)
 
-        return {param: parse_param(value, ptypes.get(param, 'string')) for param, value in params.items()}
+        return {param: parse_param(value, ptypes[param]) for param, value in params.items()}
 
     def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
