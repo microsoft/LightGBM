@@ -171,6 +171,10 @@ class CUDAVector {
     return data_;
   }
 
+  const T* RawDataReadOnly() const {
+    return data_;
+  }
+
  private:
   T* data_;
   size_t size_;

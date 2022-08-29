@@ -134,10 +134,8 @@ class BaggingSampleStrategy : public SampleStrategy {
       need_re_bagging_ = true;
 
       if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-        if (objective_function_ == nullptr) {
-          // resize gradient vectors to copy the customized gradients for using subset data
-          need_resize_gradients_ = true;
-        }
+        // resize gradient vectors to copy the customized gradients for using subset data
+        need_resize_gradients_ = true;
       }
     } else {
       bag_data_cnt_ = num_data_;

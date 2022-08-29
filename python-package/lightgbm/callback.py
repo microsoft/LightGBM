@@ -4,10 +4,10 @@ import collections
 from functools import partial
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from .basic import _ConfigAliases, _log_info, _log_warning
+from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
 _EvalResultTuple = Union[
-    List[Tuple[str, str, float, bool]],
+    List[_LGBM_BoosterEvalMethodResultType],
     List[Tuple[str, str, float, bool, float]]
 ]
 
@@ -258,11 +258,24 @@ class _EarlyStoppingCallback:
     def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score < best_score - delta
 
+    def _is_train_set(self, ds_name: str, eval_name: str, train_name: str) -> bool:
+        return (ds_name == "cv_agg" and eval_name == "train") or ds_name == train_name
+
     def _init(self, env: CallbackEnv) -> None:
-        self.enabled = not any(env.params.get(boost_alias, "") == 'dart' for boost_alias
-                               in _ConfigAliases.get("boosting"))
+        is_dart = any(env.params.get(alias, "") == 'dart' for alias in _ConfigAliases.get("boosting"))
+        only_train_set = (
+            len(env.evaluation_result_list) == 1
+            and self._is_train_set(
+                ds_name=env.evaluation_result_list[0][0],
+                eval_name=env.evaluation_result_list[0][1].split(" ")[0],
+                train_name=env.model._train_data_name)
+        )
+        self.enabled = not is_dart and not only_train_set
         if not self.enabled:
-            _log_warning('Early stopping is not available in dart mode')
+            if is_dart:
+                _log_warning('Early stopping is not available in dart mode')
+            elif only_train_set:
+                _log_warning('Only training set found, disabling early stopping.')
             return
         if not env.evaluation_result_list:
             raise ValueError('For early stopping, '
@@ -339,9 +352,7 @@ class _EarlyStoppingCallback:
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
             if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
                 continue  # use only the first metric for early stopping
-            if ((env.evaluation_result_list[i][0] == "cv_agg" and eval_name_splitted[0] == "train"
-                    or env.evaluation_result_list[i][0] == env.model._train_data_name)):
-                self._final_iteration_check(env, eval_name_splitted, i)
+            if self._is_train_set(env.evaluation_result_list[i][0], eval_name_splitted[0], env.model._train_data_name):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - self.best_iter[i] >= self.stopping_rounds:
                 if self.verbose:

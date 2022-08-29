@@ -443,6 +443,8 @@ class GBDT : public GBDTBase {
 
   double BoostFromAverage(int class_id, bool update_scorer);
 
+  void ResetGradientBuffers();
+
   /*! \brief current iteration */
   int iter_;
   /*! \brief Pointer to training data */

@@ -119,8 +119,7 @@ class RF : public GBDT {
         auto grad = gradients + offset;
         auto hess = hessians + offset;
 
-        // need to copy gradients for bagging subset.
-        if (is_use_subset && bag_data_cnt < num_data_) {
+        if (is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_) {
           for (int i = 0; i < bag_data_cnt; ++i) {
             tmp_grad_[i] = grad[bag_data_indices[i]];
             tmp_hess_[i] = hess[bag_data_indices[i]];

@@ -9,7 +9,7 @@ lgb.load(filename = NULL, model_str = NULL)
 \arguments{
 \item{filename}{path of model file}
 
-\item{model_str}{a str containing the model (as a `character` or `raw` vector)}
+\item{model_str}{a str containing the model (as a \code{character} or \code{raw} vector)}
 }
 \value{
 lgb.Booster
