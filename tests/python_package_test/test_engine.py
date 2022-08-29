@@ -1211,9 +1211,11 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
         'bagging_fraction': 0.8,
         'bagging_freq': 2,
         'boosting': 'rf',
+        'feature_contri': [0.5, 0.5, 0.5],
         'feature_fraction': 0.7,
         'force_col_wise': True,
         'interaction_constraints': [[0, 1], [0]],
+        'metric': ['l2', 'rmse'],
         'num_leaves': 5,
         'num_threads': 1,
     }
