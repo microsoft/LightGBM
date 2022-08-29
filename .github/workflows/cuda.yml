@@ -11,12 +11,11 @@ on:
 env:
   github_actions: 'true'
   os_name: linux
-  task: cuda
   conda_env: test-env
 
 jobs:
   test:
-    name: ${{ matrix.tree_learner }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     timeout-minutes: 60
     strategy:
@@ -26,28 +25,28 @@ jobs:
           - method: source
             compiler: gcc
             python_version: "3.8"
-            cuda_version: "11.6.2"
-            tree_learner: cuda
+            cuda_version: "11.7.1"
+            task: cuda
           - method: pip
             compiler: clang
             python_version: "3.9"
             cuda_version: "10.0"
-            tree_learner: cuda
+            task: cuda
           - method: wheel
             compiler: gcc
             python_version: "3.10"
             cuda_version: "9.0"
-            tree_learner: cuda
+            task: cuda
           - method: source
             compiler: gcc
             python_version: "3.8"
-            cuda_version: "11.6.2"
-            tree_learner: cuda_exp
+            cuda_version: "11.7.1"
+            task: cuda_exp
           - method: pip
             compiler: clang
             python_version: "3.9"
             cuda_version: "10.0"
-            tree_learner: cuda_exp
+            task: cuda_exp
     steps:
       - name: Setup or update software on host machine
         run: |
@@ -86,7 +85,7 @@ jobs:
             GITHUB_ACTIONS=${{ env.github_actions }}
             OS_NAME=${{ env.os_name }}
             COMPILER=${{ matrix.compiler }}
-            TASK=${{ env.task }}
+            TASK=${{ matrix.task }}
             METHOD=${{ matrix.method }}
             CONDA_ENV=${{ env.conda_env }}
             PYTHON_VERSION=${{ matrix.python_version }}

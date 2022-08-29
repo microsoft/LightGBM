@@ -16,7 +16,7 @@ namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp")) {
+  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
     if (type == std::string("regression")) {
       Log::Warning("Objective regression is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionL2loss(config);

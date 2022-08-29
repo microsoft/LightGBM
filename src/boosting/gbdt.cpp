@@ -41,6 +41,9 @@ GBDT::GBDT()
   average_output_ = false;
   tree_learner_ = nullptr;
   linear_tree_ = false;
+  gradients_pointer_ = nullptr;
+  hessians_pointer_ = nullptr;
+  boosting_on_gpu_ = false;
 }
 
 GBDT::~GBDT() {
@@ -95,9 +98,9 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
-  const bool boosting_on_gpu = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
+  boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
-                                                                              config_.get(), boosting_on_gpu));
+                                                                              config_.get(), boosting_on_gpu_));
 
   // init tree learner
   tree_learner_->Init(train_data_, is_constant_hessian_);
@@ -112,7 +115,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   #ifdef USE_CUDA_EXP
   if (config_->device_type == std::string("cuda_exp")) {
-    train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu));
+    train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu_));
   } else {
   #endif  // USE_CUDA_EXP
     train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
@@ -123,9 +126,14 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_data_ = train_data_->num_data();
   // create buffer for gradients and Hessians
   if (objective_function_ != nullptr) {
-    size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+    const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     #ifdef USE_CUDA_EXP
-    if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu) {
+    if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu_) {
+      if (gradients_pointer_ != nullptr) {
+        CHECK_NOTNULL(hessians_pointer_);
+        DeallocateCUDAMemory<score_t>(&gradients_pointer_, __FILE__, __LINE__);
+        DeallocateCUDAMemory<score_t>(&hessians_pointer_, __FILE__, __LINE__);
+      }
       AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
       AllocateCUDAMemory<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
     } else {
@@ -137,17 +145,14 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
     #ifdef USE_CUDA_EXP
     }
     #endif  // USE_CUDA_EXP
-  #ifndef USE_CUDA_EXP
+  } else if (config_->boosting == std::string("goss")) {
+    const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+    gradients_.resize(total_size);
+    hessians_.resize(total_size);
+    gradients_pointer_ = gradients_.data();
+    hessians_pointer_ = hessians_.data();
   }
-  #else  // USE_CUDA_EXP
-  } else {
-    if (config_->device_type == std::string("cuda_exp")) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-      AllocateCUDAMemory<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
-    }
-  }
-  #endif  // USE_CUDA_EXP
+
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
   // get label index
@@ -440,22 +445,35 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     Boosting();
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
-  #ifndef USE_CUDA_EXP
-  }
-  #else  // USE_CUDA_EXP
   } else {
-    if (config_->device_type == std::string("cuda_exp")) {
-      const size_t total_size = static_cast<size_t>(num_data_ * num_class_);
-      CopyFromHostToCUDADevice<score_t>(gradients_pointer_, gradients, total_size, __FILE__, __LINE__);
-      CopyFromHostToCUDADevice<score_t>(hessians_pointer_, hessians, total_size, __FILE__, __LINE__);
+    // use customized objective function
+    CHECK(objective_function_ == nullptr);
+    if (config_->boosting == std::string("goss")) {
+      // need to copy customized gradients when using GOSS
+      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
+      #pragma omp parallel for schedule(static)
+      for (int64_t i = 0; i < total_size; ++i) {
+        gradients_[i] = gradients[i];
+        hessians_[i] = hessians[i];
+      }
+      CHECK_EQ(gradients_pointer_, gradients_.data());
+      CHECK_EQ(hessians_pointer_, hessians_.data());
       gradients = gradients_pointer_;
       hessians = hessians_pointer_;
     }
   }
-  #endif  // USE_CUDA_EXP
 
   // bagging logic
   Bagging(iter_);
+
+  if (gradients != nullptr && is_use_subset_ && bag_data_cnt_ < num_data_ && !boosting_on_gpu_ && config_->boosting != std::string("goss")) {
+    // allocate gradients_ and hessians_ for copy gradients for using data subset
+    int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
+    gradients_.resize(total_size);
+    hessians_.resize(total_size);
+    gradients_pointer_ = gradients_.data();
+    hessians_pointer_ = hessians_.data();
+  }
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -465,7 +483,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto grad = gradients + offset;
       auto hess = hessians + offset;
       // need to copy gradients for bagging subset.
-      if (is_use_subset_ && bag_data_cnt_ < num_data_ && config_->device_type != std::string("cuda_exp")) {
+      if (is_use_subset_ && bag_data_cnt_ < num_data_ && !boosting_on_gpu_) {
         for (int i = 0; i < bag_data_cnt_; ++i) {
           gradients_pointer_[offset + i] = grad[bag_data_indices_[i]];
           hessians_pointer_[offset + i] = hess[bag_data_indices_[i]];
@@ -591,14 +609,13 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
 
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
   #ifdef USE_CUDA_EXP
-  const bool boosting_on_cuda = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
   const bool evaluation_on_cuda = metric->IsCUDAMetric();
-  if ((boosting_on_cuda && evaluation_on_cuda) || (!boosting_on_cuda && !evaluation_on_cuda)) {
+  if ((boosting_on_gpu_ && evaluation_on_cuda) || (!boosting_on_gpu_ && !evaluation_on_cuda)) {
   #endif  // USE_CUDA_EXP
     return metric->Eval(score, objective_function_);
   #ifdef USE_CUDA_EXP
-  } else if (boosting_on_cuda && !evaluation_on_cuda) {
-    const size_t total_size = static_cast<size_t>(num_data) * static_cast<size_t>(num_tree_per_iteration_);
+  } else if (boosting_on_gpu_ && !evaluation_on_cuda) {
+    const size_t total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_tree_per_iteration_);
     if (total_size > host_score_.size()) {
       host_score_.resize(total_size, 0.0f);
     }
@@ -804,9 +821,8 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
   }
   training_metrics_.shrink_to_fit();
 
-  #ifdef USE_CUDA_EXP
-  const bool boosting_on_gpu = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
-  #endif  // USE_CUDA_EXP
+  boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
+  tree_learner_->ResetBoostingOnGPU(boosting_on_gpu_);
 
   if (train_data != train_data_) {
     train_data_ = train_data;
@@ -814,7 +830,7 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
     // create score tracker
     #ifdef USE_CUDA_EXP
     if (config_->device_type == std::string("cuda_exp")) {
-      train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu));
+      train_score_updater_.reset(new CUDAScoreUpdater(train_data_, num_tree_per_iteration_, boosting_on_gpu_));
     } else {
     #endif  // USE_CUDA_EXP
       train_score_updater_.reset(new ScoreUpdater(train_data_, num_tree_per_iteration_));
@@ -834,9 +850,14 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
     // create buffer for gradients and hessians
     if (objective_function_ != nullptr) {
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
       #ifdef USE_CUDA_EXP
-      if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu) {
+      if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu_) {
+        if (gradients_pointer_ != nullptr) {
+          CHECK_NOTNULL(hessians_pointer_);
+          DeallocateCUDAMemory<score_t>(&gradients_pointer_, __FILE__, __LINE__);
+          DeallocateCUDAMemory<score_t>(&hessians_pointer_, __FILE__, __LINE__);
+        }
         AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
         AllocateCUDAMemory<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
       } else {
@@ -848,6 +869,12 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
       #ifdef USE_CUDA_EXP
       }
       #endif  // USE_CUDA_EXP
+    } else if (config_->boosting == std::string("goss")) {
+      const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
+      gradients_pointer_ = gradients_.data();
+      hessians_pointer_ = hessians_.data();
     }
 
     max_feature_idx_ = train_data_->num_total_features() - 1;
@@ -879,6 +906,10 @@ void GBDT::ResetConfig(const Config* config) {
   if (tree_learner_ != nullptr) {
     tree_learner_->ResetConfig(new_config.get());
   }
+
+  boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective();
+  tree_learner_->ResetBoostingOnGPU(boosting_on_gpu_);
+
   if (train_data_ != nullptr) {
     ResetBaggingConfig(new_config.get(), false);
   }
@@ -953,10 +984,16 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
     need_re_bagging_ = true;
 
     if (is_use_subset_ && bag_data_cnt_ < num_data_) {
-      if (objective_function_ == nullptr) {
-        size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+      // resize gradient vectors to copy the customized gradients for goss or bagging with subset
+      if (objective_function_ != nullptr) {
+        const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
         #ifdef USE_CUDA_EXP
-        if (config_->device_type == std::string("cuda_exp") && objective_function_ != nullptr && objective_function_->IsCUDAObjective()) {
+        if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu_) {
+          if (gradients_pointer_ != nullptr) {
+            CHECK_NOTNULL(hessians_pointer_);
+            DeallocateCUDAMemory<score_t>(&gradients_pointer_, __FILE__, __LINE__);
+            DeallocateCUDAMemory<score_t>(&hessians_pointer_, __FILE__, __LINE__);
+          }
           AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
           AllocateCUDAMemory<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
         } else {
@@ -968,6 +1005,12 @@ void GBDT::ResetBaggingConfig(const Config* config, bool is_change_dataset) {
         #ifdef USE_CUDA_EXP
         }
         #endif  // USE_CUDA_EXP
+      } else if (config_->boosting == std::string("goss")) {
+        const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+        gradients_.resize(total_size);
+        hessians_.resize(total_size);
+        gradients_pointer_ = gradients_.data();
+        hessians_pointer_ = hessians_.data();
       }
     }
   } else {

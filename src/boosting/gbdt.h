@@ -504,6 +504,8 @@ class GBDT : public GBDTBase {
   score_t* gradients_pointer_;
   /*! \brief Pointer to hessian vector, can be on CPU or GPU */
   score_t* hessians_pointer_;
+  /*! \brief Whether boosting is done on GPU, used for cuda_exp */
+  bool boosting_on_gpu_;
   #ifdef USE_CUDA_EXP
   /*! \brief Buffer for scores when boosting is on GPU but evaluation is not, used only with cuda_exp */
   mutable std::vector<double> host_score_;

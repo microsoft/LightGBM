@@ -50,6 +50,12 @@ class TreeLearner {
   */
   virtual void ResetConfig(const Config* config) = 0;
 
+  /*!
+  * \brief Reset boosting_on_gpu_
+  * \param boosting_on_gpu flag for boosting on GPU
+  */
+  virtual void ResetBoostingOnGPU(const bool /*boosting_on_gpu*/) {}
+
   virtual void SetForcedSplit(const Json* forced_split_json) = 0;
 
   /*!
