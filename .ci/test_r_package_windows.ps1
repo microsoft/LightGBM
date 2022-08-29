@@ -283,7 +283,7 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Run-R-Code-Redirect-Stderr "source('testthat.R')" ; Check-Output $?
+  Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"
