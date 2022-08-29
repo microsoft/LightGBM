@@ -3615,51 +3615,65 @@ def test_sample_strategy_with_boosting():
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
         'gpu_use_dp': True,
+        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret1 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret1 == pytest.approx(3149.393862, abs=1.0)
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret1)
+    eval_res1 = evals_result['valid_0']['l2'][-1]
+    test_res1 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res1 == pytest.approx(3149.393862, abs=1.0)
+    assert eval_res1 == pytest.approx(test_res1)
 
     params = {
         'boosting': 'gbdt',
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
         'gpu_use_dp': True,
+        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret2 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret2 == pytest.approx(2547.715968, abs=1.0)
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret2)
+    eval_res2 = evals_result['valid_0']['l2'][-1]
+    test_res2 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res2 == pytest.approx(2547.715968, abs=1.0)
+    assert eval_res2 == pytest.approx(test_res2)
 
     params = {
         'boosting': 'goss',
         'data_sample_strategy': 'goss',
         'metric': 'l2',
         'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
         'gpu_use_dp': True,
+        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret3 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret3 == pytest.approx(2547.715968, abs=1.0)
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret3)
+    eval_res3 = evals_result['valid_0']['l2'][-1]
+    test_res3 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res3 == pytest.approx(2547.715968, abs=1.0)
+    assert eval_res3 == pytest.approx(test_res3)
 
-    assert ret1 != ret2
-    assert ret2 == ret3
+    assert test_res1 != test_res2
+    assert eval_res1 != eval_res2
+    assert test_res2 == test_res3
+    assert eval_res2 == eval_res3
 
     params = {
         'boosting': 'dart',
@@ -3668,16 +3682,20 @@ def test_sample_strategy_with_boosting():
         'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
         'gpu_use_dp': True,
+        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret4 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret4 == pytest.approx(3134.866931, abs=1.0)
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret4)
+    eval_res4 = evals_result['valid_0']['l2'][-1]
+    test_res4 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res4 == pytest.approx(3134.866931, abs=1.0)
+    assert eval_res4 == pytest.approx(test_res4)
 
     params = {
         'boosting': 'gbdt',
@@ -3686,17 +3704,21 @@ def test_sample_strategy_with_boosting():
         'bagging_fraction': 0.5,
         'metric': 'l2',
         'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
         'gpu_use_dp': True,
+        'device': 'cuda'
     }
     evals_result = {}
     gbm = lgb.train(params, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
-    ret5 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret5 == pytest.approx(2539.792378, abs=1.0)
-    assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret5)
-    assert ret4 != ret5
+    eval_res5 = evals_result['valid_0']['l2'][-1]
+    test_res5 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res5 == pytest.approx(2539.792378, abs=1.0)
+    assert eval_res5 == pytest.approx(test_res5)
+    assert eval_res5 != test_res5
 
 
 def test_record_evaluation_with_train():
