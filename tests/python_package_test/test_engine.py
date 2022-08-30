@@ -1222,7 +1222,8 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
     model_file = tmp_path / 'model.txt'
     lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
     bst = lgb.Booster(model_file=model_file)
-    assert all(bst.params[k] == params[k] for k in params)  # bst.params has all parameters
+    set_params = {k: bst.params[k] for k in params.keys()}
+    assert set_params == params
     assert bst.params['categorical_feature'] == [1, 2]
 
 
