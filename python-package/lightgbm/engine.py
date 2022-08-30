@@ -685,7 +685,7 @@ def cv(
 
     # setup callbacks
     if callbacks is None:
-        callbacks_set: Set[Callable] = set()
+        callbacks_set = set()
     else:
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
@@ -704,10 +704,10 @@ def cv(
             )
         )
 
-    callbacks_before_iter = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
-    callbacks_after_iter = callbacks_set - callbacks_before_iter
-    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
-    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+    callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
+    callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
+    callbacks_before_iter = sorted(callbacks_before_iter_set, key=attrgetter('order'))
+    callbacks_after_iter = sorted(callbacks_after_iter_set, key=attrgetter('order'))
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
