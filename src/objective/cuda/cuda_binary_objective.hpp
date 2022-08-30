@@ -11,7 +11,6 @@
 
 #define GET_GRADIENTS_BLOCK_SIZE_BINARY (1024)
 #define CALC_INIT_SCORE_BLOCK_SIZE_BINARY (1024)
-#define NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY (6)
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 

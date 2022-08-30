@@ -13,46 +13,61 @@ namespace LightGBM {
 template <bool IS_OVA, bool USE_WEIGHT>
 __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_sum_labels,
                                                      double* out_cuda_sum_weights, const label_t* cuda_weights, const int ova_class_id) {
-  __shared__ double shared_label[CALC_INIT_SCORE_BLOCK_SIZE_BINARY];
-  __shared__ double shared_weight[USE_WEIGHT ? CALC_INIT_SCORE_BLOCK_SIZE_BINARY : 1];
-  const unsigned int tid = threadIdx.x;
-  const unsigned int i = (blockIdx.x * blockDim.x + tid) * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY;
-  shared_label[tid] = 0.0f;
-  __syncthreads();
-  if (USE_WEIGHT) {
-    shared_weight[tid] = 0.0f;
-    for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY; ++j) {
-      if (i + j < num_data) {
-        const label_t cuda_label = static_cast<int>(cuda_labels[i + j]);
-        const double sample_weight = cuda_weights[i + j];
-        const label_t label = IS_OVA ? (cuda_label == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
-        shared_label[tid] += label * sample_weight;
-        shared_weight[tid] += sample_weight;
-      }
+  __shared__ double shared_label[32];
+  __shared__ double shared_weight[USE_WEIGHT ? 32 : 1];
+  const uint32_t mask = 0xffffffff;
+  const uint32_t warpLane = threadIdx.x % warpSize;
+  const uint32_t warpID = threadIdx.x / warpSize;
+  const uint32_t num_warp = blockDim.x / warpSize;
+  const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  double label_value = 0.0;
+  double weight_value = 0.0;
+  if (index < num_data) {
+    if (USE_WEIGHT) {
+      const label_t cuda_label = cuda_labels[index];
+      const double sample_weight = cuda_weights[index];
+      const label_t label = IS_OVA ? (static_cast<int>(cuda_label) == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
+      label_value = label * sample_weight;
+      weight_value = sample_weight;
+    } else {
+      const label_t cuda_label = cuda_labels[index];
+      label_value = IS_OVA ? (static_cast<int>(cuda_label) == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
     }
-  } else {
-    for (unsigned int j = 0; j < NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY; ++j) {
-      if (i + j < num_data) {
-        const label_t cuda_label = static_cast<int>(cuda_labels[i + j]);
-        const label_t label = IS_OVA ? (cuda_label == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
-        shared_label[tid] += label;
-      }
+  }
+  for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
+    label_value += __shfl_down_sync(mask, label_value, offset);
+  }
+  if (warpLane == 0) {
+    shared_label[warpID] = label_value;
+  }
+  __syncthreads();
+  if (warpID == 0) {
+    label_value = (warpLane < num_warp ? shared_label[warpLane] : 0);
+    for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
+      label_value += __shfl_down_sync(mask, label_value, offset);
     }
   }
   __syncthreads();
-  for (unsigned int s = 1; s < blockDim.x; s *= 2) {
-    if (tid % (2 * s) == 0 && (tid + s) < CALC_INIT_SCORE_BLOCK_SIZE_BINARY) {
-      shared_label[tid] += shared_label[tid + s];
-      if (USE_WEIGHT) {
-        shared_weight[tid] += shared_weight[tid + s];
+  if (USE_WEIGHT) {
+    for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
+      weight_value += __shfl_down_sync(mask, weight_value, offset);
+    }
+    if (warpLane == 0) {
+      shared_weight[warpID] = weight_value;
+    }
+    __syncthreads();
+    if (warpID == 0) {
+      weight_value = (warpLane < num_warp ? shared_weight[warpLane] : 0);
+      for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
+        weight_value += __shfl_down_sync(mask, weight_value, offset);
       }
     }
     __syncthreads();
   }
-  if (tid == 0) {
-    atomicAdd_system(out_cuda_sum_labels, shared_label[0]);
+  if (threadIdx.x == 0) {
+    atomicAdd_system(out_cuda_sum_labels, label_value);
     if (USE_WEIGHT) {
-      atomicAdd_system(out_cuda_sum_weights, shared_weight[0]);
+      atomicAdd_system(out_cuda_sum_weights, weight_value);
     }
   }
 }
@@ -62,14 +77,16 @@ __global__ void BoostFromScoreKernel_2_BinaryLogloss(double* out_cuda_sum_labels
                                                      const data_size_t num_data, const double sigmoid) {
   const double suml = *out_cuda_sum_labels;
   const double sumw = USE_WEIGHT ? *out_cuda_sum_weights : static_cast<double>(num_data);
-  const double pavg = suml / sumw;
+  double pavg = suml / sumw;
+  pavg = min(pavg, 1.0 - kEpsilon);
+  pavg = max(pavg, kEpsilon);
   const double init_score = log(pavg / (1.0f - pavg)) / sigmoid;
+  *out_cuda_sum_weights = pavg;
   *out_cuda_sum_labels = init_score;
 }
 
 void CUDABinaryLogloss::LaunchBoostFromScoreKernel() const {
-  const data_size_t num_data_per_block = CALC_INIT_SCORE_BLOCK_SIZE_BINARY * NUM_DATA_THREAD_ADD_CALC_INIT_SCORE_BINARY;
-  const int num_blocks = (num_data_ + num_data_per_block - 1) / num_data_per_block;
+  const int num_blocks = (num_data_ + CALC_INIT_SCORE_BLOCK_SIZE_BINARY - 1) / CALC_INIT_SCORE_BLOCK_SIZE_BINARY;
   if (ova_class_id_ == -1) {
     if (cuda_weights_ == nullptr) {
       BoostFromScoreKernel_1_BinaryLogloss<false, false><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>

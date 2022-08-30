@@ -67,6 +67,9 @@ double CUDABinaryLogloss::BoostFromScore(int) const {
   SynchronizeCUDADevice(__FILE__, __LINE__);
   double boost_from_score = 0.0f;
   CopyFromCUDADeviceToHost<double>(&boost_from_score, cuda_boost_from_score_, 1, __FILE__, __LINE__);
+  double pavg = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&pavg, cuda_sum_weights_, 1, __FILE__, __LINE__);
+  Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, boost_from_score);
   return boost_from_score;
 }
 
