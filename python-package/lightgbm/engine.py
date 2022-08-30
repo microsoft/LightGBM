@@ -300,7 +300,7 @@ class CVBooster:
         model_file : str, pathlib.Path or None, optional (default=None)
             Path to the CVBooster model file.
         """
-        self.boosters = []
+        self.boosters: List[Booster] = []
         self.best_iteration = -1
 
         if model_file is not None:

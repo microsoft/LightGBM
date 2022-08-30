@@ -2514,7 +2514,7 @@ class Dataset:
             Chain of references of the Datasets.
         """
         head = self
-        ref_chain = set()
+        ref_chain: Set[Dataset] = set()
         while len(ref_chain) < ref_limit:
             if isinstance(head, Dataset):
                 ref_chain.add(head)
@@ -2733,8 +2733,8 @@ class Booster:
                 ctypes.byref(self.handle)))
             # save reference to data
             self.train_set = train_set
-            self.valid_sets = []
-            self.name_valid_sets = []
+            self.valid_sets: List[Dataset] = []
+            self.name_valid_sets: List[str] = []
             self.__num_dataset = 1
             self.__init_predictor = train_set._predictor
             if self.__init_predictor is not None:
