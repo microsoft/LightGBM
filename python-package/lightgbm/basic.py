@@ -2865,6 +2865,7 @@ class Booster:
             if 'vector' in type_name:
                 eltype_name = type_name[type_name.find('<') + 1:type_name.rfind('>')]
                 if 'vector' in eltype_name:
+                    # value is like "[0,1],[0]"
                     values = [parse_param(v, eltype_name) for v in re.findall(r'\[(.*?)\]', value)]
                 else:
                     eltype = types_dict[eltype_name]

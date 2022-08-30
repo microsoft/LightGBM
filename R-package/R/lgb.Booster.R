@@ -744,22 +744,21 @@ Booster <- R6::R6Class(
       )
 
       parse_param <- function(value, type_name) {
-          if (grepl("vector", type_name)) {
-            eltype_name <- sub("vector<(.*)>", "\\1", type_name)
-            if (grepl("vector", eltype_name)) {
-              arr_pat <- "\\[(.*?)\\]"
-              matches <- regmatches(value, gregexpr(arr_pat, value))[[1L]]
-              # the previous returns the matches with the square brackets
-              matches <- sapply(matches, function(x) gsub(arr_pat, "\\1", x))
-              values <- unname(sapply(matches, parse_param, eltype_name))
-            } else {
-              parse_fn <- type_name_to_fn[[eltype_name]]
-              values <- parse_fn(strsplit(value, ",")[[1L]])
-            }
-            return(values)
+        if (grepl("vector", type_name)) {
+          eltype_name <- sub("vector<(.*)>", "\\1", type_name)
+          if (grepl("vector", eltype_name)) {
+            # value is like "[0,1],[0]", we make it a JSON array to parse it as a list
+            values <- jsonlite::fromJSON(paste0("[", value, "]"))
+          } else {
+            parse_fn <- type_name_to_fn[[eltype_name]]
+            values <- parse_fn(strsplit(value, ",")[[1L]])
           }
-          parse_fn <- type_name_to_fn[[type_name]]
-          parse_fn(value)
+          return(values)
+        }
+        parse_fn <- type_name_to_fn[[type_name]]
+        parsed_value <- parse_fn(value)
+
+        return(parsed_value)
       }
 
       res <- list()
