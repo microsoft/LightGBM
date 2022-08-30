@@ -607,7 +607,11 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   }
 }
 
+#ifdef USE_CUDA_EXP
 std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const {
+#else
+std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* score, const data_size_t /*num_data*/) const {
+#endif  // USE_CUDA_EXP
   #ifdef USE_CUDA_EXP
   const bool evaluation_on_cuda = metric->IsCUDAMetric();
   if ((boosting_on_gpu_ && evaluation_on_cuda) || (!boosting_on_gpu_ && !evaluation_on_cuda)) {
@@ -615,7 +619,7 @@ std::vector<double> GBDT::EvalOneMetric(const Metric* metric, const double* scor
     return metric->Eval(score, objective_function_);
   #ifdef USE_CUDA_EXP
   } else if (boosting_on_gpu_ && !evaluation_on_cuda) {
-    const size_t total_size = static_cast<size_t>(num_data_) * static_cast<size_t>(num_tree_per_iteration_);
+    const size_t total_size = static_cast<size_t>(num_data) * static_cast<size_t>(num_tree_per_iteration_);
     if (total_size > host_score_.size()) {
       host_score_.resize(total_size, 0.0f);
     }
