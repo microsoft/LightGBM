@@ -6,6 +6,8 @@
 
 #ifdef USE_CUDA_EXP
 
+#include <algorithm>
+
 #include "cuda_binary_objective.hpp"
 
 namespace LightGBM {
