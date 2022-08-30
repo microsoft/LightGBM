@@ -180,8 +180,8 @@ test_that("Loading a Booster from a text file works", {
         , force_col_wise = TRUE
         , categorical_feature = c(1L, 2L)
         , interaction_constraints = list(c(1L, 2L), 1L)
-        , feature_contri = rep(0.5, ncol(train)),
-        , metric = c("map", "average_precision"),
+        , feature_contri = rep(0.5, ncol(train$data))
+        , metric = c("mape", "average_precision")
         , learning_rate = 1.0
         , objective = "binary"
         , verbosity = VERBOSITY
