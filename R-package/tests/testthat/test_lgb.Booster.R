@@ -177,7 +177,7 @@ test_that("Loading a Booster from a text file works", {
         , boosting = "rf"
         , bagging_fraction = 0.8
         , bagging_freq = 1L
-        , force_col_wise = TRUE
+        , boost_from_average = TRUE
         , categorical_feature = c(1L, 2L)
         , interaction_constraints = list(c(1L, 2L), 1L)
         , feature_contri = rep(0.5, ncol(train$data))
