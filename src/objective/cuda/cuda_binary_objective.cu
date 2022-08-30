@@ -90,7 +90,7 @@ void CUDABinaryLogloss::LaunchBoostFromScoreKernel() const {
   SynchronizeCUDADevice(__FILE__, __LINE__);
   if (cuda_weights_ == nullptr) {
     BoostFromScoreKernel_2_BinaryLogloss<false><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
-  } else{
+  } else {
     BoostFromScoreKernel_2_BinaryLogloss<true><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
