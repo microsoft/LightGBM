@@ -764,6 +764,14 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
     num_data = valid_score_updater_[used_idx]->num_data();
     *out_len = static_cast<int64_t>(num_data) * num_class_;
   }
+  #ifdef USE_CUDA_EXP
+  std::vector<double> host_raw_scores;
+  if (boosting_on_gpu_) {
+    host_raw_scores.resize(static_cast<size_t>(*out_len), 0.0);
+    CopyFromCUDADeviceToHost<double>(host_raw_scores.data(), raw_scores, static_cast<size_t>(*out_len), __FILE__, __LINE__);
+    raw_scores = host_raw_scores.data();
+  }
+  #endif  // USE_CUDA_EXP
   if (objective_function_ != nullptr) {
     #pragma omp parallel for schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {

@@ -64,6 +64,7 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   // CUDA memory, held by this object
   double* cuda_boost_from_score_;
+  double* cuda_sum_weights_;
   double* cuda_label_weights_;
   const int ova_class_id_ = -1;
 };
