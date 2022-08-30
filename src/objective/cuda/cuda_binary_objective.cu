@@ -15,8 +15,7 @@ namespace LightGBM {
 template <bool IS_OVA, bool USE_WEIGHT>
 __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_sum_labels,
                                                      double* out_cuda_sum_weights, const label_t* cuda_weights, const int ova_class_id) {
-  __shared__ double shared_label[32];
-  __shared__ double shared_weight[USE_WEIGHT ? 32 : 1];
+  __shared__ double shared_buffer[32];
   const uint32_t mask = 0xffffffff;
   const uint32_t warpLane = threadIdx.x % warpSize;
   const uint32_t warpID = threadIdx.x / warpSize;
@@ -40,11 +39,11 @@ __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels,
     label_value += __shfl_down_sync(mask, label_value, offset);
   }
   if (warpLane == 0) {
-    shared_label[warpID] = label_value;
+    shared_buffer[warpID] = label_value;
   }
   __syncthreads();
   if (warpID == 0) {
-    label_value = (warpLane < num_warp ? shared_label[warpLane] : 0);
+    label_value = (warpLane < num_warp ? shared_buffer[warpLane] : 0);
     for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
       label_value += __shfl_down_sync(mask, label_value, offset);
     }
@@ -55,11 +54,11 @@ __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels,
       weight_value += __shfl_down_sync(mask, weight_value, offset);
     }
     if (warpLane == 0) {
-      shared_weight[warpID] = weight_value;
+      shared_buffer[warpID] = weight_value;
     }
     __syncthreads();
     if (warpID == 0) {
-      weight_value = (warpLane < num_warp ? shared_weight[warpLane] : 0);
+      weight_value = (warpLane < num_warp ? shared_buffer[warpLane] : 0);
       for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
         weight_value += __shfl_down_sync(mask, weight_value, offset);
       }
