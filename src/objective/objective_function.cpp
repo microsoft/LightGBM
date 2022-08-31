@@ -10,6 +10,8 @@
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
 
+#include "cuda/cuda_binary_objective.hpp"
+
 namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
@@ -34,8 +36,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       Log::Warning("Objective poisson is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionPoissonLoss(config);
     } else if (type == std::string("binary")) {
-      Log::Warning("Objective binary is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new BinaryLogloss(config);
+      return new CUDABinaryLogloss(config);
     } else if (type == std::string("lambdarank")) {
       Log::Warning("Objective lambdarank is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new LambdarankNDCG(config);

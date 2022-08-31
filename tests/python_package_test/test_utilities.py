@@ -92,7 +92,6 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Info] LightGBM using CUDA trainer with DP float!!"
     ]
     cuda_exp_lines = [
-        "INFO | [LightGBM] [Warning] Objective binary is not implemented in cuda_exp version. Fall back to boosting on CPU.",
         "INFO | [LightGBM] [Warning] Metric auc is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
         "INFO | [LightGBM] [Warning] Metric binary_error is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
     ]
