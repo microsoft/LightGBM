@@ -847,10 +847,4 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DumpParamAliases_R();
 
-/*!
-* \brief Dump parameter types to JSON
-* \return R character vector (length=1) with types JSON
-*/
-LIGHTGBM_C_EXPORT SEXP LGBM_DumpParamTypes_R();
-
 #endif  // LIGHTGBM_R_H_

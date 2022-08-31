@@ -164,20 +164,47 @@ class GBDT : public GBDTBase {
     if (loaded_parameter_.empty()) {
       return std::string("{}");
     }
-    std::stringstream str_buf;
-    str_buf << "{";
+    const auto param_types = Config::ParameterTypes();
     const auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
     bool first = true;
+    std::stringstream str_buf;
+    str_buf << "{";
     for (const auto& line : lines) {
       const auto pair = Common::Split(line.c_str(), ":");
-      if (pair[1] != " ]") {
-        if (first) {
-          first = false;
-          str_buf << "\"";
+      if (pair[1] == " ]")
+        continue;
+      if (first) {
+        first = false;
+        str_buf << "\"";
+      } else {
+        str_buf << ",\"";
+      }
+      const auto param = pair[0].substr(1);
+      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
+      const auto param_type = param_types.at(param);
+      str_buf << param << "\": ";
+      if (param_type == "string") {
+        str_buf << "\"" << value_str << "\"";
+      } else if (param_type == "int") {
+        int value;
+        Common::Atoi(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "double") {
+        double value;
+        Common::Atof(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "bool") {
+        bool value = value_str == "1";
+        str_buf << std::boolalpha << value;
+      } else if (param_type.substr(0, 6) == "vector") {
+        str_buf << "[";
+        if (param_type.substr(7, 6) == "string") {
+          const auto parts = Common::Split(value_str.c_str(), ",");
+          str_buf << "\"" << Common::Join(parts, "\",\"") << "\"";
         } else {
-          str_buf << ",\"";
+          str_buf << value_str;
         }
-        str_buf << pair[0].substr(1) << "\": \"" << pair[1].substr(1, pair[1].size() - 2) << "\"";
+        str_buf << "]";
       }
     }
     str_buf << "}";

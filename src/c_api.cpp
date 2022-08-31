@@ -900,18 +900,6 @@ int LGBM_DumpParamAliases(int64_t buffer_len,
   API_END();
 }
 
-int LGBM_DumpParamTypes(int64_t buffer_len,
-                            int64_t* out_len,
-                            char* out_str) {
-  API_BEGIN();
-  std::string ptypes = Config::ParameterTypes();
-  *out_len = static_cast<int64_t>(ptypes.size()) + 1;
-  if (*out_len <= buffer_len) {
-    std::memcpy(out_str, ptypes.c_str(), *out_len);
-  }
-  API_END();
-}
-
 int LGBM_RegisterLogCallback(void (*callback)(const char*)) {
   API_BEGIN();
   Log::ResetCallBack(callback);

@@ -63,24 +63,6 @@
     return(params_to_aliases)
 }
 
-# [description] List of parameter types. Wrapped in a function to take advantage of
-#               lazy evaluation (so it doesn't matter what order R sources files during installation).
-# [return] A named list, where each key is a main LightGBM parameter and each value is a character
-#          vector of corresponding of their type name in C++.
-.PARAMETER_TYPES <- function() {
-    json_str <- .Call(
-      LGBM_DumpParamTypes_R
-    )
-    param_types <- jsonlite::fromJSON(json_str)
-    # store in cache so the next call to `.PARAMETER_TYPES()` doesn't need to recompute this
-    assign(
-        x = "PARAMETER_TYPES"
-        , value = param_types
-        , envir = .lgb_session_cache_env
-    )
-    return(param_types)
-}
-
 # [description]
 #     Per https://github.com/microsoft/LightGBM/blob/master/docs/Parameters.rst#metric,
 #     a few different strings can be used to indicate "no metrics".

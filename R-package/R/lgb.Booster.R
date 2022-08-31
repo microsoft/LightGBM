@@ -734,43 +734,11 @@ Booster <- R6::R6Class(
         , handle
       )
       params <- jsonlite::fromJSON(params_str)
-      param_types <- .PARAMETER_TYPES()
-
-      type_name_to_fn <- c(
-        "string" = as.character
-        , "int" = as.integer
-        , "double" = as.numeric
-        , "bool" = function(x) x == "1"
-      )
-
-      parse_param <- function(value, type_name) {
-        if (grepl("vector", type_name)) {
-          eltype_name <- sub("vector<(.*)>", "\\1", type_name)
-          if (grepl("vector", eltype_name)) {
-            # value is like "[0,1],[0]", we make it a JSON array to parse it as a list
-            values <- jsonlite::fromJSON(paste0("[", value, "]"))
-          } else {
-            parse_fn <- type_name_to_fn[[eltype_name]]
-            values <- parse_fn(strsplit(value, ",")[[1L]])
-          }
-          return(values)
-        }
-        parse_fn <- type_name_to_fn[[type_name]]
-        parsed_value <- parse_fn(value)
-
-        return(parsed_value)
+      if ("interaction_constraints" %in% names(params)) {
+        params[["interaction_constraints"]] <- lapply(params[["interaction_constraints"]], function(x) x + 1L)
       }
 
-      res <- list()
-      for (param_name in names(params)) {
-        value <- parse_param(params[[param_name]], param_types[[param_name]])
-        if (param_name == "interaction_constraints") {
-          value <- lapply(value, function(x) x + 1L)
-        }
-        res[[param_name]] <- value
-      }
-
-      return(res)
+      return(params)
 
     },
 

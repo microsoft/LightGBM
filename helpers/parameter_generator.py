@@ -374,11 +374,9 @@ def gen_parameter_code(
 }
 
 """
-    str_to_write += """const std::string Config::ParameterTypes() {
-  std::stringstream str_buf;
-  str_buf << "{";"""
+    str_to_write += """const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
+  static std::unordered_map<std::string, std::string> map({"""
     int_t_pat = re.compile(r'int\d+_t')
-    first = True
     # the following are stored as comma separated strings but are arrays in the wrappers
     overrides = {
         'categorical_feature': 'vector<int>',
@@ -394,15 +392,10 @@ def gen_parameter_code(
                 param_type = overrides[name]
             else:
                 param_type = int_t_pat.sub('int', y["inner_type"][0]).replace('std::', '')
-            prefix = f'\n  str_buf << "'
-            if first:
-                first = False
-            else:
-                prefix += ','
-            str_to_write += f'{prefix}\\"{name}\\": \\"{param_type}\\"";'
+            str_to_write += '\n    {"' + name + '", "' + param_type + '"},'
     str_to_write += """
-  str_buf << "}";
-  return str_buf.str();
+  });
+  return map;
 }
 
 """

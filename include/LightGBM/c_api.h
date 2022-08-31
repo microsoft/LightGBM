@@ -64,17 +64,6 @@ LIGHTGBM_C_EXPORT int LGBM_DumpParamAliases(int64_t buffer_len,
                                             char* out_str);
 
 /*!
- * \brief Dump all parameter names with their types to JSON.
- * \param buffer_len String buffer length, if ``buffer_len < out_len``, you should re-allocate buffer
- * \param[out] out_len Actual output length
- * \param[out] out_str JSON format string of parameters, should pre-allocate memory
- * \return 0 when succeed, -1 when failure happens
- */
-LIGHTGBM_C_EXPORT int LGBM_DumpParamTypes(int64_t buffer_len,
-                                              int64_t* out_len,
-                                              char* out_str);
-
-/*!
  * \brief Register a callback function for log redirecting.
  * \param callback The callback function to register
  * \return 0 when succeed, -1 when failure happens
