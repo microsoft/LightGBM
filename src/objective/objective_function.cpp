@@ -12,6 +12,7 @@
 
 #include "cuda/cuda_binary_objective.hpp"
 #include "cuda/cuda_rank_objective.hpp"
+#include "cuda/cuda_regression_objective.hpp"
 
 namespace LightGBM {
 
@@ -19,8 +20,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
   #ifdef USE_CUDA_EXP
   if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
     if (type == std::string("regression")) {
-      Log::Warning("Objective regression is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionL2loss(config);
+      return new CUDARegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {
       Log::Warning("Objective regression_l1 is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionL1loss(config);

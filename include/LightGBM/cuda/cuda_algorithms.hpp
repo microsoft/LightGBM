@@ -431,6 +431,12 @@ void BitonicArgSortItemsGlobal(
   const data_size_t* cuda_query_boundaries,
   data_size_t* out_indices);
 
+template <typename VAL_T, typename REDUCE_T>
+void ShuffleReduceSumGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer);
+
+template <typename VAL_T, typename REDUCE_T>
+void ShuffleReduceDotProdGlobal(const VAL_T* values1, const VAL_T* values2, size_t n, REDUCE_T* block_buffer);
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
