@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import roc_auc_score
 
 import lightgbm as lgb
 
@@ -84,8 +84,8 @@ bst = lgb.Booster(model_file='model.txt')
 # can only predict with the best iteration (or the saving iteration)
 y_pred = bst.predict(X_test)
 # eval with loaded model
-rmse_loaded_model = mean_squared_error(y_test, y_pred) ** 0.5
-print(f"The RMSE of loaded model's prediction is: {rmse_loaded_model}")
+auc_loaded_model = roc_auc_score(y_test, y_pred)
+print(f"The ROC AUC of loaded model's prediction is: {auc_loaded_model}")
 
 print('Dumping and loading model with pickle...')
 # dump model with pickle
@@ -97,8 +97,8 @@ with open('model.pkl', 'rb') as fin:
 # can predict with any iteration when loaded in pickle way
 y_pred = pkl_bst.predict(X_test, num_iteration=7)
 # eval with loaded model
-rmse_pickled_model = mean_squared_error(y_test, y_pred) ** 0.5
-print(f"The RMSE of pickled model's prediction is: {rmse_pickled_model}")
+auc_pickled_model = roc_auc_score(y_test, y_pred)
+print(f"The ROC AUC of pickled model's prediction is: {auc_pickled_model}")
 
 # continue training
 # init_model accepts:
