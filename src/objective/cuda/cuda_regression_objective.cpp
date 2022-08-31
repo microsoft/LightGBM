@@ -58,10 +58,10 @@ void CUDARegressionL2loss::RenewTreeOutputCUDA(
   const data_size_t* data_start_in_leaf,
   const int num_leaves,
   double* leaf_value) const {
-  global_timer.Start("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
+  global_timer.Start("CUDARegressionL2loss::LaunchRenewTreeOutputCUDAKernel");
   LaunchRenewTreeOutputCUDAKernel(score, data_indices_in_leaf, num_data_in_leaf, data_start_in_leaf, num_leaves, leaf_value);
   SynchronizeCUDADevice(__FILE__, __LINE__);
-  global_timer.Stop("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
+  global_timer.Stop("CUDARegressionL2loss::LaunchRenewTreeOutputCUDAKernel");
 }
 
 
