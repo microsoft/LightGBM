@@ -30,7 +30,7 @@ __global__ void ConvertOutputCUDAKernel_Regression(const bool sqrt, const data_s
   const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
   if (data_index < num_data) {
     if (sqrt) {
-      const double sign = input[data_index] >= 0.0f ? 1 : -1; 
+      const double sign = input[data_index] >= 0.0f ? 1 : -1;
       output[data_index] = sign * input[data_index] * input[data_index];
     } else {
       output[data_index] = input[data_index];

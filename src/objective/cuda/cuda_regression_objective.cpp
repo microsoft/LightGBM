@@ -8,6 +8,9 @@
 
 #include "cuda_regression_objective.hpp"
 
+#include <string>
+#include <vector>
+
 namespace LightGBM {
 
 CUDARegressionL2loss::CUDARegressionL2loss(const Config& config):

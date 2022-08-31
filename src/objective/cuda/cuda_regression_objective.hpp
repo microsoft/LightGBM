@@ -12,6 +12,10 @@
 #define GET_GRADIENTS_BLOCK_SIZE_REGRESSION (1024)
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
+
+#include <string>
+#include <vector>
+
 #include "../regression_objective.hpp"
 
 namespace LightGBM {
