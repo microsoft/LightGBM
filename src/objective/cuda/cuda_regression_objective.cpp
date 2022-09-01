@@ -65,7 +65,6 @@ void CUDARegressionL2loss::RenewTreeOutputCUDA(
 }
 
 
-
 CUDARegressionL1loss::CUDARegressionL1loss(const Config& config):
 CUDARegressionL2loss(config) {}
 

@@ -492,6 +492,7 @@ __device__ VAL_T PercentileDevice(const VAL_T* values,
                                   const double alpha,
                                   const INDEX_T len);
 
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

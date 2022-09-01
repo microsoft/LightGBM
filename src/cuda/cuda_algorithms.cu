@@ -466,6 +466,7 @@ __device__ double PercentileDevice<double, data_size_t, label_t, double, false, 
   return PercentileDeviceInner<double, data_size_t, label_t, double, false, false>(values, weights, indices, weights_prefix_sum, alpha, len);
 }
 
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

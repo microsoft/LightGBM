@@ -189,6 +189,7 @@ void CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel(
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
