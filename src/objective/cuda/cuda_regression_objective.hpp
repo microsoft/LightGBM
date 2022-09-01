@@ -75,6 +75,36 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 };
 
 
+class CUDARegressionL1loss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionL1loss(const Config& config);
+
+  explicit CUDARegressionL1loss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionL1loss();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+ protected:
+  CUDAVector<data_size_t> cuda_data_indices_buffer_;
+  mutable CUDAVector<double> cuda_weights_prefix_sum_;
+  CUDAVector<double> cuda_weights_prefix_sum_buffer_;
+  mutable CUDAVector<double> cuda_residual_buffer_;
+  mutable CUDAVector<label_t> cuda_weight_by_leaf_buffer_;
+  CUDAVector<label_t> cuda_percentile_result_;
+
+  double LaunchCalcInitScoreKernel() const override;
+
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  void LaunchRenewTreeOutputCUDAKernel(
+    const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
+    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
+};
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
