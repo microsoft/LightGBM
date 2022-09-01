@@ -1717,7 +1717,7 @@ class Dataset:
 
     def __init_from_list_np2d(
         self,
-        mats: np.ndarray,
+        mats: List[np.ndarray],
         params_str: str,
         ref_dataset: Optional[ctypes.c_void_p]
     ) -> "Dataset":
