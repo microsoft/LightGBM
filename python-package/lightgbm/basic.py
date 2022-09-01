@@ -22,6 +22,12 @@ from .libpath import find_lib_path
 
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_LabelType = Union[
+    list,
+    np.ndarray,
+    pd_Series,
+    pd_DataFrame
+]
 
 ZERO_THRESHOLD = 1e-35
 
@@ -1196,7 +1202,7 @@ class _InnerPredictor:
 class Dataset:
     """Dataset in LightGBM."""
 
-    def __init__(self, data, label=None, reference=None,
+    def __init__(self, data, label: Optional[_LGBM_LabelType] = None, reference=None,
                  weight=None, group=None, init_score=None,
                  feature_name='auto', categorical_feature='auto', params=None,
                  free_raw_data=True):
@@ -1488,7 +1494,7 @@ class Dataset:
             return self
         self.set_init_score(init_score)
 
-    def _lazy_init(self, data, label=None, reference=None,
+    def _lazy_init(self, data, label: Optional[_LGBM_LabelType] = None, reference=None,
                    weight=None, group=None, init_score=None, predictor=None,
                    feature_name='auto', categorical_feature='auto', params=None):
         if data is None:
@@ -1501,7 +1507,6 @@ class Dataset:
                                                                                              feature_name,
                                                                                              categorical_feature,
                                                                                              self.pandas_categorical)
-        label = _label_from_pandas(label)
 
         # process for args
         params = {} if params is None else params
@@ -1888,7 +1893,7 @@ class Dataset:
     def create_valid(
         self,
         data,
-        label=None,
+        label: Optional[_LGBM_LabelType] = None,
         weight=None,
         group=None,
         init_score=None,
@@ -2228,7 +2233,7 @@ class Dataset:
                 ctypes.c_int(len(feature_name))))
         return self
 
-    def set_label(self, label) -> "Dataset":
+    def set_label(self, label: Optional[_LGBM_LabelType]) -> "Dataset":
         """Set label of Dataset.
 
         Parameters
@@ -2243,8 +2248,14 @@ class Dataset:
         """
         self.label = label
         if self.handle is not None:
-            label = list_to_1d_numpy(_label_from_pandas(label), name='label')
-            self.set_field('label', label)
+            if isinstance(label, pd_DataFrame):
+                if len(label.columns) > 1:
+                    raise ValueError('DataFrame for label cannot have multiple columns')
+                _check_for_bad_pandas_dtypes(label.dtypes)
+                label_array = np.ravel(label.values.astype(np.float32, copy=False))
+            else:
+                label_array = list_to_1d_numpy(label, name='label')
+            self.set_field('label', label_array)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
