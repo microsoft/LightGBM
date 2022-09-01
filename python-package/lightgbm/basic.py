@@ -1509,7 +1509,7 @@ class Dataset:
         feature_name='auto',
         categorical_feature='auto',
         params: Optional[Dict[str, Any]] = None
-    ):
+    ) -> "Dataset":
         if data is None:
             self.handle = None
             return self
