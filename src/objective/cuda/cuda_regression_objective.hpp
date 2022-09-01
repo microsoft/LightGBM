@@ -61,8 +61,8 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   const label_t* cuda_labels_;
   const label_t* cuda_weights_;
-  label_t* cuda_trans_label_;
-  double* cuda_block_buffer_;
+  CUDAVector<label_t> cuda_trans_label_;
+  CUDAVector<double> cuda_block_buffer_;
   data_size_t num_get_gradients_blocks_;
   data_size_t num_init_score_blocks_;
 };
@@ -85,10 +85,10 @@ class CUDARegressionL1loss : public CUDARegressionL2loss {
 
  protected:
   CUDAVector<data_size_t> cuda_data_indices_buffer_;
-  mutable CUDAVector<double> cuda_weights_prefix_sum_;
+  CUDAVector<double> cuda_weights_prefix_sum_;
   CUDAVector<double> cuda_weights_prefix_sum_buffer_;
-  mutable CUDAVector<double> cuda_residual_buffer_;
-  mutable CUDAVector<label_t> cuda_weight_by_leaf_buffer_;
+  CUDAVector<double> cuda_residual_buffer_;
+  CUDAVector<label_t> cuda_weight_by_leaf_buffer_;
   CUDAVector<label_t> cuda_percentile_result_;
 
   double LaunchCalcInitScoreKernel() const override;

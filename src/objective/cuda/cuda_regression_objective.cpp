@@ -14,28 +14,23 @@
 namespace LightGBM {
 
 CUDARegressionL2loss::CUDARegressionL2loss(const Config& config):
-RegressionL2loss(config) {
-  cuda_block_buffer_ = nullptr;
-  cuda_trans_label_ = nullptr;
-}
+RegressionL2loss(config) {}
 
 CUDARegressionL2loss::CUDARegressionL2loss(const std::vector<std::string>& strs):
 RegressionL2loss(strs) {}
 
-CUDARegressionL2loss::~CUDARegressionL2loss() {
-  DeallocateCUDAMemory(&cuda_block_buffer_, __FILE__, __LINE__);
-  DeallocateCUDAMemory(&cuda_trans_label_, __FILE__, __LINE__);
-}
+CUDARegressionL2loss::~CUDARegressionL2loss() {}
 
 void CUDARegressionL2loss::Init(const Metadata& metadata, data_size_t num_data) {
   RegressionL2loss::Init(metadata, num_data);
   cuda_labels_ = metadata.cuda_metadata()->cuda_label();
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
   num_get_gradients_blocks_ = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
-  AllocateCUDAMemory<double>(&cuda_block_buffer_, static_cast<size_t>(num_get_gradients_blocks_), __FILE__, __LINE__);
+  cuda_block_buffer_.Resize(static_cast<size_t>(num_get_gradients_blocks_));
   if (sqrt_) {
-    InitCUDAMemoryFromHostMemory<label_t>(&cuda_trans_label_, trans_label_.data(), trans_label_.size(), __FILE__, __LINE__);
-    cuda_labels_ = cuda_trans_label_;
+    cuda_trans_label_.Resize(trans_label_.size());
+    CopyFromHostToCUDADevice<label_t>(cuda_trans_label_.RawData(), trans_label_.data(), trans_label_.size(), __FILE__, __LINE__);
+    cuda_labels_ = cuda_trans_label_.RawData();
   }
 }
 
