@@ -51,19 +51,6 @@ void CUDARegressionL2loss::ConvertOutputCUDA(const data_size_t num_data, const d
   LaunchConvertOutputCUDAKernel(num_data, input, output);
 }
 
-void CUDARegressionL2loss::RenewTreeOutputCUDA(
-  const double* score,
-  const data_size_t* data_indices_in_leaf,
-  const data_size_t* num_data_in_leaf,
-  const data_size_t* data_start_in_leaf,
-  const int num_leaves,
-  double* leaf_value) const {
-  global_timer.Start("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
-  LaunchRenewTreeOutputCUDAKernel(score, data_indices_in_leaf, num_data_in_leaf, data_start_in_leaf, num_leaves, leaf_value);
-  SynchronizeCUDADevice(__FILE__, __LINE__);
-  global_timer.Stop("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
-}
-
 
 CUDARegressionL1loss::CUDARegressionL1loss(const Config& config):
 CUDARegressionL2loss(config) {}
@@ -86,6 +73,18 @@ void CUDARegressionL1loss::Init(const Metadata& metadata, data_size_t num_data) 
   cuda_residual_buffer_.Resize(static_cast<size_t>(num_data));
 }
 
+void CUDARegressionL1loss::RenewTreeOutputCUDA(
+  const double* score,
+  const data_size_t* data_indices_in_leaf,
+  const data_size_t* num_data_in_leaf,
+  const data_size_t* data_start_in_leaf,
+  const int num_leaves,
+  double* leaf_value) const {
+  global_timer.Start("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
+  LaunchRenewTreeOutputCUDAKernel(score, data_indices_in_leaf, num_data_in_leaf, data_start_in_leaf, num_leaves, leaf_value);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+  global_timer.Stop("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
+}
 
 }  // namespace LightGBM
 

@@ -36,9 +36,6 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   double BoostFromScore(int) const override;
 
-  void RenewTreeOutputCUDA(const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
-    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
-
   std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
     return [this] (data_size_t num_data, const double* input, double* output) {
       ConvertOutputCUDA(num_data, input, output);
@@ -62,10 +59,6 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   virtual void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
-  virtual void LaunchRenewTreeOutputCUDAKernel(
-    const double* /*score*/, const data_size_t* /*data_indices_in_leaf*/, const data_size_t* /*num_data_in_leaf*/,
-    const data_size_t* /*data_start_in_leaf*/, const int /*num_leaves*/, double* /*leaf_value*/) const {}
-
   const label_t* cuda_labels_;
   const label_t* cuda_weights_;
   label_t* cuda_trans_label_;
@@ -85,6 +78,9 @@ class CUDARegressionL1loss : public CUDARegressionL2loss {
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
+  void RenewTreeOutputCUDA(const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
+    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
+
   bool IsRenewTreeOutput() const override { return true; }
 
  protected:
@@ -101,7 +97,7 @@ class CUDARegressionL1loss : public CUDARegressionL2loss {
 
   void LaunchRenewTreeOutputCUDAKernel(
     const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
-    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
+    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const;
 };
 
 
