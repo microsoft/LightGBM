@@ -1196,10 +1196,19 @@ class _InnerPredictor:
 class Dataset:
     """Dataset in LightGBM."""
 
-    def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None,
-                 feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True):
+    def __init__(
+        self,
+        data,
+        label=None,
+        reference: Optional["Dataset"] = None,
+        weight=None,
+        group=None,
+        init_score=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        params: Optional[Dict[str, Any]] = None,
+        free_raw_data: bool = True
+    ):
         """Initialize Dataset.
 
         Parameters
@@ -1488,9 +1497,19 @@ class Dataset:
             return self
         self.set_init_score(init_score)
 
-    def _lazy_init(self, data, label=None, reference=None,
-                   weight=None, group=None, init_score=None, predictor=None,
-                   feature_name='auto', categorical_feature='auto', params=None):
+    def _lazy_init(
+        self,
+        data,
+        label=None,
+        reference: Optional["Dataset"] = None,
+        weight=None,
+        group=None,
+        init_score=None,
+        predictor=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        params: Optional[Dict[str, Any]] = None
+    ):
         if data is None:
             self.handle = None
             return self
@@ -1635,7 +1654,11 @@ class Dataset:
 
         return filtered, filtered_idx
 
-    def __init_from_seqs(self, seqs: List[Sequence], ref_dataset: Optional['Dataset'] = None):
+    def __init_from_seqs(
+        self,
+        seqs: List[Sequence],
+        ref_dataset: Optional["Dataset"] = None
+    ) -> "Dataset":
         """
         Initialize data from list of Sequence objects.
 
@@ -1664,7 +1687,12 @@ class Dataset:
                 self._push_rows(seq[start:end])
         return self
 
-    def __init_from_np2d(self, mat, params_str, ref_dataset):
+    def __init_from_np2d(
+        self,
+        mat: np.ndarray,
+        params_str: str,
+        ref_dataset: Optional[ctypes.c_void_p]
+    ) -> "Dataset":
         """Initialize data from a 2-D numpy matrix."""
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray must be 2 dimensional')
@@ -1687,7 +1715,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_list_np2d(self, mats, params_str, ref_dataset):
+    def __init_from_list_np2d(
+        self,
+        mats: np.ndarray,
+        params_str: str,
+        ref_dataset: Optional[ctypes.c_void_p]
+    ) -> "Dataset":
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
         nrow = np.empty((len(mats),), np.int32)
@@ -1733,7 +1766,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_csr(self, csr, params_str, ref_dataset):
+    def __init_from_csr(
+        self,
+        csr: scipy.sparse.csr_matrix,
+        params_str: str,
+        ref_dataset: Optional[ctypes.c_void_p]
+    ) -> "Dataset":
         """Initialize data from a CSR matrix."""
         if len(csr.indices) != len(csr.data):
             raise ValueError(f'Length mismatch: {len(csr.indices)} vs {len(csr.data)}')
@@ -1759,7 +1797,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_csc(self, csc, params_str, ref_dataset):
+    def __init_from_csc(
+        self,
+        csc: scipy.sparse.csc_matrix,
+        params_str: str,
+        ref_dataset: Optional[ctypes.c_void_p]
+    ) -> "Dataset":
         """Initialize data from a CSC matrix."""
         if len(csc.indices) != len(csc.data):
             raise ValueError(f'Length mismatch: {len(csc.indices)} vs {len(csc.data)}')
