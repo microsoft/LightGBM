@@ -300,48 +300,55 @@ void CUDASingleGPUTreeLearner::SetBaggingData(const Dataset* /*subset*/,
 }
 
 void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                               data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const {
   CHECK(tree->is_cuda_tree());
   CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(cuda_tree->num_leaves(), data_partition_->num_leaves());
-    const data_size_t* bag_mapper = nullptr;
-    if (total_num_data != num_data_) {
-      CHECK_EQ(bag_cnt, num_data_);
-      bag_mapper = bag_indices;
-    }
-    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
-    int num_machines = Network::num_machines();
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      const double output = static_cast<double>(tree->LeafOutput(i));
-      data_size_t cnt_leaf_data = leaf_num_data_[i];
-      std::vector<data_size_t> index_mapper(cnt_leaf_data, -1);
-      CopyFromCUDADeviceToHost<data_size_t>(index_mapper.data(),
-        cuda_data_partition_->cuda_data_indices() + leaf_data_start_[i],
-        static_cast<size_t>(cnt_leaf_data), __FILE__, __LINE__);
-      if (cnt_leaf_data > 0) {
-        const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper.data(), bag_mapper, cnt_leaf_data);
-        tree->SetLeafOutput(i, new_output);
-      } else {
-        CHECK_GT(num_machines, 1);
-        tree->SetLeafOutput(i, 0.0);
-        n_nozeroworker_perleaf[i] = 0;
+    if (boosting_on_cuda_) {
+      obj->RenewTreeOutputCUDA(train_score, cuda_data_partition_->cuda_data_indices(),
+                               cuda_data_partition_->cuda_leaf_num_data(), cuda_data_partition_->cuda_leaf_data_start(),
+                               cuda_tree->num_leaves(), cuda_tree->cuda_leaf_value_ref());
+      cuda_tree->SyncLeafOutputFromCUDAToHost();
+    } else {
+      const data_size_t* bag_mapper = nullptr;
+      if (total_num_data != num_data_) {
+        CHECK_EQ(bag_cnt, num_data_);
+        bag_mapper = bag_indices;
+      }
+      std::vector<int> n_nozeroworker_perleaf(cuda_tree->num_leaves(), 1);
+      int num_machines = Network::num_machines();
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+        const double output = static_cast<double>(cuda_tree->LeafOutput(i));
+        data_size_t cnt_leaf_data = leaf_num_data_[i];
+        std::vector<data_size_t> index_mapper(cnt_leaf_data, -1);
+        CopyFromCUDADeviceToHost<data_size_t>(index_mapper.data(),
+          cuda_data_partition_->cuda_data_indices() + leaf_data_start_[i],
+          static_cast<size_t>(cnt_leaf_data), __FILE__, __LINE__);
+        if (cnt_leaf_data > 0) {
+          const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper.data(), bag_mapper, cnt_leaf_data);
+          cuda_tree->SetLeafOutput(i, new_output);
+        } else {
+          CHECK_GT(num_machines, 1);
+          cuda_tree->SetLeafOutput(i, 0.0);
+          n_nozeroworker_perleaf[i] = 0;
+        }
+      }
+      if (num_machines > 1) {
+        std::vector<double> outputs(cuda_tree->num_leaves());
+        for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+          outputs[i] = static_cast<double>(cuda_tree->LeafOutput(i));
+        }
+        outputs = Network::GlobalSum(&outputs);
+        n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
+        for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+          cuda_tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
+        }
       }
     }
-    if (num_machines > 1) {
-      std::vector<double> outputs(tree->num_leaves());
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        outputs[i] = static_cast<double>(tree->LeafOutput(i));
-      }
-      outputs = Network::GlobalSum(&outputs);
-      n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
-      }
-    }
+    cuda_tree->SyncLeafOutputFromHostToCUDA();
   }
-  cuda_tree->SyncLeafOutputFromHostToCUDA();
 }
 
 Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const {
