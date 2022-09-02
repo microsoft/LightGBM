@@ -42,15 +42,14 @@ void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
     max_items_in_query_aligned_ <<= 1;
   }
   if (max_items_in_query_aligned_ > 2048) {
-    AllocateCUDAMemory<int>(&cuda_item_indices_buffer_,
-                                 static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]),
-                                 __FILE__, __LINE__);
+    cuda_item_indices_buffer_.Resize(static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]));
   }
   cuda_labels_ = metadata.cuda_metadata()->cuda_label();
   cuda_query_boundaries_ = metadata.cuda_metadata()->cuda_query_boundaries();
-  AllocateCUDAMemory<double>(&cuda_lambdas_, num_data_, __FILE__, __LINE__);
-  AllocateCUDAMemory<double>(&cuda_inverse_max_dcgs_, num_queries_, __FILE__, __LINE__);
-  LaunchCalcInverseMaxDCGKernel();
+  cuda_inverse_max_dcgs_.Resize(inverse_max_dcgs_.size());
+  CopyFromHostToCUDADevice(cuda_inverse_max_dcgs_.RawData(), inverse_max_dcgs_.data(), inverse_max_dcgs_.size(), __FILE__, __LINE__);
+  cuda_label_gain_.Resize(label_gain_.size());
+  CopyFromHostToCUDADevice(cuda_label_gain_.RawData(), label_gain_.data(), label_gain_.size(), __FILE__, __LINE__);
 }
 
 void CUDALambdarankNDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {

@@ -10,7 +10,6 @@
 #ifdef USE_CUDA_EXP
 
 #define NUM_QUERY_PER_BLOCK (10)
-#define MAX_RANK_LABEL (32)
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 #include "../rank_objective.hpp"
@@ -36,12 +35,10 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
 
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
 
-  void LaunchCalcInverseMaxDCGKernel();
-
   // CUDA memory, held by this object
-  double* cuda_lambdas_;
-  double* cuda_inverse_max_dcgs_;
-  int* cuda_item_indices_buffer_;
+  CUDAVector<double> cuda_inverse_max_dcgs_;
+  CUDAVector<double> cuda_label_gain_;
+  CUDAVector<int> cuda_item_indices_buffer_;
 
   // CUDA memory, held by other objects
   const label_t* cuda_labels_;

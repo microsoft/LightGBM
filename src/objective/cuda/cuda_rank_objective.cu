@@ -14,15 +14,26 @@
 
 namespace LightGBM {
 
-template <bool MAX_ITEM_GREATER_THAN_1024>
+template <bool MAX_ITEM_GREATER_THAN_1024, data_size_t NUM_RANK_LABEL>
 __global__ void GetGradientsKernel_LambdarankNDCG(const double* cuda_scores, const label_t* cuda_labels, const data_size_t num_data,
   const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
-  const bool norm, const double sigmoid, const int truncation_level,
+  const bool norm, const double sigmoid, const int truncation_level, const double* cuda_label_gain, const data_size_t num_rank_label,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
   __shared__ score_t shared_scores[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
   __shared__ uint16_t shared_indices[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
   __shared__ score_t shared_lambdas[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
   __shared__ score_t shared_hessians[MAX_ITEM_GREATER_THAN_1024 ? 2048 : 1024];
+  __shared__ double shared_label_gain[NUM_RANK_LABEL > 1024 ? 1 : NUM_RANK_LABEL];
+  const double* label_gain_ptr = nullptr;
+  if (NUM_RANK_LABEL <= 1024) {
+    for (uint32_t i = threadIdx.x; i < num_rank_label; i += blockDim.x) {
+      shared_label_gain[i] = cuda_label_gain[i];
+    }
+    __syncthreads();
+    label_gain_ptr = shared_label_gain;
+  } else {
+    label_gain_ptr = cuda_label_gain;
+  }
   const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
   const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
   for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
@@ -104,12 +115,12 @@ __global__ void GetGradientsKernel_LambdarankNDCG(const double* cuda_scores, con
         const data_size_t high = shared_indices[high_rank];
         const int high_label = static_cast<int>(cuda_label_pointer[high]);
         const double high_score = shared_scores[high];
-        const double high_label_gain = static_cast<double>((1 << high_label) - 1);
+        const double high_label_gain = label_gain_ptr[high_label];
         const double high_discount = log2(2.0f + high_rank);
         const data_size_t low = shared_indices[low_rank];
         const int low_label = static_cast<int>(cuda_label_pointer[low]);
         const double low_score = shared_scores[low];
-        const double low_label_gain = static_cast<double>((1 << low_label) - 1);
+        const double low_label_gain = label_gain_ptr[low_label];
         const double low_discount = log2(2.0f + low_rank);
 
         const double delta_score = high_score - low_score;
@@ -174,11 +185,23 @@ __global__ void GetGradientsKernel_LambdarankNDCG(const double* cuda_scores, con
   }
 }
 
+template <data_size_t NUM_RANK_LABEL>
 __global__ void GetGradientsKernel_LambdarankNDCG_Sorted(
   const double* cuda_scores, const int* cuda_item_indices_buffer, const label_t* cuda_labels, const data_size_t num_data,
   const data_size_t num_queries, const data_size_t* cuda_query_boundaries, const double* cuda_inverse_max_dcgs,
-  const bool norm, const double sigmoid, const int truncation_level,
+  const bool norm, const double sigmoid, const int truncation_level, const double* cuda_label_gain, const data_size_t num_rank_label,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  __shared__ double shared_label_gain[NUM_RANK_LABEL > 1024 ? 1 : NUM_RANK_LABEL];
+  const double* label_gain_ptr = nullptr;
+  if (NUM_RANK_LABEL <= 1024) {
+    for (uint32_t i = threadIdx.x; i < static_cast<uint32_t>(num_rank_label); i += blockDim.x) {
+      shared_label_gain[i] = cuda_label_gain[i];
+    }
+    __syncthreads();
+    label_gain_ptr = shared_label_gain;
+  } else {
+    label_gain_ptr = cuda_label_gain;
+  }
   const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
   const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
   for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
@@ -233,12 +256,12 @@ __global__ void GetGradientsKernel_LambdarankNDCG_Sorted(
           const data_size_t high = cuda_item_indices_buffer_pointer[high_rank];
           const int high_label = static_cast<int>(cuda_label_pointer[high]);
           const double high_score = cuda_scores_pointer[high];
-          const double high_label_gain = static_cast<double>((1 << high_label) - 1);
+          const double high_label_gain = label_gain_ptr[high_label];
           const double high_discount = log2(2.0f + high_rank);
           const data_size_t low = cuda_item_indices_buffer_pointer[low_rank];
           const int low_label = static_cast<int>(cuda_label_pointer[low]);
           const double low_score = cuda_scores_pointer[low];
-          const double low_label_gain = static_cast<double>((1 << low_label) - 1);
+          const double low_label_gain = label_gain_ptr[low_label];
           const double low_discount = log2(2.0f + low_rank);
 
           const double delta_score = high_score - low_score;
@@ -283,94 +306,74 @@ __global__ void GetGradientsKernel_LambdarankNDCG_Sorted(
 
 void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
+  const data_size_t num_rank_label = static_cast<int>(label_gain_.size());
+
+  #define GetGradientsKernel_LambdarankNDCG_ARGS \
+    score, cuda_labels_, num_data_, \
+    num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_.RawData(), \
+    norm_, sigmoid_, truncation_level_, cuda_label_gain_.RawData(), num_rank_label, \
+    gradients, hessians
+
+  #define GetGradientsKernel_LambdarankNDCG_Sorted_ARGS \
+    score, cuda_item_indices_buffer_.RawData(), cuda_labels_, num_data_, \
+    num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_.RawData(), \
+    norm_, sigmoid_, truncation_level_, cuda_label_gain_.RawData(), num_rank_label, \
+    gradients, hessians
+
   if (max_items_in_query_aligned_ <= 1024) {
-    GetGradientsKernel_LambdarankNDCG<false><<<num_blocks, max_items_in_query_aligned_>>>(score, cuda_labels_, num_data_,
-      num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
-      norm_, sigmoid_, truncation_level_,
-      gradients, hessians);
+    if (num_rank_label <= 32) {
+      GetGradientsKernel_LambdarankNDCG<false, 32><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 64) {
+      GetGradientsKernel_LambdarankNDCG<false, 64><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 128) {
+      GetGradientsKernel_LambdarankNDCG<false, 128><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 256) {
+      GetGradientsKernel_LambdarankNDCG<false, 256><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 512) {
+      GetGradientsKernel_LambdarankNDCG<false, 512><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 1024) {
+      GetGradientsKernel_LambdarankNDCG<false, 1024><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else {
+      GetGradientsKernel_LambdarankNDCG<false, 2048><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    }
   } else if (max_items_in_query_aligned_ <= 2048) {
-    GetGradientsKernel_LambdarankNDCG<true><<<num_blocks, 1024>>>(score, cuda_labels_, num_data_,
-      num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
-      norm_, sigmoid_, truncation_level_,
-      gradients, hessians);
+    if (num_rank_label <= 32) {
+      GetGradientsKernel_LambdarankNDCG<true, 32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 64) {
+      GetGradientsKernel_LambdarankNDCG<true, 64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 128) {
+      GetGradientsKernel_LambdarankNDCG<true, 128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 256) {
+      GetGradientsKernel_LambdarankNDCG<true, 256><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 512) {
+      GetGradientsKernel_LambdarankNDCG<true, 512><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else if (num_rank_label <= 1024) {
+      GetGradientsKernel_LambdarankNDCG<true, 1024><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    } else {
+      GetGradientsKernel_LambdarankNDCG<true, 2048><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
+    }
   } else {
-    BitonicArgSortItemsGlobal(score, num_queries_, cuda_query_boundaries_, cuda_item_indices_buffer_);
-    GetGradientsKernel_LambdarankNDCG_Sorted<<<num_blocks, 1024>>>(score, cuda_item_indices_buffer_, cuda_labels_, num_data_,
-      num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_,
-      norm_, sigmoid_, truncation_level_,
-      gradients, hessians);
+    BitonicArgSortItemsGlobal(score, num_queries_, cuda_query_boundaries_, cuda_item_indices_buffer_.RawData());
+    if (num_rank_label <= 32) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else if (num_rank_label <= 64) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else if (num_rank_label <= 128) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else if (num_rank_label <= 256) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<256><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else if (num_rank_label <= 512) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<512><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else if (num_rank_label <= 1024) {
+      GetGradientsKernel_LambdarankNDCG_Sorted<1024><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    } else {
+      GetGradientsKernel_LambdarankNDCG_Sorted<2048><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
+    }
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
-}
 
-// TODO(shiyu1994): calc inverse max dcg kernel should consider items >= 1024
-__global__ void CalcInverseMaxDCGKernel(
-  const data_size_t* cuda_query_boundaries,
-  const label_t* cuda_labels,
-  const int truncation_level,
-  const data_size_t num_queries,
-  double* cuda_inverse_max_dcgs) {
-  __shared__ uint32_t label_sum[MAX_RANK_LABEL];
-  __shared__ uint16_t label_pos[MAX_RANK_LABEL + 1];
-  __shared__ uint16_t shared_buffer[32];
-  uint16_t pos = 0;
-  const data_size_t query_index_start = static_cast<data_size_t>(blockIdx.x) * NUM_QUERY_PER_BLOCK;
-  const data_size_t query_index_end = min(query_index_start + NUM_QUERY_PER_BLOCK, num_queries);
-  for (data_size_t query_index = query_index_start; query_index < query_index_end; ++query_index) {
-    const data_size_t query_start = cuda_query_boundaries[query_index];
-    const data_size_t query_end = cuda_query_boundaries[query_index + 1];
-    const data_size_t query_count = query_end - query_start;
-    if (threadIdx.x < MAX_RANK_LABEL) {
-      label_sum[threadIdx.x] = 0;
-    }
-    __syncthreads();
-    const label_t* label_pointer = cuda_labels + query_start;
-    if (threadIdx.x < static_cast<unsigned int>(query_count)) {
-      atomicAdd_system(label_sum + (MAX_RANK_LABEL - 1 - static_cast<size_t>(label_pointer[threadIdx.x])), 1);
-    }
-    __syncthreads();
-    if (threadIdx.x < MAX_RANK_LABEL) {
-      pos = label_sum[threadIdx.x];
-    }
-    __syncthreads();
-    pos = ShufflePrefixSumExclusive<uint16_t>(pos, shared_buffer);
-    label_pos[threadIdx.x] = pos;
-    __syncthreads();
-    __shared__ double gain;
-    if (threadIdx.x == 0) {
-      gain = 0.0f;
-    }
-    __syncthreads();
-    if (threadIdx.x < MAX_RANK_LABEL && label_sum[threadIdx.x] > 0) {
-      const uint16_t start_pos = label_pos[threadIdx.x];
-      const uint16_t end_pos = min(label_pos[threadIdx.x + 1], truncation_level);
-      double label_gain = 0.0f;
-      for (uint16_t k = start_pos; k < end_pos; ++k) {
-        label_gain += ((1 << (MAX_RANK_LABEL - 1 - threadIdx.x)) - 1) / log(2.0f + k);
-      }
-      atomicAdd_system(&gain, label_gain);
-    }
-    __syncthreads();
-    if (threadIdx.x == 0) {
-      if (gain > 0.0f) {
-        cuda_inverse_max_dcgs[query_index] = 1.0f / gain;
-      } else {
-        cuda_inverse_max_dcgs[query_index] = 0.0f;
-      }
-    }
-    __syncthreads();
-  }
-}
-
-void CUDALambdarankNDCG::LaunchCalcInverseMaxDCGKernel() {
-  const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
-  CalcInverseMaxDCGKernel<<<num_blocks, MAX_RANK_LABEL>>>(
-    cuda_query_boundaries_,
-    cuda_labels_,
-    truncation_level_,
-    num_queries_,
-    cuda_inverse_max_dcgs_);
-  SynchronizeCUDADevice(__FILE__, __LINE__);
+  #undef GetGradientsKernel_LambdarankNDCG_ARGS
+  #undef GetGradientsKernel_LambdarankNDCG_Sorted_ARGS
 }
 
 
