@@ -101,6 +101,23 @@ class CUDARegressionL1loss : public CUDARegressionL2loss {
 };
 
 
+class CUDARegressionHuberLoss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionHuberLoss(const Config& config);
+
+  explicit CUDARegressionHuberLoss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionHuberLoss();
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  const double alpha_ = 0.0f;
+};
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
