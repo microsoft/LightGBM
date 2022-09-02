@@ -36,9 +36,6 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   double BoostFromScore(int) const override;
 
-  void RenewTreeOutputCUDA(const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
-    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
-
   std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
     return [this] (data_size_t num_data, const double* input, double* output) {
       ConvertOutputCUDA(num_data, input, output);
@@ -62,16 +59,62 @@ class CUDARegressionL2loss : public CUDAObjectiveInterface, public RegressionL2l
 
   virtual void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
-  virtual void LaunchRenewTreeOutputCUDAKernel(
-    const double* /*score*/, const data_size_t* /*data_indices_in_leaf*/, const data_size_t* /*num_data_in_leaf*/,
-    const data_size_t* /*data_start_in_leaf*/, const int /*num_leaves*/, double* /*leaf_value*/) const {}
-
   const label_t* cuda_labels_;
   const label_t* cuda_weights_;
-  label_t* cuda_trans_label_;
-  double* cuda_block_buffer_;
+  CUDAVector<label_t> cuda_trans_label_;
+  CUDAVector<double> cuda_block_buffer_;
   data_size_t num_get_gradients_blocks_;
   data_size_t num_init_score_blocks_;
+};
+
+
+class CUDARegressionL1loss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionL1loss(const Config& config);
+
+  explicit CUDARegressionL1loss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionL1loss();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  void RenewTreeOutputCUDA(const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
+    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+ protected:
+  CUDAVector<data_size_t> cuda_data_indices_buffer_;
+  CUDAVector<double> cuda_weights_prefix_sum_;
+  CUDAVector<double> cuda_weights_prefix_sum_buffer_;
+  CUDAVector<double> cuda_residual_buffer_;
+  CUDAVector<label_t> cuda_weight_by_leaf_buffer_;
+  CUDAVector<label_t> cuda_percentile_result_;
+
+  double LaunchCalcInitScoreKernel() const override;
+
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  void LaunchRenewTreeOutputCUDAKernel(
+    const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
+    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const;
+};
+
+
+class CUDARegressionHuberLoss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionHuberLoss(const Config& config);
+
+  explicit CUDARegressionHuberLoss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionHuberLoss();
+
+  bool IsRenewTreeOutput() const override { return true; }
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  const double alpha_ = 0.0f;
 };
 
 
