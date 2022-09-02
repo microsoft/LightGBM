@@ -62,7 +62,7 @@ void Metadata::InitByReference(data_size_t num_data, const Metadata* reference) 
   int has_weights = reference->num_weights_ > 0;
   int has_init_scores = reference->num_init_score_ > 0;
   int has_queries = reference->num_queries_ > 0;
-  int nclasses = reference->num_classes();
+  int nclasses = reference->num_init_score_classes();
   Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
 }
 
@@ -361,7 +361,7 @@ void Metadata::InsertInitScores(const double* init_scores, data_size_t start_ind
   }
   if (init_score_.empty()) { init_score_.resize(num_init_score_); }
 
-  int nclasses = num_classes();
+  int nclasses = num_init_score_classes();
 
   for (int32_t col = 0; col < nclasses; ++col) {
     int32_t dest_offset = num_data_ * col + start_index;
