@@ -12,10 +12,13 @@
 #define NUM_QUERY_PER_BLOCK (10)
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
-#include "../rank_objective.hpp"
 #include <LightGBM/utils/threading.h>
 
 #include <fstream>
+#include <string>
+#include <vector>
+
+#include "../rank_objective.hpp"
 
 namespace LightGBM {
 
@@ -32,7 +35,6 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
   bool IsCUDAObjective() const override { return true; }
 
  protected:
-
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
 
   // CUDA memory, held by this object

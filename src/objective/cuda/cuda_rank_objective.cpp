@@ -6,6 +6,9 @@
 
 #ifdef USE_CUDA_EXP
 
+#include <string>
+#include <vector>
+
 #include "cuda_rank_objective.hpp"
 
 namespace LightGBM {
