@@ -20,6 +20,7 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
+_DatasetHandle = ctypes.c_void_p
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 
@@ -1691,7 +1692,7 @@ class Dataset:
         self,
         mat: np.ndarray,
         params_str: str,
-        ref_dataset: Optional[ctypes.c_void_p]
+        ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """Initialize data from a 2-D numpy matrix."""
         if len(mat.shape) != 2:
@@ -1719,7 +1720,7 @@ class Dataset:
         self,
         mats: List[np.ndarray],
         params_str: str,
-        ref_dataset: Optional[ctypes.c_void_p]
+        ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
@@ -1770,7 +1771,7 @@ class Dataset:
         self,
         csr: scipy.sparse.csr_matrix,
         params_str: str,
-        ref_dataset: Optional[ctypes.c_void_p]
+        ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """Initialize data from a CSR matrix."""
         if len(csr.indices) != len(csr.data):
@@ -1801,7 +1802,7 @@ class Dataset:
         self,
         csc: scipy.sparse.csc_matrix,
         params_str: str,
-        ref_dataset: Optional[ctypes.c_void_p]
+        ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """Initialize data from a CSC matrix."""
         if len(csc.indices) != len(csc.data):
