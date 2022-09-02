@@ -128,7 +128,7 @@ def test_regression(objective):
         lgb_train,
         num_boost_round=50,
         valid_sets=lgb_eval,
-        callbacks=[lgb.record_evaluation(evals_result), lgb.log_evaluation(1)]
+        callbacks=[lgb.record_evaluation(evals_result)]
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     if objective == 'huber':
@@ -1196,7 +1196,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_é›?', u'F_ä¸€', u'F_äº?', u'F_ä¸?']
+    feature_names = [u'F_é›¶', u'F_ä¸€', u'F_äºŒ', u'F_ä¸‰']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
