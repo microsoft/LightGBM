@@ -308,7 +308,7 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
     if (boosting_on_cuda_) {
       obj->RenewTreeOutputCUDA(train_score, cuda_data_partition_->cuda_data_indices(),
                                cuda_data_partition_->cuda_leaf_num_data(), cuda_data_partition_->cuda_leaf_data_start(),
-                               cuda_tree->num_leaves(),cuda_tree->cuda_leaf_value_ref());
+                               cuda_tree->num_leaves(), cuda_tree->cuda_leaf_value_ref());
       cuda_tree->SyncLeafOutputFromCUDAToHost();
     } else {
       const data_size_t* bag_mapper = nullptr;
