@@ -189,7 +189,7 @@ class BinaryLogloss: public ObjectiveFunction {
 
   data_size_t NumPositiveData() const override { return num_pos_data_; }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of positive samples */

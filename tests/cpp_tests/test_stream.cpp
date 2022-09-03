@@ -185,7 +185,7 @@ void test_stream_sparse(
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
         dataset = static_cast<Dataset*>(dataset_handle);
-        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 1);
+        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 2);
         break;
       }
 
@@ -198,6 +198,7 @@ void test_stream_sparse(
 
     dataset = static_cast<Dataset*>(dataset_handle);
 
+    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::StreamSparseDataset(
       dataset_handle,
       nrows,
@@ -213,7 +214,6 @@ void test_stream_sparse(
 
     dataset->FinishLoad();
 
-    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,
                               weights,
@@ -320,7 +320,7 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   TestUtils::CreateRandomSparseData(nrows, ncols, nclasses, sparse_percent, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
-  const std::vector<int8_t> creation_types = { 0, 1 };
+  const std::vector<int8_t> creation_types = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
   for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
     for (size_t j = 0; j < batch_counts.size(); ++j) {
