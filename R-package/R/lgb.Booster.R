@@ -1319,7 +1319,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 lgb.dump <- function(booster, num_iteration = NULL) {
 
   if (!lgb.is.Booster(x = booster)) {
-    stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
+    stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
   }
 
   # Return booster at requested iteration
