@@ -1311,7 +1311,7 @@ class Dataset:
     def _init_from_ref_dataset(
         self,
         total_nrow: int,
-        ref_dataset: Optional[_DatasetHandle]
+        ref_dataset: _DatasetHandle
     ) -> 'Dataset':
         """Create dataset from a reference dataset.
 
@@ -1319,7 +1319,7 @@ class Dataset:
         ----------
         total_nrow : int
             Number of rows expected to add to dataset.
-        ref_dataset : object or None
+        ref_dataset : object
             Handle of reference dataset to extract metadata from.
 
         Returns
