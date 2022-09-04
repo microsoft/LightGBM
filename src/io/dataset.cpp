@@ -19,7 +19,8 @@
 
 namespace LightGBM {
 
-const float Dataset::kSerializedReferenceVersion = 1.0;
+const int Dataset::kSerializedReferenceVersionLength = 2;
+const char* Dataset::serialized_reference_version = "v1";
 
 const char* Dataset::binary_file_token =
     "______LightGBM_Binary_File_Token______\n";
@@ -1048,7 +1049,7 @@ void Dataset::SerializeReference(ByteBuffer* buffer) {
 
   // Write token that marks the data as binary reference, and the version
   buffer->AlignedWrite(binary_serialized_token, size_of_token);
-  buffer->AlignedWrite(&kSerializedReferenceVersion, sizeof(float));
+  buffer->AlignedWrite(serialized_reference_version, kSerializedReferenceVersionLength);
 
   // Write the basic definition of the overall dataset
   SerializeHeader(buffer);
@@ -1077,15 +1078,12 @@ size_t Dataset::GetSerializedHeaderSize() {
     VirtualFileWriter::AlignedSize(sizeof(int32_t) * num_total_features_) +
     VirtualFileWriter::AlignedSize(sizeof(int)) * 3 +
     VirtualFileWriter::AlignedSize(sizeof(bool)) * 3;
-  // size of feature names
+  // size of feature names and forced bins
   for (int i = 0; i < num_total_features_; ++i) {
     size_of_header +=
       VirtualFileWriter::AlignedSize(feature_names_[i].size()) +
-      VirtualFileWriter::AlignedSize(sizeof(int));
-  }
-  // size of forced bins
-  for (int i = 0; i < num_total_features_; ++i) {
-    size_of_header += forced_bin_bounds_[i].size() * sizeof(double) +
+      VirtualFileWriter::AlignedSize(sizeof(int)) +
+      forced_bin_bounds_[i].size() * sizeof(double) +
       VirtualFileWriter::AlignedSize(sizeof(int));
   }
 

@@ -369,12 +369,12 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   }
   mem_ptr += size_of_token_in_input;
 
-  size_t size_of_version = VirtualFileWriter::AlignedSize(sizeof(float));
-  const float version = *(reinterpret_cast<const float*>(mem_ptr));
-  mem_ptr += size_of_version;
-  if (version != Dataset::kSerializedReferenceVersion) {
-    Log::Fatal("Unexpected version of serialized binary data: %f", version);
+  size_t size_of_version = VirtualFileWriter::AlignedSize(Dataset::kSerializedReferenceVersionLength);
+  std::string version(mem_ptr, Dataset::kSerializedReferenceVersionLength);
+  if (version != std::string(Dataset::serialized_reference_version)) {
+    Log::Fatal("Unexpected version of serialized binary data: %s", version.c_str());
   }
+  mem_ptr += size_of_version;
 
   size_t size_of_header = *(reinterpret_cast<const size_t*>(mem_ptr));
   mem_ptr += sizeof(size_t);

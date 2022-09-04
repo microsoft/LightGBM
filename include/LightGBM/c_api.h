@@ -180,10 +180,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                                                 int32_t nthreads);
 /*!
  * \brief Allocate the space for dataset and bucket feature bins according to serialized reference dataset.
- * \param ref_buffer A binary representation of the dataset schema (feature groups, bins, etc)
+ * \param ref_buffer A binary representation of the dataset schema (feature groups, bins, etc.)
  * \param ref_buffer_size The size of the reference array in bytes
- * \param num_row Number of total rows teh dataset will contain
- * \param num_classes Number of classes (if multiclass and sending intial scores)
+ * \param num_row Number of total rows the dataset will contain
+ * \param num_classes Number of classes (will be used only in case of multiclass and specifying initial scores)
  * \param parameters Additional parameters
  * \param[out] out Created dataset
  * \return 0 when succeed, -1 when failure happens

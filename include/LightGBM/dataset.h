@@ -619,7 +619,7 @@ class Dataset {
    */
   LIGHTGBM_EXPORT void SerializeReference(ByteBuffer* out);
 
-LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
+  LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
 
   LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
 
@@ -935,8 +935,9 @@ LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
   int label_idx_ = 0;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
-  /*! \brief store feature names */
-  static const float kSerializedReferenceVersion;
+  /*! \brief serialized versions */
+  static const int kSerializedReferenceVersionLength;
+  static const char* serialized_reference_version;
   static const char* binary_file_token;
   static const char* binary_serialized_token;
   int num_groups_;
