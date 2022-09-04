@@ -528,6 +528,129 @@ test_that("predictions for multiclass classification are returned as matrix", {
     expect_equal(ncol(pred), 3L)
 })
 
+test_that("Single-row predictions are identical to multi-row ones", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- mtcars[, 1L]
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
+    params <- list(min_data_in_leaf = 2L)
+    model <- lgb.train(
+      params = params
+     , data = dtrain
+     , obj = "regression"
+     , nrounds = 5L
+     , verbose = -1L
+    )
+
+    x1 <- X[1L, , drop = FALSE]
+    x11 <- X[11L, , drop = FALSE]
+    x1_spv <- as(x1, "sparseVector")
+    x11_spv <- as(x11, "sparseVector")
+    x1_csr <- as(x1, "RsparseMatrix")
+    x11_csr <- as(x11, "RsparseMatrix")
+
+    pred_all <- predict(model, X)
+    pred1_wo_config <- predict(model, x1)
+    pred11_wo_config <- predict(model, x11)
+    pred1_spv_wo_config <- predict(model, x1_spv)
+    pred11_spv_wo_config <- predict(model, x11_spv)
+    pred1_csr_wo_config <- predict(model, x1_csr)
+    pred11_csr_wo_config <- predict(model, x11_csr)
+
+    lgb.configure_fast_predict(model)
+    pred1_w_config <- predict(model, x1)
+    pred11_w_config <- predict(model, x11)
+
+    model <- lgb.train(
+      params = params
+     , data = dtrain
+     , obj = "regression"
+     , nrounds = 5L
+     , verbose = -1L
+    )
+    lgb.configure_fast_predict(model, csr = TRUE)
+    pred1_spv_w_config <- predict(model, x1_spv)
+    pred11_spv_w_config <- predict(model, x11_spv)
+    pred1_csr_w_config <- predict(model, x1_csr)
+    pred11_csr_w_config <- predict(model, x11_csr)
+
+    expect_equal(pred1_wo_config, pred_all[1L])
+    expect_equal(pred11_wo_config, pred_all[11L])
+    expect_equal(pred1_spv_wo_config, unname(pred_all[1L]))
+    expect_equal(pred11_spv_wo_config, unname(pred_all[11L]))
+    expect_equal(pred1_csr_wo_config, pred_all[1L])
+    expect_equal(pred11_csr_wo_config, pred_all[11L])
+
+    expect_equal(pred1_w_config, pred_all[1L])
+    expect_equal(pred11_w_config, pred_all[11L])
+    expect_equal(pred1_spv_w_config, unname(pred_all[1L]))
+    expect_equal(pred11_spv_w_config, unname(pred_all[11L]))
+    expect_equal(pred1_csr_w_config, pred_all[1L])
+    expect_equal(pred11_csr_w_config, pred_all[11L])
+})
+
+test_that("Fast-predict configuration accepts non-default prediction types", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- mtcars[, 1L]
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
+    params <- list(min_data_in_leaf = 2L)
+    model <- lgb.train(
+      params = params
+     , data = dtrain
+     , obj = "regression"
+     , nrounds = 5L
+     , verbose = -1L
+    )
+
+    x1 <- X[1L, , drop = FALSE]
+    x11 <- X[11L, , drop = FALSE]
+
+    pred_all <- predict(model, X, type = "leaf")
+    pred1_wo_config <- predict(model, x1, type = "leaf")
+    pred11_wo_config <- predict(model, x11, type = "leaf")
+    expect_equal(pred1_wo_config, pred_all[1L, , drop = FALSE])
+    expect_equal(pred11_wo_config, pred_all[11L, , drop = FALSE])
+
+    lgb.configure_fast_predict(model, type = "leaf")
+    pred1_w_config <- predict(model, x1, type = "leaf")
+    pred11_w_config <- predict(model, x11, type = "leaf")
+    expect_equal(pred1_w_config, pred_all[1L, , drop = FALSE])
+    expect_equal(pred11_w_config, pred_all[11L, , drop = FALSE])
+})
+
+test_that("Fast-predict configuration does not block other prediction types", {
+    data(mtcars)
+    X <- as.matrix(mtcars[, -1L])
+    y <- mtcars[, 1L]
+    dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
+    params <- list(min_data_in_leaf = 2L)
+    model <- lgb.train(
+      params = params
+     , data = dtrain
+     , obj = "regression"
+     , nrounds = 5L
+     , verbose = -1L
+    )
+
+    x1 <- X[1L, , drop = FALSE]
+    x11 <- X[11L, , drop = FALSE]
+
+    pred_all <- predict(model, X)
+    pred_all_leaf <- predict(model, X, type = "leaf")
+
+    lgb.configure_fast_predict(model)
+    pred1_w_config <- predict(model, x1)
+    pred11_w_config <- predict(model, x11)
+    pred1_leaf_w_config <- predict(model, x1, type = "leaf")
+    pred11_leaf_w_config <- predict(model, x11, type = "leaf")
+
+    expect_equal(pred1_w_config, pred_all[1L])
+    expect_equal(pred11_w_config, pred_all[11L])
+    expect_equal(pred1_leaf_w_config, pred_all_leaf[1L, , drop = FALSE])
+    expect_equal(pred11_leaf_w_config, pred_all_leaf[11L, , drop = FALSE])
+})
+
 test_that("predict type='class' returns predicted class for classification objectives", {
     data(agaricus.train, package = "lightgbm")
     X <- as.matrix(agaricus.train$data)

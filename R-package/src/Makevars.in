@@ -37,10 +37,6 @@ OBJECTS = \
     io/parser.o \
     io/train_share_states.o \
     io/tree.o \
-    io/dense_bin.o \
-    io/sparse_bin.o \
-    io/multi_val_dense_bin.o \
-    io/multi_val_sparse_bin.o \
     metric/dcg_calculator.o \
     metric/metric.o \
     objective/objective_function.o \

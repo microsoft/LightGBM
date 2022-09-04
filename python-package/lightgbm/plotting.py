@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import ZERO_THRESHOLD, Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
+from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
 from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 

@@ -20,8 +20,9 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
-                    make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
+from .utils import (SERIALIZERS, dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
+                    softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -110,10 +111,12 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-def test_regression():
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber'])
+def test_regression(objective):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
+        'objective': objective,
         'metric': 'l2',
         'verbose': -1
     }
@@ -128,7 +131,10 @@ def test_regression():
         callbacks=[lgb.record_evaluation(evals_result)]
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
+    if objective == 'huber':
+        assert ret < 35
+    else:
+        assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -764,6 +770,43 @@ def test_early_stopping():
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize('use_valid', [True, False])
+def test_early_stopping_ignores_training_set(use_valid):
+    x = np.linspace(-1, 1, 100)
+    X = x.reshape(-1, 1)
+    y = x**2
+    X_train, X_valid = X[:80], X[80:]
+    y_train, y_valid = y[:80], y[80:]
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid)
+    valid_sets = [train_ds]
+    valid_names = ['train']
+    if use_valid:
+        valid_sets.append(valid_ds)
+        valid_names.append('valid')
+    eval_result = {}
+
+    def train_fn():
+        return lgb.train(
+            {'num_leaves': 5},
+            train_ds,
+            num_boost_round=2,
+            valid_sets=valid_sets,
+            valid_names=valid_names,
+            callbacks=[lgb.early_stopping(1), lgb.record_evaluation(eval_result)]
+        )
+    if use_valid:
+        bst = train_fn()
+        assert bst.best_iteration == 1
+        assert eval_result['train']['l2'][1] < eval_result['train']['l2'][0]  # train improved
+        assert eval_result['valid']['l2'][1] > eval_result['valid']['l2'][0]  # valid didn't
+    else:
+        with pytest.warns(UserWarning, match='Only training set found, disabling early stopping.'):
+            bst = train_fn()
+        assert bst.current_iteration() == 2
+        assert bst.best_iteration == 0
+
+
 @pytest.mark.parametrize('first_metric_only', [True, False])
 def test_early_stopping_via_global_params(first_metric_only):
     X, y = load_breast_cancer(return_X_y=True)
@@ -1071,6 +1114,69 @@ def test_cvbooster():
     avg_pred = np.mean(preds, axis=0)
     ret = log_loss(y_test, avg_pred)
     assert ret < 0.15
+
+
+def test_cvbooster_save_load(tmp_path):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    model_path_txt = str(tmp_path / 'lgb.model')
+
+    cvbooster.save_model(model_path_txt)
+    model_string = cvbooster.model_to_string()
+    del cvbooster
+
+    cvbooster_from_txt_file = lgb.CVBooster(model_file=model_path_txt)
+    cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
+    for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
+        assert best_iteration == cvbooster_loaded.best_iteration
+        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
+
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_cvbooster_picklable(serializer):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
+    del cvbooster
+
+    assert best_iteration == cvbooster_from_disk.best_iteration
+
+    preds_from_disk = cvbooster_from_disk.predict(X_test)
+    np.testing.assert_array_equal(preds, preds_from_disk)
 
 
 def test_feature_name():

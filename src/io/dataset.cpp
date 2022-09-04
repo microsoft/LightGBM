@@ -744,6 +744,11 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
