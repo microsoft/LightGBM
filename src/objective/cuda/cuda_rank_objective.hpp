@@ -53,4 +53,4 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
-#endif  // LIGHTGBM_NEW_CUDA_RANKING_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_RANK_OBJECTIVE_HPP_
