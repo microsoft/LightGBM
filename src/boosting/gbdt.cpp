@@ -500,7 +500,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       auto score_ptr = train_score_updater_->score() + offset;
       auto residual_getter = [score_ptr](const label_t* label, int i) {return static_cast<double>(label[i]) - score_ptr[i]; };
       tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
-                                     num_data_, bag_data_indices_.data(), bag_data_cnt_);
+                                     num_data_, bag_data_indices_.data(), bag_data_cnt_, train_score_updater_->score());
       // shrinkage by learning rate
       new_tree->Shrinkage(shrinkage_rate_);
       // update score
