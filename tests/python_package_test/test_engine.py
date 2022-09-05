@@ -3571,8 +3571,7 @@ def test_goss_boosting_and_strategy_equivalent():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-    params1 = {
-        'boosting': 'goss',
+    base_params = {
         'metric': 'l2',
         'verbose': -1,
         'bagging_seed': 0,
@@ -3581,21 +3580,13 @@ def test_goss_boosting_and_strategy_equivalent():
         'force_row_wise': True,
         'gpu_use_dp': True,
     }
+    params1 = {**base_params, 'boosting': 'goss'}
     evals_result1 = {}
     lgb.train(params1, lgb_train,
               num_boost_round=10,
               valid_sets=lgb_eval,
               callbacks=[lgb.record_evaluation(evals_result1)])
-    params2 = {
-        'data_sample_strategy': 'goss',
-        'metric': 'l2',
-        'verbose': -1,
-        'bagging_seed': 0,
-        'learning_rate': 0.05,
-        'num_threads': 1,
-        'force_row_wise': True,
-        'gpu_use_dp': True,
-    }
+    params2 = {**base_params, 'data_sample_strategy': 'goss'}
     evals_result2 = {}
     lgb.train(params2, lgb_train,
               num_boost_round=10,
