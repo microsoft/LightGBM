@@ -77,6 +77,34 @@ void ShufflePrefixSumGlobal(uint64_t* values, size_t len, uint64_t* block_prefix
   ShufflePrefixSumGlobalInner<uint64_t>(values, len, block_prefix_sum_buffer);
 }
 
+__global__ void BitonicArgSortItemsGlobalKernel(const double* scores,
+  const int num_queries,
+  const data_size_t* cuda_query_boundaries,
+  data_size_t* out_indices) {
+  const int query_index_start = static_cast<int>(blockIdx.x) * BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE;
+  const int query_index_end = min(query_index_start + BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE, num_queries);
+  for (int query_index = query_index_start; query_index < query_index_end; ++query_index) {
+    const data_size_t query_item_start = cuda_query_boundaries[query_index];
+    const data_size_t query_item_end = cuda_query_boundaries[query_index + 1];
+    const data_size_t num_items_in_query = query_item_end - query_item_start;
+    BitonicArgSortDevice<double, data_size_t, false, BITONIC_SORT_NUM_ELEMENTS, 11>(scores + query_item_start,
+          out_indices + query_item_start,
+          num_items_in_query);
+    __syncthreads();
+  }
+}
+
+void BitonicArgSortItemsGlobal(
+  const double* scores,
+  const int num_queries,
+  const data_size_t* cuda_query_boundaries,
+  data_size_t* out_indices) {
+  const int num_blocks = (num_queries + BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE - 1) / BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE;
+  BitonicArgSortItemsGlobalKernel<<<num_blocks, BITONIC_SORT_NUM_ELEMENTS>>>(
+    scores, num_queries, cuda_query_boundaries, out_indices);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+}
+
 template <typename T>
 __global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks) {
   __shared__ T shared_buffer[32];

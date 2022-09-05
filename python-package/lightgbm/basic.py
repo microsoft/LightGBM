@@ -1314,15 +1314,19 @@ class Dataset:
         assert sample_cnt == actual_sample_cnt.value
         return indices
 
-    def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
+    def _init_from_ref_dataset(
+        self,
+        total_nrow: int,
+        ref_dataset: _DatasetHandle
+    ) -> 'Dataset':
         """Create dataset from a reference dataset.
 
         Parameters
         ----------
         total_nrow : int
             Number of rows expected to add to dataset.
-        ref_dataset : Dataset
-            Reference dataset to extract meta from.
+        ref_dataset : object
+            Handle of reference dataset to extract metadata from.
 
         Returns
         -------
@@ -1663,7 +1667,7 @@ class Dataset:
     def __init_from_seqs(
         self,
         seqs: List[Sequence],
-        ref_dataset: Optional["Dataset"] = None
+        ref_dataset: Optional[_DatasetHandle] = None
     ) -> "Dataset":
         """
         Initialize data from list of Sequence objects.
