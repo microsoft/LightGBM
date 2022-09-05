@@ -701,7 +701,7 @@ class LGBMModel(_LGBMModelBase):
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
-        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ):
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
