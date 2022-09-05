@@ -290,7 +290,7 @@ namespace LightGBM {
                                   const float* labels_ptr,
                                   const float* weights_ptr,
                                   const std::vector<double>* init_scores,
-                                  const int32_t* groups_ptr,
+                                  const int64_t* groups_ptr,
                                   int32_t thread_count,
                                   int32_t thread_id) {
     int32_t threadChunkSize = nrows / thread_count;
