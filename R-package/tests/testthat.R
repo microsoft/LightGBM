@@ -5,5 +5,5 @@ test_check(
     package = "lightgbm"
     , stop_on_failure = TRUE
     , stop_on_warning = FALSE
-    , reporter = testthat::SummaryReporter$new()
+    , reporter = testthat::SummaryReporter$new(omit_dots = TRUE)
 )
