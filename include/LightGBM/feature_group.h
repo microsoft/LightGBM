@@ -226,7 +226,7 @@ class FeatureGroup {
     }
   }
 
-  void ReSize(int num_data) {
+  void ReSize(data_size_t num_data) {
     if (!is_multi_val_) {
       bin_data_->ReSize(num_data);
     } else {
@@ -537,7 +537,7 @@ class FeatureGroup {
   }
 
  private:
-  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
+  void CreateBinData(data_size_t num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {

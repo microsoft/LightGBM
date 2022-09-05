@@ -52,10 +52,10 @@ std::vector<std::vector<int>> OneFeaturePerGroup(const std::vector<int>& used_fe
   return features_in_group;
 }
 
-int GetConflictCount(const std::vector<bool>& mark, const int* indices,
-                     int num_indices, data_size_t max_cnt) {
-  int ret = 0;
-  for (int i = 0; i < num_indices; ++i) {
+int64_t GetConflictCount(const std::vector<bool>& mark, const int* indices,
+                     int64_t num_indices, data_size_t max_cnt) {
+  int64_t ret = 0;
+  for (int64_t i = 0; i < num_indices; ++i) {
     if (mark[indices[i]]) {
       ++ret;
     }
@@ -69,13 +69,13 @@ int GetConflictCount(const std::vector<bool>& mark, const int* indices,
 void MarkUsed(std::vector<bool>* mark, const int* indices,
               data_size_t num_indices) {
   auto& ref_mark = *mark;
-  for (int i = 0; i < num_indices; ++i) {
+  for (int64_t i = 0; i < num_indices; ++i) {
     ref_mark[indices[i]] = true;
   }
 }
 
 std::vector<int> FixSampleIndices(const BinMapper* bin_mapper,
-                                  int num_total_samples, int num_indices,
+                                  int num_total_samples, int64_t num_indices,
                                   const int* sample_indices,
                                   const double* sample_values) {
   std::vector<int> ret;
@@ -102,7 +102,7 @@ std::vector<int> FixSampleIndices(const BinMapper* bin_mapper,
 std::vector<std::vector<int>> FindGroups(
     const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
     const std::vector<int>& find_order, int** sample_indices,
-    const int* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
+    const int64_t* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
     data_size_t num_data, bool is_use_gpu, bool is_sparse,
     std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
@@ -137,7 +137,7 @@ std::vector<std::vector<int>> FindGroups(
     std::vector<int> search_groups;
     if (!available_groups.empty()) {
       int last = static_cast<int>(available_groups.size()) - 1;
-      auto indices = rand.Sample(last, std::min(last, max_search_group - 1));
+      auto indices = rand.Sample<int>(last, std::min(last, max_search_group - 1));
       // always push the last group
       search_groups.push_back(available_groups.back());
       for (auto idx : indices) {
@@ -240,7 +240,7 @@ std::vector<std::vector<int>> FindGroups(
 
 std::vector<std::vector<int>> FastFeatureBundling(
     const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    int** sample_indices, double** sample_values, const int* num_per_col,
+    int** sample_indices, double** sample_values, const int64_t* num_per_col,
     int num_sample_col, data_size_t total_sample_cnt,
     const std::vector<int>& used_features, data_size_t num_data,
     bool is_use_gpu, bool is_sparse, std::vector<int8_t>* multi_val_group) {
@@ -274,7 +274,7 @@ std::vector<std::vector<int>> FastFeatureBundling(
   }
 
   std::vector<std::vector<int>> tmp_indices;
-  std::vector<int> tmp_num_per_col(num_sample_col, 0);
+  std::vector<int64_t> tmp_num_per_col(num_sample_col, 0);
   for (auto fidx : used_features) {
     if (fidx >= num_sample_col) {
       continue;
@@ -322,7 +322,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         const std::vector<std::vector<double>>& forced_bins,
                         int** sample_non_zero_indices,
                         double** sample_values,
-                        const int* num_per_col,
+                        const int64_t* num_per_col,
                         int num_sample_col,
                         size_t total_sample_cnt,
                         const Config& io_config) {
@@ -907,7 +907,7 @@ bool Dataset::SetDoubleField(const char* field_name, const double* field_data,
   return true;
 }
 
-bool Dataset::SetIntField(const char* field_name, const int* field_data,
+bool Dataset::SetIntField(const char* field_name, const data_size_t* field_data,
                           data_size_t num_element) {
   std::string name(field_name);
   name = Common::Trim(name);
@@ -957,7 +957,7 @@ bool Dataset::GetDoubleField(const char* field_name, data_size_t* out_len,
 }
 
 bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
-                          const int** out_ptr) {
+                          const data_size_t** out_ptr) {
   std::string name(field_name);
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
@@ -1109,7 +1109,7 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "num_features: %d\n", num_features_);
   fprintf(file, "num_total_features: %d\n", num_total_features_);
   fprintf(file, "num_groups: %d\n", num_groups_);
-  fprintf(file, "num_data: %d\n", num_data_);
+  fprintf(file, "num_data: %ld\n", num_data_);
   fprintf(file, "feature_names: ");
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());

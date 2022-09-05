@@ -71,7 +71,7 @@ class MapMetric:public Metric {
     return 1.0f;
   }
 
-  void CalMapAtK(std::vector<int> ks, data_size_t npos, const label_t* label,
+  void CalMapAtK(std::vector<data_size_t> ks, data_size_t npos, const label_t* label,
                  const double* score, data_size_t num_data, std::vector<double>* out) const {
     // get sorted indices by score
     std::vector<data_size_t> sorted_idx;

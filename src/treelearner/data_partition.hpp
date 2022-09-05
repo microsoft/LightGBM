@@ -34,7 +34,7 @@ class DataPartition {
     leaf_count_.resize(num_leaves_);
   }
 
-  void ResetNumData(int num_data) {
+  void ResetNumData(data_size_t num_data) {
     num_data_ = num_data;
     indices_.resize(num_data_);
     runner_.ReSize(num_data_);
@@ -100,7 +100,7 @@ class DataPartition {
   */
   void Split(int leaf, const Dataset* dataset, int feature,
              const uint32_t* threshold, int num_threshold, bool default_left,
-             int right_leaf) {
+             data_size_t right_leaf) {
     Common::FunctionTimer fun_timer("DataPartition::Split", global_timer);
     // get leaf boundary
     const data_size_t begin = leaf_begin_[leaf];

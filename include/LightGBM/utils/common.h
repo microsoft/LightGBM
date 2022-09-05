@@ -642,10 +642,10 @@ inline static std::vector<T*> Vector2Ptr(std::vector<std::vector<T>>* data) {
 }
 
 template <typename T>
-inline static std::vector<int> VectorSize(const std::vector<std::vector<T>>& data) {
-  std::vector<int> ret(data.size());
+inline static std::vector<int64_t> VectorSize(const std::vector<std::vector<T>>& data) {
+  std::vector<int64_t> ret(data.size());
   for (size_t i = 0; i < data.size(); ++i) {
-    ret[i] = static_cast<int>(data[i].size());
+    ret[i] = static_cast<int64_t>(data[i].size());
   }
   return ret;
 }
@@ -728,13 +728,13 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
 
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
 template <typename T>
-inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
+inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int64_t ny, const char *callername) {
   auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) {
     std::ostringstream os;
     os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
     Log::Fatal(os.str().c_str(), callername, i);
   };
-  for (int i = 1; i < ny; i += 2) {
+  for (int64_t i = 1; i < ny; i += 2) {
     if (y[i - 1] < y[i]) {
       if (y[i - 1] < ymin) {
         fatal_msg(i - 1);

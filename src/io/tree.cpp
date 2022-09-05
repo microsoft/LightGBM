@@ -60,7 +60,7 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
                 double threshold_double, double left_value, double right_value,
-                int left_cnt, int right_cnt, double left_weight, double right_weight, float gain,
+                data_size_t left_cnt, data_size_t right_cnt, double left_weight, double right_weight, float gain,
                 MissingType missing_type, bool default_left) {
   Split(leaf, feature, real_feature, left_value, right_value, left_cnt, right_cnt, left_weight, right_weight, gain);
   int new_node_idx = num_leaves_ - 1;
@@ -770,7 +770,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("internal_count")) {
-    internal_count_ = CommonC::StringToArrayFast<int>(key_vals["internal_count"], num_leaves_ - 1);
+    internal_count_ = CommonC::StringToArrayFast<data_size_t>(key_vals["internal_count"], num_leaves_ - 1);
   } else {
     internal_count_.resize(num_leaves_ - 1);
   }
@@ -794,7 +794,7 @@ Tree::Tree(const char* str, size_t* used_len) {
   }
 
   if (key_vals.count("leaf_count")) {
-    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
+    leaf_count_ = CommonC::StringToArrayFast<data_size_t>(key_vals["leaf_count"], num_leaves_);
   } else {
     leaf_count_.resize(num_leaves_);
   }

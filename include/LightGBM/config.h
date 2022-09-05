@@ -984,7 +984,7 @@ struct Config {
   // alias = ndcg_eval_at, ndcg_at, map_eval_at, map_at
   // desc = used only with ``ndcg`` and ``map`` metrics
   // desc = `NDCG <https://en.wikipedia.org/wiki/Discounted_cumulative_gain#Normalized_DCG>`__ and `MAP <https://makarandtapaswi.wordpress.com/2012/07/02/intuition-behind-average-precision-and-map/>`__ evaluation positions, separated by ``,``
-  std::vector<int> eval_at;
+  std::vector<data_size_t> eval_at;
 
   // check = >0
   // desc = used only with ``multi_error`` metric

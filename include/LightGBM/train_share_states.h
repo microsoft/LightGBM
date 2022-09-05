@@ -159,9 +159,9 @@ class MultiValBinWrapper {
   int num_bin_;
   int num_bin_aligned_;
   int n_data_block_;
-  int data_block_size_;
-  int min_block_size_;
-  int num_data_;
+  data_size_t data_block_size_;
+  data_size_t min_block_size_;
+  data_size_t num_data_;
 
   hist_t* origin_hist_data_;
 

@@ -66,26 +66,27 @@ class Random {
   * \param K
   * \return K Ordered sampled data from {0,1,...,N-1}
   */
-  inline std::vector<int> Sample(int N, int K) {
-    std::vector<int> ret;
+ template<typename T>
+  inline std::vector<T> Sample(T N, int K) {
+    std::vector<T> ret;
     ret.reserve(K);
     if (K > N || K <= 0) {
       return ret;
     } else if (K == N) {
-      for (int i = 0; i < N; ++i) {
+      for (T i = 0; i < N; ++i) {
         ret.push_back(i);
       }
     } else if (K > 1 && K > (N / std::log2(K))) {
-      for (int i = 0; i < N; ++i) {
+      for (T i = 0; i < N; ++i) {
         double prob = (K - ret.size()) / static_cast<double>(N - i);
         if (NextFloat() < prob) {
           ret.push_back(i);
         }
       }
     } else {
-      std::set<int> sample_set;
-      for (int r = N - K; r < N; ++r) {
-        int v = NextInt(0, r + 1);
+      std::set<T> sample_set;
+      for (T r = N - K; r < N; ++r) {
+        T v = NextInt(0, r + 1);
         if (!sample_set.insert(v).second) {
           sample_set.insert(r);
         }

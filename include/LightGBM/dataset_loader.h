@@ -31,7 +31,7 @@ class DatasetLoader {
   LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
                                                    int** sample_indices,
                                                    int num_col,
-                                                   const int* num_per_col,
+                                                   const int64_t* num_per_col,
                                                    size_t total_sample_size,
                                                    data_size_t num_local_data,
                                                    int64_t num_dist_data);
@@ -45,17 +45,17 @@ class DatasetLoader {
                                                         const std::unordered_set<int>& categorical_features);
 
  private:
-  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, data_size_t* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   void SetHeader(const char* filename);
 
   void CheckDataset(const Dataset* dataset, bool is_load_from_binary);
 
-  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, data_size_t* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data);
 
-  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, data_size_t* num_global_data, std::vector<data_size_t>* used_data_indices);
 
   void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset);
 

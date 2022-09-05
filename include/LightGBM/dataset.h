@@ -194,7 +194,7 @@ class Metadata {
     const float* labels,
     const float* weights,
     const double* init_scores,
-    const int32_t* queries);
+    const int64_t* queries);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
@@ -436,7 +436,7 @@ class Dataset {
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     double** sample_values,
-    const int* num_per_col,
+    const int64_t* num_per_col,
     int num_sample_col,
     size_t total_sample_cnt,
     const Config& io_config);
@@ -600,13 +600,13 @@ class Dataset {
 
   LIGHTGBM_EXPORT bool SetDoubleField(const char* field_name, const double* field_data, data_size_t num_element);
 
-  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const int* field_data, data_size_t num_element);
+  LIGHTGBM_EXPORT bool SetIntField(const char* field_name, const data_size_t* field_data, data_size_t num_element);
 
   LIGHTGBM_EXPORT bool GetFloatField(const char* field_name, data_size_t* out_len, const float** out_ptr);
 
   LIGHTGBM_EXPORT bool GetDoubleField(const char* field_name, data_size_t* out_len, const double** out_ptr);
 
-  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const int** out_ptr);
+  LIGHTGBM_EXPORT bool GetIntField(const char* field_name, data_size_t* out_len, const data_size_t** out_ptr);
 
   /*!
   * \brief Save current dataset into binary file, will save to "filename.bin"

@@ -354,7 +354,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
 }
 
 Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* bin_filename,
-                                        int rank, int num_machines, int* num_global_data,
+                                        int rank, int num_machines, data_size_t* num_global_data,
                                         std::vector<data_size_t>* used_data_indices) {
   auto dataset = std::unique_ptr<Dataset>(new Dataset());
   auto reader = VirtualFileReader::Make(bin_filename);
@@ -660,7 +660,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices,
                                                 int num_col,
-                                                const int* num_per_col,
+                                                const int64_t* num_per_col,
                                                 size_t total_sample_size,
                                                 data_size_t num_local_data,
                                                 int64_t num_dist_data) {
@@ -900,7 +900,7 @@ void DatasetLoader::CheckDataset(const Dataset* dataset, bool is_load_from_binar
 }
 
 std::vector<std::string> DatasetLoader::LoadTextDataToMemory(const char* filename, const Metadata& metadata,
-                                                             int rank, int num_machines, int* num_global_data,
+                                                             int rank, int num_machines, data_size_t* num_global_data,
                                                              std::vector<data_size_t>* used_data_indices) {
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
   used_data_indices->clear();
@@ -952,7 +952,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
   if (static_cast<size_t>(sample_cnt) > data.size()) {
     sample_cnt = static_cast<int>(data.size());
   }
-  auto sample_indices = random_.Sample(static_cast<int>(data.size()), sample_cnt);
+  auto sample_indices = random_.Sample<int>(static_cast<int>(data.size()), sample_cnt);
   std::vector<std::string> out(sample_indices.size());
   for (size_t i = 0; i < sample_indices.size(); ++i) {
     const size_t idx = sample_indices[i];
@@ -962,7 +962,7 @@ std::vector<std::string> DatasetLoader::SampleTextDataFromMemory(const std::vect
 }
 
 std::vector<std::string> DatasetLoader::SampleTextDataFromFile(const char* filename, const Metadata& metadata,
-                                                               int rank, int num_machines, int* num_global_data,
+                                                               int rank, int num_machines, data_size_t* num_global_data,
                                                                std::vector<data_size_t>* used_data_indices) {
   const data_size_t sample_cnt = static_cast<data_size_t>(config_.bin_construct_sample_cnt);
   TextReader<data_size_t> text_reader(filename, config_.header, config_.file_load_progress_interval_bytes);
