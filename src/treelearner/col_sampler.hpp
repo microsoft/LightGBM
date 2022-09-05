@@ -75,7 +75,7 @@ class ColSampler {
     if (need_reset_bytree_) {
       std::memset(is_feature_used_.data(), 0,
                   sizeof(int8_t) * is_feature_used_.size());
-      used_feature_indices_ = random_.Sample(
+      used_feature_indices_ = random_.Sample<int>(
           static_cast<int>(valid_feature_indices_.size()), used_cnt_bytree_);
       int omp_loop_size = static_cast<int>(used_feature_indices_.size());
 
@@ -139,7 +139,7 @@ class ColSampler {
         used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
         allowed_used_feature_indices = &filtered_feature_indices;
       }
-      auto sampled_indices = random_.Sample(
+      auto sampled_indices = random_.Sample<int>(
           static_cast<int>((*allowed_used_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
 #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)
@@ -165,7 +165,7 @@ class ColSampler {
         allowed_valid_feature_indices = &filtered_feature_indices;
         used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
       }
-      auto sampled_indices = random_.Sample(
+      auto sampled_indices = random_.Sample<int>(
           static_cast<int>((*allowed_valid_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
 #pragma omp parallel for schedule(static, 512) if (omp_loop_size >= 1024)

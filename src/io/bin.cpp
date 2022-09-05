@@ -51,7 +51,7 @@ namespace LightGBM {
   BinMapper::~BinMapper() {
   }
 
-  bool NeedFilter(const std::vector<int>& cnt_in_bin, int total_cnt, int filter_cnt, BinType bin_type) {
+  bool NeedFilter(const std::vector<int>& cnt_in_bin, data_size_t total_cnt, int filter_cnt, BinType bin_type) {
     if (bin_type == BinType::NumericalBin) {
       int sum_left = 0;
       for (size_t i = 0; i < cnt_in_bin.size() - 1; ++i) {
@@ -322,13 +322,13 @@ namespace LightGBM {
     }
   }
 
-  void BinMapper::FindBin(double* values, int num_sample_values, size_t total_sample_cnt,
+  void BinMapper::FindBin(double* values, int64_t num_sample_values, size_t total_sample_cnt,
                           int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
-    int tmp_num_sample_values = 0;
-    for (int i = 0; i < num_sample_values; ++i) {
+    int64_t tmp_num_sample_values = 0;
+    for (int64_t i = 0; i < num_sample_values; ++i) {
       if (!std::isnan(values[i])) {
         values[tmp_num_sample_values++] = values[i];
       }
@@ -367,7 +367,7 @@ namespace LightGBM {
       counts.push_back(1);
     }
 
-    for (int i = 1; i < num_sample_values; ++i) {
+    for (int64_t i = 1; i < num_sample_values; ++i) {
       if (!Common::CheckDoubleEqualOrdered(values[i - 1], values[i])) {
         if (values[i - 1] < 0.0f && values[i] > 0.0f) {
           distinct_values.push_back(0.0f);
@@ -497,7 +497,7 @@ namespace LightGBM {
       is_trivial_ = false;
     }
     // check useless bin
-    if (!is_trivial_ && pre_filter && NeedFilter(cnt_in_bin, static_cast<int>(total_sample_cnt), min_split_data, bin_type_)) {
+    if (!is_trivial_ && pre_filter && NeedFilter(cnt_in_bin, static_cast<data_size_t>(total_sample_cnt), min_split_data, bin_type_)) {
       is_trivial_ = true;
     }
 

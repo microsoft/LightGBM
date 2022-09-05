@@ -65,7 +65,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   share_state_->num_hist_total_bin(),
   share_state_->feature_hist_offsets(),
   config_, max_cache_size, config_->num_leaves);
-  Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
+  Log::Info("Number of data points in the train set: %lld, number of used features: %d", num_data_, num_features_);
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
@@ -760,7 +760,7 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
 
 void SerialTreeLearner::ComputeBestSplitForFeature(
     FeatureHistogram* histogram_array_, int feature_index, int real_fidx,
-    int8_t is_feature_used, int num_data, const LeafSplits* leaf_splits,
+    int8_t is_feature_used, data_size_t num_data, const LeafSplits* leaf_splits,
     SplitInfo* best_split, double parent_output) {
   bool is_feature_numerical = train_data_->FeatureBinMapper(feature_index)
                                   ->bin_type() == BinType::NumericalBin;
@@ -816,7 +816,7 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInf
   }
   double sum_gradients = split->left_sum_gradient + split->right_sum_gradient;
   double sum_hessians = split->left_sum_hessian + split->right_sum_hessian;
-  int num_data = split->left_count + split->right_count;
+  data_size_t num_data = split->left_count + split->right_count;
 
   std::vector<SplitInfo> bests(share_state_->num_threads);
   LeafSplits leaf_splits(num_data, config_);
