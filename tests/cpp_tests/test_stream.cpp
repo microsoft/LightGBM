@@ -320,7 +320,7 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   TestUtils::CreateRandomSparseData(nrows, ncols, nclasses, sparse_percent, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
 
   const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
-  const std::vector<int8_t> creation_types = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+  const std::vector<int8_t> creation_types = { 0, 1 };
 
   for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
     for (size_t j = 0; j < batch_counts.size(); ++j) {
