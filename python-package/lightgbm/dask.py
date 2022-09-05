@@ -22,8 +22,8 @@ from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
 from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomEvalFunction,
-                      _LGBM_ScikitCustomObjectiveFunction, _lgbmmodel_doc_custom_eval_note, _lgbmmodel_doc_fit,
-                      _lgbmmodel_doc_predict)
+                      _LGBM_ScikitCustomObjectiveFunction, _LGBM_ScikitEvalMetricType, _lgbmmodel_doc_custom_eval_note,
+                      _lgbmmodel_doc_fit, _lgbmmodel_doc_predict)
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
@@ -405,7 +405,7 @@ def _train(
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskVectorLike]] = None,
-    eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
+    eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
     eval_at: Optional[Iterable[int]] = None,
     **kwargs: Any
 ) -> LGBMModel:
@@ -1037,7 +1037,7 @@ class _DaskLGBMModel:
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Optional[Iterable[int]] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
@@ -1163,7 +1163,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
-        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
@@ -1334,7 +1334,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
