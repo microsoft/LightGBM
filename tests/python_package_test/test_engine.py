@@ -3713,7 +3713,8 @@ def test_sample_strategy_with_boosting():
     test_res5 = mean_squared_error(y_test, gbm.predict(X_test))
     assert test_res5 == pytest.approx(2539.792378, abs=1.0)
     assert eval_res5 == pytest.approx(test_res5)
-    assert eval_res5 != test_res5
+    assert test_res4 != test_res5
+    assert eval_res4 != eval_res5
 
 
 def test_record_evaluation_with_train():
