@@ -611,15 +611,6 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
     return data, feature_name, categorical_feature, pandas_categorical
 
 
-def _label_from_pandas(label):
-    if isinstance(label, pd_DataFrame):
-        if len(label.columns) > 1:
-            raise ValueError('DataFrame for label cannot have multiple columns')
-        _check_for_bad_pandas_dtypes(label.dtypes)
-        label = np.ravel(label.values.astype(np.float32, copy=False))
-    return label
-
-
 def _dump_pandas_categorical(pandas_categorical, file_name=None):
     categorical_json = json.dumps(pandas_categorical, default=json_default_with_numpy)
     pandas_str = f'\npandas_categorical:{categorical_json}\n'
