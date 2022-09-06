@@ -7,6 +7,9 @@
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 
+#include <string>
+#include <vector>
+
 #include "../multiclass_objective.hpp"
 
 #define GET_GRADIENTS_BLOCK_SIZE_MULTICLASS (1024)

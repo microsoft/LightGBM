@@ -2,7 +2,11 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
 #include "cuda_multiclass_objective.hpp"
+
+#include <string>
+#include <vector>
 
 #ifdef USE_CUDA_EXP
 
