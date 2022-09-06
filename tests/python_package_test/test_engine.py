@@ -118,7 +118,7 @@ def test_regression(objective):
     params = {
         'objective': objective,
         'metric': 'l2',
-        'verbose': -1,
+        'verbose': -1
     }
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
