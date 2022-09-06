@@ -70,7 +70,6 @@ DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
 )
 
 test_that("train and predict binary classification", {
-  stop("failing intentionally")
   nrounds <- 10L
   bst <- lightgbm(
     data = train$data

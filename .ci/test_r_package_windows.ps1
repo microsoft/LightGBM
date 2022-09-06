@@ -284,11 +284,6 @@ if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
   Run-R-Code-Redirect-Stderr "source('testthat.R')"
-  # if ($env:R_MAJOR_VERSION -eq "3") {
-  #   Run-R-Code-Redirect-Stderr "stop('I am an error')" ; Check-Output $?
-  # } else {
-  #   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
-  # }
 }
 
 Write-Output "No issues were found checking the R package"

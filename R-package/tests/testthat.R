@@ -7,5 +7,3 @@ test_check(
     , stop_on_warning = FALSE
     , reporter = testthat::SummaryReporter$new()
 )
-
-stop("I am an error")
