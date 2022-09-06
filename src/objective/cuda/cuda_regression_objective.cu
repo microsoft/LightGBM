@@ -70,7 +70,7 @@ void CUDARegressionL2loss::LaunchGetGradientsKernel(const double* score, score_t
 
 
 double CUDARegressionL1loss::LaunchCalcInitScoreKernel() const {
-  const double alpha = 0.9f;
+  const double alpha = 0.5f;
   if (cuda_weights_ == nullptr) {
     PercentileGlobal<label_t, data_size_t, label_t, double, false, false>(
       cuda_labels_, nullptr, cuda_data_indices_buffer_.RawData(), nullptr, nullptr, alpha, num_data_, cuda_percentile_result_.RawData());
