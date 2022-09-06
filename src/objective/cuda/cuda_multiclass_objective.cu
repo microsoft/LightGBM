@@ -34,9 +34,6 @@ __global__ void GetGradientsKernel_MulticlassSoftmax(
     double* softmax_result = cuda_softmax_buffer + offset;
     for (int k = 0; k < num_class; ++k) {
       const double point_score = cuda_scores[k * num_data + data_index];
-      if (isnan(point_score)) {
-        printf("error find nan %f in score ==================================================\n", point_score);
-      }
       softmax_result[k] = cuda_scores[k * num_data + data_index];
     }
     SoftmaxCUDA(softmax_result, num_class);
