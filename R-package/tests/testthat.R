@@ -1,9 +1,11 @@
 library(testthat)
 library(lightgbm)
 
-test_check(
-    package = "lightgbm"
-    , stop_on_failure = TRUE
-    , stop_on_warning = FALSE
-    , reporter = testthat::SummaryReporter$new(omit_dots = TRUE)
-)
+# test_check(
+#     package = "lightgbm"
+#     , stop_on_failure = TRUE
+#     , stop_on_warning = FALSE
+#     , reporter = testthat::SummaryReporter$new()
+# )
+
+stop("I am an error")
