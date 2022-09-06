@@ -3,11 +3,11 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#ifdef USE_CUDA_EXP
+
 #include <algorithm>
 
 #include "cuda_multiclass_objective.hpp"
-
-#ifdef USE_CUDA_EXP
 
 namespace LightGBM {
 

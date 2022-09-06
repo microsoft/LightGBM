@@ -5,6 +5,8 @@
 #ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_CUDA_CUDA_MULTICLASS_OBJECTIVE_HPP_
 
+#ifdef USE_CUDA_EXP
+
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 
 #include <string>
@@ -13,8 +15,6 @@
 #include "../multiclass_objective.hpp"
 
 #define GET_GRADIENTS_BLOCK_SIZE_MULTICLASS (1024)
-
-#ifdef USE_CUDA_EXP
 
 namespace LightGBM {
 
