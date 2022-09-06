@@ -128,7 +128,7 @@ def test_regression(objective):
         lgb_train,
         num_boost_round=50,
         valid_sets=lgb_eval,
-        callbacks=[lgb.record_evaluation(evals_result), lgb.log_evaluation(1)]
+        callbacks=[lgb.record_evaluation(evals_result)]
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     if objective == 'huber':
