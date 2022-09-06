@@ -81,6 +81,20 @@ void CUDARegressionL1loss::RenewTreeOutputCUDA(
   global_timer.Stop("CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel");
 }
 
+
+CUDARegressionHuberLoss::CUDARegressionHuberLoss(const Config& config):
+CUDARegressionL2loss(config), alpha_(config.alpha) {
+  if (sqrt_) {
+    Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+    sqrt_ = false;
+  }
+}
+
+CUDARegressionHuberLoss::CUDARegressionHuberLoss(const std::vector<std::string>& strs):
+CUDARegressionL2loss(strs) {}
+
+CUDARegressionHuberLoss::~CUDARegressionHuberLoss() {}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

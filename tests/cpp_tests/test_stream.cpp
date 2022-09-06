@@ -185,7 +185,7 @@ void test_stream_sparse(
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
         dataset = static_cast<Dataset*>(dataset_handle);
-        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 1);
+        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 2);
         break;
       }
 
@@ -198,6 +198,7 @@ void test_stream_sparse(
 
     dataset = static_cast<Dataset*>(dataset_handle);
 
+    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::StreamSparseDataset(
       dataset_handle,
       nrows,
@@ -213,7 +214,6 @@ void test_stream_sparse(
 
     dataset->FinishLoad();
 
-    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
     TestUtils::AssertMetadata(&dataset->metadata(),
                               labels,
                               weights,

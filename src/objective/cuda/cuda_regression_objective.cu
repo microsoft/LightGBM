@@ -189,6 +189,43 @@ void CUDARegressionL1loss::LaunchRenewTreeOutputCUDAKernel(
 }
 
 
+template <bool USE_WEIGHT>
+__global__ void GetGradientsKernel_Huber(const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights, const data_size_t num_data,
+  const double alpha, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  if (data_index < num_data) {
+    if (!USE_WEIGHT) {
+      const double diff = cuda_scores[data_index] - static_cast<double>(cuda_labels[data_index]);
+      if (fabs(diff) <= alpha) {
+        cuda_out_gradients[data_index] = static_cast<score_t>(diff);
+      } else {
+        const score_t sign = static_cast<score_t>((diff > 0.0f) - (diff < 0.0f));
+        cuda_out_gradients[data_index] = static_cast<score_t>(sign * alpha);
+      }
+      cuda_out_hessians[data_index] = 1.0f;
+    } else {
+      const double diff = cuda_scores[data_index] - static_cast<double>(cuda_labels[data_index]);
+      const score_t weight = static_cast<score_t>(cuda_weights[data_index]);
+      if (fabs(diff) <= alpha) {
+        cuda_out_gradients[data_index] = static_cast<score_t>(diff) * weight;
+      } else {
+        const score_t sign = static_cast<score_t>((diff > 0.0f) - (diff < 0.0f));
+        cuda_out_gradients[data_index] = static_cast<score_t>(sign * alpha) * weight;
+      }
+      cuda_out_hessians[data_index] = weight;
+    }
+  }
+}
+
+void CUDARegressionHuberLoss::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  if (cuda_weights_ == nullptr) {
+    GetGradientsKernel_Huber<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, nullptr, num_data_, alpha_, gradients, hessians);
+  } else {
+    GetGradientsKernel_Huber<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, cuda_weights_, num_data_, alpha_, gradients, hessians);
+  }
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
