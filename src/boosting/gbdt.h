@@ -417,7 +417,7 @@ class GBDT : public GBDTBase {
   void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
-  * \brief calculate the object function
+  * \brief calculate the objective function
   */
   virtual void Boosting();
 

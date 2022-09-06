@@ -13,7 +13,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification, make_regression
+from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -3572,7 +3572,7 @@ def test_force_split_with_feature_fraction(tmp_path):
 
 
 def test_goss_boosting_and_strategy_equivalent():
-    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
+    X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
@@ -3601,7 +3601,7 @@ def test_goss_boosting_and_strategy_equivalent():
 
 
 def test_sample_strategy_with_boosting():
-    X, y = make_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
+    X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)

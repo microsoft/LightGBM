@@ -413,6 +413,12 @@ void Config::CheckParamConflict() {
         "Will set min_data_in_leaf to 1.");
     min_data_in_leaf = 1;
   }
+  if (boosting == std::string("goss")) {
+    boosting = std::string("gbdt");
+    data_sample_strategy = std::string("goss");
+    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
+                 "To suppress this warning, set data_sample_strategy=goss instead.");
+  }
 }
 
 std::string Config::ToString() const {

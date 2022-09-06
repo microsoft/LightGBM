@@ -99,7 +99,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   is_constant_hessian_ = GetIsConstHessian(objective_function);
 
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
-                               !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
+                     !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
 
   tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
                                                                               config_.get(), boosting_on_gpu_));
@@ -194,7 +194,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 void GBDT::Boosting() {
   Common::FunctionTimer fun_timer("GBDT::Boosting", global_timer);
   if (objective_function_ == nullptr) {
-    Log::Fatal("No object function provided");
+    Log::Fatal("No objective function provided");
   }
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
@@ -340,24 +340,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
   const bool is_use_subset = data_sample_strategy_->is_use_subset();
   const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
-  if (gradients != nullptr && is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_ && !data_sample_strategy_->IsHessianChange()) {
-    // allocate gradients_ and hessians_ for copy gradients for using data subset
-    int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-    gradients_.resize(total_size);
-    hessians_.resize(total_size);
-    gradients_pointer_ = gradients_.data();
-    hessians_pointer_ = hessians_.data();
-  }
   const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
-
-  if (gradients != nullptr && is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_ && config_->boosting != std::string("goss")) {
-    // allocate gradients_ and hessians_ for copy gradients for using data subset
-    int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-    gradients_.resize(total_size);
-    hessians_.resize(total_size);
-    gradients_pointer_ = gradients_.data();
-    hessians_pointer_ = hessians_.data();
-  }
 
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
@@ -813,6 +796,8 @@ void GBDT::ResetConfig(const Config* config) {
 
 void GBDT::ResetGradientBuffers() {
   const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
+  const bool is_use_subset = data_sample_strategy_->is_use_subset();
+  const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
   if (objective_function_ != nullptr) {
     #ifdef USE_CUDA_EXP
     if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu_) {
@@ -832,7 +817,7 @@ void GBDT::ResetGradientBuffers() {
     #ifdef USE_CUDA_EXP
     }
     #endif  // USE_CUDA_EXP
-  } else if (data_sample_strategy_->IsHessianChange()) {
+  } else if (data_sample_strategy_->IsHessianChange() || (is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_)) {
     const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     gradients_.resize(total_size);
     hessians_.resize(total_size);
