@@ -4,8 +4,8 @@
  * license information.
  */
 
-#ifndef LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
-#define LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
+#ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
+#define LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
 
 #ifdef USE_CUDA_EXP
 
@@ -118,7 +118,27 @@ class CUDARegressionHuberLoss : public CUDARegressionL2loss {
 };
 
 
+// http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+class CUDARegressionFairLoss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionFairLoss(const Config& config);
+
+  explicit CUDARegressionFairLoss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionFairLoss();
+
+  bool IsConstantHessian() const override {
+    return false;
+  }
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  const double c_ = 0.0f;
+};
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
-#endif  // LIGHTGBM_NEW_CUDA_REGRESSION_OBJECTIVE_HPP_
+#endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_

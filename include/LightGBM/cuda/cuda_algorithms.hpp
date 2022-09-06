@@ -18,16 +18,10 @@
 
 #include <algorithm>
 
-#define NUM_BANKS_DATA_PARTITION (16)
-#define LOG_NUM_BANKS_DATA_PARTITION (4)
 #define GLOBAL_PREFIX_SUM_BLOCK_SIZE (1024)
-
 #define BITONIC_SORT_NUM_ELEMENTS (1024)
 #define BITONIC_SORT_DEPTH (11)
 #define BITONIC_SORT_QUERY_ITEM_BLOCK_SIZE (10)
-
-#define CONFLICT_FREE_INDEX(n) \
-  ((n) + ((n) >> LOG_NUM_BANKS_DATA_PARTITION)) \
 
 namespace LightGBM {
 
@@ -223,6 +217,54 @@ __device__ __forceinline__ void BitonicArgSort_1024(const VAL_T* scores, INDEX_T
   }
 }
 
+template <typename VAL_T, typename INDEX_T, bool ASCENDING>
+__device__ __forceinline__ void BitonicArgSort_2048(const VAL_T* scores, INDEX_T* indices) {
+  for (INDEX_T base = 0; base < 2048; base += 1024) {
+    for (INDEX_T outer_depth = 10; outer_depth >= 1; --outer_depth) {
+      const INDEX_T outer_segment_length = 1 << (11 - outer_depth);
+      const INDEX_T outer_segment_index = threadIdx.x / outer_segment_length;
+      const bool ascending = ((base == 0) ^ ASCENDING) ? (outer_segment_index % 2 > 0) : (outer_segment_index % 2 == 0);
+      for (INDEX_T inner_depth = outer_depth; inner_depth < 11; ++inner_depth) {
+        const INDEX_T segment_length = 1 << (11 - inner_depth);
+        const INDEX_T half_segment_length = segment_length >> 1;
+        const INDEX_T half_segment_index = threadIdx.x / half_segment_length;
+        if (half_segment_index % 2 == 0) {
+          const INDEX_T index_to_compare = threadIdx.x + half_segment_length + base;
+          if ((scores[indices[threadIdx.x + base]] > scores[indices[index_to_compare]]) == ascending) {
+            const INDEX_T index = indices[threadIdx.x + base];
+            indices[threadIdx.x + base] = indices[index_to_compare];
+            indices[index_to_compare] = index;
+          }
+        }
+        __syncthreads();
+      }
+    }
+  }
+  const unsigned int index_to_compare = threadIdx.x + 1024;
+  if (scores[indices[index_to_compare]] > scores[indices[threadIdx.x]]) {
+    const INDEX_T temp_index = indices[index_to_compare];
+    indices[index_to_compare] = indices[threadIdx.x];
+    indices[threadIdx.x] = temp_index;
+  }
+  __syncthreads();
+  for (INDEX_T base = 0; base < 2048; base += 1024) {
+    for (INDEX_T inner_depth = 1; inner_depth < 11; ++inner_depth) {
+      const INDEX_T segment_length = 1 << (11 - inner_depth);
+      const INDEX_T half_segment_length = segment_length >> 1;
+      const INDEX_T half_segment_index = threadIdx.x / half_segment_length;
+      if (half_segment_index % 2 == 0) {
+        const INDEX_T index_to_compare = threadIdx.x + half_segment_length + base;
+        if (scores[indices[threadIdx.x + base]] < scores[indices[index_to_compare]]) {
+          const INDEX_T index = indices[threadIdx.x + base];
+          indices[threadIdx.x + base] = indices[index_to_compare];
+          indices[index_to_compare] = index;
+        }
+      }
+      __syncthreads();
+    }
+  }
+}
+
 template <typename VAL_T, typename INDEX_T, bool ASCENDING, uint32_t BLOCK_DIM, uint32_t MAX_DEPTH>
 __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, const int len) {
   __shared__ VAL_T shared_values[BLOCK_DIM];
@@ -386,6 +428,12 @@ __device__ void BitonicArgSortDevice(const VAL_T* values, INDEX_T* indices, cons
     }
   }
 }
+
+void BitonicArgSortItemsGlobal(
+  const double* scores,
+  const int num_queries,
+  const data_size_t* cuda_query_boundaries,
+  data_size_t* out_indices);
 
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
 void BitonicArgSortGlobal(const VAL_T* values, INDEX_T* indices, const size_t len);

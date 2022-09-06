@@ -95,6 +95,16 @@ CUDARegressionL2loss(strs) {}
 
 CUDARegressionHuberLoss::~CUDARegressionHuberLoss() {}
 
+
+CUDARegressionFairLoss::CUDARegressionFairLoss(const Config& config):
+CUDARegressionL2loss(config), c_(config.fair_c) {}
+
+CUDARegressionFairLoss::CUDARegressionFairLoss(const std::vector<std::string>& strs):
+CUDARegressionL2loss(strs) {}
+
+CUDARegressionFairLoss::~CUDARegressionFairLoss() {}
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

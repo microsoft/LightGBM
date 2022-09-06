@@ -226,6 +226,35 @@ void CUDARegressionHuberLoss::LaunchGetGradientsKernel(const double* score, scor
   }
 }
 
+
+template <bool USE_WEIGHT>
+__global__ void GetGradientsKernel_Fair(const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights, const data_size_t num_data,
+  const double c, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  if (data_index < num_data) {
+    if (!USE_WEIGHT) {
+      const double diff = cuda_scores[data_index] - static_cast<double>(cuda_labels[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>(c * diff / (fabs(diff) + c));
+      cuda_out_hessians[data_index] = static_cast<score_t>(c * c / ((fabs(diff) + c) * (fabs(diff) + c)));
+    } else {
+      const double diff = cuda_scores[data_index] - static_cast<double>(cuda_labels[data_index]);
+      const score_t weight = static_cast<score_t>(cuda_weights[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>(c * diff / (fabs(diff) + c) * weight);
+      cuda_out_hessians[data_index] = static_cast<score_t>(c * c / ((fabs(diff) + c) * (fabs(diff) + c)) * weight);
+    }
+  }
+}
+
+void CUDARegressionFairLoss::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  if (cuda_weights_ == nullptr) {
+    GetGradientsKernel_Fair<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, nullptr, num_data_, c_, gradients, hessians);
+  } else {
+    GetGradientsKernel_Fair<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, cuda_weights_, num_data_, c_, gradients, hessians);
+  }
+}
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
