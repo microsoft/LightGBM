@@ -288,7 +288,10 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
+  $ErrorActionPreference = 'SilentlyContinue'
   Run-R-Code-Redirect-Stderr "source('testthat.R', verbose = FALSE, echo = FALSE, keep.source = FALSE)"
 }
 
 Write-Output "No issues were found checking the R package"
+
+Exit 0
