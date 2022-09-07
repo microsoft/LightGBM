@@ -111,7 +111,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair'])
 def test_regression(objective):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -133,6 +133,8 @@ def test_regression(objective):
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     if objective == 'huber':
         assert ret < 35
+    elif objective == 'fair':
+        assert ret < 17
     else:
         assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)

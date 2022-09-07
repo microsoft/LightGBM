@@ -22,17 +22,14 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     if (type == std::string("regression")) {
       return new CUDARegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {
-      Log::Warning("Objective regression_l1 is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionL1loss(config);
+      return new CUDARegressionL1loss(config);
     } else if (type == std::string("quantile")) {
       Log::Warning("Objective quantile is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionQuantileloss(config);
     } else if (type == std::string("huber")) {
-      Log::Warning("Objective huber is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionHuberLoss(config);
+      return new CUDARegressionHuberLoss(config);
     } else if (type == std::string("fair")) {
-      Log::Warning("Objective fair is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionFairLoss(config);
+      return new CUDARegressionFairLoss(config);
     } else if (type == std::string("poisson")) {
       Log::Warning("Objective poisson is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionPoissonLoss(config);
