@@ -475,11 +475,6 @@ void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
     std::vector<int8_t> is_feature_used_by_larger_node;
     if (larger_leaf_index_ >= 0) {
       is_feature_used_by_larger_node = col_sampler_.GetByNode(tree, larger_leaf_index_);
-      CHECK_EQ(is_feature_used_by_smaller_node.size(), is_feature_used_by_larger_node.size());
-      #pragma omp parallel for schedule(static) num_threads(num_threads_) if(num_features_ >= 1024)
-      for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
-        CHECK_EQ(is_feature_used_by_smaller_node[feature_index], is_feature_used_by_larger_node[feature_index]);
-      }
     }
     cuda_best_split_finder_->SetUsedFeatureByNode(is_feature_used_by_smaller_node, is_feature_used_by_larger_node);
   }
