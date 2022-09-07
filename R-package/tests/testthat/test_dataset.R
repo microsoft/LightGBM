@@ -1,78 +1,78 @@
-# VERBOSITY <- as.integer(
-#   Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
-# )
-#
-# data(agaricus.train, package = "lightgbm")
-# train_data <- agaricus.train$data[seq_len(1000L), ]
-# train_label <- agaricus.train$label[seq_len(1000L)]
-#
-# data(agaricus.test, package = "lightgbm")
-# test_data <- agaricus.test$data[1L:100L, ]
-# test_label <- agaricus.test$label[1L:100L]
-#
-# test_that("lgb.Dataset: basic construction, saving, loading", {
-#   # from sparse matrix
-#   dtest1 <- lgb.Dataset(
-#     test_data
-#     , label = test_label
-#     , params = list(
-#       verbose = VERBOSITY
-#     )
-#   )
-#   # from dense matrix
-#   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
-#   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
-#
-#   # save to a local file
-#   tmp_file <- tempfile("lgb.Dataset_")
-#   lgb.Dataset.save(dtest1, tmp_file)
-#   # read from a local file
-#   dtest3 <- lgb.Dataset(
-#     tmp_file
-#     , params = list(
-#       verbose = VERBOSITY
-#     )
-#   )
-#   lgb.Dataset.construct(dtest3)
-#   unlink(tmp_file)
-#   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
-# })
-#
-# test_that("lgb.Dataset: get_field & set_field", {
-#   dtest <- lgb.Dataset(test_data)
-#   dtest$construct()
-#
-#   set_field(dtest, "label", test_label)
-#   labels <- get_field(dtest, "label")
-#   expect_equal(test_label, get_field(dtest, "label"))
-#
-#   expect_true(length(get_field(dtest, "weight")) == 0L)
-#   expect_true(length(get_field(dtest, "init_score")) == 0L)
-#
-#   # any other label should error
-#   expect_error(set_field(dtest, "asdf", test_label))
-# })
-#
-# test_that("lgb.Dataset: slice, dim", {
-#   dtest <- lgb.Dataset(test_data, label = test_label)
-#   lgb.Dataset.construct(dtest)
-#   expect_equal(dim(dtest), dim(test_data))
-#   dsub1 <- slice(dtest, seq_len(42L))
-#   lgb.Dataset.construct(dsub1)
-#   expect_equal(nrow(dsub1), 42L)
-#   expect_equal(ncol(dsub1), ncol(test_data))
-# })
-#
-# test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
-#   dtrain <- lgb.Dataset(train_data, label = train_label)
-#   dtrain$construct()
-#   dtest <- lgb.Dataset(test_data, label = test_label)
-#   dtest$construct()
-#   expect_error({
-#     dtest$set_reference(dtrain)
-#   }, regexp = "cannot set reference after freeing raw data")
-# })
-#
+VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)
+
+data(agaricus.train, package = "lightgbm")
+train_data <- agaricus.train$data[seq_len(1000L), ]
+train_label <- agaricus.train$label[seq_len(1000L)]
+
+data(agaricus.test, package = "lightgbm")
+test_data <- agaricus.test$data[1L:100L, ]
+test_label <- agaricus.test$label[1L:100L]
+
+test_that("lgb.Dataset: basic construction, saving, loading", {
+  # from sparse matrix
+  dtest1 <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = list(
+      verbose = VERBOSITY
+    )
+  )
+  # from dense matrix
+  dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
+  expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
+
+  # save to a local file
+  tmp_file <- tempfile("lgb.Dataset_")
+  lgb.Dataset.save(dtest1, tmp_file)
+  # read from a local file
+  dtest3 <- lgb.Dataset(
+    tmp_file
+    , params = list(
+      verbose = VERBOSITY
+    )
+  )
+  lgb.Dataset.construct(dtest3)
+  unlink(tmp_file)
+  expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
+})
+
+test_that("lgb.Dataset: get_field & set_field", {
+  dtest <- lgb.Dataset(test_data)
+  dtest$construct()
+
+  set_field(dtest, "label", test_label)
+  labels <- get_field(dtest, "label")
+  expect_equal(test_label, get_field(dtest, "label"))
+
+  expect_true(length(get_field(dtest, "weight")) == 0L)
+  expect_true(length(get_field(dtest, "init_score")) == 0L)
+
+  # any other label should error
+  expect_error(set_field(dtest, "asdf", test_label))
+})
+
+test_that("lgb.Dataset: slice, dim", {
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  lgb.Dataset.construct(dtest)
+  expect_equal(dim(dtest), dim(test_data))
+  dsub1 <- slice(dtest, seq_len(42L))
+  lgb.Dataset.construct(dsub1)
+  expect_equal(nrow(dsub1), 42L)
+  expect_equal(ncol(dsub1), ncol(test_data))
+})
+
+test_that("Dataset$set_reference() on a constructed Dataset fails if raw data has been freed", {
+  dtrain <- lgb.Dataset(train_data, label = train_label)
+  dtrain$construct()
+  dtest <- lgb.Dataset(test_data, label = test_label)
+  dtest$construct()
+  expect_error({
+    dtest$set_reference(dtrain)
+  }, regexp = "cannot set reference after freeing raw data")
+})
+
 # test_that("Dataset$set_reference() fails if reference is not a Dataset", {
 #   dtrain <- lgb.Dataset(
 #     train_data
