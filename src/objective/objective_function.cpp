@@ -38,8 +38,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("lambdarank")) {
       return new CUDALambdarankNDCG(config);
     } else if (type == std::string("rank_xendcg")) {
-      Log::Warning("Objective rank_xendcg is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RankXENDCG(config);
+      return new CUDARankXENDCG(config);
     } else if (type == std::string("multiclass")) {
       Log::Warning("Objective multiclass is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new MulticlassSoftmax(config);
