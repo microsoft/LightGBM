@@ -470,7 +470,7 @@ void CUDASingleGPUTreeLearner::ResetBoostingOnGPU(const bool boosting_on_cuda) {
 
 void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
   if (select_features_by_node_) {
-    // use feature interaction constraint
+    // use feature interaction constraint or sample features by node
     const std::vector<int8_t>& is_feature_used_by_smaller_node = col_sampler_.GetByNode(tree, smaller_leaf_index_);
     std::vector<int8_t> is_feature_used_by_larger_node;
     if (larger_leaf_index_ >= 0) {
