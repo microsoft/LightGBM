@@ -55,8 +55,9 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
     cuda_histogram_constructor_->cuda_hist_pointer()));
   cuda_data_partition_->Init();
 
+  select_features_by_node_ = !config_->interaction_constraints_vector.empty() || config_->feature_fraction_bynode < 1.0;
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
-    train_data_, this->share_state_->feature_hist_offsets(), config_));
+    train_data_, this->share_state_->feature_hist_offsets(), select_features_by_node_, config_));
   cuda_best_split_finder_->Init();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
@@ -149,6 +150,9 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
       sum_hessians_in_larger_leaf);
     global_timer.Stop("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     global_timer.Start("CUDASingleGPUTreeLearner::FindBestSplitsForLeaf");
+
+    SelectFeatureByNode(tree.get());
+
     cuda_best_split_finder_->FindBestSplitsForLeaf(
       cuda_smaller_leaf_splits_->GetCUDAStruct(),
       cuda_larger_leaf_splits_->GetCUDAStruct(),
@@ -461,6 +465,18 @@ void CUDASingleGPUTreeLearner::ResetBoostingOnGPU(const bool boosting_on_cuda) {
   if (!boosting_on_cuda_) {
     AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
     AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  }
+}
+
+void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
+  if (select_features_by_node_) {
+    // use feature interaction constraint or sample features by node
+    const std::vector<int8_t>& is_feature_used_by_smaller_node = col_sampler_.GetByNode(tree, smaller_leaf_index_);
+    std::vector<int8_t> is_feature_used_by_larger_node;
+    if (larger_leaf_index_ >= 0) {
+      is_feature_used_by_larger_node = col_sampler_.GetByNode(tree, larger_leaf_index_);
+    }
+    cuda_best_split_finder_->SetUsedFeatureByNode(is_feature_used_by_smaller_node, is_feature_used_by_larger_node);
   }
 }
 

@@ -66,6 +66,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void AllocateBitset();
 
+  void SelectFeatureByNode(const Tree* tree);
+
   #ifdef DEUBG
   void CheckSplitValid(
     const int left_leaf, const int right_leaf,
@@ -100,6 +102,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int best_leaf_index_;
   int num_cat_threshold_;
   bool has_categorical_feature_;
+  // whether need to select features by node
+  bool select_features_by_node_;
 
   std::vector<int> categorical_bin_to_value_;
   std::vector<int> categorical_bin_offsets_;
