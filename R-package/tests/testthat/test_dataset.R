@@ -73,28 +73,28 @@ test_that("Dataset$set_reference() on a constructed Dataset fails if raw data ha
   }, regexp = "cannot set reference after freeing raw data")
 })
 
-# test_that("Dataset$set_reference() fails if reference is not a Dataset", {
-#   dtrain <- lgb.Dataset(
-#     train_data
-#     , label = train_label
-#     , free_raw_data = FALSE
-#   )
-#   expect_error({
-#     dtrain$set_reference(reference = data.frame(x = rnorm(10L)))
-#   }, regexp = "Can only use lgb.Dataset as a reference")
-#
-#   # passing NULL when the Dataset already has a reference raises an error
-#   dtest <- lgb.Dataset(
-#     test_data
-#     , label = test_label
-#     , free_raw_data = FALSE
-#   )
-#   dtrain$set_reference(dtest)
-#   expect_error({
-#     dtrain$set_reference(reference = NULL)
-#   }, regexp = "Can only use lgb.Dataset as a reference")
-# })
-#
+test_that("Dataset$set_reference() fails if reference is not a Dataset", {
+  dtrain <- lgb.Dataset(
+    train_data
+    , label = train_label
+    , free_raw_data = FALSE
+  )
+  expect_error({
+    dtrain$set_reference(reference = data.frame(x = rnorm(10L)))
+  }, regexp = "Can only use lgb.Dataset as a reference")
+
+  # passing NULL when the Dataset already has a reference raises an error
+  dtest <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , free_raw_data = FALSE
+  )
+  dtrain$set_reference(dtest)
+  expect_error({
+    dtrain$set_reference(reference = NULL)
+  }, regexp = "Can only use lgb.Dataset as a reference")
+})
+
 # test_that("Dataset$set_reference() setting reference to the same Dataset has no side effects", {
 #   dtrain <- lgb.Dataset(
 #     train_data

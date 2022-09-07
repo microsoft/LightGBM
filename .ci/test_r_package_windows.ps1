@@ -25,7 +25,7 @@ function Run-R-Code-Redirect-Stderr {
     [string]$rcode
   )
   $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode"
-  Rscript --vanilla -e "$decorated_code" ; Check-Output $?
+  Rscript --vanilla -e $decorated_code ; Check-Output $?
 }
 
 # Remove all items matching some pattern from PATH environment variable
@@ -284,7 +284,6 @@ if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
-  # Run-R-Code-Redirect-Stderr "source('testthat.R', verbose = FALSE, echo = FALSE, keep.source = FALSE)"
 }
 
 Write-Output "No issues were found checking the R package"
