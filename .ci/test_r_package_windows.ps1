@@ -62,7 +62,7 @@ Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
 Write-Output "--------------"
 Write-Output "PSHOME: $PSHOME"
-Write-Output Get-Content -Path "$PSHOME\powershell.config.json"
+Get-Content -Path "$PSHOME\powershell.config.json"
 Write-Output "--------------"
 
 # Get details needed for installing R components
