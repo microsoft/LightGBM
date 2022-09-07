@@ -60,11 +60,6 @@ Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 
-Write-Output "--------------"
-Write-Output "PSHOME: $PSHOME"
-Get-Content -Path "$PSHOME\powershell.config.json"
-Write-Output "--------------"
-
 # Get details needed for installing R components
 #
 # NOTES:
@@ -288,12 +283,8 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  $ErrorActionPreference = 'SilentlyContinue'
-  $env:LIGHTGBM_TEST_VERBOSITY = "1"
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
   # Run-R-Code-Redirect-Stderr "source('testthat.R', verbose = FALSE, echo = FALSE, keep.source = FALSE)"
 }
 
 Write-Output "No issues were found checking the R package"
-
-Exit 0
