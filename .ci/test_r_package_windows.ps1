@@ -289,6 +289,7 @@ if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
   $ErrorActionPreference = 'SilentlyContinue'
+  $env:LIGHTGBM_TEST_VERBOSITY = "1"
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
   # Run-R-Code-Redirect-Stderr "source('testthat.R', verbose = FALSE, echo = FALSE, keep.source = FALSE)"
 }
