@@ -126,7 +126,6 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   #endif  // USE_CUDA_EXP
 
   num_data_ = train_data_->num_data();
-  ResetGradientBuffers();
 
   // get max feature index
   max_feature_idx_ = train_data_->num_total_features() - 1;
@@ -141,6 +140,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   // if need bagging, create buffer
   data_sample_strategy_->ResetSampleConfig(config_.get(), true);
+  ResetGradientBuffers();
 
   class_need_train_ = std::vector<bool>(num_tree_per_iteration_, true);
   if (objective_function_ != nullptr && objective_function_->SkipEmptyClass()) {
