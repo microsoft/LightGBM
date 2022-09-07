@@ -24,8 +24,8 @@ function Run-R-Code-Redirect-Stderr {
   param(
     [string]$rcode
   )
-  $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode"
-  Rscript --vanilla -e $decorated_code ; Check-Output $?
+  $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink();"
+  Rscript --vanilla -e $decorated_code
 }
 
 # Remove all items matching some pattern from PATH environment variable

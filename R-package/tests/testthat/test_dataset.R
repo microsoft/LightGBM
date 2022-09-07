@@ -125,7 +125,7 @@ test_that("Dataset$set_reference() setting reference to the same Dataset has no 
     , dtrain$.__enclos_env__$private$predictor
   )
 })
-print("test-2")
+
 test_that("Dataset$set_reference() updates categorical_feature, colnames, and predictor", {
   dtrain <- lgb.Dataset(
     train_data
@@ -180,7 +180,7 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
     identical(dtest$get_colnames(), test_original_feature_names)
   )
 })
-print("test-3")
+
 test_that("lgb.Dataset: colnames", {
   dtest <- lgb.Dataset(test_data, label = test_label)
   expect_equal(colnames(dtest), colnames(test_data))
@@ -193,7 +193,7 @@ test_that("lgb.Dataset: colnames", {
   expect_silent(colnames(dtest) <- new_names)
   expect_equal(colnames(dtest), new_names)
 })
-print("test-4")
+
 test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
   nr <- 1000L
   x <- Matrix::rsparsematrix(nr, 100L, density = 0.0005)
@@ -202,7 +202,7 @@ test_that("lgb.Dataset: nrow is correct for a very sparse matrix", {
   dtest <- lgb.Dataset(x)
   expect_equal(dim(dtest), dim(x))
 })
-print("test-5")
+
 test_that("lgb.Dataset: Dataset should be able to construct from matrix and return non-null handle", {
   rawData <- matrix(runif(1000L), ncol = 10L)
   ref_handle <- NULL
@@ -219,8 +219,12 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
   .Call(LGBM_DatasetFree_R, handle)
   handle <- NULL
 })
-print("test-6")
+
 test_that("cpp errors should be raised as proper R errors", {
+  testthat::skip_if(
+    Sys.getenv("COMPILER", "") == "MSVC" && as.integer(R.Version()[["major"]]) < 4L
+    , message = "Skipping on R 3.x and Visual Studio 16 2019"
+  )
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
   dtrain <- lgb.Dataset(
@@ -234,7 +238,7 @@ test_that("cpp errors should be raised as proper R errors", {
     }, type = "message")
   }, regexp = "Initial score size doesn't match data size")
 })
-print("test-7")
+
 test_that("lgb.Dataset$set_field() should convert 'group' to integer", {
   ds <- lgb.Dataset(
     data = matrix(rnorm(100L), nrow = 50L, ncol = 2L)
@@ -247,7 +251,7 @@ test_that("lgb.Dataset$set_field() should convert 'group' to integer", {
   ds$set_field("group", group_as_numeric)
   expect_identical(ds$get_field("group"), as.integer(group_as_numeric))
 })
-print("test-8")
+
 test_that("lgb.Dataset should throw an error if 'reference' is provided but of the wrong format", {
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
@@ -261,7 +265,7 @@ test_that("lgb.Dataset should throw an error if 'reference' is provided but of t
     )
   }, regexp = "reference must be a")
 })
-print("test-9")
+
 test_that("Dataset$new() should throw an error if 'predictor' is provided but of the wrong format", {
   data(agaricus.test, package = "lightgbm")
   test_data <- agaricus.test$data[1L:100L, ]
@@ -274,7 +278,7 @@ test_that("Dataset$new() should throw an error if 'predictor' is provided but of
     )
   }, regexp = "predictor must be a", fixed = TRUE)
 })
-print("test-10")
+
 test_that("Dataset$get_params() successfully returns parameters if you passed them", {
   # note that this list uses one "main" parameter (feature_pre_filter) and one that
   # is an alias (is_sparse), to check that aliases are handled correctly
@@ -295,7 +299,7 @@ test_that("Dataset$get_params() successfully returns parameters if you passed th
     expect_identical(params[[param_name]], returned_params[[param_name]])
   }
 })
-print("test-11")
+
 test_that("Dataset$get_params() ignores irrelevant parameters", {
   params <- list(
     "feature_pre_filter" = TRUE
@@ -310,7 +314,7 @@ test_that("Dataset$get_params() ignores irrelevant parameters", {
   returned_params <- ds$get_params()
   expect_false("nonsense_parameter" %in% names(returned_params))
 })
-print("test-12")
+
 test_that("Dataset$update_parameters() does nothing for empty inputs", {
   ds <- lgb.Dataset(
     test_data
@@ -328,7 +332,7 @@ test_that("Dataset$update_parameters() does nothing for empty inputs", {
   new_params <- ds$get_params()
   expect_identical(new_params, initial_params)
 })
-print("test-13")
+
 test_that("Dataset$update_params() works correctly for recognized Dataset parameters", {
   ds <- lgb.Dataset(
     test_data
@@ -351,7 +355,7 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
     expect_identical(new_params[[param_name]], updated_params[[param_name]])
   }
 })
-print("test-14")
+
 test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
   dtest <- lgb.Dataset(
     data = test_data
@@ -369,7 +373,7 @@ test_that("Dataset$finalize() should not fail on an already-finalized Dataset", 
   dtest$finalize()
   expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 })
-print("test-15")
+
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data
@@ -403,7 +407,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
 
   expect_true(lgb.is.Booster(x = bst))
 })
-print("test-16")
+
 test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data
@@ -438,7 +442,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
 
   expect_true(methods::is(bst, "lgb.CVBooster"))
 })
-print("test-17")
+
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
   # set one feature to a value longer than the default buffer size used
   # in LGBM_DatasetGetFeatureNames_R
@@ -456,7 +460,7 @@ test_that("lgb.Dataset: should be able to use and retrieve long feature names", 
   expect_equal(col_names[1L], long_name)
   expect_equal(nchar(col_names[1L]), 1000L)
 })
-print("test-18")
+
 test_that("lgb.Dataset: should be able to create a Dataset from a text file with a header", {
   train_file <- tempfile(pattern = "train_", fileext = ".csv")
   write.table(
@@ -480,7 +484,7 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
   expect_identical(dtrain$get_params(), list(header = TRUE))
   expect_identical(dtrain$dim(), c(100L, 2L))
 })
-print("test-19")
+
 test_that("lgb.Dataset: should be able to create a Dataset from a text file without a header", {
   train_file <- tempfile(pattern = "train_", fileext = ".csv")
   write.table(
@@ -504,7 +508,7 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
   expect_identical(dtrain$get_params(), list(header = FALSE))
   expect_identical(dtrain$dim(), c(100L, 2L))
 })
-print("test-20")
+
 test_that("Dataset: method calls on a Dataset with a null handle should raise an informative error and not segfault", {
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
@@ -555,7 +559,7 @@ test_that("Dataset: method calls on a Dataset with a null handle should raise an
     dtrain$set_reference(reference = dvalid)
   }, regexp = "cannot get column names before dataset has been constructed")
 })
-print("test-21")
+
 test_that("lgb.Dataset$get_feature_num_bin() works", {
   raw_df <- data.frame(
     all_random = runif(100L)
@@ -605,7 +609,7 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
   bins_by_default_name <- sapply(default_names, ds_no_names$get_feature_num_bin)
   expect_identical(bins_by_default_name, expected_num_bins)
 })
-print("test-22")
+
 test_that("lgb.Dataset can be constructed with categorical features and without colnames", {
   # check that dataset can be constructed
   raw_mat <- matrix(rep(c(0L, 1L), 50L), ncol = 1L)
@@ -620,4 +624,3 @@ test_that("lgb.Dataset can be constructed with categorical features and without 
     lgb.Dataset(raw_mat, categorical_feature = 2L)$construct()
   }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
 })
-print("test-done")
