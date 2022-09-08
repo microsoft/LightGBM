@@ -72,11 +72,11 @@ void CUDAMulticlassSoftmax::LaunchGetGradientsKernel(const double* scores, score
   if (cuda_weights_ == nullptr) {
     GetGradientsKernel_MulticlassSoftmax<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
       scores, cuda_label_, cuda_weights_, factor_, num_class_, num_data_,
-      cuda_softmax_buffer_, gradients, hessians);
+      cuda_softmax_buffer_.RawData(), gradients, hessians);
   } else {
     GetGradientsKernel_MulticlassSoftmax<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
       scores, cuda_label_, cuda_weights_, factor_, num_class_, num_data_,
-      cuda_softmax_buffer_, gradients, hessians);
+      cuda_softmax_buffer_.RawData(), gradients, hessians);
   }
 }
 
@@ -100,7 +100,7 @@ void CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
   const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
   ConvertOutputCUDAKernel_MulticlassSoftmax<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
-    num_class_, num_data, input, cuda_softmax_buffer_, output);
+    num_class_, num_data, input, cuda_softmax_buffer_.RawData(), output);
 }
 
 }  // namespace LightGBM

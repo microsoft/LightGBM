@@ -22,9 +22,7 @@ void CUDAMulticlassSoftmax::Init(const Metadata& metadata, data_size_t num_data)
   MulticlassSoftmax::Init(metadata, num_data);
   cuda_label_ = metadata.cuda_metadata()->cuda_label();
   cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
-  AllocateCUDAMemory<double>(&cuda_boost_from_score_, num_class_, __FILE__, __LINE__);
-  AllocateCUDAMemory<double>(&cuda_softmax_buffer_, static_cast<size_t>(num_data) * static_cast<size_t>(num_class_), __FILE__, __LINE__);
-  SetCUDAMemory<double>(cuda_boost_from_score_, 0, num_class_, __FILE__, __LINE__);
+  cuda_softmax_buffer_.Resize(static_cast<size_t>(num_data) * static_cast<size_t>(num_class_));
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
