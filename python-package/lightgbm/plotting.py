@@ -1,13 +1,14 @@
 # coding: utf-8
 """Plotting library."""
+import math
 from copy import deepcopy
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import Booster, _log_warning
-from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED
+from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingType
+from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
 
@@ -414,6 +415,30 @@ def plot_metric(
     return ax
 
 
+def _determine_direction_for_numeric_split(
+    fval: float,
+    threshold: float,
+    missing_type_str: str,
+    default_left: bool,
+) -> str:
+    missing_type = _MissingType(missing_type_str)
+    if math.isnan(fval) and missing_type != _MissingType.NAN:
+        fval = 0.0
+    if ((missing_type == _MissingType.ZERO and _is_zero(fval))
+            or (missing_type == _MissingType.NAN and math.isnan(fval))):
+        direction = 'left' if default_left else 'right'
+    else:
+        direction = 'left' if fval <= threshold else 'right'
+    return direction
+
+
+def _determine_direction_for_categorical_split(fval: float, thresholds: str) -> str:
+    if math.isnan(fval) or int(fval) < 0:
+        return 'right'
+    int_thresholds = {int(t) for t in thresholds.split('||')}
+    return 'left' if int(fval) in int_thresholds else 'right'
+
+
 def _to_graphviz(
     tree_info: Dict[str, Any],
     show_info: List[str],
@@ -421,6 +446,7 @@ def _to_graphviz(
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     constraints: Optional[List[int]] = None,
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -433,23 +459,40 @@ def _to_graphviz(
     else:
         raise ImportError('You must install graphviz and restart your session to plot tree.')
 
-    def add(root, total_count, parent=None, decision=None):
+    def add(root, total_count, parent=None, decision=None, highlight=False):
         """Recursively add node or edge."""
+        fillcolor = 'white'
+        style = ''
+        if highlight:
+            color = 'blue'
+            penwidth = '3'
+        else:
+            color = 'black'
+            penwidth = '1'
         if 'split_index' in root:  # non-leaf
+            shape = "rectangle"
             l_dec = 'yes'
             r_dec = 'no'
             if root['decision_type'] == '<=':
-                lte_symbol = "&#8804;"
-                operator = lte_symbol
+                operator = "&#8804;"
             elif root['decision_type'] == '==':
                 operator = "="
             else:
                 raise ValueError('Invalid decision type in tree model.')
             name = f"split{root['split_index']}"
+            split_feature = root['split_feature']
             if feature_names is not None:
-                label = f"<B>{feature_names[root['split_feature']]}</B> {operator}"
+                label = f"<B>{feature_names[split_feature]}</B> {operator}"
             else:
-                label = f"feature <B>{root['split_feature']}</B> {operator} "
+                label = f"feature <B>{split_feature}</B> {operator} "
+            direction = None
+            if example_case is not None:
+                if root['decision_type'] == '==':
+                    direction = _determine_direction_for_categorical_split(example_case[split_feature], root['threshold'])
+                else:
+                    direction = _determine_direction_for_numeric_split(
+                        example_case[split_feature], root['threshold'], root['missing_type'], root['default_left']
+                    )
             label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
@@ -461,8 +504,6 @@ def _to_graphviz(
                     elif info == "data_percentage":
                         label += f"<br/>{_float2str(root['internal_count'] / total_count * 100, 2)}% of data"
 
-            fillcolor = "white"
-            style = ""
             if constraints:
                 if constraints[root['split_feature']] == 1:
                     fillcolor = "#ddffdd"  # light green
@@ -470,10 +511,10 @@ def _to_graphviz(
                     fillcolor = "#ffdddd"  # light red
                 style = "filled"
             label = f"<{label}>"
-            graph.node(name, label=label, shape="rectangle", style=style, fillcolor=fillcolor)
-            add(root['left_child'], total_count, name, l_dec)
-            add(root['right_child'], total_count, name, r_dec)
+            add(root['left_child'], total_count, name, l_dec, highlight and direction == "left")
+            add(root['right_child'], total_count, name, r_dec, highlight and direction == "right")
         else:  # leaf
+            shape = "ellipse"
             name = f"leaf{root['leaf_index']}"
             label = f"leaf {root['leaf_index']}: "
             label += f"<B>{_float2str(root['leaf_value'], precision)}</B>"
@@ -484,15 +525,15 @@ def _to_graphviz(
             if "data_percentage" in show_info:
                 label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
             label = f"<{label}>"
-            graph.node(name, label=label)
+        graph.node(name, label=label, shape=shape, style=style, fillcolor=fillcolor, color=color, penwidth=penwidth)
         if parent is not None:
-            graph.edge(parent, name, decision)
+            graph.edge(parent, name, decision, color=color, penwidth=penwidth)
 
     graph = Digraph(**kwargs)
     rankdir = "LR" if orientation == "horizontal" else "TB"
     graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir=rankdir)
     if "internal_count" in tree_info['tree_structure']:
-        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"])
+        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"], highlight=example_case is not None)
     else:
         raise Exception("Cannot plot trees with no split")
 
@@ -523,6 +564,7 @@ def create_tree_digraph(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -563,6 +605,9 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
+    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
+        Single row with the same structure as the training data.
+        If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
@@ -594,8 +639,17 @@ def create_tree_digraph(
     if show_info is None:
         show_info = []
 
+    if example_case is not None:
+        if not isinstance(example_case, (np.ndarray, pd_DataFrame)) or example_case.ndim != 2:
+            raise ValueError('example_case must be a numpy 2-D array or a pandas DataFrame')
+        if example_case.shape[0] != 1:
+            raise ValueError('example_case must have a single row.')
+        if isinstance(example_case, pd_DataFrame):
+            example_case = _data_from_pandas(example_case, None, None, booster.pandas_categorical)[0]
+        example_case = example_case[0]
+
     graph = _to_graphviz(tree_info, show_info, feature_names, precision,
-                         orientation, monotone_constraints, **kwargs)
+                         orientation, monotone_constraints, example_case=example_case, **kwargs)
 
     return graph
 
@@ -609,6 +663,7 @@ def plot_tree(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
     """Plot specified tree.
@@ -656,6 +711,9 @@ def plot_tree(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
+    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
+        Single row with the same structure as the training data.
+        If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
@@ -678,7 +736,7 @@ def plot_tree(
 
     graph = create_tree_digraph(booster=booster, tree_index=tree_index,
                                 show_info=show_info, precision=precision,
-                                orientation=orientation, **kwargs)
+                                orientation=orientation, example_case=example_case, **kwargs)
 
     s = BytesIO()
     s.write(graph.pipe(format='png'))

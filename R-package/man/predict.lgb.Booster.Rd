@@ -18,15 +18,26 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+               or a character representing a path to a text file (CSV, TSV, or LibSVM).
+
+               For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+               use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+               \code{dgRMatrix} from package \code{Matrix}) or as a sparse numeric vector (class
+               \code{dsparseVector} from package \code{Matrix}).
+
+               If single-row predictions are going to be performed frequently, it is recommended to
+               pre-configure the model object for fast single-row sparse predictions through function
+               \link{lgb.configure_fast_predict}.}
 
 \item{type}{Type of prediction to output. Allowed types are:\itemize{
             \item \code{"response"}: will output the predicted score according to the objective function being
                   optimized (depending on the link function that the objective uses), after applying any necessary
                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
-                  probability. For other objectives, will output the same as "response".
+                  probability. For other objectives, will output the same as "response". Note that \code{"class"} is
+                  not a supported type for \link{lgb.configure_fast_predict} (see the documentation of that function
+                  for more details).
             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
                   results) from which the "response" number is produced for a given objective function - for example,
                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
@@ -34,9 +45,7 @@ a character representing a path to a text file (CSV, TSV, or LibSVM)}
             \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
                   in each tree in the model, outputted as integers, with one column per tree.
             \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
-                  intercept (each feature will produce one column). If there are multiple classes, each class will
-                  have separate feature contributions (thus the number of columns is features+1 multiplied by the
-                  number of classes).
+                  intercept (each feature will produce one column).
             }
 
             Note that, if using custom objectives, types "class" and "response" will not be available and will
@@ -64,15 +73,34 @@ the values in \code{params} take precedence.}
 }
 \value{
 For prediction types that are meant to always return one output per observation (e.g. when predicting
-        \code{type="response"} on a binary classification or regression objective), will return a vector with one
-        element per row in \code{newdata}.
+        \code{type="response"} or \code{type="raw"} on a binary classification or regression objective), will
+        return a vector with one element per row in \code{newdata}.
 
         For prediction types that are meant to return more than one output per observation (e.g. when predicting
-        \code{type="response"} on a multi-class objective, or when predicting \code{type="leaf"}, regardless of
-        objective), will return a matrix with one row per observation in \code{newdata} and one column per output.
+        \code{type="response"} or \code{type="raw"} on a multi-class objective, or when predicting
+        \code{type="leaf"}, regardless of objective), will return a matrix with one row per observation in
+        \code{newdata} and one column per output.
+
+        For \code{type="leaf"} predictions, will return a matrix with one row per observation in \code{newdata}
+        and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class at each
+        boosting iteration. That means that, for example, for a multiclass model with 3 classes, the leaf
+        predictions for the first class can be found in columns 1, 4, 7, 10, etc.
+
+        For \code{type="contrib"}, will return a matrix of SHAP values with one row per observation in
+        \code{newdata} and columns corresponding to features. For regression, ranking, cross-entropy, and binary
+        classification objectives, this matrix contains one column per feature plus a final column containing the
+        Shapley base value. For multiclass objectives, this matrix will represent \code{num_classes} such matrices,
+        in the order "feature contributions for first class, feature contributions for second class, feature
+        contributions for third class, etc.".
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
+}
+\details{
+If the model object has been configured for fast single-row predictions through
+         \link{lgb.configure_fast_predict}, this function will use the prediction parameters
+         that were configured for it - as such, extra prediction parameters should not be passed
+         here, otherwise the configuration will be ignored and the slow route will be taken.
 }
 \examples{
 \donttest{

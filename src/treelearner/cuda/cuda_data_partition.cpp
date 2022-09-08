@@ -61,7 +61,6 @@ CUDADataPartition::CUDADataPartition(
   cuda_out_data_indices_in_leaf_ = nullptr;
   cuda_split_info_buffer_ = nullptr;
   cuda_num_data_ = nullptr;
-  cuda_add_train_score_ = nullptr;
 }
 
 CUDADataPartition::~CUDADataPartition() {
@@ -78,7 +77,6 @@ CUDADataPartition::~CUDADataPartition() {
   DeallocateCUDAMemory<data_size_t>(&cuda_out_data_indices_in_leaf_, __FILE__, __LINE__);
   DeallocateCUDAMemory<int>(&cuda_split_info_buffer_, __FILE__, __LINE__);
   DeallocateCUDAMemory<data_size_t>(&cuda_num_data_, __FILE__, __LINE__);
-  DeallocateCUDAMemory<double>(&cuda_add_train_score_, __FILE__, __LINE__);
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[0]));
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[1]));
   CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_streams_[2]));
@@ -115,8 +113,6 @@ void CUDADataPartition::Init() {
   gpuAssert(cudaStreamCreate(&cuda_streams_[3]), __FILE__, __LINE__);
 
   InitCUDAMemoryFromHostMemory<data_size_t>(&cuda_num_data_, &num_data_, 1, __FILE__, __LINE__);
-  add_train_score_.resize(num_data_, 0.0f);
-  AllocateCUDAMemory<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   use_bagging_ = false;
   used_indices_ = nullptr;
 }
@@ -270,33 +266,11 @@ void CUDADataPartition::UpdateTrainScore(const Tree* tree, double* scores) {
     cuda_tree_ptr.reset(new CUDATree(tree));
     cuda_tree = cuda_tree_ptr.get();
   }
-  const data_size_t num_data_in_root = root_num_data();
   if (use_bagging_) {
     // we need restore the order of indices in cuda_data_indices_
-    CopyFromHostToCUDADevice<data_size_t>(cuda_data_indices_, used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_data_indices_, used_indices_, static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
   }
-  LaunchAddPredictionToScoreKernel(cuda_tree->cuda_leaf_value(), cuda_add_train_score_);
-  CopyFromCUDADeviceToHost<double>(add_train_score_.data(),
-    cuda_add_train_score_, static_cast<size_t>(num_data_in_root), __FILE__, __LINE__);
-  if (!use_bagging_) {
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (data_size_t data_index = 0; data_index < num_data_in_root; ++data_index) {
-      OMP_LOOP_EX_BEGIN();
-      scores[data_index] += add_train_score_[data_index];
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
-  } else {
-    OMP_INIT_EX();
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (data_size_t data_index = 0; data_index < num_data_in_root; ++data_index) {
-      OMP_LOOP_EX_BEGIN();
-      scores[used_indices_[data_index]] += add_train_score_[data_index];
-      OMP_LOOP_EX_END();
-    }
-    OMP_THROW_EX();
-  }
+  LaunchAddPredictionToScoreKernel(cuda_tree->cuda_leaf_value(), scores);
 }
 
 void CUDADataPartition::CalcBlockDim(const data_size_t num_data_in_leaf) {
@@ -318,7 +292,7 @@ void CUDADataPartition::SetUsedDataIndices(const data_size_t* used_indices, cons
   use_bagging_ = true;
   num_used_indices_ = num_used_indices;
   used_indices_ = used_indices;
-  CopyFromHostToCUDADevice<data_size_t>(cuda_data_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
+  CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_data_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
   LaunchFillDataIndexToLeafIndex();
 }
 
@@ -347,14 +321,11 @@ void CUDADataPartition::ResetTrainingData(const Dataset* train_data, const int n
     DeallocateCUDAMemory<uint16_t>(&cuda_block_to_left_offset_, __FILE__, __LINE__);
     DeallocateCUDAMemory<int>(&cuda_data_index_to_leaf_index_, __FILE__, __LINE__);
     DeallocateCUDAMemory<data_size_t>(&cuda_out_data_indices_in_leaf_, __FILE__, __LINE__);
-    DeallocateCUDAMemory<double>(&cuda_add_train_score_, __FILE__, __LINE__);
-    add_train_score_.resize(num_data_, 0.0f);
 
     AllocateCUDAMemory<data_size_t>(&cuda_data_indices_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
     AllocateCUDAMemory<uint16_t>(&cuda_block_to_left_offset_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
     AllocateCUDAMemory<int>(&cuda_data_index_to_leaf_index_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
     AllocateCUDAMemory<data_size_t>(&cuda_out_data_indices_in_leaf_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    AllocateCUDAMemory<double>(&cuda_add_train_score_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
   used_indices_ = nullptr;
   use_bagging_ = false;

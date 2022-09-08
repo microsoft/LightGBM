@@ -167,14 +167,33 @@ class GOSS: public GBDT {
     bag_data_cnt_ = left_cnt;
     // set bagging data to tree learner
     if (!is_use_subset_) {
-      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
+      if (config_->device_type == std::string("cuda_exp")) {
+        CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+        tree_learner_->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
+      } else {
+      #endif  // USE_CUDA_EXP
+        tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
+      }
+      #endif  // USE_CUDA_EXP
     } else {
       // get subset
       tmp_subset_->ReSize(bag_data_cnt_);
       tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                               bag_data_cnt_, false);
-      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
-                                    bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
+      if (config_->device_type == std::string("cuda_exp")) {
+        CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+        tree_learner_->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
+                                      bag_data_cnt_);
+      } else {
+      #endif  // USE_CUDA_EXP
+        tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                      bag_data_cnt_);
+      #ifdef USE_CUDA_EXP
+      }
+      #endif  // USE_CUDA_EXP
     }
   }
 

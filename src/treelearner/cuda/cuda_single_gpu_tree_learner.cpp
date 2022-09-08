@@ -19,14 +19,16 @@
 
 namespace LightGBM {
 
-CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config): SerialTreeLearner(config) {
+CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda): SerialTreeLearner(config), boosting_on_cuda_(boosting_on_cuda) {
   cuda_gradients_ = nullptr;
   cuda_hessians_ = nullptr;
 }
 
 CUDASingleGPUTreeLearner::~CUDASingleGPUTreeLearner() {
-  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+    DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  }
 }
 
 void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
@@ -53,8 +55,9 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
     cuda_histogram_constructor_->cuda_hist_pointer()));
   cuda_data_partition_->Init();
 
+  select_features_by_node_ = !config_->interaction_constraints_vector.empty() || config_->feature_fraction_bynode < 1.0;
   cuda_best_split_finder_.reset(new CUDABestSplitFinder(cuda_histogram_constructor_->cuda_hist(),
-    train_data_, this->share_state_->feature_hist_offsets(), config_));
+    train_data_, this->share_state_->feature_hist_offsets(), select_features_by_node_, config_));
   cuda_best_split_finder_->Init();
 
   leaf_best_split_feature_.resize(config_->num_leaves, -1);
@@ -64,28 +67,45 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   leaf_data_start_.resize(config_->num_leaves, 0);
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
-  AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  }
   AllocateBitset();
 
   cuda_leaf_gradient_stat_buffer_ = nullptr;
   cuda_leaf_hessian_stat_buffer_ = nullptr;
   leaf_stat_buffer_size_ = 0;
   num_cat_threshold_ = 0;
+
+  #ifdef DEBUG
+  host_gradients_.resize(num_data_, 0.0f);
+  host_hessians_.resize(num_data_, 0.0f);
+  #endif  // DEBUG
 }
 
 void CUDASingleGPUTreeLearner::BeforeTrain() {
   const data_size_t root_num_data = cuda_data_partition_->root_num_data();
-  CopyFromHostToCUDADevice<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  CopyFromHostToCUDADevice<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    CopyFromHostToCUDADevice<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    gradients_ = cuda_gradients_;
+    hessians_ = cuda_hessians_;
+  }
+
+  #ifdef DEBUG
+  CopyFromCUDADeviceToHost<score_t>(host_gradients.data(), gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  CopyFromCUDADeviceToHost<score_t>(host_hessians.data(), hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  #endif  // DEBUG
+
   const data_size_t* leaf_splits_init_indices =
     cuda_data_partition_->use_bagging() ? cuda_data_partition_->cuda_data_indices() : nullptr;
   cuda_data_partition_->BeforeTrain();
   cuda_smaller_leaf_splits_->InitValues(
     config_->lambda_l1,
     config_->lambda_l2,
-    cuda_gradients_,
-    cuda_hessians_,
+    gradients_,
+    hessians_,
     leaf_splits_init_indices,
     cuda_data_partition_->cuda_data_indices(),
     root_num_data,
@@ -93,7 +113,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
     &leaf_sum_hessians_[0]);
   leaf_num_data_[0] = root_num_data;
   cuda_larger_leaf_splits_->InitValues();
-  cuda_histogram_constructor_->BeforeTrain(cuda_gradients_, cuda_hessians_);
+  cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
   col_sampler_.ResetByTree();
   cuda_best_split_finder_->BeforeTrain(col_sampler_.is_feature_used_bytree());
   leaf_data_start_[0] = 0;
@@ -130,6 +150,9 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
       sum_hessians_in_larger_leaf);
     global_timer.Stop("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     global_timer.Start("CUDASingleGPUTreeLearner::FindBestSplitsForLeaf");
+
+    SelectFeatureByNode(tree.get());
+
     cuda_best_split_finder_->FindBestSplitsForLeaf(
       cuda_smaller_leaf_splits_->GetCUDAStruct(),
       cuda_larger_leaf_splits_->GetCUDAStruct(),
@@ -247,10 +270,12 @@ void CUDASingleGPUTreeLearner::ResetTrainingData(
   cuda_smaller_leaf_splits_->Resize(num_data_);
   cuda_larger_leaf_splits_->Resize(num_data_);
   CHECK_EQ(is_constant_hessian, share_state_->is_constant_hessian);
-  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
-  AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+    DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  }
 }
 
 void CUDASingleGPUTreeLearner::ResetConfig(const Config* config) {
@@ -279,48 +304,55 @@ void CUDASingleGPUTreeLearner::SetBaggingData(const Dataset* /*subset*/,
 }
 
 void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                         data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                               data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const {
   CHECK(tree->is_cuda_tree());
   CUDATree* cuda_tree = reinterpret_cast<CUDATree*>(tree);
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(cuda_tree->num_leaves(), data_partition_->num_leaves());
-    const data_size_t* bag_mapper = nullptr;
-    if (total_num_data != num_data_) {
-      CHECK_EQ(bag_cnt, num_data_);
-      bag_mapper = bag_indices;
-    }
-    std::vector<int> n_nozeroworker_perleaf(tree->num_leaves(), 1);
-    int num_machines = Network::num_machines();
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < tree->num_leaves(); ++i) {
-      const double output = static_cast<double>(tree->LeafOutput(i));
-      data_size_t cnt_leaf_data = leaf_num_data_[i];
-      std::vector<data_size_t> index_mapper(cnt_leaf_data, -1);
-      CopyFromCUDADeviceToHost<data_size_t>(index_mapper.data(),
-        cuda_data_partition_->cuda_data_indices() + leaf_data_start_[i],
-        static_cast<size_t>(cnt_leaf_data), __FILE__, __LINE__);
-      if (cnt_leaf_data > 0) {
-        const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper.data(), bag_mapper, cnt_leaf_data);
-        tree->SetLeafOutput(i, new_output);
-      } else {
-        CHECK_GT(num_machines, 1);
-        tree->SetLeafOutput(i, 0.0);
-        n_nozeroworker_perleaf[i] = 0;
+    if (boosting_on_cuda_) {
+      obj->RenewTreeOutputCUDA(train_score, cuda_data_partition_->cuda_data_indices(),
+                               cuda_data_partition_->cuda_leaf_num_data(), cuda_data_partition_->cuda_leaf_data_start(),
+                               cuda_tree->num_leaves(), cuda_tree->cuda_leaf_value_ref());
+      cuda_tree->SyncLeafOutputFromCUDAToHost();
+    } else {
+      const data_size_t* bag_mapper = nullptr;
+      if (total_num_data != num_data_) {
+        CHECK_EQ(bag_cnt, num_data_);
+        bag_mapper = bag_indices;
+      }
+      std::vector<int> n_nozeroworker_perleaf(cuda_tree->num_leaves(), 1);
+      int num_machines = Network::num_machines();
+      #pragma omp parallel for schedule(static)
+      for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+        const double output = static_cast<double>(cuda_tree->LeafOutput(i));
+        data_size_t cnt_leaf_data = leaf_num_data_[i];
+        std::vector<data_size_t> index_mapper(cnt_leaf_data, -1);
+        CopyFromCUDADeviceToHost<data_size_t>(index_mapper.data(),
+          cuda_data_partition_->cuda_data_indices() + leaf_data_start_[i],
+          static_cast<size_t>(cnt_leaf_data), __FILE__, __LINE__);
+        if (cnt_leaf_data > 0) {
+          const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper.data(), bag_mapper, cnt_leaf_data);
+          cuda_tree->SetLeafOutput(i, new_output);
+        } else {
+          CHECK_GT(num_machines, 1);
+          cuda_tree->SetLeafOutput(i, 0.0);
+          n_nozeroworker_perleaf[i] = 0;
+        }
+      }
+      if (num_machines > 1) {
+        std::vector<double> outputs(cuda_tree->num_leaves());
+        for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+          outputs[i] = static_cast<double>(cuda_tree->LeafOutput(i));
+        }
+        outputs = Network::GlobalSum(&outputs);
+        n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
+        for (int i = 0; i < cuda_tree->num_leaves(); ++i) {
+          cuda_tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
+        }
       }
     }
-    if (num_machines > 1) {
-      std::vector<double> outputs(tree->num_leaves());
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        outputs[i] = static_cast<double>(tree->LeafOutput(i));
-      }
-      outputs = Network::GlobalSum(&outputs);
-      n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
-      for (int i = 0; i < tree->num_leaves(); ++i) {
-        tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
-      }
-    }
+    cuda_tree->SyncLeafOutputFromHostToCUDA();
   }
-  cuda_tree->SyncLeafOutputFromHostToCUDA();
 }
 
 Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const {
@@ -426,6 +458,28 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
   cuda_bitset_inner_len_ = 0;
 }
 
+void CUDASingleGPUTreeLearner::ResetBoostingOnGPU(const bool boosting_on_cuda) {
+  boosting_on_cuda_ = boosting_on_cuda;
+  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  if (!boosting_on_cuda_) {
+    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  }
+}
+
+void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
+  if (select_features_by_node_) {
+    // use feature interaction constraint or sample features by node
+    const std::vector<int8_t>& is_feature_used_by_smaller_node = col_sampler_.GetByNode(tree, smaller_leaf_index_);
+    std::vector<int8_t> is_feature_used_by_larger_node;
+    if (larger_leaf_index_ >= 0) {
+      is_feature_used_by_larger_node = col_sampler_.GetByNode(tree, larger_leaf_index_);
+    }
+    cuda_best_split_finder_->SetUsedFeatureByNode(is_feature_used_by_smaller_node, is_feature_used_by_larger_node);
+  }
+}
+
 #ifdef DEBUG
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int left_leaf,
@@ -444,13 +498,13 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
   double sum_right_gradients = 0.0f, sum_right_hessians = 0.0f;
   for (size_t i = 0; i < left_data_indices.size(); ++i) {
     const data_size_t index = left_data_indices[i];
-    sum_left_gradients += gradients_[index];
-    sum_left_hessians += hessians_[index];
+    sum_left_gradients += host_gradients_[index];
+    sum_left_hessians += host_hessians_[index];
   }
   for (size_t i = 0; i < right_data_indices.size(); ++i) {
     const data_size_t index = right_data_indices[i];
-    sum_right_gradients += gradients_[index];
-    sum_right_hessians += hessians_[index];
+    sum_right_gradients += host_gradients_[index];
+    sum_right_hessians += host_hessians_[index];
   }
   CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
   CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);

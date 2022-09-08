@@ -18,6 +18,7 @@
 * [Testing](#testing)
     - [Running the Tests](#running-the-tests)
     - [Code Coverage](#code-coverage)
+* [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -275,6 +276,29 @@ Rscript -e " \
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
+```
+
+Updating Documentation
+----------------------
+
+The R package uses [`{roxygen2}`](https://cran.r-project.org/web/packages/roxygen2/index.html) to generate its documentation.
+The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
+To regenerate those files, run the following.
+
+```shell
+Rscript \
+    --vanilla \
+    -e "install.packages('roxygen2', repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh --no-build-vignettes
+R CMD INSTALL \
+  --with-keep.source \
+  ./lightgbm_*.tar.gz
+
+cd R-package
+Rscript \
+    --vanilla \
+    -e "roxygen2::roxygenize(load = 'installed')"
 ```
 
 Preparing a CRAN Package

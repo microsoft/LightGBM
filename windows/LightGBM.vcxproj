@@ -101,7 +101,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>EIGEN_MPL2_ONLY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EIGEN_MPL2_ONLY;EIGEN_DONT_PARALLELIZE</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
@@ -317,14 +317,10 @@
     <ClCompile Include="..\src\io\config_auto.cpp" />
     <ClCompile Include="..\src\io\dataset.cpp" />
     <ClCompile Include="..\src\io\dataset_loader.cpp" />
-    <ClCompile Include="..\src\io\dense_bin.cpp" />
     <ClCompile Include="..\src\io\file_io.cpp" />
     <ClCompile Include="..\src\io\json11.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
-    <ClCompile Include="..\src\io\multi_val_dense_bin.cpp" />
-    <ClCompile Include="..\src\io\multi_val_sparse_bin.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
-    <ClCompile Include="..\src\io\sparse_bin.cpp" />
     <ClCompile Include="..\src\io\train_share_states.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />
     <ClCompile Include="..\src\metric\dcg_calculator.cpp" />

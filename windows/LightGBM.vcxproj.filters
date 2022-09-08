@@ -326,17 +326,5 @@
     <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\io\multi_val_dense_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\io\multi_val_sparse_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\io\dense_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\io\sparse_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
