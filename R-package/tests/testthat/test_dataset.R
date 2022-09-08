@@ -95,9 +95,6 @@ test_that("Dataset$set_reference() fails if reference is not a Dataset", {
   }, regexp = "Can only use lgb.Dataset as a reference")
 })
 
-# --- here ---
-
-print("test-1")
 test_that("Dataset$set_reference() setting reference to the same Dataset has no side effects", {
   dtrain <- lgb.Dataset(
     train_data
