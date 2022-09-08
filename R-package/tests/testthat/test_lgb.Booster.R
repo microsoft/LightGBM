@@ -6,7 +6,6 @@ ON_WINDOWS <- .Platform$OS.type == "windows"
 TOLERANCE <- 1e-6
 
 test_that("Booster$finalize() should not fail", {
-    stop("fail intentionally")
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
     dtrain <- lgb.Dataset(X, label = y)
