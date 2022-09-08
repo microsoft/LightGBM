@@ -170,8 +170,9 @@ if ($env:COMPILER -ne "MSVC") {
     # Putting the msys64 utilities at the beginning of PATH temporarily to be
     # sure they're used for that purpose.
     if ($env:R_MAJOR_VERSION -eq "3") {
+      $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
       # $env:PATH = "C:\Rtools\bin;C:\msys64\usr\bin;" + $env:PATH
-      $env:PATH = "C:\msys64\usr\bin;C:\Rtools\bin;" + $env:PATH
+      #$env:PATH = "C:\msys64\usr\bin;C:\Rtools\bin;" + $env:PATH
     }
     Write-Output "--- location of tar ---"
     Get-Command tar
@@ -182,7 +183,12 @@ if ($env:COMPILER -ne "MSVC") {
     Write-Output "--- location of sh ---"
     Get-Command sh
     Write-Output "Building CRAN package"
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    if ($env:R_MAJOR_VERSION -eq "3") {
+        $build_args = "c('build-cran-package.sh', '--no-build-vignettes')"
+    } else {
+        $build_args = "'build-cran-package.sh'"
+    }
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = $build_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
