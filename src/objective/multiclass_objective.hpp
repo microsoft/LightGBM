@@ -165,7 +165,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
- private:
+ protected:
   double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
