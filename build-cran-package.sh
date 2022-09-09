@@ -208,7 +208,7 @@ if ${BUILD_VIGNETTES} ; then
         echo "re-tarring ${TARBALL_NAME}"
         Rscript \
             --vanilla \
-            -e 'tar(tarfile = "lightgbm.tar.gz", compression = "gzip", files = grep(dir(recursive = TRUE), pattern = "\\\\.a$|\\\\.dll$|\\\\.o$|\\\\.so$|\\\\.tar\\\\.gz$|conftest\\\\.c$|conftest\\\\.exe$", value = TRUE, invert = TRUE))'
+            -e 'tar(tarfile = "lightgbm.tar.gz", compression = "gzip", files = grep(dir(path = "lightgbm", include.dirs = TRUE, full.names = TRUE, recursive = TRUE), pattern = "\\\\.a$|\\\\.dll$|\\\\.o$|\\\\.so$|\\\\.tar\\\\.gz$|conftest\\\\.c$|conftest\\\\.exe$", value = TRUE, invert = TRUE))'
         mv ./lightgbm.tar.gz ../${TARBALL_NAME}
     cd ..
     echo "Done creating ${TARBALL_NAME}"
