@@ -199,29 +199,18 @@ if ${BUILD_VIGNETTES} ; then
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
-        tar \
-            -x \
-            -vv \
-            -f "${TARBALL_NAME}"
+        Rscript \
+            --vanilla \
+            -e "untar(tarfile = '${TARBALL_NAME}', extras = '-x')"
         rm -rf "${TARBALL_NAME}"
-    cd ..
-    echo "done untarring ${TARBALL_NAME}"
+        echo "done untarring ${TARBALL_NAME}"
 
-    echo "re-tarring ${TARBALL_NAME}"
-    tar \
-        -c \
-        -z \
-        -vv \
-        -C ./_tmp \
-        --exclude=*.a \
-        --exclude=*.dll \
-        --exclude=*.o \
-        --exclude=*.so \
-        --exclude=*.tar.gz \
-        --exclude=**/conftest.c \
-        --exclude=**/conftest.exe \
-        -f "${TARBALL_NAME}" \
-        lightgbm
+        echo "re-tarring ${TARBALL_NAME}"
+        Rscript \
+            --vanilla \
+            -e "tar(tarfile = '${TARBALL_NAME}', compression = 'gzip', files = 'lightgbm', extra_flags=c('--exclude=*.a', '--exclude=*.dll', '--exclude=*.o', '--exclude=*.so', '--exclude=*.tar.gz', '--exclude=**/conftest.c', '--exclude=**/conftest.exe'))"
+        mv "${TARBALL_NAME}" ../
+    cd ..
     echo "Done creating ${TARBALL_NAME}"
 
     rm -rf ./_tmp
