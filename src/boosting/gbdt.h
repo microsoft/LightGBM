@@ -443,6 +443,9 @@ class GBDT : public GBDTBase {
 
   double BoostFromAverage(int class_id, bool update_scorer);
 
+  /*!
+  * \brief Reset gradient buffers, must be called after sample strategy is reset
+  */
   void ResetGradientBuffers();
 
   /*! \brief current iteration */
