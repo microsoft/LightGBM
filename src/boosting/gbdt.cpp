@@ -822,7 +822,6 @@ void GBDT::ResetGradientBuffers() {
     }
     #endif  // USE_CUDA_EXP
   } else if (data_sample_strategy_->IsHessianChange() || (is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_)) {
-    const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     if (gradients_.size() < total_size) {
       gradients_.resize(total_size);
       hessians_.resize(total_size);
