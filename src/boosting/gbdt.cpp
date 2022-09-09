@@ -342,6 +342,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
   const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
 
+  if (gradients != nullptr && is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_ && !data_sample_strategy_->IsHessianChange()) {
+    ResetGradientBuffers();
+  }
+
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
@@ -800,17 +804,18 @@ void GBDT::ResetGradientBuffers() {
   if (objective_function_ != nullptr) {
     #ifdef USE_CUDA_EXP
     if (config_->device_type == std::string("cuda_exp") && boosting_on_gpu_) {
-      if (gradients_pointer_ != nullptr) {
-        CHECK_NOTNULL(hessians_pointer_);
-        DeallocateCUDAMemory<score_t>(&gradients_pointer_, __FILE__, __LINE__);
-        DeallocateCUDAMemory<score_t>(&hessians_pointer_, __FILE__, __LINE__);
+      if (cuda_gradients_.Size() < total_size) {
+        cuda_gradients_.Resize(total_size);
+        cuda_hessians_.Resize(total_size);
       }
-      AllocateCUDAMemory<score_t>(&gradients_pointer_, total_size, __FILE__, __LINE__);
-      AllocateCUDAMemory<score_t>(&hessians_pointer_, total_size, __FILE__, __LINE__);
+      gradients_pointer_ = cuda_gradients_.RawData();
+      hessians_pointer_ = cuda_hessians_.RawData();
     } else {
     #endif  // USE_CUDA_EXP
-      gradients_.resize(total_size);
-      hessians_.resize(total_size);
+      if (gradients_.size() < total_size) {
+        gradients_.resize(total_size);
+        hessians_.resize(total_size);
+      }
       gradients_pointer_ = gradients_.data();
       hessians_pointer_ = hessians_.data();
     #ifdef USE_CUDA_EXP
@@ -818,8 +823,10 @@ void GBDT::ResetGradientBuffers() {
     #endif  // USE_CUDA_EXP
   } else if (data_sample_strategy_->IsHessianChange() || (is_use_subset && bag_data_cnt < num_data_ && !boosting_on_gpu_)) {
     const size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-    gradients_.resize(total_size);
-    hessians_.resize(total_size);
+    if (gradients_.size() < total_size) {
+      gradients_.resize(total_size);
+      hessians_.resize(total_size);
+    }
     gradients_pointer_ = gradients_.data();
     hessians_pointer_ = hessians_.data();
   }

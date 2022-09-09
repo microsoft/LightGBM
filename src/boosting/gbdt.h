@@ -501,6 +501,10 @@ class GBDT : public GBDTBase {
   /*! \brief Whether boosting is done on GPU, used for cuda_exp */
   bool boosting_on_gpu_;
   #ifdef USE_CUDA_EXP
+  /*! \brief Gradient vector on GPU */
+  CUDAVector<score_t> cuda_gradients_;
+  /*! \brief Hessian vector on GPU */
+  CUDAVector<score_t> cuda_hessians_;
   /*! \brief Buffer for scores when boosting is on GPU but evaluation is not, used only with cuda_exp */
   mutable std::vector<double> host_score_;
   /*! \brief Buffer for scores when boosting is not on GPU but evaluation is, used only with cuda_exp */

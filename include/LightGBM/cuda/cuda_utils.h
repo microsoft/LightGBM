@@ -121,6 +121,7 @@ class CUDAVector {
   void Resize(size_t size) {
     if (size == 0) {
       Clear();
+      return;
     }
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
