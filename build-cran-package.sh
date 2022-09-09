@@ -195,21 +195,21 @@ if ${BUILD_VIGNETTES} ; then
     rm -rf ./_tmp
     mkdir _tmp
     TARBALL_NAME="lightgbm_${LGB_VERSION}.tar.gz"
-    mv "${TARBALL_NAME}" _tmp/
+    mv "${TARBALL_NAME}" _tmp/lightgbm.tar.gz
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
         Rscript \
             --vanilla \
-            -e "untar(tarfile = '${TARBALL_NAME}', extras = '-x')"
-        rm -rf "${TARBALL_NAME}"
+            -e "untar(tarfile = 'lightgbm.tar.gz')"
+        rm -rf ./lightgbm.tar.gz
         echo "done untarring ${TARBALL_NAME}"
 
         echo "re-tarring ${TARBALL_NAME}"
         Rscript \
             --vanilla \
-            -e "tar(tarfile = '${TARBALL_NAME}', compression = 'gzip', files = 'lightgbm', extra_flags=c('--exclude=*.a', '--exclude=*.dll', '--exclude=*.o', '--exclude=*.so', '--exclude=*.tar.gz', '--exclude=**/conftest.c', '--exclude=**/conftest.exe'))"
-        mv "${TARBALL_NAME}" ../
+            -e 'tar(tarfile = "lightgbm.tar.gz", compression = "gzip", files = grep(dir(recursive = TRUE), pattern = "\\\\.a$|\\\\.dll$|\\\\.o$|\\\\.so$|\\\\.tar\\\\.gz$|conftest\\\\.c$|conftest\\\\.exe$", value = TRUE, invert = TRUE))'
+        mv ./lightgbm.tar.gz ../${TARBALL_NAME}
     cd ..
     echo "Done creating ${TARBALL_NAME}"
 
