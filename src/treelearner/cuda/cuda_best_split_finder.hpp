@@ -46,6 +46,7 @@ class CUDABestSplitFinder {
     const hist_t* cuda_hist,
     const Dataset* train_data,
     const std::vector<uint32_t>& feature_hist_offsets,
+    const bool select_features_by_node,
     const Config* config);
 
   ~CUDABestSplitFinder();
@@ -87,6 +88,9 @@ class CUDABestSplitFinder {
     const std::vector<uint32_t>& feature_hist_offsets);
 
   void ResetConfig(const Config* config, const hist_t* cuda_hist);
+
+  void SetUsedFeatureByNode(const std::vector<int8_t>& is_feature_used_by_smaller_node,
+                            const std::vector<int8_t>& is_feature_used_by_larger_node);
 
  private:
   #define LaunchFindBestSplitsForLeafKernel_PARAMS \
@@ -172,6 +176,8 @@ class CUDABestSplitFinder {
   int max_num_categorical_bin_;
   // marks whether a feature is categorical
   std::vector<int8_t> is_categorical_;
+  // whether need to select features by node
+  bool select_features_by_node_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
@@ -195,6 +201,9 @@ class CUDABestSplitFinder {
   int max_num_categories_in_split_;
   // used for extremely randomized trees
   CUDAVector<CUDARandom> cuda_randoms_;
+  // features used by node
+  CUDAVector<int8_t> is_feature_used_by_smaller_node_;
+  CUDAVector<int8_t> is_feature_used_by_larger_node_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;

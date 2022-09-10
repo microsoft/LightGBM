@@ -134,6 +134,10 @@ class CUDATree : public Tree {
 
   void LaunchAddBiasKernel(const double val);
 
+  void RecordBranchFeatures(const int left_leaf_index,
+                            const int right_leaf_index,
+                            const int real_feature_index);
+
   int* cuda_left_child_;
   int* cuda_right_child_;
   int* cuda_split_feature_inner_;

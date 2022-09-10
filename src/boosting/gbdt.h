@@ -428,7 +428,7 @@ class GBDT : public GBDTBase {
                                     data_size_t* buffer);
 
   /*!
-  * \brief calculate the object function
+  * \brief calculate the objective function
   */
   virtual void Boosting();
 
