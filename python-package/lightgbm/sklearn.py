@@ -1198,7 +1198,7 @@ class LGBMRanker(LGBMModel):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Iterable[int] = (1, 2, 3, 4, 5),
+        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
@@ -1246,6 +1246,6 @@ class LGBMRanker(LGBMModel):
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition('feature_name :')
-    fit.__doc__ = f"""{_before_feature_name}eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))
+    fit.__doc__ = f"""{_before_feature_name}eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
         The evaluation positions of the specified metric.
     {_feature_name}{_after_feature_name}"""
