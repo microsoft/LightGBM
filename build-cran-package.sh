@@ -195,21 +195,36 @@ if ${BUILD_VIGNETTES} ; then
     rm -rf ./_tmp
     mkdir _tmp
     TARBALL_NAME="lightgbm_${LGB_VERSION}.tar.gz"
-    mv "${TARBALL_NAME}" _tmp/lightgbm.tar.gz
+    mv "${TARBALL_NAME}" _tmp/
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
-        Rscript \
-            --vanilla \
-            -e "untar(tarfile = 'lightgbm.tar.gz')"
-        rm -rf ./lightgbm.tar.gz
+        tar -xf "${TARBALL_NAME}" > /dev/null 2>&1
+        rm -f "${TARBALL_NAME}"
         echo "done untarring ${TARBALL_NAME}"
 
+        # Object files are left behind from compiling the library to generate vignettes.
+        # Approaches like using tar --exclude=*.so to exclude them are not portable
+        # (for example, don't work with some versions of tar on Windows).
+        #
+        # Removing them manually here removes the need to use tar --exclude.
+        #
+        # For background, see https://github.com/microsoft/LightGBM/pull/3946#pullrequestreview-799415812.
+        rm -f ./lightgbm/src/*.o
+        rm -f ./lightgbm/src/boosting/*.o
+        rm -f ./lightgbm/src/io/*.o
+        rm -f ./lightgbm/src/metric/*.o
+        rm -f ./lightgbm/src/network/*.o
+        rm -f ./lightgbm/src/objective/*.o
+        rm -f ./lightgbm/src/treelearner/*.o
+
         echo "re-tarring ${TARBALL_NAME}"
-        Rscript \
-            --vanilla \
-            -e 'tar(tarfile = "lightgbm.tar.gz", compression = "gzip", files = grep(dir(path = "lightgbm", include.dirs = FALSE, full.names = TRUE, recursive = TRUE), pattern = "\\\\.a$|\\\\.dll$|\\\\.o$|\\\\.so$|\\\\.tar\\\\.gz$|conftest\\\\.c$|conftest\\\\.exe$", value = TRUE, invert = TRUE))'
-        mv ./lightgbm.tar.gz ../${TARBALL_NAME}
+        tar \
+            -cz \
+            -f "${TARBALL_NAME}" \
+            lightgbm \
+        > /dev/null 2>&1
+        mv "${TARBALL_NAME}" ../
     cd ..
     echo "Done creating ${TARBALL_NAME}"
 
