@@ -129,7 +129,7 @@ class BinaryLogloss: public ObjectiveFunction {
         // calculate gradients and hessians
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
-        gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
+        gradients[i] = static_cast<score_t>(response * label_weight * weights_[i]);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
