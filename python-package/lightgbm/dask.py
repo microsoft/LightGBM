@@ -1489,7 +1489,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
-        eval_metric: Optional[Union[_LGBM_ScikitCustomEvalFunction, str, List[Union[_LGBM_ScikitCustomEvalFunction, str]]]] = None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
         **kwargs: Any
     ) -> "DaskLGBMRanker":
