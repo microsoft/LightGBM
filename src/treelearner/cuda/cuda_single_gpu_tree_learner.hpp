@@ -40,7 +40,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   void AddPredictionToScore(const Tree* tree, double* out_score) const override;
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const override;
 
   void ResetConfig(const Config* config) override;
 
@@ -48,6 +48,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) const override;
+
+  void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
 
  protected:
   void BeforeTrain() override;
@@ -63,6 +65,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   void LaunchConstructBitsetForCategoricalSplitKernel(const CUDASplitInfo* best_split_info);
 
   void AllocateBitset();
+
+  void SelectFeatureByNode(const Tree* tree);
 
   #ifdef DEUBG
   void CheckSplitValid(
@@ -98,6 +102,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   int best_leaf_index_;
   int num_cat_threshold_;
   bool has_categorical_feature_;
+  // whether need to select features by node
+  bool select_features_by_node_;
 
   std::vector<int> categorical_bin_to_value_;
   std::vector<int> categorical_bin_offsets_;
@@ -119,7 +125,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   /*! \brief hessians on CUDA */
   score_t* cuda_hessians_;
   /*! \brief whether boosting is done on CUDA */
-  const bool boosting_on_cuda_;
+  bool boosting_on_cuda_;
 
   #ifdef DEBUG
   /*! \brief gradients on CPU */

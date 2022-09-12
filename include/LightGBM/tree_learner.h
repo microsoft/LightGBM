@@ -50,6 +50,12 @@ class TreeLearner {
   */
   virtual void ResetConfig(const Config* config) = 0;
 
+  /*!
+  * \brief Reset boosting_on_gpu_
+  * \param boosting_on_gpu flag for boosting on GPU
+  */
+  virtual void ResetBoostingOnGPU(const bool /*boosting_on_gpu*/) {}
+
   virtual void SetForcedSplit(const Json* forced_split_json) = 0;
 
   /*!
@@ -86,7 +92,7 @@ class TreeLearner {
   virtual void AddPredictionToScore(const Tree* tree, double* out_score) const = 0;
 
   virtual void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                               data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const = 0;
+                               data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const = 0;
 
   TreeLearner() = default;
   /*! \brief Disable copy */

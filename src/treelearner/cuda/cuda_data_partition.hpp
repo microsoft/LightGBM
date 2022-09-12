@@ -346,7 +346,7 @@ class CUDADataPartition {
   data_size_t* cuda_data_indices_;
   /*! \brief start position of each leaf in cuda_data_indices_ */
   data_size_t* cuda_leaf_data_start_;
-  /*! \brief end position of each leaf in cuda_data_indices_  */
+  /*! \brief end position of each leaf in cuda_data_indices_ */
   data_size_t* cuda_leaf_data_end_;
   /*! \brief number of data in each leaf */
   data_size_t* cuda_leaf_num_data_;
