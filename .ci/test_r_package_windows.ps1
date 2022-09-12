@@ -283,6 +283,9 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
+  # NOTE: using Rscript.exe intentionally here, instead of Run-R-Code-Redirect-Stderr,
+  #       because something about the interaction between Run-R-Code-Redirect-Stderr
+  #       and testthat results in failing tests not exiting with a non-0 exit code.
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
