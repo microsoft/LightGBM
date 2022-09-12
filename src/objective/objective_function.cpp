@@ -11,6 +11,7 @@
 #include "xentropy_objective.hpp"
 
 #include "cuda/cuda_binary_objective.hpp"
+#include "cuda/cuda_multiclass_objective.hpp"
 #include "cuda/cuda_rank_objective.hpp"
 #include "cuda/cuda_regression_objective.hpp"
 
@@ -40,8 +41,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("rank_xendcg")) {
       return new CUDARankXENDCG(config);
     } else if (type == std::string("multiclass")) {
-      Log::Warning("Objective multiclass is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new MulticlassSoftmax(config);
+      return new CUDAMulticlassSoftmax(config);
     } else if (type == std::string("multiclassova")) {
       Log::Warning("Objective multiclassova is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new MulticlassOVA(config);
