@@ -247,6 +247,10 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
 })
 
 test_that("cpp errors should be raised as proper R errors", {
+  testthat::skip_if(
+    Sys.getenv("COMPILER", "") == "MSVC" && as.integer(R.Version()[["major"]]) < 4L
+    , message = "Skipping on R 3.x and Visual Studio"
+  )
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
   dtrain <- lgb.Dataset(
