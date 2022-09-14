@@ -1198,7 +1198,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+    feature_names = [u'F1', u'F2', u'F3', u'F4']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -3607,17 +3607,17 @@ def test_sample_strategy_with_boosting():
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
-    params = {
-        'boosting': 'dart',
-        'data_sample_strategy': 'goss',
+    base_params = {
         'metric': 'l2',
         'verbose': -1,
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
     }
+
+    params1 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': 'goss'}
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
+    gbm = lgb.train(params1, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
@@ -3626,17 +3626,9 @@ def test_sample_strategy_with_boosting():
     assert test_res1 == pytest.approx(3149.393862, abs=1.0)
     assert eval_res1 == pytest.approx(test_res1)
 
-    params = {
-        'boosting': 'gbdt',
-        'data_sample_strategy': 'goss',
-        'metric': 'l2',
-        'verbose': -1,
-        'num_threads': 1,
-        'force_row_wise': True,
-        'gpu_use_dp': True,
-    }
+    params2 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'goss'}
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
+    gbm = lgb.train(params2, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
@@ -3645,17 +3637,9 @@ def test_sample_strategy_with_boosting():
     assert test_res2 == pytest.approx(2547.715968, abs=1.0)
     assert eval_res2 == pytest.approx(test_res2)
 
-    params = {
-        'boosting': 'goss',
-        'data_sample_strategy': 'goss',
-        'metric': 'l2',
-        'verbose': -1,
-        'num_threads': 1,
-        'force_row_wise': True,
-        'gpu_use_dp': True,
-    }
+    params3 = {**base_params, 'boosting': 'goss', 'data_sample_strategy': 'goss'}
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
+    gbm = lgb.train(params3, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
@@ -3664,54 +3648,64 @@ def test_sample_strategy_with_boosting():
     assert test_res3 == pytest.approx(2547.715968, abs=1.0)
     assert eval_res3 == pytest.approx(test_res3)
 
-    assert test_res1 != test_res2
-    assert eval_res1 != eval_res2
-    assert test_res2 == test_res3
-    assert eval_res2 == eval_res3
-
-    params = {
-        'boosting': 'dart',
-        'data_sample_strategy': 'bagging',
-        'bagging_freq': 1,
-        'bagging_fraction': 0.5,
-        'metric': 'l2',
-        'verbose': -1,
-        'num_threads': 1,
-        'force_row_wise': True,
-        'gpu_use_dp': True,
-    }
+    params4 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': 'goss'}
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
+    gbm = lgb.train(params4, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res4 = evals_result['valid_0']['l2'][-1]
     test_res4 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res4 == pytest.approx(3134.866931, abs=1.0)
+    assert test_res4 == pytest.approx(2095.538735, abs=1.0)
     assert eval_res4 == pytest.approx(test_res4)
 
-    params = {
-        'boosting': 'gbdt',
-        'data_sample_strategy': 'bagging',
-        'bagging_freq': 1,
-        'bagging_fraction': 0.5,
-        'metric': 'l2',
-        'verbose': -1,
-        'num_threads': 1,
-        'force_row_wise': True,
-        'gpu_use_dp': True,
-    }
+    assert test_res1 != test_res2
+    assert eval_res1 != eval_res2
+    assert test_res2 == test_res3
+    assert eval_res2 == eval_res3
+    assert eval_res1 != eval_res4
+    assert test_res1 != test_res4
+    assert eval_res2 != eval_res4
+    assert test_res2 != test_res4
+
+    params5 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
     evals_result = {}
-    gbm = lgb.train(params, lgb_train,
+    gbm = lgb.train(params5, lgb_train,
                     num_boost_round=10,
                     valid_sets=lgb_eval,
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res5 = evals_result['valid_0']['l2'][-1]
     test_res5 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res5 == pytest.approx(2539.792378, abs=1.0)
+    assert test_res5 == pytest.approx(3134.866931, abs=1.0)
     assert eval_res5 == pytest.approx(test_res5)
-    assert test_res4 != test_res5
-    assert eval_res4 != eval_res5
+
+    params6 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
+    evals_result = {}
+    gbm = lgb.train(params6, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res6 = evals_result['valid_0']['l2'][-1]
+    test_res6 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res6 == pytest.approx(2539.792378, abs=1.0)
+    assert eval_res6 == pytest.approx(test_res6)
+    assert test_res5 != test_res6
+    assert eval_res5 != eval_res6
+
+    params7 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
+    evals_result = {}
+    gbm = lgb.train(params7, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res7 = evals_result['valid_0']['l2'][-1]
+    test_res7 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res7 == pytest.approx(1518.704481, abs=1.0)
+    assert eval_res7 == pytest.approx(test_res7)
+    assert test_res5 != test_res7
+    assert eval_res5 != eval_res7
+    assert test_res6 != test_res7
+    assert eval_res6 != eval_res7
 
 
 def test_record_evaluation_with_train():
