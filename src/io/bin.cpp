@@ -508,7 +508,7 @@ namespace LightGBM {
       const double max_sparse_rate =
           static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
       // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
-      // so use most_freq_bin_  = default_bin_ when there is not so sparse
+      // so use most_freq_bin_ = default_bin_ when there is not so sparse
       if (most_freq_bin_ != default_bin_ && max_sparse_rate < kSparseThreshold) {
         most_freq_bin_ = default_bin_;
       }
@@ -705,7 +705,7 @@ namespace LightGBM {
         return new MultiValSparseBin<uint32_t, uint32_t>(
             num_data, num_bin, estimate_element_per_row);
       }
-    } else  {
+    } else {
       if (num_bin <= 256) {
         return new MultiValSparseBin<size_t, uint8_t>(
             num_data, num_bin, estimate_element_per_row);

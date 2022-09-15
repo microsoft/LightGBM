@@ -12,7 +12,10 @@
 #include <string>
 #include <vector>
 
+<<<<<<< HEAD
 #include "cuda_binary_objective.hpp"
+=======
+>>>>>>> origin/master
 #include "../multiclass_objective.hpp"
 
 #define GET_GRADIENTS_BLOCK_SIZE_MULTICLASS (1024)

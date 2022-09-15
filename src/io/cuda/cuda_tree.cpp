@@ -216,6 +216,7 @@ int CUDATree::Split(const int leaf_index,
            const MissingType missing_type,
            const CUDASplitInfo* cuda_split_info) {
   LaunchSplitKernel(leaf_index, real_feature_index, real_threshold, missing_type, cuda_split_info);
+  RecordBranchFeatures(leaf_index, num_leaves_, real_feature_index);
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -235,7 +236,18 @@ int CUDATree::SplitCategorical(const int leaf_index,
   cuda_bitset_inner_.PushBack(cuda_bitset_inner, cuda_bitset_inner_len);
   ++num_leaves_;
   ++num_cat_;
+  RecordBranchFeatures(leaf_index, num_leaves_, real_feature_index);
   return num_leaves_ - 1;
+}
+
+void CUDATree::RecordBranchFeatures(const int left_leaf_index,
+                                    const int right_leaf_index,
+                                    const int real_feature_index) {
+  if (track_branch_features_) {
+    branch_features_[right_leaf_index] = branch_features_[left_leaf_index];
+    branch_features_[right_leaf_index].push_back(real_feature_index);
+    branch_features_[left_leaf_index].push_back(real_feature_index);
+  }
 }
 
 void CUDATree::AddPredictionToScore(const Dataset* data,

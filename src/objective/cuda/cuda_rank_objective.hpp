@@ -50,6 +50,33 @@ class CUDALambdarankNDCG : public CUDAObjectiveInterface, public LambdarankNDCG 
   int max_items_in_query_aligned_;
 };
 
+
+class CUDARankXENDCG : public CUDALambdarankNDCG {
+ public:
+  explicit CUDARankXENDCG(const Config& config);
+
+  explicit CUDARankXENDCG(const std::vector<std::string>& strs);
+
+  ~CUDARankXENDCG();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  bool IsCUDAObjective() const override { return true; }
+
+ private:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const;
+
+  void GenerateItemRands() const;
+
+  mutable std::vector<double> item_rands_;
+  mutable std::vector<Random> rands_;
+  mutable double* cuda_item_rands_;
+  mutable double* cuda_params_buffer_;
+};
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
