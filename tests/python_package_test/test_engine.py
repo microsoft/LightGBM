@@ -3120,7 +3120,6 @@ def test_trees_to_dataframe():
         assert tree_df.loc[0, col] is None
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
 def test_interaction_constraints():
     X, y = load_boston(return_X_y=True)
     num_features = X.shape[1]
