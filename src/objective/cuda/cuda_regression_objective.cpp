@@ -105,6 +105,30 @@ CUDARegressionL2loss(strs) {}
 CUDARegressionFairLoss::~CUDARegressionFairLoss() {}
 
 
+CUDARegressionPoissonLoss::CUDARegressionPoissonLoss(const Config& config):
+CUDARegressionL2loss(config), max_delta_step_(config.poisson_max_delta_step) {
+  if (sqrt_) {
+    Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
+    sqrt_ = false;
+  }
+}
+
+CUDARegressionPoissonLoss::CUDARegressionPoissonLoss(const std::vector<std::string>& strs):
+CUDARegressionL2loss(strs) {}
+
+CUDARegressionPoissonLoss::~CUDARegressionPoissonLoss() {}
+
+void CUDARegressionPoissonLoss::Init(const Metadata& metadata, data_size_t num_data) {
+  CUDARegressionL2loss::Init(metadata, num_data);
+  AllocateCUDAMemory<double>(&cuda_block_buffer_, static_cast<size_t>(num_get_gradients_blocks_), __FILE__, __LINE__);
+  LaunchCheckLabelKernel();
+}
+
+double CUDARegressionPoissonLoss::LaunchCalcInitScoreKernel() const {
+  return Common::SafeLog(CUDARegressionL2loss::LaunchCalcInitScoreKernel());
+}
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

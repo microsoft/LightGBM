@@ -143,6 +143,46 @@ void ShuffleReduceSumGlobal<label_t, double>(const label_t* values, size_t n, do
 }
 
 template <typename VAL_T, typename REDUCE_T>
+__global__ void ShuffleReduceMinGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceMin<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
+}
+
+template <typename T>
+__global__ void ShuffleBlockReduceMin(T* block_buffer, const data_size_t num_blocks) {
+  __shared__ T shared_buffer[32];
+  T thread_min = 0;
+  for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
+    const T value = block_buffer[block_index];
+    if (value < thread_min) {
+      thread_min = value;
+    }
+  }
+  thread_min = ShuffleReduceMin<T>(thread_min, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[0] = thread_min;
+  }
+}
+
+template <typename VAL_T, typename REDUCE_T>
+void ShuffleReduceMinGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ShuffleReduceMinGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
+  ShuffleBlockReduceMin<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template <>
+void ShuffleReduceMinGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
+  ShuffleReduceMinGlobalInner(values, n, block_buffer);
+}
+
+template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceDotProdGlobalKernel(const VAL_T* values1, const VAL_T* values2, const data_size_t num_value, REDUCE_T* block_buffer) {
   __shared__ REDUCE_T shared_buffer[32];
   const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);

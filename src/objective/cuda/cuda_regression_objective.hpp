@@ -138,6 +138,34 @@ class CUDARegressionFairLoss : public CUDARegressionL2loss {
 };
 
 
+class CUDARegressionPoissonLoss : public CUDARegressionL2loss {
+ public:
+  explicit CUDARegressionPoissonLoss(const Config& config);
+
+  explicit CUDARegressionPoissonLoss(const std::vector<std::string>& strs);
+
+  ~CUDARegressionPoissonLoss();
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  double LaunchCalcInitScoreKernel() const override;
+
+  bool IsConstantHessian() const override {
+    return false;
+  }
+
+ protected:
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+
+  void LaunchCheckLabelKernel() const;
+
+  const double max_delta_step_ = 0.0f;
+  mutable double* cuda_block_buffer_;
+};
+
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

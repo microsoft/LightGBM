@@ -254,6 +254,64 @@ void CUDARegressionFairLoss::LaunchGetGradientsKernel(const double* score, score
   }
 }
 
+void CUDARegressionPoissonLoss::LaunchCheckLabelKernel() const {
+  ShuffleReduceSumGlobal<label_t, double>(cuda_labels_, static_cast<size_t>(num_data_), cuda_block_buffer_);
+  double label_sum = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&label_sum, cuda_block_buffer_, 1, __FILE__, __LINE__);
+
+  ShuffleReduceMinGlobal<label_t, double>(cuda_labels_, static_cast<size_t>(num_data_), cuda_block_buffer_);
+  double label_min = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&label_min, cuda_block_buffer_, 1, __FILE__, __LINE__);
+
+  if (label_min < 0.0f) {
+    Log::Fatal("[%s]: at least one target label is negative", GetName());
+  }
+  if (label_sum == 0.0f) {
+    Log::Fatal("[%s]: sum of labels is zero", GetName());
+  }
+}
+
+template <bool USE_WEIGHT>
+__global__ void GetGradientsKernel_Poisson(const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights, const data_size_t num_data,
+  const double max_delta_step, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  const double exp_max_delta_step = std::exp(max_delta_step);
+  if (data_index < num_data) {
+    if (!USE_WEIGHT) {
+      const double exp_score = exp(cuda_scores[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>(exp_score - cuda_labels[data_index]);
+      cuda_out_hessians[data_index] = static_cast<score_t>(exp_score * exp_max_delta_step);
+    } else {
+      const double exp_score = exp(cuda_scores[data_index]);
+      const score_t weight = static_cast<score_t>(cuda_weights[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>((exp_score - cuda_labels[data_index]) * weight);
+      cuda_out_hessians[data_index] = static_cast<score_t>(exp_score * exp_max_delta_step * weight);
+    }
+  }
+}
+
+void CUDARegressionPoissonLoss::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  if (cuda_weights_ == nullptr) {
+    GetGradientsKernel_Poisson<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(
+      score, cuda_labels_, nullptr, num_data_, max_delta_step_, gradients, hessians);
+  } else {
+    GetGradientsKernel_Poisson<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(
+      score, cuda_labels_, cuda_weights_, num_data_, max_delta_step_, gradients, hessians);
+  }
+}
+
+__global__ void ConvertOutputCUDAKernel_Regression_Poissson(const bool sqrt, const data_size_t num_data, const double* input, double* output) {
+  const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (data_index < num_data) {
+    output[data_index] = exp(input[data_index]);
+  }
+}
+
+void CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  ConvertOutputCUDAKernel_Regression_Poissson<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
+}
 
 }  // namespace LightGBM
 
