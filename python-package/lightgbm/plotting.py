@@ -518,6 +518,18 @@ def _to_graphviz(
             name = f"leaf{root['leaf_index']}"
             label = f"leaf {root['leaf_index']}: "
             label += f"<B>{_float2str(root['leaf_value'], precision)}</B>"
+
+            if 'leaf_features' in root and 'leaf_coeff' in root:
+                for feature_index, feature_coeff in zip(root['leaf_features'], root['leaf_coeff']):
+                    if isinstance(precision, int) and not isinstance(feature_coeff, str):
+                        label += f" +<B>{feature_coeff:.{precision}g}</B>&#215;"
+                    else:
+                        label += f" +<B>{feature_coeff}</B>&#215;"
+                    if feature_names is not None:
+                        label += f"<B>{feature_names[feature_index]}</B>"
+                    else:
+                        label += f"feature <B>{feature_index}</B>"
+
             if 'leaf_weight' in show_info:
                 label += f"<br/>{_float2str(root['leaf_weight'], precision)} weight"
             if 'leaf_count' in show_info:
