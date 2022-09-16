@@ -213,7 +213,7 @@ if ($env:COMPILER -ne "MSVC") {
   #R.exe CMD INSTALL "D:/a/LightGBM/LightGBM/lightgbm_3.3.2.99.tar.gz"
   #Write-Output "done installing"
 
-  $check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
+  #$check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
