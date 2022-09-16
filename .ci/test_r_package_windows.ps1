@@ -59,6 +59,7 @@ Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
 
+Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\Rtools42 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
@@ -79,7 +80,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
   $env:RTOOLS_EXE_FILE = "rtools42-5253-5107.exe"
-  $env:R_WINDOWS_VERSION = "4.2.0"
+  $env:R_WINDOWS_VERSION = "4.2.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -209,7 +210,6 @@ if ($env:COMPILER -ne "MSVC") {
   }
   R.exe CMD INSTALL "D:/a/LightGBM/LightGBM/lightgbm_3.3.2.99.tar.gz"
   Write-Output "done installing"
-  Check-Output $false
 
   $check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?

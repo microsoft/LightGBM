@@ -82,7 +82,7 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
@@ -96,7 +96,7 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           ###############
           # CRAN builds #
@@ -111,7 +111,7 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.1
+            r_version: 4.2
             build_type: cran
           # - os: ubuntu-latest
           #   task: r-package
