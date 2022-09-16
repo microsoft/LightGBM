@@ -26,6 +26,7 @@ Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   has_raw_ = false;
 }
 
@@ -35,13 +36,14 @@ Dataset::Dataset(data_size_t num_data) {
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   group_bin_boundaries_.push_back(0);
   has_raw_ = false;
 }
 
 Dataset::~Dataset() {}
 
-std::vector<std::vector<int>> NoGroup(const std::vector<int>& used_features) {
+std::vector<std::vector<int>> OneFeaturePerGroup(const std::vector<int>& used_features) {
   std::vector<std::vector<int>> features_in_group;
   features_in_group.resize(used_features.size());
   for (size_t i = 0; i < used_features.size(); ++i) {
@@ -318,9 +320,12 @@ std::vector<std::vector<int>> FastFeatureBundling(
 void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         int num_total_features,
                         const std::vector<std::vector<double>>& forced_bins,
-                        int** sample_non_zero_indices, double** sample_values,
-                        const int* num_per_col, int num_sample_col,
-                        size_t total_sample_cnt, const Config& io_config) {
+                        int** sample_non_zero_indices,
+                        double** sample_values,
+                        const int* num_per_col,
+                        int num_sample_col,
+                        size_t total_sample_cnt,
+                        const Config& io_config) {
   num_total_features_ = num_total_features;
   CHECK_EQ(num_total_features_, static_cast<int>(bin_mappers->size()));
   // get num_features
@@ -337,7 +342,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
         "Decreasing Dataset parameters min_data_in_bin or min_data_in_leaf and re-constructing "
         "Dataset might resolve this warning.");
   }
-  auto features_in_group = NoGroup(used_features);
+  auto features_in_group = OneFeaturePerGroup(used_features);
 
   auto is_sparse = io_config.is_enable_sparse;
   if (io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) {
@@ -440,6 +445,8 @@ void Dataset::FinishLoad() {
       feature_groups_[i]->FinishLoad();
     }
   }
+  metadata_.FinishLoad();
+
   #ifdef USE_CUDA_EXP
   if (device_type_ == std::string("cuda_exp")) {
     CreateCUDAColumnData();
@@ -733,6 +740,11 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {

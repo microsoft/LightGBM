@@ -123,7 +123,7 @@ test_that("lgb.check.wrapper_param() prefers alias to keyword arg", {
     expect_equal(params[["num_iterations"]], num_tree)
     expect_identical(params, list(num_iterations = num_tree))
 
-    # switching the order should switch which one is chosen
+    # switching the order shouldn't switch which one is chosen
     params2 <- lgb.check.wrapper_param(
         main_param_name = "num_iterations"
         , params = list(
@@ -132,6 +132,18 @@ test_that("lgb.check.wrapper_param() prefers alias to keyword arg", {
         )
         , alternative_kwarg_value = kwarg_val
     )
-    expect_equal(params2[["num_iterations"]], n_estimators)
-    expect_identical(params2, list(num_iterations = n_estimators))
+    expect_equal(params2[["num_iterations"]], num_tree)
+    expect_identical(params2, list(num_iterations = num_tree))
+})
+
+test_that("lgb.equal.or.both.null produces expected results", {
+    expect_true(lgb.equal.or.both.null(NULL, NULL))
+    expect_false(lgb.equal.or.both.null(1.0, NULL))
+    expect_false(lgb.equal.or.both.null(NULL, 1.0))
+    expect_true(lgb.equal.or.both.null(1.0, 1.0))
+    expect_true(lgb.equal.or.both.null(1.0, 1L))
+    expect_false(lgb.equal.or.both.null(NA, NULL))
+    expect_false(lgb.equal.or.both.null(NULL, NA))
+    expect_false(lgb.equal.or.both.null(10.0, 1L))
+    expect_true(lgb.equal.or.both.null(0L, 0L))
 })

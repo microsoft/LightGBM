@@ -12,7 +12,7 @@
 \item{...}{Not used}
 }
 \value{
-The same input `object`, returned as invisible.
+The same input \code{object}, returned as invisible.
 }
 \description{
 Show summary information about a LightGBM model object (same as \code{print}).

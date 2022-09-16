@@ -167,7 +167,11 @@ class CUDAVector {
     return host_vector;
   }
 
-  T* RawData() {
+  T* RawData() const {
+    return data_;
+  }
+
+  const T* RawDataReadOnly() const {
     return data_;
   }
 

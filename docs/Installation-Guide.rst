@@ -73,7 +73,7 @@ From Command Line
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -91,7 +91,7 @@ MinGW-w64
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -118,7 +118,7 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -146,7 +146,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 Install Using ``Homebrew``
 **************************
 
-.. code::
+.. code:: sh
 
   brew install lightgbm
 
@@ -155,19 +155,19 @@ Build from GitHub
 
 1. Install `CMake`_ (3.16 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **OpenMP**:
 
-   .. code::
+   .. code:: sh
 
      brew install libomp
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -181,19 +181,19 @@ gcc
 
 1. Install `CMake`_ (3.2 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **gcc**:
 
-   .. code::
+   .. code:: sh
 
      brew install gcc
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -256,7 +256,7 @@ From Command Line
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -274,7 +274,7 @@ MinGW-w64
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -296,7 +296,7 @@ On Linux a version of LightGBM without OpenMP support can be built using **CMake
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -319,13 +319,13 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
 1. Install `CMake`_ (3.16 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -339,19 +339,19 @@ gcc
 
 1. Install `CMake`_ (3.2 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **gcc**:
 
-   .. code::
+   .. code:: sh
 
      brew install gcc
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -404,7 +404,7 @@ From Command Line
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -428,7 +428,7 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -453,25 +453,25 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
 1. Install `CMake`_ (3.16 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **OpenMP**:
 
-   .. code::
+   .. code:: sh
 
      brew install libomp
 
 3. Install **Open MPI**:
 
-   .. code::
+   .. code:: sh
 
      brew install open-mpi
 
 4. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -485,25 +485,25 @@ gcc
 
 1. Install `CMake`_ (3.2 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **gcc**:
 
-   .. code::
+   .. code:: sh
 
      brew install gcc
 
 3. Install **Open MPI**:
 
-   .. code::
+   .. code:: sh
 
      brew install open-mpi
 
 4. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -537,7 +537,7 @@ The following dependencies should be installed before compilation:
 
 To build LightGBM GPU version, run the following commands:
 
-.. code::
+.. code:: sh
 
   git clone --recursive https://github.com/microsoft/LightGBM
   cd LightGBM
@@ -576,7 +576,7 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 3. Install `Boost Binaries`_.
 
    **Note**: Match your Visual C++ version:
-   
+
    Visual Studio 2015 -> ``msvc-14.0-64.exe``,
 
    Visual Studio 2017 -> ``msvc-14.1-64.exe``,
@@ -587,7 +587,7 @@ Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
 4. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -627,7 +627,7 @@ The following dependencies should be installed before compilation:
 
 To build LightGBM CUDA version, run the following commands:
 
-.. code::
+.. code:: sh
 
   git clone --recursive https://github.com/microsoft/LightGBM
   cd LightGBM
@@ -656,7 +656,7 @@ On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -694,7 +694,7 @@ VS Build Tools
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -714,7 +714,7 @@ MinGW-w64
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -741,7 +741,7 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -769,19 +769,19 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
 1. Install `CMake`_ (3.16 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **OpenMP**:
 
-   .. code::
+   .. code:: sh
 
      brew install libomp
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -795,19 +795,19 @@ gcc
 
 1. Install `CMake`_ (3.2 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **gcc**:
 
-   .. code::
+   .. code:: sh
 
      brew install gcc
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -831,7 +831,7 @@ On Windows, C++ unit tests of LightGBM can be built using **CMake** and **VS Bui
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: console
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -851,7 +851,7 @@ On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** o
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -874,13 +874,13 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
 1. Install `CMake`_ (3.16 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
@@ -894,19 +894,19 @@ gcc
 
 1. Install `CMake`_ (3.2 or higher):
 
-   .. code::
+   .. code:: sh
 
      brew install cmake
 
 2. Install **gcc**:
 
-   .. code::
+   .. code:: sh
 
      brew install gcc
 
 3. Run the following commands:
 
-   .. code::
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
