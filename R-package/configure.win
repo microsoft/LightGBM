@@ -13,6 +13,12 @@ CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 
+# RTools 4.2 looks for the compiler toolchain (and related headers)
+# in a path configured at R_TOOLS_SOFT, not on PATH.
+# For more, see https://cran.r-project.org/bin/windows/base/howto-R-4.2.html.
+R_TOOLS_SOFT=`"${R_HOME}/bin/R" CMD config R_TOOLS_SOFT`
+R_TOOLS_INCLUDES="${R_TOOLS_SOFT}/include"
+
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
 LGB_LIBS="-lws2_32 -lIphlpapi"
@@ -123,7 +129,7 @@ echo "R_TOOLS_SOFT: ${R_TOOLS_SOFT}"
 echo "--- R CMD config ---"
 R CMD config
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} "${R_TOOLS_INCLUDES}" ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
 #${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
