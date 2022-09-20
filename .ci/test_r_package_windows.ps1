@@ -153,6 +153,10 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
 }
 
+Write-Output "----- contents of include/ dir -----"
+Get-ChildItem -Recurse "c:/rtools42/x86_64-w64-mingw32.static.posix/include"
+Write-Output "--------------"
+
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
