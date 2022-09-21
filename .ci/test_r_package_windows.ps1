@@ -158,7 +158,7 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_3.3.2.99.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   Write-Output "--- where R thinks the compiler is ---"
