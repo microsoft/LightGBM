@@ -11,7 +11,6 @@ CXX11STD=`"${R_EXE}" CMD config CXX11STD`
 CXX="${CXX11} ${CXX11STD}"
 CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
-LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 
 # RTools 4.2 looks for the compiler toolchain (and related headers)
 # in a path configured at R_TOOLS_SOFT, not on PATH.
@@ -21,7 +20,6 @@ R_TOOLS_INCLUDES="${R_TOOLS_SOFT}/include"
 
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
-LGB_LIBS="-lws2_32 -lIphlpapi"
 
 #########
 # Eigen #
@@ -44,7 +42,7 @@ int main() {
 }
 EOL
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_prefetch="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether MM_PREFETCH works...${ac_mm_prefetch}"
@@ -68,7 +66,7 @@ int main() {
 }
 EOL
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether MM_MALLOC works...${ac_mm_malloc}"
@@ -85,15 +83,10 @@ fi
 ac_inet_pton="no"
 
 cat > conftest.cpp <<EOL
-#include <winsock2.h>
 #include <ws2tcpip.h>
-#include <iphlpapi.h>
 int main() {
-  #ifdef inet_pton
+  void* p = inet_pton;
   return 0;
-  #else
-  return 1;
-  #endif
 }
 EOL
 
@@ -129,8 +122,7 @@ echo "R_TOOLS_SOFT: ${R_TOOLS_SOFT}"
 echo "--- R CMD config ---"
 R CMD config
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} -I"${R_TOOLS_INCLUDES}" ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
-#${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -I"${R_TOOLS_INCLUDES}" -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether INET_PTON works...${ac_inet_pton}"
@@ -143,5 +135,4 @@ fi
 # Generate Makevars.win from Makevars.win.in
 sed \
     -e "s/@LGB_CPPFLAGS@/$LGB_CPPFLAGS/" \
-    -e "s/@LGB_LIBS@/$LGB_LIBS/" \
     < src/Makevars.win.in > src/Makevars.win
