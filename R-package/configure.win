@@ -122,7 +122,7 @@ EOL
 # echo "--- R CMD config ---"
 # R CMD config
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} -I"${R_TOOLS_INCLUDES}" -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -lws2_32 -I"${R_TOOLS_INCLUDES}" -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether INET_PTON works...${ac_inet_pton}"
