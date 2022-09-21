@@ -111,10 +111,12 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-def test_regression():
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair'])
+def test_regression(objective):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
+        'objective': objective,
         'metric': 'l2',
         'verbose': -1
     }
@@ -129,7 +131,12 @@ def test_regression():
         callbacks=[lgb.record_evaluation(evals_result)]
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
+    if objective == 'huber':
+        assert ret < 35
+    elif objective == 'fair':
+        assert ret < 17
+    else:
+        assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -3142,7 +3149,6 @@ def test_trees_to_dataframe():
         assert tree_df.loc[0, col] is None
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
 def test_interaction_constraints():
     X, y = load_boston(return_X_y=True)
     num_features = X.shape[1]

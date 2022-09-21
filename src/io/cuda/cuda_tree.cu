@@ -35,6 +35,16 @@ __device__ bool IsZeroCUDA(double fval) {
   return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
 }
 
+template<typename T>
+__device__ bool FindInBitsetCUDA(const uint32_t* bits, int n, T pos) {
+  int i1 = pos / 32;
+  if (i1 >= n) {
+    return false;
+  }
+  int i2 = pos % 32;
+  return (bits[i1] >> i2) & 1;
+}
+
 __global__ void SplitKernel(  // split information
                             const int leaf_index,
                             const int real_feature_index,
@@ -323,11 +333,13 @@ __global__ void AddPredictionToScoreKernel(
   const int* cuda_left_child,
   const int* cuda_right_child,
   const double* cuda_leaf_value,
+  const uint32_t* cuda_bitset_inner,
+  const int* cuda_cat_boundaries_inner,
   // output
   double* score) {
   const data_size_t inner_data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
-  const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
-  if (data_index < num_data) {
+  if (inner_data_index < num_data) {
+    const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
     int node = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
@@ -352,20 +364,30 @@ __global__ void AddPredictionToScoreKernel(
         bin = most_freq_bin;
       }
       const int8_t decision_type = cuda_decision_type[node];
-      const uint32_t threshold_in_bin = cuda_threshold_in_bin[node];
-      const int8_t missing_type = ((decision_type >> 2) & 3);
-      const bool default_left = ((decision_type & kDefaultLeftMask) > 0);
-      if ((missing_type == 1 && bin == default_bin) || (missing_type == 2 && bin == max_bin)) {
-        if (default_left) {
+      if (GetDecisionTypeCUDA(decision_type, kCategoricalMask)) {
+        int cat_idx = static_cast<int>(cuda_threshold_in_bin[node]);
+        if (FindInBitsetCUDA(cuda_bitset_inner + cuda_cat_boundaries_inner[cat_idx],
+                             cuda_cat_boundaries_inner[cat_idx + 1] - cuda_cat_boundaries_inner[cat_idx], bin)) {
           node = cuda_left_child[node];
         } else {
           node = cuda_right_child[node];
         }
       } else {
-        if (bin <= threshold_in_bin) {
-          node = cuda_left_child[node];
+        const uint32_t threshold_in_bin = cuda_threshold_in_bin[node];
+        const int8_t missing_type = GetMissingTypeCUDA(decision_type);
+        const bool default_left = ((decision_type & kDefaultLeftMask) > 0);
+        if ((missing_type == 1 && bin == default_bin) || (missing_type == 2 && bin == max_bin)) {
+          if (default_left) {
+            node = cuda_left_child[node];
+          } else {
+            node = cuda_right_child[node];
+          }
         } else {
-          node = cuda_right_child[node];
+          if (bin <= threshold_in_bin) {
+            node = cuda_left_child[node];
+          } else {
+            node = cuda_right_child[node];
+          }
         }
       }
     }
@@ -400,6 +422,8 @@ void CUDATree::LaunchAddPredictionToScoreKernel(
       cuda_left_child_,
       cuda_right_child_,
       cuda_leaf_value_,
+      cuda_bitset_inner_.RawDataReadOnly(),
+      cuda_cat_boundaries_inner_.RawDataReadOnly(),
       // output
       score);
   } else {
@@ -422,6 +446,8 @@ void CUDATree::LaunchAddPredictionToScoreKernel(
       cuda_left_child_,
       cuda_right_child_,
       cuda_leaf_value_,
+      cuda_bitset_inner_.RawDataReadOnly(),
+      cuda_cat_boundaries_inner_.RawDataReadOnly(),
       // output
       score);
   }

@@ -146,7 +146,7 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   # create plot
   tree_interpretation[abs(Contribution) > 0.0, bar_color := "firebrick"]
   tree_interpretation[Contribution == 0.0, bar_color := "steelblue"]
-  tree_interpretation[.N:1L,
+  tree_interpretation[rev(seq_len(.N)),
                       graphics::barplot(
                           height = Contribution
                           , names.arg = Feature

@@ -199,25 +199,33 @@ if ${BUILD_VIGNETTES} ; then
 
     echo "untarring ${TARBALL_NAME}"
     cd _tmp
-        tar -xvf "${TARBALL_NAME}" > /dev/null 2>&1
-        rm -rf "${TARBALL_NAME}"
-    cd ..
-    echo "done untarring ${TARBALL_NAME}"
+        tar -xf "${TARBALL_NAME}" > /dev/null 2>&1
+        rm -f "${TARBALL_NAME}"
+        echo "done untarring ${TARBALL_NAME}"
 
-    echo "re-tarring ${TARBALL_NAME}"
-    tar \
-        -czv \
-        -C ./_tmp \
-        --exclude=*.a \
-        --exclude=*.dll \
-        --exclude=*.o \
-        --exclude=*.so \
-        --exclude=*.tar.gz \
-        --exclude=**/conftest.c \
-        --exclude=**/conftest.exe \
-        -f "${TARBALL_NAME}" \
-        lightgbm \
-    > /dev/null 2>&1
+        # Object files are left behind from compiling the library to generate vignettes.
+        # Approaches like using tar --exclude=*.so to exclude them are not portable
+        # (for example, don't work with some versions of tar on Windows).
+        #
+        # Removing them manually here removes the need to use tar --exclude.
+        #
+        # For background, see https://github.com/microsoft/LightGBM/pull/3946#pullrequestreview-799415812.
+        rm -f ./lightgbm/src/*.o
+        rm -f ./lightgbm/src/boosting/*.o
+        rm -f ./lightgbm/src/io/*.o
+        rm -f ./lightgbm/src/metric/*.o
+        rm -f ./lightgbm/src/network/*.o
+        rm -f ./lightgbm/src/objective/*.o
+        rm -f ./lightgbm/src/treelearner/*.o
+
+        echo "re-tarring ${TARBALL_NAME}"
+        tar \
+            -cz \
+            -f "${TARBALL_NAME}" \
+            lightgbm \
+        > /dev/null 2>&1
+        mv "${TARBALL_NAME}" ../
+    cd ..
     echo "Done creating ${TARBALL_NAME}"
 
     rm -rf ./_tmp
