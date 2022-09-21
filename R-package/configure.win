@@ -131,6 +131,7 @@ if test "${ac_inet_pton}" = "yes";
 then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 fi
+LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 
 # Generate Makevars.win from Makevars.win.in
 sed -e \
