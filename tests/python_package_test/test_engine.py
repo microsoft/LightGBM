@@ -1226,6 +1226,11 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
     assert set_params == params
     assert bst.params['categorical_feature'] == [1, 2]
 
+    # check that passing parameters to the constructor raises warning and ignores them
+    with pytest.warns(UserWarning, match='Ignoring params argument'):
+        bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
+    assert bst.params == bst2.params
+
 
 def test_save_load_copy_pickle():
     def train_and_predict(init_model=None, return_model=False):

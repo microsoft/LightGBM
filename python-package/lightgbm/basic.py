@@ -2764,6 +2764,8 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
+            if params:
+                _log_warning('Ignoring params argument, using parameters from model file.')
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
