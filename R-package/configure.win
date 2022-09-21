@@ -129,7 +129,7 @@ echo "R_TOOLS_SOFT: ${R_TOOLS_SOFT}"
 echo "--- R CMD config ---"
 R CMD config
 
-${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} "${R_TOOLS_INCLUDES}" ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} -I"${R_TOOLS_INCLUDES}" ${LGB_LIBS} -o conftest conftest.cpp && ./conftest && ac_inet_pton="yes"
 #${CXX} ${CXXFLAGS} ${CPPFLAGS} ${LDFLAGS} ${LGB_LIBS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
