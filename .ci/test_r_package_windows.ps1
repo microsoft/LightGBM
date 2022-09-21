@@ -170,11 +170,9 @@ if ($env:COMPILER -ne "MSVC") {
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
       Write-Output "Telling R to use MinGW"
-      #$env:BUILD_R_FLAGS = "c('--use-mingw', '-j4')"
       $env:BUILD_R_FLAGS = "c('--skip-install', '--use-mingw', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSYS") {
       Write-Output "Telling R to use MSYS"
-      #$env:BUILD_R_FLAGS = "c('--use-msys2', '-j4')"
       $env:BUILD_R_FLAGS = "c('--skip-install', '--use-msys2', '-j4')"
     } elseif ($env:TOOLCHAIN -eq "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
@@ -210,10 +208,6 @@ if ($env:COMPILER -ne "MSVC") {
   } else {
     $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
-  #R.exe CMD INSTALL "D:/a/LightGBM/LightGBM/lightgbm_3.3.2.99.tar.gz"
-  #Write-Output "done installing"
-
-  #$check_args = "c('CMD', 'install', '--with-keep.source', '$PKG_FILE_NAME')"
   Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
