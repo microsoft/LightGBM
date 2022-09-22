@@ -122,15 +122,9 @@ Write-Output "Installing R"
 Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
 Write-Output "Done installing R"
 
-Write-Output "----- PATH after installing R -----"
-Write-Output $env:PATH
-
 Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
-
-Write-Output "----- PATH after installing Rtools -----"
-Write-Output $env:PATH
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
@@ -153,21 +147,13 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
 }
 
-sh.exe "test-inet.sh"
-
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_3.3.2.99.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
-
-  Write-Output "--- where R thinks the compiler is ---"
-  R.exe CMD config CXX11
-  Write-Output "--- where our config thinks the compiler is ---"
-  Write-Output $env:CXX
-  Write-Output $env:CC
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
     if ($env:TOOLCHAIN -eq "MINGW") {
