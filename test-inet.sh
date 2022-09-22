@@ -3,7 +3,7 @@ echo "------ testing test program ----"
 cat > conftest.cpp <<EOL
 #include <ws2tcpip.h>
 int main() {
-  void (*fptr)(int, const char*, void*);
+  int (*fptr)(int, const char*, void*);
   fptr = &inet_pton;
   return 0;
 }
