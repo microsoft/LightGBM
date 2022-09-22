@@ -85,11 +85,9 @@ ac_inet_pton="no"
 cat > conftest.cpp <<EOL
 #include <ws2tcpip.h>
 int main() {
-  #ifdef inet_pton
+  void (*fptr)(int, const char*, void*);
+  fptr = &inet_pton;
   return 0;
-  #else
-  return 1;
-  #endif
 }
 EOL
 
