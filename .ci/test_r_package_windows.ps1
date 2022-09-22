@@ -153,6 +153,8 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
 }
 
+sh.exe "test-inet.sh"
+
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
