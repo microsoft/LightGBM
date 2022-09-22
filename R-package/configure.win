@@ -91,39 +91,7 @@ int main() {
 }
 EOL
 
-echo "flags: ${CXX} ${CXXFLAGS} ${CPPFLAGS}"
-
-CFLAGS=`"${R_EXE}" CMD config CFLAGS`
-echo "CFLAGS: ${CFLAGS}"
-
-CPICFLAGS=`"${R_EXE}" CMD config CPICFLAGS`
-echo "CPICFLAGS: ${CPICFLAGS}"
-
-CXX11PICFLAGS=`"${R_EXE}" CMD config CXXPICFLAGS`
-echo "CXXPICFLAGS: ${CXXPICFLAGS}"
-
-LDFLAGS=`"${R_EXE}" CMD config LDFLAGS`
-echo "LDFLAGS: ${LDFLAGS}"
-
-SHLIBLD_FLAGS=`"${R_EXE}" CMD config SHLIB_LDFLAGS`
-echo "SHLIB_LDFLAGS: ${SHLIB_LDFLAGS}"
-
-SHLIB_CXXLDFLAGS=`"${R_EXE}" CMD config SHLIB_CXXLDFLAGS`
-echo "SHLIB_CXXLDFLAGS: ${SHLIB_CXXLDFLAGS}"
-
-COMPILED_BY=`"${R_EXE}" CMD config COMPILED_BY`
-echo "COMPILED_BY: ${COMPILED_BY}"
-
-LOCAL_SOFT=`"${R_EXE}" CMD config LOCAL_SOFT`
-echo "LOCAL_SOFT: ${LOCAL_SOFT}"
-
-R_TOOLS_SOFT=`"${R_EXE}" CMD config R_TOOLS_SOFT`
-echo "R_TOOLS_SOFT: ${R_TOOLS_SOFT}"
-
-# echo "--- R CMD config ---"
-# R CMD config
-
-${CXX} ${CXXFLAGS} ${CPPFLAGS} -I"${R_TOOLS_INCLUDES}" -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
 rm -f ./conftest
 rm -f ./conftest.cpp
 echo "checking whether INET_PTON works...${ac_inet_pton}"
@@ -132,7 +100,6 @@ if test "${ac_inet_pton}" = "yes";
 then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 fi
-#LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
 
 # Generate Makevars.win from Makevars.win.in
 sed -e \
