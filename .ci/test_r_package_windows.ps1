@@ -152,7 +152,7 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
+  $PKG_FILE_NAME = @(gci lightgbm_*.tar.gz)[0]
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
