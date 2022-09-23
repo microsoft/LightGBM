@@ -56,7 +56,14 @@ With GUI
 
 1. Install `Visual Studio`_ (2015 or newer).
 
-2. Download `zip archive`_ and unzip it.
+2. Git the whole project using:  
+
+   .. code:: console
+
+     git clone https://github.com/microsoft/LightGBM.git  
+     git submodule init  
+     git submodule update --recursive  
+
 
 3. Go to ``LightGBM-master/windows`` folder.
 
