@@ -63,14 +63,14 @@ pytestmark = [
 
 @pytest.fixture(scope='module')
 def cluster():
-    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)
+    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=1, dashboard_address=None)
     yield dask_cluster
     dask_cluster.close()
 
 
 @pytest.fixture(scope='module')
 def cluster2():
-    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)
+    dask_cluster = LocalCluster(n_workers=2, threads_per_worker=1, dashboard_address=None)
     yield dask_cluster
     dask_cluster.close()
 
