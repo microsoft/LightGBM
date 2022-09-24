@@ -165,6 +165,7 @@ jobs:
         shell: pwsh -command ". {0}"
         run: |
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+          $env:LGB_VER = (Get-Content -TotalCount 1 $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim().replace('rc', '-')
           $env:TOOLCHAIN = "${{ matrix.toolchain }}"
           $env:R_VERSION = "${{ matrix.r_version }}"
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
