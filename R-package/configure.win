@@ -12,12 +12,6 @@ CXX="${CXX11} ${CXX11STD}"
 CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 
-# RTools 4.2 looks for the compiler toolchain (and related headers)
-# in a path configured at R_TOOLS_SOFT, not on PATH.
-# For more, see https://cran.r-project.org/bin/windows/base/howto-R-4.2.html.
-R_TOOLS_SOFT=`"${R_HOME}/bin/R" CMD config R_TOOLS_SOFT`
-R_TOOLS_INCLUDES="${R_TOOLS_SOFT}/include"
-
 # LightGBM-specific flags
 LGB_CPPFLAGS=""
 
