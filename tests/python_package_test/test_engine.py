@@ -135,8 +135,6 @@ def test_regression(objective):
         assert ret < 35
     elif objective == 'fair':
         assert ret < 17
-    elif objective == 'poisson':
-        assert ret < 8
     else:
         assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
