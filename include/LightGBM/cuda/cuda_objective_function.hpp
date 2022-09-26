@@ -13,14 +13,17 @@
 #include <LightGBM/objective_function.h>
 #include <LightGBM/meta.h>
 
+#include <string>
+#include <vector>
+
 namespace LightGBM {
 
 template <typename HOST_OBJECTIVE>
 class CUDAObjectiveInterface: public HOST_OBJECTIVE {
  public:
-  CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {}
+  explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {}
 
-  CUDAObjectiveInterface(const std::vector<std::string>& strs): HOST_OBJECTIVE(strs) {}
+  explicit CUDAObjectiveInterface(const std::vector<std::string>& strs): HOST_OBJECTIVE(strs) {}
 
   void Init(const Metadata& metadata, data_size_t num_data) {
     HOST_OBJECTIVE::Init(metadata, num_data);

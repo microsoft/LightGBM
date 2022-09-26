@@ -23,9 +23,9 @@ namespace LightGBM {
 template <typename HOST_OBJECTIVE>
 class CUDARegressionObjectiveInterface: public CUDAObjectiveInterface<HOST_OBJECTIVE> {
  public:
-  CUDARegressionObjectiveInterface(const Config& config): CUDAObjectiveInterface<HOST_OBJECTIVE>(config) {}
+  explicit CUDARegressionObjectiveInterface(const Config& config): CUDAObjectiveInterface<HOST_OBJECTIVE>(config) {}
 
-  CUDARegressionObjectiveInterface(const std::vector<std::string>& strs): CUDAObjectiveInterface<HOST_OBJECTIVE>(strs) {}
+  explicit CUDARegressionObjectiveInterface(const std::vector<std::string>& strs): CUDAObjectiveInterface<HOST_OBJECTIVE>(strs) {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
@@ -47,9 +47,9 @@ class CUDARegressionL2loss : public CUDARegressionObjectiveInterface<RegressionL
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
  protected:
-  virtual void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
-  virtual void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 };
 
 
