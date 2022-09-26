@@ -9,6 +9,7 @@
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
 
