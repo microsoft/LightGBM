@@ -30,7 +30,8 @@ conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION ; Check-Output $?
+# matplotlib and python-graphviz have to be installed separately to prevent conda from downgrading to pypy
+conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION matplotlib python-graphviz ; Check-Output $?
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
 }
@@ -51,8 +52,6 @@ if ($env:TASK -eq "swig") {
 }
 
 conda install -q -y -n $env:CONDA_ENV cloudpickle joblib numpy pandas psutil pytest scikit-learn scipy ; Check-Output $?
-# matplotlib and python-graphviz have to be installed separately to prevent conda from downgrading to pypy
-conda install -q -y -n $env:CONDA_ENV matplotlib python-graphviz ; Check-Output $?
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
