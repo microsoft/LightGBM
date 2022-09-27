@@ -116,7 +116,8 @@ double CUDABinaryLogloss::LaunchCalcInitScoreKernel(const int /*class_id*/) cons
   CopyFromCUDADeviceToHost<double>(&boost_from_score, cuda_boost_from_score_, 1, __FILE__, __LINE__);
   double pavg = 0.0f;
   CopyFromCUDADeviceToHost<double>(&pavg, cuda_sum_weights_, 1, __FILE__, __LINE__);
-  Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, boost_from_score);
+  // for some test cases in test_utilities.py which check the log output
+  Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), "BoostFromScore", pavg, boost_from_score);
   return boost_from_score;
 }
 
