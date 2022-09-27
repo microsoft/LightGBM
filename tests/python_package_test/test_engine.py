@@ -135,6 +135,8 @@ def test_regression(objective):
         assert ret < 35
     elif objective == 'fair':
         assert ret < 17
+    elif objective == 'poisson':
+        assert ret < 8
     else:
         assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -1198,7 +1200,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_é›¶', u'F_ä¸€', u'F_äºŒ', u'F_ä¸‰']
+    feature_names = [u'F_é›?', u'F_ä¸€', u'F_äº?', u'F_ä¸?']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
