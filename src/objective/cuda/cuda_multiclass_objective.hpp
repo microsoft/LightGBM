@@ -70,7 +70,6 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
   void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
 
   double BoostFromScore(int class_id) const override {
-    Log::Debug("BoostFromScore class_id = %d", class_id);
     return cuda_binary_loss_[class_id]->BoostFromScore(0);
   }
 
@@ -79,6 +78,8 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
   }
 
   ~CUDAMulticlassOVA();
+
+  bool IsCUDAObjective() const override { return true; }
 
  private:
   std::vector<std::unique_ptr<CUDABinaryLogloss>> cuda_binary_loss_;
