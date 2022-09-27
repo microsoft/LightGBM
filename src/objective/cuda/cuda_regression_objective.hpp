@@ -126,8 +126,6 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
   double LaunchCalcInitScoreKernel(const int class_id) const override;
 
   void LaunchCheckLabelKernel() const;
-
-  CUDAVector<double> cuda_block_buffer_;
 };
 
 
