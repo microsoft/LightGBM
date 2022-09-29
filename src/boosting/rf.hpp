@@ -116,7 +116,7 @@ class RF : public GBDT {
         auto hess = hessians + offset;
 
         // need to copy gradients for bagging subset.
-        if (is_use_subset_ && bag_data_cnt_ < num_data_) {
+        if (is_use_subset_ && bag_data_cnt_ < num_data_ && !boosting_on_gpu_) {
           for (int i = 0; i < bag_data_cnt_; ++i) {
             tmp_grad_[i] = grad[bag_data_indices_[i]];
             tmp_hess_[i] = hess[bag_data_indices_[i]];
@@ -132,7 +132,7 @@ class RF : public GBDT {
         double pred = init_scores_[cur_tree_id];
         auto residual_getter = [pred](const label_t* label, int i) {return static_cast<double>(label[i]) - pred; };
         tree_learner_->RenewTreeOutput(new_tree.get(), objective_function_, residual_getter,
-          num_data_, bag_data_indices_.data(), bag_data_cnt_);
+          num_data_, bag_data_indices_.data(), bag_data_cnt_, train_score_updater_->score());
         if (std::fabs(init_scores_[cur_tree_id]) > kEpsilon) {
           new_tree->AddBias(init_scores_[cur_tree_id]);
         }

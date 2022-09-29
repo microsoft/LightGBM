@@ -161,7 +161,7 @@ class Metadata {
   * \param values Initial score values for this record, one per class
   */
   inline void SetInitScoreAt(data_size_t idx, const double* values) {
-    const auto nclasses = num_classes();
+    const auto nclasses = num_init_score_classes();
     const double* val_ptr = values;
     for (int i = idx; i < nclasses * num_data_; i += num_data_, ++val_ptr) {
       init_score_[i] = *val_ptr;
@@ -265,7 +265,7 @@ class Metadata {
   /*!
   * \brief Get number of classes
   */
-  inline int32_t num_classes() const {
+  inline int32_t num_init_score_classes() const {
     if (num_data_ && num_init_score_) {
       return static_cast<int>(num_init_score_ / num_data_);
     }

@@ -20,6 +20,16 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
+_DatasetHandle = ctypes.c_void_p
+_LGBM_EvalFunctionResultType = Tuple[str, float, bool]
+_LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_LabelType = Union[
+    list,
+    np.ndarray,
+    pd_Series,
+    pd_DataFrame
+]
+
 ZERO_THRESHOLD = 1e-35
 
 
@@ -252,7 +262,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -260,7 +270,7 @@ def cfloat32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -268,7 +278,7 @@ def cfloat64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -276,7 +286,7 @@ def cint32_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr: ctypes.POINTER, length: int) -> np.ndarray:
+def cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -599,15 +609,6 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         if categorical_feature == 'auto':
             categorical_feature = None
     return data, feature_name, categorical_feature, pandas_categorical
-
-
-def _label_from_pandas(label):
-    if isinstance(label, pd_DataFrame):
-        if len(label.columns) > 1:
-            raise ValueError('DataFrame for label cannot have multiple columns')
-        _check_for_bad_pandas_dtypes(label.dtypes)
-        label = np.ravel(label.values.astype(np.float32, copy=False))
-    return label
 
 
 def _dump_pandas_categorical(pandas_categorical, file_name=None):
@@ -1193,10 +1194,19 @@ class _InnerPredictor:
 class Dataset:
     """Dataset in LightGBM."""
 
-    def __init__(self, data, label=None, reference=None,
-                 weight=None, group=None, init_score=None,
-                 feature_name='auto', categorical_feature='auto', params=None,
-                 free_raw_data=True):
+    def __init__(
+        self,
+        data,
+        label: Optional[_LGBM_LabelType] = None,
+        reference: Optional["Dataset"] = None,
+        weight=None,
+        group=None,
+        init_score=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        params: Optional[Dict[str, Any]] = None,
+        free_raw_data: bool = True
+    ):
         """Initialize Dataset.
 
         Parameters
@@ -1295,15 +1305,19 @@ class Dataset:
         assert sample_cnt == actual_sample_cnt.value
         return indices
 
-    def _init_from_ref_dataset(self, total_nrow: int, ref_dataset: 'Dataset') -> 'Dataset':
+    def _init_from_ref_dataset(
+        self,
+        total_nrow: int,
+        ref_dataset: _DatasetHandle
+    ) -> 'Dataset':
         """Create dataset from a reference dataset.
 
         Parameters
         ----------
         total_nrow : int
             Number of rows expected to add to dataset.
-        ref_dataset : Dataset
-            Reference dataset to extract meta from.
+        ref_dataset : object
+            Handle of reference dataset to extract metadata from.
 
         Returns
         -------
@@ -1485,9 +1499,19 @@ class Dataset:
             return self
         self.set_init_score(init_score)
 
-    def _lazy_init(self, data, label=None, reference=None,
-                   weight=None, group=None, init_score=None, predictor=None,
-                   feature_name='auto', categorical_feature='auto', params=None):
+    def _lazy_init(
+        self,
+        data,
+        label: Optional[_LGBM_LabelType] = None,
+        reference: Optional["Dataset"] = None,
+        weight=None,
+        group=None,
+        init_score=None,
+        predictor=None,
+        feature_name='auto',
+        categorical_feature='auto',
+        params: Optional[Dict[str, Any]] = None
+    ) -> "Dataset":
         if data is None:
             self.handle = None
             return self
@@ -1498,7 +1522,6 @@ class Dataset:
                                                                                              feature_name,
                                                                                              categorical_feature,
                                                                                              self.pandas_categorical)
-        label = _label_from_pandas(label)
 
         # process for args
         params = {} if params is None else params
@@ -1632,7 +1655,11 @@ class Dataset:
 
         return filtered, filtered_idx
 
-    def __init_from_seqs(self, seqs: List[Sequence], ref_dataset: Optional['Dataset'] = None):
+    def __init_from_seqs(
+        self,
+        seqs: List[Sequence],
+        ref_dataset: Optional[_DatasetHandle] = None
+    ) -> "Dataset":
         """
         Initialize data from list of Sequence objects.
 
@@ -1661,7 +1688,12 @@ class Dataset:
                 self._push_rows(seq[start:end])
         return self
 
-    def __init_from_np2d(self, mat, params_str, ref_dataset):
+    def __init_from_np2d(
+        self,
+        mat: np.ndarray,
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
         """Initialize data from a 2-D numpy matrix."""
         if len(mat.shape) != 2:
             raise ValueError('Input numpy.ndarray must be 2 dimensional')
@@ -1684,7 +1716,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_list_np2d(self, mats, params_str, ref_dataset):
+    def __init_from_list_np2d(
+        self,
+        mats: List[np.ndarray],
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
         nrow = np.empty((len(mats),), np.int32)
@@ -1730,7 +1767,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_csr(self, csr, params_str, ref_dataset):
+    def __init_from_csr(
+        self,
+        csr: scipy.sparse.csr_matrix,
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
         """Initialize data from a CSR matrix."""
         if len(csr.indices) != len(csr.data):
             raise ValueError(f'Length mismatch: {len(csr.indices)} vs {len(csr.data)}')
@@ -1756,7 +1798,12 @@ class Dataset:
             ctypes.byref(self.handle)))
         return self
 
-    def __init_from_csc(self, csc, params_str, ref_dataset):
+    def __init_from_csc(
+        self,
+        csc: scipy.sparse.csc_matrix,
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
         """Initialize data from a CSC matrix."""
         if len(csc.indices) != len(csc.data):
             raise ValueError(f'Length mismatch: {len(csc.indices)} vs {len(csc.data)}')
@@ -1885,7 +1932,7 @@ class Dataset:
     def create_valid(
         self,
         data,
-        label=None,
+        label: Optional[_LGBM_LabelType] = None,
         weight=None,
         group=None,
         init_score=None,
@@ -2225,7 +2272,7 @@ class Dataset:
                 ctypes.c_int(len(feature_name))))
         return self
 
-    def set_label(self, label) -> "Dataset":
+    def set_label(self, label: Optional[_LGBM_LabelType]) -> "Dataset":
         """Set label of Dataset.
 
         Parameters
@@ -2240,8 +2287,14 @@ class Dataset:
         """
         self.label = label
         if self.handle is not None:
-            label = list_to_1d_numpy(_label_from_pandas(label), name='label')
-            self.set_field('label', label)
+            if isinstance(label, pd_DataFrame):
+                if len(label.columns) > 1:
+                    raise ValueError('DataFrame for label cannot have multiple columns')
+                _check_for_bad_pandas_dtypes(label.dtypes)
+                label_array = np.ravel(label.values.astype(np.float32, copy=False))
+            else:
+                label_array = list_to_1d_numpy(label, name='label')
+            self.set_field('label', label_array)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
@@ -2482,10 +2535,12 @@ class Dataset:
         """
         if self.handle is not None:
             if isinstance(feature, str):
-                feature = self.feature_name.index(feature)
+                feature_index = self.feature_name.index(feature)
+            else:
+                feature_index = feature
             ret = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_DatasetGetFeatureNumBin(self.handle,
-                                                         ctypes.c_int(feature),
+                                                         ctypes.c_int(feature_index),
                                                          ctypes.byref(ret)))
             return ret.value
         else:
@@ -2509,7 +2564,7 @@ class Dataset:
             Chain of references of the Datasets.
         """
         head = self
-        ref_chain = set()
+        ref_chain: Set[Dataset] = set()
         while len(ref_chain) < ref_limit:
             if isinstance(head, Dataset):
                 ref_chain.add(head)
@@ -2635,6 +2690,16 @@ _LGBM_CustomObjectiveFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[np.ndarray, np.ndarray]
 ]
+_LGBM_CustomEvalFunction = Union[
+    Callable[
+        [np.ndarray, Dataset],
+        _LGBM_EvalFunctionResultType
+    ],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalFunctionResultType]
+    ]
+]
 
 
 class Booster:
@@ -2718,8 +2783,8 @@ class Booster:
                 ctypes.byref(self.handle)))
             # save reference to data
             self.train_set = train_set
-            self.valid_sets = []
-            self.name_valid_sets = []
+            self.valid_sets: List[Dataset] = []
+            self.name_valid_sets: List[str] = []
             self.__num_dataset = 1
             self.__init_predictor = train_set._predictor
             if self.__init_predictor is not None:
@@ -3273,7 +3338,12 @@ class Booster:
             ctypes.byref(ret)))
         return ret.value
 
-    def eval(self, data, name, feval=None):
+    def eval(
+        self,
+        data: Dataset,
+        name: str,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for data.
 
         Parameters
@@ -3304,7 +3374,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         if not isinstance(data, Dataset):
             raise TypeError("Can only eval for Dataset instance")
@@ -3323,7 +3393,10 @@ class Booster:
 
         return self.__inner_eval(name, data_idx, feval)
 
-    def eval_train(self, feval=None):
+    def eval_train(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for training data.
 
         Parameters
@@ -3350,11 +3423,14 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return self.__inner_eval(self._train_data_name, 0, feval)
 
-    def eval_valid(self, feval=None):
+    def eval_valid(
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for validation data.
 
         Parameters
@@ -3381,7 +3457,7 @@ class Booster:
         Returns
         -------
         result : list
-            List with evaluation results.
+            List with (validation_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
         return [item for i in range(1, self.__num_dataset)
                 for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
@@ -3987,7 +4063,12 @@ class Booster:
         else:
             return hist, bin_edges
 
-    def __inner_eval(self, data_name, data_idx, feval=None):
+    def __inner_eval(
+        self,
+        data_name: str,
+        data_idx: int,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+    ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
             raise ValueError("Data_idx should be smaller than number of dataset")

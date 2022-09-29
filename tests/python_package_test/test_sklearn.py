@@ -1124,11 +1124,6 @@ def test_first_metric_only():
     iter_min = min([iter_min_l1, iter_min_l2])
     iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
-    # training data as eval_set
-    params_fit['eval_set'] = (X_train, y_train)
-    fit_and_check(['training'], ['l2'], 30, False)
-    fit_and_check(['training'], ['l2'], 30, True)
-
     # feval
     params['metric'] = 'None'
     params_fit['eval_metric'] = lambda preds, train_data: [decreasing_metric(preds, train_data),

@@ -29,17 +29,18 @@ def test_register_logger(tmp_path):
                   [1, 2, 3]],
                  dtype=np.float32)
     y = np.array([0, 1, 1, 0])
-    lgb_data = lgb.Dataset(X, y)
+    lgb_train = lgb.Dataset(X, y)
+    lgb_valid = lgb.Dataset(X, y)  # different object for early-stopping
 
     eval_records = {}
     callbacks = [
         lgb.record_evaluation(eval_records),
         lgb.log_evaluation(2),
-        lgb.early_stopping(4)
+        lgb.early_stopping(10)
     ]
     lgb.train({'objective': 'binary', 'metric': ['auc', 'binary_error']},
-              lgb_data, num_boost_round=10, feval=dummy_metric,
-              valid_sets=[lgb_data], categorical_feature=[1], callbacks=callbacks)
+              lgb_train, num_boost_round=10, feval=dummy_metric,
+              valid_sets=[lgb_valid], categorical_feature=[1], callbacks=callbacks)
 
     lgb.plot_metric(eval_records)
 
@@ -51,32 +52,32 @@ INFO | [LightGBM] [Info] Number of data points in the train set: 4, number of us
 INFO | [LightGBM] [Info] [binary:BoostFromScore]: pavg=0.500000 -> initscore=0.000000
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
-INFO | Training until validation scores don't improve for 4 rounds
+INFO | Training until validation scores don't improve for 10 rounds
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
-INFO | [2]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
-INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
-DEBUG | In dummy_metric
-INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
-DEBUG | In dummy_metric
-INFO | [4]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
+INFO | [2]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
-INFO | [6]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
+INFO | [4]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
-INFO | [8]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
+INFO | [6]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
 INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
 DEBUG | In dummy_metric
-INFO | [10]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
+INFO | [8]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
+INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
+DEBUG | In dummy_metric
+INFO | [LightGBM] [Warning] Stopped training because there are no more leaves that meet the split requirements
+DEBUG | In dummy_metric
+INFO | [10]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
 INFO | Did not meet early stopping. Best iteration is:
-[1]	training's auc: 0.5	training's binary_error: 0.5	training's dummy_metric: 1
+[1]	valid_0's auc: 0.5	valid_0's binary_error: 0.5	valid_0's dummy_metric: 1
 WARNING | More than one metric available, picking one to plot.
 """.strip()
 
@@ -90,11 +91,15 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations.",
         "INFO | [LightGBM] [Info] LightGBM using CUDA trainer with DP float!!"
     ]
+    cuda_exp_lines = [
+        "INFO | [LightGBM] [Warning] Metric auc is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
+        "INFO | [LightGBM] [Warning] Metric binary_error is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
+    ]
     with open(log_filename, "rt", encoding="utf-8") as f:
         actual_log = f.read().strip()
         actual_log_wo_gpu_stuff = []
         for line in actual_log.split("\n"):
-            if not any(line.startswith(gpu_line) for gpu_line in gpu_lines):
+            if not any(line.startswith(gpu_or_cuda_exp_line) for gpu_or_cuda_exp_line in gpu_lines + cuda_exp_lines):
                 actual_log_wo_gpu_stuff.append(line)
 
     assert "\n".join(actual_log_wo_gpu_stuff) == expected_log

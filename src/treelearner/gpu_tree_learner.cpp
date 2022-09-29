@@ -266,7 +266,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   ptr_pinned_gradients_ = queue_.enqueue_map_buffer(pinned_gradients_, boost::compute::command_queue::map_write_invalidate_region,
                                                     0, allocated_num_data_ * sizeof(score_t));
   pinned_hessians_ = boost::compute::buffer();  // deallocate
-  pinned_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
+  pinned_hessians_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
                                              boost::compute::memory_object::read_write | boost::compute::memory_object::use_host_ptr,
                                              ordered_hessians_.data());
   ptr_pinned_hessians_ = queue_.enqueue_map_buffer(pinned_hessians_, boost::compute::command_queue::map_write_invalidate_region,
@@ -277,7 +277,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   device_gradients_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
                       boost::compute::memory_object::read_only, nullptr);
   device_hessians_ = boost::compute::buffer();  // deallocate
-  device_hessians_  = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
+  device_hessians_ = boost::compute::buffer(ctx_, allocated_num_data_ * sizeof(score_t),
                       boost::compute::memory_object::read_only, nullptr);
   // allocate feature mask, for disabling some feature-groups' histogram calculation
   feature_masks_.resize(num_dense_feature4_ * dword_features_);
