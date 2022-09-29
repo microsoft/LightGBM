@@ -1,4 +1,5 @@
 #!/bin/bash
+export OMP_NUM_THREADS=1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
