@@ -16,7 +16,7 @@ import lightgbm as lgb
 
 from .utils import sklearn_multiclass_custom_objective
 
-if not platform.startswith('linux'):
+if not platform.startswith(('linux', 'darwin')):
     pytest.skip('lightgbm.dask is currently supported in Linux environments', allow_module_level=True)
 if machine() != 'x86_64':
     pytest.skip('lightgbm.dask tests are currently skipped on some architectures like arm64', allow_module_level=True)
