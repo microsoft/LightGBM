@@ -177,7 +177,7 @@ def _is_numeric(obj: Any) -> bool:
         return False
 
 
-def is_numpy_1d_array(data: Any) -> bool:
+def _is_numpy_1d_array(data: Any) -> bool:
     """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
@@ -205,7 +205,7 @@ def is_1d_list(data: Any) -> bool:
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
-        is_numpy_1d_array(data)
+        _is_numpy_1d_array(data)
         or is_numpy_column_array(data)
         or is_1d_list(data)
         or isinstance(data, pd_Series)
@@ -214,7 +214,7 @@ def _is_1d_collection(data: Any) -> bool:
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
-    if is_numpy_1d_array(data):
+    if _is_numpy_1d_array(data):
         return cast_numpy_array_to_dtype(data, dtype)
     elif is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
@@ -320,7 +320,7 @@ def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
         return ""
     pairs = []
     for key, val in data.items():
-        if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
+        if isinstance(val, (list, tuple, set)) or _is_numpy_1d_array(val):
             def to_string(x):
                 if isinstance(x, list):
                     return f"[{','.join(map(str, x))}]"
@@ -515,7 +515,7 @@ def c_float_array(data):
     """Get pointer of float numpy array / list."""
     if is_1d_list(data):
         data = np.array(data, copy=False)
-    if is_numpy_1d_array(data):
+    if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.float32:
@@ -535,7 +535,7 @@ def c_int_array(data):
     """Get pointer of int numpy array / list."""
     if is_1d_list(data):
         data = np.array(data, copy=False)
-    if is_numpy_1d_array(data):
+    if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.int32:
