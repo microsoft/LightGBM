@@ -327,10 +327,10 @@ namespace LightGBM {
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
-    int non_na_cnt = 0; // number of non-NaN values.
+    int tmp_num_sample_values = 0;
     for (int i = 0; i < num_sample_values; ++i) {
       if (!std::isnan(values[i])) {
-        values[non_na_cnt++] = values[i];
+        values[tmp_num_sample_values++] = values[i];
       }
     }
     if (!use_missing) {
@@ -338,14 +338,14 @@ namespace LightGBM {
     } else if (zero_as_missing) {
       missing_type_ = MissingType::Zero;
     } else {
-      if (non_na_cnt == num_sample_values) {
+      if (tmp_num_sample_values == num_sample_values) {
         missing_type_ = MissingType::None;
       } else {
         missing_type_ = MissingType::NaN;
-        na_cnt = num_sample_values - non_na_cnt;
+        na_cnt = num_sample_values - tmp_num_sample_values;
       }
     }
-    num_sample_values = non_na_cnt;
+    num_sample_values = tmp_num_sample_values;
 
     bin_type_ = bin_type;
     default_bin_ = 0;
