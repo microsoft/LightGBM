@@ -13,7 +13,6 @@ from enum import Enum, auto
 from functools import partial
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
-import time
 
 import numpy as np
 import scipy.sparse as ss
@@ -330,8 +329,6 @@ def _train_part(
             eval_names=local_eval_names,
             **kwargs
         )
-
-    time.sleep(5)
 
     if n_evals:
         # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.

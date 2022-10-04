@@ -260,7 +260,8 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             "boosting_type": boosting_type,
             "tree_learner": tree_learner,
             "n_estimators": 50,
-            "num_leaves": 31
+            "num_leaves": 31,
+            "verbose": 0
         }
         if boosting_type == 'rf':
             params.update({
@@ -450,7 +451,7 @@ def test_classifier_custom_objective(output, task, cluster):
         params = {
             "n_estimators": 50,
             "num_leaves": 31,
-            "verbose": -1,
+            "verbose": 0,
             "seed": 708,
             "deterministic": True,
             "force_col_wise": True
@@ -593,6 +594,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
             "random_state": 42,
             "num_leaves": 31,
             "n_estimators": 20,
+            "verbose": 0
         }
         if boosting_type == 'rf':
             params.update({
@@ -843,7 +845,8 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             "random_state": 42,
             "n_estimators": 50,
             "num_leaves": 20,
-            "min_child_samples": 1
+            "min_child_samples": 1,
+            "verbose": 0
         }
         if boosting_type == 'rf':
             params.update({
