@@ -304,33 +304,37 @@ def _train_part(
         if eval_class_weight:
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
-    model = model_factory(**params)
-    if is_ranker:
-        model.fit(
-            data,
-            label,
-            sample_weight=weight,
-            init_score=init_score,
-            group=group,
-            eval_set=local_eval_set,
-            eval_sample_weight=local_eval_sample_weight,
-            eval_init_score=local_eval_init_score,
-            eval_group=local_eval_group,
-            eval_names=local_eval_names,
-            **kwargs
-        )
-    else:
-        model.fit(
-            data,
-            label,
-            sample_weight=weight,
-            init_score=init_score,
-            eval_set=local_eval_set,
-            eval_sample_weight=local_eval_sample_weight,
-            eval_init_score=local_eval_init_score,
-            eval_names=local_eval_names,
-            **kwargs
-        )
+    try:
+        model = model_factory(**params)
+        if is_ranker:
+            model.fit(
+                data,
+                label,
+                sample_weight=weight,
+                init_score=init_score,
+                group=group,
+                eval_set=local_eval_set,
+                eval_sample_weight=local_eval_sample_weight,
+                eval_init_score=local_eval_init_score,
+                eval_group=local_eval_group,
+                eval_names=local_eval_names,
+                **kwargs
+            )
+        else:
+            model.fit(
+                data,
+                label,
+                sample_weight=weight,
+                init_score=init_score,
+                eval_set=local_eval_set,
+                eval_sample_weight=local_eval_sample_weight,
+                eval_init_score=local_eval_init_score,
+                eval_names=local_eval_names,
+                **kwargs
+            )
+    finally:
+        if model.booster_:
+            model.booster_.free_network()
 
     if n_evals:
         # ensure that expected keys for evals_result_ and best_score_ exist regardless of padding.
