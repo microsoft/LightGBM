@@ -451,6 +451,7 @@ namespace LightGBM {
         // will ignore the categorical of small counts
         int cut_cnt = static_cast<int>(
             Common::RoundInt((total_sample_cnt - na_cnt) * 0.99f));
+        size_t cur_cat_idx = 0; // index of current category.
         categorical_2_bin_.clear();
         bin_2_categorical_.clear();
         int used_cnt = 0;
@@ -465,7 +466,6 @@ namespace LightGBM {
         bin_2_categorical_.push_back(-1);
         categorical_2_bin_[-1] = 0;
         cnt_in_bin.push_back(0);
-        size_t cur_cat_idx = 0; // index of current category.
         num_bin_ = 1;
         while (cur_cat_idx < distinct_values_int.size()
                && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
