@@ -6,6 +6,7 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
+import gc
 import socket
 from collections import defaultdict, namedtuple
 from copy import deepcopy
@@ -175,6 +176,7 @@ def _train_part(
     time_out: int = 120,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
+    gc.collect()
     network_params = {
         'machines': machines,
         'local_listen_port': local_listen_port,
