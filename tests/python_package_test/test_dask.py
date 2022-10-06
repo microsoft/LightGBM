@@ -1506,9 +1506,6 @@ def test_errors(cluster):
             )
             assert 'foo' in str(info.value)
 
-    # don't leave the cluster in an error state
-    client.restart()
-
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
@@ -1768,7 +1765,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
             'random_state': 0,
             'time_out': 5
         }
-        model = model_factory(**params)
+        model = model_factory(**params, client=client)
         model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
         assert model.fitted_
 
