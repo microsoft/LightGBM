@@ -1485,8 +1485,14 @@ def test_error_on_feature_parallel_tree_learner(cluster):
         with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
             dask_regressor = dask_regressor.fit(X, y)
 
+    # don't leave the cluster in an error state
+    client.restart()
+
 
 def test_errors(cluster):
+    # maybe the logs tricked us, and instead of the problem being
+    # in test_training_succeeds_even_if_some_workers_do_not_have_any_data(),
+    # it's with this test that leaves the cluster in a bad state?
     with Client(cluster) as client:
         def f(part):
             raise Exception('foo')
@@ -1502,6 +1508,9 @@ def test_errors(cluster):
                 model_factory=lgb.LGBMClassifier
             )
             assert 'foo' in str(info.value)
+
+    # don't leave the cluster in an error state
+    client.restart()
 
 
 @pytest.mark.parametrize('task', tasks)
