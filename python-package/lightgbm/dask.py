@@ -304,8 +304,8 @@ def _train_part(
         if eval_class_weight:
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
+    model = model_factory(**params)
     try:
-        model = model_factory(**params)
         if is_ranker:
             model.fit(
                 data,
@@ -333,7 +333,7 @@ def _train_part(
                 **kwargs
             )
     finally:
-        if model.booster_:
+        if model.fitted_:
             model.booster_.free_network()
 
     if n_evals:
