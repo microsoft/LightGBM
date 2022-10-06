@@ -333,7 +333,7 @@ def _train_part(
                 **kwargs
             )
     finally:
-        if model.fitted_:
+        if getattr(model, "fitted_", False):
             model.booster_.free_network()
 
     if n_evals:
