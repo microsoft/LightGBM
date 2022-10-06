@@ -592,7 +592,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
             "boosting_type": boosting_type,
             "random_state": 42,
             "num_leaves": 31,
-            "n_estimators": 20
+            "n_estimators": 20,
         }
         if boosting_type == 'rf':
             params.update({
@@ -1495,7 +1495,7 @@ def test_errors(cluster):
                 client=client,
                 data=df,
                 label=df.x,
-                params={"time_out": 1},
+                params={},
                 model_factory=lgb.LGBMClassifier
             )
             assert 'foo' in str(info.value)
