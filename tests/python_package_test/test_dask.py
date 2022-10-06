@@ -1618,7 +1618,6 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
 
 @pytest.mark.parametrize('task', tasks)
 def test_machines_should_be_used_if_provided(task, cluster):
-    pytest.skip("this test seems to be causing some problems")
     with Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(
             objective=task,
@@ -1643,6 +1642,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
                 f"{workers_hostname}:{port}"
                 for port in open_ports
             ]),
+            time_out=1
         )
 
         # test that "machines" is actually respected by creating a socket that uses
