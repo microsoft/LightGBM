@@ -1513,27 +1513,40 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, outpu
     with Client(cluster) as client:
         def collection_to_single_partition(collection):
             """Merge the parts of a Dask collection into a single partition."""
+            print("line 1516")
             if collection is None:
+                print("line 1518")
                 return
+            print("line 1520")
             if isinstance(collection, da.Array):
+                print("line 1522")
                 return collection.rechunk(*collection.shape)
+            print("line 1524")
             return collection.repartition(npartitions=1)
 
+        print("line 1527")
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective=task,
             output=output,
             group=None
         )
 
+        print("line 1534")
         dask_model_factory = task_to_dask_factory[task]
         local_model_factory = task_to_local_factory[task]
 
+        print("line 1538")
         dX = collection_to_single_partition(dX)
+        print("line 1540")
         dy = collection_to_single_partition(dy)
+        print("line 1542")
         dw = collection_to_single_partition(dw)
+        print("line 1544")
         dg = collection_to_single_partition(dg)
+        print("line 1546")
 
         n_workers = len(client.scheduler_info()['workers'])
+        print("line 1549")
         assert n_workers > 1
         assert dX.npartitions == 1
 
@@ -1544,15 +1557,24 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, outpu
         }
 
         dask_model = dask_model_factory(tree='data', client=client, **params)
+        print("line 1560")
         dask_model.fit(dX, dy, group=dg, sample_weight=dw)
+        print("line 1562")
         dask_preds = dask_model.predict(dX).compute()
+        print("line 1564")
 
         local_model = local_model_factory(**params)
+        print("line 1566")
         if task == 'ranking':
+            print("line 1569")
             local_model.fit(X, y, group=g, sample_weight=w)
+            print("line 1571")
         else:
+            print("line 1573")
             local_model.fit(X, y, sample_weight=w)
+            print("line 1575")
         local_preds = local_model.predict(X)
+        print("line 1577")
 
         assert assert_eq(dask_preds, local_preds)
         print("if you see this message and the test is timing out, the issue is in closing the cluster")
