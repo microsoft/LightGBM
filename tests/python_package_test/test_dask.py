@@ -54,7 +54,7 @@ task_to_local_factory = {
     'ranking': lgb.LGBMRanker
 }
 
-TEST_TIMEOUT_MINUTES = 1
+TEST_TIMEOUT_MINUTES = 5
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),

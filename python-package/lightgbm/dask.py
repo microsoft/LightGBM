@@ -173,7 +173,7 @@ def _train_part(
     local_listen_port: int,
     num_machines: int,
     return_model: bool,
-    time_out: int = 1,
+    time_out: int = 120,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     gc.collect()
@@ -778,7 +778,7 @@ def _train(
             machines=machines,
             local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
-            time_out=params.get('time_out', 1),
+            time_out=params.get('time_out', 120),
             return_model=(worker == master_worker),
             workers=[worker],
             allow_other_workers=False,
