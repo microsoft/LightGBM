@@ -332,6 +332,7 @@ def _train_part(
                 eval_names=local_eval_names,
                 **kwargs
             )
+
     finally:
         if getattr(model, "fitted_", False):
             model.booster_.free_network()

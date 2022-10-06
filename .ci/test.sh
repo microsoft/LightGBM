@@ -185,12 +185,12 @@ if [[ $TASK == "gpu" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
-        pytest -s -vvv -Wall $BUILD_DIRECTORY/tests/python_package_test/test_dask.py || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest -s -vvv -Wall $BUILD_DIRECTORY/tests/python_package_test/test_dask.py || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON ..

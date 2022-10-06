@@ -54,8 +54,6 @@ task_to_local_factory = {
     'ranking': lgb.LGBMRanker
 }
 
-TEST_TIMEOUT_MINUTES = 5
-
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
     pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
@@ -275,7 +273,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
 
         dask_classifier = lgb.DaskLGBMClassifier(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             **params
         )
         dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
@@ -361,7 +359,7 @@ def test_classifier_pred_contrib(output, task, cluster):
 
         dask_classifier = lgb.DaskLGBMClassifier(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='data',
             **params
         )
@@ -471,7 +469,7 @@ def test_classifier_custom_objective(output, task, cluster):
 
         dask_classifier = lgb.DaskLGBMClassifier(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='data',
             **params
         )
@@ -568,7 +566,7 @@ def test_training_does_not_fail_on_port_conflicts(cluster):
             s.bind((workers_hostname, lightgbm_default_port))
             dask_classifier = lgb.DaskLGBMClassifier(
                 client=client,
-                time_out=TEST_TIMEOUT_MINUTES,
+                time_out=5,
                 n_estimators=5,
                 num_leaves=5
             )
@@ -606,7 +604,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
 
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree=tree_learner,
             **params
         )
@@ -679,7 +677,7 @@ def test_regressor_pred_contrib(output, cluster):
 
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='data',
             **params
         )
@@ -776,7 +774,7 @@ def test_regressor_custom_objective(output, cluster):
 
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='data',
             **params
         )
@@ -858,7 +856,7 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
 
         dask_ranker = lgb.DaskLGBMRanker(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner_type=tree_learner,
             **params
         )
@@ -956,7 +954,7 @@ def test_ranker_custom_objective(output, cluster):
 
         dask_ranker = lgb.DaskLGBMRanker(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner_type="data",
             **params
         )
@@ -1215,7 +1213,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         model_factory = task_to_dask_factory[task]
 
         params = {
-            "time_out": TEST_TIMEOUT_MINUTES,
+            "time_out": 5,
             "n_estimators": 1,
             "num_leaves": 2
         }
@@ -1291,7 +1289,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             model_factory = task_to_dask_factory[task]
 
             params = {
-                "time_out": TEST_TIMEOUT_MINUTES,
+                "time_out": 5,
                 "n_estimators": 1,
                 "num_leaves": 2
             }
@@ -1440,7 +1438,7 @@ def test_warns_and_continues_on_unrecognized_tree_learner(cluster):
         y = da.random.random((1e3, 1))
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='some-nonsense-value',
             n_estimators=1,
             num_leaves=2
@@ -1460,7 +1458,7 @@ def test_training_respects_tree_learner_aliases(tree_learner, cluster):
         dask_model = dask_factory(
             client=client,
             tree_learner=tree_learner,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             n_estimators=10,
             num_leaves=15
         )
@@ -1479,7 +1477,7 @@ def test_error_on_feature_parallel_tree_learner(cluster):
         client.rebalance()
         dask_regressor = lgb.DaskLGBMRegressor(
             client=client,
-            time_out=TEST_TIMEOUT_MINUTES,
+            time_out=5,
             tree_learner='feature_parallel',
             n_estimators=1,
             num_leaves=2
@@ -1541,7 +1539,7 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, outpu
         assert dX.npartitions == 1
 
         params = {
-            'time_out': TEST_TIMEOUT_MINUTES,
+            'time_out': 5,
             'random_state': 42,
             'num_leaves': 10
         }
@@ -1740,7 +1738,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
             'n_estimators': 1,
             'num_leaves': 3,
             'random_state': 0,
-            'time_out': TEST_TIMEOUT_MINUTES
+            'time_out': 5
         }
         model = model_factory(**params)
         model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
@@ -1765,7 +1763,7 @@ def test_init_score(task, output, cluster):
         params = {
             'n_estimators': 1,
             'num_leaves': 2,
-            'time_out': TEST_TIMEOUT_MINUTES
+            'time_out': 5
         }
         init_score = random.random()
         size_factor = 1
@@ -1803,7 +1801,7 @@ def _tested_estimators():
 @pytest.mark.parametrize("check", sklearn_checks_to_run())
 def test_sklearn_integration(estimator, check, cluster):
     with Client(cluster) as client:
-        estimator.set_params(local_listen_port=18000, time_out=TEST_TIMEOUT_MINUTES)
+        estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
 
@@ -1834,7 +1832,7 @@ def test_predict_with_raw_score(task, output, cluster):
             'client': client,
             'n_estimators': 1,
             'num_leaves': 2,
-            'time_out': TEST_TIMEOUT_MINUTES,
+            'time_out': 5,
             'min_sum_hessian': 0
         }
         model = model_factory(**params)
