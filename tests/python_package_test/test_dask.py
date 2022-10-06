@@ -260,8 +260,7 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             "boosting_type": boosting_type,
             "tree_learner": tree_learner,
             "n_estimators": 50,
-            "num_leaves": 31,
-            "verbose": 1
+            "num_leaves": 31
         }
         if boosting_type == 'rf':
             params.update({
@@ -451,7 +450,7 @@ def test_classifier_custom_objective(output, task, cluster):
         params = {
             "n_estimators": 50,
             "num_leaves": 31,
-            "verbose": 1,
+            "verbose": -1,
             "seed": 708,
             "deterministic": True,
             "force_col_wise": True
@@ -593,8 +592,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
             "boosting_type": boosting_type,
             "random_state": 42,
             "num_leaves": 31,
-            "n_estimators": 20,
-            "verbose": 1
+            "n_estimators": 20
         }
         if boosting_type == 'rf':
             params.update({
@@ -845,8 +843,7 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
             "random_state": 42,
             "n_estimators": 50,
             "num_leaves": 20,
-            "min_child_samples": 1,
-            "verbose": 1
+            "min_child_samples": 1
         }
         if boosting_type == 'rf':
             params.update({
@@ -1487,9 +1484,6 @@ def test_error_on_feature_parallel_tree_learner(cluster):
 
 
 def test_errors(cluster):
-    # maybe the logs tricked us, and instead of the problem being
-    # in test_training_succeeds_even_if_some_workers_do_not_have_any_data(),
-    # it's with this test that leaves the cluster in a bad state?
     with Client(cluster) as client:
         def f(part):
             raise Exception('foo')
@@ -1510,46 +1504,34 @@ def test_errors(cluster):
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
 def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, output, cluster):
+    pytest.skip("skipping due to timeout issues discussed in https://github.com/microsoft/LightGBM/pull/5510")
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
     with Client(cluster) as client:
         def collection_to_single_partition(collection):
             """Merge the parts of a Dask collection into a single partition."""
-            print("line 1516")
             if collection is None:
-                print("line 1518")
                 return
-            print("line 1520")
             if isinstance(collection, da.Array):
-                print("line 1522")
                 return collection.rechunk(*collection.shape)
-            print("line 1524")
             return collection.repartition(npartitions=1)
 
-        print("line 1527")
         X, y, w, g, dX, dy, dw, dg = _create_data(
             objective=task,
             output=output,
             group=None
         )
 
-        print("line 1534")
         dask_model_factory = task_to_dask_factory[task]
         local_model_factory = task_to_local_factory[task]
 
-        print("line 1538")
         dX = collection_to_single_partition(dX)
-        print("line 1540")
         dy = collection_to_single_partition(dy)
-        print("line 1542")
         dw = collection_to_single_partition(dw)
-        print("line 1544")
         dg = collection_to_single_partition(dg)
-        print("line 1546")
 
         n_workers = len(client.scheduler_info()['workers'])
-        print("line 1549")
         assert n_workers > 1
         assert dX.npartitions == 1
 
@@ -1560,27 +1542,17 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, outpu
         }
 
         dask_model = dask_model_factory(tree='data', client=client, **params)
-        print("line 1560")
         dask_model.fit(dX, dy, group=dg, sample_weight=dw)
-        print("line 1562")
         dask_preds = dask_model.predict(dX).compute()
-        print("line 1564")
 
         local_model = local_model_factory(**params)
-        print("line 1566")
         if task == 'ranking':
-            print("line 1569")
             local_model.fit(X, y, group=g, sample_weight=w)
-            print("line 1571")
         else:
-            print("line 1573")
             local_model.fit(X, y, sample_weight=w)
-            print("line 1575")
         local_preds = local_model.predict(X)
-        print("line 1577")
 
         assert assert_eq(dask_preds, local_preds)
-        print("if you see this message and the test is timing out, the issue is in closing the cluster")
 
 
 @pytest.mark.parametrize('task', tasks)
@@ -1765,7 +1737,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
             'random_state': 0,
             'time_out': 5
         }
-        model = model_factory(**params, client=client)
+        model = model_factory(**params)
         model.fit(dX, dy_col_array, sample_weight=dw, group=dg)
         assert model.fitted_
 
