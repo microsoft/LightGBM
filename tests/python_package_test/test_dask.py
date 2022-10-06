@@ -1485,9 +1485,6 @@ def test_error_on_feature_parallel_tree_learner(cluster):
         with pytest.raises(lgb.basic.LightGBMError, match='Do not support feature parallel in c api'):
             dask_regressor = dask_regressor.fit(X, y)
 
-    # don't leave the cluster in an error state
-    client.restart()
-
 
 def test_errors(cluster):
     # maybe the logs tricked us, and instead of the problem being
@@ -1504,7 +1501,7 @@ def test_errors(cluster):
                 client=client,
                 data=df,
                 label=df.x,
-                params={},
+                params={"time_out": 1},
                 model_factory=lgb.LGBMClassifier
             )
             assert 'foo' in str(info.value)
