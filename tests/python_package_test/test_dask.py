@@ -1555,6 +1555,7 @@ def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, outpu
         local_preds = local_model.predict(X)
 
         assert assert_eq(dask_preds, local_preds)
+        print("if you see this message and the test is timing out, the issue is in closing the cluster")
 
 
 @pytest.mark.parametrize('task', tasks)
