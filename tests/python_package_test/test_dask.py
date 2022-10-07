@@ -1639,7 +1639,6 @@ def test_machines_should_be_used_if_provided(task, cluster):
                 f"{workers_hostname}:{port}"
                 for port in open_ports
             ]),
-            time_out=1
         )
 
         # test that "machines" is actually respected by creating a socket that uses
