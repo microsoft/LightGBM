@@ -251,6 +251,29 @@ Rscript -e " \
     "
 ```
 
+Updating Documentation
+----------------------
+
+The R package uses [`{roxygen2}`](https://CRAN.R-project.org/package=roxygen2) to generate its documentation.
+The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
+To regenerate those files, run the following.
+
+```shell
+Rscript \
+    --vanilla \
+    -e "install.packages('roxygen2', repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh --no-build-vignettes
+R CMD INSTALL \
+  --with-keep.source \
+  ./lightgbm_*.tar.gz
+
+cd R-package
+Rscript \
+    --vanilla \
+    -e "roxygen2::roxygenize(load = 'installed')"
+```
+
 Preparing a CRAN Package
 ------------------------
 
