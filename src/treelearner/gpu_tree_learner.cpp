@@ -233,7 +233,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   num_dense_feature4_ = (num_dense_feature_groups_ + (dword_features_ - 1)) / dword_features_;
   // leave some safe margin for prefetching
   // 256 work-items per workgroup. Each work-item prefetches one tuple for that feature
-  int allocated_num_data_ = num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature);
+  data_size_t allocated_num_data_ = num_data_ + 256 * (1 << kMaxLogWorkgroupsPerFeature);
   // clear sparse/dense maps
   dense_feature_group_map_.clear();
   device_bin_mults_.clear();
@@ -391,7 +391,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
         *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[5]),
         *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[6]),
         *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iters[7])};
-      for (int j = 0; j < num_data_; ++j) {
+      for (data_size_t j = 0; j < num_data_; ++j) {
         host4[j].s[0] = (uint8_t)((iters[0].RawGet(j) * dev_bin_mult[0] + ((j+0) & (dev_bin_mult[0] - 1)))
                       |((iters[1].RawGet(j) * dev_bin_mult[1] + ((j+1) & (dev_bin_mult[1] - 1))) << 4));
         host4[j].s[1] = (uint8_t)((iters[2].RawGet(j) * dev_bin_mult[2] + ((j+2) & (dev_bin_mult[2] - 1)))
@@ -409,13 +409,13 @@ void GPUTreeLearner::AllocateGPUMemory() {
         if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           // Dense bin
           DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
-          for (int j = 0; j < num_data_; ++j) {
+          for (data_size_t j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
         } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           // Dense 4-bit bin
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
-          for (int j = 0; j < num_data_; ++j) {
+          for (data_size_t j = 0; j < num_data_; ++j) {
             host4[j].s[s_idx] = (uint8_t)(iter.RawGet(j) * dev_bin_mult[s_idx] + ((j+s_idx) & (dev_bin_mult[s_idx] - 1)));
           }
         } else {
@@ -452,7 +452,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
         if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
-          for (int j = 0; j < num_data_; ++j) {
+          for (data_size_t j = 0; j < num_data_; ++j) {
             host4[j].s[i >> 1] |= (uint8_t)((iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                                 + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)))
                                << ((i & 1) << 2));
@@ -465,14 +465,14 @@ void GPUTreeLearner::AllocateGPUMemory() {
         if (dynamic_cast<DenseBinIterator<uint8_t, false>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, false> iter = *static_cast<DenseBinIterator<uint8_t, false>*>(bin_iter);
           #pragma omp parallel for schedule(static)
-          for (int j = 0; j < num_data_; ++j) {
+          for (data_size_t j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
         } else if (dynamic_cast<DenseBinIterator<uint8_t, true>*>(bin_iter) != 0) {
           DenseBinIterator<uint8_t, true> iter = *static_cast<DenseBinIterator<uint8_t, true>*>(bin_iter);
           #pragma omp parallel for schedule(static)
-          for (int j = 0; j < num_data_; ++j) {
+          for (data_size_t j = 0; j < num_data_; ++j) {
             host4[j].s[i] = (uint8_t)(iter.RawGet(j) * device_bin_mults_[copied_feature4 * dword_features_ + i]
                           + ((j+i) & (device_bin_mults_[copied_feature4 * dword_features_ + i] - 1)));
           }
@@ -486,7 +486,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
     // fill the leftover features
     if (dword_features_ == 8) {
       #pragma omp parallel for schedule(static)
-      for (int j = 0; j < num_data_; ++j) {
+      for (data_size_t j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
           host4[j].s[i >> 1] |= (uint8_t)((j & 0xf) << ((i & 1) << 2));
@@ -494,7 +494,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
       }
     } else if (dword_features_ == 4) {
       #pragma omp parallel for schedule(static)
-      for (int j = 0; j < num_data_; ++j) {
+      for (data_size_t j = 0; j < num_data_; ++j) {
         for (int i = k; i < dword_features_; ++i) {
           // fill this empty feature with some "random" value
           host4[j].s[i] = (uint8_t)j;

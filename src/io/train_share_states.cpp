@@ -75,7 +75,7 @@ void MultiValBinWrapper::HistMerge(std::vector<hist_t,
     const data_size_t end = std::min<data_size_t>(start + bin_block_size, num_bin_);
     for (data_size_t tid = 1; tid < n_data_block_; ++tid) {
       auto src_ptr = hist_buf->data() + static_cast<size_t>(num_bin_aligned_) * 2 * (tid - 1);
-      for (int i = start * 2; i < end * 2; ++i) {
+      for (data_size_t i = start * 2; i < end * 2; ++i) {
         dst[i] += src_ptr[i];
       }
     }

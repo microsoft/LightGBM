@@ -489,6 +489,11 @@ if(USE_SWIG)
     )
   else()
     add_custom_command(
+        TARGET _lightgbm_swig_swig_compilation
+        POST_BUILD
+        COMMAND sed -i 's/long long const/int64_t const/g' java/lightgbmlibJAVA_wrap.cxx
+    )
+    add_custom_command(
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java

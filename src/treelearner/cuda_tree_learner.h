@@ -235,7 +235,7 @@ class CUDATreeLearner: public SerialTreeLearner {
     std::vector<float> kernel_time_;  // measure histogram kernel time
     std::vector<std::chrono::duration<double, std::milli>> kernel_input_wait_time_;
     int num_gpu_;
-    int allocated_num_data_;  // allocated data instances
+    data_size_t allocated_num_data_;  // allocated data instances
     pthread_t **cpu_threads_;  // pthread, 1 cpu thread / gpu
 };
 
