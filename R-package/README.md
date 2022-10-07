@@ -281,7 +281,7 @@ Rscript -e " \
 Updating Documentation
 ----------------------
 
-The R package uses [`{roxygen2}`](https://cran.r-project.org/web/packages/roxygen2/index.html) to generate its documentation.
+The R package uses [`{roxygen2}`](https://CRAN.R-project.org/package=roxygen2) to generate its documentation.
 The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
 To regenerate those files, run the following.
 
