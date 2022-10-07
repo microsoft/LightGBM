@@ -562,7 +562,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
 
     bad_pandas_dtypes = [
         f'{column_name}: {pandas_dtype}'
-        for column_name, pandas_dtype in pandas_dtypes_series.iteritems()
+        for column_name, pandas_dtype in pandas_dtypes_series.items()
         if not is_allowed_numpy_dtype(pandas_dtype.type)
     ]
     if bad_pandas_dtypes:
