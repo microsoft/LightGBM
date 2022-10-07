@@ -1504,6 +1504,7 @@ def test_errors(cluster):
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
 def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, output, cluster):
+    pytest.skip("skipping due to timeout issues discussed in https://github.com/microsoft/LightGBM/pull/5510")
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
