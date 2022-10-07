@@ -71,7 +71,7 @@ typedef uint acc_int_type;
 #define AMD_USE_DS_ADD_F32 0
 #endif
 
-typedef signed long int data_size_t;
+typedef ulong data_size_t;
 typedef float score_t;
 
 
