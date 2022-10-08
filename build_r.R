@@ -39,7 +39,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 }
 parsed_args <- .parse_args(args)
 
-SKIP_VIGNETTES <- "--no-build-vignettes" %in% parsed_args[["flags"]]
+SKIP_VIGNETTES <- TRUE
 USING_GPU <- "--use-gpu" %in% parsed_args[["flags"]]
 USING_MINGW <- "--use-mingw" %in% parsed_args[["flags"]]
 USING_MSYS2 <- "--use-msys2" %in% parsed_args[["flags"]]

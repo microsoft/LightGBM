@@ -30,7 +30,7 @@
 set -e
 
 # Default values of arguments
-BUILD_VIGNETTES=true
+BUILD_VIGNETTES=false
 LGB_R_EXECUTABLE=R
 
 while [ $# -gt 0 ]; do
