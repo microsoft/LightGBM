@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - master
+    - release/*
 
 env:
   # hack to get around this:
