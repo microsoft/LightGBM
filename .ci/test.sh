@@ -36,13 +36,20 @@ cd $BUILD_DIRECTORY
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda install -q -y -n $CONDA_ENV -c conda-forge doxygen rstcheck
-    pip install --user -r requirements.txt
+    conda env update \
+        -n $CONDA_ENV \
+        --file ./env.yml || exit -1
+    conda install \
+        -q \
+        -y \
+        -n $CONDA_ENV \
+            doxygen \
+            'rstcheck>=6.0.0' || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
@@ -62,16 +69,13 @@ fi
 
 if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
+        cmakelint \
+        cpplint \
+        isort \
+        mypy \
         pycodestyle \
         pydocstyle \
-        r-stringi  # stringi needs to be installed separate from r-lintr to avoid issues like 'unable to load shared object stringi.so'
-    # r-xfun below has to be upgraded because lintr requires > 0.19 for that package
-    conda install -q -y -n $CONDA_ENV \
-        -c conda-forge \
-            libxml2 \
-            "r-xfun>=0.19" \
-            "r-lintr>=2.0"
-    pip install --user cmakelint cpplint isort mypy
+        "r-lintr>=3.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -82,7 +86,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting C++ code"
     cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
     cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
-    cmakelint --linelength=120 ${cmake_files} || true
+    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
     exit 0
 fi
 
@@ -114,15 +118,27 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-# temporary fix for https://github.com/microsoft/LightGBM/issues/4769
-if [[ $PYTHON_VERSION == "3.6" ]]; then
-    DASK_DEPENDENCIES="dask distributed"
+# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    DEPENDENCIES="dask distributed"
 else
-    DASK_DEPENDENCIES="dask=2021.9.1 distributed=2021.9.1"
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
 fi
 
-conda install -q -y -n $CONDA_ENV cloudpickle ${DASK_DEPENDENCIES} joblib matplotlib numpy pandas psutil pytest scikit-learn scipy
-pip install graphviz  # python-graphviz from Anaconda is not allowed to be installed with Python 3.9
+conda install -q -y -n $CONDA_ENV \
+    cloudpickle \
+    ${DEPENDENCIES} \
+    joblib \
+    matplotlib \
+    numpy \
+    pandas \
+    psutil \
+    pytest \
+    scikit-learn || exit -1
+
+# python-graphviz has to be installed separately to prevent conda from downgrading to pypy
+conda install -q -y -n $CONDA_ENV \
+    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -140,7 +156,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_14_x86_64.macosx_10_15_x86_64.macosx_11_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
@@ -168,32 +184,52 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu --install-option="--opencl-include-dir=$AMDAPPSDK_PATH/include/" || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu --opencl-include-dir="$AMDAPPSDK_PATH/include/" || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -DUSE_GPU=ON -DOpenCL_INCLUDE_DIR=$AMDAPPSDK_PATH/include/ ..
+        cmake -DUSE_GPU=ON ..
     fi
-elif [[ $TASK == "cuda" ]]; then
-    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
-    grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
+    if [[ $TASK == "cuda" ]]; then
+        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    else
+        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda_exp";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'std::string device_type = "cuda_exp"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+        # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
+        sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
+        grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    fi
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        else
+            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda-exp || exit -1
+        fi
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        if [[ $TASK == "cuda" ]]; then
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        else
+            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda-exp || exit -1
+        fi
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        cmake -DUSE_CUDA=ON ..
+        if [[ $TASK == "cuda" ]]; then
+            cmake -DUSE_CUDA=ON ..
+        else
+            cmake -DUSE_CUDA_EXP=ON ..
+        fi
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
@@ -236,7 +272,11 @@ import matplotlib\
 matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
-    conda install -q -y -n $CONDA_ENV h5py ipywidgets notebook  # requirements for examples
+    # requirements for examples
+    conda install -q -y -n $CONDA_ENV \
+        h5py \
+        ipywidgets \
+        notebook
     for f in *.py **/*.py; do python $f || exit -1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb

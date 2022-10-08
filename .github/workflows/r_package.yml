@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - master
+    - release/*
 
 env:
   # hack to get around this:
@@ -40,7 +41,7 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.2
             build_type: cmake
           - os: ubuntu-latest
             task: r-package
@@ -50,7 +51,7 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.2
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -60,7 +61,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.2
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -70,7 +71,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.2
             build_type: cmake
           - os: windows-latest
             task: r-package
@@ -82,21 +83,21 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
-            build_type: cmake
-          # Visual Studio 2017
-          - os: windows-2016
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
+            r_version: 4.1
             build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.0
+            r_version: 3.6
+            build_type: cmake
+          # Visual Studio 2022
+          - os: windows-2022
+            task: r-package
+            compiler: MSVC
+            toolchain: MSVC
+            r_version: 4.1
             build_type: cmake
           ###############
           # CRAN builds #
@@ -111,17 +112,17 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.0
+            r_version: 4.1
             build_type: cran
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.2
             build_type: cran
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.0
+            r_version: 4.2
             build_type: cran
           ################
           # Other checks #
@@ -129,7 +130,7 @@ jobs:
           - os: ubuntu-latest
             task: r-rchk
             compiler: gcc
-            r_version: 4.0
+            r_version: 4.2
             build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
@@ -137,7 +138,7 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: true
@@ -186,23 +187,26 @@ jobs:
           - r_customization: csan
             compiler: clang
     steps:
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: true
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
         shell: bash
         run: |
           cd R-package/tests
           exit_code=0
-          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=1
+          RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
           cat ./tests.log
           exit ${exit_code}
   test-r-debian-clang:
@@ -216,8 +220,11 @@ jobs:
         run: |
           apt-get update --allow-releaseinfo-change
           apt-get install --no-install-recommends -y git
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           fetch-depth: 5
           submodules: true
@@ -225,7 +232,7 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then

@@ -21,9 +21,12 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
   out_list <- list(
     "flags" = character(0L)
     , "keyword_args" = character(0L)
+    , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("=", arg))) {
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
+        out_list[["make_args"]] <- arg
+    } else if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
       arg_name <- split_arg[[1L]]
       arg_value <- split_arg[[2L]]
@@ -36,6 +39,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
 }
 parsed_args <- .parse_args(args)
 
+SKIP_VIGNETTES <- "--no-build-vignettes" %in% parsed_args[["flags"]]
 USING_GPU <- "--use-gpu" %in% parsed_args[["flags"]]
 USING_MINGW <- "--use-mingw" %in% parsed_args[["flags"]]
 USING_MSYS2 <- "--use-msys2" %in% parsed_args[["flags"]]
@@ -51,7 +55,8 @@ ARGS_TO_DEFINES <- c(
 )
 
 recognized_args <- c(
-  "--skip-install"
+  "--no-build-vignettes"
+  , "--skip-install"
   , "--use-gpu"
   , "--use-mingw"
   , "--use-msys2"
@@ -65,7 +70,7 @@ unrecognized_args <- setdiff(given_args, recognized_args)
 if (length(unrecognized_args) > 0L) {
   msg <- paste0(
     "Unrecognized arguments: "
-    , paste0(unrecognized_args, collapse = ", ")
+    , toString(unrecognized_args)
   )
   stop(msg)
 }
@@ -109,6 +114,20 @@ if (length(keyword_args) > 0L) {
   )
 }
 
+# if provided, set '-j' in 'make' commands in install.libs.R
+if (length(parsed_args[["make_args"]]) > 0L) {
+  install_libs_content <- gsub(
+    pattern = "make_args_from_build_script <- character(0L)"
+    , replacement = paste0(
+      "make_args_from_build_script <- c(\""
+      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , "\")"
+    )
+    , x = install_libs_content
+    , fixed = TRUE
+  )
+}
+
 # R returns FALSE (not a non-zero exit code) if a file copy operation
 # breaks. Let's fix that
 .handle_result <- function(res) {
@@ -127,7 +146,7 @@ if (length(keyword_args) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx && on_windows) {
@@ -385,7 +404,7 @@ dynlib_line <- grep(
 )
 
 c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
-c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
+c_api_contents <- c_api_contents[startsWith(c_api_contents, "LIGHTGBM_C_EXPORT")]
 c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
@@ -398,7 +417,7 @@ c_api_symbols <- gsub(
 )
 dynlib_statement <- paste0(
   "useDynLib(lib_lightgbm, "
-  , paste0(c_api_symbols, collapse = ", ")
+  , toString(c_api_symbols)
   , ")"
 )
 namespace_contents[dynlib_line] <- dynlib_statement
@@ -407,7 +426,11 @@ writeLines(namespace_contents, NAMESPACE_FILE)
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
-.run_shell_command("R", c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs"))
+r_build_args <- c("CMD", "build", TEMP_R_DIR, "--keep-empty-dirs")
+if (isTRUE(SKIP_VIGNETTES)) {
+  r_build_args <- c(r_build_args, "--no-build-vignettes")
+}
+.run_shell_command("R", r_build_args)
 
 # Install the package
 version <- gsub(

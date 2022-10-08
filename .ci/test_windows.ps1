@@ -30,7 +30,7 @@ conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV python=$env:PYTHON_VERSION ; Check-Output $?
+conda create -q -y -n $env:CONDA_ENV "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
 }
@@ -50,7 +50,8 @@ if ($env:TASK -eq "swig") {
   Exit 0
 }
 
-conda install -q -y -n $env:CONDA_ENV joblib matplotlib numpy pandas psutil pytest python-graphviz scikit-learn scipy ; Check-Output $?
+# re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
+conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest "python=$env:PYTHON_VERSION[build=*cpython]" python-graphviz scikit-learn scipy ; Check-Output $?
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
