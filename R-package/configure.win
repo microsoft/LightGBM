@@ -66,6 +66,31 @@ then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
+#############
+# INET_PTON #
+#############
+
+ac_inet_pton="no"
+
+cat > conftest.cpp <<EOL
+#include <ws2tcpip.h>
+int main() {
+  int (*fptr)(int, const char*, void*);
+  fptr = &inet_pton;
+  return 0;
+}
+EOL
+
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
+echo "checking whether INET_PTON works...${ac_inet_pton}"
+
+if test "${ac_inet_pton}" = "yes";
+then
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
+fi
+
 # Generate Makevars.win from Makevars.win.in
 sed -e \
     "s/@LGB_CPPFLAGS@/$LGB_CPPFLAGS/" \
