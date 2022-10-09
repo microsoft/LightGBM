@@ -1251,7 +1251,18 @@ test_that("lgb.train() supports non-ASCII feature names", {
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
   )
-  feature_names <- c("F_零", "F_一", "F_二", "F_三")
+  # content below is equivalent to
+  #
+  #  feature_names <- c("F_零", "F_一", "F_二", "F_三")
+  #
+  # but using rawToChar() to avoid weird issues when {testthat}
+  # sources files and converts their encodings prior to evaluating the code
+  feature_names <- c(
+    rawToChar(as.raw(c(0x46, 0x5f, 0xe9, 0x9b, 0xb6)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xb8, 0x80)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xba, 0x8c)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xb8, 0x89)))
+  )
   bst <- lgb.train(
     data = dtrain
     , nrounds = 5L
