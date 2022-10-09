@@ -99,7 +99,7 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
         - `C:\rtools40\usr\bin`
     - If you have `Rtools` 4.2, example:
         - `C:\rtools42\x86_64-w64-mingw32.static.posix\bin`
-        - `C:\rtools42\user\bin`
+        - `C:\rtools42\usr\bin`
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
