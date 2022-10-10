@@ -190,13 +190,27 @@ class FeatureGroup {
   ~FeatureGroup() {}
 
   /*!
+  * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
+  * \param num_thread The number of external threads that will be calling the push APIs
+  */
+  void InitStreaming(int32_t num_thread) {
+    if (is_multi_val_) {
+      for (int i = 0; i < num_feature_; ++i) {
+        multi_bin_data_[i]->InitStreaming(num_thread);
+      }
+    } else {
+      bin_data_->InitStreaming(num_thread);
+    }
+  }
+
+  /*!
    * \brief Push one record, will auto convert to bin and push to bin data
    * \param tid Thread id
-   * \param idx Index of record
+   * \param sub_feature_idx Index of the subfeature
+   * \param line_idx Index of record
    * \param value feature value of record
    */
-  inline void PushData(int tid, int sub_feature_idx, data_size_t line_idx,
-                       double value) {
+  inline void PushData(int tid, int sub_feature_idx, data_size_t line_idx, double value) {
     uint32_t bin = bin_mappers_[sub_feature_idx]->ValueToBin(value);
     if (bin == bin_mappers_[sub_feature_idx]->GetMostFreqBin()) {
       return;

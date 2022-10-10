@@ -48,6 +48,9 @@ class ObjectiveFunction {
                                  const data_size_t*,
                                  data_size_t) const { return ori_output; }
 
+  virtual void RenewTreeOutputCUDA(const double* /*score*/, const data_size_t* /*data_indices_in_leaf*/, const data_size_t* /*num_data_in_leaf*/,
+    const data_size_t* /*data_start_in_leaf*/, const int /*num_leaves*/, double* /*leaf_value*/) const {}
+
   virtual double BoostFromScore(int /*class_id*/) const { return 0.0; }
 
   virtual bool ClassNeedTrain(int /*class_id*/) const { return true; }
@@ -93,6 +96,15 @@ class ObjectiveFunction {
   * \brief Whether boosting is done on CUDA
   */
   virtual bool IsCUDAObjective() const { return false; }
+
+  #ifdef USE_CUDA_EXP
+  /*!
+  * \brief Get output convert function for CUDA version
+  */
+  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const {
+    return [] (data_size_t, const double*, double*) {};
+  }
+  #endif  // USE_CUDA_EXP
 };
 
 }  // namespace LightGBM

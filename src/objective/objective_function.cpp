@@ -10,41 +10,38 @@
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
 
+#include "cuda/cuda_binary_objective.hpp"
+#include "cuda/cuda_multiclass_objective.hpp"
+#include "cuda/cuda_rank_objective.hpp"
+#include "cuda/cuda_regression_objective.hpp"
+
 namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp")) {
+  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
     if (type == std::string("regression")) {
-      Log::Warning("Objective regression is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionL2loss(config);
+      return new CUDARegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {
-      Log::Warning("Objective regression_l1 is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionL1loss(config);
+      return new CUDARegressionL1loss(config);
     } else if (type == std::string("quantile")) {
       Log::Warning("Objective quantile is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionQuantileloss(config);
     } else if (type == std::string("huber")) {
-      Log::Warning("Objective huber is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionHuberLoss(config);
+      return new CUDARegressionHuberLoss(config);
     } else if (type == std::string("fair")) {
-      Log::Warning("Objective fair is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionFairLoss(config);
+      return new CUDARegressionFairLoss(config);
     } else if (type == std::string("poisson")) {
       Log::Warning("Objective poisson is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new RegressionPoissonLoss(config);
     } else if (type == std::string("binary")) {
-      Log::Warning("Objective binary is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new BinaryLogloss(config);
+      return new CUDABinaryLogloss(config);
     } else if (type == std::string("lambdarank")) {
-      Log::Warning("Objective lambdarank is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new LambdarankNDCG(config);
+      return new CUDALambdarankNDCG(config);
     } else if (type == std::string("rank_xendcg")) {
-      Log::Warning("Objective rank_xendcg is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RankXENDCG(config);
+      return new CUDARankXENDCG(config);
     } else if (type == std::string("multiclass")) {
-      Log::Warning("Objective multiclass is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new MulticlassSoftmax(config);
+      return new CUDAMulticlassSoftmax(config);
     } else if (type == std::string("multiclassova")) {
       Log::Warning("Objective multiclassova is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new MulticlassOVA(config);

@@ -3,23 +3,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import pickle_obj, unpickle_obj
-
-SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
-
-
-def pickle_and_unpickle_object(obj, serializer):
-    with lgb.basic._TempFile() as tmp_file:
-        pickle_obj(
-            obj=obj,
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
-        obj_from_disk = unpickle_obj(
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
-    return obj_from_disk
+from .utils import SERIALIZERS, pickle_and_unpickle_object, pickle_obj, unpickle_obj
 
 
 def reset_feature_fraction(boosting_round):

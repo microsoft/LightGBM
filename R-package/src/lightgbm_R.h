@@ -505,6 +505,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
 *        Note:  should pre-allocate memory for out_result,
 *               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
+*               for feature contributions, its length is equal to num_class * num_data * (num_features + 1)
 * \param handle Booster handle
 * \param indptr pointer to row headers
 * \param indices findex
@@ -517,7 +518,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterCalcNumPredict_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
-* \param start_iteration Start index of the iteration to predict
+* \param start_iteration start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
 * \param out_result prediction result
@@ -545,6 +546,152 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 *        Note:  should pre-allocate memory for out_result,
 *               for normal and raw score: its length is equal to num_class * num_data
 *               for leaf index, its length is equal to num_class * num_data * num_iteration
+*               for feature contributions, its length is equal to num_class * num_data * (num_features + 1)
+* \param handle Booster handle
+* \param indptr array with the index pointer of the data in CSR format
+* \param indices array with the non-zero indices of the data in CSR format
+* \param data array with the non-zero values of the data in CSR format
+* \param ncols number of columns in the data
+* \param is_rawscore 1 to get raw predictions, before transformations like
+*                    converting to probabilities, 0 otherwise
+* \param is_leafidx 1 to get record of which leaf in each tree
+*                   observations fell into, 0 otherwise
+* \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \param out_result prediction result
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSR_R(
+  SEXP handle,
+  SEXP indptr,
+  SEXP indices,
+  SEXP data,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result
+);
+
+/*!
+* \brief make prediction for a single row of data
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class
+*               for leaf index, its length is equal to num_class * num_iteration
+*               for feature contributions, its length is equal to num_class * (num_features + 1)
+* \param handle Booster handle
+* \param indices array corresponding to the indices of the columns with non-zero values of the row to predict on
+* \param data array corresponding to the non-zero values of row to predict on
+* \param ncols number of columns in the data
+* \param is_rawscore 1 to get raw predictions, before transformations like
+*                    converting to probabilities, 0 otherwise
+* \param is_leafidx 1 to get record of which leaf in each tree
+*                   observations fell into, 0 otherwise
+* \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \param out_result prediction result
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSRSingleRow_R(
+  SEXP handle,
+  SEXP indices,
+  SEXP data,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result
+);
+
+/*!
+* \brief Initialize and return a fast configuration handle to use with ``LGBM_BoosterPredictForCSRSingleRowFast_R``.
+* \param handle Booster handle
+* \param ncols number columns in the data
+* \param is_rawscore 1 to get raw predictions, before transformations like
+*                    converting to probabilities, 0 otherwise
+* \param is_leafidx 1 to get record of which leaf in each tree
+*                   observations fell into, 0 otherwise
+* \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \return Fast configuration handle
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSRSingleRowFastInit_R(
+  SEXP handle,
+  SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter
+);
+
+/*!
+* \brief make prediction for a single row of data
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class
+*               for leaf index, its length is equal to num_class * num_iteration
+*               for feature contributions, its length is equal to num_class * (num_features + 1)
+* \param handle_fastConfig Fast configuration handle
+* \param indices array corresponding to the indices of the columns with non-zero values of the row to predict on
+* \param data array corresponding to the non-zero values of row to predict on
+* \param out_result prediction result
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSRSingleRowFast_R(
+  SEXP handle_fastConfig,
+  SEXP indices,
+  SEXP data,
+  SEXP out_result
+);
+
+/*!
+* \brief make feature contribution prediction for a new Dataset
+* \param handle Booster handle
+* \param indptr array with the index pointer of the data in CSR or CSC format
+* \param indices array with the non-zero indices of the data in CSR or CSC format
+* \param data array with the non-zero values of the data in CSR or CSC format
+* \param is_csr whether the input data is in CSR format or not (pass FALSE for CSC)
+* \param nrows number of rows in the data
+* \param ncols number of columns in the data
+* \param start_iteration start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \return An R list with entries "indptr", "indices", "data", constituting the
+*         feature contributions in sparse format, in the same storage order as
+*         the input data.
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictSparseOutput_R(
+  SEXP handle,
+  SEXP indptr,
+  SEXP indices,
+  SEXP data,
+  SEXP is_csr,
+  SEXP nrows,
+  SEXP ncols,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter
+);
+
+/*!
+* \brief make prediction for a new Dataset
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class * num_data
+*               for leaf index, its length is equal to num_class * num_data * num_iteration
+*               for feature contributions, its length is equal to num_class * num_data * (num_features + 1)
 * \param handle Booster handle
 * \param data pointer to the data space
 * \param num_row number of rows
@@ -554,7 +701,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForCSC_R(
 * \param is_leafidx 1 to get record of which leaf in each tree
 *                   observations fell into, 0 otherwise
 * \param is_predcontrib 1 to get feature contributions, 0 otherwise
-* \param start_iteration Start index of the iteration to predict
+* \param start_iteration start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
 * \param out_result prediction result
@@ -575,32 +722,76 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMat_R(
 );
 
 /*!
-* \brief make feature contribution prediction for a new Dataset
+* \brief make prediction for a single row of data
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class
+*               for leaf index, its length is equal to num_class * num_iteration
+*               for feature contributions, its length is equal to num_class * (num_features + 1)
 * \param handle Booster handle
-* \param indptr array with the index pointer of the data in CSR or CSC format
-* \param indices array with the non-zero indices of the data in CSR or CSC format
-* \param data array with the non-zero values of the data in CSR or CSC format
-* \param is_csr whether the input data is in CSR format or not (pass FALSE for CSC)
-* \param nrows number of rows in the data
-* \param ncols number of columns in the data
-* \param start_iteration Start index of the iteration to predict
+* \param data array corresponding to the row to predict on
+* \param is_rawscore 1 to get raw predictions, before transformations like
+*                    converting to probabilities, 0 otherwise
+* \param is_leafidx 1 to get record of which leaf in each tree
+*                   observations fell into, 0 otherwise
+* \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration start index of the iteration to predict
 * \param num_iteration number of iteration for prediction, <= 0 means no limit
 * \param parameter additional parameters
-* \return An R list with entries "indptr", "indices", "data", constituting the
-*         feature contributions in sparse format, in the same storage order as
-*         the input data.
+* \param out_result prediction result
+* \return R NULL value
 */
-LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictSparseOutput_R(
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRow_R(
   SEXP handle,
-  SEXP indptr,
-  SEXP indices,
   SEXP data,
-  SEXP is_csr,
-  SEXP nrows,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
+  SEXP start_iteration,
+  SEXP num_iteration,
+  SEXP parameter,
+  SEXP out_result
+);
+
+/*!
+* \brief Initialize and return a fast configuration handle to use with ``LGBM_BoosterPredictForMatSingleRowFast_R``.
+* \param handle Booster handle
+* \param ncols number columns in the data
+* \param is_rawscore 1 to get raw predictions, before transformations like
+*                    converting to probabilities, 0 otherwise
+* \param is_leafidx 1 to get record of which leaf in each tree
+*                   observations fell into, 0 otherwise
+* \param is_predcontrib 1 to get feature contributions, 0 otherwise
+* \param start_iteration start index of the iteration to predict
+* \param num_iteration number of iteration for prediction, <= 0 means no limit
+* \param parameter additional parameters
+* \return Fast configuration handle
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRowFastInit_R(
+  SEXP handle,
   SEXP ncols,
+  SEXP is_rawscore,
+  SEXP is_leafidx,
+  SEXP is_predcontrib,
   SEXP start_iteration,
   SEXP num_iteration,
   SEXP parameter
+);
+
+/*!
+* \brief make prediction for a single row of data
+*        Note:  should pre-allocate memory for out_result,
+*               for normal and raw score: its length is equal to num_class
+*               for leaf index, its length is equal to num_class * num_iteration
+*               for feature contributions, its length is equal to num_class * (num_features + 1)
+* \param handle_fastConfig Fast configuration handle
+* \param data array corresponding to the row to predict on
+* \param out_result prediction result
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRowFast_R(
+  SEXP handle_fastConfig,
+  SEXP data,
+  SEXP out_result
 );
 
 /*!

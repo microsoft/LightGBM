@@ -246,3 +246,17 @@ lgb.get.default.num.threads <- function() {
     return(cores)
   }
 }
+
+lgb.equal.or.both.null <- function(a, b) {
+  if (is.null(a)) {
+    if (!is.null(b)) {
+      return(FALSE)
+    }
+    return(TRUE)
+  } else {
+    if (is.null(b)) {
+      return(FALSE)
+    }
+    return(a == b)
+  }
+}
