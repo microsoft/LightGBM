@@ -6,10 +6,11 @@ configuration:  # a trick to construct a build matrix with multiple Python versi
   - '3.7'
 
 # only build pull requests and
-# commits to 'master'
+# commits to 'master' or any branch starting with 'release'
 branches:
   only:
     - master
+    - /^release/
 
 environment:
   matrix:

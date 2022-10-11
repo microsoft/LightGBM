@@ -7,6 +7,7 @@ trigger:
     - v*
 pr:
 - master
+- release/*
 variables:
   AZURE: 'true'
   PYTHON_VERSION: '3.10'
