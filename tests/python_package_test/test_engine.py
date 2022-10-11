@@ -6,6 +6,7 @@ import math
 import pickle
 import platform
 import random
+import re
 from os import getenv
 from pathlib import Path
 
@@ -3766,6 +3767,47 @@ def test_cegb_split_buffer_clean():
     predicts = model.predict(test_data)
     rmse = np.sqrt(mean_squared_error(test_y, predicts))
     assert rmse < 10.0
+
+
+def test_verbosity_and_verbose(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'verbose': 1,
+        'verbosity': 0,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. '
+        'Current value: verbosity=0'
+    )
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
+
+
+@pytest.mark.parametrize('verbosity_param', lgb.basic._ConfigAliases.get("verbosity"))
+@pytest.mark.parametrize('verbosity', [-1, 0])
+def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosity):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'subsample': 0.75,
+        'bagging_fraction': 0.8,
+        'force_col_wise': True,
+        verbosity_param: verbosity,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] bagging_fraction is set=0.8, subsample=0.75 will be ignored. '
+        'Current value: bagging_fraction=0.8'
+    )
+    stdout = capsys.readouterr().out
+    if verbosity >= 0:
+        assert expected_msg in stdout
+    else:
+        assert re.search(r'\[LightGBM\]', stdout) is None
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
