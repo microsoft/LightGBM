@@ -352,7 +352,7 @@ namespace LightGBM {
     int zero_cnt = static_cast<int>(total_sample_cnt - num_sample_values - na_cnt);
     // find distinct_values first
     std::vector<double> distinct_values;
-    std::vector<int> counts; // count of data points for each distinct feature value.
+    std::vector<int> counts;  // count of data points for each distinct feature value.
 
     std::stable_sort(values, values + num_sample_values);
 
@@ -389,7 +389,7 @@ namespace LightGBM {
     }
     min_val_ = distinct_values.front();
     max_val_ = distinct_values.back();
-    std::vector<int> cnt_in_bin; // count of data points in each bin.
+    std::vector<int> cnt_in_bin;  // count of data points in each bin.
     int num_distinct_values = static_cast<int>(distinct_values.size());
     if (bin_type_ == BinType::NumericalBin) {
       if (missing_type_ == MissingType::Zero) {
@@ -451,7 +451,7 @@ namespace LightGBM {
         // will ignore the categorical of small counts
         int cut_cnt = static_cast<int>(
             Common::RoundInt((total_sample_cnt - na_cnt) * 0.99f));
-        size_t cur_cat_idx = 0; // index of current category.
+        size_t cur_cat_idx = 0;  // index of current category.
         categorical_2_bin_.clear();
         bin_2_categorical_.clear();
         int used_cnt = 0;
