@@ -327,10 +327,10 @@ namespace LightGBM {
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
-    int tmp_num_sample_values = 0;
+    int non_na_cnt = 0;
     for (int i = 0; i < num_sample_values; ++i) {
       if (!std::isnan(values[i])) {
-        values[tmp_num_sample_values++] = values[i];
+        values[non_na_cnt++] = values[i];
       }
     }
     if (!use_missing) {
@@ -338,14 +338,14 @@ namespace LightGBM {
     } else if (zero_as_missing) {
       missing_type_ = MissingType::Zero;
     } else {
-      if (tmp_num_sample_values == num_sample_values) {
+      if (non_na_cnt == num_sample_values) {
         missing_type_ = MissingType::None;
       } else {
         missing_type_ = MissingType::NaN;
-        na_cnt = num_sample_values - tmp_num_sample_values;
+        na_cnt = num_sample_values - non_na_cnt;
       }
     }
-    num_sample_values = tmp_num_sample_values;
+    num_sample_values = non_na_cnt;
 
     bin_type_ = bin_type;
     default_bin_ = 0;
@@ -508,7 +508,7 @@ namespace LightGBM {
       const double max_sparse_rate =
           static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
       // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
-      // so use most_freq_bin_  = default_bin_ when there is not so sparse
+      // so use most_freq_bin_ = default_bin_ when there is not so sparse
       if (most_freq_bin_ != default_bin_ && max_sparse_rate < kSparseThreshold) {
         most_freq_bin_ = default_bin_;
       }
@@ -705,7 +705,7 @@ namespace LightGBM {
         return new MultiValSparseBin<uint32_t, uint32_t>(
             num_data, num_bin, estimate_element_per_row);
       }
-    } else  {
+    } else {
       if (num_bin <= 256) {
         return new MultiValSparseBin<size_t, uint8_t>(
             num_data, num_bin, estimate_element_per_row);
