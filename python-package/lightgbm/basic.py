@@ -190,7 +190,7 @@ def _is_numpy_column_array(data: Any) -> bool:
     return len(shape) == 2 and shape[1] == 1
 
 
-def cast_numpy_array_to_dtype(array, dtype):
+def _cast_numpy_array_to_dtype(array, dtype):
     """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
@@ -215,11 +215,11 @@ def _is_1d_collection(data: Any) -> bool:
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
-        return cast_numpy_array_to_dtype(data, dtype)
+        return _cast_numpy_array_to_dtype(data, dtype)
     elif _is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return cast_numpy_array_to_dtype(array, dtype)
+        return _cast_numpy_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -252,12 +252,12 @@ def _is_2d_collection(data: Any) -> bool:
 def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
-        return cast_numpy_array_to_dtype(data, dtype)
+        return _cast_numpy_array_to_dtype(data, dtype)
     if _is_2d_list(data):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
         _check_for_bad_pandas_dtypes(data.dtypes)
-        return cast_numpy_array_to_dtype(data.values, dtype)
+        return _cast_numpy_array_to_dtype(data.values, dtype)
     raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
