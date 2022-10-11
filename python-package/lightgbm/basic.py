@@ -2816,6 +2816,9 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
+            if params:
+                _log_warning('Ignoring params argument, using parameters from model file.')
+            params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
         else:
@@ -2863,6 +2866,28 @@ class Booster:
                 ctypes.byref(handle)))
             state['handle'] = handle
         self.__dict__.update(state)
+
+    def _get_loaded_param(self) -> Dict[str, Any]:
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
+            self.handle,
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
+                self.handle,
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        return json.loads(string_buffer.value.decode('utf-8'))
 
     def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.

@@ -1077,6 +1077,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::unordered_map<std::string, std::string>& ParameterTypes();
   static const std::string DumpAliases();
 
  private:
