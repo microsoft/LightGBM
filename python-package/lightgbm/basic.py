@@ -182,7 +182,7 @@ def _is_numpy_1d_array(data: Any) -> bool:
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
-def is_numpy_column_array(data: Any) -> bool:
+def _is_numpy_column_array(data: Any) -> bool:
     """Check whether data is a column numpy array."""
     if not isinstance(data, np.ndarray):
         return False
@@ -206,7 +206,7 @@ def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
         _is_numpy_1d_array(data)
-        or is_numpy_column_array(data)
+        or _is_numpy_column_array(data)
         or is_1d_list(data)
         or isinstance(data, pd_Series)
     )
@@ -216,7 +216,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
-    elif is_numpy_column_array(data):
+    elif _is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
