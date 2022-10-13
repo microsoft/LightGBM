@@ -177,12 +177,12 @@ def _is_numeric(obj: Any) -> bool:
         return False
 
 
-def is_numpy_1d_array(data: Any) -> bool:
+def _is_numpy_1d_array(data: Any) -> bool:
     """Check whether data is a numpy 1-D array."""
     return isinstance(data, np.ndarray) and len(data.shape) == 1
 
 
-def is_numpy_column_array(data: Any) -> bool:
+def _is_numpy_column_array(data: Any) -> bool:
     """Check whether data is a column numpy array."""
     if not isinstance(data, np.ndarray):
         return False
@@ -190,7 +190,7 @@ def is_numpy_column_array(data: Any) -> bool:
     return len(shape) == 2 and shape[1] == 1
 
 
-def cast_numpy_array_to_dtype(array, dtype):
+def _cast_numpy_array_to_dtype(array, dtype):
     """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
@@ -205,8 +205,8 @@ def is_1d_list(data: Any) -> bool:
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
-        is_numpy_1d_array(data)
-        or is_numpy_column_array(data)
+        _is_numpy_1d_array(data)
+        or _is_numpy_column_array(data)
         or is_1d_list(data)
         or isinstance(data, pd_Series)
     )
@@ -214,12 +214,12 @@ def _is_1d_collection(data: Any) -> bool:
 
 def list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
-    if is_numpy_1d_array(data):
-        return cast_numpy_array_to_dtype(data, dtype)
-    elif is_numpy_column_array(data):
+    if _is_numpy_1d_array(data):
+        return _cast_numpy_array_to_dtype(data, dtype)
+    elif _is_numpy_column_array(data):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
-        return cast_numpy_array_to_dtype(array, dtype)
+        return _cast_numpy_array_to_dtype(array, dtype)
     elif is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
@@ -252,12 +252,12 @@ def _is_2d_collection(data: Any) -> bool:
 def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
-        return cast_numpy_array_to_dtype(data, dtype)
+        return _cast_numpy_array_to_dtype(data, dtype)
     if _is_2d_list(data):
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
         _check_for_bad_pandas_dtypes(data.dtypes)
-        return cast_numpy_array_to_dtype(data.values, dtype)
+        return _cast_numpy_array_to_dtype(data.values, dtype)
     raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
@@ -320,7 +320,7 @@ def param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
         return ""
     pairs = []
     for key, val in data.items():
-        if isinstance(val, (list, tuple, set)) or is_numpy_1d_array(val):
+        if isinstance(val, (list, tuple, set)) or _is_numpy_1d_array(val):
             def to_string(x):
                 if isinstance(x, list):
                     return f"[{','.join(map(str, x))}]"
@@ -515,7 +515,7 @@ def c_float_array(data):
     """Get pointer of float numpy array / list."""
     if is_1d_list(data):
         data = np.array(data, copy=False)
-    if is_numpy_1d_array(data):
+    if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.float32:
@@ -535,7 +535,7 @@ def c_int_array(data):
     """Get pointer of int numpy array / list."""
     if is_1d_list(data):
         data = np.array(data, copy=False)
-    if is_numpy_1d_array(data):
+    if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.int32:
@@ -562,7 +562,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
 
     bad_pandas_dtypes = [
         f'{column_name}: {pandas_dtype}'
-        for column_name, pandas_dtype in pandas_dtypes_series.iteritems()
+        for column_name, pandas_dtype in pandas_dtypes_series.items()
         if not is_allowed_numpy_dtype(pandas_dtype.type)
     ]
     if bad_pandas_dtypes:
@@ -2816,6 +2816,9 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
+            if params:
+                _log_warning('Ignoring params argument, using parameters from model file.')
+            params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
         else:
@@ -2863,6 +2866,28 @@ class Booster:
                 ctypes.byref(handle)))
             state['handle'] = handle
         self.__dict__.update(state)
+
+    def _get_loaded_param(self) -> Dict[str, Any]:
+        buffer_len = 1 << 20
+        tmp_out_len = ctypes.c_int64(0)
+        string_buffer = ctypes.create_string_buffer(buffer_len)
+        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
+            self.handle,
+            ctypes.c_int64(buffer_len),
+            ctypes.byref(tmp_out_len),
+            ptr_string_buffer))
+        actual_len = tmp_out_len.value
+        # if buffer length is not long enough, re-allocate a buffer
+        if actual_len > buffer_len:
+            string_buffer = ctypes.create_string_buffer(actual_len)
+            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
+                self.handle,
+                ctypes.c_int64(actual_len),
+                ctypes.byref(tmp_out_len),
+                ptr_string_buffer))
+        return json.loads(string_buffer.value.decode('utf-8'))
 
     def free_dataset(self) -> "Booster":
         """Free Booster's Datasets.
