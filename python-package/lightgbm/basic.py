@@ -262,7 +262,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -973,7 +973,7 @@ class _InnerPredictor:
         else:
             raise TypeError("Expected int32 or int64 type for indptr")
         if data_type == C_API_DTYPE_FLOAT32:
-            out_data = cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
         elif data_type == C_API_DTYPE_FLOAT64:
             out_data = cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
         else:
@@ -2151,7 +2151,7 @@ class Dataset:
         if out_type.value == C_API_DTYPE_INT32:
             arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = _cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
             arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
