@@ -299,7 +299,7 @@ def _c_str(string: str) -> ctypes.c_char_p:
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype: type, values: List[Any]) -> ctypes.Array:
+def _c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
@@ -2268,7 +2268,7 @@ class Dataset:
             c_feature_name = [_c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
-                c_array(ctypes.c_char_p, c_feature_name),
+                _c_array(ctypes.c_char_p, c_feature_name),
                 ctypes.c_int(len(feature_name))))
         return self
 
