@@ -592,7 +592,7 @@ def test_choose_param_value_objective(objective_alias):
 
 @pytest.mark.parametrize('collection', ['1d_np', '2d_np', 'pd_float', 'pd_str', '1d_list', '2d_list'])
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_list_to_1d_numpy(collection, dtype):
+def test__list_to_1d_numpy(collection, dtype):
     collection2y = {
         '1d_np': np.random.rand(10),
         '2d_np': np.random.rand(10, 1),
@@ -609,17 +609,17 @@ def test_list_to_1d_numpy(collection, dtype):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
         with pytest.raises(ValueError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
-    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
 

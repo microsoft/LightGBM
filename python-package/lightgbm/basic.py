@@ -212,7 +212,7 @@ def _is_1d_collection(data: Any) -> bool:
     )
 
 
-def list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -1895,7 +1895,7 @@ class Dataset:
                                     feature_name=self.feature_name, params=self.params)
                 else:
                     # construct subset
-                    used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    used_indices = _list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
@@ -2090,7 +2090,7 @@ class Dataset:
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
-                data = list_to_1d_numpy(data, dtype, name=field_name)
+                data = _list_to_1d_numpy(data, dtype, name=field_name)
             elif _is_2d_collection(data):
                 data = _data_to_2d_numpy(data, dtype, name=field_name)
                 data = data.ravel(order='F')
@@ -2101,7 +2101,7 @@ class Dataset:
                 )
         else:
             dtype = np.int32 if field_name == 'group' else np.float32
-            data = list_to_1d_numpy(data, dtype, name=field_name)
+            data = _list_to_1d_numpy(data, dtype, name=field_name)
 
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
@@ -2293,7 +2293,7 @@ class Dataset:
                 _check_for_bad_pandas_dtypes(label.dtypes)
                 label_array = np.ravel(label.values.astype(np.float32, copy=False))
             else:
-                label_array = list_to_1d_numpy(label, name='label')
+                label_array = _list_to_1d_numpy(label, name='label')
             self.set_field('label', label_array)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
@@ -2315,7 +2315,7 @@ class Dataset:
             weight = None
         self.weight = weight
         if self.handle is not None and weight is not None:
-            weight = list_to_1d_numpy(weight, name='weight')
+            weight = _list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
@@ -2358,7 +2358,7 @@ class Dataset:
         """
         self.group = group
         if self.handle is not None and group is not None:
-            group = list_to_1d_numpy(group, np.int32, name='group')
+            group = _list_to_1d_numpy(group, np.int32, name='group')
             self.set_field('group', group)
         return self
 
@@ -3258,8 +3258,8 @@ class Booster:
         if self.__num_class > 1:
             grad = grad.ravel(order='F')
             hess = hess.ravel(order='F')
-        grad = list_to_1d_numpy(grad, name='gradient')
-        hess = list_to_1d_numpy(hess, name='hessian')
+        grad = _list_to_1d_numpy(grad, name='gradient')
+        hess = _list_to_1d_numpy(hess, name='hessian')
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
