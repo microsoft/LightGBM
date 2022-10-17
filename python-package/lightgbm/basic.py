@@ -286,7 +286,7 @@ def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -969,7 +969,7 @@ class _InnerPredictor:
         if indptr_type == C_API_DTYPE_INT32:
             out_indptr = _cint32_array_to_numpy(out_ptr_indptr, indptr_len)
         elif indptr_type == C_API_DTYPE_INT64:
-            out_indptr = cint64_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint64_array_to_numpy(out_ptr_indptr, indptr_len)
         else:
             raise TypeError("Expected int32 or int64 type for indptr")
         if data_type == C_API_DTYPE_FLOAT32:
