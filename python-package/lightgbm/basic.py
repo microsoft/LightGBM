@@ -197,7 +197,7 @@ def _cast_numpy_array_to_dtype(array, dtype):
     return array.astype(dtype=dtype, copy=False)
 
 
-def is_1d_list(data: Any) -> bool:
+def _is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
@@ -207,7 +207,7 @@ def _is_1d_collection(data: Any) -> bool:
     return (
         _is_numpy_1d_array(data)
         or _is_numpy_column_array(data)
-        or is_1d_list(data)
+        or _is_1d_list(data)
         or isinstance(data, pd_Series)
     )
 
@@ -220,7 +220,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
-    elif is_1d_list(data):
+    elif _is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
@@ -237,7 +237,7 @@ def _is_numpy_2d_array(data: Any) -> bool:
 
 def _is_2d_list(data: Any) -> bool:
     """Check whether data is a 2-D list."""
-    return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
+    return isinstance(data, list) and len(data) > 0 and _is_1d_list(data[0])
 
 
 def _is_2d_collection(data: Any) -> bool:
@@ -513,7 +513,7 @@ def convert_from_sliced_object(data):
 
 def c_float_array(data):
     """Get pointer of float numpy array / list."""
-    if is_1d_list(data):
+    if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
@@ -533,7 +533,7 @@ def c_float_array(data):
 
 def c_int_array(data):
     """Get pointer of int numpy array / list."""
-    if is_1d_list(data):
+    if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
