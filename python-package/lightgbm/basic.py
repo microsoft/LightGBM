@@ -270,7 +270,7 @@ def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -975,7 +975,7 @@ class _InnerPredictor:
         if data_type == C_API_DTYPE_FLOAT32:
             out_data = _cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
         elif data_type == C_API_DTYPE_FLOAT64:
-            out_data = cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
         else:
             raise TypeError("Expected float32 or float64 type for data")
         out_indices = cint32_array_to_numpy(out_ptr_indices, data_indices_len)
@@ -2153,7 +2153,7 @@ class Dataset:
         elif out_type.value == C_API_DTYPE_FLOAT32:
             arr = _cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = _cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
         if field_name == 'init_score':
