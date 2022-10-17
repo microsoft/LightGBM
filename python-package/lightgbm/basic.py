@@ -278,7 +278,7 @@ def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -967,7 +967,7 @@ class _InnerPredictor:
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
         if indptr_type == C_API_DTYPE_INT32:
-            out_indptr = cint32_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint32_array_to_numpy(out_ptr_indptr, indptr_len)
         elif indptr_type == C_API_DTYPE_INT64:
             out_indptr = cint64_array_to_numpy(out_ptr_indptr, indptr_len)
         else:
@@ -978,7 +978,7 @@ class _InnerPredictor:
             out_data = _cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
         else:
             raise TypeError("Expected float32 or float64 type for data")
-        out_indices = cint32_array_to_numpy(out_ptr_indices, data_indices_len)
+        out_indices = _cint32_array_to_numpy(out_ptr_indices, data_indices_len)
         # break up indptr based on number of rows (note more than one matrix in multiclass case)
         per_class_indptr_shape = cs.indptr.shape[0]
         # for CSC there is extra column added
@@ -2149,7 +2149,7 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = _cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
             arr = _cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
