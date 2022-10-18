@@ -165,6 +165,8 @@ class ParallelPartitionRunner {
       left_write_pos_[i] = left_write_pos_[i - 1] + left_cnts_[i - 1];
       right_write_pos_[i] = right_write_pos_[i - 1] + right_cnts_[i - 1];
     }
+
+    // array index(nblock - 1) should >= 0
     data_size_t left_cnt = 0;
     if(nblock > 0){
       left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];  

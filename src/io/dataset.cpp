@@ -52,10 +52,10 @@ std::vector<std::vector<int>> OneFeaturePerGroup(const std::vector<int>& used_fe
   return features_in_group;
 }
 
-int64_t GetConflictCount(const std::vector<bool>& mark, const int* indices,
-                     int64_t num_indices, data_size_t max_cnt) {
-  int64_t ret = 0;
-  for (int64_t i = 0; i < num_indices; ++i) {
+data_size_t GetConflictCount(const std::vector<bool>& mark, const int* indices,
+                     data_size_t num_indices, data_size_t max_cnt) {
+  data_size_t ret = 0;
+  for (data_size_t i = 0; i < num_indices; ++i) {
     if (mark[indices[i]]) {
       ++ret;
     }
@@ -69,13 +69,13 @@ int64_t GetConflictCount(const std::vector<bool>& mark, const int* indices,
 void MarkUsed(std::vector<bool>* mark, const int* indices,
               data_size_t num_indices) {
   auto& ref_mark = *mark;
-  for (int64_t i = 0; i < num_indices; ++i) {
+  for (data_size_t i = 0; i < num_indices; ++i) {
     ref_mark[indices[i]] = true;
   }
 }
 
 std::vector<int> FixSampleIndices(const BinMapper* bin_mapper,
-                                  int num_total_samples, int64_t num_indices,
+                                  int num_total_samples, data_size_t num_indices,
                                   const int* sample_indices,
                                   const double* sample_values) {
   std::vector<int> ret;
@@ -102,7 +102,7 @@ std::vector<int> FixSampleIndices(const BinMapper* bin_mapper,
 std::vector<std::vector<int>> FindGroups(
     const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
     const std::vector<int>& find_order, int** sample_indices,
-    const int64_t* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
+    const data_size_t* num_per_col, int num_sample_col, data_size_t total_sample_cnt,
     data_size_t num_data, bool is_use_gpu, bool is_sparse,
     std::vector<int8_t>* multi_val_group) {
   const int max_search_group = 100;
@@ -240,7 +240,7 @@ std::vector<std::vector<int>> FindGroups(
 
 std::vector<std::vector<int>> FastFeatureBundling(
     const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
-    int** sample_indices, double** sample_values, const int64_t* num_per_col,
+    int** sample_indices, double** sample_values, const data_size_t* num_per_col,
     int num_sample_col, data_size_t total_sample_cnt,
     const std::vector<int>& used_features, data_size_t num_data,
     bool is_use_gpu, bool is_sparse, std::vector<int8_t>* multi_val_group) {
@@ -274,7 +274,7 @@ std::vector<std::vector<int>> FastFeatureBundling(
   }
 
   std::vector<std::vector<int>> tmp_indices;
-  std::vector<int64_t> tmp_num_per_col(num_sample_col, 0);
+  std::vector<data_size_t> tmp_num_per_col(num_sample_col, 0);
   for (auto fidx : used_features) {
     if (fidx >= num_sample_col) {
       continue;
@@ -322,7 +322,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         const std::vector<std::vector<double>>& forced_bins,
                         int** sample_non_zero_indices,
                         double** sample_values,
-                        const int64_t* num_per_col,
+                        const data_size_t* num_per_col,
                         int num_sample_col,
                         size_t total_sample_cnt,
                         const Config& io_config) {
@@ -1109,7 +1109,11 @@ void Dataset::DumpTextFile(const char* text_filename) {
   fprintf(file, "num_features: %d\n", num_features_);
   fprintf(file, "num_total_features: %d\n", num_total_features_);
   fprintf(file, "num_groups: %d\n", num_groups_);
+#ifdef USE_DATASET_INT64
   fprintf(file, "num_data: %ld\n", num_data_);
+#else
+  fprintf(file, "num_data: %d\n", num_data_);
+#endif
   fprintf(file, "feature_names: ");
   for (auto n : feature_names_) {
     fprintf(file, "%s, ", n.c_str());

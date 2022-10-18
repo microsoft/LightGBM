@@ -301,7 +301,7 @@ class Metadata {
   /*! \brief Insert initial scores at the given index */
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
   /*! \brief Insert queries at the given index */
-  void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
+  void InsertQueries(const int64_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -436,7 +436,7 @@ class Dataset {
     const std::vector<std::vector<double>>& forced_bins,
     int** sample_non_zero_indices,
     double** sample_values,
-    const int64_t* num_per_col,
+    const data_size_t* num_per_col,
     int num_sample_col,
     size_t total_sample_cnt,
     const Config& io_config);
@@ -548,7 +548,7 @@ class Dataset {
     const label_t* labels,
     const label_t* weights,
     const double* init_scores,
-    const data_size_t* queries) {
+    const int64_t* queries) {
     metadata_.InsertAt(start_index, count, labels, weights, init_scores, queries);
   }
 

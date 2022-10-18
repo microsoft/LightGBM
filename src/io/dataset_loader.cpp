@@ -660,7 +660,7 @@ Dataset* DatasetLoader::LoadFromBinFile(const char* data_filename, const char* b
 Dataset* DatasetLoader::ConstructFromSampleData(double** sample_values,
                                                 int** sample_indices,
                                                 int num_col,
-                                                const int64_t* num_per_col,
+                                                const data_size_t* num_per_col,
                                                 size_t total_sample_size,
                                                 data_size_t num_local_data,
                                                 int64_t num_dist_data) {

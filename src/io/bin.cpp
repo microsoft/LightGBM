@@ -322,13 +322,13 @@ namespace LightGBM {
     }
   }
 
-  void BinMapper::FindBin(double* values, int64_t num_sample_values, size_t total_sample_cnt,
+  void BinMapper::FindBin(double* values, data_size_t num_sample_values, size_t total_sample_cnt,
                           int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
-    int non_na_cnt = 0;
-    for (int i = 0; i < num_sample_values; ++i) {
+    data_size_t non_na_cnt = 0;
+    for (data_size_t i = 0; i < num_sample_values; ++i) {
       if (!std::isnan(values[i])) {
         values[non_na_cnt++] = values[i];
       }
@@ -367,7 +367,7 @@ namespace LightGBM {
       counts.push_back(1);
     }
 
-    for (int64_t i = 1; i < num_sample_values; ++i) {
+    for (data_size_t i = 1; i < num_sample_values; ++i) {
       if (!Common::CheckDoubleEqualOrdered(values[i - 1], values[i])) {
         if (values[i - 1] < 0.0f && values[i] > 0.0f) {
           distinct_values.push_back(0.0f);

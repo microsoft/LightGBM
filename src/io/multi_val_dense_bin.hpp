@@ -158,7 +158,7 @@ class MultiValDenseBin : public MultiValBin {
     for (data_size_t tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);
-      for (int i = start; i < end; ++i) {
+      for (data_size_t i = start; i < end; ++i) {
         const auto j_start = RowPtr(i);
         const auto other_j_start =
             SUBROW ? other_bin->RowPtr(used_indices[i]) : other_bin->RowPtr(i);

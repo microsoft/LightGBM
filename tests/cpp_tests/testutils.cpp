@@ -12,6 +12,7 @@
 #include <thread>
 #include <utility>
 
+using LightGBM::data_size_t;
 using LightGBM::Log;
 using LightGBM::Random;
 
@@ -217,7 +218,7 @@ namespace LightGBM {
                                       const std::vector<float>* labels,
                                       const std::vector<float>* weights,
                                       const std::vector<double>* init_scores,
-    const std::vector<int64_t>* groups) {
+                                      const std::vector<int64_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -392,7 +393,7 @@ namespace LightGBM {
       FAIL() << "Expected non-null init_scores";
     }
 
-    const int64_t* query_boundaries = metadata->query_boundaries();
+    const data_size_t* query_boundaries = metadata->query_boundaries();
     if (query_boundaries) {
       if (!ref_groups) {
         FAIL() << "Expected null query_boundaries";

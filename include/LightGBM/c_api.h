@@ -46,6 +46,12 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 #define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
 
+#ifdef USE_DATASET_INT64
+typedef int64_t data_size_t;
+#else
+typedef int32_t data_size_t;
+#endif
+
 /*!
  * \brief Get string message of the last error.
  * \return Error information
@@ -127,7 +133,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromFile(const char* filename,
 LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSampledColumn(double** sample_data,
                                                           int** sample_indices,
                                                           int32_t ncol,
-                                                          const int64_t* num_per_col,
+                                                          const data_size_t* num_per_col,
                                                           int64_t num_sample_row,
                                                           int64_t num_local_row,
                                                           int64_t num_dist_row,
@@ -411,7 +417,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetGetSubset(const DatasetHandle handle,
-                                            const int64_t* used_row_indices,
+                                            const data_size_t* used_row_indices,
                                             int64_t num_used_row_indices,
                                             const char* parameters,
                                             DatasetHandle* out);

@@ -489,7 +489,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   #endif  // USE_CUDA_EXP
 }
 
-void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
+void Metadata::InsertQueries(const int64_t* queries, data_size_t start_index, data_size_t len) {
   if (!queries) {
     Log::Fatal("Passed null queries");
   }
@@ -499,8 +499,9 @@ void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index
   if (static_cast<size_t>(start_index + len) > queries_.size()) {
     Log::Fatal("Inserted query data is too large for dataset");
   }
-
-  memcpy(queries_.data() + start_index, queries, sizeof(data_size_t) * len);
+  for (data_size_t i = 0; i < len ; i++){
+    queries_[i + start_index] = static_cast<data_size_t>(queries[i]);
+  }
 
   query_load_from_file_ = false;
   // CUDA is handled after all insertions are complete

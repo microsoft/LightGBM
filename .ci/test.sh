@@ -118,6 +118,12 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+if [[ $TASK == "int64" ]]; then
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+    cmake -DUSE_DATASET_INT64=ON ..
+    make -j4 || exit -1
+    exit 0
+fi
 # temporary fix for https://github.com/microsoft/LightGBM/issues/5390
 if [[ $PYTHON_VERSION == "3.7" ]]; then
     DEPENDENCIES="dask distributed"

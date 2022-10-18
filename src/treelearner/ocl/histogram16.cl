@@ -97,7 +97,11 @@ typedef uint acc_int_type;
 #define AMD_USE_DS_ADD_F32 0
 #endif
 
+#ifdef USE_DATASET_INT64
+typedef ulong data_size_t;
+#else
 typedef uint data_size_t;
+#endif
 typedef float score_t;
 
 #define ATOMIC_FADD_SUB1 { \
@@ -388,7 +392,7 @@ __kernel void histogram16(__global const uchar4* feature_data_base,
 R""()
 */
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
-    for (uint i = subglobal_tid; i < num_data; i += subglobal_size) {
+    for (data_size_t i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
         // we don't need boundary check because we have made the buffer larger
         stat1_next = ordered_gradients[i + subglobal_size];

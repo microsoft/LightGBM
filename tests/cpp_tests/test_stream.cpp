@@ -11,6 +11,7 @@
 
 #include <iostream>
 
+using LightGBM::data_size_t;
 using LightGBM::Dataset;
 using LightGBM::Log;
 using LightGBM::TestUtils;
@@ -55,7 +56,7 @@ void test_stream_dense(
           }
         }
 
-        std::vector<int64_t> sample_sizes;
+        std::vector<data_size_t> sample_sizes;
         std::vector<double*> sample_values_ptrs;
         std::vector<int*> sample_idx_ptrs;
         for (int32_t i = 0; i < ncols; ++i) {
@@ -163,7 +164,7 @@ void test_stream_sparse(
           }
         }
 
-        std::vector<int64_t> sample_sizes;
+        std::vector<data_size_t> sample_sizes;
         std::vector<double*> sample_values_ptrs;
         std::vector<int*> sample_idx_ptrs;
         for (int32_t i = 0; i < ncols; ++i) {
@@ -246,7 +247,7 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   int nclasses = 2;  // choose > 1 just to test multi-class handling
   std::vector<double> unused_init_scores;
   unused_init_scores.resize(noriginalrows * nclasses);
-  std::vector<int64_t> unused_groups;
+  std::vector<data_size_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
   result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;
@@ -297,7 +298,7 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   int32_t nclasses = 2;
   std::vector<double> unused_init_scores;
   unused_init_scores.resize(noriginalrows * nclasses);
-  std::vector<int64_t> unused_groups;
+  std::vector<data_size_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
   result = LGBM_DatasetSetField(ref_datset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;

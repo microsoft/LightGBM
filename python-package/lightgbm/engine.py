@@ -36,7 +36,8 @@ def train(
     feature_name: Union[List[str], str] = 'auto',
     categorical_feature: Union[List[str], List[int], str] = 'auto',
     keep_training_booster: bool = False,
-    callbacks: Optional[List[Callable]] = None
+    callbacks: Optional[List[Callable]] = None,
+    use_int64: bool = False,
 ) -> Booster:
     """Perform the training with given parameters.
 
@@ -99,7 +100,9 @@ def train(
     callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
-
+    use_int64 : bool, optional (default=False)
+        If True, support dataset rows more then max(int32_t).
+        Need to build with build option USE_DATASET_INT64 for lightGBM.
     Note
     ----
     A custom objective function can be provided for the ``objective`` parameter.
@@ -156,7 +159,7 @@ def train(
         raise ValueError("num_boost_round should be greater than zero.")
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params, use_int64=use_int64)
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(dict(init_model.params, **params))
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
@@ -220,7 +223,7 @@ def train(
 
     # construct booster
     try:
-        booster = Booster(params=params, train_set=train_set)
+        booster = Booster(params=params, train_set=train_set, use_int64=use_int64)
         if is_valid_contain_train:
             booster.set_train_data_name(train_data_name)
         for valid_set, name_valid_set in zip(reduced_valid_sets, name_valid_sets):
