@@ -498,9 +498,9 @@ FIELD_TYPE_MAPPER = {"label": C_API_DTYPE_FLOAT32,
                      "group": C_API_DTYPE_INT32}
 """Data type of data field(int64)"""
 FIELD_TYPE_MAPPER_INT64 = {"label": C_API_DTYPE_FLOAT32,
-                     "weight": C_API_DTYPE_FLOAT32,
-                     "init_score": C_API_DTYPE_FLOAT64,
-                     "group": C_API_DTYPE_INT64}
+                           "weight": C_API_DTYPE_FLOAT32,
+                           "init_score": C_API_DTYPE_FLOAT64,
+                           "group": C_API_DTYPE_INT64}
 
 """String name to int feature importance type mapper"""
 FEATURE_IMPORTANCE_TYPE_MAPPER = {"split": C_API_FEATURE_IMPORTANCE_SPLIT,
@@ -809,7 +809,6 @@ class _InnerPredictor:
         data_has_header: bool = False,
         validate_features: bool = False,
         use_int64: bool = False
-        
     ):
         """Predict logic.
 
@@ -2172,7 +2171,6 @@ class Dataset:
                 dtype = np.int64 if field_name == 'group' else np.float32
             else:
                 dtype = np.int32 if field_name == 'group' else np.float32
-            
             data = list_to_1d_numpy(data, dtype, name=field_name)
 
         if data.dtype == np.float32 or data.dtype == np.float64:
@@ -2181,11 +2179,11 @@ class Dataset:
             ptr_data, type_data, _ = c_int_array(data)
         elif data.dtype == np.int64 and field_name == 'group':
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
-            type_data= C_API_DTYPE_INT64
+            type_data = C_API_DTYPE_INT64
         else:
             raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
-        
-        if self.use_int64:
+
+        if self.use_int64 :
             if type_data != FIELD_TYPE_MAPPER_INT64[field_name]:
                 raise TypeError("Input type error for set_field")
         else:

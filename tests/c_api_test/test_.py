@@ -88,14 +88,14 @@ def load_from_csr(filename, reference):
     if reference is not None:
         ref = reference
 
-    if csr.indptr.dtype==np.int32:
+    if csr.indptr.dtype == np.int32:
         indices_t = csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
         indptr_t = csr.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
-        indptr_type=ctypes.c_int(dtype_int32)
-    elif csr.indptr.dtype==np.int64:
+        indptr_type = ctypes.c_int(dtype_int32)
+    elif csr.indptr.dtype == np.int64:
         indices_t = csr.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
         indptr_t = csr.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
-        indptr_type=ctypes.c_int(dtype_int64)
+        indptr_type = ctypes.c_int(dtype_int64)
 
     LIB.LGBM_DatasetCreateFromCSR(
         indptr_t,
@@ -132,14 +132,14 @@ def load_from_csc(filename, reference):
     if reference is not None:
         ref = reference
 
-    if csc.indptr.dtype==np.int32:
+    if csc.indptr.dtype == np.int32:
         indices_t = csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
         indptr_t = csc.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
-        indptr_type=ctypes.c_int(dtype_int32)
-    elif csc.indptr.dtype==np.int64:
+        indptr_type = ctypes.c_int(dtype_int32)
+    elif csc.indptr.dtype == np.int64:
         indices_t = csc.indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
         indptr_t = csc.indptr.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
-        indptr_type=ctypes.c_int(dtype_int64)
+        indptr_type = ctypes.c_int(dtype_int64)
 
     LIB.LGBM_DatasetCreateFromCSC(
         indptr_t,

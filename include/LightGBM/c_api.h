@@ -46,10 +46,11 @@ typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 #define C_API_FEATURE_IMPORTANCE_SPLIT (0)  /*!< \brief Split type of feature importance. */
 #define C_API_FEATURE_IMPORTANCE_GAIN  (1)  /*!< \brief Gain type of feature importance. */
 
+/*!< \brief type define for dataset rows. */
 #ifdef USE_DATASET_INT64
-typedef int64_t data_size_t;
+typedef int64_t data_size_t;  /*!< \brief dataset rows type int64. */
 #else
-typedef int32_t data_size_t;
+typedef int32_t data_size_t;  /*!< \brief dataset rows type int32. */
 #endif
 
 /*!
