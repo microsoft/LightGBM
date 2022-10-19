@@ -117,6 +117,10 @@ class ThreadExceptionHelper {
 #define OMP_LOOP_EX_END()
 #define OMP_THROW_EX()
 
+/** In an external multi-threaded environment, the above methods can return different values on
+    different threads (in Linux at least). To share allocations between threads, use a constant. **/
+#define MAX_THREAD_ALLOCATION 128
+
 #endif
 
 

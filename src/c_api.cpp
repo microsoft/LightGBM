@@ -1073,7 +1073,6 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
-  const int num_omp_threads = OMP_NUM_THREADS();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
   if (p_dataset->has_raw()) {
@@ -1085,7 +1084,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (num_omp_threads * tid);
+    const int internal_tid = omp_get_thread_num() + (MAX_THREAD_ALLOCATION * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, start_row + i, one_row);
     OMP_LOOP_EX_END();
@@ -1154,7 +1153,6 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
-  const int num_omp_threads = OMP_NUM_THREADS();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
@@ -1166,7 +1164,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (num_omp_threads * tid);
+    const int internal_tid = omp_get_thread_num() + (MAX_THREAD_ALLOCATION * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
