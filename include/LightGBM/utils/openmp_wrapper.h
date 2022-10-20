@@ -5,6 +5,10 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
+/** In an external multi-threaded environment, the above methods can return different values on
+    different threads (in Linux at least). To share allocations between threads, use a constant. **/
+#define MAX_THREAD_ALLOCATION 128
+
 #ifdef _OPENMP
 
 #include <LightGBM/utils/log.h>
@@ -116,10 +120,6 @@ class ThreadExceptionHelper {
 #define OMP_LOOP_EX_BEGIN()
 #define OMP_LOOP_EX_END()
 #define OMP_THROW_EX()
-
-/** In an external multi-threaded environment, the above methods can return different values on
-    different threads (in Linux at least). To share allocations between threads, use a constant. **/
-#define MAX_THREAD_ALLOCATION 128
 
 #endif
 
