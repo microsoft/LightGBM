@@ -82,7 +82,8 @@ class SparseBin : public Bin {
   ~SparseBin() {}
 
   void InitStreaming(uint32_t num_thread) override {
-    // Each thread needs its own push buffer, so allocate external num_thread times the max number of OMP threads
+    // Each external thread needs its own set of OpenMP push buffers,
+    // so allocate num_thread times the maximum number of OMP threads per external thread
     push_buffers_.resize(MAX_THREAD_ALLOCATION * num_thread);
   };
 
