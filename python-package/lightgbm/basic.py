@@ -2183,7 +2183,7 @@ class Dataset:
         else:
             raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
 
-        if self.use_int64 :
+        if self.use_int64:
             if type_data != FIELD_TYPE_MAPPER_INT64[field_name]:
                 raise TypeError("Input type error for set_field")
         else:
