@@ -168,8 +168,8 @@ class ParallelPartitionRunner {
 
     // array index(nblock - 1) should >= 0
     data_size_t left_cnt = 0;
-    if(nblock > 0){
-      left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];  
+    if (nblock > 0) {
+      left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];
     }
 
     auto right_start = out + left_cnt;

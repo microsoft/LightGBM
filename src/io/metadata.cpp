@@ -499,7 +499,7 @@ void Metadata::InsertQueries(const int64_t* queries, data_size_t start_index, da
   if (static_cast<size_t>(start_index + len) > queries_.size()) {
     Log::Fatal("Inserted query data is too large for dataset");
   }
-  for (data_size_t i = 0; i < len ; i++){
+  for (data_size_t i = 0; i < len ; i++) {
     queries_[i + start_index] = static_cast<data_size_t>(queries[i]);
   }
 

@@ -66,7 +66,7 @@ class Random {
   * \param K
   * \return K Ordered sampled data from {0,1,...,N-1}
   */
- template<typename T>
+  template<typename T>
   inline std::vector<T> Sample(T N, int K) {
     std::vector<T> ret;
     ret.reserve(K);

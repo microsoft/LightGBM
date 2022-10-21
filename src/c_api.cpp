@@ -2261,7 +2261,6 @@ int LGBM_BoosterPredictForCSC(BoosterHandle handle,
   }
   std::function<std::vector<std::pair<int, double>>(data_size_t row_idx)> get_row_fun =
       [&iterators, ncol](data_size_t i) {
-
         std::vector<std::pair<int, double>> one_row;
         one_row.reserve(ncol);
         const int tid = omp_get_thread_num();
@@ -2614,7 +2613,6 @@ RowPairFunctionFromDenseRows(const void** data, int num_col, int data_type) {
 template<typename T, typename T1, typename T2>
 std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR_helper(const void* indptr, const void* tmp_indices, const void* data) {
-
   const T1* data_ptr = reinterpret_cast<const T1*>(data);
   const T2* ptr_indptr = reinterpret_cast<const T2*>(indptr);
   const T2* indices = reinterpret_cast<const T2*>(tmp_indices);
@@ -2635,7 +2633,6 @@ RowFunctionFromCSR_helper(const void* indptr, const void* tmp_indices, const voi
 template<typename T>
 std::function<std::vector<std::pair<int, double>>(T idx)>
 RowFunctionFromCSR(const void* indptr, int indptr_type, const void* indices, const void* data, int data_type, int64_t , int64_t ) {
-
   if (data_type == C_API_DTYPE_FLOAT32) {
     if (indptr_type == C_API_DTYPE_INT32) {
      return RowFunctionFromCSR_helper<T, float, int32_t>(indptr, indices, data);
@@ -2652,8 +2649,6 @@ RowFunctionFromCSR(const void* indptr, int indptr_type, const void* indices, con
   Log::Fatal("Unknown data type in RowFunctionFromCSR");
   return nullptr;
 }
-
-
 
 template <typename T1, typename T2>
 std::function<std::pair<T2, double>(T2 idx)> IterateFunctionFromCSC_helper(const void* col_ptr, const void* tmp_indices, const void* data, int col_idx) {
@@ -2677,7 +2672,6 @@ std::function<std::pair<T2, double>(T2 idx)> IterateFunctionFromCSC_helper(const
 template <typename T>
 std::function<std::pair<T, double>(data_size_t idx)>
 IterateFunctionFromCSC(const void* col_ptr, int, const void* indices, const void* data, int data_type, int64_t ncol_ptr, int64_t , int col_idx) {
-
   CHECK(col_idx < ncol_ptr && col_idx >= 0);
   if (data_type == C_API_DTYPE_FLOAT32) {
       return IterateFunctionFromCSC_helper<float, T>(col_ptr, indices, data, col_idx);
@@ -2688,7 +2682,6 @@ IterateFunctionFromCSC(const void* col_ptr, int, const void* indices, const void
   return nullptr;
 }
 
-
 CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const void* indices,
                                  const void* data, int data_type, int64_t ncol_ptr, int64_t nelem, int col_idx) {
   if (col_ptr_type == C_API_DTYPE_INT32) {
@@ -2696,7 +2689,6 @@ CSC_RowIterator::CSC_RowIterator(const void* col_ptr, int col_ptr_type, const vo
   } else if (col_ptr_type == C_API_DTYPE_INT64) {
      iter_fun_ = IterateFunctionFromCSC<int64_t>(col_ptr, col_ptr_type, indices, data, data_type, ncol_ptr, nelem, col_idx);
   }
- 
 }
 
 double CSC_RowIterator::Get(data_size_t idx) {

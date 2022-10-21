@@ -612,11 +612,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "is_provide_training_metric", &is_provide_training_metric);
 
   if (GetString(params, "eval_at", &tmp_str)) {
-#ifdef USE_DATASET_INT64
-    eval_at = Common::StringToArray<int64_t>(tmp_str, ',');
-#else
-    eval_at = Common::StringToArray<int32_t>(tmp_str, ',');
-#endif
+    eval_at = Common::StringToArray<data_size_t>(tmp_str, ',');
   }
 
   GetInt(params, "multi_error_top_k", &multi_error_top_k);
