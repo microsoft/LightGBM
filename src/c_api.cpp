@@ -2721,3 +2721,4 @@ std::pair<data_size_t, double> CSC_RowIterator::NextNonZero() {
     return std::make_pair(static_cast<data_size_t>(-1), 0.0);
   }
 }
+
