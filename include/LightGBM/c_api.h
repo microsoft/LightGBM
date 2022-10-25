@@ -559,6 +559,13 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetGetFeatureNumBin(DatasetHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
                                                   DatasetHandle source);
 
+/*!
+ * \brief Get current support int64_t or not.
+ * \param[out] out 1 means built with USE_DATASET_INT64(cmake option), 0 not use int64_t
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetGetUseLong(int* out);
+
 /* --- start Booster interfaces */
 
 /*!
@@ -1517,3 +1524,4 @@ INLINE_FUNCTION void LGBM_SetLastError(const char* msg) {
 }
 
 #endif  /* LIGHTGBM_C_API_H_ */
+

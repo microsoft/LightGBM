@@ -1718,6 +1718,16 @@ int LGBM_DatasetAddFeaturesFrom(DatasetHandle target,
   API_END();
 }
 
+int LGBM_DatasetGetUseLong(int* out) {
+  API_BEGIN();
+#ifdef USE_DATASET_INT64
+  *out = 1;
+#else
+  *out = 0;
+#endif
+  API_END();
+}
+
 // ---- start of booster
 
 int LGBM_BoosterCreate(const DatasetHandle train_data,

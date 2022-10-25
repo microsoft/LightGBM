@@ -736,8 +736,7 @@ class _InnerPredictor:
         self,
         model_file: Optional[Union[str, Path]] = None,
         booster_handle: Optional[ctypes.c_void_p] = None,
-        pred_parameter: Optional[Dict[str, Any]] = None,
-        use_int64: bool = False
+        pred_parameter: Optional[Dict[str, Any]] = None
     ):
         """Initialize the _InnerPredictor.
 
@@ -749,13 +748,9 @@ class _InnerPredictor:
             Handle of Booster.
         pred_parameter: dict or None, optional (default=None)
             Other parameters for the prediction.
-        use_int64 : bool, optional (default=False)
-            If True, support dataset rows more then max(int32_t).
-            Need to build with cmake option USE_DATASET_INT64 for lightGBM.
         """
         self.handle = ctypes.c_void_p()
         self.__is_manage_handle = True
-        self.__use_int64 = use_int64
         if model_file is not None:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
@@ -807,8 +802,7 @@ class _InnerPredictor:
         pred_leaf: bool = False,
         pred_contrib: bool = False,
         data_has_header: bool = False,
-        validate_features: bool = False,
-        use_int64: bool = False
+        validate_features: bool = False
     ):
         """Predict logic.
 
@@ -833,9 +827,6 @@ class _InnerPredictor:
         validate_features : bool, optional (default=False)
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
-        use_int64 : bool, optional (default=False)
-            If True, support dataset rows more then max(int32_t).
-            Need to build with cmake option USE_DATASET_INT64 for lightGBM.
 
         Returns
         -------
@@ -880,9 +871,9 @@ class _InnerPredictor:
                 preds = np.loadtxt(f.name, dtype=np.float64)
                 nrow = preds.shape[0]
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type, use_int64=self.__use_int64)
+            preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type, use_int64=self.__use_int64)
+            preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
         elif isinstance(data, list):
@@ -899,7 +890,7 @@ class _InnerPredictor:
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError(f'Cannot predict data for type {type(data).__name__}')
-            preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type, use_int64=self.__use_int64)
+            preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type)
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
@@ -1022,7 +1013,7 @@ class _InnerPredictor:
             return cs_output_matrices[0]
         return cs_output_matrices
 
-    def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type, use_int64):
+    def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type):
         """Predict for a CSR data."""
         def inner_predict(csr, start_iteration, num_iteration, predict_type, preds=None):
             nrow = len(csr.indptr) - 1
@@ -1064,7 +1055,7 @@ class _InnerPredictor:
                 raise ValueError("Wrong length for predict results")
             return preds, nrow
 
-        def inner_predict_sparse(csr, start_iteration, num_iteration, predict_type, use_int64=False):
+        def inner_predict_sparse(csr, start_iteration, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
             ptr_data, type_ptr_data, _ = c_float_array(csr.data)
             csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -1079,7 +1070,12 @@ class _InnerPredictor:
             else:
                 out_ptr_data = ctypes.POINTER(ctypes.c_double)()
             out_shape = np.empty(2, dtype=np.int64)
-            if use_int64:
+
+            use_int64 = ctypes.c_int32(0)
+            _safe_call(_LIB.LGBM_DatasetGetUseLong(
+                ctypes.byref(use_int64)
+            ))
+            if use_int64 == 1:
                 csr_indices_p = csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
             else:
                 csr_indices_p = csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
@@ -1109,7 +1105,7 @@ class _InnerPredictor:
             return matrices, nrow
 
         if predict_type == C_API_PREDICT_CONTRIB:
-            return inner_predict_sparse(csr, start_iteration, num_iteration, predict_type, use_int64=self.__use_int64)
+            return inner_predict_sparse(csr, start_iteration, num_iteration, predict_type)
         nrow = len(csr.indptr) - 1
         if nrow > MAX_INT32:
             sections = [0] + list(np.arange(start=MAX_INT32, stop=nrow, step=MAX_INT32)) + [nrow]
@@ -1125,7 +1121,7 @@ class _InnerPredictor:
         else:
             return inner_predict(csr, start_iteration, num_iteration, predict_type)
 
-    def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type, use_int64):
+    def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type):
         """Predict for a CSC data."""
         def inner_predict_sparse(csc, start_iteration, num_iteration, predict_type):
             ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
@@ -1168,7 +1164,7 @@ class _InnerPredictor:
 
         nrow = csc.shape[0]
         if nrow > MAX_INT32:
-            return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type, use_int64=self.__use_int64)
+            return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type)
         if predict_type == C_API_PREDICT_CONTRIB:
             return inner_predict_sparse(csc, start_iteration, num_iteration, predict_type)
         n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
@@ -1235,8 +1231,7 @@ class Dataset:
         feature_name='auto',
         categorical_feature='auto',
         params: Optional[Dict[str, Any]] = None,
-        free_raw_data: bool = True,
-        use_int64: bool = False
+        free_raw_data: bool = True
     ):
         """Initialize Dataset.
 
@@ -1276,9 +1271,6 @@ class Dataset:
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
-        use_int64 : bool, optional (default=False)
-            If True, support dataset rows more then max(int32_t).
-            Need to build with cmake option USE_DATASET_INT64 for lightGBM.
         """
         self.handle = None
         self.data = data
@@ -1291,7 +1283,6 @@ class Dataset:
         self.categorical_feature = categorical_feature
         self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
-        self.use_int64 = use_int64
         self.used_indices = None
         self.need_slice = True
         self._predictor = None
@@ -1327,7 +1318,11 @@ class Dataset:
         """
         param_str = param_dict_to_str(self.get_params())
         sample_cnt = _get_sample_count(total_nrow, param_str)
-        if self.use_int64:
+        use_int64 = ctypes.c_int32(0)
+        _safe_call(_LIB.LGBM_DatasetGetUseLong(
+            ctypes.byref(use_int64)
+        ))
+        if use_int64 == 1:
             indices = np.empty(sample_cnt, dtype=np.int64)
         else:
             indices = np.empty(sample_cnt, dtype=np.int32)
@@ -1413,7 +1408,11 @@ class Dataset:
         for i in range(ncol):
             sample_col_ptr[i] = c_float_array(sample_data[i])[0]
             indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
-        if self.use_int64:
+        use_int64 = ctypes.c_int32(0)
+        _safe_call(_LIB.LGBM_DatasetGetUseLong(
+            ctypes.byref(use_int64)
+        ))
+        if use_int64 == 1:
             num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int64)
         else:
             num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int32)
@@ -1944,8 +1943,12 @@ class Dataset:
                                     init_score=self.init_score, predictor=self._predictor,
                                     feature_name=self.feature_name, params=self.params)
                 else:
+                    use_int64 = ctypes.c_int32(0)
+                    _safe_call(_LIB.LGBM_DatasetGetUseLong(
+                        ctypes.byref(use_int64)
+                    ))
                     # construct subset
-                    if self.use_int64:
+                    if use_int64 == 1:
                         used_indices = list_to_1d_numpy(self.used_indices, np.int64, name='used_indices')
                     else:
                         used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
@@ -1957,7 +1960,7 @@ class Dataset:
                                                   return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
-                    if self.use_int64:
+                    if use_int64 == 1:
                         _safe_call(_LIB.LGBM_DatasetGetSubset(
                             self.reference.construct().handle,
                             used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
@@ -2140,7 +2143,12 @@ class Dataset:
         """
         if self.handle is None:
             raise Exception(f"Cannot set {field_name} before construct dataset")
-        if self.use_int64:
+
+        use_int64 = ctypes.c_int32(0)
+        _safe_call(_LIB.LGBM_DatasetGetUseLong(
+            ctypes.byref(use_int64)
+        ))
+        if use_int64 == 1:
             field_type = FIELD_TYPE_MAPPER_INT64[field_name]
         else:
             field_type = FIELD_TYPE_MAPPER[field_name]
@@ -2167,7 +2175,7 @@ class Dataset:
                     'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
         else:
-            if self.use_int64:
+            if use_int64 == 1:
                 dtype = np.int64 if field_name == 'group' else np.float32
             else:
                 dtype = np.int32 if field_name == 'group' else np.float32
@@ -2183,7 +2191,7 @@ class Dataset:
         else:
             raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
 
-        if self.use_int64:
+        if use_int64 == 1:
             if type_data != FIELD_TYPE_MAPPER_INT64[field_name]:
                 raise TypeError("Input type error for set_field")
         else:
@@ -2226,9 +2234,13 @@ class Dataset:
             raise TypeError("Return type error for get_field")
         if tmp_out_len.value == 0:
             return None
-        if out_type.value == C_API_DTYPE_INT32 and not self.use_int64:
+        use_int64 = ctypes.c_int32(0)
+        _safe_call(_LIB.LGBM_DatasetGetUseLong(
+            ctypes.byref(use_int64)
+        ))
+        if out_type.value == C_API_DTYPE_INT32 and not use_int64 == 1:
             arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
-        elif (out_type.value == C_API_DTYPE_INT32 and self.use_int64) or (out_type.value == C_API_DTYPE_INT64 and field_name == 'group'):
+        elif (out_type.value == C_API_DTYPE_INT32 and use_int64 == 1) or (out_type.value == C_API_DTYPE_INT64 and field_name == 'group'):
             arr = cint64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int64)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
             arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
@@ -2790,8 +2802,7 @@ class Booster:
         params: Optional[Dict[str, Any]] = None,
         train_set: Optional[Dataset] = None,
         model_file: Optional[Union[str, Path]] = None,
-        model_str: Optional[str] = None,
-        use_int64: bool = False
+        model_str: Optional[str] = None
     ):
         """Initialize the Booster.
 
@@ -2813,7 +2824,6 @@ class Booster:
         self.__set_objective_to_none = False
         self.best_iteration = -1
         self.best_score = {}
-        self.use_int64 = use_int64
         params = {} if params is None else deepcopy(params)
         if train_set is not None:
             # Training task
@@ -2898,9 +2908,6 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-            if params:
-                _log_warning('Ignoring params argument, using parameters from model file.')
-            params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
         else:
@@ -3912,7 +3919,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features, use_int64=self.use_int64)
+        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
@@ -3935,8 +3942,7 @@ class Booster:
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             params=new_params,
-            free_raw_data=free_raw_data,
-            use_int64=self.use_int64,
+            free_raw_data=free_raw_data
         )
         new_params['refit_decay_rate'] = decay_rate
         new_booster = Booster(new_params, train_set)
@@ -4268,3 +4274,4 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(('auc', 'ndcg@', 'map@', 'average_precision')) for name in self.__name_inner_eval
                 ]
+
