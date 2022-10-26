@@ -32,7 +32,7 @@ class TestUtils {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-      std::vector<int64_t>* groups);
+    std::vector<int64_t>* groups);
 
   /*!
    * Creates a CSR sparse Dataset of random values.
@@ -47,7 +47,7 @@ class TestUtils {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-      std::vector<int64_t>* groups);
+    std::vector<int64_t>* groups);
 
   /*!
    * Creates a batch of Metadata of random values.
@@ -57,7 +57,7 @@ class TestUtils {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-      std::vector<int64_t>* groups);
+    std::vector<int64_t>* groups);
 
   /*!
    * Pushes nrows of data to a Dataset in batches of batch_count.
@@ -71,7 +71,7 @@ class TestUtils {
     const std::vector<float>* labels,
     const std::vector<float>* weights,
     const std::vector<double>* init_scores,
-      const std::vector<int64_t>* groups);
+    const std::vector<int64_t>* groups);
 
   /*!
    * Pushes nrows of data to a Dataset in batches of batch_count.
@@ -86,7 +86,7 @@ class TestUtils {
     const std::vector<float>* labels,
     const std::vector<float>* weights,
     const std::vector<double>* init_scores,
-      const std::vector<int64_t>* groups);
+    const std::vector<int64_t>* groups);
 
   /*!
    * Validates metadata against reference vectors.
@@ -95,7 +95,7 @@ class TestUtils {
     const std::vector<float>* labels,
     const std::vector<float>* weights,
     const std::vector<double>* init_scores,
-      const std::vector<int64_t>* groups);
+    const std::vector<int64_t>* groups);
 
   static const double* CreateInitScoreBatch(std::vector<double>* init_score_batch,
     int32_t index,

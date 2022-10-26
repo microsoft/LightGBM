@@ -99,6 +99,7 @@ def train(
     callbacks : list of callable, or None, optional (default=None)
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
+
     Note
     ----
     A custom objective function can be provided for the ``objective`` parameter.
@@ -741,4 +742,3 @@ def cv(
         results['cvbooster'] = cvfolds
 
     return dict(results)
-
