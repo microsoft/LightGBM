@@ -1075,7 +1075,7 @@ class _InnerPredictor:
             _safe_call(_LIB.LGBM_DatasetGetUseLong(
                 ctypes.byref(use_int64)
             ))
-            if use_int64 == 1:
+            if use_int64.value == 1:
                 csr_indices_p = csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64))
             else:
                 csr_indices_p = csr_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
@@ -1322,7 +1322,7 @@ class Dataset:
         _safe_call(_LIB.LGBM_DatasetGetUseLong(
             ctypes.byref(use_int64)
         ))
-        if use_int64 == 1:
+        if use_int64.value == 1:
             indices = np.empty(sample_cnt, dtype=np.int64)
         else:
             indices = np.empty(sample_cnt, dtype=np.int32)
@@ -1393,29 +1393,37 @@ class Dataset:
         ncol = len(sample_indices)
         assert len(sample_data) == ncol, "#sample data column != #column indices"
 
-        for i in range(ncol):
-            if sample_data[i].dtype != np.double:
-                raise ValueError(f"sample_data[{i}] type {sample_data[i].dtype} is not double")
-            if sample_indices[i].dtype != np.int32:
-                raise ValueError(f"sample_indices[{i}] type {sample_indices[i].dtype} is not int32")
-
-        # c type: double**
-        # each double* element points to start of each column of sample data.
-        sample_col_ptr = (ctypes.POINTER(ctypes.c_double) * ncol)()
-        # c type int**
-        # each int* points to start of indices for each column
-        indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
-        for i in range(ncol):
-            sample_col_ptr[i] = c_float_array(sample_data[i])[0]
-            indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
         use_int64 = ctypes.c_int32(0)
         _safe_call(_LIB.LGBM_DatasetGetUseLong(
             ctypes.byref(use_int64)
         ))
-        if use_int64 == 1:
+        for i in range(ncol):
+            if sample_data[i].dtype != np.double:
+                raise ValueError(f"sample_data[{i}] type {sample_data[i].dtype} is not double")
+            if use_int64.value == 1:
+                if sample_indices[i].dtype != np.int64:
+                    raise ValueError(f"sample_indices[{i}] type {sample_indices[i].dtype} is not int64")
+            else:
+                if sample_indices[i].dtype != np.int32:
+                    raise ValueError(f"sample_indices[{i}] type {sample_indices[i].dtype} is not int32")
+
+        # c type: double**
+        # each double* element points to start of each column of sample data.
+        sample_col_ptr = (ctypes.POINTER(ctypes.c_double) * ncol)()
+        if use_int64.value == 1:
             num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int64)
+            # c type int**
+            # each int* points to start of indices for each column
+            indices_col_ptr = (ctypes.POINTER(ctypes.c_int64) * ncol)()
         else:
             num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int32)
+            # c type int**
+            # each int* points to start of indices for each column
+            indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
+        for i in range(ncol):
+            sample_col_ptr[i] = c_float_array(sample_data[i])[0]
+            indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
+
         num_per_col_ptr, _, _ = c_int_array(num_per_col)
 
         self.handle = ctypes.c_void_p()
@@ -1683,7 +1691,14 @@ class Dataset:
 
         filtered = []
         filtered_idx = []
-        sampled_row_range = np.arange(len(indices), dtype=np.int32)
+        use_int64 = ctypes.c_int32(0)
+        _safe_call(_LIB.LGBM_DatasetGetUseLong(
+            ctypes.byref(use_int64)
+        ))
+        if use_int64.value == 1:
+            sampled_row_range = np.arange(len(indices), dtype=np.int64)
+        else:
+            sampled_row_range = np.arange(len(indices), dtype=np.int32)
         for col in sampled:
             col_predicate = (np.abs(col) > ZERO_THRESHOLD) | np.isnan(col)
             filtered_col = col[col_predicate]
@@ -1948,7 +1963,7 @@ class Dataset:
                         ctypes.byref(use_int64)
                     ))
                     # construct subset
-                    if use_int64 == 1:
+                    if use_int64.value == 1:
                         used_indices = list_to_1d_numpy(self.used_indices, np.int64, name='used_indices')
                     else:
                         used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
@@ -1960,7 +1975,7 @@ class Dataset:
                                                   return_counts=True)
                     self.handle = ctypes.c_void_p()
                     params_str = param_dict_to_str(self.params)
-                    if use_int64 == 1:
+                    if use_int64.value == 1:
                         _safe_call(_LIB.LGBM_DatasetGetSubset(
                             self.reference.construct().handle,
                             used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
@@ -2148,7 +2163,7 @@ class Dataset:
         _safe_call(_LIB.LGBM_DatasetGetUseLong(
             ctypes.byref(use_int64)
         ))
-        if use_int64 == 1:
+        if use_int64.value == 1:
             field_type = FIELD_TYPE_MAPPER_INT64[field_name]
         else:
             field_type = FIELD_TYPE_MAPPER[field_name]
@@ -2175,7 +2190,7 @@ class Dataset:
                     'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
         else:
-            if use_int64 == 1:
+            if use_int64.value == 1:
                 dtype = np.int64 if field_name == 'group' else np.float32
             else:
                 dtype = np.int32 if field_name == 'group' else np.float32
@@ -2191,7 +2206,7 @@ class Dataset:
         else:
             raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
 
-        if use_int64 == 1:
+        if use_int64.value == 1:
             if type_data != FIELD_TYPE_MAPPER_INT64[field_name]:
                 raise TypeError("Input type error for set_field")
         else:
@@ -2238,9 +2253,9 @@ class Dataset:
         _safe_call(_LIB.LGBM_DatasetGetUseLong(
             ctypes.byref(use_int64)
         ))
-        if out_type.value == C_API_DTYPE_INT32 and not use_int64 == 1:
+        if out_type.value == C_API_DTYPE_INT32 and not use_int64.value == 1:
             arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
-        elif (out_type.value == C_API_DTYPE_INT32 and use_int64 == 1) or (out_type.value == C_API_DTYPE_INT64 and field_name == 'group'):
+        elif (out_type.value == C_API_DTYPE_INT32 and use_int64.value == 1) or (out_type.value == C_API_DTYPE_INT64 and field_name == 'group'):
             arr = cint64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int64)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
             arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
