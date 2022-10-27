@@ -1183,6 +1183,27 @@ SEXP LGBM_DumpParamAliases_R() {
   R_API_END();
 }
 
+SEXP LGBM_BoosterGetLoadedParam_R(SEXP handle) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  SEXP params_str;
+  int64_t out_len = 0;
+  int64_t buf_len = 1024 * 1024;
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_BoosterGetLoadedParam(R_ExternalPtrAddr(handle), buf_len, &out_len, inner_char_buf.data()));
+  // if aliases string was larger than the initial buffer, allocate a bigger buffer and try again
+  if (out_len > buf_len) {
+    inner_char_buf.resize(out_len);
+    CHECK_CALL(LGBM_BoosterGetLoadedParam(R_ExternalPtrAddr(handle), out_len, &out_len, inner_char_buf.data()));
+  }
+  params_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
+  SET_STRING_ELT(params_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  UNPROTECT(2);
+  return params_str;
+  R_API_END();
+}
+
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_HandleIsNull_R"                         , (DL_FUNC) &LGBM_HandleIsNull_R                         , 1},
@@ -1211,6 +1232,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterResetParameter_R"                , (DL_FUNC) &LGBM_BoosterResetParameter_R                , 2},
   {"LGBM_BoosterGetNumClasses_R"                 , (DL_FUNC) &LGBM_BoosterGetNumClasses_R                 , 2},
   {"LGBM_BoosterGetNumFeature_R"                 , (DL_FUNC) &LGBM_BoosterGetNumFeature_R                 , 1},
+  {"LGBM_BoosterGetLoadedParam_R"                , (DL_FUNC) &LGBM_BoosterGetLoadedParam_R                , 1},
   {"LGBM_BoosterUpdateOneIter_R"                 , (DL_FUNC) &LGBM_BoosterUpdateOneIter_R                 , 1},
   {"LGBM_BoosterUpdateOneIterCustom_R"           , (DL_FUNC) &LGBM_BoosterUpdateOneIterCustom_R           , 4},
   {"LGBM_BoosterRollbackOneIter_R"               , (DL_FUNC) &LGBM_BoosterRollbackOneIter_R               , 1},

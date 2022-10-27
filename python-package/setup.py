@@ -28,6 +28,7 @@ LIGHTGBM_OPTIONS = [
     ('bit32', None, 'Compile 32-bit version'),
     ('use-int64', None, 'Compile int64 version'),
     ('precompile', 'p', 'Use precompiled library'),
+    ('time-costs', None, 'Output time costs for different internal routines'),
     ('boost-root=', None, 'Boost preferred installation prefix'),
     ('boost-dir=', None, 'Directory with Boost package configuration file'),
     ('boost-include-dir=', None, 'Directory containing Boost headers'),
@@ -118,7 +119,8 @@ def compile_cpp(
     nomp: bool = False,
     bit32: bool = False,
     integrated_opencl: bool = False,
-    use_int64: bool = False
+    use_int64: bool = False,
+    time_costs: bool = False
 ) -> None:
     build_dir = CURRENT_DIR / "build_cpp"
     rmtree(build_dir, ignore_errors=True)
@@ -158,6 +160,8 @@ def compile_cpp(
         cmake_cmd.append("-DUSE_HDFS=ON")
     if use_int64:
         cmake_cmd.append("-DUSE_DATASET_INT64=ON")
+    if time_costs:
+        cmake_cmd.append("-DUSE_TIMETAG=ON")
 
     if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
@@ -245,6 +249,7 @@ class CustomInstall(install):
         self.mpi = False
         self.hdfs = False
         self.precompile = False
+        self.time_costs = False
         self.nomp = False
         self.bit32 = False
         self.use_int64 = False
@@ -264,7 +269,8 @@ class CustomInstall(install):
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl, use_int64=self.use_int64)
+                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl, use_int64=self.use_int64,
+                        time_costs=self.time_costs)
         install.run(self)
         if LOG_PATH.is_file():
             LOG_PATH.unlink()
@@ -290,6 +296,7 @@ class CustomBdistWheel(bdist_wheel):
         self.mpi = False
         self.hdfs = False
         self.precompile = False
+        self.time_costs = False
         self.nomp = False
         self.bit32 = False
         self.use_int64 = False
@@ -313,6 +320,7 @@ class CustomBdistWheel(bdist_wheel):
         install.mpi = self.mpi
         install.hdfs = self.hdfs
         install.precompile = self.precompile
+        install.time_costs = self.time_costs
         install.nomp = self.nomp
         install.bit32 = self.bit32
         install.use_int64 = self.use_int64
@@ -396,4 +404,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.9',
                        'Programming Language :: Python :: 3.10',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])
+
 

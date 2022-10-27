@@ -163,6 +163,15 @@ By default, installation in environment with 32-bit Python is prohibited. Howeve
 
 It is **strongly not recommended** to use this version of LightGBM!
 
+Build with time costs output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --install-option=--time-costs
+
+Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
+
 Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 

@@ -1211,6 +1211,35 @@ def test_feature_name_with_non_ascii():
     assert feature_names == gbm2.feature_name()
 
 
+def test_parameters_are_loaded_from_model_file(tmp_path):
+    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
+    y = np.random.rand(100)
+    ds = lgb.Dataset(X, y)
+    params = {
+        'bagging_fraction': 0.8,
+        'bagging_freq': 2,
+        'boosting': 'rf',
+        'feature_contri': [0.5, 0.5, 0.5],
+        'feature_fraction': 0.7,
+        'boost_from_average': False,
+        'interaction_constraints': [[0, 1], [0]],
+        'metric': ['l2', 'rmse'],
+        'num_leaves': 5,
+        'num_threads': 1,
+    }
+    model_file = tmp_path / 'model.txt'
+    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    bst = lgb.Booster(model_file=model_file)
+    set_params = {k: bst.params[k] for k in params.keys()}
+    assert set_params == params
+    assert bst.params['categorical_feature'] == [1, 2]
+
+    # check that passing parameters to the constructor raises warning and ignores them
+    with pytest.warns(UserWarning, match='Ignoring params argument'):
+        bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
+    assert bst.params == bst2.params
+
+
 def test_save_load_copy_pickle():
     def train_and_predict(init_model=None, return_model=False):
         X, y = make_synthetic_regression()
