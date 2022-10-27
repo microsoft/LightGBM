@@ -61,6 +61,7 @@ jobs:
       int64_source:
         TASK: int64
         METHOD: source
+        PYTHON_VERSION: '3.8'
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
