@@ -58,8 +58,9 @@ jobs:
         METHOD: source
       swig:
         TASK: swig
-      int64:
+      int64_source:
         TASK: int64
+        METHOD: source
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -127,6 +128,15 @@ jobs:
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
+      int64_source:
+        TASK: int64
+        METHOD: source
+      int64_pip:
+        TASK: int64
+        METHOD: pip
+      int64_wheel:
+        TASK: int64
+        METHOD: wheel
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -396,3 +406,4 @@ jobs:
       isDraft: true
       isPreRelease: false
       addChangeLog: false
+

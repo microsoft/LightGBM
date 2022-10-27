@@ -26,6 +26,7 @@ LIGHTGBM_OPTIONS = [
     ('nomp', None, 'Compile version without OpenMP support'),
     ('hdfs', 'h', 'Compile HDFS version'),
     ('bit32', None, 'Compile 32-bit version'),
+    ('use-int64', None, 'Compile int64 version'),
     ('precompile', 'p', 'Use precompiled library'),
     ('boost-root=', None, 'Boost preferred installation prefix'),
     ('boost-dir=', None, 'Directory with Boost package configuration file'),
@@ -116,7 +117,8 @@ def compile_cpp(
     opencl_library: Optional[str] = None,
     nomp: bool = False,
     bit32: bool = False,
-    integrated_opencl: bool = False
+    integrated_opencl: bool = False,
+    use_int64: bool = False
 ) -> None:
     build_dir = CURRENT_DIR / "build_cpp"
     rmtree(build_dir, ignore_errors=True)
@@ -154,6 +156,8 @@ def compile_cpp(
         cmake_cmd.append("-DUSE_OPENMP=OFF")
     if use_hdfs:
         cmake_cmd.append("-DUSE_HDFS=ON")
+    if use_int64:
+        cmake_cmd.append("-DUSE_DATASET_INT64=ON")
 
     if system() in {'Windows', 'Microsoft'}:
         if use_mingw:
@@ -167,7 +171,7 @@ def compile_cpp(
         else:
             status = 1
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
-            if not any((use_gpu, use_cuda, use_cuda_exp, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
+            if not any((use_gpu, use_cuda, use_cuda_exp, use_mpi, use_hdfs, nomp, bit32, use_int64, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v143", "v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -243,6 +247,7 @@ class CustomInstall(install):
         self.precompile = False
         self.nomp = False
         self.bit32 = False
+        self.use_int64 = False
 
     def run(self) -> None:
         if (8 * struct.calcsize("P")) != 64:
@@ -259,7 +264,7 @@ class CustomInstall(install):
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
-                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl)
+                        nomp=self.nomp, bit32=self.bit32, integrated_opencl=self.integrated_opencl, use_int64=self.use_int64)
         install.run(self)
         if LOG_PATH.is_file():
             LOG_PATH.unlink()
@@ -287,6 +292,7 @@ class CustomBdistWheel(bdist_wheel):
         self.precompile = False
         self.nomp = False
         self.bit32 = False
+        self.use_int64 = False
 
     def finalize_options(self) -> None:
         bdist_wheel.finalize_options(self)
@@ -309,6 +315,7 @@ class CustomBdistWheel(bdist_wheel):
         install.precompile = self.precompile
         install.nomp = self.nomp
         install.bit32 = self.bit32
+        install.use_int64 = self.use_int64
 
 
 class CustomSdist(sdist):
@@ -389,3 +396,4 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.9',
                        'Programming Language :: Python :: 3.10',
                        'Topic :: Scientific/Engineering :: Artificial Intelligence'])
+
