@@ -1015,7 +1015,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},
-    {"eval_at", "vector<int>"},
+    {"eval_at", "vector<data_size_t>"},
     {"multi_error_top_k", "int"},
     {"auc_mu_weights", "vector<double>"},
     {"num_machines", "int"},
