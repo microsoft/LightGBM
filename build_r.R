@@ -95,23 +95,26 @@ install_libs_content <- .replace_flag("use_msys2", USING_MSYS2, install_libs_con
 
 # set up extra flags based on keyword arguments
 keyword_args <- parsed_args[["keyword_args"]]
+print("+-+-+-+-+-")
 if (length(keyword_args) > 0L) {
   cmake_args_to_add <- NULL
   for (i in seq_len(length(keyword_args))) {
     arg_name <- names(keyword_args)[[i]]
     define_name <- ARGS_TO_DEFINES[[arg_name]]
-    arg_value <- shQuote(keyword_args[[arg_name]])
+    arg_value <- shQuote(normalizePath(keyword_args[[arg_name]], winslash = "/"))
     cmake_args_to_add <- c(cmake_args_to_add, paste0(define_name, "=", arg_value))
   }
   install_libs_content <- gsub(
     pattern = paste0("command_line_args <- NULL")
     , replacement = paste0(
-      "command_line_args <- c(\""
-      , paste(cmake_args_to_add, collapse = "\", \"")
-      , "\")"
+      "command_line_args <- c(\'"
+      , paste(cmake_args_to_add, collapse = "', '")
+      , "')"
     )
     , x = install_libs_content
+    , fixed = TRUE
   )
+  writeLines(install_libs_content, "C:/Users/James/repos/LightGBM/install-out.R")
 }
 
 # if provided, set '-j' in 'make' commands in install.libs.R
