@@ -500,8 +500,10 @@ if(USE_DATASET_INT64)
         TARGET _lightgbm_swig_swig_compilation
         POST_BUILD
         COMMAND sed -i "s/long long const/int64_t const/g" java/lightgbmlibJAVA_wrap.cxx
-        COMMAND sed -i "/LGBM_DatasetGetSubset/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
-        COMMAND sed -i "/LGBM_DatasetCreateFromSampledColumn/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
+        COMMAND sed -i 
+          "/LGBM_DatasetGetSubset/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
+        COMMAND sed -i 
+          "/LGBM_DatasetCreateFromSampledColumn/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
     )
 else()
     add_custom_command(
