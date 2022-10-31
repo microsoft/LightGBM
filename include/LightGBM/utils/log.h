@@ -109,8 +109,8 @@ class Log {
   }
   static void Fatal(const char *format, ...) {
     va_list val;
-    const size_t log_buf_size_ = 1024;
-    char str_buf[log_buf_size_];
+    const size_t kBufSize = 1024;
+    char str_buf[kBufSize];
     va_start(val, format);
 #ifdef _MSC_VER
     vsnprintf_s(str_buf, log_buf_size_, format, val);
