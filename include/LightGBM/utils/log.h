@@ -113,9 +113,9 @@ class Log {
     char str_buf[kBufSize];
     va_start(val, format);
 #ifdef _MSC_VER
-    vsnprintf_s(str_buf, log_buf_size_, format, val);
+    vsnprintf_s(str_buf, kBufSize, format, val);
 #else
-    vsnprintf(str_buf, log_buf_size_, format, val);
+    vsnprintf(str_buf, kBufSize, format, val);
 #endif
     va_end(val);
 
