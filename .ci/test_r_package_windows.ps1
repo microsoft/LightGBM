@@ -138,7 +138,7 @@ if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
     Write-Output "Setting up MiKTeX"
     .\miktex\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --verbose install ; Check-Output $?
+    .\miktex\download\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --verbose install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--verbose', '--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
