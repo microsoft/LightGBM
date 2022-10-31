@@ -132,7 +132,7 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 #
 # MiKTeX always needs to be built to test a CRAN package.
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
+    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-5.2.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
