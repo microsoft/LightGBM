@@ -180,7 +180,7 @@ class Tree {
   inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
 
   /*! \brief Get the summed weights of data points that fall at or below this node*/
-  inline int data_weight(int node) const { return node >= 0 ? internal_weight_[node] : leaf_weight_[~node]; }
+  inline double data_weight(int node) const { return node >= 0 ? internal_weight_[node] : leaf_weight_[~node]; }
 
   /*!
   * \brief Shrinkage for the tree's output
