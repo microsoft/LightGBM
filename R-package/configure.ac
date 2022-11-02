@@ -104,6 +104,25 @@ if test `uname -s` = "Darwin"
 then
     OPENMP_CXXFLAGS='-Xclang -fopenmp'
     OPENMP_LIB='-lomp'
+
+    # libomp 15.0+ from brew is keg-only (i.e. not symlinked into the standard paths search by the linker),
+    # so need to search in other locations.
+    # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+    #
+    # If Homebrew is found and libomp was installed with it, this code adds the necessary
+    # flags for the compiler to find libomp headers and for the linker to find libomp.dylib.
+    HOMEBREW_LIBOMP_PREFIX=""
+    if command -v brew &> /dev/null; then
+        ac_brew_openmp=no
+        AC_MSG_CHECKING([whether OpenMP was installed via Homebrew])
+        brew --prefix libomp &>/dev/null && ac_brew_openmp=yes
+        AC_MSG_RESULT([${ac_brew_openmp}])
+        if test "${ac_brew_openmp}" = yes; then
+            HOMEBREW_LIBOMP_PREFIX=`brew --prefix libomp`
+            OPENMP_CXXFLAGS="${OPENMP_CXXFLAGS} -I${HOMEBREW_LIBOMP_PREFIX}/include"
+            OPENMP_LIB="${OPENMP_LIB} -L${HOMEBREW_LIBOMP_PREFIX}/lib"
+        fi
+    fi
     ac_pkg_openmp=no
     AC_MSG_CHECKING([whether OpenMP will work in a package])
     AC_LANG_CONFTEST(
