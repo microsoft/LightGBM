@@ -1,8 +1,28 @@
 # CRAN Submission History
 
-## v3.3.2 - Submission 1 - (TBD)
+## v3.3.3 - Submission 1 - (October 10, 2022)
 
 ### CRAN response
+
+### Maintainer Notes
+
+Submitted with the following comment:
+
+> This submission contains {lightgbm} 3.3.3.
+
+> Per CRAN's policies, I am submitting on it on behalf of the project's maintainer (Yu Shi), with his permission (https://github.com/microsoft/LightGBM/pull/5525).
+
+> This submission includes two patches:
+> * a change to testing to avoid a failed test related to non-ASCII strings on the `r-devel-linux-x86_64-debian-clang` check flavor (https://github.com/microsoft/LightGBM/pull/5526)
+> * modifications to allow compatibility with the RTools42 build toolchain (https://github.com/microsoft/LightGBM/pull/5503)
+
+> Thank you very much for your time and consideration.
+
+## v3.3.2 - Submission 1 - (January 7, 2022)
+
+### CRAN response
+
+Accepted to CRAN on January 14, 2022.
 
 ### Maintainer Notes
 
