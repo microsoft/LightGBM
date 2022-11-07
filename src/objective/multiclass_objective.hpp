@@ -266,7 +266,7 @@ class MulticlassOVA: public ObjectiveFunction {
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */
