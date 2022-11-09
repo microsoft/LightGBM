@@ -60,20 +60,30 @@ else  # Linux
         sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libopenmpi-dev \
-            openmpi-bin
+        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                libopenmpi-dev \
+                openmpi-bin
+        else  # in manylinux image
+            yum update -y
+            yum install -y \
+                openmpi-devel
+        fi
     fi
     if [[ $TASK == "gpu" ]]; then
-        sudo add-apt-repository ppa:mhier/libboost-latest -y
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libboost1.74-dev \
-            ocl-icd-opencl-dev
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo add-apt-repository ppa:mhier/libboost-latest -y
+            sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
+                libboost1.74-dev \
+                ocl-icd-opencl-dev \
                 pocl-opencl-icd
+        else  # in manylinux image
+            yum update -y
+            yum install -y \
+                boost-devel \
+                ocl-icd-devel
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then

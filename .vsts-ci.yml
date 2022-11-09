@@ -18,8 +18,8 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
   containers:
-  - container: ubuntu1404
-    image: lightgbm/vsts-agent:ubuntu-14.04
+  - container: linux-artifact-builder
+    image: lightgbm/vsts-agent:manylinux_2_28_x86_64-dev2
   - container: ubuntu-latest
     image: 'ubuntu:20.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
@@ -35,7 +35,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool: sh-ubuntu
-  container: ubuntu1404
+  container: linux-artifact-builder
   strategy:
     matrix:
       regular:
