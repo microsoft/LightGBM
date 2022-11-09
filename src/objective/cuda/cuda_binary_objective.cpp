@@ -59,6 +59,25 @@ void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
   }
 }
 
+void CUDABinaryLogloss::GetGradients(const double* scores, score_t* gradients, score_t* hessians) const {
+  LaunchGetGradientsKernel(scores, gradients, hessians);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+}
+
+double CUDABinaryLogloss::BoostFromScore(int) const {
+  LaunchBoostFromScoreKernel();
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+  double boost_from_score = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&boost_from_score, cuda_boost_from_score_, 1, __FILE__, __LINE__);
+  double pavg = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&pavg, cuda_sum_weights_, 1, __FILE__, __LINE__);
+  Log::Info("[%s:%s]: pavg=%f -> initscore=%f", GetName(), __func__, pavg, boost_from_score);
+  return boost_from_score;
+}
+
+void CUDABinaryLogloss::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+  LaunchConvertOutputCUDAKernel(num_data, input, output);
+}
 
 }  // namespace LightGBM
 

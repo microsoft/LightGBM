@@ -609,17 +609,17 @@ def test_list_to_1d_numpy(collection, dtype):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
         with pytest.raises(ValueError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
-    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
 
