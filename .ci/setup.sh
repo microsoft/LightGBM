@@ -83,7 +83,8 @@ else  # Linux
             yum update -y
             yum install -y \
                 boost-devel \
-                ocl-icd-devel
+                ocl-icd-devel \
+                opencl-headers
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
