@@ -21,7 +21,7 @@ def check_dependicies(objdump_string: str) -> None:
     assert len(versions) > 1
     for major, minor in versions:
         assert int(major) <= 2
-        assert int(minor) <= 14
+        assert int(minor) <= 28
 
     GLIBCXX_version = re.compile(r'0{16}[ \t]+GLIBCXX_(\d{1,2})[.](\d{1,2})[.]?(\d{,3})[ \t]+')
     versions = GLIBCXX_version.findall(objdump_string)
