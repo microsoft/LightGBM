@@ -66,9 +66,10 @@ else  # Linux
                 libopenmpi-dev \
                 openmpi-bin
         else  # in manylinux image
-            yum update -y
-            yum install -y \
-                openmpi-devel
+            sudo yum update -y
+            sudo yum install -y \
+                openmpi-devel \
+            || exit -1
         fi
     fi
     if [[ $TASK == "gpu" ]]; then
@@ -84,7 +85,8 @@ else  # Linux
             yum install -y \
                 boost-devel \
                 ocl-icd-devel \
-                opencl-headers
+                opencl-headers \
+            || exit -1
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
