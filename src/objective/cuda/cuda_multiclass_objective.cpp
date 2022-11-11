@@ -25,13 +25,13 @@ void CUDAMulticlassSoftmax::Init(const Metadata& metadata, data_size_t num_data)
 }
 
 
-CUDAMulticlassOVA::CUDAMulticlassOVA(const Config& config): MulticlassOVA(config) {
+CUDAMulticlassOVA::CUDAMulticlassOVA(const Config& config): CUDAObjectiveInterface<MulticlassOVA>(config) {
   for (int i = 0; i < num_class_; ++i) {
     cuda_binary_loss_.emplace_back(new CUDABinaryLogloss(config, i));
   }
 }
 
-CUDAMulticlassOVA::CUDAMulticlassOVA(const std::vector<std::string>& strs): MulticlassOVA(strs) {}
+CUDAMulticlassOVA::CUDAMulticlassOVA(const std::vector<std::string>& strs): CUDAObjectiveInterface<MulticlassOVA>(strs) {}
 
 CUDAMulticlassOVA::~CUDAMulticlassOVA() {}
 

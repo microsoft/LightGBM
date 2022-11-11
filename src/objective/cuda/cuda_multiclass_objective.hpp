@@ -41,7 +41,7 @@ class CUDAMulticlassSoftmax: public CUDAObjectiveInterface<MulticlassSoftmax> {
 };
 
 
-class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
+class CUDAMulticlassOVA: public CUDAObjectiveInterface<MulticlassOVA> {
  public:
   explicit CUDAMulticlassOVA(const Config& config);
 
@@ -66,6 +66,8 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
   bool IsCUDAObjective() const override { return true; }
 
  private:
+  void LaunchGetGradientsKernel(const double* /*scores*/, score_t* /*gradients*/, score_t* /*hessians*/) const {}
+
   std::vector<std::unique_ptr<CUDABinaryLogloss>> cuda_binary_loss_;
 };
 
