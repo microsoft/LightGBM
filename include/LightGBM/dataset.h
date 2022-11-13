@@ -459,6 +459,9 @@ class Dataset {
                                      int32_t has_queries,
                                      int32_t nclasses,
                                      int32_t nthreads) {
+    // Initialize max thread count
+    OMP_GET_STREAMING_MAX_THREADS(false);
+
     metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
     for (int i = 0; i < num_groups_; ++i) {
       feature_groups_[i]->InitStreaming(nthreads);

@@ -5,9 +5,11 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
-/** In an external multi-threaded environment, the below methods can return different values on
-    different threads (in Linux at least). To share allocations between threads, use a constant. **/
-#define MAX_THREAD_ALLOCATION 128
+inline static std::string getEnvVar(const char* name) {
+  const char *tmp = getenv(name);
+  std::string env_var(tmp ? tmp : "");
+  return env_var;
+}
 
 #ifdef _OPENMP
 
@@ -20,6 +22,8 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+
+#define DEFAULT_STREAMING_MAX_THREADS 8  // TODO decide
 
 inline int OMP_NUM_THREADS() {
   int ret = 1;
@@ -36,6 +40,30 @@ inline void OMP_SET_NUM_THREADS(int num_threads) {
   } else {
     omp_set_num_threads(default_omp_num_threads);
   }
+}
+
+inline void OMP_SET_DYNAMIC(int dyn) {
+  omp_set_dynamic(dyn);
+}
+
+inline int OMP_GET_STREAMING_MAX_THREADS(bool use_cached = true) {
+  // Create a constant max OpenMP thread count per calling thread.
+  // Allow override by environment variable. Cache to avoid repeated system calls.
+
+  static int max_streaming_threads = -1;
+
+  if (use_cached && max_streaming_threads != -1) {
+    return max_streaming_threads;
+  }
+  
+  std::string env_var = getEnvVar("OMP_STREAMING_MAX_THREADS");
+  int max_threads = DEFAULT_STREAMING_MAX_THREADS;
+  if (!env_var.empty()) {
+    max_threads=atoi(env_var.c_str());
+  }
+
+  max_streaming_threads = max_threads;
+  return max_streaming_threads;
 }
 
 class ThreadExceptionHelper {
@@ -112,6 +140,11 @@ class ThreadExceptionHelper {
   inline int omp_get_max_threads() __GOMP_NOTHROW {return 1;}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
+  inline int omp_get_dynamic() __GOMP_NOTHROW {return 1; }
+  inline void OMP_SET_DYNAMIC(int) __GOMP_NOTHROW {}
+  inline int omp_get_thread_limit() __GOMP_NOTHROW {return 1;}
+  inline int omp_get_active_level() __GOMP_NOTHROW {return 1;}
+  inline int OMP_GET_STREAMING_MAX_THREADS(bool use_cached = true) __GOMP_NOTHROW {return 1;}
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -122,7 +155,5 @@ class ThreadExceptionHelper {
 #define OMP_THROW_EX()
 
 #endif
-
-
 
 #endif /* LIGHTGBM_OPENMP_WRAPPER_H_ */

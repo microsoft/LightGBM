@@ -1079,12 +1079,14 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
+  const int max_omp_threads = OMP_GET_STREAMING_MAX_THREADS();
+
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (MAX_THREAD_ALLOCATION * tid);
+    const int internal_tid = omp_get_thread_num() + (max_omp_threads * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, start_row + i, one_row);
     OMP_LOOP_EX_END();
@@ -1159,12 +1161,15 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   if (p_dataset->has_raw()) {
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
+
+  const int max_omp_threads = OMP_GET_STREAMING_MAX_THREADS();
+ 
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (MAX_THREAD_ALLOCATION * tid);
+    const int internal_tid = omp_get_thread_num() + (max_omp_threads * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
