@@ -261,6 +261,7 @@ class Bin {
   /*!
   * \brief Initialize for pushing.  By default, no action needed.
   * \param num_thread The number of external threads that will be calling the push APIs
+  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
   */
   virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) { }
   /*!
