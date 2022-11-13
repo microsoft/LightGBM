@@ -262,7 +262,7 @@ class Bin {
   * \brief Initialize for pushing.  By default, no action needed.
   * \param num_thread The number of external threads that will be calling the push APIs
   */
-  virtual void InitStreaming(uint32_t /*num_thread*/) { }
+  virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) { }
   /*!
   * \brief Push one record
   * \param tid Thread id

@@ -1018,11 +1018,12 @@ int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                               int32_t has_init_scores,
                               int32_t has_queries,
                               int32_t nclasses,
-                              int32_t nthreads) {
+                              int32_t nthreads,
+                              int32_t omp_max_threads) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto num_data = p_dataset->num_data();
-  p_dataset->InitStreaming(num_data, has_weights, has_init_scores, has_queries, nclasses, nthreads);
+  p_dataset->InitStreaming(num_data, has_weights, has_init_scores, has_queries, nclasses, nthreads, omp_max_threads);
   p_dataset->set_wait_for_manual_finish(true);
   API_END();
 }
@@ -1079,7 +1080,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = OMP_GET_STREAMING_MAX_THREADS();
+  const int max_omp_threads = p_dataset->omp_max_threads();
 
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
@@ -1162,7 +1163,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = OMP_GET_STREAMING_MAX_THREADS();
+  const int max_omp_threads = p_dataset->omp_max_threads();
  
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
