@@ -1164,7 +1164,7 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   }
 
   const int max_omp_threads = p_dataset->omp_max_threads();
- 
+
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {

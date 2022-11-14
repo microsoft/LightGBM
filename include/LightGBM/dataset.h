@@ -956,7 +956,7 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<float>> raw_data_;
   bool wait_for_manual_finish_;
-  int omp_max_threads_ = 16;  // TODO decide
+  int omp_max_threads_ = 16;  // TODO(svotaw) decide before checkin
   bool has_raw_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
