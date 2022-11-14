@@ -81,8 +81,8 @@ else  # Linux
                 ocl-icd-opencl-dev \
                 pocl-opencl-icd
         else  # in manylinux image
-            yum update -y
-            yum install -y \
+            sudo yum update -y
+            sudo yum install -y \
                 boost-devel \
                 ocl-icd-devel \
                 opencl-headers \
