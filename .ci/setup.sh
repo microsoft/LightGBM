@@ -8,7 +8,9 @@ if [[ $OS_NAME == "macos" ]]; then
         fi
     else  # gcc
         if [[ $TASK != "mpi" ]]; then
-            brew install 'gcc@11'
+            sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
+            # xcode-select -p /Applications/Xcode10.app/Contents/Developer
+            brew install gcc
         fi
     fi
     if [[ $TASK == "mpi" ]]; then
