@@ -7,9 +7,8 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer || exit -1
         fi
     else  # gcc
+        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
         if [[ $TASK != "mpi" ]]; then
-            sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
-            # xcode-select -p /Applications/Xcode10.app/Contents/Developer
             brew install gcc
         fi
     fi
