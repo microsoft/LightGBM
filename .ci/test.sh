@@ -122,7 +122,7 @@ fi
 if [[ $PYTHON_VERSION == "3.7" ]]; then
     DEPENDENCIES="dask distributed"
 else
-    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0"
+    DEPENDENCIES="dask distributed"
 fi
 
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
