@@ -122,7 +122,7 @@ fi
 if [[ $PYTHON_VERSION == "3.7" ]]; then
     DEPENDENCIES="dask distributed"
 else
-    DEPENDENCIES="dask distributed"
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
 fi
 
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
@@ -245,7 +245,7 @@ elif [[ $TASK == "mpi" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
 else
-    cmake ..
+    cmake -DUSE_OPENMP=OFF ..
 fi
 
 make _lightgbm -j4 || exit -1
