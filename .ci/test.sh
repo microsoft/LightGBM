@@ -138,7 +138,7 @@ conda install -q -y -n $CONDA_ENV \
     "python=$PYTHON_VERSION[build=*cpython]" \
     python-graphviz \
     scikit-learn \
-    'scipy=1.8.1=py39h8ba3f38_2' | exit -1
+    'scipy>1.9.3' | exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
