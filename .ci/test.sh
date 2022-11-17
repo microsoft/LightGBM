@@ -122,7 +122,7 @@ fi
 if [[ $PYTHON_VERSION == "3.7" ]]; then
     DEPENDENCIES="dask distributed"
 else
-    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
+    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0"
 fi
 
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
@@ -137,8 +137,7 @@ conda install -q -y -n $CONDA_ENV \
     pytest \
     "python=$PYTHON_VERSION[build=*cpython]" \
     python-graphviz \
-    scikit-learn \
-    'scipy>1.9.3' | exit -1
+    scikit-learn | exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
