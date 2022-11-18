@@ -6,7 +6,7 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
+from platform import libc_ver, machine
 from sys import platform
 from urllib.parse import urlparse
 
@@ -22,6 +22,15 @@ if machine() != 'x86_64':
     pytest.skip('lightgbm.dask tests are currently skipped on some architectures like arm64', allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
+
+if platform.startswith('linux') and os.getenv("COMPILER", "not-found") == "gcc":
+    _, glibc_version = libc_ver()
+    major, minor = glibc_version.split(".")
+    if int(major) <=2 and int(minor) <= 23:
+        pytest.skip(
+            f"Skipping Dask tests in environment with GLIBC={major}.{minor}. "
+            "See https://github.com/microsoft/LightGBM/pull/5588#issuecomment-1319516599"
+        )
 
 import dask.array as da
 import dask.dataframe as dd
