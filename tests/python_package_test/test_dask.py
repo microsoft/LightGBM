@@ -28,8 +28,8 @@ if platform.startswith('linux') and getenv("COMPILER", "not-found") == "gcc":
     major, minor = glibc_version.split(".")
     if int(major) <= 2 and int(minor) <= 23:
         pytest.skip(
-            f"Skipping Dask tests in environment with GLIBC={major}.{minor}. "
-            "See https://github.com/microsoft/LightGBM/pull/5588#issuecomment-1319516599"
+            f"Skipping Dask tests in environment with GLIBC={major}.{minor}. See https://github.com/microsoft/LightGBM/pull/5588#issuecomment-1319516599",
+            allow_module_level=True
         )
 
 import dask.array as da
