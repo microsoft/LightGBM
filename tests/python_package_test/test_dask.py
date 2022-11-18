@@ -23,10 +23,10 @@ if machine() != 'x86_64':
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip('Dask is not installed', allow_module_level=True)
 
-if platform.startswith('linux') and os.getenv("COMPILER", "not-found") == "gcc":
+if platform.startswith('linux') and getenv("COMPILER", "not-found") == "gcc":
     _, glibc_version = libc_ver()
     major, minor = glibc_version.split(".")
-    if int(major) <=2 and int(minor) <= 23:
+    if int(major) <= 2 and int(minor) <= 23:
         pytest.skip(
             f"Skipping Dask tests in environment with GLIBC={major}.{minor}. "
             "See https://github.com/microsoft/LightGBM/pull/5588#issuecomment-1319516599"
