@@ -118,11 +118,17 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    DEPENDENCIES="dask-core distributed"
+else
+    DEPENDENCIES="dask-core=2022.7.0 distributed=2022.7.0 scipy<1.9"
+fi
+
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask \
-    distributed \
+    ${DEPENDENCIES} \
     joblib \
     matplotlib \
     numpy \
@@ -245,7 +251,7 @@ fi
 make _lightgbm -j4 || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
-pytest $BUILD_DIRECTORY/tests || exit -1
+pytest --exitfirst -rA -vv $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
