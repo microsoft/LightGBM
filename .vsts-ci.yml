@@ -30,7 +30,7 @@ jobs:
 - job: Linux
 ###########################################
   variables:
-    COMPILER: gcc
+    COMPILER: clang
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
