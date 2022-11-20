@@ -1080,7 +1080,7 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = p_dataset->omp_max_threads();
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads(): OMP_NUM_THREADS();
 
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
@@ -1163,8 +1163,8 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
-  const int max_omp_threads = p_dataset->omp_max_threads();
-
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads(): OMP_NUM_THREADS();
+ 
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
