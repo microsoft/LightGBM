@@ -460,7 +460,7 @@ class Dataset {
                                      int32_t nclasses,
                                      int32_t nthreads,
                                      int32_t omp_max_threads) {
-    // Initialize optional max thread count
+    // Initialize optional max thread count with either parameter or OMP setting
     if (omp_max_threads > 0) {
       omp_max_threads_ = omp_max_threads;
     } else if (omp_max_threads_ <= 0) {
