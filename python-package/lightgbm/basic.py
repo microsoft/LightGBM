@@ -41,7 +41,7 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
     sample_cnt = ctypes.c_int(0)
     _safe_call(_LIB.LGBM_GetSampleCount(
         ctypes.c_int32(total_nrow),
-        c_str(params),
+        _c_str(params),
         ctypes.byref(sample_cnt),
     ))
     return sample_cnt.value
@@ -197,7 +197,7 @@ def _cast_numpy_array_to_dtype(array, dtype):
     return array.astype(dtype=dtype, copy=False)
 
 
-def is_1d_list(data: Any) -> bool:
+def _is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
@@ -207,12 +207,12 @@ def _is_1d_collection(data: Any) -> bool:
     return (
         _is_numpy_1d_array(data)
         or _is_numpy_column_array(data)
-        or is_1d_list(data)
+        or _is_1d_list(data)
         or isinstance(data, pd_Series)
     )
 
 
-def list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -220,7 +220,7 @@ def list_to_1d_numpy(data, dtype=np.float32, name='list'):
         _log_warning('Converting column-vector to 1d array')
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
-    elif is_1d_list(data):
+    elif _is_1d_list(data):
         return np.array(data, dtype=dtype, copy=False)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
@@ -237,7 +237,7 @@ def _is_numpy_2d_array(data: Any) -> bool:
 
 def _is_2d_list(data: Any) -> bool:
     """Check whether data is a 2-D list."""
-    return isinstance(data, list) and len(data) > 0 and is_1d_list(data[0])
+    return isinstance(data, list) and len(data) > 0 and _is_1d_list(data[0])
 
 
 def _is_2d_collection(data: Any) -> bool:
@@ -262,7 +262,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -270,7 +270,7 @@ def cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -278,7 +278,7 @@ def cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -286,7 +286,7 @@ def cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -294,12 +294,12 @@ def cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected int64 pointer')
 
 
-def c_str(string: str) -> ctypes.c_char_p:
+def _c_str(string: str) -> ctypes.c_char_p:
     """Convert a Python string to C string."""
     return ctypes.c_char_p(string.encode('utf-8'))
 
 
-def c_array(ctype: type, values: List[Any]) -> ctypes.Array:
+def _c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
     return (ctype * len(values))(*values)
 
@@ -513,7 +513,7 @@ def convert_from_sliced_object(data):
 
 def c_float_array(data):
     """Get pointer of float numpy array / list."""
-    if is_1d_list(data):
+    if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
@@ -533,7 +533,7 @@ def c_float_array(data):
 
 def c_int_array(data):
     """Get pointer of int numpy array / list."""
-    if is_1d_list(data):
+    if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = convert_from_sliced_object(data)
@@ -749,7 +749,7 @@ class _InnerPredictor:
             """Prediction task"""
             out_num_iterations = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(str(model_file)),
+                _c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
             out_num_class = ctypes.c_int(0)
@@ -855,13 +855,13 @@ class _InnerPredictor:
             with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self.handle,
-                    c_str(str(data)),
+                    _c_str(str(data)),
                     ctypes.c_int(int_data_has_header),
                     ctypes.c_int(predict_type),
                     ctypes.c_int(start_iteration),
                     ctypes.c_int(num_iteration),
-                    c_str(self.pred_parameter),
-                    c_str(f.name)))
+                    _c_str(self.pred_parameter),
+                    _c_str(f.name)))
                 preds = np.loadtxt(f.name, dtype=np.float64)
                 nrow = preds.shape[0]
         elif isinstance(data, scipy.sparse.csr_matrix):
@@ -939,7 +939,7 @@ class _InnerPredictor:
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
+                _c_str(self.pred_parameter),
                 ctypes.byref(out_num_preds),
                 preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if n_preds != out_num_preds.value:
@@ -967,18 +967,18 @@ class _InnerPredictor:
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
         if indptr_type == C_API_DTYPE_INT32:
-            out_indptr = cint32_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint32_array_to_numpy(out_ptr_indptr, indptr_len)
         elif indptr_type == C_API_DTYPE_INT64:
-            out_indptr = cint64_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint64_array_to_numpy(out_ptr_indptr, indptr_len)
         else:
             raise TypeError("Expected int32 or int64 type for indptr")
         if data_type == C_API_DTYPE_FLOAT32:
-            out_data = cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
         elif data_type == C_API_DTYPE_FLOAT64:
-            out_data = cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
         else:
             raise TypeError("Expected float32 or float64 type for data")
-        out_indices = cint32_array_to_numpy(out_ptr_indices, data_indices_len)
+        out_indices = _cint32_array_to_numpy(out_ptr_indices, data_indices_len)
         # break up indptr based on number of rows (note more than one matrix in multiclass case)
         per_class_indptr_shape = cs.indptr.shape[0]
         # for CSC there is extra column added
@@ -1037,7 +1037,7 @@ class _InnerPredictor:
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
+                _c_str(self.pred_parameter),
                 ctypes.byref(out_num_preds),
                 preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
             if n_preds != out_num_preds.value:
@@ -1072,7 +1072,7 @@ class _InnerPredictor:
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
+                _c_str(self.pred_parameter),
                 ctypes.c_int(matrix_type),
                 out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
                 ctypes.byref(out_ptr_indptr),
@@ -1130,7 +1130,7 @@ class _InnerPredictor:
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
-                c_str(self.pred_parameter),
+                _c_str(self.pred_parameter),
                 ctypes.c_int(matrix_type),
                 out_shape.ctypes.data_as(ctypes.POINTER(ctypes.c_int64)),
                 ctypes.byref(out_ptr_indptr),
@@ -1169,7 +1169,7 @@ class _InnerPredictor:
             ctypes.c_int(predict_type),
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
-            c_str(self.pred_parameter),
+            _c_str(self.pred_parameter),
             ctypes.byref(out_num_preds),
             preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
         if n_preds != out_num_preds.value:
@@ -1298,7 +1298,7 @@ class Dataset:
 
         _safe_call(_LIB.LGBM_SampleIndices(
             ctypes.c_int32(total_nrow),
-            c_str(param_str),
+            _c_str(param_str),
             ptr_data,
             ctypes.byref(actual_sample_cnt),
         ))
@@ -1389,7 +1389,7 @@ class Dataset:
             ctypes.c_int32(sample_cnt),
             ctypes.c_int32(total_nrow),
             ctypes.c_int64(total_nrow),
-            c_str(params_str),
+            _c_str(params_str),
             ctypes.byref(self.handle),
         ))
         return self
@@ -1566,8 +1566,8 @@ class Dataset:
         if isinstance(data, (str, Path)):
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromFile(
-                c_str(str(data)),
-                c_str(params_str),
+                _c_str(str(data)),
+                _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self.handle)))
         elif isinstance(data, scipy.sparse.csr_matrix):
@@ -1711,7 +1711,7 @@ class Dataset:
             ctypes.c_int32(mat.shape[0]),
             ctypes.c_int32(mat.shape[1]),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
-            c_str(params_str),
+            _c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1762,7 +1762,7 @@ class Dataset:
             nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
             ctypes.c_int32(ncol),
             ctypes.c_int(C_API_IS_ROW_MAJOR),
-            c_str(params_str),
+            _c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1793,7 +1793,7 @@ class Dataset:
             ctypes.c_int64(len(csr.indptr)),
             ctypes.c_int64(len(csr.data)),
             ctypes.c_int64(csr.shape[1]),
-            c_str(params_str),
+            _c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1824,7 +1824,7 @@ class Dataset:
             ctypes.c_int64(len(csc.indptr)),
             ctypes.c_int64(len(csc.data)),
             ctypes.c_int64(csc.shape[0]),
-            c_str(params_str),
+            _c_str(params_str),
             ref_dataset,
             ctypes.byref(self.handle)))
         return self
@@ -1895,7 +1895,7 @@ class Dataset:
                                     feature_name=self.feature_name, params=self.params)
                 else:
                     # construct subset
-                    used_indices = list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    used_indices = _list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
@@ -1907,7 +1907,7 @@ class Dataset:
                         self.reference.construct().handle,
                         used_indices.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                         ctypes.c_int32(used_indices.shape[0]),
-                        c_str(params_str),
+                        _c_str(params_str),
                         ctypes.byref(self.handle)))
                     if not self.free_raw_data:
                         self.get_data()
@@ -2021,7 +2021,7 @@ class Dataset:
         """
         _safe_call(_LIB.LGBM_DatasetSaveBinary(
             self.construct().handle,
-            c_str(str(filename))))
+            _c_str(str(filename))))
         return self
 
     def _update_params(self, params: Optional[Dict[str, Any]]) -> "Dataset":
@@ -2040,8 +2040,8 @@ class Dataset:
             update()
         elif params is not None:
             ret = _LIB.LGBM_DatasetUpdateParamChecking(
-                c_str(param_dict_to_str(self.params)),
-                c_str(param_dict_to_str(params)))
+                _c_str(param_dict_to_str(self.params)),
+                _c_str(param_dict_to_str(params)))
             if ret != 0:
                 # could be updated if data is not freed
                 if self.data is not None:
@@ -2082,7 +2082,7 @@ class Dataset:
             # set to None
             _safe_call(_LIB.LGBM_DatasetSetField(
                 self.handle,
-                c_str(field_name),
+                _c_str(field_name),
                 None,
                 ctypes.c_int(0),
                 ctypes.c_int(FIELD_TYPE_MAPPER[field_name])))
@@ -2090,7 +2090,7 @@ class Dataset:
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
-                data = list_to_1d_numpy(data, dtype, name=field_name)
+                data = _list_to_1d_numpy(data, dtype, name=field_name)
             elif _is_2d_collection(data):
                 data = _data_to_2d_numpy(data, dtype, name=field_name)
                 data = data.ravel(order='F')
@@ -2101,7 +2101,7 @@ class Dataset:
                 )
         else:
             dtype = np.int32 if field_name == 'group' else np.float32
-            data = list_to_1d_numpy(data, dtype, name=field_name)
+            data = _list_to_1d_numpy(data, dtype, name=field_name)
 
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = c_float_array(data)
@@ -2113,7 +2113,7 @@ class Dataset:
             raise TypeError("Input type error for set_field")
         _safe_call(_LIB.LGBM_DatasetSetField(
             self.handle,
-            c_str(field_name),
+            _c_str(field_name),
             ptr_data,
             ctypes.c_int(len(data)),
             ctypes.c_int(type_data)))
@@ -2140,7 +2140,7 @@ class Dataset:
         ret = ctypes.POINTER(ctypes.c_void_p)()
         _safe_call(_LIB.LGBM_DatasetGetField(
             self.handle,
-            c_str(field_name),
+            _c_str(field_name),
             ctypes.byref(tmp_out_len),
             ctypes.byref(ret),
             ctypes.byref(out_type)))
@@ -2149,11 +2149,11 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == C_API_DTYPE_INT32:
-            arr = cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = _cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT32:
-            arr = cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = _cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
         elif out_type.value == C_API_DTYPE_FLOAT64:
-            arr = cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = _cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
         else:
             raise TypeError("Unknown type")
         if field_name == 'init_score':
@@ -2265,10 +2265,10 @@ class Dataset:
         if self.handle is not None and feature_name is not None and feature_name != 'auto':
             if len(feature_name) != self.num_feature():
                 raise ValueError(f"Length of feature_name({len(feature_name)}) and num_feature({self.num_feature()}) don't match")
-            c_feature_name = [c_str(name) for name in feature_name]
+            c_feature_name = [_c_str(name) for name in feature_name]
             _safe_call(_LIB.LGBM_DatasetSetFeatureNames(
                 self.handle,
-                c_array(ctypes.c_char_p, c_feature_name),
+                _c_array(ctypes.c_char_p, c_feature_name),
                 ctypes.c_int(len(feature_name))))
         return self
 
@@ -2293,7 +2293,7 @@ class Dataset:
                 _check_for_bad_pandas_dtypes(label.dtypes)
                 label_array = np.ravel(label.values.astype(np.float32, copy=False))
             else:
-                label_array = list_to_1d_numpy(label, name='label')
+                label_array = _list_to_1d_numpy(label, name='label')
             self.set_field('label', label_array)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
@@ -2315,7 +2315,7 @@ class Dataset:
             weight = None
         self.weight = weight
         if self.handle is not None and weight is not None:
-            weight = list_to_1d_numpy(weight, name='weight')
+            weight = _list_to_1d_numpy(weight, name='weight')
             self.set_field('weight', weight)
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
@@ -2358,7 +2358,7 @@ class Dataset:
         """
         self.group = group
         if self.handle is not None and group is not None:
-            group = list_to_1d_numpy(group, np.int32, name='group')
+            group = _list_to_1d_numpy(group, np.int32, name='group')
             self.set_field('group', group)
         return self
 
@@ -2682,7 +2682,7 @@ class Dataset:
         """
         _safe_call(_LIB.LGBM_DatasetDumpText(
             self.construct().handle,
-            c_str(str(filename))))
+            _c_str(str(filename))))
         return self
 
 
@@ -2779,7 +2779,7 @@ class Booster:
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set.handle,
-                c_str(params_str),
+                _c_str(params_str),
                 ctypes.byref(self.handle)))
             # save reference to data
             self.train_set = train_set
@@ -2807,7 +2807,7 @@ class Booster:
             out_num_iterations = ctypes.c_int(0)
             self.handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
-                c_str(str(model_file)),
+                _c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(self.handle)))
             out_num_class = ctypes.c_int(0)
@@ -2861,7 +2861,7 @@ class Booster:
             handle = ctypes.c_void_p()
             out_num_iterations = ctypes.c_int(0)
             _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
-                c_str(model_str),
+                _c_str(model_str),
                 ctypes.byref(out_num_iterations),
                 ctypes.byref(handle)))
             state['handle'] = handle
@@ -2934,7 +2934,7 @@ class Booster:
         """
         if isinstance(machines, (list, set)):
             machines = ','.join(machines)
-        _safe_call(_LIB.LGBM_NetworkInit(c_str(machines),
+        _safe_call(_LIB.LGBM_NetworkInit(_c_str(machines),
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
                                          ctypes.c_int(num_machines)))
@@ -3152,7 +3152,7 @@ class Booster:
         if params_str:
             _safe_call(_LIB.LGBM_BoosterResetParameter(
                 self.handle,
-                c_str(params_str)))
+                _c_str(params_str)))
         self.params.update(params)
         return self
 
@@ -3258,8 +3258,8 @@ class Booster:
         if self.__num_class > 1:
             grad = grad.ravel(order='F')
             hess = hess.ravel(order='F')
-        grad = list_to_1d_numpy(grad, name='gradient')
-        hess = list_to_1d_numpy(hess, name='hessian')
+        grad = _list_to_1d_numpy(grad, name='gradient')
+        hess = _list_to_1d_numpy(hess, name='hessian')
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
@@ -3524,7 +3524,7 @@ class Booster:
             ctypes.c_int(start_iteration),
             ctypes.c_int(num_iteration),
             ctypes.c_int(importance_type_int),
-            c_str(str(filename))))
+            _c_str(str(filename))))
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
@@ -3573,7 +3573,7 @@ class Booster:
         self.handle = ctypes.c_void_p()
         out_num_iterations = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterLoadModelFromString(
-            c_str(model_str),
+            _c_str(model_str),
             ctypes.byref(out_num_iterations),
             ctypes.byref(self.handle)))
         out_num_class = ctypes.c_int(0)
