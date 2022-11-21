@@ -31,7 +31,7 @@ def check_dependencies(objdump_string: str) -> None:
     for major, minor in versions:
         error_msg = f"found unexpected GLIBC version: '{major}.{minor}'"
         assert int(major) <= 2, error_msg
-        assert int(minor) <= 14, error_msg
+        assert int(minor) <= 28, error_msg
 
     GLIBCXX_version = re.compile(r'0{16}[ \t]+GLIBCXX_(\d{1,2})[.](\d{1,2})[.]?(\d{,3})[ \t]+')
     versions = GLIBCXX_version.findall(objdump_string)
@@ -40,15 +40,15 @@ def check_dependencies(objdump_string: str) -> None:
         error_msg = f"found unexpected GLIBCXX version: '{major}.{minor}.{patch}'"
         assert int(major) == 3, error_msg
         assert int(minor) == 4, error_msg
-        assert patch == '' or int(patch) <= 19, error_msg
+        assert patch == '' or int(patch) <= 22, error_msg
 
     GOMP_version = re.compile(r'0{16}[ \t]+G?OMP_(\d{1,2})[.](\d{1,2})[.]?\d{,3}[ \t]+')
     versions = GOMP_version.findall(objdump_string)
     assert len(versions) > 1
     for major, minor in versions:
         error_msg = f"found unexpected OMP/GOMP version: '{major}.{minor}'"
-        assert int(major) == 1, error_msg
-        assert int(minor) == 0, error_msg
+        assert int(major) <= 4, error_msg
+        assert int(minor) <= 5, error_msg
 
 
 if __name__ == "__main__":
