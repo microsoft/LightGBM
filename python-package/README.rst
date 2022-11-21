@@ -26,7 +26,7 @@ Compiled library that is included in the wheel file supports both **GPU** and **
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
-For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+For **Linux** users, **glibc** >= 2.14 is required for LightGBM ``<=3.3.3`` and **glibc** >= 2.28 is required for newer versions. Also, in some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
@@ -45,7 +45,7 @@ Build from Sources
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
-For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+For **Linux** users, **glibc** >= 2.28 is required. Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**.
 
