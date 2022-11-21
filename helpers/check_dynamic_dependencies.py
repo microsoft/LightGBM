@@ -21,7 +21,7 @@ def check_dependicies(objdump_string: str) -> None:
     assert len(versions) > 1
     for major, minor in versions:
         assert int(major) <= 2
-        assert int(minor) <= 14
+        assert int(minor) <= 28
 
     GLIBCXX_version = re.compile(r'0{16}[ \t]+GLIBCXX_(\d{1,2})[.](\d{1,2})[.]?(\d{,3})[ \t]+')
     versions = GLIBCXX_version.findall(objdump_string)
@@ -29,14 +29,14 @@ def check_dependicies(objdump_string: str) -> None:
     for major, minor, patch in versions:
         assert int(major) == 3
         assert int(minor) == 4
-        assert patch == '' or int(patch) <= 19
+        assert patch == '' or int(patch) <= 22
 
     GOMP_version = re.compile(r'0{16}[ \t]+G?OMP_(\d{1,2})[.](\d{1,2})[.]?\d{,3}[ \t]+')
     versions = GOMP_version.findall(objdump_string)
     assert len(versions) > 1
     for major, minor in versions:
-        assert int(major) == 1
-        assert int(minor) == 0
+        assert int(major) <= 4
+        assert int(minor) <= 5
 
 
 if __name__ == "__main__":
