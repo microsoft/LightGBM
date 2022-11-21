@@ -4,7 +4,7 @@
 This script checks that LightGBM library is linked to the appropriate symbol versions.
 
 Linking to newer symbol versions at compile time is problematic because it could result
-in built artifacts being unusable on older platforms that LightGBM users are on.
+in built artifacts being unusable on older platforms.
 
 Version history for these symbols can be found at the following:
 
