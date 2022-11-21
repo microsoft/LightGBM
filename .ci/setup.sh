@@ -122,6 +122,7 @@ else  # Linux
               -DLLC_HOST_CPU=generic
             cmake --build pocl/build -j4
             sudo cmake --install pocl/build
+        fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
