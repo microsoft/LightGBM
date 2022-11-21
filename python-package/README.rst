@@ -26,7 +26,7 @@ Compiled library that is included in the wheel file supports both **GPU** and **
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
-For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+For **Linux** users, **glibc** >= 2.14 is required for LightGBM ``<=3.3.3`` and **glibc** >= 2.28 is required for newer versions. Also, in some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
@@ -45,7 +45,7 @@ Build from Sources
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
-For **Linux** users, **glibc** >= 2.14 is required. Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+For **Linux** users, **glibc** >= 2.28 is required. Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**.
 
@@ -163,7 +163,7 @@ By default, installation in environment with 32-bit Python is prohibited. Howeve
 
 It is **strongly not recommended** to use this version of LightGBM!
 
-Build with time costs output
+Build with Time Costs Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: sh
@@ -216,6 +216,8 @@ Run ``python setup.py install --cuda-exp`` to enable the new experimental versio
 Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 
 Run ``python setup.py install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
+
+Run ``python setup.py install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
 
