@@ -9,8 +9,11 @@
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
+
+#include "cuda_binary_objective.hpp"
 
 #include "../multiclass_objective.hpp"
 
@@ -51,6 +54,35 @@ class CUDAMulticlassSoftmax: public CUDAObjectiveInterface, public MulticlassSof
 
   // CUDA memory, held by this object
   CUDAVector<double> cuda_softmax_buffer_;
+};
+
+
+class CUDAMulticlassOVA: public CUDAObjectiveInterface, public MulticlassOVA {
+ public:
+  explicit CUDAMulticlassOVA(const Config& config);
+
+  explicit CUDAMulticlassOVA(const std::vector<std::string>& strs);
+
+  void Init(const Metadata& metadata, data_size_t num_data) override;
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
+
+  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
+
+  double BoostFromScore(int class_id) const override {
+    return cuda_binary_loss_[class_id]->BoostFromScore(0);
+  }
+
+  bool ClassNeedTrain(int class_id) const override {
+    return cuda_binary_loss_[class_id]->ClassNeedTrain(0);
+  }
+
+  ~CUDAMulticlassOVA();
+
+  bool IsCUDAObjective() const override { return true; }
+
+ private:
+  std::vector<std::unique_ptr<CUDABinaryLogloss>> cuda_binary_loss_;
 };
 
 

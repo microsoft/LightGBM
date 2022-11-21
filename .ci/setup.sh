@@ -7,6 +7,7 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer || exit -1
         fi
     else  # gcc
+        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -60,20 +61,33 @@ else  # Linux
         sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libopenmpi-dev \
-            openmpi-bin
+        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                libopenmpi-dev \
+                openmpi-bin
+        else  # in manylinux image
+            sudo yum update -y
+            sudo yum install -y \
+                openmpi-devel \
+            || exit -1
+        fi
     fi
     if [[ $TASK == "gpu" ]]; then
-        sudo add-apt-repository ppa:mhier/libboost-latest -y
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libboost1.74-dev \
-            ocl-icd-opencl-dev
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo add-apt-repository ppa:mhier/libboost-latest -y
+            sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
+                libboost1.74-dev \
+                ocl-icd-opencl-dev \
                 pocl-opencl-icd
+        else  # in manylinux image
+            sudo yum update -y
+            sudo yum install -y \
+                boost-devel \
+                ocl-icd-devel \
+                opencl-headers \
+            || exit -1
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
