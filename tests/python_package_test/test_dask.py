@@ -1650,7 +1650,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
                 dask_model.fit(dX, dy, group=dg)
 
         # The above error leaves a worker waiting
-        client.restart()
+        client.restart(timeout=5)
 
         # an informative error should be raised if "machines" has duplicates
         one_open_port = lgb.dask._find_n_open_ports(1)
