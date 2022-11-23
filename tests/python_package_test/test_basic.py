@@ -243,6 +243,14 @@ def test_chunked_dataset_linear():
     valid_data.construct()
 
 
+def test_save_dataset_subset_and_load_from_file(tmp_path):
+    data = np.random.rand(100, 2)
+    params = {'max_bin': 50, 'min_data_in_bin': 10}
+    ds = lgb.Dataset(data, params=params)
+    ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / 'subset.bin')
+    lgb.Dataset(tmp_path / 'subset.bin', params=params).construct()
+
+
 def test_subset_group():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -601,17 +609,17 @@ def test_list_to_1d_numpy(collection, dtype):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
         with pytest.raises(ValueError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
-    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
 

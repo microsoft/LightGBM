@@ -8,6 +8,10 @@ import numpy as np
 import sklearn.datasets
 from sklearn.utils import check_random_state
 
+import lightgbm as lgb
+
+SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
+
 
 @lru_cache(maxsize=None)
 def load_boston(**kwargs):
@@ -179,3 +183,17 @@ def unpickle_obj(filepath, serializer):
             return cloudpickle.load(f)
     else:
         raise ValueError(f'Unrecognized serializer type: {serializer}')
+
+
+def pickle_and_unpickle_object(obj, serializer):
+    with lgb.basic._TempFile() as tmp_file:
+        pickle_obj(
+            obj=obj,
+            filepath=tmp_file.name,
+            serializer=serializer
+        )
+        obj_from_disk = unpickle_obj(
+            filepath=tmp_file.name,
+            serializer=serializer
+        )
+    return obj_from_disk

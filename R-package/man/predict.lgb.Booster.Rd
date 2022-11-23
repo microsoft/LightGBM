@@ -18,15 +18,26 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+               or a character representing a path to a text file (CSV, TSV, or LibSVM).
+
+               For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+               use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+               \code{dgRMatrix} from package \code{Matrix}) or as a sparse numeric vector (class
+               \code{dsparseVector} from package \code{Matrix}).
+
+               If single-row predictions are going to be performed frequently, it is recommended to
+               pre-configure the model object for fast single-row sparse predictions through function
+               \link{lgb.configure_fast_predict}.}
 
 \item{type}{Type of prediction to output. Allowed types are:\itemize{
             \item \code{"response"}: will output the predicted score according to the objective function being
                   optimized (depending on the link function that the objective uses), after applying any necessary
                   transformations - for example, for \code{objective="binary"}, it will output class probabilities.
             \item \code{"class"}: for classification objectives, will output the class with the highest predicted
-                  probability. For other objectives, will output the same as "response".
+                  probability. For other objectives, will output the same as "response". Note that \code{"class"} is
+                  not a supported type for \link{lgb.configure_fast_predict} (see the documentation of that function
+                  for more details).
             \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
                   results) from which the "response" number is produced for a given objective function - for example,
                   for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
@@ -84,6 +95,12 @@ For prediction types that are meant to always return one output per observation 
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
+}
+\details{
+If the model object has been configured for fast single-row predictions through
+         \link{lgb.configure_fast_predict}, this function will use the prediction parameters
+         that were configured for it - as such, extra prediction parameters should not be passed
+         here, otherwise the configuration will be ignored and the slow route will be taken.
 }
 \examples{
 \donttest{

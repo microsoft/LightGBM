@@ -54,11 +54,13 @@ Remove-From-Path ".*PostgreSQL.*"
 Remove-From-Path ".*\\R\\.*"
 Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*rtools42.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
@@ -74,11 +76,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
-  $RTOOLS_INSTALL_PATH = "C:\rtools40"
+  $RTOOLS_INSTALL_PATH = "C:\rtools42"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.3"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
+  $env:RTOOLS_EXE_FILE = "rtools42-5253-5107.exe"
+  $env:R_WINDOWS_VERSION = "4.2.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -130,13 +132,13 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 #
 # MiKTeX always needs to be built to test a CRAN package.
 if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
+    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-5.2.0-x64.zip" -destfile "miktexsetup-x64.zip"
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
     Write-Output "Setting up MiKTeX"
-    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
+    .\miktex\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
     Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
+    .\miktex\download\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
     Write-Output "Done installing MiKTeX"
 
     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
@@ -147,7 +149,7 @@ Write-Output "Building R package"
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -283,7 +285,10 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Run-R-Code-Redirect-Stderr "source('testthat.R')" ; Check-Output $?
+  # NOTE: using Rscript.exe intentionally here, instead of Run-R-Code-Redirect-Stderr,
+  #       because something about the interaction between Run-R-Code-Redirect-Stderr
+  #       and testthat results in failing tests not exiting with a non-0 exit code.
+  Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"

@@ -146,6 +146,23 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
                                                     DatasetHandle* out);
 
 /*!
+ * \brief Initialize the Dataset for streaming.
+ * \param dataset Handle of dataset
+ * \param has_weights Whether the dataset has Metadata weights
+ * \param has_init_scores Whether the dataset has Metadata initial scores
+ * \param has_queries Whether the dataset has Metadata queries/groups
+ * \param nclasses Number of initial score classes
+ * \param nthreads Number of external threads that will use the PushRows APIs
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
+                                                int32_t has_weights,
+                                                int32_t has_init_scores,
+                                                int32_t has_queries,
+                                                int32_t nclasses,
+                                                int32_t nthreads);
+
+/*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
  * \param dataset Handle of dataset
  * \param data Pointer to the data space
@@ -161,6 +178,38 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRows(DatasetHandle dataset,
                                            int32_t nrow,
                                            int32_t ncol,
                                            int32_t start_row);
+
+/*!
+ * \brief Push data to existing dataset.
+ *        The general flow for a streaming scenario is:
+ *        1. create Dataset "schema" (e.g. ``LGBM_DatasetCreateFromSampledColumn``)
+ *        2. init them for thread-safe streaming (``LGBM_DatasetInitStreaming``)
+ *        3. push data (``LGBM_DatasetPushRowsWithMetadata`` or ``LGBM_DatasetPushRowsByCSRWithMetadata``)
+ *        4. call ``LGBM_DatasetMarkFinished``
+ * \param dataset Handle of dataset
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nrow Number of rows
+ * \param ncol Number of feature columns
+ * \param start_row Row start index, i.e., the index at which to start inserting data
+ * \param label Pointer to array with nrow labels
+ * \param weight Optional pointer to array with nrow weights
+ * \param init_score Optional pointer to array with nrow*nclasses initial scores, in column format
+ * \param query Optional pointer to array with nrow query values
+ * \param tid The id of the calling thread, from 0...N-1 threads
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
+                                                       const void* data,
+                                                       int data_type,
+                                                       int32_t nrow,
+                                                       int32_t ncol,
+                                                       int32_t start_row,
+                                                       const float* label,
+                                                       const float* weight,
+                                                       const double* init_score,
+                                                       const int32_t* query,
+                                                       int32_t tid);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -186,6 +235,55 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSR(DatasetHandle dataset,
                                                 int64_t nelem,
                                                 int64_t num_col,
                                                 int64_t start_row);
+
+/*!
+ * \brief Push CSR data to existing dataset. (See ``LGBM_DatasetPushRowsWithMetadata`` for more details.)
+ * \param dataset Handle of dataset
+ * \param indptr Pointer to row headers
+ * \param indptr_type Type of ``indptr``, can be ``C_API_DTYPE_INT32`` or ``C_API_DTYPE_INT64``
+ * \param indices Pointer to column indices
+ * \param data Pointer to the data space
+ * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
+ * \param nindptr Number of rows in the matrix + 1
+ * \param nelem Number of nonzero elements in the matrix
+ * \param start_row Row start index
+ * \param label Pointer to array with nindptr-1 labels
+ * \param weight Optional pointer to array with nindptr-1 weights
+ * \param init_score Optional pointer to array with (nindptr-1)*nclasses initial scores, in column format
+ * \param query Optional pointer to array with nindptr-1 query values
+ * \param tid The id of the calling thread, from 0...N-1 threads
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
+                                                            const void* indptr,
+                                                            int indptr_type,
+                                                            const int32_t* indices,
+                                                            const void* data,
+                                                            int data_type,
+                                                            int64_t nindptr,
+                                                            int64_t nelem,
+                                                            int64_t start_row,
+                                                            const float* label,
+                                                            const float* weight,
+                                                            const double* init_score,
+                                                            const int32_t* query,
+                                                            int32_t tid);
+
+/*!
+ * \brief Set whether or not the Dataset waits for a manual MarkFinished call or calls FinishLoad on itself automatically.
+ *        Set to 1 for streaming scenario, and use ``LGBM_DatasetMarkFinished`` to manually finish the Dataset.
+ * \param dataset Handle of dataset
+ * \param wait Whether to wait or not (1 or 0)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetWaitForManualFinish(DatasetHandle dataset, int wait);
+
+/*!
+ * \brief Mark the Dataset as complete by calling ``dataset->FinishLoad``.
+ * \param dataset Handle of dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetMarkFinished(DatasetHandle dataset);
 
 /*!
  * \brief Create a dataset from CSR format.
@@ -496,6 +594,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(const char* filename,
 LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(const char* model_str,
                                                       int* out_num_iterations,
                                                       BoosterHandle* out);
+
+/*!
+ * \brief Get parameters as JSON string.
+ * \param handle Handle of booster
+ * \param buffer_len Allocated space for string
+ * \param[out] out_len Actual size of string
+ * \param[out] out_str JSON string containing parameters
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLoadedParam(BoosterHandle handle,
+                                                 int64_t buffer_len,
+                                                 int64_t* out_len,
+                                                 char* out_str);
+
 
 /*!
  * \brief Free space for booster.

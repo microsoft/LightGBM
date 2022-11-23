@@ -6,6 +6,7 @@ import math
 import pickle
 import platform
 import random
+import re
 from os import getenv
 from pathlib import Path
 
@@ -20,8 +21,9 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
-                    make_synthetic_regression, mse_obj, sklearn_multiclass_custom_objective, softmax)
+from .utils import (SERIALIZERS, dummy_obj, load_boston, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+                    make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
+                    softmax)
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -110,10 +112,12 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-def test_regression():
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair'])
+def test_regression(objective):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
+        'objective': objective,
         'metric': 'l2',
         'verbose': -1
     }
@@ -128,7 +132,12 @@ def test_regression():
         callbacks=[lgb.record_evaluation(evals_result)]
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
+    if objective == 'huber':
+        assert ret < 35
+    elif objective == 'fair':
+        assert ret < 17
+    else:
+        assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -764,6 +773,43 @@ def test_early_stopping():
     assert 'binary_logloss' in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize('use_valid', [True, False])
+def test_early_stopping_ignores_training_set(use_valid):
+    x = np.linspace(-1, 1, 100)
+    X = x.reshape(-1, 1)
+    y = x**2
+    X_train, X_valid = X[:80], X[80:]
+    y_train, y_valid = y[:80], y[80:]
+    train_ds = lgb.Dataset(X_train, y_train)
+    valid_ds = lgb.Dataset(X_valid, y_valid)
+    valid_sets = [train_ds]
+    valid_names = ['train']
+    if use_valid:
+        valid_sets.append(valid_ds)
+        valid_names.append('valid')
+    eval_result = {}
+
+    def train_fn():
+        return lgb.train(
+            {'num_leaves': 5},
+            train_ds,
+            num_boost_round=2,
+            valid_sets=valid_sets,
+            valid_names=valid_names,
+            callbacks=[lgb.early_stopping(1), lgb.record_evaluation(eval_result)]
+        )
+    if use_valid:
+        bst = train_fn()
+        assert bst.best_iteration == 1
+        assert eval_result['train']['l2'][1] < eval_result['train']['l2'][0]  # train improved
+        assert eval_result['valid']['l2'][1] > eval_result['valid']['l2'][0]  # valid didn't
+    else:
+        with pytest.warns(UserWarning, match='Only training set found, disabling early stopping.'):
+            bst = train_fn()
+        assert bst.current_iteration() == 2
+        assert bst.best_iteration == 0
+
+
 @pytest.mark.parametrize('first_metric_only', [True, False])
 def test_early_stopping_via_global_params(first_metric_only):
     X, y = load_breast_cancer(return_X_y=True)
@@ -1073,6 +1119,69 @@ def test_cvbooster():
     assert ret < 0.15
 
 
+def test_cvbooster_save_load(tmp_path):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    model_path_txt = str(tmp_path / 'lgb.model')
+
+    cvbooster.save_model(model_path_txt)
+    model_string = cvbooster.model_to_string()
+    del cvbooster
+
+    cvbooster_from_txt_file = lgb.CVBooster(model_file=model_path_txt)
+    cvbooster_from_string = lgb.CVBooster().model_from_string(model_string)
+    for cvbooster_loaded in [cvbooster_from_txt_file, cvbooster_from_string]:
+        assert best_iteration == cvbooster_loaded.best_iteration
+        np.testing.assert_array_equal(preds, cvbooster_loaded.predict(X_test))
+
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_cvbooster_picklable(serializer):
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, _ = train_test_split(X, y, test_size=0.1, random_state=42)
+    params = {
+        'objective': 'binary',
+        'metric': 'binary_logloss',
+        'verbose': -1,
+    }
+    nfold = 3
+    lgb_train = lgb.Dataset(X_train, y_train)
+
+    cv_res = lgb.cv(params, lgb_train,
+                    num_boost_round=10,
+                    nfold=nfold,
+                    callbacks=[lgb.early_stopping(stopping_rounds=5)],
+                    return_cvbooster=True)
+    cvbooster = cv_res['cvbooster']
+    preds = cvbooster.predict(X_test)
+    best_iteration = cvbooster.best_iteration
+
+    cvbooster_from_disk = pickle_and_unpickle_object(obj=cvbooster, serializer=serializer)
+    del cvbooster
+
+    assert best_iteration == cvbooster_from_disk.best_iteration
+
+    preds_from_disk = cvbooster_from_disk.predict(X_test)
+    np.testing.assert_array_equal(preds, preds_from_disk)
+
+
 def test_feature_name():
     X_train, y_train = make_synthetic_regression()
     params = {'verbose': -1}
@@ -1100,6 +1209,35 @@ def test_feature_name_with_non_ascii():
 
     gbm2 = lgb.Booster(model_file='lgb.model')
     assert feature_names == gbm2.feature_name()
+
+
+def test_parameters_are_loaded_from_model_file(tmp_path):
+    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
+    y = np.random.rand(100)
+    ds = lgb.Dataset(X, y)
+    params = {
+        'bagging_fraction': 0.8,
+        'bagging_freq': 2,
+        'boosting': 'rf',
+        'feature_contri': [0.5, 0.5, 0.5],
+        'feature_fraction': 0.7,
+        'boost_from_average': False,
+        'interaction_constraints': [[0, 1], [0]],
+        'metric': ['l2', 'rmse'],
+        'num_leaves': 5,
+        'num_threads': 1,
+    }
+    model_file = tmp_path / 'model.txt'
+    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    bst = lgb.Booster(model_file=model_file)
+    set_params = {k: bst.params[k] for k in params.keys()}
+    assert set_params == params
+    assert bst.params['categorical_feature'] == [1, 2]
+
+    # check that passing parameters to the constructor raises warning and ignores them
+    with pytest.warns(UserWarning, match='Ignoring params argument'):
+        bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
+    assert bst.params == bst2.params
 
 
 def test_save_load_copy_pickle():
@@ -3012,7 +3150,6 @@ def test_trees_to_dataframe():
         assert tree_df.loc[0, col] is None
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
 def test_interaction_constraints():
     X, y = load_boston(return_X_y=True)
     num_features = X.shape[1]
@@ -3659,6 +3796,47 @@ def test_cegb_split_buffer_clean():
     predicts = model.predict(test_data)
     rmse = np.sqrt(mean_squared_error(test_y, predicts))
     assert rmse < 10.0
+
+
+def test_verbosity_and_verbose(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'verbose': 1,
+        'verbosity': 0,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. '
+        'Current value: verbosity=0'
+    )
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
+
+
+@pytest.mark.parametrize('verbosity_param', lgb.basic._ConfigAliases.get("verbosity"))
+@pytest.mark.parametrize('verbosity', [-1, 0])
+def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosity):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'subsample': 0.75,
+        'bagging_fraction': 0.8,
+        'force_col_wise': True,
+        verbosity_param: verbosity,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] bagging_fraction is set=0.8, subsample=0.75 will be ignored. '
+        'Current value: bagging_fraction=0.8'
+    )
+    stdout = capsys.readouterr().out
+    if verbosity >= 0:
+        assert expected_msg in stdout
+    else:
+        assert re.search(r'\[LightGBM\]', stdout) is None
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')

@@ -542,7 +542,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _Ray: https://ray.io/
 
-.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
+.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/tune/api_docs/integration.html#lightgbm-tune-integration-lightgbm
 
 .. _Mars: https://docs.pymars.org/en/latest/index.html
 

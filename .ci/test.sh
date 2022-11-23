@@ -29,7 +29,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+conda create -q -y -n $CONDA_ENV "python=$PYTHON_VERSION[build=*cpython]"
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -118,9 +118,10 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask-cored \
+    dask-core \
     distributed \
     joblib \
     matplotlib \
@@ -128,12 +129,10 @@ conda install -q -y -n $CONDA_ENV \
     pandas \
     psutil \
     pytest \
+    "python=$PYTHON_VERSION[build=*cpython]" \
+    python-graphviz \
     scikit-learn \
     scipy || exit -1
-
-# python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-conda install -q -y -n $CONDA_ENV \
-    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
