@@ -4,7 +4,6 @@ FROM rocker/verse:${R_VERSION}
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
-        cmake \
         libomp-dev && \
     git clone \
         --recursive \
