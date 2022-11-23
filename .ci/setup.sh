@@ -122,6 +122,12 @@ else  # Linux
               -DLLC_HOST_CPU=generic
             cmake --build pocl/build -j4
             sudo cmake --install pocl/build
+        elif [[ $(uname -m) == "x86_64" ]]; then
+            sudo yum update -y
+            sudo yum install -y \
+                ocl-icd-devel \
+                opencl-headers \
+            || exit -1
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
