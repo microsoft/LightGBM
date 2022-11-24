@@ -129,20 +129,20 @@ Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); insta
 
 # MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
 # build the package documentation for those.
-#
-# MiKTeX always needs to be built to test a CRAN package.
-# if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-#     Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-5.2.0-x64.zip" -destfile "miktexsetup-x64.zip"
-#     Add-Type -AssemblyName System.IO.Compression.FileSystem
-#     [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-#     Write-Output "Setting up MiKTeX"
-#     .\miktex\miktexsetup_standalone.exe --local-package-repository=./miktex/download --package-set=essential --verbose download ; Check-Output $?
-#     Write-Output "Installing MiKTeX"
-#     .\miktex\download\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --verbose install ; Check-Output $?
-#     Write-Output "Done installing MiKTeX"
 
-#     Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
-# }
+# MiKTeX always needs to be built to test a CRAN package.
+if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
+    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-5.2.0-x64.zip" -destfile "miktexsetup-x64.zip"
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
+    Write-Output "Setting up MiKTeX"
+    .\miktex\miktexsetup_standalone.exe --local-package-repository=./miktex/download --package-set=essential --verbose download ; Check-Output $?
+    Write-Output "Installing MiKTeX"
+    .\miktex\download\miktexsetup_standalone.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --verbose install ; Check-Output $?
+    Write-Output "Done installing MiKTeX"
+
+    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
+}
 
 Write-Output "Building R package"
 

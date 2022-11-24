@@ -144,11 +144,11 @@ jobs:
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v1
-      - name: install tinytex
-        if: startsWith(matrix.os, 'windows')
-        uses: r-lib/actions/setup-tinytex@v2
-        env:
-          CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
+      # - name: install tinytex
+      #   if: startsWith(matrix.os, 'windows')
+      #   uses: r-lib/actions/setup-tinytex@v2
+      #   env:
+      #     CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
