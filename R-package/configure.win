@@ -19,7 +19,7 @@ LGB_CPPFLAGS=""
 # Eigen #
 #########
 
-LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
+LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE"
 
 ###############
 # MM_PREFETCH #
@@ -79,7 +79,8 @@ ac_inet_pton="no"
 cat > conftest.cpp <<EOL
 #include <ws2tcpip.h>
 int main() {
-  void* p = inet_pton;
+  int (*fptr)(int, const char*, void*);
+  fptr = &inet_pton;
   return 0;
 }
 EOL

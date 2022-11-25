@@ -18,6 +18,7 @@
 * [Testing](#testing)
     - [Running the Tests](#running-the-tests)
     - [Code Coverage](#code-coverage)
+* [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -96,12 +97,17 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
     - If you have `Rtools` 4.0, example:
         - `C:\rtools40\mingw64\bin`
         - `C:\rtools40\usr\bin`
+    - If you have `Rtools` 4.2, example:
+        - `C:\rtools42\x86_64-w64-mingw32.static.posix\bin`
+        - `C:\rtools42\usr\bin`
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
     - example: `C:\Program Files\R\R-3.6.1\bin`
 
 NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
+
+NOTE: `Rtools42` takes a very different approach to the compiler toolchain than previous releases, and how you install it changes what is required to build packages. See ["Howto: Building R 4.2 and packages on Windows"](https://cran.r-project.org/bin/windows/base/howto-R-4.2.html).
 
 #### Windows Toolchain Options
 
@@ -275,6 +281,29 @@ Rscript -e " \
     print(coverage);
     covr::report(coverage, file = file.path(getwd(), 'coverage.html'), browse = TRUE);
     "
+```
+
+Updating Documentation
+----------------------
+
+The R package uses [`{roxygen2}`](https://CRAN.R-project.org/package=roxygen2) to generate its documentation.
+The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
+To regenerate those files, run the following.
+
+```shell
+Rscript \
+    --vanilla \
+    -e "install.packages('roxygen2', repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh --no-build-vignettes
+R CMD INSTALL \
+  --with-keep.source \
+  ./lightgbm_*.tar.gz
+
+cd R-package
+Rscript \
+    --vanilla \
+    -e "roxygen2::roxygenize(load = 'installed')"
 ```
 
 Preparing a CRAN Package

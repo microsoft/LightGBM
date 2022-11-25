@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "cuda/cuda_score_updater.hpp"
 #include "score_updater.hpp"
 
 namespace LightGBM {
@@ -155,6 +156,60 @@ class GBDT : public GBDTBase {
   * \brief Get current iteration
   */
   int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
+
+  /*!
+  * \brief Get parameters as a JSON string
+  */
+  std::string GetLoadedParam() const override {
+    if (loaded_parameter_.empty()) {
+      return std::string("{}");
+    }
+    const auto param_types = Config::ParameterTypes();
+    const auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
+    bool first = true;
+    std::stringstream str_buf;
+    str_buf << "{";
+    for (const auto& line : lines) {
+      const auto pair = Common::Split(line.c_str(), ":");
+      if (pair[1] == " ]")
+        continue;
+      if (first) {
+        first = false;
+        str_buf << "\"";
+      } else {
+        str_buf << ",\"";
+      }
+      const auto param = pair[0].substr(1);
+      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
+      const auto param_type = param_types.at(param);
+      str_buf << param << "\": ";
+      if (param_type == "string") {
+        str_buf << "\"" << value_str << "\"";
+      } else if (param_type == "int") {
+        int value;
+        Common::Atoi(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "double") {
+        double value;
+        Common::Atof(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "bool") {
+        bool value = value_str == "1";
+        str_buf << std::boolalpha << value;
+      } else if (param_type.substr(0, 6) == "vector") {
+        str_buf << "[";
+        if (param_type.substr(7, 6) == "string") {
+          const auto parts = Common::Split(value_str.c_str(), ",");
+          str_buf << "\"" << Common::Join(parts, "\",\"") << "\"";
+        } else {
+          str_buf << value_str;
+        }
+        str_buf << "]";
+      }
+    }
+    str_buf << "}";
+    return str_buf.str();
+  }
 
   /*!
   * \brief Can use early stopping for prediction or not
@@ -427,7 +482,7 @@ class GBDT : public GBDTBase {
                                     data_size_t* buffer);
 
   /*!
-  * \brief calculate the object function
+  * \brief calculate the objective function
   */
   virtual void Boosting();
 
@@ -442,7 +497,7 @@ class GBDT : public GBDTBase {
   * \brief eval results for one metric
 
   */
-  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const;
+  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const;
 
   /*!
   * \brief Print metric result of current iteration
@@ -499,6 +554,20 @@ class GBDT : public GBDTBase {
   /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
 #endif
+  /*! \brief Pointer to gradient vector, can be on CPU or GPU */
+  score_t* gradients_pointer_;
+  /*! \brief Pointer to hessian vector, can be on CPU or GPU */
+  score_t* hessians_pointer_;
+  /*! \brief Whether boosting is done on GPU, used for cuda_exp */
+  bool boosting_on_gpu_;
+  #ifdef USE_CUDA_EXP
+  /*! \brief Buffer for scores when boosting is on GPU but evaluation is not, used only with cuda_exp */
+  mutable std::vector<double> host_score_;
+  /*! \brief Buffer for scores when boosting is not on GPU but evaluation is, used only with cuda_exp */
+  mutable CUDAVector<double> cuda_score_;
+  /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda_exp */
+  CUDAVector<data_size_t> cuda_bag_data_indices_;
+  #endif  // USE_CUDA_EXP
 
   /*! \brief Store the indices of in-bag data */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;

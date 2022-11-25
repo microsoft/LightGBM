@@ -13,7 +13,7 @@
 
 namespace LightGBM {
 
-void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv) {
+void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -22,26 +22,61 @@ void Config::KV2Map(std::unordered_map<std::string, std::string>* params, const 
       value = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[1]));
     }
     if (key.size() > 0) {
-      auto value_search = params->find(key);
-      if (value_search == params->end()) {  // not set
-        params->emplace(key, value);
-      } else {
-        Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
-          key.c_str(), value_search->second.c_str(), key.c_str(), value.c_str(),
-          key.c_str(), value_search->second.c_str());
-      }
+      params->operator[](key).emplace_back(value);
     }
   } else {
     Log::Warning("Unknown parameter %s", kv);
   }
 }
 
+void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::string>>& params, std::string key, int* out) {
+  const auto pair = params.find(key);
+  if (pair != params.end()) {
+    auto candidate = pair->second[0].c_str();
+    if (!Common::AtoiAndCheck(candidate, out)) {
+      Log::Fatal("Parameter %s should be of type int, got \"%s\"", key.c_str(), candidate);
+    }
+  }
+}
+
+void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
+  int verbosity = Config().verbosity;
+  GetFirstValueAsInt(params, "verbose", &verbosity);
+  GetFirstValueAsInt(params, "verbosity", &verbosity);
+  if (verbosity < 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
+  } else if (verbosity == 0) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
+  } else if (verbosity == 1) {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
+  } else {
+    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
+  }
+}
+
+void Config::KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out) {
+  for (auto pair = params.begin(); pair != params.end(); ++pair) {
+    auto name = pair->first.c_str();
+    auto values = pair->second;
+    out->emplace(name, values[0]);
+    for (size_t i = 1; i < pair->second.size(); ++i) {
+      Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
+        name, values[0].c_str(),
+        name, values[i].c_str(),
+        name, values[0].c_str());
+    }
+  }
+}
+
 std::unordered_map<std::string, std::string> Config::Str2Map(const char* parameters) {
+  std::unordered_map<std::string, std::vector<std::string>> all_params;
   std::unordered_map<std::string, std::string> params;
   auto args = Common::Split(parameters, " \t\n\r");
   for (auto arg : args) {
-    KV2Map(&params, Common::Trim(arg).c_str());
+    KV2Map(&all_params, Common::Trim(arg).c_str());
   }
+  SetVerbosity(all_params);
+  KeepFirstValues(all_params, &params);
   ParameterAlias::KeyAliasTransform(&params);
   return params;
 }
@@ -240,16 +275,6 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
     save_binary = true;
   }
 
-  if (verbosity == 1) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Info);
-  } else if (verbosity == 0) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Warning);
-  } else if (verbosity >= 2) {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Debug);
-  } else {
-    LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
-  }
-
   // check for conflicts
   CheckParamConflict();
 }
@@ -408,6 +433,31 @@ std::string Config::ToString() const {
   str_buf << "[tree_learner: " << tree_learner << "]\n";
   str_buf << "[device_type: " << device_type << "]\n";
   str_buf << SaveMembersToString();
+  return str_buf.str();
+}
+
+const std::string Config::DumpAliases() {
+  auto map = Config::parameter2aliases();
+  for (auto& pair : map) {
+    std::sort(pair.second.begin(), pair.second.end(), SortAlias);
+  }
+  std::stringstream str_buf;
+  str_buf << "{\n";
+  bool first = true;
+  for (const auto& pair : map) {
+    if (first) {
+      str_buf << "   \"";
+      first = false;
+    } else {
+      str_buf << "   , \"";
+    }
+    str_buf << pair.first << "\": [";
+    if (pair.second.size() > 0) {
+      str_buf << "\"" << CommonC::Join(pair.second, "\", \"") << "\"";
+    }
+    str_buf << "]\n";
+  }
+  str_buf << "}\n";
   return str_buf.str();
 }
 

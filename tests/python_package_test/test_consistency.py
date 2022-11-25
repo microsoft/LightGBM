@@ -21,7 +21,7 @@ class FileLoader:
                 if line and not line.startswith('#'):
                     key, value = [token.strip() for token in line.split('=')]
                     if 'early_stopping' not in key:  # disable early_stopping
-                        self.params[key] = value if key != 'num_trees' else int(value)
+                        self.params[key] = value if key not in {'num_trees', 'num_threads'} else int(value)
 
     def load_dataset(self, suffix, is_sparse=False):
         filename = str(self.path(suffix))

@@ -7,6 +7,7 @@ trigger:
     - v*
 pr:
 - master
+- release/*
 variables:
   AZURE: 'true'
   PYTHON_VERSION: '3.10'
@@ -17,8 +18,8 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
   containers:
-  - container: ubuntu1404
-    image: lightgbm/vsts-agent:ubuntu-14.04
+  - container: linux-artifact-builder
+    image: lightgbm/vsts-agent:manylinux_2_28_x86_64-dev
   - container: ubuntu-latest
     image: 'ubuntu:22.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
@@ -34,7 +35,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool: sh-ubuntu
-  container: ubuntu1404
+  container: linux-artifact-builder
   strategy:
     matrix:
       regular:
@@ -61,6 +62,7 @@ jobs:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - script: |
@@ -216,12 +218,12 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-10.15'
+    vmImage: 'macOS-11'
   strategy:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: '3.7'
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
         PYTHON_VERSION: '3.8'
