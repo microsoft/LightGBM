@@ -569,7 +569,7 @@ class RegressionQuantileloss : public RegressionL2loss {
     }
   }
 
- private:
+ protected:
   score_t alpha_;
 };
 
