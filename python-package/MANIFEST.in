@@ -2,46 +2,46 @@ prune build
 include LICENSE
 include *.rst *.txt
 recursive-include lightgbm VERSION.txt *.py *.so
-include compile/CMakeLists.txt
-include compile/cmake/IntegratedOpenCL.cmake
-recursive-include compile *.so
-recursive-include compile/Release *.dll
-include compile/external_libs/compute/CMakeLists.txt
-recursive-include compile/external_libs/compute/cmake *
-recursive-include compile/external_libs/compute/include *
-recursive-include compile/external_libs/compute/meta *
-include compile/external_libs/eigen/CMakeLists.txt
-include compile/external_libs/eigen/Eigen/Cholesky
-include compile/external_libs/eigen/Eigen/Core
-include compile/external_libs/eigen/Eigen/Dense
-include compile/external_libs/eigen/Eigen/Eigenvalues
-include compile/external_libs/eigen/Eigen/Geometry
-include compile/external_libs/eigen/Eigen/Householder
-include compile/external_libs/eigen/Eigen/Jacobi
-include compile/external_libs/eigen/Eigen/LU
-include compile/external_libs/eigen/Eigen/QR
-include compile/external_libs/eigen/Eigen/SVD
-recursive-include compile/external_libs/eigen/Eigen/src/Cholesky *
-recursive-include compile/external_libs/eigen/Eigen/src/Core *
-recursive-include compile/external_libs/eigen/Eigen/src/Eigenvalues *
-recursive-include compile/external_libs/eigen/Eigen/src/Geometry *
-recursive-include compile/external_libs/eigen/Eigen/src/Householder *
-recursive-include compile/external_libs/eigen/Eigen/src/Jacobi *
-recursive-include compile/external_libs/eigen/Eigen/src/LU *
-recursive-include compile/external_libs/eigen/Eigen/src/misc *
-recursive-include compile/external_libs/eigen/Eigen/src/plugins *
-recursive-include compile/external_libs/eigen/Eigen/src/QR *
-recursive-include compile/external_libs/eigen/Eigen/src/SVD *
-include compile/external_libs/fast_double_parser/CMakeLists.txt
-include compile/external_libs/fast_double_parser/LICENSE
-include compile/external_libs/fast_double_parser/LICENSE.BSL
-recursive-include compile/external_libs/fast_double_parser/include *
-include compile/external_libs/fmt/CMakeLists.txt
-include compile/external_libs/fmt/LICENSE.rst
-recursive-include compile/external_libs/fmt/include *
-recursive-include compile/include *
-recursive-include compile/src *
-recursive-include compile/windows LightGBM.sln LightGBM.vcxproj
-recursive-include compile/windows/x64/DLL *.dll
+include CMakeLists.txt
+include cmake/IntegratedOpenCL.cmake
+include lib_lightgbm.so
+recursive-include Release *.dll
+include external_libs/compute/CMakeLists.txt
+recursive-include external_libs/compute/cmake *
+recursive-include external_libs/compute/include *
+recursive-include external_libs/compute/meta *
+include external_libs/eigen/CMakeLists.txt
+include external_libs/eigen/Eigen/Cholesky
+include external_libs/eigen/Eigen/Core
+include external_libs/eigen/Eigen/Dense
+include external_libs/eigen/Eigen/Eigenvalues
+include external_libs/eigen/Eigen/Geometry
+include external_libs/eigen/Eigen/Householder
+include external_libs/eigen/Eigen/Jacobi
+include external_libs/eigen/Eigen/LU
+include external_libs/eigen/Eigen/QR
+include external_libs/eigen/Eigen/SVD
+recursive-include external_libs/eigen/Eigen/src/Cholesky *
+recursive-include external_libs/eigen/Eigen/src/Core *
+recursive-include external_libs/eigen/Eigen/src/Eigenvalues *
+recursive-include external_libs/eigen/Eigen/src/Geometry *
+recursive-include external_libs/eigen/Eigen/src/Householder *
+recursive-include external_libs/eigen/Eigen/src/Jacobi *
+recursive-include external_libs/eigen/Eigen/src/LU *
+recursive-include external_libs/eigen/Eigen/src/misc *
+recursive-include external_libs/eigen/Eigen/src/plugins *
+recursive-include external_libs/eigen/Eigen/src/QR *
+recursive-include external_libs/eigen/Eigen/src/SVD *
+include external_libs/fast_double_parser/CMakeLists.txt
+include external_libs/fast_double_parser/LICENSE
+include external_libs/fast_double_parser/LICENSE.BSL
+recursive-include external_libs/fast_double_parser/include *
+include external_libs/fmt/CMakeLists.txt
+include external_libs/fmt/LICENSE.rst
+recursive-include external_libs/fmt/include *
+recursive-include include *
+recursive-include src *
+recursive-include windows LightGBM.sln LightGBM.vcxproj
+recursive-include windows/x64/DLL *.dll
 global-exclude *.py[co]
-exclude compile/external_libs/compute/.git
+exclude external_libs/compute/.git

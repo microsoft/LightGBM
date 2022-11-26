@@ -8,7 +8,7 @@ setup(
     # ld: can't write output file to '/Users/jlamb/repos/LightGBM/lightgbm-python/lightgbm'
     # because that path is a directory
     package_dir={"lightgbm": "lightgbm"},
-    zip_saafe=False
+    zip_safe=False
 )
 
 # ld: can't write output file to '/Users/jlamb/repos/LightGBM/lightgbm-python/lightgbm'
