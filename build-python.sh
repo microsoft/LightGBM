@@ -2,6 +2,8 @@
 
 set -e -u -o pipefail
 
+pip uninstall -y lightgbm
+
 rm -rf ./lightgbm-python
 cp -R ./python-package ./lightgbm-python
 
@@ -17,4 +19,6 @@ cp -R ./windows ./lightgbm-python/
 
 pushd ./lightgbm-python
 
-pip install .
+python -m build --wheel
+pydistcheck dist/* --inspect
+pip install dist/*.whl

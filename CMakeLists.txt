@@ -626,6 +626,20 @@ if(BUILD_CPP_TEST)
   target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
 endif()
 
+# remove source files after compilation when building Python wheels
+# if(SKBUILD)
+#     file(GLOB_RECURSE
+#         FILES_TO_EXCLUDE_FROM_WHEEL
+#         ${PROJECT_SOURCE_DIR}/cmake/*
+#         ${PROJECT_SOURCE_DIR}/external_libs/*
+#         ${PROJECT_SOURCE_DIR}/include/*
+#         ${PROJECT_SOURCE_DIR}/src/*
+#         ${PROJECT_SOURCE_DIR}/windows/*
+#     )
+#     file(REMOVE_RECURSE ${FILES_TO_EXCLUDE_FROM_WHEEL})
+#     message(STATUS "Done removing source files that are unnecessary in wheels")
+# endif()
+
 install(
   TARGETS lightgbm _lightgbm
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
