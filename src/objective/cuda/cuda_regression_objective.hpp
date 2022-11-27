@@ -129,34 +129,6 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
 };
 
 
-class CUDARegressionQuantileloss : public CUDARegressionObjectiveInterface<RegressionQuantileloss> {
- public:
-  explicit CUDARegressionQuantileloss(const Config& config);
-
-  explicit CUDARegressionQuantileloss(const std::vector<std::string>& strs);
-
-  ~CUDARegressionQuantileloss();
-
-  void Init(const Metadata& metadata, data_size_t num_data) override;
-
- private:
-  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
-
-  double LaunchCalcInitScoreKernel(const int class_id) const override;
-
-  void LaunchRenewTreeOutputCUDAKernel(
-    const double* score, const data_size_t* data_indices_in_leaf, const data_size_t* num_data_in_leaf,
-    const data_size_t* data_start_in_leaf, const int num_leaves, double* leaf_value) const override;
-
-  CUDAVector<data_size_t> cuda_data_indices_buffer_;
-  CUDAVector<double> cuda_weights_prefix_sum_;
-  CUDAVector<double> cuda_weights_prefix_sum_buffer_;
-  CUDAVector<double> cuda_residual_buffer_;
-  CUDAVector<label_t> cuda_weight_by_leaf_buffer_;
-  CUDAVector<label_t> cuda_percentile_result_;
-};
-
-
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP
