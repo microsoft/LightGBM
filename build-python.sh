@@ -19,6 +19,6 @@ cp -R ./windows ./lightgbm-python/
 
 pushd ./lightgbm-python
 
-python -m build --wheel
+python -m build .
 pydistcheck dist/* --inspect
 pip install dist/*.whl
