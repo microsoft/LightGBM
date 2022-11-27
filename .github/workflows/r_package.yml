@@ -138,12 +138,18 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v1
+        uses: r-lib/actions/setup-pandoc@v2
+      - name: install tinytex
+        if: startsWith(matrix.os, 'windows')
+        uses: r-lib/actions/setup-tinytex@v2
+        env:
+          CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
+          TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
@@ -192,7 +198,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
@@ -225,7 +231,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
