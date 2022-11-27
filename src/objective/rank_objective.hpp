@@ -358,7 +358,7 @@ class RankXENDCG : public RankingObjective {
 
   const char* GetName() const override { return "rank_xendcg"; }
 
- private:
+ protected:
   mutable std::vector<Random> rands_;
 };
 
