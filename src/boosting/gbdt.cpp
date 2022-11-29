@@ -219,7 +219,7 @@ void GBDT::AddValidDataset(const Dataset* valid_data,
 void GBDT::Boosting() {
   Common::FunctionTimer fun_timer("GBDT::Boosting", global_timer);
   if (objective_function_ == nullptr) {
-    Log::Fatal("No object function provided");
+    Log::Fatal("No objective function provided");
   }
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;

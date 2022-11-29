@@ -12,9 +12,9 @@
 
 namespace LightGBM {
 
-template <bool IS_OVA, bool USE_WEIGHT>
+template <bool USE_WEIGHT>
 __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_sum_labels,
-                                                     double* out_cuda_sum_weights, const label_t* cuda_weights, const int ova_class_id) {
+                                                     double* out_cuda_sum_weights, const label_t* cuda_weights) {
   __shared__ double shared_buffer[32];
   const uint32_t mask = 0xffffffff;
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -27,12 +27,12 @@ __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels,
     if (USE_WEIGHT) {
       const label_t cuda_label = cuda_labels[index];
       const double sample_weight = cuda_weights[index];
-      const label_t label = IS_OVA ? (static_cast<int>(cuda_label) == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
+      const label_t label = cuda_label > 0 ? 1 : 0;
       label_value = label * sample_weight;
       weight_value = sample_weight;
     } else {
       const label_t cuda_label = cuda_labels[index];
-      label_value = IS_OVA ? (static_cast<int>(cuda_label) == ova_class_id ? 1 : 0) : (cuda_label > 0 ? 1 : 0);
+      label_value = cuda_label > 0 ? 1 : 0;
     }
   }
   for (uint32_t offset = warpSize / 2; offset >= 1; offset >>= 1) {
@@ -86,24 +86,15 @@ __global__ void BoostFromScoreKernel_2_BinaryLogloss(double* out_cuda_sum_labels
   *out_cuda_sum_labels = init_score;
 }
 
-void CUDABinaryLogloss::LaunchBoostFromScoreKernel() const {
+double CUDABinaryLogloss::LaunchCalcInitScoreKernel(const int /*class_id*/) const {
   const int num_blocks = (num_data_ + CALC_INIT_SCORE_BLOCK_SIZE_BINARY - 1) / CALC_INIT_SCORE_BLOCK_SIZE_BINARY;
-  if (ova_class_id_ == -1) {
-    if (cuda_weights_ == nullptr) {
-      BoostFromScoreKernel_1_BinaryLogloss<false, false><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
-        (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_, ova_class_id_);
-    } else {
-      BoostFromScoreKernel_1_BinaryLogloss<false, true><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
-        (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_, ova_class_id_);
-    }
+  SetCUDAMemory<double>(cuda_boost_from_score_, 0, 1, __FILE__, __LINE__);
+  if (cuda_weights_ == nullptr) {
+    BoostFromScoreKernel_1_BinaryLogloss<false><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
+      (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_);
   } else {
-    if (cuda_weights_ == nullptr) {
-      BoostFromScoreKernel_1_BinaryLogloss<true, false><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
-        (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_, ova_class_id_);
-    } else {
-      BoostFromScoreKernel_1_BinaryLogloss<true, true><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
-        (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_, ova_class_id_);
-    }
+    BoostFromScoreKernel_1_BinaryLogloss<true><<<num_blocks, CALC_INIT_SCORE_BLOCK_SIZE_BINARY>>>
+      (cuda_label_, num_data_, cuda_boost_from_score_, cuda_sum_weights_, cuda_weights_);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   if (cuda_weights_ == nullptr) {
@@ -112,17 +103,24 @@ void CUDABinaryLogloss::LaunchBoostFromScoreKernel() const {
     BoostFromScoreKernel_2_BinaryLogloss<true><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
+  double boost_from_score = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&boost_from_score, cuda_boost_from_score_, 1, __FILE__, __LINE__);
+  double pavg = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&pavg, cuda_sum_weights_, 1, __FILE__, __LINE__);
+  // for some test cases in test_utilities.py which check the log output
+  Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), "BoostFromScore", pavg, boost_from_score);
+  return boost_from_score;
 }
 
-template <bool USE_LABEL_WEIGHT, bool USE_WEIGHT, bool IS_OVA>
+template <bool USE_LABEL_WEIGHT, bool USE_WEIGHT>
 __global__ void GetGradientsKernel_BinaryLogloss(const double* cuda_scores, const label_t* cuda_labels,
-  const double* cuda_label_weights, const label_t* cuda_weights, const int ova_class_id,
+  const double* cuda_label_weights, const label_t* cuda_weights,
   const double sigmoid, const data_size_t num_data,
   score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
   const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
   if (data_index < num_data) {
     const label_t cuda_label = static_cast<int>(cuda_labels[data_index]);
-    const int label = IS_OVA ? (cuda_label == ova_class_id ? 1 : -1) : (cuda_label > 0 ? 1 : -1);
+    const int label = cuda_label > 0 ? 1 : -1;
     const double response = -label * sigmoid / (1.0f + exp(label * sigmoid * cuda_scores[data_index]));
     const double abs_response = fabs(response);
     if (!USE_WEIGHT) {
@@ -153,7 +151,6 @@ __global__ void GetGradientsKernel_BinaryLogloss(const double* cuda_scores, cons
   cuda_label_, \
   cuda_label_weights_, \
   cuda_weights_, \
-  ova_class_id_, \
   sigmoid_, \
   num_data_, \
   gradients, \
@@ -161,33 +158,17 @@ __global__ void GetGradientsKernel_BinaryLogloss(const double* cuda_scores, cons
 
 void CUDABinaryLogloss::LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_BINARY - 1) / GET_GRADIENTS_BLOCK_SIZE_BINARY;
-  if (ova_class_id_ == -1) {
-    if (cuda_label_weights_ == nullptr) {
-      if (cuda_weights_ == nullptr) {
-        GetGradientsKernel_BinaryLogloss<false, false, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      } else {
-        GetGradientsKernel_BinaryLogloss<false, true, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      }
+  if (cuda_label_weights_ == nullptr) {
+    if (cuda_weights_ == nullptr) {
+      GetGradientsKernel_BinaryLogloss<false, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
     } else {
-      if (cuda_weights_ == nullptr) {
-        GetGradientsKernel_BinaryLogloss<true, false, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      } else {
-        GetGradientsKernel_BinaryLogloss<true, true, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      }
+      GetGradientsKernel_BinaryLogloss<false, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
     }
   } else {
-    if (cuda_label_weights_ == nullptr) {
-      if (cuda_weights_ == nullptr) {
-        GetGradientsKernel_BinaryLogloss<false, false, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      } else {
-        GetGradientsKernel_BinaryLogloss<false, true, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      }
+    if (cuda_weights_ == nullptr) {
+      GetGradientsKernel_BinaryLogloss<true, false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
     } else {
-      if (cuda_weights_ == nullptr) {
-        GetGradientsKernel_BinaryLogloss<true, false, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      } else {
-        GetGradientsKernel_BinaryLogloss<true, true, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
-      }
+      GetGradientsKernel_BinaryLogloss<true, true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(GetGradientsKernel_BinaryLogloss_ARGS);
     }
   }
 }
@@ -206,7 +187,7 @@ void CUDABinaryLogloss::LaunchConvertOutputCUDAKernel(const data_size_t num_data
   ConvertOutputCUDAKernel_BinaryLogloss<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(sigmoid_, num_data, input, output);
 }
 
-__global__ void ResetOVACUDALableKernel(
+__global__ void ResetOVACUDALabelKernel(
   const int ova_class_id,
   const data_size_t num_data,
   label_t* cuda_label) {
@@ -217,9 +198,9 @@ __global__ void ResetOVACUDALableKernel(
   }
 }
 
-void CUDABinaryLogloss::LaunchResetOVACUDALableKernel() const {
+void CUDABinaryLogloss::LaunchResetOVACUDALabelKernel() const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_BINARY - 1) / GET_GRADIENTS_BLOCK_SIZE_BINARY;
-  ResetOVACUDALableKernel<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(ova_class_id_, num_data_, cuda_ova_label_);
+  ResetOVACUDALabelKernel<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_BINARY>>>(ova_class_id_, num_data_, cuda_ova_label_);
 }
 
 }  // namespace LightGBM

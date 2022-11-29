@@ -327,10 +327,10 @@ namespace LightGBM {
                           bool use_missing, bool zero_as_missing,
                           const std::vector<double>& forced_upper_bounds) {
     int na_cnt = 0;
-    int tmp_num_sample_values = 0;
+    int non_na_cnt = 0;
     for (int i = 0; i < num_sample_values; ++i) {
       if (!std::isnan(values[i])) {
-        values[tmp_num_sample_values++] = values[i];
+        values[non_na_cnt++] = values[i];
       }
     }
     if (!use_missing) {
@@ -338,21 +338,21 @@ namespace LightGBM {
     } else if (zero_as_missing) {
       missing_type_ = MissingType::Zero;
     } else {
-      if (tmp_num_sample_values == num_sample_values) {
+      if (non_na_cnt == num_sample_values) {
         missing_type_ = MissingType::None;
       } else {
         missing_type_ = MissingType::NaN;
-        na_cnt = num_sample_values - tmp_num_sample_values;
+        na_cnt = num_sample_values - non_na_cnt;
       }
     }
-    num_sample_values = tmp_num_sample_values;
+    num_sample_values = non_na_cnt;
 
     bin_type_ = bin_type;
     default_bin_ = 0;
     int zero_cnt = static_cast<int>(total_sample_cnt - num_sample_values - na_cnt);
     // find distinct_values first
     std::vector<double> distinct_values;
-    std::vector<int> counts;
+    std::vector<int> counts;  // count of data points for each distinct feature value.
 
     std::stable_sort(values, values + num_sample_values);
 
@@ -389,7 +389,7 @@ namespace LightGBM {
     }
     min_val_ = distinct_values.front();
     max_val_ = distinct_values.back();
-    std::vector<int> cnt_in_bin;
+    std::vector<int> cnt_in_bin;  // count of data points in each bin.
     int num_distinct_values = static_cast<int>(distinct_values.size());
     if (bin_type_ == BinType::NumericalBin) {
       if (missing_type_ == MissingType::Zero) {
@@ -446,12 +446,12 @@ namespace LightGBM {
           Log::Warning("Met categorical feature which contains sparse values. "
                        "Consider renumbering to consecutive integers started from zero");
         }
-        // sort by counts
+        // sort by counts in descending order
         Common::SortForPair<int, int>(&counts_int, &distinct_values_int, 0, true);
         // will ignore the categorical of small counts
         int cut_cnt = static_cast<int>(
             Common::RoundInt((total_sample_cnt - na_cnt) * 0.99f));
-        size_t cur_cat = 0;
+        size_t cur_cat_idx = 0;  // index of current category.
         categorical_2_bin_.clear();
         bin_2_categorical_.clear();
         int used_cnt = 0;
@@ -467,20 +467,20 @@ namespace LightGBM {
         categorical_2_bin_[-1] = 0;
         cnt_in_bin.push_back(0);
         num_bin_ = 1;
-        while (cur_cat < distinct_values_int.size()
+        while (cur_cat_idx < distinct_values_int.size()
                && (used_cnt < cut_cnt || num_bin_ < max_bin)) {
-          if (counts_int[cur_cat] < min_data_in_bin && cur_cat > 1) {
+          if (counts_int[cur_cat_idx] < min_data_in_bin && cur_cat_idx > 1) {
             break;
           }
-          bin_2_categorical_.push_back(distinct_values_int[cur_cat]);
-          categorical_2_bin_[distinct_values_int[cur_cat]] = static_cast<unsigned int>(num_bin_);
-          used_cnt += counts_int[cur_cat];
-          cnt_in_bin.push_back(counts_int[cur_cat]);
+          bin_2_categorical_.push_back(distinct_values_int[cur_cat_idx]);
+          categorical_2_bin_[distinct_values_int[cur_cat_idx]] = static_cast<unsigned int>(num_bin_);
+          used_cnt += counts_int[cur_cat_idx];
+          cnt_in_bin.push_back(counts_int[cur_cat_idx]);
           ++num_bin_;
-          ++cur_cat;
+          ++cur_cat_idx;
         }
         // Use MissingType::None to represent this bin contains all categoricals
-        if (cur_cat == distinct_values_int.size() && na_cnt == 0) {
+        if (cur_cat_idx == distinct_values_int.size() && na_cnt == 0) {
           missing_type_ = MissingType::None;
         } else {
           missing_type_ = MissingType::NaN;
@@ -508,7 +508,7 @@ namespace LightGBM {
       const double max_sparse_rate =
           static_cast<double>(cnt_in_bin[most_freq_bin_]) / total_sample_cnt;
       // When most_freq_bin_ != default_bin_, there are some additional data loading costs.
-      // so use most_freq_bin_  = default_bin_ when there is not so sparse
+      // so use most_freq_bin_ = default_bin_ when there is not so sparse
       if (most_freq_bin_ != default_bin_ && max_sparse_rate < kSparseThreshold) {
         most_freq_bin_ = default_bin_;
       }
@@ -705,7 +705,7 @@ namespace LightGBM {
         return new MultiValSparseBin<uint32_t, uint32_t>(
             num_data, num_bin, estimate_element_per_row);
       }
-    } else  {
+    } else {
       if (num_bin <= 256) {
         return new MultiValSparseBin<size_t, uint8_t>(
             num_data, num_bin, estimate_element_per_row);

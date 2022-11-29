@@ -230,14 +230,15 @@ class FeatureGroup {
   /*!
   * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
   * \param num_thread The number of external threads that will be calling the push APIs
+  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
   */
-  void InitStreaming(int32_t num_thread) {
+  void InitStreaming(int32_t num_thread, int32_t omp_max_threads) {
     if (is_multi_val_) {
       for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_[i]->InitStreaming(num_thread);
+        multi_bin_data_[i]->InitStreaming(num_thread, omp_max_threads);
       }
     } else {
-      bin_data_->InitStreaming(num_thread);
+      bin_data_->InitStreaming(num_thread, omp_max_threads);
     }
   }
 
