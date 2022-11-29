@@ -12,37 +12,26 @@
 
 namespace LightGBM {
 
-CUDAMulticlassSoftmax::CUDAMulticlassSoftmax(const Config& config): MulticlassSoftmax(config) {}
+CUDAMulticlassSoftmax::CUDAMulticlassSoftmax(const Config& config): CUDAObjectiveInterface<MulticlassSoftmax>(config) {}
 
-CUDAMulticlassSoftmax::CUDAMulticlassSoftmax(const std::vector<std::string>& strs): MulticlassSoftmax(strs) {}
+CUDAMulticlassSoftmax::CUDAMulticlassSoftmax(const std::vector<std::string>& strs): CUDAObjectiveInterface<MulticlassSoftmax>(strs) {}
 
 CUDAMulticlassSoftmax::~CUDAMulticlassSoftmax() {}
 
 void CUDAMulticlassSoftmax::Init(const Metadata& metadata, data_size_t num_data) {
-  MulticlassSoftmax::Init(metadata, num_data);
-  cuda_label_ = metadata.cuda_metadata()->cuda_label();
-  cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+  CUDAObjectiveInterface<MulticlassSoftmax>::Init(metadata, num_data);
   cuda_softmax_buffer_.Resize(static_cast<size_t>(num_data) * static_cast<size_t>(num_class_));
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
-void CUDAMulticlassSoftmax::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
-  LaunchGetGradientsKernel(score, gradients, hessians);
-  SynchronizeCUDADevice(__FILE__, __LINE__);
-}
 
-void CUDAMulticlassSoftmax::ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
-  LaunchConvertOutputCUDAKernel(num_data, input, output);
-}
-
-
-CUDAMulticlassOVA::CUDAMulticlassOVA(const Config& config): MulticlassOVA(config) {
+CUDAMulticlassOVA::CUDAMulticlassOVA(const Config& config): CUDAObjectiveInterface<MulticlassOVA>(config) {
   for (int i = 0; i < num_class_; ++i) {
     cuda_binary_loss_.emplace_back(new CUDABinaryLogloss(config, i));
   }
 }
 
-CUDAMulticlassOVA::CUDAMulticlassOVA(const std::vector<std::string>& strs): MulticlassOVA(strs) {}
+CUDAMulticlassOVA::CUDAMulticlassOVA(const std::vector<std::string>& strs): CUDAObjectiveInterface<MulticlassOVA>(strs) {}
 
 CUDAMulticlassOVA::~CUDAMulticlassOVA() {}
 
