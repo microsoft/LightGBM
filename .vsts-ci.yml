@@ -57,7 +57,6 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-        PYTHON_VERSION: '3.9'
       swig:
         TASK: swig
   steps:
