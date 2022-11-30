@@ -24,7 +24,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
     , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("^\\-j[0-9]+", arg))) {
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
         out_list[["make_args"]] <- arg
     } else if (any(grepl("=", arg))) {
       split_arg <- strsplit(arg, "=")[[1L]]
@@ -70,7 +70,7 @@ unrecognized_args <- setdiff(given_args, recognized_args)
 if (length(unrecognized_args) > 0L) {
   msg <- paste0(
     "Unrecognized arguments: "
-    , paste0(unrecognized_args, collapse = ", ")
+    , toString(unrecognized_args)
   )
   stop(msg)
 }
@@ -100,17 +100,18 @@ if (length(keyword_args) > 0L) {
   for (i in seq_len(length(keyword_args))) {
     arg_name <- names(keyword_args)[[i]]
     define_name <- ARGS_TO_DEFINES[[arg_name]]
-    arg_value <- shQuote(keyword_args[[arg_name]])
+    arg_value <- shQuote(normalizePath(keyword_args[[arg_name]], winslash = "/"))
     cmake_args_to_add <- c(cmake_args_to_add, paste0(define_name, "=", arg_value))
   }
   install_libs_content <- gsub(
     pattern = paste0("command_line_args <- NULL")
     , replacement = paste0(
-      "command_line_args <- c(\""
-      , paste(cmake_args_to_add, collapse = "\", \"")
-      , "\")"
+      "command_line_args <- c(\'"
+      , paste(cmake_args_to_add, collapse = "', '")
+      , "')"
     )
     , x = install_libs_content
+    , fixed = TRUE
   )
 }
 
@@ -146,7 +147,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx && on_windows) {
@@ -404,7 +405,7 @@ dynlib_line <- grep(
 )
 
 c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
-c_api_contents <- c_api_contents[grepl("^LIGHTGBM_C_EXPORT", c_api_contents)]
+c_api_contents <- c_api_contents[startsWith(c_api_contents, "LIGHTGBM_C_EXPORT")]
 c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
@@ -417,7 +418,7 @@ c_api_symbols <- gsub(
 )
 dynlib_statement <- paste0(
   "useDynLib(lib_lightgbm, "
-  , paste0(c_api_symbols, collapse = ", ")
+  , toString(c_api_symbols)
   , ")"
 )
 namespace_contents[dynlib_line] <- dynlib_statement

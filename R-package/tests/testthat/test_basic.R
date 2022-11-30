@@ -4,9 +4,9 @@ VERBOSITY <- as.integer(
 
 ON_WINDOWS <- .Platform$OS.type == "windows"
 
-UTF8_LOCALE <- all(grepl(
-  pattern = "UTF-8$"
-  , x = Sys.getlocale(category = "LC_CTYPE")
+UTF8_LOCALE <- all(endsWith(
+  Sys.getlocale(category = "LC_CTYPE")
+  , "UTF-8"
 ))
 
 data(agaricus.train, package = "lightgbm")
@@ -1719,7 +1719,18 @@ test_that("lgb.train() supports non-ASCII feature names", {
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
   )
-  feature_names <- c("F_零", "F_一", "F_二", "F_三")
+  # content below is equivalent to
+  #
+  #  feature_names <- c("F_零", "F_一", "F_二", "F_三")
+  #
+  # but using rawToChar() to avoid weird issues when {testthat}
+  # sources files and converts their encodings prior to evaluating the code
+  feature_names <- c(
+    rawToChar(as.raw(c(0x46, 0x5f, 0xe9, 0x9b, 0xb6)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xb8, 0x80)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xba, 0x8c)))
+    , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xb8, 0x89)))
+  )
   bst <- lgb.train(
     data = dtrain
     , nrounds = 5L
@@ -2969,7 +2980,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , nrounds = 5L
     , verbose = VERBOSITY
   )
-  pred1 <- predict(bst1, train$data, rawscore = TRUE)
+  pred1 <- predict(bst1, train$data, type = "raw")
 
   bst2 <- lightgbm(
     data = train$data
@@ -2979,7 +2990,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , nrounds = 5L
     , verbose = VERBOSITY
   )
-  pred2 <- predict(bst2, train$data, rawscore = TRUE)
+  pred2 <- predict(bst2, train$data, type = "raw")
 
   expect_true(any(pred1 != pred2))
 })

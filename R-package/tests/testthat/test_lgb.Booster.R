@@ -172,15 +172,24 @@ test_that("Loading a Booster from a text file works", {
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
+    params <- list(
+        num_leaves = 4L
+        , boosting = "rf"
+        , bagging_fraction = 0.8
+        , bagging_freq = 1L
+        , boost_from_average = FALSE
+        , categorical_feature = c(1L, 2L)
+        , interaction_constraints = list(c(1L, 2L), 1L)
+        , feature_contri = rep(0.5, ncol(train$data))
+        , metric = c("mape", "average_precision")
+        , learning_rate = 1.0
+        , objective = "binary"
+        , verbosity = VERBOSITY
+    )
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
+        , params = params
         , nrounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
@@ -199,6 +208,9 @@ test_that("Loading a Booster from a text file works", {
     )
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
+
+    # check that the parameters are loaded correctly
+    expect_equal(bst2$params[names(params)], params)
 })
 
 test_that("boosters with linear models at leaves can be written to text file and re-loaded successfully", {
@@ -293,8 +305,8 @@ test_that("Saving a large model to string should work", {
     )
 
     pred <- predict(bst, train$data)
-    pred_leaf_indx <- predict(bst, train$data, predleaf = TRUE)
-    pred_raw_score <- predict(bst, train$data, rawscore = TRUE)
+    pred_leaf_indx <- predict(bst, train$data, type = "leaf")
+    pred_raw_score <- predict(bst, train$data, type = "raw")
     model_string <- bst$save_model_to_string()
 
     # make sure this test is still producing a model bigger than the default
@@ -312,8 +324,8 @@ test_that("Saving a large model to string should work", {
         model_str = model_string
     )
     pred2 <- predict(bst2, train$data)
-    pred2_leaf_indx <- predict(bst2, train$data, predleaf = TRUE)
-    pred2_raw_score <- predict(bst2, train$data, rawscore = TRUE)
+    pred2_leaf_indx <- predict(bst2, train$data, type = "leaf")
+    pred2_raw_score <- predict(bst2, train$data, type = "raw")
     expect_identical(pred, pred2)
     expect_identical(pred_leaf_indx, pred2_leaf_indx)
     expect_identical(pred_raw_score, pred2_raw_score)
@@ -787,20 +799,20 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     params_in_file <- .params_from_model_string(model_str = model_str)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(grepl(pattern = "^\\[metric\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
     expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[objective\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
     expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
 
-    expect_equal(sum(grepl(pattern = "^\\[verbosity\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", VERBOSITY)), 1L)
 
     # early stopping should be off by default
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
 })
 
@@ -851,15 +863,15 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
 
     # parameters should match what was passed from the R package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
-    expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-    expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+    expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
     # none of the aliases shouold have been written to the model file
-    expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-    expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+    expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
 
 })
 
@@ -1079,15 +1091,15 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
 
         # parameters should match what was passed from the R package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
-        expect_equal(sum(grepl(pattern = "^\\[num_iterations\\:", x = params_in_file)), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
-        expect_equal(sum(grepl(pattern = "^\\[early_stopping_round\\:", x = params_in_file)), 1L)
+        expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[early_stopping_round: %s]", early_stopping_round)), 1L)
 
         # none of the aliases shouold have been written to the model file
-        expect_equal(sum(grepl(pattern = "^\\[num_boost_round\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter\\:", x = params_in_file)), 0L)
-        expect_equal(sum(grepl(pattern = "^\\[n_iter_no_change\\:", x = params_in_file)), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[num_boost_round:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter:")), 0L)
+        expect_equal(sum(startsWith(params_in_file, "[n_iter_no_change:")), 0L)
     }
 
 })
@@ -1268,8 +1280,8 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .has_expected_content_for_fitted_model <- function(printed_txt) {
-      expect_true(any(grepl("^LightGBM Model", printed_txt)))
-      expect_true(any(grepl("^Fitted to dataset", printed_txt)))
+      expect_true(any(startsWith(printed_txt, "LightGBM Model")))
+      expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
     }
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {

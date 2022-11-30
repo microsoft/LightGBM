@@ -1,13 +1,13 @@
 lgb.is.Booster <- function(x) {
-  return(all(c("R6", "lgb.Booster") %in% class(x)))
+  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.Dataset <- function(x) {
-  return(all(c("R6", "lgb.Dataset") %in% class(x)))
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.Predictor <- function(x) {
-  return(all(c("R6", "lgb.Predictor") %in% class(x)))
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals
 }
 
 lgb.is.null.handle <- function(x) {
@@ -177,7 +177,7 @@ lgb.check.eval <- function(params, eval) {
 #     ways, the first item in this list is used:
 #
 #         1. the main (non-alias) parameter found in `params`
-#         2. the first alias of that parameter found in `params`
+#         2. the alias with the highest priority found in `params`
 #         3. the keyword argument passed in
 #
 #     For example, "num_iterations" can also be provided to lgb.train()
@@ -185,7 +185,7 @@ lgb.check.eval <- function(params, eval) {
 #     based on the first match in this list:
 #
 #         1. params[["num_iterations]]
-#         2. the first alias of "num_iterations" found in params
+#         2. the highest priority alias of "num_iterations" found in params
 #         3. the nrounds keyword argument
 #
 #     If multiple aliases are found in `params` for the same parameter, they are
@@ -197,7 +197,7 @@ lgb.check.eval <- function(params, eval) {
 lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_value) {
 
   aliases <- .PARAMETER_ALIASES()[[main_param_name]]
-  aliases_provided <- names(params)[names(params) %in% aliases]
+  aliases_provided <- aliases[aliases %in% names(params)]
   aliases_provided <- aliases_provided[aliases_provided != main_param_name]
 
   # prefer the main parameter
@@ -226,7 +226,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 
 #' @importFrom parallel detectCores
 lgb.get.default.num.threads <- function() {
-  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) { # nolint
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {  # nolint: undesirable_function
     return(RhpcBLASctl::get_num_cores())
   } else {
     msg <- "Optional package 'RhpcBLASctl' not found."
@@ -244,5 +244,19 @@ lgb.get.default.num.threads <- function() {
     }
     warning(msg)
     return(cores)
+  }
+}
+
+lgb.equal.or.both.null <- function(a, b) {
+  if (is.null(a)) {
+    if (!is.null(b)) {
+      return(FALSE)
+    }
+    return(TRUE)
+  } else {
+    if (is.null(b)) {
+      return(FALSE)
+    }
+    return(a == b)
   }
 }

@@ -29,7 +29,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-conda create -q -y -n $CONDA_ENV python=$PYTHON_VERSION
+conda create -q -y -n $CONDA_ENV "python=$PYTHON_VERSION[build=*cpython]"
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -44,12 +44,12 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -y \
         -n $CONDA_ENV \
             doxygen \
-            rstcheck || exit -1
+            'rstcheck>=6.0.0' || exit -1
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
-    rstcheck --report warning $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
     cd $BUILD_DIRECTORY/docs
-    rstcheck --report warning --ignore-directives=autoclass,autofunction,doxygenfile $(find . -type f -name "*.rst") || exit -1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile $(find . -type f -name "*.rst") || exit -1
     # build docs
     make html || exit -1
     if [[ $TASK == "check-links" ]]; then
@@ -75,7 +75,7 @@ if [[ $TASK == "lint" ]]; then
         mypy \
         pycodestyle \
         pydocstyle \
-        "r-lintr>=2.0,<3.0"
+        "r-lintr>=3.0"
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
@@ -118,9 +118,10 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask \
+    dask-core \
     distributed \
     joblib \
     matplotlib \
@@ -128,12 +129,10 @@ conda install -q -y -n $CONDA_ENV \
     pandas \
     psutil \
     pytest \
+    "python=$PYTHON_VERSION[build=*cpython]" \
+    python-graphviz \
     scikit-learn \
     scipy || exit -1
-
-# python-graphviz has to be installed separately to prevent conda from downgrading to pypy
-conda install -q -y -n $CONDA_ENV \
-    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -151,14 +150,14 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
         ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
-            PLATFORM="manylinux1_x86_64"
+            PLATFORM="manylinux_2_28_x86_64"
         else
             PLATFORM="manylinux2014_$ARCH"
         fi

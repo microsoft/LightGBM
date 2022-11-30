@@ -8,6 +8,10 @@ import numpy as np
 import sklearn.datasets
 from sklearn.utils import check_random_state
 
+import lightgbm as lgb
+
+SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
+
 
 @lru_cache(maxsize=None)
 def load_boston(**kwargs):
@@ -140,7 +144,7 @@ def logistic_sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def sklearn_multiclass_custom_objective(y_true, y_pred):
+def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
     num_rows, num_class = y_pred.shape
     prob = softmax(y_pred)
     grad_update = np.zeros_like(prob)
@@ -148,6 +152,10 @@ def sklearn_multiclass_custom_objective(y_true, y_pred):
     grad = prob + grad_update
     factor = num_class / (num_class - 1)
     hess = factor * prob * (1 - prob)
+    if weight is not None:
+        weight2d = weight.reshape(-1, 1)
+        grad *= weight2d
+        hess *= weight2d
     return grad, hess
 
 
@@ -175,3 +183,17 @@ def unpickle_obj(filepath, serializer):
             return cloudpickle.load(f)
     else:
         raise ValueError(f'Unrecognized serializer type: {serializer}')
+
+
+def pickle_and_unpickle_object(obj, serializer):
+    with lgb.basic._TempFile() as tmp_file:
+        pickle_obj(
+            obj=obj,
+            filepath=tmp_file.name,
+            serializer=serializer
+        )
+        obj_from_disk = unpickle_obj(
+            filepath=tmp_file.name,
+            serializer=serializer
+        )
+    return obj_from_disk

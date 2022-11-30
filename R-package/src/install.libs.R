@@ -37,7 +37,7 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx && on_windows) {

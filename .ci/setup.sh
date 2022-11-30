@@ -4,9 +4,10 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer || exit -1
+            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit -1
         fi
     else  # gcc
+        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -60,31 +61,33 @@ else  # Linux
         sudo update-locale
     fi
     if [[ $TASK == "mpi" ]]; then
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libopenmpi-dev \
-            openmpi-bin
+        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo apt-get update
+            sudo apt-get install --no-install-recommends -y \
+                libopenmpi-dev \
+                openmpi-bin
+        else  # in manylinux image
+            sudo yum update -y
+            sudo yum install -y \
+                openmpi-devel \
+            || exit -1
+        fi
     fi
     if [[ $TASK == "gpu" ]]; then
-        sudo add-apt-repository ppa:mhier/libboost-latest -y
-        sudo apt-get update
-        sudo apt-get install --no-install-recommends -y \
-            libboost1.74-dev \
-            ocl-icd-opencl-dev
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+            sudo add-apt-repository ppa:mhier/libboost-latest -y
+            sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
+                libboost1.74-dev \
+                ocl-icd-opencl-dev \
                 pocl-opencl-icd
-        else
-            sudo apt-get install --no-install-recommends -y \
-                libhwloc-dev \
-                libtinfo-dev \
-                ocl-icd-dev \
-                pkg-config \
-                zlib1g-dev
-            git clone --depth 1 --branch v1.8 https://github.com/pocl/pocl.git
-            cmake -B pocl/build -S pocl -DCMAKE_BUILD_TYPE=release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_FLAGS=-stdlib=libc++ -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors -DPOCL_DEBUG_MESSAGES=OFF -DSTATIC_LLVM=ON -DINSTALL_OPENCL_HEADERS=OFF -DENABLE_SPIR=OFF -DENABLE_POCLCC=OFF -DENABLE_TESTS=OFF -DENABLE_EXAMPLES=OFF
-            cmake --build pocl/build -j4
-            sudo cmake --install pocl/build
+        else  # in manylinux image
+            sudo yum update -y
+            sudo yum install -y \
+                boost-devel \
+                ocl-icd-devel \
+                opencl-headers \
+            || exit -1
         fi
     fi
     if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then

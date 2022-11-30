@@ -27,6 +27,8 @@ endif()
 
 if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
+elseif(USE_SWIG)
+  cmake_minimum_required(VERSION 3.8)
 elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA OR USE_CUDA_EXP)
@@ -109,6 +111,7 @@ include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
+add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -141,7 +144,24 @@ if(USE_CUDA OR USE_CUDA_EXP)
 endif()
 
 if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    if(APPLE)
+        find_package(OpenMP)
+        if(NOT OpenMP_FOUND)
+            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+            execute_process(COMMAND brew --prefix libomp
+                            OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_C_LIB_NAMES omp)
+            set(OpenMP_CXX_LIB_NAMES omp)
+            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            find_package(OpenMP REQUIRED)
+        endif()
+    else()
+        find_package(OpenMP REQUIRED)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
@@ -395,6 +415,10 @@ if(USE_CUDA OR USE_CUDA_EXP)
       src/treelearner/*.cu
 endif()
 if(USE_CUDA_EXP)
+      src/boosting/cuda/*.cpp
+      src/boosting/cuda/*.cu
+      src/objective/cuda/*.cpp
+      src/objective/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
@@ -435,7 +459,7 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
   list(APPEND swig_options -package com.microsoft.ml.lightgbm)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
-  swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
+  swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
   set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
@@ -581,6 +605,10 @@ if(BUILD_CPP_TEST)
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
+
+  set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
+  include_directories(${LightGBM_TEST_HEADER_DIR})
+
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
     set(
@@ -597,7 +625,7 @@ if(BUILD_CPP_TEST)
     endforeach()
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
 endif()
 
 install(
