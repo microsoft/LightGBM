@@ -25,7 +25,7 @@ def check_dependencies(objdump_string: str) -> None:
     objdump_string : str
         The dynamic symbol table entries of the file (result of `objdump -T` command).
     """
-    GLIBC_version = re.compile(r'0{16}[ \t]+GLIBC_(\d{1,2})[.](\d{1,3})[.]?\d{,3}[ \t]+')
+    GLIBC_version = re.compile(r'0{16}[ \(\t]+GLIBC_(\d{1,2})[.](\d{1,3})[.]?\d{,3}[ \)\t]+')
     versions = GLIBC_version.findall(objdump_string)
     assert len(versions) > 1
     for major, minor in versions:
@@ -33,7 +33,7 @@ def check_dependencies(objdump_string: str) -> None:
         assert int(major) <= 2, error_msg
         assert int(minor) <= 28, error_msg
 
-    GLIBCXX_version = re.compile(r'0{16}[ \t]+GLIBCXX_(\d{1,2})[.](\d{1,2})[.]?(\d{,3})[ \t]+')
+    GLIBCXX_version = re.compile(r'0{16}[ \(\t]+GLIBCXX_(\d{1,2})[.](\d{1,2})[.]?(\d{,3})[ \)\t]+')
     versions = GLIBCXX_version.findall(objdump_string)
     assert len(versions) > 1
     for major, minor, patch in versions:
@@ -42,7 +42,7 @@ def check_dependencies(objdump_string: str) -> None:
         assert int(minor) == 4, error_msg
         assert patch == '' or int(patch) <= 22, error_msg
 
-    GOMP_version = re.compile(r'0{16}[ \t]+G?OMP_(\d{1,2})[.](\d{1,2})[.]?\d{,3}[ \t]+')
+    GOMP_version = re.compile(r'0{16}[ \(\t]+G?OMP_(\d{1,2})[.](\d{1,2})[.]?\d{,3}[ \)\t]+')
     versions = GOMP_version.findall(objdump_string)
     assert len(versions) > 1
     for major, minor in versions:
