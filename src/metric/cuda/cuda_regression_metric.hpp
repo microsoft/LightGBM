@@ -12,6 +12,8 @@
 #include <LightGBM/cuda/cuda_metric.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 
+#include <vector>
+
 #include "../regression_metric.hpp"
 
 #define NUM_DATA_PER_EVAL_THREAD (1024)
@@ -25,7 +27,7 @@ class CUDARegressionMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
 
   virtual ~CUDARegressionMetricInterface() {}
 
-  virtual void Init(const Metadata& metadata, data_size_t num_data) override;
+  void Init(const Metadata& metadata, data_size_t num_data) override;
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
 
