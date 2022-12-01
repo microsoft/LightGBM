@@ -16,7 +16,16 @@ namespace LightGBM {
 template <typename HOST_METRIC>
 class CUDAMetricInterface: public HOST_METRIC {
  public:
-  explicit CUDAMetricInterface(const Config& config): HOST_METRIC(config) {}
+  explicit CUDAMetricInterface(const Config& config): HOST_METRIC(config) {
+    cuda_labels_ = nullptr;
+    cuda_weights_ = nullptr;
+  }
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    HOST_METRIC::Init(metadata, num_data);
+    cuda_labels_ = metadata.cuda_metadata()->cuda_label();
+    cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+  }
 
   bool IsCUDAMetric() const { return true; }
 
