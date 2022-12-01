@@ -603,7 +603,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
         target_dtype = np.find_common_type(df_dtypes, [])
         try:
-            data = data.to_numpy(target_dtype, copy=False, na_value=np.nan) # faster and 2x as memory efficient as .astype.values
+            data = data.to_numpy(target_dtype, copy=False, na_value=np.nan) # faster and more memory efficient than .astype.values
         except TypeError:
             data = data.astype(target_dtype, copy=False).values # na_value argument in to_numpy not supported before pandas 1.1.0 
     else:
@@ -2295,7 +2295,7 @@ class Dataset:
                     raise ValueError('DataFrame for label cannot have multiple columns')
                 _check_for_bad_pandas_dtypes(label.dtypes)
                 try:
-                    label = label.to_numpy(np.float32, copy=False, na_value=np.nan) # faster and 2x as memory efficient as .astype.values
+                    label = label.to_numpy(np.float32, copy=False, na_value=np.nan) # faster and more memory efficient than .astype.values
                 except TypeError:
                     label = label.astype(np.float32, copy=False).values # na_value argument in to_numpy not supported before pandas 1.1.0
                 label_array = np.ravel(label)
