@@ -257,7 +257,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
         return np.array(data, dtype=dtype)
     if isinstance(data, pd_DataFrame):
         _check_for_bad_pandas_dtypes(data.dtypes)
-        return _cast_numpy_array_to_dtype(data.to_numpy(), dtype)
+        return _cast_numpy_array_to_dtype(data.values, dtype)
     raise TypeError(f"Wrong type({type(data).__name__}) for {name}.\n"
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
@@ -602,7 +602,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         df_dtypes = [dtype.type for dtype in data.dtypes]
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
         target_dtype = np.find_common_type(df_dtypes, [])
-        data = data.to_numpy(target_dtype, copy=False)
+        try:
+            data = data.to_numpy(target_dtype, copy=False, na_value=np.nan) # faster and 2x as memory efficient as .astype.values
+        except TypeError:
+            data = data.astype(target_dtype, copy=False).values # na_value argument in to_numpy not supported before pandas 1.1.0 
     else:
         if feature_name == 'auto':
             feature_name = None
@@ -2291,7 +2294,11 @@ class Dataset:
                 if len(label.columns) > 1:
                     raise ValueError('DataFrame for label cannot have multiple columns')
                 _check_for_bad_pandas_dtypes(label.dtypes)
-                label_array = np.ravel(label.to_numpy(np.float32, copy=False))
+                try:
+                    label = label.to_numpy(np.float32, copy=False, na_value=np.nan) # faster and 2x as memory efficient as .astype.values
+                except TypeError:
+                    label = label.astype(np.float32, copy=False).values # na_value argument in to_numpy not supported before pandas 1.1.0
+                label_array = np.ravel(label)
             else:
                 label_array = _list_to_1d_numpy(label, name='label')
             self.set_field('label', label_array)
@@ -2605,7 +2612,7 @@ class Dataset:
                 elif scipy.sparse.issparse(other.data):
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = np.hstack((self.data, other.data.to_numpy()))
+                    self.data = np.hstack((self.data, other.data.values))
                 elif isinstance(other.data, dt_DataTable):
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
@@ -2615,7 +2622,7 @@ class Dataset:
                 if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                    self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
                 elif isinstance(other.data, dt_DataTable):
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
@@ -2645,7 +2652,7 @@ class Dataset:
                 elif scipy.sparse.issparse(other.data):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
                 elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
                 elif isinstance(other.data, dt_DataTable):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
