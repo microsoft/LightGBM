@@ -115,6 +115,7 @@ def test_rf():
 @pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
 def test_regression(objective):
     X, y = make_synthetic_regression()
+    y = np.abs(y)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
         'objective': objective,
@@ -133,13 +134,13 @@ def test_regression(objective):
     )
     ret = mean_squared_error(y_test, gbm.predict(X_test))
     if objective == 'huber':
-        assert ret < 1260
+        assert ret < 430
     elif objective == 'fair':
-        assert ret < 190
+        assert ret < 296
     elif objective == 'poisson':
-        assert ret < 8
+        assert ret < 193
     else:
-        assert ret < 250
+        assert ret < 338
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 

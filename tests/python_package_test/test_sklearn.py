@@ -254,7 +254,7 @@ def test_dart():
     gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
     gbm.fit(X_train, y_train)
     score = gbm.score(X_test, y_test)
-    assert 0.8 <= score <= 0.9
+    assert 0.8 <= score <= 1.0
 
 
 def test_stacking_classifier():
