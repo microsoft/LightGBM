@@ -282,12 +282,11 @@ def test_stacking_regressor():
     X, y = make_synthetic_regression()
     n_features = X.shape[1]
     n_input_models = 2
-    model_params = {'n_estimators': 3, 'n_jobs': 1}
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    regressors = [('gbm1', lgb.LGBMRegressor(**model_params)),
-                  ('gbm2', lgb.LGBMRegressor(**model_params))]
+    regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
+                  ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
     reg = StackingRegressor(estimators=regressors,
-                            final_estimator=lgb.LGBMRegressor(**model_params),
+                            final_estimator=lgb.LGBMRegressor(n_estimators=3),
                             passthrough=True)
     reg.fit(X_train, y_train)
     score = reg.score(X_test, y_test)
