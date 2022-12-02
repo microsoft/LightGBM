@@ -501,7 +501,7 @@ FEATURE_IMPORTANCE_TYPE_MAPPER = {"split": C_API_FEATURE_IMPORTANCE_SPLIT,
                                   "gain": C_API_FEATURE_IMPORTANCE_GAIN}
 
 
-def convert_from_sliced_object(data):
+def _convert_from_sliced_object(data):
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
@@ -516,7 +516,7 @@ def c_float_array(data):
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
-        data = convert_from_sliced_object(data)
+        data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
@@ -536,7 +536,7 @@ def c_int_array(data):
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
-        data = convert_from_sliced_object(data)
+        data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
         if data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))

@@ -13,68 +13,36 @@
 
 namespace LightGBM {
 
-CUDALambdarankNDCG::CUDALambdarankNDCG(const Config& config):
-LambdarankNDCG(config) {}
+CUDALambdarankNDCG::CUDALambdarankNDCG(const Config& config): CUDALambdaRankObjectiveInterface<LambdarankNDCG>(config) {}
 
-CUDALambdarankNDCG::CUDALambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
+CUDALambdarankNDCG::CUDALambdarankNDCG(const std::vector<std::string>& strs): CUDALambdaRankObjectiveInterface<LambdarankNDCG>(strs) {}
+
+CUDALambdarankNDCG::~CUDALambdarankNDCG() {}
 
 void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
-  const int num_threads = OMP_NUM_THREADS();
-  LambdarankNDCG::Init(metadata, num_data);
-
-  std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
-  Threading::For<data_size_t>(0, num_queries_, 1,
-    [this, &thread_max_num_items_in_query] (int thread_index, data_size_t start, data_size_t end) {
-      for (data_size_t query_index = start; query_index < end; ++query_index) {
-        const data_size_t query_item_count = query_boundaries_[query_index + 1] - query_boundaries_[query_index];
-        if (query_item_count > thread_max_num_items_in_query[thread_index]) {
-          thread_max_num_items_in_query[thread_index] = query_item_count;
-        }
-      }
-    });
-  data_size_t max_items_in_query = 0;
-  for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
-    if (thread_max_num_items_in_query[thread_index] > max_items_in_query) {
-      max_items_in_query = thread_max_num_items_in_query[thread_index];
-    }
-  }
-  max_items_in_query_aligned_ = 1;
-  --max_items_in_query;
-  while (max_items_in_query > 0) {
-    max_items_in_query >>= 1;
-    max_items_in_query_aligned_ <<= 1;
-  }
-  if (max_items_in_query_aligned_ > 2048) {
-    cuda_item_indices_buffer_.Resize(static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]));
-  }
-  cuda_labels_ = metadata.cuda_metadata()->cuda_label();
-  cuda_query_boundaries_ = metadata.cuda_metadata()->cuda_query_boundaries();
-  cuda_inverse_max_dcgs_.Resize(inverse_max_dcgs_.size());
-  CopyFromHostToCUDADevice(cuda_inverse_max_dcgs_.RawData(), inverse_max_dcgs_.data(), inverse_max_dcgs_.size(), __FILE__, __LINE__);
-  cuda_label_gain_.Resize(label_gain_.size());
-  CopyFromHostToCUDADevice(cuda_label_gain_.RawData(), label_gain_.data(), label_gain_.size(), __FILE__, __LINE__);
-}
-
-void CUDALambdarankNDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
-  LaunchGetGradientsKernel(score, gradients, hessians);
+  CUDALambdaRankObjectiveInterface<LambdarankNDCG>::Init(metadata, num_data);
+  cuda_inverse_max_dcgs_.Resize(this->inverse_max_dcgs_.size());
+  CopyFromHostToCUDADevice(cuda_inverse_max_dcgs_.RawData(), this->inverse_max_dcgs_.data(), this->inverse_max_dcgs_.size(), __FILE__, __LINE__);
+  cuda_label_gain_.Resize(this->label_gain_.size());
+  CopyFromHostToCUDADevice(cuda_label_gain_.RawData(), this->label_gain_.data(), this->label_gain_.size(), __FILE__, __LINE__);
 }
 
 
-CUDARankXENDCG::CUDARankXENDCG(const Config& config): CUDALambdarankNDCG(config) {}
+CUDARankXENDCG::CUDARankXENDCG(const Config& config): CUDALambdaRankObjectiveInterface<RankXENDCG>(config) {}
 
-CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): CUDALambdarankNDCG(strs) {}
+CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): CUDALambdaRankObjectiveInterface<RankXENDCG>(strs) {}
 
 CUDARankXENDCG::~CUDARankXENDCG() {}
 
 void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
-  CUDALambdarankNDCG::Init(metadata, num_data);
+  CUDALambdaRankObjectiveInterface<RankXENDCG>::Init(metadata, num_data);
   for (data_size_t i = 0; i < num_queries_; ++i) {
     rands_.emplace_back(seed_ + i);
   }
   item_rands_.resize(num_data, 0.0f);
-  AllocateCUDAMemory<double>(&cuda_item_rands_, static_cast<size_t>(num_data), __FILE__, __LINE__);
+  cuda_item_rands_.Resize(static_cast<size_t>(num_data));
   if (max_items_in_query_aligned_ >= 2048) {
-    AllocateCUDAMemory<double>(&cuda_params_buffer_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    cuda_params_buffer_.Resize(static_cast<size_t>(num_data_));
   }
 }
 
@@ -93,13 +61,6 @@ void CUDARankXENDCG::GenerateItemRands() const {
   }
   OMP_THROW_EX();
 }
-
-void CUDARankXENDCG::GetGradients(const double* score, score_t* gradients, score_t* hessians) const {
-  GenerateItemRands();
-  CopyFromHostToCUDADevice<double>(cuda_item_rands_, item_rands_.data(), item_rands_.size(), __FILE__, __LINE__);
-  LaunchGetGradientsKernel(score, gradients, hessians);
-}
-
 
 }  // namespace LightGBM
 

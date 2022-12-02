@@ -112,7 +112,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
 def test_regression(objective):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -136,6 +136,8 @@ def test_regression(objective):
         assert ret < 1260
     elif objective == 'fair':
         assert ret < 190
+    elif objective == 'poisson':
+        assert ret < 8
     else:
         assert ret < 250
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
