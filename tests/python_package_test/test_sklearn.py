@@ -21,8 +21,8 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
+from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
+                    sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 task_to_model_factory = {
@@ -279,7 +279,7 @@ def test_stacking_classifier():
 
 
 def test_stacking_regressor():
-    X, y = make_synthetic_regression()
+    X, y = make_synthetic_regression(n_samples=200)
     n_features = X.shape[1]
     n_input_models = 2
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -1104,7 +1104,7 @@ def test_first_metric_only():
                 else:
                     assert gbm.n_estimators == gbm.best_iteration_
 
-    X, y = make_synthetic_regression()
+    X, y = make_synthetic_regression(n_samples=300)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
     params = {'n_estimators': 30,
@@ -1116,11 +1116,11 @@ def test_first_metric_only():
     params_fit = {'X': X_train,
                   'y': y_train}
 
-    iter_valid1_l1 = 9
-    iter_valid1_l2 = 9
-    iter_valid2_l1 = 3
-    iter_valid2_l2 = 4
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 3
+    iter_valid1_l1 = 4
+    iter_valid1_l2 = 4
+    iter_valid2_l1 = 2
+    iter_valid2_l2 = 2
+    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min = min([iter_min_l1, iter_min_l2])
