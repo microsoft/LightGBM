@@ -118,17 +118,11 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
-if [[ $PYTHON_VERSION == "3.7" ]]; then
-    DEPENDENCIES="dask distributed"
-else
-    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
-fi
-
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    ${DEPENDENCIES} \
+    dask-core \
+    distributed \
     joblib \
     matplotlib \
     numpy \
@@ -137,7 +131,8 @@ conda install -q -y -n $CONDA_ENV \
     pytest \
     "python=$PYTHON_VERSION[build=*cpython]" \
     python-graphviz \
-    scikit-learn || exit -1
+    scikit-learn \
+    scipy || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
