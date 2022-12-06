@@ -76,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install --cask basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self || exit -1
-    sudo tlmgr --verify-repo=none install inconsolata helvetic || exit -1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit -1
 
     curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
