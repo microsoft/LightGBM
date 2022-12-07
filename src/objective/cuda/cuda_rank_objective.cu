@@ -616,12 +616,15 @@ __global__ void GetGradientsKernel_RankXENDCG_GlobalMemory(
 }
 
 void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  GenerateItemRands();
+  CopyFromHostToCUDADevice<double>(cuda_item_rands_.RawData(), item_rands_.data(), item_rands_.size(), __FILE__, __LINE__);
+
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
   if (max_items_in_query_aligned_ <= 1024) {
     GetGradientsKernel_RankXENDCG_SharedMemory<1024><<<num_blocks, max_items_in_query_aligned_>>>(
       score,
       cuda_labels_,
-      cuda_item_rands_,
+      cuda_item_rands_.RawData(),
       num_data_,
       num_queries_,
       cuda_query_boundaries_,
@@ -631,7 +634,7 @@ void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* grad
     GetGradientsKernel_RankXENDCG_SharedMemory<2 * 1024><<<num_blocks, 1024>>>(
       score,
       cuda_labels_,
-      cuda_item_rands_,
+      cuda_item_rands_.RawData(),
       num_data_,
       num_queries_,
       cuda_query_boundaries_,
@@ -641,11 +644,11 @@ void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* grad
     GetGradientsKernel_RankXENDCG_GlobalMemory<<<num_blocks, 1024>>>(
       score,
       cuda_labels_,
-      cuda_item_rands_,
+      cuda_item_rands_.RawData(),
       num_data_,
       num_queries_,
       cuda_query_boundaries_,
-      cuda_params_buffer_,
+      cuda_params_buffer_.RawData(),
       gradients,
       hessians);
   }

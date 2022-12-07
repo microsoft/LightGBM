@@ -26,28 +26,45 @@ FetchContent_Declare(OpenCL-ICD-Loader GIT_REPOSITORY ${OPENCL_LOADER_REPOSITORY
 FetchContent_GetProperties(OpenCL-ICD-Loader)
 if(NOT OpenCL-ICD-Loader_POPULATED)
   FetchContent_Populate(OpenCL-ICD-Loader)
-  set(USE_DYNAMIC_VCXX_RUNTIME ON)
+  if(WIN32)
+    set(USE_DYNAMIC_VCXX_RUNTIME ON)
+  endif()
   add_subdirectory(${opencl-icd-loader_SOURCE_DIR} ${opencl-icd-loader_BINARY_DIR} EXCLUDE_FROM_ALL)
   message(STATUS "Populated OpenCL ICD Loader")
 endif()
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${OPENCL_ICD_LOADER_HEADERS_DIR})
-list(
-  APPEND
-  INTEGRATED_OPENCL_LIBRARIES
-    ${opencl-icd-loader_BINARY_DIR}/Release/OpenCL.lib
-    cfgmgr32.lib
-    runtimeobject.lib
-)
 list(APPEND INTEGRATED_OPENCL_DEFINITIONS CL_TARGET_OPENCL_VERSION=120)
+if(WIN32)
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+      ${opencl-icd-loader_BINARY_DIR}/Release/OpenCL.lib
+      cfgmgr32.lib
+      runtimeobject.lib
+  )
+else()
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+      ${opencl-icd-loader_BINARY_DIR}/libOpenCL.a
+  )
+  set_property(TARGET OpenCL PROPERTY POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Build Independent Boost libraries
 include(ExternalProject)
 include(ProcessorCount)
 ProcessorCount(J)
 set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
-set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
-set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
-set(BOOST_FLAGS "")
+if(WIN32)
+  set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
+  set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
+  set(BOOST_FLAGS "")
+else()
+  set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.sh")
+  set(BOOST_BUILD "${BOOST_BASE}/source/b2")
+  set(BOOST_FLAGS "-fPIC")
+endif()
 list(
   APPEND
   BOOST_SUBMODULES
@@ -137,35 +154,37 @@ ExternalProject_Add(
 set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
 set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${BOOST_INCLUDE})
-if(MSVC)
-  if(${MSVC_VERSION} GREATER 1929)
-    message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
-  elseif(${MSVC_VERSION} GREATER 1919)
-    set(MSVC_TOOLCHAIN_ID "142")
-  elseif(${MSVC_VERSION} GREATER 1909)
-    set(MSVC_TOOLCHAIN_ID "141")
-  elseif(${MSVC_VERSION} GREATER 1899)
-    set(MSVC_TOOLCHAIN_ID "140")
+if(WIN32)
+  if(MSVC)
+    if(${MSVC_VERSION} GREATER 1929)
+      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    elseif(${MSVC_VERSION} GREATER 1919)
+      set(MSVC_TOOLCHAIN_ID "142")
+    elseif(${MSVC_VERSION} GREATER 1909)
+      set(MSVC_TOOLCHAIN_ID "141")
+    elseif(${MSVC_VERSION} GREATER 1899)
+      set(MSVC_TOOLCHAIN_ID "140")
+    else()
+      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    endif()
+    list(
+      APPEND
+      INTEGRATED_OPENCL_LIBRARIES
+      ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+      ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+      ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+    )
   else()
-    message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
   endif()
-  list(
-    APPEND
-    INTEGRATED_OPENCL_LIBRARIES
-    ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-  )
-  list(
-    APPEND
-    INTEGRATED_OPENCL_LIBRARIES
-    ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-  )
-  list(
-    APPEND
-    INTEGRATED_OPENCL_LIBRARIES
-    ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-  )
 else()
-  message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
+  list(
+    APPEND
+    INTEGRATED_OPENCL_LIBRARIES
+    ${BOOST_LIBRARY}/libboost_filesystem.a
+    ${BOOST_LIBRARY}/libboost_system.a
+    ${BOOST_LIBRARY}/libboost_chrono.a
+  )
 endif()
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
