@@ -1,4 +1,3 @@
-# https://setuptools.pypa.io/en/latest/userguide/dependency_management.html
 [build-system]
 requires = [
   "setuptools>=42",
