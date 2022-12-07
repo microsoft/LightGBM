@@ -241,6 +241,20 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
+elif [[ $TASK == "int64" ]]; then
+    if [[ $METHOD == "pip" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--use-int64 || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        exit 0
+    elif [[ $METHOD == "wheel" ]]; then
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --use-int64 || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
+        pytest $BUILD_DIRECTORY/tests || exit -1
+        exit 0
+    elif [[ $METHOD == "source" ]]; then
+        cmake -DUSE_DATASET_INT64=ON ..
+    fi
 else
     cmake ..
 fi
@@ -278,3 +292,4 @@ matplotlib.use\(\"Agg\"\)\
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 fi
+

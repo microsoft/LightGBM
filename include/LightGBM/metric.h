@@ -67,7 +67,7 @@ class Metric {
 */
 class DCGCalculator {
  public:
-  static void DefaultEvalAt(std::vector<int>* eval_at);
+  static void DefaultEvalAt(std::vector<data_size_t>* eval_at);
   static void DefaultLabelGain(std::vector<double>* label_gain);
   /*!
   * \brief Initial logic

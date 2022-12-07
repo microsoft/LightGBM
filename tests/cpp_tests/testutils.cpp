@@ -12,6 +12,7 @@
 #include <thread>
 #include <utility>
 
+using LightGBM::data_size_t;
 using LightGBM::Log;
 using LightGBM::Random;
 
@@ -42,7 +43,7 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int64_t>* groups) {
     Random rand(42);
     features->reserve(nrows * ncols);
 
@@ -69,7 +70,7 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int64_t>* groups) {
     Random rand(42);
     indptr->reserve(static_cast<int32_t>(nrows + 1));
     indices->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
@@ -98,7 +99,7 @@ namespace LightGBM {
     std::vector<float>* labels,
     std::vector<float>* weights,
     std::vector<double>* init_scores,
-    std::vector<int32_t>* groups) {
+    std::vector<int64_t>* groups) {
     Random rand(42);
     labels->reserve(nrows);
     if (weights) {
@@ -111,7 +112,7 @@ namespace LightGBM {
       groups->reserve(nrows);
     }
 
-    int32_t group = 0;
+    int64_t group = 0;
 
     for (int32_t row = 0; row < nrows; row++) {
       labels->push_back(rand.NextFloat());
@@ -141,7 +142,7 @@ namespace LightGBM {
     const std::vector<float>* labels,
     const std::vector<float>* weights,
     const std::vector<double>* init_scores,
-    const std::vector<int32_t>* groups) {
+    const std::vector<int64_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -165,7 +166,7 @@ namespace LightGBM {
       init_scores_ptr = init_score_batch.data();
     }
 
-    const int32_t* groups_ptr = nullptr;
+    const int64_t* groups_ptr = nullptr;
     if (groups) {
       groups_ptr = groups->data();
     }
@@ -217,7 +218,7 @@ namespace LightGBM {
                                       const std::vector<float>* labels,
                                       const std::vector<float>* weights,
                                       const std::vector<double>* init_scores,
-                                      const std::vector<int32_t>* groups) {
+                                      const std::vector<int64_t>* groups) {
     int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
     EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -235,7 +236,7 @@ namespace LightGBM {
       weights_ptr = weights->data();
     }
 
-    const int32_t* groups_ptr = nullptr;
+    const int64_t* groups_ptr = nullptr;
     if (groups) {
       groups_ptr = groups->data();
     }
@@ -290,7 +291,7 @@ namespace LightGBM {
                                   const float* labels_ptr,
                                   const float* weights_ptr,
                                   const std::vector<double>* init_scores,
-                                  const int32_t* groups_ptr,
+                                  const int64_t* groups_ptr,
                                   int32_t thread_count,
                                   int32_t thread_id) {
     int32_t threadChunkSize = nrows / thread_count;
@@ -352,7 +353,7 @@ namespace LightGBM {
     const std::vector<float>* ref_labels,
     const std::vector<float>* ref_weights,
     const std::vector<double>* ref_init_scores,
-    const std::vector<int32_t>* ref_groups) {
+    const std::vector<int64_t>* ref_groups) {
     const float* labels = metadata->label();
     auto nTotal = static_cast<int32_t>(ref_labels->size());
     for (auto i = 0; i < nTotal; i++) {
@@ -392,7 +393,7 @@ namespace LightGBM {
       FAIL() << "Expected non-null init_scores";
     }
 
-    const int32_t* query_boundaries = metadata->query_boundaries();
+    const data_size_t* query_boundaries = metadata->query_boundaries();
     if (query_boundaries) {
       if (!ref_groups) {
         FAIL() << "Expected null query_boundaries";

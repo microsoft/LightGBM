@@ -222,7 +222,7 @@ class MultiValSparseBin : public MultiValBin {
     }
     int n_block = 1;
     data_size_t block_size = num_data_;
-    Threading::BlockInfo<data_size_t>(static_cast<int>(t_data_.size() + 1),
+    Threading::BlockInfo<data_size_t>(static_cast<data_size_t>(t_data_.size() + 1),
                                       num_data_, 1024, &n_block, &block_size);
     std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
     const int pre_alloc_size = 50;

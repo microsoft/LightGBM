@@ -77,7 +77,7 @@ class CostEfficientGradientBoosting {
   }
 
   double DeltaGain(int feature_index, int real_fidx, int leaf_index,
-                   int num_data_in_leaf, SplitInfo split_info) {
+                   data_size_t num_data_in_leaf, SplitInfo split_info) {
     auto config = tree_learner_->config_;
     double delta =
         config->cegb_tradeoff * config->cegb_penalty_split * num_data_in_leaf;

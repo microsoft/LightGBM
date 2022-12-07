@@ -68,7 +68,7 @@ class Threading {
   template <typename INDEX_T>
   static inline int For(
       INDEX_T start, INDEX_T end, INDEX_T min_block_size,
-      const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
+      const std::function<void(INDEX_T, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
     BlockInfo<INDEX_T>(num_inner, min_block_size, &n_block, &num_inner);
@@ -161,11 +161,16 @@ class ParallelPartitionRunner {
 
     left_write_pos_[0] = 0;
     right_write_pos_[0] = 0;
-    for (int i = 1; i < nblock; ++i) {
+    for (INDEX_T i = 1; i < nblock; ++i) {
       left_write_pos_[i] = left_write_pos_[i - 1] + left_cnts_[i - 1];
       right_write_pos_[i] = right_write_pos_[i - 1] + right_cnts_[i - 1];
     }
-    data_size_t left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];
+
+    // array index(nblock - 1) should >= 0
+    data_size_t left_cnt = 0;
+    if (nblock > 0) {
+      left_cnt = left_write_pos_[nblock - 1] + left_cnts_[nblock - 1];
+    }
 
     auto right_start = out + left_cnt;
 #pragma omp parallel for schedule(static, 1) num_threads(num_threads_)

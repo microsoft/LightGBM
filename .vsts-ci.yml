@@ -58,6 +58,10 @@ jobs:
         METHOD: source
       swig:
         TASK: swig
+      int64_source:
+        TASK: int64
+        METHOD: source
+        PYTHON_VERSION: '3.8'
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -73,7 +77,7 @@ jobs:
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
   - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig', 'int64'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: PackageAssets
@@ -126,6 +130,15 @@ jobs:
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
+      int64_source:
+        TASK: int64
+        METHOD: source
+      int64_pip:
+        TASK: int64
+        METHOD: pip
+      int64_wheel:
+        TASK: int64
+        METHOD: wheel
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -396,3 +409,4 @@ jobs:
       isDraft: true
       isPreRelease: false
       addChangeLog: false
+

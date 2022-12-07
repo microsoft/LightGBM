@@ -80,7 +80,7 @@
                                       jdoubleArray data,
                                       BoosterHandle handle,
                                       int data_type,
-                                      int ncol,
+                                      int32_t ncol,
                                       int is_row_major,
                                       int predict_type,
                                       int start_iteration,
@@ -143,7 +143,7 @@
     // https://stackoverflow.com/questions/23258357/whats-the-trade-off-between-using-getprimitivearraycritical-and-getprimitivety
 
     jboolean isCopy;
-    int* indices0 = (int*)jenv->GetPrimitiveArrayCritical(indices, &isCopy);
+    int64_t* indices0 = (int64_t*)jenv->GetPrimitiveArrayCritical(indices, &isCopy);
     double* values0 = (double*)jenv->GetPrimitiveArrayCritical(values, &isCopy);
 
     int32_t ind[2] = { 0, numNonZeros };
@@ -182,7 +182,7 @@
     // https://stackoverflow.com/questions/23258357/whats-the-trade-off-between-using-getprimitivearraycritical-and-getprimitivety
 
     jboolean isCopy;
-    int* indices0 = (int*)jenv->GetPrimitiveArrayCritical(indices, &isCopy);
+    int64_t* indices0 = (int64_t*)jenv->GetPrimitiveArrayCritical(indices, &isCopy);
     double* values0 = (double*)jenv->GetPrimitiveArrayCritical(values, &isCopy);
 
     int32_t ind[2] = { 0, numNonZeros };

@@ -20,6 +20,7 @@ option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
+option(USE_DATASET_INT64 "Enable int64 for dataset rows, when dataset rows more then MAX(int32_t)" OFF)
 
 if(APPLE)
   option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
@@ -288,6 +289,9 @@ if(USE_HDFS)
     add_definitions(-DUSE_HDFS)
     set(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif()
+if(USE_DATASET_INT64)
+    add_definitions(-DUSE_DATASET_INT64)
+endif()
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
@@ -509,6 +513,26 @@ if(USE_SWIG)
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   else()
+
+# temporary fix for https://github.com/microsoft/LightGBM/issues/5540
+# due to SWIG is correct support int64
+if(USE_DATASET_INT64)
+    add_custom_command(
+        TARGET _lightgbm_swig_swig_compilation
+        POST_BUILD
+        COMMAND sed -i "s/long long const/int64_t const/g" java/lightgbmlibJAVA_wrap.cxx
+        COMMAND sed -i
+          "/LGBM_DatasetGetSubset/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
+        COMMAND sed -i
+          "/LGBM_DatasetCreateFromSampledColumn/ s/int const /int64_t const /g" java/lightgbmlibJAVA_wrap.cxx
+    )
+else()
+    add_custom_command(
+        TARGET _lightgbm_swig_swig_compilation
+        POST_BUILD
+        COMMAND sed -i "s/long long const/int64_t const/g" java/lightgbmlibJAVA_wrap.cxx
+    )
+endif()
     add_custom_command(
         TARGET _lightgbm_swig
         POST_BUILD

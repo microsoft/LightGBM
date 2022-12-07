@@ -122,7 +122,7 @@ class SerialTreeLearner: public TreeLearner {
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
                                   int feature_index, int real_fidx,
-                                  int8_t is_feature_used, int num_data,
+                                  int8_t is_feature_used, data_size_t num_data,
                                   const LeafSplits* leaf_splits,
                                   SplitInfo* best_split, double parent_output);
 

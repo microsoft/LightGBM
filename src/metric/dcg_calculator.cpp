@@ -17,7 +17,7 @@ std::vector<double> DCGCalculator::discount_;
 const data_size_t DCGCalculator::kMaxPosition = 10000;
 
 
-void DCGCalculator::DefaultEvalAt(std::vector<int>* eval_at) {
+void DCGCalculator::DefaultEvalAt(std::vector<data_size_t>* eval_at) {
   auto& ref_eval_at = *eval_at;
   if (ref_eval_at.empty()) {
     for (int i = 1; i <= 5; ++i) {

@@ -612,7 +612,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetBool(params, "is_provide_training_metric", &is_provide_training_metric);
 
   if (GetString(params, "eval_at", &tmp_str)) {
-    eval_at = Common::StringToArray<int>(tmp_str, ',');
+    eval_at = Common::StringToArray<data_size_t>(tmp_str, ',');
   }
 
   GetInt(params, "multi_error_top_k", &multi_error_top_k);
@@ -1015,7 +1015,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},
-    {"eval_at", "vector<int>"},
+    {"eval_at", "vector<data_size_t>"},
     {"multi_error_top_k", "int"},
     {"auc_mu_weights", "vector<double>"},
     {"num_machines", "int"},
