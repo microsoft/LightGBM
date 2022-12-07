@@ -3,4 +3,4 @@ requires = [
   "setuptools>=42",
   "wheel"
 ]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta:__legacy__"
