@@ -351,12 +351,12 @@ if __name__ == "__main__":
     logger = logging.getLogger('LightGBM')
 
     setup(
-          version=version,
-          zip_safe=False,
-          cmdclass={
-              'install': CustomInstall,
-              'install_lib': CustomInstallLib,
-              'bdist_wheel': CustomBdistWheel,
-              'sdist': CustomSdist,
-          },
+        version=version,
+        zip_safe=False,
+        cmdclass={
+          'install': CustomInstall,
+          'install_lib': CustomInstallLib,
+          'bdist_wheel': CustomBdistWheel,
+          'sdist': CustomSdist,
+        },
     )
