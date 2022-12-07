@@ -21,9 +21,9 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.2.1
+    export R_MAC_VERSION=4.2.2
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
-    export R_LINUX_VERSION="4.2.1-1.2004.0"
+    export R_LINUX_VERSION="4.2.2-1.2004.0"
     export R_APT_REPO="focal-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -76,7 +76,7 @@ if [[ $OS_NAME == "macos" ]]; then
     brew install --cask basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self || exit -1
-    sudo tlmgr --verify-repo=none install inconsolata helvetic || exit -1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit -1
 
     curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
@@ -163,11 +163,12 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         || (cat ${RCHK_LOG_FILE} && exit -1)
         cat ${RCHK_LOG_FILE}
 
-        # the exception below is from R itself and not LightGBM:
+        # the exceptions below are from R itself and not LightGBM:
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
         exit $(
             cat ${RCHK_LOG_FILE} \
             | grep -v "in function strptime_internal" \
+            | grep -v "in function RunGenCollect" \
             | grep --count -E '\[PB\]|ERROR'
         )
     fi

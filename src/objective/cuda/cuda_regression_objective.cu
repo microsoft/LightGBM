@@ -11,20 +11,50 @@
 
 namespace LightGBM {
 
-double CUDARegressionL2loss::LaunchCalcInitScoreKernel() const {
+template <typename HOST_OBJECTIVE>
+void CUDARegressionObjectiveInterface<HOST_OBJECTIVE>::Init(const Metadata& metadata, data_size_t num_data) {
+  CUDAObjectiveInterface<HOST_OBJECTIVE>::Init(metadata, num_data);
+  const data_size_t num_get_gradients_blocks = (this->num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  cuda_block_buffer_.Resize(static_cast<size_t>(num_get_gradients_blocks));
+  if (this->sqrt_) {
+    cuda_trans_label_.Resize(this->trans_label_.size());
+    CopyFromHostToCUDADevice<label_t>(cuda_trans_label_.RawData(), this->trans_label_.data(), this->trans_label_.size(), __FILE__, __LINE__);
+    this->cuda_labels_ = cuda_trans_label_.RawData();
+  }
+}
+
+template void CUDARegressionObjectiveInterface<RegressionL2loss>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDARegressionObjectiveInterface<RegressionL1loss>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDARegressionObjectiveInterface<RegressionHuberLoss>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDARegressionObjectiveInterface<RegressionFairLoss>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDARegressionObjectiveInterface<RegressionPoissonLoss>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDARegressionObjectiveInterface<RegressionQuantileloss>::Init(const Metadata& metadata, data_size_t num_data);
+
+template <typename HOST_OBJECTIVE>
+double CUDARegressionObjectiveInterface<HOST_OBJECTIVE>::LaunchCalcInitScoreKernel(const int /*class_id*/) const {
   double label_sum = 0.0f, weight_sum = 0.0f;
-  if (cuda_weights_ == nullptr) {
-    ShuffleReduceSumGlobal<label_t, double>(cuda_labels_, static_cast<size_t>(num_data_), cuda_block_buffer_.RawData());
+  if (this->cuda_weights_ == nullptr) {
+    ShuffleReduceSumGlobal<label_t, double>(this->cuda_labels_,
+      static_cast<size_t>(this->num_data_), cuda_block_buffer_.RawData());
     CopyFromCUDADeviceToHost<double>(&label_sum, cuda_block_buffer_.RawData(), 1, __FILE__, __LINE__);
-    weight_sum = static_cast<double>(num_data_);
+    weight_sum = static_cast<double>(this->num_data_);
   } else {
-    ShuffleReduceDotProdGlobal<label_t, double>(cuda_labels_, cuda_weights_, static_cast<size_t>(num_data_), cuda_block_buffer_.RawData());
+    ShuffleReduceDotProdGlobal<label_t, double>(this->cuda_labels_,
+      this->cuda_weights_, static_cast<size_t>(this->num_data_), cuda_block_buffer_.RawData());
     CopyFromCUDADeviceToHost<double>(&label_sum, cuda_block_buffer_.RawData(), 1, __FILE__, __LINE__);
-    ShuffleReduceSumGlobal<label_t, double>(cuda_weights_, static_cast<size_t>(num_data_), cuda_block_buffer_.RawData());
+    ShuffleReduceSumGlobal<label_t, double>(this->cuda_weights_,
+      static_cast<size_t>(this->num_data_), cuda_block_buffer_.RawData());
     CopyFromCUDADeviceToHost<double>(&weight_sum, cuda_block_buffer_.RawData(), 1, __FILE__, __LINE__);
   }
   return label_sum / weight_sum;
 }
+
+template double CUDARegressionObjectiveInterface<RegressionL2loss>::LaunchCalcInitScoreKernel(const int class_id) const;
+template double CUDARegressionObjectiveInterface<RegressionL1loss>::LaunchCalcInitScoreKernel(const int class_id) const;
+template double CUDARegressionObjectiveInterface<RegressionHuberLoss>::LaunchCalcInitScoreKernel(const int class_id) const;
+template double CUDARegressionObjectiveInterface<RegressionFairLoss>::LaunchCalcInitScoreKernel(const int class_id) const;
+template double CUDARegressionObjectiveInterface<RegressionPoissonLoss>::LaunchCalcInitScoreKernel(const int class_id) const;
+template double CUDARegressionObjectiveInterface<RegressionQuantileloss>::LaunchCalcInitScoreKernel(const int class_id) const;
 
 __global__ void ConvertOutputCUDAKernel_Regression(const bool sqrt, const data_size_t num_data, const double* input, double* output) {
   const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
@@ -38,9 +68,10 @@ __global__ void ConvertOutputCUDAKernel_Regression(const bool sqrt, const data_s
   }
 }
 
-void CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+const double* CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
   ConvertOutputCUDAKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
+  return output;
 }
 
 template <bool USE_WEIGHT>
@@ -69,7 +100,7 @@ void CUDARegressionL2loss::LaunchGetGradientsKernel(const double* score, score_t
 }
 
 
-double CUDARegressionL1loss::LaunchCalcInitScoreKernel() const {
+double CUDARegressionL1loss::LaunchCalcInitScoreKernel(const int /*class_id*/) const {
   const double alpha = 0.5f;
   if (cuda_weights_ == nullptr) {
     PercentileGlobal<label_t, data_size_t, label_t, double, false, false>(
@@ -133,7 +164,8 @@ __global__ void RenewTreeOutputCUDAKernel_RegressionL1(
   double* weight_prefix_sum_buffer_pointer = weight_prefix_sum_buffer + data_start;
   const double* residual_buffer_pointer = residual_buffer + data_start;
   const double alpha = 0.5f;
-  for (data_size_t inner_data_index = data_start + static_cast<data_size_t>(threadIdx.x); inner_data_index < data_start + num_data; inner_data_index += static_cast<data_size_t>(blockDim.x)) {
+  for (data_size_t inner_data_index = data_start + static_cast<data_size_t>(threadIdx.x);
+    inner_data_index < data_start + num_data; inner_data_index += static_cast<data_size_t>(blockDim.x)) {
     const data_size_t data_index = data_indices_in_leaf[inner_data_index];
     const label_t data_label = label[data_index];
     const double data_score = score[data_index];
@@ -252,6 +284,66 @@ void CUDARegressionFairLoss::LaunchGetGradientsKernel(const double* score, score
   } else {
     GetGradientsKernel_Fair<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(score, cuda_labels_, cuda_weights_, num_data_, c_, gradients, hessians);
   }
+}
+
+void CUDARegressionPoissonLoss::LaunchCheckLabelKernel() const {
+  ShuffleReduceSumGlobal<label_t, double>(cuda_labels_, static_cast<size_t>(num_data_), cuda_block_buffer_.RawData());
+  double label_sum = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&label_sum, cuda_block_buffer_.RawData(), 1, __FILE__, __LINE__);
+
+  ShuffleReduceMinGlobal<label_t, double>(cuda_labels_, static_cast<size_t>(num_data_), cuda_block_buffer_.RawData());
+  double label_min = 0.0f;
+  CopyFromCUDADeviceToHost<double>(&label_min, cuda_block_buffer_.RawData(), 1, __FILE__, __LINE__);
+
+  if (label_min < 0.0f) {
+    Log::Fatal("[%s]: at least one target label is negative", GetName());
+  }
+  if (label_sum == 0.0f) {
+    Log::Fatal("[%s]: sum of labels is zero", GetName());
+  }
+}
+
+template <bool USE_WEIGHT>
+__global__ void GetGradientsKernel_Poisson(const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights, const data_size_t num_data,
+  const double max_delta_step, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+  const data_size_t data_index = static_cast<data_size_t>(blockDim.x * blockIdx.x + threadIdx.x);
+  const double exp_max_delta_step = std::exp(max_delta_step);
+  if (data_index < num_data) {
+    if (!USE_WEIGHT) {
+      const double exp_score = exp(cuda_scores[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>(exp_score - cuda_labels[data_index]);
+      cuda_out_hessians[data_index] = static_cast<score_t>(exp_score * exp_max_delta_step);
+    } else {
+      const double exp_score = exp(cuda_scores[data_index]);
+      const score_t weight = static_cast<score_t>(cuda_weights[data_index]);
+      cuda_out_gradients[data_index] = static_cast<score_t>((exp_score - cuda_labels[data_index]) * weight);
+      cuda_out_hessians[data_index] = static_cast<score_t>(exp_score * exp_max_delta_step * weight);
+    }
+  }
+}
+
+void CUDARegressionPoissonLoss::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
+  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  if (cuda_weights_ == nullptr) {
+    GetGradientsKernel_Poisson<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(
+      score, cuda_labels_, nullptr, num_data_, max_delta_step_, gradients, hessians);
+  } else {
+    GetGradientsKernel_Poisson<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(
+      score, cuda_labels_, cuda_weights_, num_data_, max_delta_step_, gradients, hessians);
+  }
+}
+
+__global__ void ConvertOutputCUDAKernel_Regression_Poisson(const data_size_t num_data, const double* input, double* output) {
+  const int data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  if (data_index < num_data) {
+    output[data_index] = exp(input[data_index]);
+  }
+}
+
+const double* CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+  const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
+  ConvertOutputCUDAKernel_Regression_Poisson<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(num_data, input, output);
+  return output;
 }
 
 
