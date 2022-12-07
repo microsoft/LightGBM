@@ -289,6 +289,11 @@ if(USE_HDFS)
     set(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif()
 
+# Add for IBM i PASE
+if (${CMAKE_SYSTEM_NAME} MATCHES "OS400")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-extern-tls-init")
+endif()
+
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
 #include <xmmintrin.h>

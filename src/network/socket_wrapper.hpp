@@ -35,7 +35,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef __PASE__
+#include <as400_protos.h>
+#define ifaddrs ifaddrs_pase
+#define getifaddrs Qp2getifaddrs
+#define freeifaddrs Qp2freeifaddrs
+#else
 #include <ifaddrs.h>
+#endif
 
 #endif  // defined(_WIN32)
 

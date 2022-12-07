@@ -246,7 +246,11 @@ class CustomInstall(install):
         self.hdfs = False
         self.precompile = False
         self.time_costs = False
-        self.nomp = False
+        #Add for PASE on i
+        if system() == 'OS400':
+            self.nomp = True
+        else:
+            self.nomp = False
         self.bit32 = False
 
     def run(self) -> None:
@@ -292,7 +296,11 @@ class CustomBdistWheel(bdist_wheel):
         self.hdfs = False
         self.precompile = False
         self.time_costs = False
-        self.nomp = False
+        #Add for PASE on i
+        if system() == 'OS400':
+            self.nomp = True
+        else:
+            self.nomp = False
         self.bit32 = False
 
     def finalize_options(self) -> None:
