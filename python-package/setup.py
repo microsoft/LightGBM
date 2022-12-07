@@ -354,9 +354,9 @@ if __name__ == "__main__":
         version=version,
         zip_safe=False,
         cmdclass={
-          'install': CustomInstall,
-          'install_lib': CustomInstallLib,
-          'bdist_wheel': CustomBdistWheel,
-          'sdist': CustomSdist,
+            'install': CustomInstall,
+            'install_lib': CustomInstallLib,
+            'bdist_wheel': CustomBdistWheel,
+            'sdist': CustomSdist,
         },
     )
