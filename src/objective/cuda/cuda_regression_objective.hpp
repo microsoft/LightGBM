@@ -49,7 +49,7 @@ class CUDARegressionL2loss : public CUDARegressionObjectiveInterface<RegressionL
  protected:
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
-  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+  const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 };
 
 
@@ -118,10 +118,10 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
- protected:
+ private:
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
-  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+  const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 
   double LaunchCalcInitScoreKernel(const int class_id) const override;
 

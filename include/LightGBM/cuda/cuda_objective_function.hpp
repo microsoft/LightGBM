@@ -31,14 +31,8 @@ class CUDAObjectiveInterface: public HOST_OBJECTIVE {
     cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
   }
 
-  virtual void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
-    LaunchConvertOutputCUDAKernel(num_data, input, output);
-  }
-
-  std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
-    return [this] (data_size_t num_data, const double* input, double* output) {
-      ConvertOutputCUDA(num_data, input, output);
-    };
+  virtual const double* ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {
+    return LaunchConvertOutputCUDAKernel(num_data, input, output);
   }
 
   double BoostFromScore(int class_id) const override {
@@ -67,7 +61,7 @@ class CUDAObjectiveInterface: public HOST_OBJECTIVE {
     return HOST_OBJECTIVE::BoostFromScore(class_id);
   }
 
-  virtual void LaunchConvertOutputCUDAKernel(const data_size_t /*num_data*/, const double* /*input*/, double* /*output*/) const {}
+  virtual const double* LaunchConvertOutputCUDAKernel(const data_size_t /*num_data*/, const double* input, double* /*output*/) const { return input; }
 
   virtual void LaunchRenewTreeOutputCUDAKernel(
     const double* /*score*/, const data_size_t* /*data_indices_in_leaf*/, const data_size_t* /*num_data_in_leaf*/,

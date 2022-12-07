@@ -68,9 +68,10 @@ __global__ void ConvertOutputCUDAKernel_Regression(const bool sqrt, const data_s
   }
 }
 
-void CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+const double* CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
   ConvertOutputCUDAKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
+  return output;
 }
 
 template <bool USE_WEIGHT>
@@ -339,9 +340,10 @@ __global__ void ConvertOutputCUDAKernel_Regression_Poisson(const data_size_t num
   }
 }
 
-void CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
+const double* CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
   ConvertOutputCUDAKernel_Regression_Poisson<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(num_data, input, output);
+  return output;
 }
 
 
@@ -391,7 +393,6 @@ __global__ void RenewTreeOutputCUDAKernel_RegressionQuantile(
     } 
   }
   __syncthreads();
-  // TODO(shiyu1994): replace this bitonic sort based percentile method with a more efficient one 
   const double renew_leaf_value = PercentileDevice<double, data_size_t, label_t, double, false, USE_WEIGHT>(
     residual_buffer_pointer, weight_by_leaf_pointer, data_indices_buffer_pointer,
     weight_prefix_sum_buffer_pointer, alpha, num_data);

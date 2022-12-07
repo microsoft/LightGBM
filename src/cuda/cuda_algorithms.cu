@@ -127,6 +127,7 @@ void ShuffleReduceSumGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffe
 }
 
 template void ShuffleReduceSumGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer);
+template void ShuffleReduceSumGlobal<double, double>(const double* values, size_t n, double* block_buffer);
 
 template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceMinGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
