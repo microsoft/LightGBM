@@ -4,7 +4,16 @@ set -e -u -o pipefail
 
 pip uninstall -y lightgbm
 
-rm -rf ./lightgbm-python
+rm -rf \
+    ./lightgbm-python \
+    ./lib_lightgbm.so \
+    ./lightgbm \
+    ./python-package/build \
+    ./python-package/build_cpp \
+    ./python-package/compile \
+    ./python-package/dist \
+    ./python-package/lightgbm.egg-info
+
 cp -R ./python-package ./lightgbm-python
 
 cp -R ./cmake ./lightgbm-python/
@@ -22,3 +31,4 @@ pushd ./lightgbm-python
 python -m build .
 pydistcheck dist/* --inspect
 pip install dist/*.whl
+python -c "import lightgbm"
