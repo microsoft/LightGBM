@@ -1,3 +1,0 @@
-numpy
-scikit-learn!=0.22.0
-scipy
