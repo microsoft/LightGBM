@@ -8,8 +8,6 @@ setup(
     package_data={
         "lightgbm": [
             "LICENSE",
-            "requirements-install.txt",
-            "requirements-dask.txt",
             "VERSION.txt"
         ]
     },

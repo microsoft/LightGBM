@@ -27,8 +27,9 @@ cp VERSION.txt ./lightgbm-python/
 cp -R ./windows ./lightgbm-python/
 
 pushd ./lightgbm-python
+    python -m build .
+    pydistcheck dist/* --inspect
+    pip install dist/*.whl
+popd
 
-python -m build .
-pydistcheck dist/* --inspect
-pip install dist/*.whl
 python -c "import lightgbm"
