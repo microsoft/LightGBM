@@ -118,6 +118,13 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
+# hack around https://github.com/microsoft/LightGBM/pull/5619#issuecomment-1341935203 just to produce
+# a releasable artifact on Ubuntu 14.04
+PACKAGE_CONSTRAINTS="pandas numpy scikit-learn scipy"
+if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK == "sdist" ]]; then
+    PACKAGE_CONSTRAINTS="libstdcxx-ng<12.0 numpy<=1.2.0 pandas scikit-learn<=1.1.0 scipy<=1.8.0"
+fi
+
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
@@ -125,14 +132,11 @@ conda install -q -y -n $CONDA_ENV \
     distributed \
     joblib \
     matplotlib \
-    numpy \
-    pandas \
     psutil \
     pytest \
+    ${PACKAGE_CONSTRAINTS} \
     "python=$PYTHON_VERSION[build=*cpython]" \
-    python-graphviz \
-    scikit-learn \
-    scipy || exit -1
+    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
