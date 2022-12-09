@@ -120,16 +120,14 @@ fi
 
 # hack around https://github.com/microsoft/LightGBM/pull/5619#issuecomment-1341935203 just to produce
 # a releasable artifact on Ubuntu 14.04
-PACKAGE_CONSTRAINTS="pandas numpy scikit-learn scipy"
+PACKAGE_CONSTRAINTS="dask-core distributed pandas numpy scikit-learn scipy"
 if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]] && [[ $TASK == "sdist" ]]; then
-    PACKAGE_CONSTRAINTS="libstdcxx-ng<12.0 numpy<=1.2.0 pandas scikit-learn<=1.1.0 scipy<=1.8.0"
+    PACKAGE_CONSTRAINTS="dask-core<=2022.7.1 distributed<=2022.7.1 libstdcxx-ng<12.0 numpy<=1.2.0 pandas scikit-learn<=1.1.0 scipy<=1.8.0"
 fi
 
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask-core \
-    distributed \
     joblib \
     matplotlib \
     psutil \
