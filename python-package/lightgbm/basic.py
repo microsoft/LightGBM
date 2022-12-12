@@ -608,7 +608,7 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
         except TypeError:
             # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
             # raises error because array is casted to type(pd.NA) and there's no na_value argument
-            data = data.astype(target_dtype).values
+            data = data.astype(target_dtype, copy=False).values
         except ValueError:
             # data has nullable dtypes, but we can specify na_value argument and copy will be made
             data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
@@ -2306,7 +2306,7 @@ class Dataset:
                 except TypeError:
                     # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
                     # raises error because array is casted to type(pd.NA) and there's no na_value argument
-                    label = label.astype(np.float32).values
+                    label = label.astype(np.float32, copy=False).values
                 except ValueError:
                     # data has nullable dtypes, but we can specify na_value argument and copy will be made
                     label = label.to_numpy(dtype=np.float32, na_value=np.nan)
