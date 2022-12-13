@@ -46,7 +46,18 @@ class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEM
   virtual ~CUDARMSEMetric() {}
 
   __device__ static double MetricOnPointCUDA(label_t label, double score) {
-    return (score - static_cast<double>(label));
+    return (score - label) * (score - label);
+  }
+};
+
+class CUDAL2Metric : public CUDARegressionMetricInterface<L2Metric, CUDAL2Metric> {
+ public:
+  explicit CUDAL2Metric(const Config& config);
+
+  virtual ~CUDAL2Metric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score) {
+    return (score - label) * (score - label);
   }
 };
 
