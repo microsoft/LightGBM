@@ -277,4 +277,15 @@ matplotlib.use\(\"Agg\"\)\
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
+
+    # importing the library should succeed even if all optional dependencies are not present
+    conda uninstall --force --yes \
+        dask \
+        distributed \
+        joblib \
+        matplotlib \
+        psutil \
+        python-graphviz \
+        scikit-learn || exit -1
+    python -c "import lightgbm" || exit -1
 fi
