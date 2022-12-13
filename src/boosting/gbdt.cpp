@@ -737,6 +737,8 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
     num_data_ = train_data_->num_data();
 
+    ResetGradientBuffers();
+
     max_feature_idx_ = train_data_->num_total_features() - 1;
     label_idx_ = train_data_->label_idx();
     feature_names_ = train_data_->feature_names();
@@ -745,7 +747,6 @@ void GBDT::ResetTrainingData(const Dataset* train_data, const ObjectiveFunction*
 
     tree_learner_->ResetTrainingData(train_data, is_constant_hessian_);
     data_sample_strategy_->ResetSampleConfig(config_.get(), true);
-    ResetGradientBuffers();
   } else {
     tree_learner_->ResetIsConstantHessian(is_constant_hessian_);
   }
