@@ -86,7 +86,9 @@ struct Config {
   */
   inline static bool SortAlias(const std::string& x, const std::string& y);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
+  static void KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
+  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
+  static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #ifndef __NVCC__
@@ -1082,6 +1084,7 @@ struct Config {
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::unordered_map<std::string, std::string>& ParameterTypes();
   static const std::string DumpAliases();
 
  private:

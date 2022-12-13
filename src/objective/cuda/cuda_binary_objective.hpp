@@ -21,7 +21,7 @@
 
 namespace LightGBM {
 
-class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
+class CUDABinaryLogloss : public CUDAObjectiveInterface<BinaryLogloss> {
  public:
   explicit CUDABinaryLogloss(const Config& config);
 
@@ -33,28 +33,14 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface, public BinaryLogloss {
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
-  void GetGradients(const double* scores, score_t* gradients, score_t* hessians) const override;
-
-  double BoostFromScore(int) const override;
-
-  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
-
-  std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const override {
-    return [this] (data_size_t num_data, const double* input, double* output) {
-      ConvertOutputCUDA(num_data, input, output);
-    };
-  }
-
-  bool IsCUDAObjective() const override { return true; }
-
  private:
-  void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const;
+  void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const override;
 
-  void LaunchBoostFromScoreKernel() const;
+  double LaunchCalcInitScoreKernel(const int class_id) const override;
 
-  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
+  const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 
-  void LaunchResetOVACUDALableKernel() const;
+  void LaunchResetOVACUDALabelKernel() const;
 
   // CUDA memory, held by other objects
   const label_t* cuda_label_;

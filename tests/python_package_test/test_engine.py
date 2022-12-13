@@ -6,6 +6,7 @@ import math
 import pickle
 import platform
 import random
+import re
 from os import getenv
 from pathlib import Path
 
@@ -111,7 +112,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
 def test_regression(objective):
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -135,6 +136,8 @@ def test_regression(objective):
         assert ret < 35
     elif objective == 'fair':
         assert ret < 17
+    elif objective == 'poisson':
+        assert ret < 8
     else:
         assert ret < 7
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -1208,6 +1211,35 @@ def test_feature_name_with_non_ascii():
 
     gbm2 = lgb.Booster(model_file='lgb.model')
     assert feature_names == gbm2.feature_name()
+
+
+def test_parameters_are_loaded_from_model_file(tmp_path):
+    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
+    y = np.random.rand(100)
+    ds = lgb.Dataset(X, y)
+    params = {
+        'bagging_fraction': 0.8,
+        'bagging_freq': 2,
+        'boosting': 'rf',
+        'feature_contri': [0.5, 0.5, 0.5],
+        'feature_fraction': 0.7,
+        'boost_from_average': False,
+        'interaction_constraints': [[0, 1], [0]],
+        'metric': ['l2', 'rmse'],
+        'num_leaves': 5,
+        'num_threads': 1,
+    }
+    model_file = tmp_path / 'model.txt'
+    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    bst = lgb.Booster(model_file=model_file)
+    set_params = {k: bst.params[k] for k in params.keys()}
+    assert set_params == params
+    assert bst.params['categorical_feature'] == [1, 2]
+
+    # check that passing parameters to the constructor raises warning and ignores them
+    with pytest.warns(UserWarning, match='Ignoring params argument'):
+        bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
+    assert bst.params == bst2.params
 
 
 def test_save_load_copy_pickle():
@@ -3902,6 +3934,47 @@ def test_cegb_split_buffer_clean():
     predicts = model.predict(test_data)
     rmse = np.sqrt(mean_squared_error(test_y, predicts))
     assert rmse < 10.0
+
+
+def test_verbosity_and_verbose(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'verbose': 1,
+        'verbosity': 0,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. '
+        'Current value: verbosity=0'
+    )
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
+
+
+@pytest.mark.parametrize('verbosity_param', lgb.basic._ConfigAliases.get("verbosity"))
+@pytest.mark.parametrize('verbosity', [-1, 0])
+def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosity):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        'num_leaves': 3,
+        'subsample': 0.75,
+        'bagging_fraction': 0.8,
+        'force_col_wise': True,
+        verbosity_param: verbosity,
+    }
+    lgb.train(params, ds, num_boost_round=1)
+    expected_msg = (
+        '[LightGBM] [Warning] bagging_fraction is set=0.8, subsample=0.75 will be ignored. '
+        'Current value: bagging_fraction=0.8'
+    )
+    stdout = capsys.readouterr().out
+    if verbosity >= 0:
+        assert expected_msg in stdout
+    else:
+        assert re.search(r'\[LightGBM\]', stdout) is None
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')

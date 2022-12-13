@@ -27,6 +27,8 @@ endif()
 
 if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
+elseif(USE_SWIG)
+  cmake_minimum_required(VERSION 3.8)
 elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA OR USE_CUDA_EXP)
@@ -142,7 +144,24 @@ if(USE_CUDA OR USE_CUDA_EXP)
 endif()
 
 if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    if(APPLE)
+        find_package(OpenMP)
+        if(NOT OpenMP_FOUND)
+            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+            execute_process(COMMAND brew --prefix libomp
+                            OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_C_LIB_NAMES omp)
+            set(OpenMP_CXX_LIB_NAMES omp)
+            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            find_package(OpenMP REQUIRED)
+        endif()
+    else()
+        find_package(OpenMP REQUIRED)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
@@ -165,11 +184,11 @@ if(USE_GPU)
 endif()
 
 if(__INTEGRATE_OPENCL)
-    if(WIN32)
+    if(APPLE)
+        message(FATAL_ERROR "Integrated OpenCL build is not available on macOS")
+    else()
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
-    else()
-        message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
     endif()
 endif()
 
@@ -398,6 +417,8 @@ endif()
 if(USE_CUDA_EXP)
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
+      src/metric/cuda/*.cpp
+      src/metric/cuda/*.cu
       src/objective/cuda/*.cpp
       src/objective/cuda/*.cu
       src/treelearner/cuda/*.cpp
@@ -440,7 +461,7 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
   list(APPEND swig_options -package com.microsoft.ml.lightgbm)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
-  swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
+  swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
   set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
@@ -525,7 +546,7 @@ if(__INTEGRATE_OPENCL)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
 if(USE_CUDA OR USE_CUDA_EXP)

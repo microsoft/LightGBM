@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - release/*
 
 jobs:
   all-successful:
@@ -11,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: false
