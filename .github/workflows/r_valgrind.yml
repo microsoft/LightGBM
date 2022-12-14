@@ -8,7 +8,7 @@ jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
     timeout-minutes: 300
-    runs-on: ubuntu-latest
+    runs-on: 'ubuntu-20.04'
     container: wch1/r-debug
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}

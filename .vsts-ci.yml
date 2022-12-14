@@ -49,7 +49,6 @@ jobs:
         PYTHON_VERSION: '3.8'
       inference:
         TASK: if-else
-        PYTHON_VERSION: '3.8'
       mpi_source:
         TASK: mpi
         METHOD: source
@@ -57,10 +56,8 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-        PYTHON_VERSION: '3.8'
       swig:
         TASK: swig
-        PYTHON_VERSION: '3.8'
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -153,7 +150,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: ubuntu-latest
+    vmImage: 'ubuntu-20.04'
   timeoutInMinutes: 180
   strategy:
     matrix:
@@ -300,7 +297,7 @@ jobs:
 ###########################################
   condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-20.04'
   container: rbase
   steps:
   - script: |
@@ -331,7 +328,7 @@ jobs:
   - R_artifact
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-20.04'
   steps:
   # Create archives with complete source code included (with git submodules)
   - task: ArchiveFiles@2
