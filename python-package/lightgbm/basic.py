@@ -511,7 +511,7 @@ def _convert_from_sliced_object(data):
     return data
 
 
-def c_float_array(data):
+def _c_float_array(data):
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
@@ -531,7 +531,7 @@ def c_float_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def c_int_array(data):
+def _c_int_array(data):
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
@@ -922,7 +922,7 @@ class _InnerPredictor:
                 data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
             else:  # change non-float data to float data, need to copy
                 data = np.array(mat.reshape(mat.size), dtype=np.float32)
-            ptr_data, type_ptr_data, _ = c_float_array(data)
+            ptr_data, type_ptr_data, _ = _c_float_array(data)
             n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
             if preds is None:
                 preds = np.empty(n_preds, dtype=np.float64)
@@ -1018,8 +1018,8 @@ class _InnerPredictor:
                 raise ValueError("Wrong length of pre-allocated predict array")
             out_num_preds = ctypes.c_int64(0)
 
-            ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
-            ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+            ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
+            ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
 
             assert csr.shape[1] <= MAX_INT32
             csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -1045,8 +1045,8 @@ class _InnerPredictor:
             return preds, nrow
 
         def inner_predict_sparse(csr, start_iteration, num_iteration, predict_type):
-            ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
-            ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+            ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
+            ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
             csr_indices = csr.indices.astype(np.int32, copy=False)
             matrix_type = C_API_MATRIX_TYPE_CSR
             if type_ptr_indptr == C_API_DTYPE_INT32:
@@ -1103,8 +1103,8 @@ class _InnerPredictor:
     def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type):
         """Predict for a CSC data."""
         def inner_predict_sparse(csc, start_iteration, num_iteration, predict_type):
-            ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
-            ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+            ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
+            ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
             csc_indices = csc.indices.astype(np.int32, copy=False)
             matrix_type = C_API_MATRIX_TYPE_CSC
             if type_ptr_indptr == C_API_DTYPE_INT32:
@@ -1150,8 +1150,8 @@ class _InnerPredictor:
         preds = np.empty(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
+        ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
 
         assert csc.shape[0] <= MAX_INT32
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -1293,7 +1293,7 @@ class Dataset:
         param_str = param_dict_to_str(self.get_params())
         sample_cnt = _get_sample_count(total_nrow, param_str)
         indices = np.empty(sample_cnt, dtype=np.int32)
-        ptr_data, _, _ = c_int_array(indices)
+        ptr_data, _, _ = _c_int_array(indices)
         actual_sample_cnt = ctypes.c_int32(0)
 
         _safe_call(_LIB.LGBM_SampleIndices(
@@ -1373,11 +1373,11 @@ class Dataset:
         # each int* points to start of indices for each column
         indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
         for i in range(ncol):
-            sample_col_ptr[i] = c_float_array(sample_data[i])[0]
-            indices_col_ptr[i] = c_int_array(sample_indices[i])[0]
+            sample_col_ptr[i] = _c_float_array(sample_data[i])[0]
+            indices_col_ptr[i] = _c_int_array(sample_indices[i])[0]
 
         num_per_col = np.array([len(d) for d in sample_indices], dtype=np.int32)
-        num_per_col_ptr, _, _ = c_int_array(num_per_col)
+        num_per_col_ptr, _, _ = _c_int_array(num_per_col)
 
         self.handle = ctypes.c_void_p()
         params_str = param_dict_to_str(self.get_params())
@@ -1409,7 +1409,7 @@ class Dataset:
         """
         nrow, ncol = data.shape
         data = data.reshape(data.size)
-        data_ptr, data_type, _ = c_float_array(data)
+        data_ptr, data_type, _ = _c_float_array(data)
 
         _safe_call(_LIB.LGBM_DatasetPushRows(
             self.handle,
@@ -1704,7 +1704,7 @@ class Dataset:
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
-        ptr_data, type_ptr_data, _ = c_float_array(data)
+        ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
             ctypes.c_int(type_ptr_data),
@@ -1747,7 +1747,7 @@ class Dataset:
             else:  # change non-float data to float data, need to copy
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
-            chunk_ptr_data, chunk_type_ptr_data, holder = c_float_array(mats[i])
+            chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mats[i])
             if type_ptr_data is not None and chunk_type_ptr_data != type_ptr_data:
                 raise ValueError('Input chunks must have same type')
             ptr_data[i] = chunk_ptr_data
@@ -1778,8 +1778,8 @@ class Dataset:
             raise ValueError(f'Length mismatch: {len(csr.indices)} vs {len(csr.data)}')
         self.handle = ctypes.c_void_p()
 
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csr.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csr.data)
+        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
+        ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
 
         assert csr.shape[1] <= MAX_INT32
         csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -1809,8 +1809,8 @@ class Dataset:
             raise ValueError(f'Length mismatch: {len(csc.indices)} vs {len(csc.data)}')
         self.handle = ctypes.c_void_p()
 
-        ptr_indptr, type_ptr_indptr, __ = c_int_array(csc.indptr)
-        ptr_data, type_ptr_data, _ = c_float_array(csc.data)
+        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
+        ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
 
         assert csc.shape[0] <= MAX_INT32
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -2104,9 +2104,9 @@ class Dataset:
             data = _list_to_1d_numpy(data, dtype, name=field_name)
 
         if data.dtype == np.float32 or data.dtype == np.float64:
-            ptr_data, type_data, _ = c_float_array(data)
+            ptr_data, type_data, _ = _c_float_array(data)
         elif data.dtype == np.int32:
-            ptr_data, type_data, _ = c_int_array(data)
+            ptr_data, type_data, _ = _c_int_array(data)
         else:
             raise TypeError(f"Expected np.float32/64 or np.int32, met type({data.dtype})")
         if type_data != FIELD_TYPE_MAPPER[field_name]:
@@ -3884,7 +3884,7 @@ class Booster:
             new_booster.handle,
             predictor.handle))
         leaf_preds = leaf_preds.reshape(-1)
-        ptr_data, _, _ = c_int_array(leaf_preds)
+        ptr_data, _, _ = _c_int_array(leaf_preds)
         _safe_call(_LIB.LGBM_BoosterRefit(
             new_booster.handle,
             ptr_data,
