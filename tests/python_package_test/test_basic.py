@@ -693,6 +693,17 @@ def test_custom_objective_safety():
         bad_bst_multi.update(fobj=_bad_gradients)
 
 
+@pytest.mark.parametrize('dtype', [np.float32, np.float64])
+@pytest.mark.parametrize('feature_name', [['x1', 'x2'], 'auto'])
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
+    pd = pytest.importorskip('pandas')
+    X = np.random.rand(10, 2).astype(dtype)
+    df = pd.DataFrame(X)
+    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    assert built_data.dtype == dtype
+    assert np.shares_memory(X, built_data)
+
+
 @pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
 def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
     pd = pytest.importorskip('pandas')
