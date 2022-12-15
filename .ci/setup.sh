@@ -62,7 +62,7 @@ else  # Linux
     fi
     if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
         apt-get install --no-install-recommends -y \
-            libomp-dev
+            libomp-14-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
