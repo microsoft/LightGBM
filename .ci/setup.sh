@@ -42,13 +42,13 @@ else  # Linux
             iputils-ping \
             jq \
             libcurl4 \
-            libicu66 \
-            libssl1.1 \
+            libicu-dev \
+            libssl-dev \
             libunwind8 \
             locales \
             netcat \
             unzip \
-            zip
+            zip || exit -1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
