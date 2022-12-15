@@ -61,7 +61,7 @@ else  # Linux
         sudo update-locale
     fi
     if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
-        apt-get install --no-install-recommends -y \
+        sudo apt-get install --no-install-recommends -y \
             libomp-14-dev
     fi
     if [[ $TASK == "mpi" ]]; then
