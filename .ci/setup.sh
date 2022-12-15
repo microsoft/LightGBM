@@ -60,6 +60,13 @@ else  # Linux
         sudo locale-gen ${LANG}
         sudo update-locale
     fi
+    if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
+        libgomp_found=$(find / -name 'libgomp*.so' | wc -l)
+        if [ $libgomp_found -eq 0 ]; then
+            apt-get install --no-install-recommends -y \
+                libomp-dev
+        fi
+    fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
             sudo apt-get update
