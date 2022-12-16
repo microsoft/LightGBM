@@ -159,7 +159,7 @@ jobs:
         shell: bash
         run: |
           apt-get update --allow-releaseinfo-change
-          apt-get install --no-install-recommends -y git
+          apt-get install --no-install-recommends -y ca-certificates git
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
