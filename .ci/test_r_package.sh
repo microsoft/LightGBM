@@ -51,8 +51,9 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
-        -y --allow-downgrades \
+        -y \
             devscripts \
+            r-base-core=${R_LINUX_VERSION} \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-extra \
