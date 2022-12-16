@@ -155,11 +155,15 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
         run: git config --global core.autocrlf false
-      - name: Install Git before checkout
+      - name: Install packages used by third-party actions
+        if: startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
           apt-get update --allow-releaseinfo-change
-          apt-get install --no-install-recommends -y ca-certificates git
+          apt-get install --no-install-recommends -y \
+            ca-certificates \
+            git \
+            sudo
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
