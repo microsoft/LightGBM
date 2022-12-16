@@ -24,7 +24,7 @@ elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.2.2
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
     export R_LINUX_VERSION="4.2.2-1.2004.0"
-    export R_APT_REPO="focal-cran40/"
+    export R_APT_REPO="jammy-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
     exit -1
