@@ -178,7 +178,7 @@ jobs:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
@@ -186,7 +186,7 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
