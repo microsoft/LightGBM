@@ -55,10 +55,11 @@ else  # Linux
                 libomp-dev
         fi
 
-        export LANG="en_US.UTF-8"
-        export LC_ALL="${LANG}"
-        sudo locale-gen ${LANG}
+        TARGET_LANG="en_US.UTF-8"
+        sudo locale-gen ${TARGET_LANG}
         sudo update-locale
+        export LANG="${TARGET_LANG}"
+        export LC_ALL="${TARGET_LANG}"
     fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
