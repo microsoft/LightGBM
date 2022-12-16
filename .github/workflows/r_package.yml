@@ -155,6 +155,11 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
         run: git config --global core.autocrlf false
+      - name: Install Git before checkout
+        shell: bash
+        run: |
+          apt-get update --allow-releaseinfo-change
+          apt-get install --no-install-recommends -y git
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
