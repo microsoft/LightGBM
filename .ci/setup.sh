@@ -60,10 +60,6 @@ else  # Linux
         sudo locale-gen ${LANG}
         sudo update-locale
     fi
-    if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
-        sudo apt-get install --no-install-recommends -y \
-            libomp-dev
-    fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
             sudo apt-get update

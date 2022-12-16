@@ -38,9 +38,9 @@ fi
 if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
-        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
     sudo add-apt-repository \
-        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}"
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}" || exit -1
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
