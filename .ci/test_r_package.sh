@@ -41,7 +41,8 @@ if [[ $OS_NAME == "linux" ]]; then
         --no-install-recommends \
         -y \
             dirmngr \
-            gpg
+            gpg \
+            gpg-agent
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
