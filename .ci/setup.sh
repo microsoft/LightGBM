@@ -42,13 +42,13 @@ else  # Linux
             iputils-ping \
             jq \
             libcurl4 \
-            libicu66 \
-            libssl1.1 \
+            libicu-dev \
+            libssl-dev \
             libunwind8 \
             locales \
             netcat \
             unzip \
-            zip
+            zip || exit -1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
@@ -59,6 +59,10 @@ else  # Linux
         export LC_ALL="${LANG}"
         sudo locale-gen ${LANG}
         sudo update-locale
+    fi
+    if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
+        sudo apt-get install --no-install-recommends -y \
+            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
@@ -75,10 +79,10 @@ else  # Linux
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
-            sudo add-apt-repository ppa:mhier/libboost-latest -y
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libboost1.74-dev \
+                libboost-filesystem1.74-dev \
                 ocl-icd-opencl-dev
         else  # in manylinux image
             sudo yum update -y
