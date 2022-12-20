@@ -7,10 +7,12 @@ mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
 
-# ensure locale variables are set up so test on encoding work as expected
+# ensure locale variables are set up so tests on encoding work as expected
 # (assumes UTF-8 locale has already been generated)
-export LANG="en_us.UTF-8"
-export LC_ALL="en_us.UTF-8"
+export LANG=en_us.UTF-8
+export LANGUAGE=en_us.UTF-8
+export LC_CTYPE=en_US.UTF-8
+export LC_ALL=en_us.UTF-8
 
 # don't fail builds for long-running examples unless they're very long.
 # See https://github.com/microsoft/LightGBM/issues/4049#issuecomment-793412254.
