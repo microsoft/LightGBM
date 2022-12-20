@@ -162,6 +162,9 @@ jobs:
           apt-get update -y
           apt-get install --no-install-recommends -y \
             ca-certificates \
+            dirmngr \
+            gpg \
+            gpg-agent \
             software-properties-common \
             sudo
           # install newest version of git
