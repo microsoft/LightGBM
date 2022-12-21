@@ -226,6 +226,27 @@ if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
 
+used_correct_r_version=$(
+    cat $LOG_FILE_NAME \
+    | grep --count "using R version fail-${R_VERSION}"
+)
+if [[ $used_correct_r_version -ne 1 ]]; then
+    echo "Unexpected R version was used. Expected '${R_VERSION}'."
+    exit -1
+fi
+
+if [[ $R_BUILD_TYPE == "cmake" ]]; then
+    passed_correct_r_version_to_cmake=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count -E "R version passed into FindLibR\.cmake\: fail-${R_VERSION}"
+    )
+    if [[ $used_correct_r_version -ne 1 ]]; then
+        echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
+        exit -1
+    fi
+fi
+
+
 if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
