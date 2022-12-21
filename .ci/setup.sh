@@ -46,6 +46,7 @@ else  # Linux
             libssl-dev \
             libunwind8 \
             locales \
+            locales-all \
             netcat \
             unzip \
             zip || exit -1
@@ -55,11 +56,10 @@ else  # Linux
                 libomp-dev
         fi
 
-        TARGET_LANG="en_US.UTF-8"
-        sudo locale-gen ${TARGET_LANG}
-        sudo update-locale
-        export LANG="${TARGET_LANG}"
-        export LC_ALL="${TARGET_LANG}"
+        export LANG="en_US.UTF-8"
+        sudo locale-gen ${LANG}
+        sudo update-locale LANG=${LANG}
+        export LC_ALL="${LANG}"
     fi
     if [[ $TASK == "mpi" ]]; then
         if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then

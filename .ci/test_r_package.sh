@@ -36,7 +36,6 @@ fi
 #
 # `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
-
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
@@ -64,17 +63,6 @@ if [[ $OS_NAME == "linux" ]]; then
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
                 || exit -1
     fi
-
-    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
-        # ensure locale variables are set up so tests on encoding work as expected
-        # (assumes UTF-8 locale has already been generated)
-        export LANG=en_us.UTF-8
-        export LANGUAGE=en_us.UTF-8
-        export LC_CTYPE=en_US.UTF-8
-        export LC_ALL=en_us.UTF-8
-        sudo update-locale
-    fi
-
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
