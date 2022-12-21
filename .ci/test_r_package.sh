@@ -74,7 +74,7 @@ if [[ $OS_NAME == "linux" ]]; then
         || exit -1
 
         sudo mkdir /opt/cmake || exit -1
-        sudo sh cmake-3.25.1-linux-x86_64.sh --prefix=/opt/cmake || exit -1
+        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit -1
         sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit -1
     fi
 fi
