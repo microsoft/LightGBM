@@ -57,7 +57,6 @@ else  # Linux
         fi
 
         export LANG="en_US.UTF-8"
-        sudo locale-gen ${LANG}
         sudo update-locale LANG=${LANG}
         export LC_ALL="${LANG}"
     fi
