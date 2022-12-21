@@ -84,7 +84,7 @@ jobs:
   variables:
     COMPILER: clang
     DEBIAN_FRONTEND: 'noninteractive'
-    IN_UBUNTU_LATEST_CONTAINER: 'true'
+    IN_BASE_LATEST_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
