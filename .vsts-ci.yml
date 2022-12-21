@@ -21,7 +21,7 @@ resources:
   - container: linux-artifact-builder
     image: lightgbm/vsts-agent:manylinux_2_28_x86_64
   - container: ubuntu-latest
-    image: 'ubuntu:20.04'
+    image: 'ubuntu:22.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
     image: wch1/r-debug
@@ -151,7 +151,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-22.04
   timeoutInMinutes: 180
   strategy:
     matrix:
@@ -299,7 +299,7 @@ jobs:
 ###########################################
   condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   container: rbase
   steps:
   - script: |
@@ -330,7 +330,7 @@ jobs:
   - R_artifact
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   steps:
   # Create archives with complete source code included (with git submodules)
   - task: ArchiveFiles@2

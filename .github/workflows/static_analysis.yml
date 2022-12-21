@@ -21,7 +21,7 @@ env:
 jobs:
   test:
     name: ${{ matrix.task }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -47,7 +47,7 @@ jobs:
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container: rocker/verse
     steps:
       - name: Trust git cloning LightGBM
@@ -82,7 +82,7 @@ jobs:
           fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [test, r-check-docs]
     steps:
     - name: Note that all tests succeeded
