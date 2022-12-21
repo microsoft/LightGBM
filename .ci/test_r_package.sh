@@ -148,10 +148,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        echo "------ CONFIGURE CHECK -----"
-        echo "here: ${PWD}"
-        git status
-        echo "----------------------------"
         ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
 
         num_files_changed=$(

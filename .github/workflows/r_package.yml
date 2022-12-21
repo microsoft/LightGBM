@@ -175,6 +175,10 @@ jobs:
           apt-get update -y
           apt-get install --no-install-recommends -y \
             git
+      - name: Trust git cloning LightGBM
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
