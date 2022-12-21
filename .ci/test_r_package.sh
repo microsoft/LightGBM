@@ -68,6 +68,14 @@ if [[ $OS_NAME == "linux" ]]; then
                 automake \
                 || exit -1
     fi
+    if [[ $R_BUILD_TYPE == "cmake" ]]; then
+        wget \
+            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh
+
+        sudo mkdir /opt/cmake
+        sudo sh cmake-3.25.1-linux-x86_64.sh --prefix=/opt/cmake
+        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
+    fi
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
