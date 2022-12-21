@@ -36,6 +36,10 @@ fi
 #
 # `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
+    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        export LANG="en_US.UTF-8"
+        export LC_ALL="en_US.UTF-8"
+    fi
     sudo apt-key adv \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
