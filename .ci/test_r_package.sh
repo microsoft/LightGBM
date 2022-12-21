@@ -65,6 +65,7 @@ if [[ $OS_NAME == "linux" ]]; then
             --no-install-recommends \
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
+                automake \
                 || exit -1
     fi
 fi
