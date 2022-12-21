@@ -148,6 +148,10 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
+        echo "------ CONFIGURE CHECK -----"
+        echo "here: ${PWD}"
+        git status
+        echo "----------------------------"
         ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
 
         num_files_changed=$(
@@ -228,7 +232,7 @@ fi
 
 used_correct_r_version=$(
     cat $LOG_FILE_NAME \
-    | grep --count "using R version fail-${R_VERSION}"
+    | grep --count "using R version ${R_VERSION}"
 )
 if [[ $used_correct_r_version -ne 1 ]]; then
     echo "Unexpected R version was used. Expected '${R_VERSION}'."
@@ -238,7 +242,7 @@ fi
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     passed_correct_r_version_to_cmake=$(
         cat $BUILD_LOG_FILE \
-        | grep --count -E "R version passed into FindLibR\.cmake\: fail-${R_VERSION}"
+        | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
     )
     if [[ $used_correct_r_version -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
