@@ -597,8 +597,9 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
 
+  template <bool USE_QUANT_GRAD, uint8_t NUM_HIST_BITS, typename SCORE_T, typename HIST_T>
   TrainingShareStates* GetShareStates(
-      score_t* gradients, score_t* hessians,
+      SCORE_T* gradients, SCORE_T* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
       bool force_col_wise, bool force_row_wise) const;
 
@@ -648,12 +649,13 @@ class Dataset {
                                    TrainingShareStates* share_state,
                                    hist_t* hist_data) const;
 
+  template <bool USE_QUANT_GRAD, uint8_t NUM_HIST_BITS, typename SCORE_T, typename HIST_T>
   inline void ConstructHistograms(
       const std::vector<int8_t>& is_feature_used,
       const data_size_t* data_indices, data_size_t num_data,
-      const score_t* gradients, const score_t* hessians,
-      score_t* ordered_gradients, score_t* ordered_hessians,
-      TrainingShareStates* share_state, hist_t* hist_data) const {
+      const SCORE_T* gradients, const SCORE_T* hessians,
+      SCORE_T* ordered_gradients, SCORE_T* ordered_hessians,
+      TrainingShareStates* share_state, HIST_T* hist_data) const {
     if (num_data <= 0) {
       return;
     }

@@ -85,6 +85,38 @@ class LeafSplits {
     sum_hessians_ = tmp_sum_hessians;
   }
 
+
+  /*!
+   * \brief Init splits on the current leaf, it will traverse all data to sum up the results
+   * \param int_gradients_and_hessians Discretized gradients and hessians
+   * \param grad_scale Scaling factor to recover original gradients from discretized gradients
+   * \param hess_scale Scaling factor to recover original hessians from discretized hessians
+   */
+  void Init(const int8_t* int_gradients_and_hessians,
+    const score_t grad_scale, const score_t hess_scale) {
+    num_data_in_leaf_ = num_data_;
+    leaf_index_ = 0;
+    data_indices_ = nullptr;
+    double tmp_sum_gradients = 0.0f;
+    double tmp_sum_hessians = 0.0f;
+    const int16_t* packed_int_gradients_and_hessians = reinterpret_cast<const int16_t*>(int_gradients_and_hessians);
+    int64_t tmp_sum_gradients_and_hessians = 0;
+#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
+    for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
+      tmp_sum_gradients += int_gradients_and_hessians[2 * i + 1] * grad_scale;
+      tmp_sum_hessians += int_gradients_and_hessians[2 * i] * hess_scale;
+      const int16_t packed_int_grad_and_hess = packed_int_gradients_and_hessians[i];
+      const int64_t packed_long_int_grad_and_hess =
+        (static_cast<int64_t>(static_cast<int8_t>(packed_int_grad_and_hess >> 8)) << 32) |
+        (static_cast<int64_t>(packed_int_grad_and_hess & 0x00ff));
+      tmp_sum_gradients_and_hessians += packed_long_int_grad_and_hess;
+    }
+    sum_gradients_ = tmp_sum_gradients;
+    sum_hessians_ = tmp_sum_hessians;
+    int_sum_gradients_and_hessians_ = tmp_sum_gradients_and_hessians;
+  }
+
+
   /*!
    * \brief Init splits on current leaf of partial data.
    * \param leaf Index of current leaf
@@ -106,6 +138,40 @@ class LeafSplits {
     }
     sum_gradients_ = tmp_sum_gradients;
     sum_hessians_ = tmp_sum_hessians;
+  }
+
+
+  /*!
+   * \brief Init splits on current leaf of partial data.
+   * \param leaf Index of current leaf
+   * \param data_partition current data partition
+   * \param int_gradients_and_hessians Discretized gradients and hessians
+   * \param grad_scale Scaling factor to recover original gradients from discretized gradients
+   * \param hess_scale Scaling factor to recover original hessians from discretized hessians
+   */
+  void Init(int leaf, const DataPartition* data_partition,
+            const int8_t* int_gradients_and_hessians,
+            const score_t grad_scale, const score_t hess_scale) {
+    leaf_index_ = leaf;
+    data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
+    double tmp_sum_gradients = 0.0f;
+    double tmp_sum_hessians = 0.0f;
+    const int16_t* packed_int_gradients_and_hessians = reinterpret_cast<const int16_t*>(int_gradients_and_hessians);
+    int64_t tmp_sum_gradients_and_hessians = 0;
+#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && deterministic_)
+    for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
+      const data_size_t idx = data_indices_[i];
+      tmp_sum_gradients += int_gradients_and_hessians[2 * idx + 1] * grad_scale;
+      tmp_sum_hessians += int_gradients_and_hessians[2 * idx] * hess_scale;
+      const int16_t packed_int_grad_and_hess = packed_int_gradients_and_hessians[i];
+      const int64_t packed_long_int_grad_and_hess =
+        (static_cast<int64_t>(static_cast<int8_t>(packed_int_grad_and_hess >> 8)) << 32) |
+        (static_cast<int64_t>(packed_int_grad_and_hess & 0x00ff));
+      tmp_sum_gradients_and_hessians += packed_long_int_grad_and_hess;
+    }
+    sum_gradients_ = tmp_sum_gradients;
+    sum_hessians_ = tmp_sum_hessians;
+    int_sum_gradients_and_hessians_ = tmp_sum_gradients_and_hessians;
   }
 
 
@@ -142,6 +208,9 @@ class LeafSplits {
   /*! \brief Get sum of Hessians of current leaf */
   double sum_hessians() const { return sum_hessians_; }
 
+  /*! \brief Get sum of discretized gradients and Hessians of current leaf */
+  int64_t int_sum_gradients_and_hessians() const { return int_sum_gradients_and_hessians_; }
+
   /*! \brief Get indices of data of current leaf */
   const data_size_t* data_indices() const { return data_indices_; }
 
@@ -162,6 +231,8 @@ class LeafSplits {
   double sum_gradients_;
   /*! \brief sum of Hessians of current leaf */
   double sum_hessians_;
+  /*! \brief sum of discretized gradients and Hessians of current leaf */
+  int64_t int_sum_gradients_and_hessians_;
   /*! \brief indices of data of current leaf */
   const data_size_t* data_indices_;
   /*! \brief weight of current leaf */

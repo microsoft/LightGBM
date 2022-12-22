@@ -604,8 +604,9 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   return ret.release();
 }
 
+template <bool USE_QUANT_GRAD, uint8_t NUM_HIST_BITS, typename SCORE_T, typename HIST_T>
 TrainingShareStates* Dataset::GetShareStates(
-    score_t* gradients, score_t* hessians,
+    SCORE_T* gradients, SCORE_T* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
@@ -666,7 +667,7 @@ TrainingShareStates* Dataset::GetShareStates(
 
     uint64_t max_total_bin = std::max<uint64_t>(row_wise_state->num_hist_total_bin(),
       col_wise_state->num_hist_total_bin());
-    std::vector<hist_t, Common::AlignmentAllocator<hist_t, kAlignedSize>>
+    std::vector<HIST_T, Common::AlignmentAllocator<HIST_T, kAlignedSize>>
         hist_data(max_total_bin * 2);
 
     Log::Debug(
@@ -681,12 +682,12 @@ TrainingShareStates* Dataset::GetShareStates(
     InitTrain(is_feature_used, row_wise_state.get());
     std::chrono::duration<double, std::milli> col_wise_time, row_wise_time;
     start_time = std::chrono::steady_clock::now();
-    ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
+    ConstructHistograms<USE_QUANT_GRAD, NUM_HIST_BITS, SCORE_T, HIST_T>(is_feature_used, nullptr, num_data_, gradients,
                         hessians, gradients, hessians, col_wise_state.get(),
                         hist_data.data());
     col_wise_time = std::chrono::steady_clock::now() - start_time;
     start_time = std::chrono::steady_clock::now();
-    ConstructHistograms(is_feature_used, nullptr, num_data_, gradients,
+    ConstructHistograms<USE_QUANT_GRAD, NUM_HIST_BITS, SCORE_T, HIST_T>(is_feature_used, nullptr, num_data_, gradients,
                         hessians, gradients, hessians, row_wise_state.get(),
                         hist_data.data());
     row_wise_time = std::chrono::steady_clock::now() - start_time;
