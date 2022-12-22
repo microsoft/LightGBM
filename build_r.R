@@ -100,17 +100,18 @@ if (length(keyword_args) > 0L) {
   for (i in seq_len(length(keyword_args))) {
     arg_name <- names(keyword_args)[[i]]
     define_name <- ARGS_TO_DEFINES[[arg_name]]
-    arg_value <- shQuote(keyword_args[[arg_name]])
+    arg_value <- shQuote(normalizePath(keyword_args[[arg_name]], winslash = "/"))
     cmake_args_to_add <- c(cmake_args_to_add, paste0(define_name, "=", arg_value))
   }
   install_libs_content <- gsub(
     pattern = paste0("command_line_args <- NULL")
     , replacement = paste0(
-      "command_line_args <- c(\""
-      , paste(cmake_args_to_add, collapse = "\", \"")
-      , "\")"
+      "command_line_args <- c(\'"
+      , paste(cmake_args_to_add, collapse = "', '")
+      , "')"
     )
     , x = install_libs_content
+    , fixed = TRUE
   )
 }
 

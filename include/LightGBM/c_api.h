@@ -153,6 +153,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
  * \param has_queries Whether the dataset has Metadata queries/groups
  * \param nclasses Number of initial score classes
  * \param nthreads Number of external threads that will use the PushRows APIs
+ * \param omp_max_threads Maximum number of OpenMP threads (-1 for default)
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
@@ -160,7 +161,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                                                 int32_t has_init_scores,
                                                 int32_t has_queries,
                                                 int32_t nclasses,
-                                                int32_t nthreads);
+                                                int32_t nthreads,
+                                                int32_t omp_max_threads);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.

@@ -80,7 +80,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
   $env:RTOOLS_EXE_FILE = "rtools42-5253-5107.exe"
-  $env:R_WINDOWS_VERSION = "4.2.1"
+  $env:R_WINDOWS_VERSION = "4.2.2"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false

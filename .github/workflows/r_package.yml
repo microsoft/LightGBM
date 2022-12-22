@@ -33,22 +33,22 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
             r_version: 4.2
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: clang
             r_version: 4.2
@@ -114,7 +114,7 @@ jobs:
             toolchain: MSYS
             r_version: 4.2
             build_type: cran
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
             r_version: 4.2
@@ -127,7 +127,7 @@ jobs:
           ################
           # Other checks #
           ################
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-rchk
             compiler: gcc
             r_version: 4.2
@@ -151,7 +151,7 @@ jobs:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
@@ -159,7 +159,7 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
@@ -181,9 +181,9 @@ jobs:
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
-    name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
+    name: r-sanitizers (ubuntu-22.04, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container: wch1/r-debug
     strategy:
       fail-fast: false
@@ -219,7 +219,7 @@ jobs:
   test-r-debian-clang:
     name: r-package (debian, R-devel, clang)
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container: rhub/debian-clang-devel
     steps:
       - name: Install Git before checkout
@@ -248,7 +248,7 @@ jobs:
           fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [test, test-r-sanitizers, test-r-debian-clang]
     steps:
     - name: Note that all tests succeeded
