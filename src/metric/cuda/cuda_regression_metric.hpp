@@ -45,7 +45,7 @@ class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEM
 
   virtual ~CUDARMSEMetric() {}
 
-  __device__ static double MetricOnPointCUDA(label_t label, double score) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score) {
     return (score - label) * (score - label);
   }
 };

@@ -38,6 +38,8 @@ std::vector<double> CUDARegressionMetricInterface<HOST_METRIC, CUDA_METRIC>::Eva
 
 CUDARMSEMetric::CUDARMSEMetric(const Config& config): CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric>(config) {}
 
+CUDAL2Metric::CUDAL2Metric(const Config& config): CUDARegressionMetricInterface<L2Metric, CUDAL2Metric>(config) {}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA_EXP

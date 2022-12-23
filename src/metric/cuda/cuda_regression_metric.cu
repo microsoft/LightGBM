@@ -55,6 +55,7 @@ double CUDARegressionMetricInterface<HOST_METRIC, CUDA_METRIC>::LaunchEvalKernel
 }
 
 template double CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric>::LaunchEvalKernel(const double* score) const;
+template double CUDARegressionMetricInterface<L2Metric, CUDAL2Metric>::LaunchEvalKernel(const double* score) const;
 
 }  // namespace LightGBM
 
