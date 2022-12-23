@@ -121,6 +121,8 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 
 lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
 
+`postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
+
 Support
 -------
 
