@@ -121,7 +121,7 @@ fi
 # hack around https://github.com/microsoft/LightGBM/pull/5619#issuecomment-1341935203 just to produce
 # a releasable artifact on Ubuntu 14.04
 PACKAGE_CONSTRAINTS="dask-core distributed pandas numpy scipy"
-if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]] && [[ $ARCH != "aarch64" ]]; then
     if [[ $TASK == "bdist" ]] || [[ $TASK == "regular" ]] || [[ $TASK == "mpi" ]]; then
         PACKAGE_CONSTRAINTS="dask-core<=2022.7.1 distributed<=2022.7.1 libstdcxx-ng<12.0 numpy<=1.20.0 pandas<=1.4.1 scipy<=1.8.0"
     fi
