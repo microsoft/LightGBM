@@ -23,7 +23,7 @@ namespace LightGBM {
 template <typename HOST_METRIC, typename CUDA_METRIC>
 class CUDARegressionMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
  public:
-  explicit CUDARegressionMetricInterface(const Config& config): CUDAMetricInterface<HOST_METRIC>(config) {}
+  explicit CUDARegressionMetricInterface(const Config& config): CUDAMetricInterface<HOST_METRIC>(config), num_class_(config.num_class) {}
 
   virtual ~CUDARegressionMetricInterface() {}
 
@@ -34,9 +34,10 @@ class CUDARegressionMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
  protected:
   double LaunchEvalKernel(const double* score_convert) const;
 
-  CUDAVector<double> score_convert_buffer_;
+  mutable CUDAVector<double> score_convert_buffer_;
   CUDAVector<double> reduce_block_buffer_;
   CUDAVector<double> reduce_block_buffer_inner_;
+  const int num_class_;
 };
 
 class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric> {
