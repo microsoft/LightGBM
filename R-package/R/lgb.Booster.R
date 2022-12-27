@@ -77,6 +77,7 @@ Booster <- R6::R6Class(
           LGBM_BoosterCreateFromModelfile_R
           , modelfile
         )
+        params <- private$get_loaded_param(handle)
 
       } else if (!is.null(model_str)) {
 
@@ -724,6 +725,20 @@ Booster <- R6::R6Class(
       }
 
       return(private$eval_names)
+
+    },
+
+    get_loaded_param = function(handle) {
+      params_str <- .Call(
+        LGBM_BoosterGetLoadedParam_R
+        , handle
+      )
+      params <- jsonlite::fromJSON(params_str)
+      if ("interaction_constraints" %in% names(params)) {
+        params[["interaction_constraints"]] <- lapply(params[["interaction_constraints"]], function(x) x + 1L)
+      }
+
+      return(params)
 
     },
 

@@ -97,12 +97,17 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
     - If you have `Rtools` 4.0, example:
         - `C:\rtools40\mingw64\bin`
         - `C:\rtools40\usr\bin`
+    - If you have `Rtools` 4.2, example:
+        - `C:\rtools42\x86_64-w64-mingw32.static.posix\bin`
+        - `C:\rtools42\usr\bin`
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
     - example: `C:\Program Files\R\R-3.6.1\bin`
 
 NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
+
+NOTE: `Rtools42` takes a very different approach to the compiler toolchain than previous releases, and how you install it changes what is required to build packages. See ["Howto: Building R 4.2 and packages on Windows"](https://cran.r-project.org/bin/windows/base/howto-R-4.2.html).
 
 #### Windows Toolchain Options
 
@@ -281,7 +286,7 @@ Rscript -e " \
 Updating Documentation
 ----------------------
 
-The R package uses [`{roxygen2}`](https://cran.r-project.org/web/packages/roxygen2/index.html) to generate its documentation.
+The R package uses [`{roxygen2}`](https://CRAN.R-project.org/package=roxygen2) to generate its documentation.
 The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
 To regenerate those files, run the following.
 
@@ -347,22 +352,22 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 22.04.
 
-    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 22.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 22.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
-        -t ubuntu:20.04 \
+        -t ubuntu:22.04 \
         ./R-package/recreate-configure.sh
     ```
 

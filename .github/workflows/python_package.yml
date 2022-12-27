@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - master
+    - release/*
 
 env:
   CONDA_ENV: test-env
@@ -47,7 +48,7 @@ jobs:
             python_version: '3.7'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true

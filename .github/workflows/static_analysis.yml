@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
     - master
+    - release/*
 
 env:
   COMPILER: 'gcc'
@@ -20,7 +21,7 @@ env:
 jobs:
   test:
     name: ${{ matrix.task }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -30,7 +31,7 @@ jobs:
           - task: check-docs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: false
@@ -46,14 +47,14 @@ jobs:
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container: rocker/verse
     steps:
       - name: Trust git cloning LightGBM
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
@@ -81,7 +82,7 @@ jobs:
           fi
   all-successful:
     # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: [test, r-check-docs]
     steps:
     - name: Note that all tests succeeded

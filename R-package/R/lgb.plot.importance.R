@@ -79,7 +79,7 @@ lgb.plot.importance <- function(tree_imp,
     )
   )
 
-  tree_imp[.N:1L,
+  tree_imp[rev(seq_len(.N)),
            graphics::barplot(
                height = get(measure)
                , names.arg = Feature

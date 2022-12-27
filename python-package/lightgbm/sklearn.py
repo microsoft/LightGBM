@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 import copy
 from inspect import signature
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -42,6 +43,11 @@ _LGBM_ScikitCustomEvalFunction = Union[
         [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
         Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
     ],
+]
+_LGBM_ScikitEvalMetricType = Union[
+    str,
+    _LGBM_ScikitCustomEvalFunction,
+    List[Union[str, _LGBM_ScikitCustomEvalFunction]]
 ]
 
 
@@ -685,16 +691,16 @@ class LGBMModel(_LGBMModelBase):
         init_score=None,
         group=None,
         eval_set=None,
-        eval_names=None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
         eval_class_weight=None,
         eval_init_score=None,
         eval_group=None,
-        eval_metric=None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
-        init_model=None
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ):
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
@@ -978,14 +984,14 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         sample_weight=None,
         init_score=None,
         eval_set=None,
-        eval_names=None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
         eval_init_score=None,
-        eval_metric=None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
-        init_model=None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ):
         """Docstring is inherited from the LGBMModel."""
         super().fit(
@@ -1024,15 +1030,15 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         sample_weight=None,
         init_score=None,
         eval_set=None,
-        eval_names=None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
         eval_class_weight=None,
         eval_init_score=None,
-        eval_metric=None,
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
-        init_model=None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ):
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
@@ -1186,16 +1192,16 @@ class LGBMRanker(LGBMModel):
         init_score=None,
         group=None,
         eval_set=None,
-        eval_names=None,
+        eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
         eval_init_score=None,
         eval_group=None,
-        eval_metric=None,
-        eval_at=(1, 2, 3, 4, 5),
+        eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
+        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
-        init_model=None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ):
         """Docstring is inherited from the LGBMModel."""
         # check group data
@@ -1239,6 +1245,6 @@ class LGBMRanker(LGBMModel):
                    + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
     _base_doc = fit.__doc__
     _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition('feature_name :')
-    fit.__doc__ = f"""{_before_feature_name}eval_at : iterable of int, optional (default=(1, 2, 3, 4, 5))
+    fit.__doc__ = f"""{_before_feature_name}eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
         The evaluation positions of the specified metric.
     {_feature_name}{_after_feature_name}"""

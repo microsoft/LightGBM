@@ -458,10 +458,18 @@ class Dataset {
                                      int32_t has_init_scores,
                                      int32_t has_queries,
                                      int32_t nclasses,
-                                     int32_t nthreads) {
+                                     int32_t nthreads,
+                                     int32_t omp_max_threads) {
+    // Initialize optional max thread count with either parameter or OMP setting
+    if (omp_max_threads > 0) {
+      omp_max_threads_ = omp_max_threads;
+    } else if (omp_max_threads_ <= 0) {
+      omp_max_threads_ = OMP_NUM_THREADS();
+    }
+
     metadata_.Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
     for (int i = 0; i < num_groups_; ++i) {
-      feature_groups_[i]->InitStreaming(nthreads);
+      feature_groups_[i]->InitStreaming(nthreads, omp_max_threads_);
     }
   }
 
@@ -846,6 +854,9 @@ class Dataset {
   /*! \brief Get whether FinishLoad is automatically called when pushing last row. */
   inline bool wait_for_manual_finish() const { return wait_for_manual_finish_; }
 
+  /*! \brief Get the maximum number of OpenMP threads to allocate for. */
+  inline int omp_max_threads() const { return omp_max_threads_; }
+
   /*! \brief Set whether the Dataset is finished automatically when last row is pushed or with a manual
    *         MarkFinished API call.  Set to true for thread-safe streaming and/or if will be coalesced later.
    *         FinishLoad should not be called on any Dataset that will be coalesced.
@@ -947,6 +958,7 @@ class Dataset {
   std::vector<int> feature_need_push_zeros_;
   std::vector<std::vector<float>> raw_data_;
   bool wait_for_manual_finish_;
+  int omp_max_threads_ = -1;
   bool has_raw_;
   /*! map feature (inner index) to its index in the list of numeric (non-categorical) features */
   std::vector<int> numeric_feature_map_;
