@@ -91,19 +91,20 @@ class BaggingSampleStrategy : public SampleStrategy {
       if (!is_change_dataset &&
         config_ != nullptr && config_->bagging_fraction == config->bagging_fraction && config_->bagging_freq == config->bagging_freq
         && config_->pos_bagging_fraction == config->pos_bagging_fraction && config_->neg_bagging_fraction == config->neg_bagging_fraction) {
+        config_ = config;
         return;
       }
       config_ = config;
       if (balance_bagging_cond) {
         balanced_bagging_ = true;
-        bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config->pos_bagging_fraction)
-                        + static_cast<data_size_t>((num_data_ - num_pos_data) * config->neg_bagging_fraction);
+        bag_data_cnt_ = static_cast<data_size_t>(num_pos_data * config_->pos_bagging_fraction)
+                        + static_cast<data_size_t>((num_data_ - num_pos_data) * config_->neg_bagging_fraction);
       } else {
-        bag_data_cnt_ = static_cast<data_size_t>(config->bagging_fraction * num_data_);
+        bag_data_cnt_ = static_cast<data_size_t>(config_->bagging_fraction * num_data_);
       }
       bag_data_indices_.resize(num_data_);
       #ifdef USE_CUDA_EXP
-      if (config->device_type == std::string("cuda_exp")) {
+      if (config_->device_type == std::string("cuda_exp")) {
         cuda_bag_data_indices_.Resize(num_data_);
       }
       #endif  // USE_CUDA_EXP
@@ -115,7 +116,7 @@ class BaggingSampleStrategy : public SampleStrategy {
       }
 
       double average_bag_rate =
-          (static_cast<double>(bag_data_cnt_) / num_data_) / config->bagging_freq;
+          (static_cast<double>(bag_data_cnt_) / num_data_) / config_->bagging_freq;
       is_use_subset_ = false;
       if (config_->device_type != std::string("cuda_exp")) {
         const int group_threshold_usesubset = 100;

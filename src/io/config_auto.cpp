@@ -901,6 +901,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"config", "string"},
     {"objective", "string"},
     {"boosting", "string"},
+    {"data_sample_strategy", "string"},
     {"data", "string"},
     {"valid", "vector<string>"},
     {"num_iterations", "int"},
