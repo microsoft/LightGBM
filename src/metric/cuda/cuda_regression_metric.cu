@@ -19,7 +19,9 @@ __global__ void EvalKernel(const data_size_t num_data, const label_t* labels, co
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double point_metric = 0.0;
   if (index < num_data) {
-    point_metric = CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]);
+    point_metric = USE_WEIGHTS ?
+      CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]) * weights[index] :
+      CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]);
   }
   const double block_sum_point_metric = ShuffleReduceSum<double>(point_metric, shared_mem_buffer, NUM_DATA_PER_EVAL_THREAD);
   if (threadIdx.x == 0) {

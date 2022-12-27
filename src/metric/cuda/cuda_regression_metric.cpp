@@ -31,10 +31,11 @@ void CUDARegressionMetricInterface<HOST_METRIC, CUDA_METRIC>::Init(const Metadat
 
 template <typename HOST_METRIC, typename CUDA_METRIC>
 std::vector<double> CUDARegressionMetricInterface<HOST_METRIC, CUDA_METRIC>::Eval(const double* score, const ObjectiveFunction* objective) const {
-  if (objective->NeedConvertOutputCUDA()) {
+  const double* score_convert = score;
+  if (objective != nullptr && objective->NeedConvertOutputCUDA()) {
     score_convert_buffer_.Resize(static_cast<size_t>(this->num_data_) * static_cast<size_t>(this->num_class_));
+    score_convert = objective->ConvertOutputCUDA(this->num_data_, score, score_convert_buffer_.RawData());
   }
-  const double* score_convert = objective->ConvertOutputCUDA(this->num_data_, score, score_convert_buffer_.RawData());
   const double eval_score = LaunchEvalKernel(score_convert);
   return std::vector<double>{eval_score};
 }
