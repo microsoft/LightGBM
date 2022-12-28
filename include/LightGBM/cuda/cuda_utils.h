@@ -119,6 +119,9 @@ class CUDAVector {
   }
 
   void Resize(size_t size) {
+    if (size == size_) {
+      return;
+    }
     if (size == 0) {
       Clear();
       return;
