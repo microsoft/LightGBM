@@ -30,7 +30,18 @@ conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
+conda create -q -y -n $env:CONDA_ENV `
+  cloudpickle `
+  joblib `
+  matplotlib `
+  numpy `
+  pandas `
+  psutil `
+  pytest `
+  "python=$env:PYTHON_VERSION[build=*cpython]" `
+  python-graphviz `
+  scikit-learn `
+  scipy ; Check-Output $?
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
 }
