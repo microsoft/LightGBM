@@ -120,12 +120,15 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
- protected:
+ private:
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
   const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+<<<<<<< HEAD
 
   bool NeedConvertOutputCUDA() const override { return true; }
+=======
+>>>>>>> 0b80042c153a23fc2804e39f88fad21fcb25560a
 
   double LaunchCalcInitScoreKernel(const int class_id) const override;
 
@@ -143,7 +146,11 @@ class CUDARegressionQuantileloss : public CUDARegressionObjectiveInterface<Regre
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
+<<<<<<< HEAD
  protected:
+=======
+ private:
+>>>>>>> 0b80042c153a23fc2804e39f88fad21fcb25560a
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
   double LaunchCalcInitScoreKernel(const int class_id) const override;

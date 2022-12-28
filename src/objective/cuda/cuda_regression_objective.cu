@@ -394,10 +394,9 @@ __global__ void RenewTreeOutputCUDAKernel_RegressionQuantile(
     residual_buffer[inner_data_index] = static_cast<double>(data_label) - data_score;
     if (USE_WEIGHT) {
       weight_by_leaf[inner_data_index] = weight[data_index];
-    } 
+    }
   }
   __syncthreads();
-  // TODO(shiyu1994): replace this bitonic sort based percentile method with a more efficient one 
   const double renew_leaf_value = PercentileDevice<double, data_size_t, label_t, double, false, USE_WEIGHT>(
     residual_buffer_pointer, weight_by_leaf_pointer, data_indices_buffer_pointer,
     weight_prefix_sum_buffer_pointer, alpha, num_data);
