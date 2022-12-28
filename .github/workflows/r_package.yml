@@ -181,9 +181,9 @@ jobs:
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
-    name: r-sanitizers (ubuntu-22.04, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
+    name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: wch1/r-debug
     strategy:
       fail-fast: false
@@ -219,7 +219,7 @@ jobs:
   test-r-debian-clang:
     name: r-package (debian, R-devel, clang)
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: rhub/debian-clang-devel
     steps:
       - name: Install Git before checkout

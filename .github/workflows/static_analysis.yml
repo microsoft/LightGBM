@@ -47,7 +47,7 @@ jobs:
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: rocker/verse
     steps:
       - name: Trust git cloning LightGBM
