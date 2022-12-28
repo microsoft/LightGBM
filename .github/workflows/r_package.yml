@@ -203,7 +203,7 @@ jobs:
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
-              export IN_UBUNTU_LATEST_CONTAINER="true"
+              export IN_UBUNTU_BASE_CONTAINER="true"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
