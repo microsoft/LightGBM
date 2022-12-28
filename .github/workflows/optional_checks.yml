@@ -7,7 +7,7 @@ on:
       - release/*
 
 jobs:
-  all-successful:
+  all-optional-checks-successful:
     timeout-minutes: 120
     runs-on: ubuntu-latest
     steps:

@@ -1042,6 +1042,8 @@ class _DaskLGBMModel:
         eval_at: Optional[Iterable[int]] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
+        if not DASK_INSTALLED:
+            raise LightGBMError('dask is required for lightgbm.dask')
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 

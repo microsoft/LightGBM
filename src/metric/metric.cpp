@@ -19,8 +19,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
   if (config.device_type == std::string("cuda_exp")) {
     if (type == std::string("l2")) {
-      Log::Warning("Metric l2 is not implemented in cuda_exp version. Fall back to evaluation on CPU.");
-      return new L2Metric(config);
+      return new CUDAL2Metric(config);
     } else if (type == std::string("rmse")) {
       return new CUDARMSEMetric(config);
     } else if (type == std::string("l1")) {

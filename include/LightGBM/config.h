@@ -153,13 +153,20 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
+  // options = gbdt, rf, dart
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
-  // desc = ``goss``, Gradient-based One-Side Sampling
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
+
+  // [doc-only]
+  // type = enum
+  // options = bagging, goss
+  // desc = ``bagging``, Randomly Bagging Sampling
+  // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
+  // desc = ``goss``, Gradient-based One-Side Sampling
+  std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
@@ -263,7 +270,7 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
   // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
-  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` sample strategy to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
