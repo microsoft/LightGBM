@@ -19,16 +19,22 @@ __global__ void EvalKernel(const data_size_t num_data, const label_t* labels, co
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double point_metric = 0.0;
   if (index < num_data) {
-    point_metric = CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]);
+    point_metric = USE_WEIGHTS ?
+      CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]) * weights[index] :
+      CUDA_METRIC::MetricOnPointCUDA(labels[index], scores[index]);
   }
   const double block_sum_point_metric = ShuffleReduceSum<double>(point_metric, shared_mem_buffer, NUM_DATA_PER_EVAL_THREAD);
-  reduce_block_buffer[blockIdx.x] = block_sum_point_metric;
+  if (threadIdx.x == 0) {
+    reduce_block_buffer[blockIdx.x] = block_sum_point_metric;
+  }
   if (USE_WEIGHTS) {
     double weight = 0.0;
     if (index < num_data) {
       weight = static_cast<double>(weights[index]);
       const double block_sum_weight = ShuffleReduceSum<double>(weight, shared_mem_buffer, NUM_DATA_PER_EVAL_THREAD);
-      reduce_block_buffer[blockIdx.x + blockDim.x] = block_sum_weight;
+      if (threadIdx.x == 0) {
+        reduce_block_buffer[blockIdx.x + gridDim.x] = block_sum_weight;
+      }
     }
   }
 }
@@ -55,6 +61,7 @@ double CUDARegressionMetricInterface<HOST_METRIC, CUDA_METRIC>::LaunchEvalKernel
 }
 
 template double CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric>::LaunchEvalKernel(const double* score) const;
+template double CUDARegressionMetricInterface<L2Metric, CUDAL2Metric>::LaunchEvalKernel(const double* score) const;
 
 }  // namespace LightGBM
 

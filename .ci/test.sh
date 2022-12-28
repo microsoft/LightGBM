@@ -8,6 +8,11 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CC=clang
 fi
 
+if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
+    export LANG="en_US.UTF-8"
+    export LC_ALL="en_US.UTF-8"
+fi
+
 if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit -1
     exit 0
