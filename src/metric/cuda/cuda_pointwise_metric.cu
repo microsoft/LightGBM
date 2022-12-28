@@ -16,7 +16,7 @@ namespace LightGBM {
 
 template <typename CUDA_METRIC, bool USE_WEIGHTS>
 __global__ void EvalKernel(const data_size_t num_data, const label_t* labels, const label_t* weights,
-                                  const double* scores, double* reduce_block_buffer) {
+                           const double* scores, double* reduce_block_buffer) {
   __shared__ double shared_mem_buffer[32];
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double point_metric = 0.0;
