@@ -10,10 +10,10 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
+#include <LightGBM/utils/log.h>
 #endif  // USE_CUDA || USE_CUDA_EXP
 
 #ifdef USE_CUDA_EXP
-#include <LightGBM/utils/log.h>
 #include <vector>
 #endif  // USE_CUDA_EXP
 
@@ -124,6 +124,7 @@ class CUDAVector {
     }
     if (size == 0) {
       Clear();
+      return;
     }
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
