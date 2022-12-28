@@ -38,7 +38,7 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface<BinaryLogloss> {
 
   double LaunchCalcInitScoreKernel(const int class_id) const override;
 
-  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+  const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 
   void LaunchResetOVACUDALabelKernel() const;
 

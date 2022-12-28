@@ -118,17 +118,11 @@ if [[ $TASK == "swig" ]]; then
     exit 0
 fi
 
-# temporary fix for https://github.com/microsoft/LightGBM/issues/5390
-if [[ $PYTHON_VERSION == "3.7" ]]; then
-    DEPENDENCIES="dask distributed"
-else
-    DEPENDENCIES="dask=2022.7.0 distributed=2022.7.0 scipy<1.9"
-fi
-
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
-    ${DEPENDENCIES} \
+    dask-core \
+    distributed \
     joblib \
     matplotlib \
     numpy \
@@ -137,7 +131,8 @@ conda install -q -y -n $CONDA_ENV \
     pytest \
     "python=$PYTHON_VERSION[build=*cpython]" \
     python-graphviz \
-    scikit-learn || exit -1
+    scikit-learn \
+    scipy || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
@@ -155,21 +150,23 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_0_x86_64.whl
+        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
     else
         ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
-            PLATFORM="manylinux1_x86_64"
+            PLATFORM="manylinux_2_28_x86_64"
         else
             PLATFORM="manylinux2014_$ARCH"
         fi
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=$PLATFORM --python-tag py3 || exit -1
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --integrated-opencl --plat-name=$PLATFORM --python-tag py3 || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
+        # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
+        export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install --user $BUILD_DIRECTORY/python-package/dist/*.whl || exit -1
     pytest $BUILD_DIRECTORY/tests || exit -1

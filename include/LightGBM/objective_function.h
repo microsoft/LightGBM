@@ -99,11 +99,14 @@ class ObjectiveFunction {
 
   #ifdef USE_CUDA_EXP
   /*!
-  * \brief Get output convert function for CUDA version
+  * \brief Convert output for CUDA version
   */
-  virtual std::function<void(data_size_t, const double*, double*)> GetCUDAConvertOutputFunc() const {
-    return [] (data_size_t, const double*, double*) {};
+  virtual const double* ConvertOutputCUDA(data_size_t /*num_data*/, const double* input, double* /*output*/) const {
+    return input;
   }
+
+  virtual bool NeedConvertOutputCUDA () const { return false; }
+
   #endif  // USE_CUDA_EXP
 };
 

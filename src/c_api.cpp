@@ -1018,11 +1018,12 @@ int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                               int32_t has_init_scores,
                               int32_t has_queries,
                               int32_t nclasses,
-                              int32_t nthreads) {
+                              int32_t nthreads,
+                              int32_t omp_max_threads) {
   API_BEGIN();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto num_data = p_dataset->num_data();
-  p_dataset->InitStreaming(num_data, has_weights, has_init_scores, has_queries, nclasses, nthreads);
+  p_dataset->InitStreaming(num_data, has_weights, has_init_scores, has_queries, nclasses, nthreads, omp_max_threads);
   p_dataset->set_wait_for_manual_finish(true);
   API_END();
 }
@@ -1073,19 +1074,20 @@ int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
-  const int num_omp_threads = OMP_NUM_THREADS();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromDenseMatric(data, nrow, ncol, data_type, 1);
   if (p_dataset->has_raw()) {
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
 
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
+
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (num_omp_threads * tid);
+    const int internal_tid = omp_get_thread_num() + (max_omp_threads * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, start_row + i, one_row);
     OMP_LOOP_EX_END();
@@ -1154,19 +1156,21 @@ int LGBM_DatasetPushRowsByCSRWithMetadata(DatasetHandle dataset,
   if (!data) {
     Log::Fatal("data cannot be null.");
   }
-  const int num_omp_threads = OMP_NUM_THREADS();
   auto p_dataset = reinterpret_cast<Dataset*>(dataset);
   auto get_row_fun = RowFunctionFromCSR<int>(indptr, indptr_type, indices, data, data_type, nindptr, nelem);
   int32_t nrow = static_cast<int32_t>(nindptr - 1);
   if (p_dataset->has_raw()) {
     p_dataset->ResizeRaw(p_dataset->num_numeric_features() + nrow);
   }
+
+  const int max_omp_threads = p_dataset->omp_max_threads() > 0 ? p_dataset->omp_max_threads() : OMP_NUM_THREADS();
+
   OMP_INIT_EX();
 #pragma omp parallel for schedule(static)
   for (int i = 0; i < nrow; ++i) {
     OMP_LOOP_EX_BEGIN();
     // convert internal thread id to be unique based on external thread id
-    const int internal_tid = omp_get_thread_num() + (num_omp_threads * tid);
+    const int internal_tid = omp_get_thread_num() + (max_omp_threads * tid);
     auto one_row = get_row_fun(i);
     p_dataset->PushOneRow(internal_tid, static_cast<data_size_t>(start_row + i), one_row);
     OMP_LOOP_EX_END();
