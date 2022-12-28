@@ -23,7 +23,7 @@ if [[ $OS_NAME == "macos" ]]; then
         -o miniforge.sh \
         https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+    if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
@@ -57,12 +57,15 @@ else  # Linux
         fi
 
         export LANG="en_US.UTF-8"
-        sudo locale-gen ${LANG}
         sudo update-locale LANG=${LANG}
         export LC_ALL="${LANG}"
     fi
+    if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
+        sudo apt-get install --no-install-recommends -y \
+            libomp-dev
+    fi
     if [[ $TASK == "mpi" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libopenmpi-dev \
@@ -75,7 +78,7 @@ else  # Linux
         fi
     fi
     if [[ $TASK == "gpu" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libboost1.74-dev \
@@ -91,7 +94,7 @@ else  # Linux
         fi
     fi
     if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 pocl-opencl-icd
