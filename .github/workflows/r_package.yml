@@ -204,6 +204,11 @@ jobs:
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
               export IN_UBUNTU_BASE_CONTAINER="true"
+              # the default version of cmake provided on Ubuntu 18.04 (v3.10.2), is not supported by LightGBM
+              # see https://github.com/microsoft/LightGBM/issues/5642
+              if [[ "${{ matrix.container }}" == "ubuntu:18.04" ]]; then
+                export INSTALL_CMAKE_FROM_RELEASES="true"
+              fi
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
