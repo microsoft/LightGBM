@@ -18,7 +18,7 @@ namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp")) {
+  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
     if (type == std::string("l2")) {
       return new CUDAL2Metric(config);
     } else if (type == std::string("rmse")) {
