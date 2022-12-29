@@ -47,7 +47,7 @@ docker run \
   --rm \
   --volume "${PWD}":/opt/training \
   --workdir /opt/training \
-  -it lightgbm-cli \
+  lightgbm-cli \
   config=train.conf
 ```
 
@@ -97,7 +97,7 @@ docker run \
     --rm \
     --volume "${PWD}":/opt/training \
     --workdir /opt/training \
-    -it lightgbm-python \
+    lightgbm-python \
     python train.py
 ```
 
@@ -156,7 +156,7 @@ docker run \
     --rm \
     --volume "${PWD}":/opt/training \
     --workdir /opt/training \
-    -it lightgbm-r \
+    lightgbm-r \
     Rscript train.R
 ```
 
@@ -178,7 +178,7 @@ docker run \
     --rm \
     --env PASSWORD="lightgbm" \
     -p 8787:8787 \
-    -it lightgbm-r
+    lightgbm-r
 ```
 
 Then navigate to `localhost:8787` in your local web browser, and log in with username `rstudio` and password `lightgbm`.
