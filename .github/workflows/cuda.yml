@@ -9,6 +9,11 @@ on:
     - master
     - release/*
 
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   github_actions: 'true'
   os_name: linux
