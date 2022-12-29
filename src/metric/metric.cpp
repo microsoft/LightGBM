@@ -11,13 +11,14 @@
 #include "regression_metric.hpp"
 #include "xentropy_metric.hpp"
 
+#include "cuda/cuda_binary_metric.hpp"
 #include "cuda/cuda_regression_metric.hpp"
 
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp")) {
+  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
     if (type == std::string("l2")) {
       return new CUDAL2Metric(config);
     } else if (type == std::string("rmse")) {
@@ -38,8 +39,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       Log::Warning("Metric poisson is not implemented in cuda_exp version. Fall back to evaluation on CPU.");
       return new PoissonMetric(config);
     } else if (type == std::string("binary_logloss")) {
-      Log::Warning("Metric binary_logloss is not implemented in cuda_exp version. Fall back to evaluation on CPU.");
-      return new BinaryLoglossMetric(config);
+      return new CUDABinaryLoglossMetric(config);
     } else if (type == std::string("binary_error")) {
       Log::Warning("Metric binary_error is not implemented in cuda_exp version. Fall back to evaluation on CPU.");
       return new BinaryErrorMetric(config);
