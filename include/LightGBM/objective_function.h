@@ -101,9 +101,12 @@ class ObjectiveFunction {
   /*!
   * \brief Convert output for CUDA version
   */
-  const double* ConvertOutputCUDA(data_size_t /*num_data*/, const double* input, double* /*output*/) const {
+  virtual const double* ConvertOutputCUDA(data_size_t /*num_data*/, const double* input, double* /*output*/) const {
     return input;
   }
+
+  virtual bool NeedConvertOutputCUDA () const { return false; }
+
   #endif  // USE_CUDA_EXP
 };
 
