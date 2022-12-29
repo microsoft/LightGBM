@@ -9,6 +9,11 @@ on:
     - master
     - release/*
 
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
