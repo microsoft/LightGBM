@@ -7,11 +7,6 @@ from sklearn.utils import check_random_state
 
 
 @lru_cache(maxsize=None)
-def load_boston(**kwargs):
-    return sklearn.datasets.load_boston(**kwargs)
-
-
-@lru_cache(maxsize=None)
 def load_breast_cancer(**kwargs):
     return sklearn.datasets.load_breast_cancer(**kwargs)
 

@@ -18,7 +18,7 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
+from .utils import load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking
 
 sk_version = parse_version(sk_version)
 if sk_version < parse_version("0.23"):
@@ -91,6 +91,7 @@ def test_binary():
 
 
 def test_regression():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, silent=True)
@@ -157,6 +158,7 @@ def test_eval_at_aliases():
 
 
 def test_regression_with_custom_objective():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, silent=True, objective=objective_ls)
@@ -180,6 +182,7 @@ def test_binary_classification_with_custom_objective():
 
 
 def test_dart():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
@@ -217,6 +220,7 @@ def test_stacking_classifier():
 # sklearn <0.23 does not have a stacking regressor and n_features_in_ property
 @pytest.mark.skipif(sk_version < parse_version('0.23'), reason='scikit-learn version is less than 0.23')
 def test_stacking_regressor():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     from sklearn.ensemble import StackingRegressor
 
     X, y = load_boston(return_X_y=True)
@@ -384,14 +388,6 @@ def test_regressor_chain():
 
 
 def test_clone_and_property():
-    X, y = load_boston(return_X_y=True)
-    gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
-    gbm.fit(X, y, verbose=False)
-
-    gbm_clone = clone(gbm)
-    assert isinstance(gbm.booster_, lgb.Booster)
-    assert isinstance(gbm.feature_importances_, np.ndarray)
-
     X, y = load_digits(n_class=2, return_X_y=True)
     clf = lgb.LGBMClassifier(n_estimators=10, silent=True)
     clf.fit(X, y, verbose=False)
@@ -402,6 +398,7 @@ def test_clone_and_property():
 
 
 def test_joblib():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj,
@@ -644,6 +641,7 @@ def test_predict():
 
 
 def test_evaluate_train_set():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, silent=True)
@@ -658,6 +656,7 @@ def test_evaluate_train_set():
 
 
 def test_metrics():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     params = {'n_estimators': 2, 'verbose': -1}
     params_fit = {'X': X, 'y': y, 'eval_set': (X, y), 'verbose': False}
@@ -989,7 +988,7 @@ def test_nan_handle():
 
 
 def test_first_metric_only():
-
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
         params['first_metric_only'] = first_metric_only
         gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
@@ -1204,7 +1203,7 @@ def test_parameters_default_constructible(estimator):
     check_parameters_default_constructible(name, Estimator)
 
 
-@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+@pytest.mark.parametrize('task', ['classification', 'ranking'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
     if task == 'ranking':
@@ -1214,9 +1213,6 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     elif task == 'classification':
         X, y = load_iris(return_X_y=True)
         model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = load_boston(return_X_y=True)
-        model_factory = lgb.LGBMRegressor
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {

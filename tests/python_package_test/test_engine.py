@@ -17,7 +17,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 
 import lightgbm as lgb
 
-from .utils import load_boston, load_breast_cancer, load_digits, load_iris
+from .utils import load_breast_cancer, load_digits, load_iris
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -99,6 +99,7 @@ def test_rf():
 
 
 def test_regression():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
@@ -643,6 +644,7 @@ def test_early_stopping():
 
 
 def test_continue_train():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
@@ -671,6 +673,7 @@ def test_continue_train():
 
 
 def test_continue_train_reused_dataset():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     params = {
         'objective': 'regression',
@@ -685,6 +688,7 @@ def test_continue_train_reused_dataset():
 
 
 def test_continue_train_dart():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {
@@ -733,6 +737,7 @@ def test_continue_train_multiclass():
 
 
 def test_cv():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X_train, y_train = load_boston(return_X_y=True)
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -837,6 +842,7 @@ def test_cvbooster():
 
 
 def test_feature_name():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X_train, y_train = load_boston(return_X_y=True)
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -866,6 +872,7 @@ def test_feature_name_with_non_ascii():
 
 
 def test_save_load_copy_pickle():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     def train_and_predict(init_model=None, return_model=False):
         X, y = load_boston(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1496,6 +1503,7 @@ def test_refit():
 
 
 def test_mape_rf():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     params = {
         'boosting_type': 'rf',
@@ -1514,6 +1522,7 @@ def test_mape_rf():
 
 
 def test_mape_dart():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     params = {
         'boosting_type': 'dart',
@@ -2052,6 +2061,7 @@ def test_default_objective_and_metric():
 
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
 def test_model_size():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     data = lgb.Dataset(X, y)
     bst = lgb.train({'verbose': -1}, data, num_boost_round=2)
@@ -2079,6 +2089,7 @@ def test_model_size():
 
 
 def test_get_split_value_histogram():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     lgb_train = lgb.Dataset(X, y, categorical_feature=[2])
     gbm = lgb.train({'verbose': -1}, lgb_train, num_boost_round=20)
@@ -2159,6 +2170,7 @@ def test_get_split_value_histogram():
 
 
 def test_early_stopping_for_only_first_metric():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
 
     def metrics_combination_train_regression(valid_sets, metric_list, assumed_iteration,
                                              first_metric_only, feval=None):
@@ -2465,6 +2477,7 @@ def test_dataset_params_with_reference():
 
 
 def test_extra_trees():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     # check extra trees increases regularization
     X, y = load_boston(return_X_y=True)
     lgb_x = lgb.Dataset(X, label=y)
@@ -2484,6 +2497,7 @@ def test_extra_trees():
 
 
 def test_path_smoothing():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     # check path smoothing increases regularization
     X, y = load_boston(return_X_y=True)
     lgb_x = lgb.Dataset(X, label=y)
@@ -2554,6 +2568,7 @@ def test_trees_to_dataframe():
 
 
 def test_interaction_constraints():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     X, y = load_boston(return_X_y=True)
     num_features = X.shape[1]
     train_data = lgb.Dataset(X, label=y)
@@ -2709,6 +2724,7 @@ def test_linear_single_leaf():
 
 
 def test_predict_with_start_iteration():
+    pytest.skip("load_boston() was removed in scikit-learn 1.2.0")
     def inner_test(X, y, params, early_stopping_rounds):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
         train_data = lgb.Dataset(X_train, label=y_train)

@@ -51,7 +51,7 @@ if ($env:TASK -eq "swig") {
 }
 
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest "python=$env:PYTHON_VERSION[build=*cpython]" python-graphviz 'scikit-learn<=1.1' scipy ; Check-Output $?
+conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest "python=$env:PYTHON_VERSION[build=*cpython]" python-graphviz scikit-learn scipy ; Check-Output $?
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build

@@ -120,10 +120,10 @@ fi
 
 # hack around https://github.com/microsoft/LightGBM/pull/5619#issuecomment-1341935203 just to produce
 # a releasable artifact on Ubuntu 14.04
-PACKAGE_CONSTRAINTS="dask-core distributed pandas numpy scipy"
+PACKAGE_CONSTRAINTS="dask-core distributed pandas numpy scikit-learn scipy"
 if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]] && [[ $ARCH != "aarch64" ]]; then
     if [[ $TASK == "bdist" ]] || [[ $TASK == "regular" ]] || [[ $TASK == "mpi" ]]; then
-        PACKAGE_CONSTRAINTS="dask-core<=2022.7.1 distributed<=2022.7.1 libstdcxx-ng<12.0 numpy<=1.20.0 pandas<=1.4.1 scipy<=1.8.0"
+        PACKAGE_CONSTRAINTS="dask-core<=2022.7.1 distributed<=2022.7.1 libstdcxx-ng<12.0 numpy<=1.20.0 pandas<=1.4.1 scikit-learn<=1.1.0 scipy<=1.8.0"
     fi
 fi
 
@@ -136,8 +136,7 @@ conda install -q -y -n $CONDA_ENV \
     pytest \
     ${PACKAGE_CONSTRAINTS} \
     "python=$PYTHON_VERSION[build=*cpython]" \
-    python-graphviz \
-    'scikit-learn<1.2.0' || exit -1
+    python-graphviz || exit -1
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
