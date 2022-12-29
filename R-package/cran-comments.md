@@ -10,7 +10,7 @@ Accepted to CRAN
 
 Submitted with the following comment:
 
-> This submission contains {lightgbm} 3.3.3.
+> This submission contains {lightgbm} 3.3.4
 
 > Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
 
@@ -20,7 +20,7 @@ Submitted with the following comment:
 
 > Thank you very much for your time and consideration.
 
-## v3.3.3 - Submission 1 - (October 10, 2022)
+## v3.3.4 - Submission 1 - (October 10, 2022)
 
 ### CRAN response
 

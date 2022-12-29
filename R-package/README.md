@@ -484,13 +484,6 @@ These tests can also be triggered on any pull request by leaving a comment in a 
 
 > /gha run r-valgrind
 
-External (Unofficial) Repositories
-----------------------------------
-
-Projects listed here are not maintained or endorsed by the `LightGBM` development team, but may offer some features currently missing from the main R package.
-
-* [lightgbm.py](https://github.com/kapsner/lightgbm.py): This R package offers a wrapper built with `reticulate`, a package used to call Python code from R. If you are comfortable with the added installation complexity of installing `lightgbm`'s Python package and the performance cost of passing data between R and Python, you might find that this package offers some features that are not yet available in the native `lightgbm` R package.
-
 Known Issues
 ------------
 
