@@ -3592,6 +3592,142 @@ def test_force_split_with_feature_fraction(tmp_path):
         assert tree_structure['split_feature'] == 0
 
 
+def test_goss_boosting_and_strategy_equivalent():
+    X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    base_params = {
+        'metric': 'l2',
+        'verbose': -1,
+        'bagging_seed': 0,
+        'learning_rate': 0.05,
+        'num_threads': 1,
+        'force_row_wise': True,
+        'gpu_use_dp': True,
+    }
+    params1 = {**base_params, 'boosting': 'goss'}
+    evals_result1 = {}
+    lgb.train(params1, lgb_train,
+              num_boost_round=10,
+              valid_sets=lgb_eval,
+              callbacks=[lgb.record_evaluation(evals_result1)])
+    params2 = {**base_params, 'data_sample_strategy': 'goss'}
+    evals_result2 = {}
+    lgb.train(params2, lgb_train,
+              num_boost_round=10,
+              valid_sets=lgb_eval,
+              callbacks=[lgb.record_evaluation(evals_result2)])
+    assert evals_result1['valid_0']['l2'] == evals_result2['valid_0']['l2']
+
+
+def test_sample_strategy_with_boosting():
+    X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+
+    base_params = {
+        'metric': 'l2',
+        'verbose': -1,
+        'num_threads': 1,
+        'force_row_wise': True,
+        'gpu_use_dp': True,
+    }
+
+    params1 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': 'goss'}
+    evals_result = {}
+    gbm = lgb.train(params1, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res1 = evals_result['valid_0']['l2'][-1]
+    test_res1 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res1 == pytest.approx(3149.393862, abs=1.0)
+    assert eval_res1 == pytest.approx(test_res1)
+
+    params2 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'goss'}
+    evals_result = {}
+    gbm = lgb.train(params2, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res2 = evals_result['valid_0']['l2'][-1]
+    test_res2 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res2 == pytest.approx(2547.715968, abs=1.0)
+    assert eval_res2 == pytest.approx(test_res2)
+
+    params3 = {**base_params, 'boosting': 'goss', 'data_sample_strategy': 'goss'}
+    evals_result = {}
+    gbm = lgb.train(params3, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res3 = evals_result['valid_0']['l2'][-1]
+    test_res3 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res3 == pytest.approx(2547.715968, abs=1.0)
+    assert eval_res3 == pytest.approx(test_res3)
+
+    params4 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': 'goss'}
+    evals_result = {}
+    gbm = lgb.train(params4, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res4 = evals_result['valid_0']['l2'][-1]
+    test_res4 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res4 == pytest.approx(2095.538735, abs=1.0)
+    assert eval_res4 == pytest.approx(test_res4)
+
+    assert test_res1 != test_res2
+    assert eval_res1 != eval_res2
+    assert test_res2 == test_res3
+    assert eval_res2 == eval_res3
+    assert eval_res1 != eval_res4
+    assert test_res1 != test_res4
+    assert eval_res2 != eval_res4
+    assert test_res2 != test_res4
+
+    params5 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
+    evals_result = {}
+    gbm = lgb.train(params5, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res5 = evals_result['valid_0']['l2'][-1]
+    test_res5 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res5 == pytest.approx(3134.866931, abs=1.0)
+    assert eval_res5 == pytest.approx(test_res5)
+
+    params6 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
+    evals_result = {}
+    gbm = lgb.train(params6, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res6 = evals_result['valid_0']['l2'][-1]
+    test_res6 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res6 == pytest.approx(2539.792378, abs=1.0)
+    assert eval_res6 == pytest.approx(test_res6)
+    assert test_res5 != test_res6
+    assert eval_res5 != eval_res6
+
+    params7 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}
+    evals_result = {}
+    gbm = lgb.train(params7, lgb_train,
+                    num_boost_round=10,
+                    valid_sets=lgb_eval,
+                    callbacks=[lgb.record_evaluation(evals_result)])
+    eval_res7 = evals_result['valid_0']['l2'][-1]
+    test_res7 = mean_squared_error(y_test, gbm.predict(X_test))
+    assert test_res7 == pytest.approx(1518.704481, abs=1.0)
+    assert eval_res7 == pytest.approx(test_res7)
+    assert test_res5 != test_res7
+    assert eval_res5 != eval_res7
+    assert test_res6 != test_res7
+    assert eval_res6 != eval_res7
+
+
 def test_record_evaluation_with_train():
     X, y = make_synthetic_regression()
     ds = lgb.Dataset(X, y)
