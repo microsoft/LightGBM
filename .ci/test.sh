@@ -120,6 +120,7 @@ fi
 
 # hack around https://github.com/microsoft/LightGBM/pull/5619#issuecomment-1341935203 just to produce
 # a releasable artifact on Ubuntu 14.04
+ARCH=$(uname -m)
 PACKAGE_CONSTRAINTS="dask-core distributed pandas numpy scikit-learn scipy"
 if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]] && [[ $ARCH != "aarch64" ]]; then
     if [[ $TASK == "bdist" ]] || [[ $TASK == "regular" ]] || [[ $TASK == "mpi" ]]; then
