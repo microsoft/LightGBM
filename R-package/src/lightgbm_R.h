@@ -267,6 +267,15 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterLoadModelFromString_R(
 );
 
 /*!
+* \brief Get parameters as JSON string.
+* \param handle Booster handle
+* \return R character vector (length=1) with parameters in JSON format
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetLoadedParam_R(
+  SEXP handle
+);
+
+/*!
 * \brief Merge model in two Boosters to first handle
 * \param handle handle primary Booster handle, will merge other handle to this
 * \param other_handle secondary Booster handle

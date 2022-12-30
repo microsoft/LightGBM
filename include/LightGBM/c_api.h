@@ -153,6 +153,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateByReference(const DatasetHandle referenc
  * \param has_queries Whether the dataset has Metadata queries/groups
  * \param nclasses Number of initial score classes
  * \param nthreads Number of external threads that will use the PushRows APIs
+ * \param omp_max_threads Maximum number of OpenMP threads (-1 for default)
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
@@ -160,7 +161,8 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                                                 int32_t has_init_scores,
                                                 int32_t has_queries,
                                                 int32_t nclasses,
-                                                int32_t nthreads);
+                                                int32_t nthreads,
+                                                int32_t omp_max_threads);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -594,6 +596,20 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterCreateFromModelfile(const char* filename,
 LIGHTGBM_C_EXPORT int LGBM_BoosterLoadModelFromString(const char* model_str,
                                                       int* out_num_iterations,
                                                       BoosterHandle* out);
+
+/*!
+ * \brief Get parameters as JSON string.
+ * \param handle Handle of booster
+ * \param buffer_len Allocated space for string
+ * \param[out] out_len Actual size of string
+ * \param[out] out_str JSON string containing parameters
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterGetLoadedParam(BoosterHandle handle,
+                                                 int64_t buffer_len,
+                                                 int64_t* out_len,
+                                                 char* out_str);
+
 
 /*!
  * \brief Free space for booster.

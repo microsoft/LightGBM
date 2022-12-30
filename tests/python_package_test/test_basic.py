@@ -376,6 +376,29 @@ def test_add_features_from_different_sources():
             assert d1.feature_name == res_feature_names
 
 
+def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys):
+
+    arr_a = np.zeros((100, 1), dtype=np.float32)
+    arr_b = np.random.normal(size=(100, 5))
+
+    dataset_a = lgb.Dataset(arr_a).construct()
+    expected_msg = (
+        '[LightGBM] [Warning] There are no meaningful features which satisfy '
+        'the provided configuration. Decreasing Dataset parameters min_data_in_bin '
+        'or min_data_in_leaf and re-constructing Dataset might resolve this warning.\n'
+    )
+    log_lines = capsys.readouterr().out
+    assert expected_msg in log_lines
+
+    dataset_b = lgb.Dataset(arr_b).construct()
+
+    original_handle = dataset_a.handle.value
+    dataset_a.add_features_from(dataset_b)
+    assert dataset_a.num_feature() == 6
+    assert dataset_a.num_data() == 100
+    assert dataset_a.handle.value == original_handle
+
+
 def test_cegb_affects_behavior(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
@@ -609,17 +632,17 @@ def test_list_to_1d_numpy(collection, dtype):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
         with pytest.raises(ValueError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
-    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
 

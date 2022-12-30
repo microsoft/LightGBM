@@ -19,7 +19,9 @@ namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
+  if (config.device_type == std::string("cuda_exp") &&
+      config.data_sample_strategy != std::string("goss") &&
+      config.boosting != std::string("rf")) {
     if (type == std::string("regression")) {
       return new CUDARegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {
@@ -32,8 +34,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("fair")) {
       return new CUDARegressionFairLoss(config);
     } else if (type == std::string("poisson")) {
-      Log::Warning("Objective poisson is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new RegressionPoissonLoss(config);
+      return new CUDARegressionPoissonLoss(config);
     } else if (type == std::string("binary")) {
       return new CUDABinaryLogloss(config);
     } else if (type == std::string("lambdarank")) {
@@ -43,8 +44,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("multiclass")) {
       return new CUDAMulticlassSoftmax(config);
     } else if (type == std::string("multiclassova")) {
-      Log::Warning("Objective multiclassova is not implemented in cuda_exp version. Fall back to boosting on CPU.");
-      return new MulticlassOVA(config);
+      return new CUDAMulticlassOVA(config);
     } else if (type == std::string("cross_entropy")) {
       Log::Warning("Objective cross_entropy is not implemented in cuda_exp version. Fall back to boosting on CPU.");
       return new CrossEntropy(config);

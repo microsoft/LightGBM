@@ -35,6 +35,9 @@ void test_stream_dense(
   int has_init_scores = init_scores != nullptr;
   int has_queries = groups != nullptr;
 
+  bool succeeded = true;
+  std::string exceptionText("");
+
   try {
     int result = 0;
     switch (creation_type) {
@@ -76,7 +79,7 @@ void test_stream_dense(
           &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
-        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores, has_queries, nclasses, 1);
+        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores, has_queries, nclasses, 1, -1);
         EXPECT_EQ(0, result) << "LGBM_DatasetInitStreaming result code: " << result;
         break;
       }
@@ -111,12 +114,18 @@ void test_stream_dense(
                               init_scores,
                               groups);
   }
-  catch (...) {
+  catch (std::exception& ex) {
+    succeeded = false;
+    exceptionText = std::string(ex.what());
   }
 
   if (dataset_handle) {
     int result = LGBM_DatasetFree(dataset_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+
+  if (!succeeded) {
+    FAIL() << "Test Dense Stream failed with exception: " << exceptionText;
   }
 }
 
@@ -141,6 +150,9 @@ void test_stream_sparse(
   int has_weights = weights != nullptr;
   int has_init_scores = init_scores != nullptr;
   int has_queries = groups != nullptr;
+
+  bool succeeded = true;
+  std::string exceptionText("");
 
   try {
     int result = 0;
@@ -185,7 +197,7 @@ void test_stream_sparse(
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
         dataset = static_cast<Dataset*>(dataset_handle);
-        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 2);
+        dataset->InitStreaming(nrows, has_weights, has_init_scores, has_queries, nclasses, 2, -1);
         break;
       }
 
@@ -220,12 +232,18 @@ void test_stream_sparse(
                               init_scores,
                               groups);
   }
-  catch (...) {
+  catch (std::exception& ex) {
+    succeeded = false;
+    exceptionText = std::string(ex.what());
   }
 
   if (dataset_handle) {
     int result = LGBM_DatasetFree(dataset_handle);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+  }
+
+  if (!succeeded) {
+    FAIL() << "Test Sparse Stream failed with exception: " << exceptionText;
   }
 }
 
