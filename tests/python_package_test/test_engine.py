@@ -2887,6 +2887,25 @@ def test_node_level_subcol():
     assert ret != ret2
 
 
+def test_forced_split_feature_indices(tmp_path):
+    X, y = make_synthetic_regression()
+    forced_split = {
+        "feature": 0,
+        "threshold": 0.5,
+        "left": {"feature": X.shape[1], "threshold": 0.5},
+    }
+    tmp_split_file = tmp_path / "forced_split.json"
+    with open(tmp_split_file, "w") as f:
+        f.write(json.dumps(forced_split))
+    lgb_train = lgb.Dataset(X, y)
+    params = {
+        "objective": "regression",
+        "forcedsplits_filename": tmp_split_file
+    }
+    with pytest.raises(lgb.basic.LightGBMError, match="Forced splits file includes feature index"):
+        bst = lgb.train(params, lgb_train)
+
+
 def test_forced_bins():
     x = np.empty((100, 2))
     x[:, 0] = np.arange(0, 1, 0.01)

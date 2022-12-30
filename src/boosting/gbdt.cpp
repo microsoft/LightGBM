@@ -14,6 +14,7 @@
 
 #include <chrono>
 #include <ctime>
+#include <queue>
 #include <sstream>
 
 namespace LightGBM {
@@ -138,6 +139,9 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   // get parser config file content
   parser_config_str_ = train_data_->parser_config_str();
 
+  // check that forced splits does not use feature indices larger than dataset size
+  CheckForcedSplitFeatures();
+
   // if need bagging, create buffer
   data_sample_strategy_->ResetSampleConfig(config_.get(), true);
   ResetGradientBuffers();
@@ -152,6 +156,26 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
 
   if (config_->linear_tree) {
     linear_tree_ = true;
+  }
+}
+
+void GBDT::CheckForcedSplitFeatures() {
+  std::queue<Json> forced_split_nodes;
+  forced_split_nodes.push(forced_splits_json_);
+  while (!forced_split_nodes.empty()) {
+    Json node = forced_split_nodes.front();
+    forced_split_nodes.pop();
+    const int feature_index = node["feature"].int_value();
+    if (feature_index > max_feature_idx_) {
+      Log::Fatal("Forced splits file includes feature index %d, but maximum feature index in dataset is %d",
+        feature_index, max_feature_idx_);
+    }
+    if (node.object_items().count("left") > 0) {
+      forced_split_nodes.push(node["left"]);
+    }
+    if (node.object_items().count("right") > 0) {
+      forced_split_nodes.push(node["right"]);
+    }
   }
 }
 
