@@ -17,7 +17,7 @@ from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold,
 __all__ = [
     'cv',
     'CVBooster',
-    'train'
+    'train',
 ]
 
 

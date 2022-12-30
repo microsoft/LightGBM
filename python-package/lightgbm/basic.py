@@ -26,7 +26,7 @@ __all__ = [
     'LGBMDeprecationWarning',
     'LightGBMError',
     'register_logger',
-    'Sequence'
+    'Sequence',
 ]
 
 _DatasetHandle = ctypes.c_void_p

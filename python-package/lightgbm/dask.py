@@ -28,7 +28,7 @@ from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGB
 __all__ = [
     'DaskLGBMClassifier',
     'DaskLGBMRanker',
-    'DaskLGBMRegressor'
+    'DaskLGBMRegressor',
 ]
 
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
