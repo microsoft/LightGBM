@@ -16,6 +16,13 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      dt_DataTable, pd_DataFrame)
 from .engine import train
 
+__all__ = [
+    'LGBMClassifier',
+    'LGBMModel',
+    'LGBMRanker',
+    'LGBMRegressor',
+]
+
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
         [np.ndarray, np.ndarray],
