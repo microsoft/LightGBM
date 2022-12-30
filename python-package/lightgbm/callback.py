@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
 __all__ = [
-    'early_stopping'
+    'early_stopping',
     'log_evaluation',
     'record_evaluation',
     'reset_parameter',
