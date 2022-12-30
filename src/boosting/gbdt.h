@@ -59,7 +59,7 @@ class GBDT : public GBDTBase {
             const std::vector<const Metric*>& training_metrics) override;
 
   /*!
-  * \brief Traverse the tree of forced splits and check that all indices  are less than the number of features.
+  * \brief Traverse the tree of forced splits and check that all indices are less than the number of features.
   */
   void CheckForcedSplitFeatures();
 
