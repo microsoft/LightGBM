@@ -23,8 +23,8 @@ from .libpath import find_lib_path
 __all__ = [
     'Booster',
     'Dataset',
-    'LightGBMError',
     'LGBMDeprecationWarning',
+    'LightGBMError',
     'register_logger',
     'Sequence'
 ]
