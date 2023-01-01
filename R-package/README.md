@@ -352,22 +352,22 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 22.04.
 
-    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 22.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 22.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
-        -t ubuntu:20.04 \
+        -t ubuntu:22.04 \
         ./R-package/recreate-configure.sh
     ```
 

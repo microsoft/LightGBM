@@ -14,11 +14,6 @@ SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
 
 
 @lru_cache(maxsize=None)
-def load_boston(**kwargs):
-    return sklearn.datasets.load_boston(**kwargs)
-
-
-@lru_cache(maxsize=None)
 def load_breast_cancer(**kwargs):
     return sklearn.datasets.load_breast_cancer(**kwargs)
 
@@ -119,8 +114,9 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 
 
 @lru_cache(maxsize=None)
-def make_synthetic_regression(n_samples=100):
-    return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
+def make_synthetic_regression(n_samples=100, n_features=4, n_informative=2, random_state=42):
+    return sklearn.datasets.make_regression(n_samples=n_samples, n_features=n_features,
+                                            n_informative=n_informative, random_state=random_state)
 
 
 def dummy_obj(preds, train_data):

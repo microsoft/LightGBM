@@ -34,7 +34,7 @@ class CUDAMulticlassSoftmax: public CUDAObjectiveInterface<MulticlassSoftmax> {
  private:
   void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const;
 
-  void LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
+  const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const;
 
   // CUDA memory, held by this object
   CUDAVector<double> cuda_softmax_buffer_;
@@ -51,7 +51,7 @@ class CUDAMulticlassOVA: public CUDAObjectiveInterface<MulticlassOVA> {
 
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override;
 
-  void ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
+  const double* ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const override;
 
   double BoostFromScore(int class_id) const override {
     return cuda_binary_loss_[class_id]->BoostFromScore(0);
