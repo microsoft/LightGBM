@@ -122,6 +122,7 @@ except ImportError:
 
         pass
 
+    _LGBMBaseCrossValidator = None
     _LGBMLabelEncoder = None
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None

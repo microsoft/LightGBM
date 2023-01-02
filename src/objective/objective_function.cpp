@@ -19,7 +19,9 @@ namespace LightGBM {
 
 ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string& type, const Config& config) {
   #ifdef USE_CUDA_EXP
-  if (config.device_type == std::string("cuda_exp") && config.boosting == std::string("gbdt")) {
+  if (config.device_type == std::string("cuda_exp") &&
+      config.data_sample_strategy != std::string("goss") &&
+      config.boosting != std::string("rf")) {
     if (type == std::string("regression")) {
       return new CUDARegressionL2loss(config);
     } else if (type == std::string("regression_l1")) {

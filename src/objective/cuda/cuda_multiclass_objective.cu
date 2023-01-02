@@ -95,11 +95,12 @@ __global__ void ConvertOutputCUDAKernel_MulticlassSoftmax(
   }
 }
 
-void CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
+const double* CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
   const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
   ConvertOutputCUDAKernel_MulticlassSoftmax<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
     num_class_, num_data, input, cuda_softmax_buffer_.RawData(), output);
+  return output;
 }
 
 }  // namespace LightGBM

@@ -1,8 +1,30 @@
 # CRAN Submission History
 
+## v3.3.4 - Submission 1 - (December 15, 2022)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+Submitted with the following comment:
+
+> This submission contains {lightgbm} 3.3.3.
+
+> Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
+
+> This submission includes patches to address the following warnings observed on the fedora and debian CRAN checks.
+>
+> Compiled code should not call entry points which might terminate R nor write to stdout/stderr instead of to the console, nor use Fortran I/O nor system RNGs nor [v]sprintf.
+
+> Thank you very much for your time and consideration.
+
 ## v3.3.3 - Submission 1 - (October 10, 2022)
 
 ### CRAN response
+
+Accepted to CRAN
 
 ### Maintainer Notes
 

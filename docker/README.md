@@ -2,6 +2,8 @@
 
 This directory contains `Dockerfile`s to make it easy to build and run LightGBM via [Docker](https://www.docker.com/).
 
+These builds of LightGBM all train on the CPU. For GPU-enabled builds, see [the gpu/ directory](./gpu).
+
 ## Installing Docker
 
 Follow the general installation instructions [on the Docker site](https://docs.docker.com/install/):
@@ -12,113 +14,183 @@ Follow the general installation instructions [on the Docker site](https://docs.d
 
 ## Using CLI Version of LightGBM via Docker
 
-Build a Docker image with LightGBM CLI:
+Build an image with the LightGBM CLI.
 
-```
+```shell
 mkdir lightgbm-docker
 cd lightgbm-docker
 wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-cli
-docker build -t lightgbm-cli -f dockerfile-cli .
+docker build \
+    -t lightgbm-cli \
+    -f dockerfile-cli \
+    .
 ```
 
-where `lightgbm-cli` is the desired Docker image name.
+Once that completes, the built image can be used to run the CLI in a container.
+To try it out, run the following.
 
-Run the CLI from the container:
+```shell
+# configure the CLI
+cat << EOF > train.conf
+task = train
+objective = binary
+data = binary.train
+num_trees = 10
+output_model = LightGBM-CLI-model.txt
+EOF
 
-```
-docker run --rm -it \
---volume $HOME/lgbm.conf:/lgbm.conf \
---volume $HOME/model.txt:/model.txt \
---volume $HOME/tmp:/out \
-lightgbm-cli \
-config=lgbm.conf
-```
+# get training data
+curl -O https://raw.githubusercontent.com/Microsoft/LightGBM/master/examples/binary_classification/binary.train
 
-In the above example, three volumes are [mounted](https://docs.docker.com/engine/reference/commandline/run/#mount-volume--v---read-only)
-from the host machine to the Docker container:
-
-* `lgbm.conf` - task config, for example
-
-```
-app=multiclass
-num_class=3
-task=convert_model
-input_model=model.txt
-convert_model=/out/predict.cpp
-convert_model_language=cpp
+# train, and save model to a text file
+docker run \
+  --rm \
+  --volume "${PWD}":/opt/training \
+  --workdir /opt/training \
+  lightgbm-cli \
+  config=train.conf
 ```
 
-* `model.txt` - an input file for the task, could be training data or, in this case, a pre-trained model.
-* `out` - a directory to store the output of the task, notice that `convert_model` in the task config is using it.
+After this runs, a LightGBM model can be found at `LightGBM-CLI-model.txt`.
 
-`config=lgbm.conf` is a command-line argument passed to the `lightgbm` executable, more arguments can be passed if required.
+For more details on how to configure and use the LightGBM CLI, see https://lightgbm.readthedocs.io/en/latest/Quick-Start.html.
 
 ## Running the Python-package Сontainer
 
-Build the container, for Python users:
+Build an image with the LightGBM Python package installed.
 
-```
+```shell
 mkdir lightgbm-docker
 cd lightgbm-docker
 wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-python
-docker build -t lightgbm -f dockerfile-python .
+docker build \
+    -t lightgbm-python \
+    -f dockerfile-python \
+    .
 ```
 
-After build finished, run the container:
+Once that completes, the built image can be used to run LightGBM's Python package in a container.
+Run the following to produce a model using the Python package.
 
+```shell
+# get training data
+curl -O https://raw.githubusercontent.com/Microsoft/LightGBM/master/examples/binary_classification/binary.train
+
+# create training script
+cat << EOF > train.py
+import lightgbm as lgb
+import numpy as np
+params = {
+    "objective": "binary",
+    "num_trees": 10
+}
+
+bst = lgb.train(
+    train_set=lgb.Dataset("binary.train"),
+    params=params
+)
+bst.save_model("LightGBM-python-model.txt")
+EOF
+
+# run training in a container
+docker run \
+    --rm \
+    --volume "${PWD}":/opt/training \
+    --workdir /opt/training \
+    lightgbm-python \
+    python train.py
 ```
-docker run --rm -it lightgbm
+
+After this runs, a LightGBM model can be found at `LightGBM-python-model.txt`.
+
+Or run an interactive Python session in a container.
+
+```shell
+docker run \
+    --rm \
+    --volume "${PWD}":/opt/training \
+    --workdir /opt/training \
+    -it lightgbm-python \
+    python
 ```
 
 ## Running the R-package Сontainer
 
-Build the container based on the [`verse` Rocker image](https://www.rocker-project.org/images/), for R users:
+Build an image with the LightGBM R package installed.
 
-```
+```shell
 mkdir lightgbm-docker
 cd lightgbm-docker
 wget https://raw.githubusercontent.com/Microsoft/LightGBM/master/docker/dockerfile-r
-docker build -t lightgbm-r -f dockerfile-r .
+
+docker build \
+    -t lightgbm-r \
+    -f dockerfile-r \
+    .
 ```
 
-This will default to the latest version of R. If you want to try with an older `rocker` container to run a particular version of R, pass in a build arg with [a valid tag](https://hub.docker.com/r/rocker/verse/tags).
+Once that completes, the built image can be used to run LightGBM's R package in a container.
+Run the following to produce a model using the R package.
 
-For example, to test with R 3.5:
+```shell
+# get training data
+curl -O https://raw.githubusercontent.com/Microsoft/LightGBM/master/examples/binary_classification/binary.train
 
+# create training script
+cat << EOF > train.R
+library(lightgbm)
+params <- list(
+    objective = "binary"
+    , num_trees = 10L
+)
+
+bst <- lgb.train(
+    data = lgb.Dataset("binary.train"),
+    params = params
+)
+lgb.save(bst, "LightGBM-R-model.txt")
+EOF
+
+# run training in a container
+docker run \
+    --rm \
+    --volume "${PWD}":/opt/training \
+    --workdir /opt/training \
+    lightgbm-r \
+    Rscript train.R
 ```
+
+After this runs, a LightGBM model can be found at `LightGBM-R-model.txt`.
+
+Run the following to get an interactive R session in a container.
+
+```shell
+docker run \
+    --rm \
+    -it lightgbm-r \
+    R
+```
+
+To use [RStudio](https://www.rstudio.com/products/rstudio/), an interactive development environment, run the following.
+
+```shell
+docker run \
+    --rm \
+    --env PASSWORD="lightgbm" \
+    -p 8787:8787 \
+    lightgbm-r
+```
+
+Then navigate to `localhost:8787` in your local web browser, and log in with username `rstudio` and password `lightgbm`.
+
+To target a different R version, pass any [valid rocker/verse tag](https://hub.docker.com/r/rocker/verse/tags) to `docker build`.
+
+For example, to test LightGBM with R 3.5:
+
+```shell
 docker build \
     -t lightgbm-r-35 \
     -f dockerfile-r \
     --build-arg R_VERSION=3.5 \
     .
-```
-
-After the build is finished you have two options to run the container:
-
-1. Start [RStudio](https://www.rstudio.com/products/rstudio/), an interactive development environment, so that you can develop your analysis using LightGBM or simply try out the R package. You can open RStudio in your web browser.
-2. Start a regular R session.
-
-In both cases you can simply call
-
-```
-library("lightgbm")
-```
-
-to load the installed LightGBM R package.
-
-**RStudio**
-
-```
-docker run --rm -it -e PASSWORD=lightgbm -p 8787:8787 lightgbm-r
-```
-
-Open the browser at http://localhost:8787 and log in.
-See the [`rocker/rstudio`](https://hub.docker.com/r/rocker/rstudio) image documentation for further configuration options.
-
-**Regular R**
-
-If you just want a vanilla R process, change the executable of the container:
-
-```
-docker run --rm -it lightgbm-r R
 ```

@@ -398,7 +398,6 @@ class RegressionFairLoss: public RegressionL2loss {
 class RegressionPoissonLoss: public RegressionL2loss {
  public:
   explicit RegressionPoissonLoss(const Config& config): RegressionL2loss(config) {
-    Log::Warning("RegressionPoissonLoss is created again");
     max_delta_step_ = static_cast<double>(config.poisson_max_delta_step);
     if (sqrt_) {
       Log::Warning("Cannot use sqrt transform in %s Regression, will auto disable it", GetName());
