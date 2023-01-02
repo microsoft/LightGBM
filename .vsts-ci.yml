@@ -36,7 +36,6 @@ jobs:
     PRODUCES_ARTIFACTS: 'true'
   pool: sh-ubuntu
   container: linux-artifact-builder
-  timeoutInMinutes: 60
   strategy:
     matrix:
       regular:
@@ -90,7 +89,6 @@ jobs:
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
   container: ubuntu-latest
-  timeoutInMinutes: 60
   strategy:
     matrix:
       regular:
