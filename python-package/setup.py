@@ -96,7 +96,7 @@ def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') 
         with open(LOG_PATH, "ab") as log:
             subprocess.check_call(cmd, stderr=log, stdout=log)
         return 0
-    except Exception as err:
+    except Exception:
         if raise_error:
             raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1

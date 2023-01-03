@@ -446,7 +446,9 @@ def test_clone_and_property():
 
     gbm_clone = clone(gbm)
     assert isinstance(gbm.booster_, lgb.Booster)
+    assert isinstance(gbm_clone.booster_, lgb.Booster)
     assert isinstance(gbm.feature_importances_, np.ndarray)
+    assert isinstance(gbm_clone.feature_importances_, np.ndarray)
 
     X, y = load_digits(n_class=2, return_X_y=True)
     clf = lgb.LGBMClassifier(n_estimators=10, verbose=-1)

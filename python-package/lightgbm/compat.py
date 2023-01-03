@@ -36,14 +36,14 @@ except ImportError:
 
 """matplotlib"""
 try:
-    import matplotlib
+    import matplotlib  # noqa: F401
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 """graphviz"""
 try:
-    import graphviz
+    import graphviz  # noqa: F401
     GRAPHVIZ_INSTALLED = True
 except ImportError:
     GRAPHVIZ_INSTALLED = False
