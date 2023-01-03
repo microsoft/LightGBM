@@ -159,7 +159,7 @@ class NDCGMetric:public Metric {
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of NDCG */
-  std::vector<data_size_t> eval_at_;
+  std::vector<int> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
   std::vector<std::vector<double>> inverse_max_dcgs_;
 };

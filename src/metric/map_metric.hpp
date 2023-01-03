@@ -156,7 +156,7 @@ class MapMetric:public Metric {
   /*! \brief Sum weights of queries */
   double sum_query_weights_;
   /*! \brief Evaluate position of Nmap */
-  std::vector<data_size_t> eval_at_;
+  std::vector<int> eval_at_;
   std::vector<std::string> name_;
   std::vector<data_size_t> npos_per_query_;
 };

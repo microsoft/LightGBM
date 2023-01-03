@@ -83,7 +83,7 @@ class DCGCalculator {
   * \param num_data Number of data
   * \param out Output result
   */
-  static void CalDCG(const std::vector<data_size_t>& ks,
+  static void CalDCG(const std::vector<int>& ks,
     const label_t* label, const double* score,
     data_size_t num_data, std::vector<double>* out);
 
@@ -119,7 +119,7 @@ class DCGCalculator {
   * \param num_data Number of data
   * \param out Output result
   */
-  static void CalMaxDCG(const std::vector<data_size_t>& ks,
+  static void CalMaxDCG(const std::vector<int>& ks,
     const label_t* label, data_size_t num_data, std::vector<double>* out);
 
   /*!
