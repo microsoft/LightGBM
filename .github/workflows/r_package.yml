@@ -278,10 +278,8 @@ jobs:
               libclang-15-dev \
               libclang-cpp15-dev \
               libunwind-15-dev
-          #
-          ln -s \
-              /usr/lib/llvm-15/bin/clang \
-              /usr/bin/clang
+          # overwrite everything in /usr/bin with the new v15 versions
+          cp /usr/lib/llvm-15/bin/* /usr/bin/
       - name: Install packages and run tests
         shell: bash
         run: |
