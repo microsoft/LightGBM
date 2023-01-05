@@ -240,6 +240,46 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+      - name: update to clang 15
+        shell: bash
+        run: |
+          # remove clang stuff that comes installed in the image
+          apt-get autoremove -y --purge \
+              clang-* \
+              libclang-* \
+              libunwind-* \
+              llvm-*
+          #
+          # replace it all with clang-15
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+              gnupg \
+              lsb-release \
+              software-properties-common \
+              wget
+          #
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          #
+          add-apt-repository "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-15 main"
+          apt-get install -y --no-install-recommends \
+              clang-15 \
+              clangd-15 \
+              clang-format-15 \
+              clang-tidy-15 \
+              clang-tools-15 \
+              lldb-15 \
+              lld-15 \
+              llvm-15-dev \
+              llvm-15-tools \
+              libomp-15-dev \
+              libc++-15-dev \
+              libc++abi-15-dev \
+              libclang-common-15-dev \
+              libclang-15-dev \
+              libclang-cpp15-dev \
+              libunwind-15-dev
+          # overwrite everything in /usr/bin with the new v15 versions
+          cp --remove-destination /usr/lib/llvm-15/bin/* /usr/bin/
       - name: Install packages and run tests
         shell: bash
         run: |
