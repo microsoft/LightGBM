@@ -121,7 +121,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>((p) * weights_[i]);
+            gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
           hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
         }
@@ -165,7 +165,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
- private:
+ protected:
   double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -266,7 +266,7 @@ class MulticlassOVA: public ObjectiveFunction {
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */

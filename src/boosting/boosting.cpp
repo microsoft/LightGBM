@@ -6,7 +6,6 @@
 
 #include "dart.hpp"
 #include "gbdt.h"
-#include "goss.hpp"
 #include "rf.hpp"
 #include "mvs.hpp"
 
@@ -40,11 +39,9 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
     } else if (type == std::string("dart")) {
       return new DART();
     } else if (type == std::string("goss")) {
-      return new GOSS();
+      return new GBDT();
     } else if (type == std::string("rf")) {
       return new RF();
-    } else if (type == std::string("mvs")) {
-      return new MVS();
     } else {
       return nullptr;
     }
@@ -56,11 +53,9 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else if (type == std::string("dart")) {
         ret.reset(new DART());
       } else if (type == std::string("goss")) {
-        ret.reset(new GOSS());
+        ret.reset(new GBDT());
       } else if (type == std::string("rf")) {
         return new RF();
-      } else if (type == std::string("mvs")) {
-        return new MVS();
       } else {
         Log::Fatal("Unknown boosting type %s", type.c_str());
       }

@@ -278,6 +278,10 @@ void SerialTreeLearner::BeforeTrain() {
   }
 
   larger_leaf_splits_->Init();
+
+  if (cegb_ != nullptr) {
+    cegb_->BeforeTrain();
+  }
 }
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
@@ -715,7 +719,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* /*train_score*/) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;

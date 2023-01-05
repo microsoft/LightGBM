@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
     - master
+    - release/*
 
 env:
   # hack to get around this:
@@ -32,25 +33,25 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-package
             compiler: clang
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -60,7 +61,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: gcc
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           - os: macOS-latest
             task: r-package
@@ -70,7 +71,7 @@ jobs:
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           - os: windows-latest
             task: r-package
@@ -82,7 +83,7 @@ jobs:
             task: r-package
             compiler: MINGW
             toolchain: MSYS
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           # Visual Studio 2019
           - os: windows-2019
@@ -96,7 +97,7 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.1
+            r_version: 4.2
             build_type: cmake
           ###############
           # CRAN builds #
@@ -104,26 +105,32 @@ jobs:
           - os: windows-latest
             task: r-package
             compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.1
+            toolchain: MINGW
+            r_version: 3.6
             build_type: cran
-          - os: ubuntu-latest
+          - os: windows-latest
+            task: r-package
+            compiler: MINGW
+            toolchain: MSYS
+            r_version: 4.2
+            build_type: cran
+          - os: ubuntu-22.04
             task: r-package
             compiler: gcc
-            r_version: 4.1
+            r_version: 4.2
             build_type: cran
           - os: macOS-latest
             task: r-package
             compiler: clang
-            r_version: 4.1
+            r_version: 4.2
             build_type: cran
           ################
           # Other checks #
           ################
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             task: r-rchk
             compiler: gcc
-            r_version: 4.1
+            r_version: 4.2
             build_type: cran
     steps:
       - name: Prevent conversion of line endings on Windows
@@ -131,14 +138,20 @@ jobs:
         shell: pwsh
         run: git config --global core.autocrlf false
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v1
+        uses: r-lib/actions/setup-pandoc@v2
+      - name: install tinytex
+        if: startsWith(matrix.os, 'windows')
+        uses: r-lib/actions/setup-tinytex@v2
+        env:
+          CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
+          TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-22.04'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
@@ -146,7 +159,7 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
@@ -159,6 +172,7 @@ jobs:
         shell: pwsh -command ". {0}"
         run: |
           $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
+          $env:LGB_VER = (Get-Content -TotalCount 1 $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim().replace('rc', '-')
           $env:TOOLCHAIN = "${{ matrix.toolchain }}"
           $env:R_VERSION = "${{ matrix.r_version }}"
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
@@ -184,14 +198,14 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
       - name: Run tests with sanitizers
@@ -217,7 +231,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
@@ -225,17 +239,19 @@ jobs:
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
               echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
               exit -1
           fi
-  all-successful:
-    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+  all-r-package-jobs-successful:
+    if: always()
     runs-on: ubuntu-latest
     needs: [test, test-r-sanitizers, test-r-debian-clang]
     steps:
     - name: Note that all tests succeeded
-      run: echo "🎉"
+      uses: re-actors/alls-green@v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}

@@ -47,8 +47,8 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
     // store only upper triangular half of matrix as an array, in row-major order
     // this requires (max_num_feat + 1) * (max_num_feat + 2) / 2 entries (including the constant terms of the regression)
     // we add another 8 to ensure cache lines are not shared among processors
-    XTHX_.push_back(std::vector<float>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
-    XTg_.push_back(std::vector<float>(max_num_feat + 9, 0.0));
+    XTHX_.push_back(std::vector<double>((max_num_feat + 1) * (max_num_feat + 2) / 2 + 8, 0));
+    XTg_.push_back(std::vector<double>(max_num_feat + 9, 0.0));
   }
   XTHX_by_thread_.clear();
   XTg_by_thread_.clear();
@@ -281,7 +281,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       float g = static_cast<float>(gradients[i]);
       int j = 0;
       for (int feat1 = 0; feat1 < num_feat + 1; ++feat1) {
-        float f1_val = curr_row[feat1];
+        double f1_val = static_cast<double>(curr_row[feat1]);
         XTg_by_thread_[tid][leaf_num][feat1] += f1_val * g;
         f1_val *= h;
         for (int feat2 = feat1; feat2 < num_feat + 1; ++feat2) {

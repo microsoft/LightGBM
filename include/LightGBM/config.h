@@ -78,7 +78,17 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
+  /*!
+  * \brief Sort aliases by length and then alphabetically
+  * \param x Alias 1
+  * \param y Alias 2
+  * \return true if x has higher priority than y
+  */
+  inline static bool SortAlias(const std::string& x, const std::string& y);
+
+  static void KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
+  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
+  static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #ifndef __NVCC__
@@ -143,14 +153,21 @@ struct Config {
   // [doc-only]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
+  // options = gbdt, rf, dart
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
-  // desc = ``goss``, Gradient-based One-Side Sampling
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   // desc = ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
   std::string boosting = "gbdt";
+
+  // [doc-only]
+  // type = enum
+  // options = bagging, goss
+  // desc = ``bagging``, Randomly Bagging Sampling
+  // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
+  // desc = ``goss``, Gradient-based One-Side Sampling
+  std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
@@ -254,7 +271,7 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
   // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
-  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` sample strategy to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
@@ -1083,9 +1100,11 @@ struct Config {
   bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_map<std::string, std::vector<std::string>>& parameter2aliases();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::unordered_map<std::string, std::string>& ParameterTypes();
   static const std::string DumpAliases();
 
  private:
@@ -1151,6 +1170,10 @@ inline bool Config::GetBool(
   return false;
 }
 
+inline bool Config::SortAlias(const std::string& x, const std::string& y) {
+  return x.size() < y.size() || (x.size() == y.size() && x < y);
+}
+
 struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
@@ -1159,9 +1182,7 @@ struct ParameterAlias {
       if (alias != Config::alias_table().end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
         if (alias_set != tmp_map.end()) {  // alias already set
-                                           // set priority by length & alphabetically to ensure reproducible behavior
-          if (alias_set->second.size() < pair.first.size() ||
-            (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
+          if (Config::SortAlias(alias_set->second, pair.first)) {
             Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
                          alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
                          pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());

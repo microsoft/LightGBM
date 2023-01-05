@@ -255,7 +255,7 @@ class LambdarankNDCG : public RankingObjective {
 
   const char* GetName() const override { return "lambdarank"; }
 
- private:
+ protected:
   /*! \brief Sigmoid param */
   double sigmoid_;
   /*! \brief Normalize the lambdas or not */
@@ -358,7 +358,7 @@ class RankXENDCG : public RankingObjective {
 
   const char* GetName() const override { return "rank_xendcg"; }
 
- private:
+ protected:
   mutable std::vector<Random> rands_;
 };
 

@@ -1,6 +1,8 @@
 #' @name lgb.train
 #' @title Main training logic for LightGBM
-#' @description Logic to train with LightGBM
+#' @description Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+#'              this function is focused on performance (e.g. speed, memory efficiency). It is also
+#'              less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
@@ -210,7 +212,7 @@ lgb.train <- function(params = list(),
   }
 
   # Add printing log callback
-  if (verbose > 0L && eval_freq > 0L) {
+  if (params[["verbosity"]] > 0L && eval_freq > 0L) {
     callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
@@ -253,7 +255,7 @@ lgb.train <- function(params = list(),
       , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
-        , verbose = verbose
+        , verbose = params[["verbosity"]] > 0L
       )
     )
   }

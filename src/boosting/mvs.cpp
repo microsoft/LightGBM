@@ -11,8 +11,6 @@ namespace LightGBM {
 
 using ConstTreeIterator = std::vector<std::unique_ptr<Tree>>::const_iterator;
 
-MVS::MVS() : GBDT() {}
-
 static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin,
                                             ConstTreeIterator end,
                                             const data_size_t num_leaves) {
@@ -31,7 +29,7 @@ static double ComputeLeavesMeanSquaredValue(ConstTreeIterator begin,
   return sum_values / num_leaves;
 }
 
-static double ComputeMeanGradValues(score_t *gradients, score_t *hessians,
+static double ComputeMeanGradValues(const score_t *gradients, const score_t *hessians,
                                     data_size_t size,
                                     data_size_t num_tree_per_iteration) {
   double sum = 0.0;
@@ -48,32 +46,32 @@ static double ComputeMeanGradValues(score_t *gradients, score_t *hessians,
   return sum / size;
 }
 
-double MVS::GetLambda() {
+double MVS::GetLambda(int iter, const score_t* gradients, const score_t* hessians, const std::vector<std::unique_ptr<Tree>>& models) {
   if (!mvs_adaptive_) {
     return mvs_lambda_;
   }
-  if (this->iter_ > 0) {
-    return ComputeLeavesMeanSquaredValue(models_.cend() - num_tree_per_iteration_,
-                                         models_.cend(), config_->num_leaves);
+  if (iter > 0) {
+    return ComputeLeavesMeanSquaredValue(models.cend() - num_tree_per_iteration_,
+                                         models.cend(), config_->num_leaves);
   }
-  return ComputeMeanGradValues(gradients_.data(), hessians_.data(), num_data_,
+  return ComputeMeanGradValues(gradients, hessians, num_data_,
                                num_tree_per_iteration_);
 }
 
-void MVS::Bagging(int iter) {
+void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians, const std::vector<std::unique_ptr<Tree>>& models) {
   if (iter % config_->bagging_freq != 0 && !need_re_bagging_) {
     return;
   }
   need_re_bagging_ = false;
   bag_data_cnt_ = num_data_;
-  mvs_lambda_ = GetLambda();
+  mvs_lambda_ = GetLambda(iter, gradients, hessians, models);
 
-  //#pragma omp parallel for schedule(static, 1024)
+  #pragma omp parallel for schedule(static, 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     tmp_derivatives_[i] = 0.0f;
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + i;
-      tmp_derivatives_[i] += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
+      tmp_derivatives_[i] += gradients[idx] * gradients[idx] + mvs_lambda_ * hessians[idx] * hessians[idx];
     }
     tmp_derivatives_[i] = std::sqrt(tmp_derivatives_[i]);
   }
@@ -86,26 +84,26 @@ void MVS::Bagging(int iter) {
       num_data_,
       [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t *left,
           data_size_t *) {
-        data_size_t left_count = BaggingHelper(cur_start, cur_cnt, left);
+        data_size_t left_count = BaggingHelper(cur_start, cur_cnt, gradients, hessians, left);
         return left_count;
       },
       bag_data_indices_.data());
 
   bag_data_cnt_ = left_cnt;
   if (!is_use_subset_) {
-    tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+    tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
   } else {
     tmp_subset_->ReSize(bag_data_cnt_);
     tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                             bag_data_cnt_, false);
-    tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+    tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                   bag_data_cnt_);
   }
   threshold_ = 0.0;
   Log::Debug("MVS Sample size %d %d", left_cnt, static_cast<data_size_t>(config_->bagging_fraction * num_data_));
 }
 
-data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *buffer) {
+data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, score_t* gradients, score_t* hessians, data_size_t *buffer) {
   if (cnt <= 0) {
     return 0;
   }
@@ -121,7 +119,7 @@ data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *
     double derivative = 0.0;
     for (data_size_t j = 0; j < num_tree_per_iteration_; ++j) {
       size_t idx = static_cast<size_t>(j) * num_data_ + position;
-      derivative += gradients_[idx] * gradients_[idx] + mvs_lambda_ * hessians_[idx] * hessians_[idx];
+      derivative += gradients[idx] * gradients[idx] + mvs_lambda_ * hessians[idx] * hessians[idx];
     }
     derivative = std::sqrt(derivative);
 
@@ -135,8 +133,8 @@ data_size_t MVS::BaggingHelper(data_size_t start, data_size_t cnt, data_size_t *
         buffer[left_cnt++] = position;
         for (data_size_t tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
           size_t idx = static_cast<size_t>(num_data_) * tree_id + position;
-          gradients_[idx] /= proba_threshold;
-          hessians_[idx] /= proba_threshold;
+          gradients[idx] /= proba_threshold;
+          hessians[idx] /= proba_threshold;
         }
       } else {
         buffer[--right_pos] = position;
@@ -157,12 +155,25 @@ double MVS::GetThreshold(data_size_t begin, data_size_t cnt) {
   return threshold;
 }
 
-void MVS::ResetMVS() {
+void MVS::ResetSampleConfig(const Config* config, bool is_change_dataset) {
+  config_ = config;
+  need_resize_gradients_ = false;
+  if (objective_function_ == nullptr) {
+    // resize gradient vectors to copy the customized gradients for goss
+    need_resize_gradients_ = true;
+  }
+  balanced_bagging_ = false;
   CHECK(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0);
   CHECK(config_->mvs_lambda >= 0.0f);
-  CHECK(!balanced_bagging_);
   bag_data_indices_.resize(num_data_);
+  #ifdef USE_CUDA_EXP
+  if (config_->device_type == std::string("cuda_exp")) {
+    cuda_bag_data_indices_.Resize(num_data_);
+  }
+  #endif  // USE_CUDA_EXP
   tmp_derivatives_.resize(num_data_);
+  is_use_subset_ = false;
+  bag_data_cnt_ = num_data_;
   Log::Info("Using MVS");
 }
 

@@ -216,6 +216,7 @@ int CUDATree::Split(const int leaf_index,
            const MissingType missing_type,
            const CUDASplitInfo* cuda_split_info) {
   LaunchSplitKernel(leaf_index, real_feature_index, real_threshold, missing_type, cuda_split_info);
+  RecordBranchFeatures(leaf_index, num_leaves_, real_feature_index);
   ++num_leaves_;
   return num_leaves_ - 1;
 }
@@ -235,7 +236,32 @@ int CUDATree::SplitCategorical(const int leaf_index,
   cuda_bitset_inner_.PushBack(cuda_bitset_inner, cuda_bitset_inner_len);
   ++num_leaves_;
   ++num_cat_;
+  RecordBranchFeatures(leaf_index, num_leaves_, real_feature_index);
   return num_leaves_ - 1;
+}
+
+void CUDATree::RecordBranchFeatures(const int left_leaf_index,
+                                    const int right_leaf_index,
+                                    const int real_feature_index) {
+  if (track_branch_features_) {
+    branch_features_[right_leaf_index] = branch_features_[left_leaf_index];
+    branch_features_[right_leaf_index].push_back(real_feature_index);
+    branch_features_[left_leaf_index].push_back(real_feature_index);
+  }
+}
+
+void CUDATree::AddPredictionToScore(const Dataset* data,
+                                    data_size_t num_data,
+                                    double* score) const {
+  LaunchAddPredictionToScoreKernel(data, nullptr, num_data, score);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+}
+
+void CUDATree::AddPredictionToScore(const Dataset* data,
+                                    const data_size_t* used_data_indices,
+                                    data_size_t num_data, double* score) const {
+  LaunchAddPredictionToScoreKernel(data, used_data_indices, num_data, score);
+  SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
 inline void CUDATree::Shrinkage(double rate) {
@@ -304,6 +330,10 @@ void CUDATree::SyncLeafOutputFromCUDAToHost() {
   CopyFromCUDADeviceToHost<double>(leaf_value_.data(), cuda_leaf_value_, leaf_value_.size(), __FILE__, __LINE__);
 }
 
+void CUDATree::AsConstantTree(double val) {
+  Tree::AsConstantTree(val);
+  CopyFromHostToCUDADevice<double>(cuda_leaf_value_, &val, 1, __FILE__, __LINE__);
+}
 
 }  // namespace LightGBM
 
