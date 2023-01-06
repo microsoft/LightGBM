@@ -33,6 +33,8 @@ class CUDABinaryLogloss : public CUDAObjectiveInterface<BinaryLogloss> {
 
   void Init(const Metadata& metadata, data_size_t num_data) override;
 
+  bool NeedConvertOutputCUDA() const override { return true; }
+
  private:
   void LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const override;
 
