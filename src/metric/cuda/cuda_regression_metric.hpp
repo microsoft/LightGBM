@@ -66,7 +66,7 @@ class CUDAQuantileMetric : public CUDARegressionMetricInterface<QuantileMetric, 
       return alpha * delta;
     }
   }
-  
+
   double GetParamFromConfig() const override {
     return alpha_;
   }
