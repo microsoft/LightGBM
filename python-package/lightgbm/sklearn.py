@@ -382,7 +382,6 @@ class LGBMModel(_LGBMModelBase):
         boosting_type : str, optional (default='gbdt')
             'gbdt', traditional Gradient Boosting Decision Tree.
             'dart', Dropouts meet Multiple Additive Regression Trees.
-            'goss', Gradient-based One-Side Sampling.
             'rf', Random Forest.
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.

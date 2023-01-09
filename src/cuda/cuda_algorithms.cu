@@ -55,27 +55,16 @@ __global__ void ShufflePrefixSumGlobalAddBase(size_t len, const T* block_prefix_
 }
 
 template <typename T>
-void ShufflePrefixSumGlobalInner(T* values, size_t len, T* block_prefix_sum_buffer) {
+void ShufflePrefixSumGlobal(T* values, size_t len, T* block_prefix_sum_buffer) {
   const int num_blocks = (static_cast<int>(len) + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   ShufflePrefixSumGlobalKernel<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, len, block_prefix_sum_buffer);
   ShufflePrefixSumGlobalReduceBlockKernel<<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_prefix_sum_buffer, num_blocks);
   ShufflePrefixSumGlobalAddBase<<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(len, block_prefix_sum_buffer, values);
 }
 
-template <>
-void ShufflePrefixSumGlobal(uint16_t* values, size_t len, uint16_t* block_prefix_sum_buffer) {
-  ShufflePrefixSumGlobalInner<uint16_t>(values, len, block_prefix_sum_buffer);
-}
-
-template <>
-void ShufflePrefixSumGlobal(uint32_t* values, size_t len, uint32_t* block_prefix_sum_buffer) {
-  ShufflePrefixSumGlobalInner<uint32_t>(values, len, block_prefix_sum_buffer);
-}
-
-template <>
-void ShufflePrefixSumGlobal(uint64_t* values, size_t len, uint64_t* block_prefix_sum_buffer) {
-  ShufflePrefixSumGlobalInner<uint64_t>(values, len, block_prefix_sum_buffer);
-}
+template void ShufflePrefixSumGlobal<uint16_t>(uint16_t* values, size_t len, uint16_t* block_prefix_sum_buffer);
+template void ShufflePrefixSumGlobal<uint32_t>(uint32_t* values, size_t len, uint32_t* block_prefix_sum_buffer);
+template void ShufflePrefixSumGlobal<uint64_t>(uint64_t* values, size_t len, uint64_t* block_prefix_sum_buffer);
 
 __global__ void BitonicArgSortItemsGlobalKernel(const double* scores,
   const int num_queries,
@@ -130,17 +119,52 @@ __global__ void ShuffleReduceSumGlobalKernel(const VAL_T* values, const data_siz
 }
 
 template <typename VAL_T, typename REDUCE_T>
-void ShuffleReduceSumGlobalInner(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+void ShuffleReduceSumGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
   const data_size_t num_value = static_cast<data_size_t>(n);
   const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   ShuffleReduceSumGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
   BlockReduceSum<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
 }
 
-template <>
-void ShuffleReduceSumGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer) {
-  ShuffleReduceSumGlobalInner(values, n, block_buffer);
+template void ShuffleReduceSumGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer);
+template void ShuffleReduceSumGlobal<double, double>(const double* values, size_t n, double* block_buffer);
+
+template <typename VAL_T, typename REDUCE_T>
+__global__ void ShuffleReduceMinGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
+  __shared__ REDUCE_T shared_buffer[32];
+  const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
+  const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
+  const REDUCE_T reduce_value = ShuffleReduceMin<REDUCE_T>(value, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[blockIdx.x] = reduce_value;
+  }
 }
+
+template <typename T>
+__global__ void ShuffleBlockReduceMin(T* block_buffer, const data_size_t num_blocks) {
+  __shared__ T shared_buffer[32];
+  T thread_min = 0;
+  for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
+    const T value = block_buffer[block_index];
+    if (value < thread_min) {
+      thread_min = value;
+    }
+  }
+  thread_min = ShuffleReduceMin<T>(thread_min, shared_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    block_buffer[0] = thread_min;
+  }
+}
+
+template <typename VAL_T, typename REDUCE_T>
+void ShuffleReduceMinGlobal(const VAL_T* values, size_t n, REDUCE_T* block_buffer) {
+  const data_size_t num_value = static_cast<data_size_t>(n);
+  const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
+  ShuffleReduceMinGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values, num_value, block_buffer);
+  ShuffleBlockReduceMin<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
+}
+
+template void ShuffleReduceMinGlobal<label_t, double>(const label_t* values, size_t n, double* block_buffer);
 
 template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceDotProdGlobalKernel(const VAL_T* values1, const VAL_T* values2, const data_size_t num_value, REDUCE_T* block_buffer) {
@@ -155,17 +179,14 @@ __global__ void ShuffleReduceDotProdGlobalKernel(const VAL_T* values1, const VAL
 }
 
 template <typename VAL_T, typename REDUCE_T>
-void ShuffleReduceDotProdGlobalInner(const VAL_T* values1, const VAL_T* values2, size_t n, REDUCE_T* block_buffer) {
+void ShuffleReduceDotProdGlobal(const VAL_T* values1, const VAL_T* values2, size_t n, REDUCE_T* block_buffer) {
   const data_size_t num_value = static_cast<data_size_t>(n);
   const data_size_t num_blocks = (num_value + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   ShuffleReduceDotProdGlobalKernel<VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(values1, values2, num_value, block_buffer);
   BlockReduceSum<REDUCE_T><<<1, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(block_buffer, num_blocks);
 }
 
-template <>
-void ShuffleReduceDotProdGlobal<label_t, double>(const label_t* values1, const label_t* values2, size_t n, double* block_buffer) {
-  ShuffleReduceDotProdGlobalInner(values1, values2, n, block_buffer);
-}
+template void ShuffleReduceDotProdGlobal<label_t, double>(const label_t* values1, const label_t* values2, size_t n, double* block_buffer);
 
 template <typename INDEX_T, typename VAL_T, typename REDUCE_T>
 __global__ void GlobalInclusiveArgPrefixSumKernel(
@@ -209,7 +230,7 @@ __global__ void GlobalInclusivePrefixSumAddBlockBaseKernel(const T* block_buffer
 }
 
 template <typename VAL_T, typename REDUCE_T, typename INDEX_T>
-void GlobalInclusiveArgPrefixSumInner(const INDEX_T* sorted_indices, const VAL_T* in_values, REDUCE_T* out_values, REDUCE_T* block_buffer, size_t n) {
+void GlobalInclusiveArgPrefixSum(const INDEX_T* sorted_indices, const VAL_T* in_values, REDUCE_T* out_values, REDUCE_T* block_buffer, size_t n) {
   const data_size_t num_data = static_cast<data_size_t>(n);
   const data_size_t num_blocks = (num_data + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1) / GLOBAL_PREFIX_SUM_BLOCK_SIZE;
   GlobalInclusiveArgPrefixSumKernel<INDEX_T, VAL_T, REDUCE_T><<<num_blocks, GLOBAL_PREFIX_SUM_BLOCK_SIZE>>>(
@@ -223,10 +244,7 @@ void GlobalInclusiveArgPrefixSumInner(const INDEX_T* sorted_indices, const VAL_T
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
-template <>
-void GlobalInclusiveArgPrefixSum<label_t, double, data_size_t>(const data_size_t* sorted_indices, const label_t* in_values, double* out_values, double* block_buffer, size_t n) {
-  GlobalInclusiveArgPrefixSumInner<label_t, double, data_size_t>(sorted_indices, in_values, out_values, block_buffer, n);
-}
+template void GlobalInclusiveArgPrefixSum<label_t, double, data_size_t>(const data_size_t* sorted_indices, const label_t* in_values, double* out_values, double* block_buffer, size_t n);
 
 template <typename VAL_T, typename INDEX_T, bool ASCENDING>
 __global__ void BitonicArgSortGlobalKernel(const VAL_T* values, INDEX_T* indices, const int num_total_data) {
@@ -424,7 +442,7 @@ void BitonicArgSortGlobal<data_size_t, int, true>(const data_size_t* values, int
 }
 
 template <typename VAL_T, typename INDEX_T, typename WEIGHT_T, typename REDUCE_WEIGHT_T, bool ASCENDING, bool USE_WEIGHT>
-__device__ VAL_T PercentileDeviceInner(const VAL_T* values,
+__device__ VAL_T PercentileDevice(const VAL_T* values,
                                        const WEIGHT_T* weights,
                                        INDEX_T* indices,
                                        REDUCE_WEIGHT_T* weights_prefix_sum,
@@ -472,27 +490,21 @@ __device__ VAL_T PercentileDeviceInner(const VAL_T* values,
   }
 }
 
-template <>
-__device__ double PercentileDevice<double, data_size_t, label_t, double, false, true>(
+template __device__ double PercentileDevice<double, data_size_t, label_t, double, false, true>(
                                   const double* values,
                                   const label_t* weights,
                                   data_size_t* indices,
                                   double* weights_prefix_sum,
                                   const double alpha,
-                                  const data_size_t len) {
-  return PercentileDeviceInner<double, data_size_t, label_t, double, false, true>(values, weights, indices, weights_prefix_sum, alpha, len);
-}
+                                  const data_size_t len);
 
-template <>
-__device__ double PercentileDevice<double, data_size_t, label_t, double, false, false>(
+template __device__ double PercentileDevice<double, data_size_t, label_t, double, false, false>(
                                   const double* values,
                                   const label_t* weights,
                                   data_size_t* indices,
                                   double* weights_prefix_sum,
                                   const double alpha,
-                                  const data_size_t len) {
-  return PercentileDeviceInner<double, data_size_t, label_t, double, false, false>(values, weights, indices, weights_prefix_sum, alpha, len);
-}
+                                  const data_size_t len);
 
 
 }  // namespace LightGBM

@@ -228,7 +228,7 @@ class Tree {
     shrinkage_ = 1.0f;
   }
 
-  inline void AsConstantTree(double val) {
+  virtual inline void AsConstantTree(double val) {
     num_leaves_ = 1;
     shrinkage_ = 1.0f;
     leaf_value_[0] = val;

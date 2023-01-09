@@ -21,8 +21,8 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
+from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
+                    sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
 task_to_model_factory = {
@@ -112,12 +112,12 @@ def test_binary():
 
 
 def test_regression():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
+    assert ret < 174
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
@@ -226,12 +226,12 @@ def test_objective_aliases(custom_objective):
 
 
 def test_regression_with_custom_objective():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1, objective=objective_ls)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7.0
+    assert ret < 174
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
@@ -249,13 +249,12 @@ def test_binary_classification_with_custom_objective():
 
 
 def test_dart():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
     gbm.fit(X_train, y_train)
     score = gbm.score(X_test, y_test)
-    assert score >= 0.8
-    assert score <= 1.
+    assert 0.8 <= score <= 1.0
 
 
 def test_stacking_classifier():
@@ -280,7 +279,9 @@ def test_stacking_classifier():
 
 
 def test_stacking_regressor():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression(n_samples=200)
+    n_features = X.shape[1]
+    n_input_models = 2
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
                   ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
@@ -291,11 +292,11 @@ def test_stacking_regressor():
     score = reg.score(X_test, y_test)
     assert score >= 0.2
     assert score <= 1.
-    assert reg.n_features_in_ == 13  # number of input features
-    assert len(reg.named_estimators_['gbm1'].feature_importances_) == 13
+    assert reg.n_features_in_ == n_features  # number of input features
+    assert len(reg.named_estimators_['gbm1'].feature_importances_) == n_features
     assert reg.named_estimators_['gbm1'].n_features_in_ == reg.named_estimators_['gbm2'].n_features_in_
-    assert reg.final_estimator_.n_features_in_ == 15  # number of concatenated features
-    assert len(reg.final_estimator_.feature_importances_) == 15
+    assert reg.final_estimator_.n_features_in_ == n_features + n_input_models  # number of concatenated features
+    assert len(reg.final_estimator_.feature_importances_) == n_features + n_input_models
 
 
 def test_grid_search():
@@ -765,7 +766,8 @@ def test_evaluate_train_set():
 
 
 def test_metrics():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
+    y = abs(y)
     params = {'n_estimators': 2, 'verbose': -1}
     params_fit = {'X': X, 'y': y, 'eval_set': (X, y)}
 
@@ -1102,7 +1104,7 @@ def test_first_metric_only():
                 else:
                     assert gbm.n_estimators == gbm.best_iteration_
 
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression(n_samples=300)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
     params = {'n_estimators': 30,
@@ -1114,11 +1116,11 @@ def test_first_metric_only():
     params_fit = {'X': X_train,
                   'y': y_train}
 
-    iter_valid1_l1 = 3
-    iter_valid1_l2 = 18
-    iter_valid2_l1 = 11
-    iter_valid2_l2 = 7
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 4
+    iter_valid1_l1 = 4
+    iter_valid1_l2 = 4
+    iter_valid2_l1 = 2
+    iter_valid2_l2 = 2
+    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min = min([iter_min_l1, iter_min_l2])
