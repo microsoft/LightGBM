@@ -139,7 +139,7 @@ conda install -q -y -n $CONDA_ENV \
     pandas \
     psutil \
     pytest \
-    "python=$PYTHON_VERSION[build=*cpython]" \
+    ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \
     scikit-learn \
     scipy || exit -1
