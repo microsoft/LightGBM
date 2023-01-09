@@ -38,6 +38,7 @@ CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
+    source activate $CONDA_ENV
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
     cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
@@ -74,6 +75,7 @@ if [[ $TASK == "lint" ]]; then
         pycodestyle \
         pydocstyle \
         "r-lintr>=3.0"
+    source activate $CONDA_ENV
     echo "Linting Python code"
     pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
