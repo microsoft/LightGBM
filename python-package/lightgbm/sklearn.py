@@ -890,7 +890,7 @@ class LGBMModel(_LGBMModelBase):
         return self._n_features
 
     @property
-    def n_features_in_(self) -> int:
+    def n_features_in_(self) -> Optional[int]:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
@@ -904,7 +904,7 @@ class LGBMModel(_LGBMModelBase):
         return self._best_score
 
     @property
-    def best_iteration_(self) -> int:
+    def best_iteration_(self) -> Optional[int]:
         """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
@@ -1197,7 +1197,7 @@ class LGBMRanker(LGBMModel):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,

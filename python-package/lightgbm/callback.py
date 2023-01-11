@@ -8,7 +8,8 @@ from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info,
 
 _EvalResultTuple = Union[
     List[_LGBM_BoosterEvalMethodResultType],
-    List[Tuple[str, str, float, bool, float]]
+    List[Tuple[str, str, float, bool, float]],
+    None
 ]
 
 
@@ -43,6 +44,8 @@ CallbackEnv = collections.namedtuple(
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool = True) -> str:
     """Format metric string."""
+    if value is None:
+        raise ValueError("Wrong metric value")
     if len(value) == 4:
         return f"{value[0]}'s {value[1]}: {value[2]:g}"
     elif len(value) == 5:
@@ -246,10 +249,10 @@ class _EarlyStoppingCallback:
         self._reset_storages()
 
     def _reset_storages(self) -> None:
-        self.best_score = []
-        self.best_iter = []
-        self.best_score_list = []
-        self.cmp_op = []
+        self.best_score: List[float] = []
+        self.best_iter: List[int] = []
+        self.best_score_list: List[_EvalResultTuple] = []
+        self.cmp_op: List[Callable[[float, float], bool]] = []
         self.first_metric = ''
 
     def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
