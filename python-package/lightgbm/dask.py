@@ -25,6 +25,12 @@ from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGB
                       _LGBM_ScikitEvalMetricType, _lgbmmodel_doc_custom_eval_note, _lgbmmodel_doc_fit,
                       _lgbmmodel_doc_predict)
 
+__all__ = [
+    'DaskLGBMClassifier',
+    'DaskLGBMRanker',
+    'DaskLGBMRegressor',
+]
+
 _DaskCollection = Union[dask_Array, dask_DataFrame, dask_Series]
 _DaskMatrixLike = Union[dask_Array, dask_DataFrame]
 _DaskVectorLike = Union[dask_Array, dask_Series]

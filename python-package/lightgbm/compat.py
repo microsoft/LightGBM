@@ -194,3 +194,5 @@ except ImportError:
 
         def _LGBMCpuCount(only_physical_cores: bool = True):
             return cpu_count()
+
+__all__ = []
