@@ -76,13 +76,16 @@ if [[ $TASK == "lint" ]]; then
     conda install -q -y -n $CONDA_ENV \
         cmakelint \
         cpplint \
+        flake8 \
         isort \
         mypy \
-        pycodestyle \
         pydocstyle \
         "r-lintr>=3.0"
     echo "Linting Python code"
-    pycodestyle --ignore=E501,W503 --exclude=./.nuget,./external_libs . || exit -1
+    flake8 \
+        --ignore=E501,W503 \
+        --exclude=./.nuget,./external_libs,./python-package/build \
+        . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     isort . --check-only || exit -1
     mypy --ignore-missing-imports python-package/ || true
