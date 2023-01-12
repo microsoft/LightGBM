@@ -105,7 +105,7 @@ autodoc_mock_imports = [
     'scipy.sparse',
 ]
 try:
-    import sklearn
+    import sklearn  # noqa: F401
 except ImportError:
     autodoc_mock_imports.append('sklearn')
 # hide type hints in API docs

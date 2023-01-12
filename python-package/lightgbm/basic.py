@@ -20,6 +20,15 @@ import scipy.sparse
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
 
+__all__ = [
+    'Booster',
+    'Dataset',
+    'LGBMDeprecationWarning',
+    'LightGBMError',
+    'register_logger',
+    'Sequence',
+]
+
 _DatasetHandle = ctypes.c_void_p
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
@@ -1275,7 +1284,6 @@ class Dataset:
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
-        self.feature_penalty = None
         self.monotone_constraints = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
