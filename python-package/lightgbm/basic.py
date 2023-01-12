@@ -1284,7 +1284,6 @@ class Dataset:
         self._predictor = None
         self.pandas_categorical = None
         self.params_back_up = None
-        self.feature_penalty = None
         self.monotone_constraints = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
