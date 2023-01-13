@@ -413,7 +413,7 @@ def _train(
     eval_init_score: Optional[List[_DaskCollection]] = None,
     eval_group: Optional[List[_DaskVectorLike]] = None,
     eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-    eval_at: Optional[Union[List[int], Tuple[int]]] = None,
+    eval_at: Optional[Union[List[int], Tuple[int, ...]]] = None,
     **kwargs: Any
 ) -> LGBMModel:
     """Inner train routine.
@@ -1045,7 +1045,7 @@ class _DaskLGBMModel:
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Optional[Iterable[int]] = None,
+        eval_at: Optional[Union[List[int], Tuple[int, ...]]] = None,
         **kwargs: Any
     ) -> "_DaskLGBMModel":
         if not DASK_INSTALLED:
@@ -1499,7 +1499,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""

@@ -1204,7 +1204,7 @@ class LGBMRanker(LGBMModel):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,

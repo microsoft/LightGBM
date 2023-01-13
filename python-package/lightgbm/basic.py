@@ -2186,7 +2186,7 @@ class Dataset:
 
     def set_categorical_feature(
         self,
-        categorical_feature: Union[List[int], List[str]]
+        categorical_feature: Union[List[int], List[str], str]
     ) -> "Dataset":
         """Set categorical features.
 
@@ -2268,7 +2268,7 @@ class Dataset:
             raise LightGBMError("Cannot set reference after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_feature_name(self, feature_name: List[str]) -> "Dataset":
+    def set_feature_name(self, feature_name: Union[List[str], str]) -> "Dataset":
         """Set feature name.
 
         Parameters
