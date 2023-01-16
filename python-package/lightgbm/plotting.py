@@ -11,6 +11,14 @@ from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingT
 from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
+__all__ = [
+    'create_tree_digraph',
+    'plot_importance',
+    'plot_metric',
+    'plot_split_value_histogram',
+    'plot_tree',
+]
+
 
 def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
     """Check object is not tuple or does not have 2 elements."""

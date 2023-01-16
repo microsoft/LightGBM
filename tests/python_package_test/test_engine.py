@@ -2903,7 +2903,7 @@ def test_forced_split_feature_indices(tmp_path):
         "forcedsplits_filename": tmp_split_file
     }
     with pytest.raises(lgb.basic.LightGBMError, match="Forced splits file includes feature index"):
-        bst = lgb.train(params, lgb_train)
+        lgb.train(params, lgb_train)
 
 
 def test_forced_bins():
