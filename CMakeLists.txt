@@ -4,8 +4,8 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
-option(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
-option(USE_CUDA_EXP "Enable CUDA-accelerated training with more acceleration (EXPERIMENTAL)" OFF)
+option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_CUDA_EXP "(DEPRECATED) Alias for 'USE_CUDA'. Use 'USE_CUDA' instead." OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 set(
@@ -31,7 +31,7 @@ elseif(USE_SWIG)
   cmake_minimum_required(VERSION 3.8)
 elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA OR USE_CUDA_EXP)
+elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
 else()
   cmake_minimum_required(VERSION 3.0)
@@ -137,7 +137,12 @@ else()
     add_definitions(-DUSE_SOCKET)
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA_EXP)
+    message(WARNING "Option -DUSE_CUDA_EXP=ON is deprecated. Use -DUSE_CUDA=ON instead.")
+    set(USE_CUDA ON CACHE BOOL "Building CUDA-enabled version" FORCE)
+endif()
+
+if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
@@ -192,12 +197,8 @@ if(__INTEGRATE_OPENCL)
     endif()
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
-    if(USE_CUDA)
-      find_package(CUDA 9.0 REQUIRED)
-    else()
-      find_package(CUDA 10.0 REQUIRED)
-    endif()
+if(USE_CUDA)
+    find_package(CUDA 10.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
@@ -224,11 +225,7 @@ if(USE_CUDA OR USE_CUDA_EXP)
     endif()
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
 
-    if(USE_CUDA)
-      add_definitions(-DUSE_CUDA)
-    elseif(USE_CUDA_EXP)
-      add_definitions(-DUSE_CUDA_EXP)
-    endif()
+    add_definitions(-DUSE_CUDA)
 
     if(NOT DEFINED CMAKE_CUDA_STANDARD)
       set(CMAKE_CUDA_STANDARD 11)
@@ -411,10 +408,8 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
       src/treelearner/*.cu
-endif()
-if(USE_CUDA_EXP)
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
       src/metric/cuda/*.cpp
@@ -549,7 +544,7 @@ if(__INTEGRATE_OPENCL)
   target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
   # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
   # Custom target properties does not propagate, thus we need to specify for
   # each target that contains or depends on cuda source.

@@ -128,6 +128,9 @@ def compile_cpp(
 
     logger.info("Starting to compile the library.")
 
+    if use_cuda_exp:
+        use_cuda = True
+
     cmake_cmd = ["cmake", str(CURRENT_DIR / "compile")]
     if integrated_opencl:
         use_gpu = False
@@ -148,8 +151,6 @@ def compile_cpp(
             cmake_cmd.append(f"-DOpenCL_LIBRARY={opencl_library}")
     elif use_cuda:
         cmake_cmd.append("-DUSE_CUDA=ON")
-    elif use_cuda_exp:
-        cmake_cmd.append("-DUSE_CUDA_EXP=ON")
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
@@ -171,7 +172,7 @@ def compile_cpp(
         else:
             status = 1
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
-            if not any((use_gpu, use_cuda, use_cuda_exp, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
+            if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v143", "v142", "v141", "v140")
                 for pt in platform_toolsets:
