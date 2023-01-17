@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -383,4 +383,4 @@ void CUDABestSplitFinder::SetUsedFeatureByNode(const std::vector<int8_t>& is_fea
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

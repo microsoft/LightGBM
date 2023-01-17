@@ -5,12 +5,11 @@
 #ifndef LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 #define LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 
+#ifdef USE_CUDA
 #include <LightGBM/utils/common.h>
 
-#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
 #include <stdio.h>
 
 enum LGBM_Device {
@@ -43,44 +42,36 @@ struct CHAllocator {
     T* ptr;
     if (n == 0) return NULL;
     n = SIZE_ALIGNED(n);
-    #if defined(USE_CUDA) || defined(USE_CUDA_EXP)
-      if (LGBM_config_::current_device == lgbm_device_cuda) {
+    if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
-          Log::Warning("Defaulting to malloc in CHAllocator!!!");
-          ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
+            Log::Warning("Defaulting to malloc in CHAllocator!!!");
+            ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
         }
-      } else {
+    } else {
         ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
-      }
-    #else
-      ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
-    #endif
+    }
     return ptr;
   }
 
   void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
     if (p == NULL) return;
-    #if defined(USE_CUDA) || defined(USE_CUDA_EXP)
-      if (LGBM_config_::current_device == lgbm_device_cuda) {
+    if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
         #if CUDA_VERSION >= 10000
-          if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+        if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
             cudaFreeHost(p);
-          }
+        }
         #else
-          if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+        if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
             cudaFreeHost(p);
-          }
+        }
         #endif
-      } else {
+    } else {
         _mm_free(p);
-      }
-    #else
-      _mm_free(p);
-    #endif
+    }
   }
 };
 template <class T, class U>
@@ -90,4 +81,5 @@ bool operator!=(const CHAllocator<T>&, const CHAllocator<U>&);
 
 }  // namespace LightGBM
 
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_

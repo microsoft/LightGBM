@@ -178,7 +178,13 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
     } else if (value == std::string("cuda")) {
       *device_type = "cuda";
     } else if (value == std::string("cuda_exp")) {
-      *device_type = "cuda_exp";
+      Log::Warning(
+        "Found device_type='cuda_exp' passed through params. "
+        "That is an alias for device_type='cuda'. "
+        "Use device_type='cuda' to suppress this warning. "
+        "In the future, this warning will become an error. "
+      );
+      *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -260,7 +266,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   GetObjectiveType(params, &objective);
   GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
-  if (device_type == std::string("cuda") || device_type == std::string("cuda_exp")) {
+  if (device_type == std::string("cuda")) {
     LGBM_config_::current_device = lgbm_device_cuda;
   }
   GetTreeLearnerType(params, &tree_learner);
@@ -373,25 +379,20 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
+  if (device_type == std::string("gpu")) {
     // force col-wise for gpu, and cuda version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
-  } else if (device_type == std::string("cuda_exp")) {
-    // force row-wise for cuda_exp version
+  } else if (device_type == std::string("cuda")) {
+    // force row-wise for cuda version
     force_col_wise = false;
     force_row_wise = true;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
-  }
-  // force gpu_use_dp for CUDA
-  if (device_type == std::string("cuda") && !gpu_use_dp) {
-    Log::Warning("CUDA currently requires double precision calculations.");
-    gpu_use_dp = true;
   }
   // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_rank_objective.hpp"
 
@@ -658,4 +658,4 @@ void CUDARankXENDCG::LaunchGetGradientsKernel(const double* score, score_t* grad
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

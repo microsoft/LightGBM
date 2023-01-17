@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_binary_objective.hpp"
 
@@ -61,4 +61,4 @@ void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
