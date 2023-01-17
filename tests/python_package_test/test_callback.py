@@ -3,7 +3,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import SERIALIZERS, pickle_and_unpickle_object, pickle_obj, unpickle_obj
+from .utils import SERIALIZERS, pickle_and_unpickle_object
 
 
 def reset_feature_fraction(boosting_round):
