@@ -158,7 +158,7 @@ struct Config {
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
-  // desc = ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
+  // desc = ``mvs``, `Minimal variance sampling <https://arxiv.org/abs/1910.13204>`__
   std::string boosting = "gbdt";
 
   // [doc-only]
