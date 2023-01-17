@@ -56,7 +56,7 @@ With GUI
 
 1. Install `Visual Studio`_ (2015 or newer).
 
-2. Download `zip archive`_ and unzip it.
+2. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 3. Go to ``LightGBM-master/windows`` folder.
 
@@ -235,7 +235,7 @@ With GUI
 
 1. Install `Visual Studio`_ (2015 or newer).
 
-2. Download `zip archive`_ and unzip it.
+2. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 3. Go to ``LightGBM-master/windows`` folder.
 
@@ -385,7 +385,7 @@ With GUI
 
 2. Install `Visual Studio`_ (2015 or newer).
 
-3. Download `zip archive`_ and unzip it.
+3. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 4. Go to ``LightGBM-master/windows`` folder.
 
@@ -923,8 +923,6 @@ gcc
 .. _Python-package: https://github.com/microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/microsoft/LightGBM/tree/master/R-package
-
-.. _zip archive: https://github.com/microsoft/LightGBM/archive/master.zip
 
 .. _Visual Studio: https://visualstudio.microsoft.com/downloads/
 
