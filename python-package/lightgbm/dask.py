@@ -6,12 +6,12 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
-from pathlib import Path
 import socket
 from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
+from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
