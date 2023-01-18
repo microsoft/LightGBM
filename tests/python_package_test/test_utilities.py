@@ -91,7 +91,7 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations.",
         "INFO | [LightGBM] [Info] LightGBM using CUDA trainer with DP float!!"
     ]
-    cuda_ines = [
+    cuda_lines = [
         "INFO | [LightGBM] [Warning] Metric auc is not implemented in cuda version. Fall back to evaluation on CPU.",
         "INFO | [LightGBM] [Warning] Metric binary_error is not implemented in cuda version. Fall back to evaluation on CPU.",
     ]

@@ -453,7 +453,7 @@ void Dataset::FinishLoad() {
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
   is_finish_load_ = true;
 }
 
@@ -869,7 +869,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
     }
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -1513,7 +1513,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 const void* Dataset::GetColWiseData(

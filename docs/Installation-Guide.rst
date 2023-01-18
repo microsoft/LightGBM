@@ -605,8 +605,8 @@ Docker
 
 Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/docker/gpu>`__.
 
-Build CUDA Version (Experimental)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Build CUDA Version
+~~~~~~~~~~~~~~~~~~
 
 The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 

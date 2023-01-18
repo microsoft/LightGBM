@@ -286,7 +286,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     } else {
       dataset->cuda_column_data_ = nullptr;
     }
-    #endif  // USE_CUDA_EXP
+    #endif  // USE_CUDA
   }
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);

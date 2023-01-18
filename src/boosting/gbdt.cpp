@@ -75,7 +75,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
       const int gpu_device_id = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
       CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_device_id));
     }
-    #endif  // USE_CUDA_EXP
+    #endif  // USE_CUDA
   }
 
   // load forced_splits file
