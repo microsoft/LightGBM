@@ -447,9 +447,13 @@ void Dataset::FinishLoad() {
   metadata_.FinishLoad();
 
   #ifdef USE_CUDA
-  CreateCUDAColumnData();
-  metadata_.CreateCUDAMetadata(gpu_device_id_);
-  #endif  // USE_CUDA
+  if (device_type_ == std::string("cuda")) {
+    CreateCUDAColumnData();
+    metadata_.CreateCUDAMetadata(gpu_device_id_);
+  } else {
+    cuda_column_data_.reset(nullptr);
+  }
+  #endif  // USE_CUDA_EXP
   is_finish_load_ = true;
 }
 
