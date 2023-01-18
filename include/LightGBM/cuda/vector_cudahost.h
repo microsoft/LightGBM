@@ -80,7 +80,6 @@ struct CHAllocator {
     #else
       _mm_free(p);
     #endif
-    }
   }
 };
 template <class T, class U>

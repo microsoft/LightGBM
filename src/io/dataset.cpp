@@ -858,12 +858,14 @@ void Dataset::CopySubrow(const Dataset* fullset,
   gpu_device_id_ = fullset->gpu_device_id_;
 
   #ifdef USE_CUDA
-  if (cuda_column_data_ == nullptr) {
-    cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
-    metadata_.CreateCUDAMetadata(gpu_device_id_);
+  if (device_type_ == std::string("cuda")) {
+    if (cuda_column_data_ == nullptr) {
+      cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
+      metadata_.CreateCUDAMetadata(gpu_device_id_);
+    }
+    cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
-  #endif  // USE_CUDA
+  #endif  // USE_CUDA_EXP
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -1502,8 +1504,12 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
     }
   }
   #ifdef USE_CUDA
-  CreateCUDAColumnData();
-  #endif  // USE_CUDA
+  if (device_type_ == std::string("cuda")) {
+    CreateCUDAColumnData();
+  } else {
+    cuda_column_data_ = nullptr;
+  }
+  #endif  // USE_CUDA_EXP
 }
 
 const void* Dataset::GetColWiseData(
