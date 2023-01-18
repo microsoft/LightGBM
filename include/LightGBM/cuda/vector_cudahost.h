@@ -42,35 +42,44 @@ struct CHAllocator {
     T* ptr;
     if (n == 0) return NULL;
     n = SIZE_ALIGNED(n);
-    if (LGBM_config_::current_device == lgbm_device_cuda) {
+    #ifdef USE_CUDA
+      if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
-            Log::Warning("Defaulting to malloc in CHAllocator!!!");
-            ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
+          Log::Warning("Defaulting to malloc in CHAllocator!!!");
+          ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
         }
-    } else {
+      } else {
         ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
-    }
+      }
+    #else
+      ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
+    #endif
     return ptr;
   }
 
   void deallocate(T* p, std::size_t n) {
     (void)n;  // UNUSED
     if (p == NULL) return;
-    if (LGBM_config_::current_device == lgbm_device_cuda) {
+    #ifdef USE_CUDA
+      if (LGBM_config_::current_device == lgbm_device_cuda) {
         cudaPointerAttributes attributes;
         cudaPointerGetAttributes(&attributes, p);
         #if CUDA_VERSION >= 10000
-        if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+          if ((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
             cudaFreeHost(p);
-        }
+          }
         #else
-        if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
+          if ((attributes.memoryType == cudaMemoryTypeHost) && (attributes.devicePointer != NULL)) {
             cudaFreeHost(p);
-        }
+          }
         #endif
-    } else {
+      } else {
         _mm_free(p);
+      }
+    #else
+      _mm_free(p);
+    #endif
     }
   }
 };

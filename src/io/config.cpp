@@ -182,8 +182,7 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
         "Found device_type='cuda_exp' passed through params. "
         "That is an alias for device_type='cuda'. "
         "Use device_type='cuda' to suppress this warning. "
-        "In the future, this warning will become an error. "
-      );
+        "In the future, this warning will become an error. ");
       *device_type = "cuda";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
