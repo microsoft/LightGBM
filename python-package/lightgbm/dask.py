@@ -6,18 +6,19 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
+from pathlib import Path
 import socket
 from collections import defaultdict, namedtuple
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib.parse import urlparse
 
 import numpy as np
 import scipy.sparse as ss
 
-from .basic import LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning
+from .basic import Booster, LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning
 from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
@@ -1166,14 +1167,20 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskCollection] = None,
+        init_score: Optional[_DaskVectorLike] = None,
+        group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
-        eval_class_weight: Optional[List[Union[dict, str]]] = None,
-        eval_init_score: Optional[List[_DaskCollection]] = None,
+        eval_class_weight: Optional[List] = None,
+        eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        **kwargs: Any
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
+        feature_name: str = 'auto',
+        categorical_feature: str = 'auto',
+        callbacks: Optional[List[Callable]] = None,
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
         return self._lgb_dask_fit(
@@ -1182,13 +1189,19 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             init_score=init_score,
+            group=group,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
+            eval_group=eval_group,
             eval_metric=eval_metric,
-            **kwargs
+            eval_at=eval_at,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model,
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
@@ -1339,12 +1352,19 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
         init_score: Optional[_DaskVectorLike] = None,
+        group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_class_weight: Optional[List] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
+        eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        **kwargs: Any
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
+        feature_name: str = 'auto',
+        categorical_feature: str = 'auto',
+        callbacks: Optional[List[Callable]] = None,
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
         return self._lgb_dask_fit(
@@ -1353,12 +1373,19 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             init_score=init_score,
+            group=group,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
+            eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
+            eval_group=eval_group,
             eval_metric=eval_metric,
-            **kwargs
+            eval_at=eval_at,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model,
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
@@ -1496,11 +1523,15 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
+        eval_class_weight: Optional[List] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
-        **kwargs: Any
+        feature_name: str = 'auto',
+        categorical_feature: str = 'auto',
+        callbacks: Optional[List[Callable]] = None,
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         return self._lgb_dask_fit(
@@ -1513,11 +1544,15 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
+            eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
             eval_group=eval_group,
             eval_metric=eval_metric,
             eval_at=eval_at,
-            **kwargs
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            callbacks=callbacks,
+            init_model=init_model,
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
