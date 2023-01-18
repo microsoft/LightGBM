@@ -5,11 +5,12 @@
 #ifndef LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 #define LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 
-#ifdef USE_CUDA
 #include <LightGBM/utils/common.h>
 
+#ifdef USE_CUDA
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
 #include <stdio.h>
 
 enum LGBM_Device {
@@ -89,5 +90,4 @@ bool operator!=(const CHAllocator<T>&, const CHAllocator<U>&);
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA
 #endif  // LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
