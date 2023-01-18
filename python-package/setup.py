@@ -21,7 +21,7 @@ LIGHTGBM_OPTIONS = [
     ('integrated-opencl', None, 'Compile integrated OpenCL version'),
     ('gpu', 'g', 'Compile GPU version'),
     ('cuda', None, 'Compile CUDA version'),
-    ('cuda-exp', None, '(deprecated) Alias for 'cuda'. Use 'cuda' instead.'),
+    ('cuda-exp', None, '(deprecated) Alias for "cuda". Use "cuda" instead.'),
     ('mpi', None, 'Compile MPI version'),
     ('nomp', None, 'Compile version without OpenMP support'),
     ('hdfs', 'h', 'Compile HDFS version'),
