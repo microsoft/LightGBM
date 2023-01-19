@@ -345,7 +345,7 @@ struct Config {
   // check = >0
   // desc = used in MVS boosting training. If dataset size is greater than ``mvs_max_sequential_size``, then threshold for MVS is chosen for each thread independently.
   // desc = used only in ``mvs``
-  // desc = **Note**: on small dataset setting this parameter less than size of dataset may produce results depending on number of threads
+  // desc = **Note**: on small dataset setting this parameter less than size of dataset may produce non-deterministic results depending on number of threads
   int mvs_max_sequential_size = 256000;
 
   // alias = subsample_freq
