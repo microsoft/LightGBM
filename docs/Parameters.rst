@@ -137,7 +137,7 @@ Core Parameters
 
       -  **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
 
-   -  ``mvs``, Minimal variance sampling <https://arxiv.org/abs/1910.13204>__
+   -  ``mvs``, `Minimal variance sampling <https://arxiv.org/abs/1910.13204>`__
 
 -  ``data_sample_strategy`` :raw-html:`<a id="data_sample_strategy" title="Permalink to this parameter" href="#data_sample_strategy">&#x1F517;&#xFE0E;</a>`, default = ``bagging``, type = enum, options: ``bagging``, ``goss``
 
@@ -362,13 +362,11 @@ Learning Control Parameters
 
 -  ``mvs_max_sequential_size`` :raw-html:`<a id="mvs_max_sequential_size" title="Permalink to this parameter" href="#mvs_max_sequential_size">&#x1F517;&#xFE0E;</a>`, default = ``256000``, type = int, constraints: ``mvs_max_sequential_size > 0``
 
-   -  used in MVS boosting training. If dataset size is greater than ``mvs_max_sequential_size``, then threshold
-
-   -  for MVS is chosen for each thread independently.
+   -  used in MVS boosting training. If dataset size is greater than ``mvs_max_sequential_size``, then threshold for MVS is chosen for each thread independently.
 
    -  used only in ``mvs``
 
-   -  **Note**: on small dataset setting this parameter less than size of dataset may produce results depending on number of threads
+   -  **Note**: on small dataset setting this parameter less than size of dataset may produce non-deterministic results depending on number of threads
 
 -  ``bagging_freq`` :raw-html:`<a id="bagging_freq" title="Permalink to this parameter" href="#bagging_freq">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, aliases: ``subsample_freq``
 
