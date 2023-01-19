@@ -5,20 +5,13 @@
 #ifndef LIGHTGBM_BOOSTING_MVS_H_
 #define LIGHTGBM_BOOSTING_MVS_H_
 
-#include <LightGBM/boosting.h>
 #include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/log.h>
-
-#include <string>
-#include <algorithm>
-#include <chrono>
-#include <cstdio>
-#include <cstdint>
-#include <fstream>
-#include <vector>
-
 #include <LightGBM/sample_strategy.h>
-#include "score_updater.hpp"
+
+#include <algorithm>
+#include <string>
+#include <memory>
+#include <vector>
 
 namespace LightGBM {
 

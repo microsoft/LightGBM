@@ -7,6 +7,7 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/tree.h>
 #include <LightGBM/utils/json11.h>
 
 #include <string>
@@ -17,7 +18,6 @@ namespace LightGBM {
 using json11::Json;
 
 /*! \brief forward declaration */
-class Tree;
 class Dataset;
 class ObjectiveFunction;
 

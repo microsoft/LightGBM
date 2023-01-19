@@ -155,7 +155,7 @@ double MVS::GetThreshold(data_size_t begin, data_size_t cnt) {
   return threshold;
 }
 
-void MVS::ResetSampleConfig(const Config* config, bool is_change_dataset) {
+void MVS::ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) {
   config_ = config;
   need_resize_gradients_ = false;
   if (objective_function_ == nullptr) {

@@ -6,7 +6,9 @@
 #ifndef LIGHTGBM_BOOSTING_BAGGING_HPP_
 #define LIGHTGBM_BOOSTING_BAGGING_HPP_
 
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace LightGBM {
 
