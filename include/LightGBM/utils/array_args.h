@@ -189,6 +189,7 @@ class ArrayArgs {
 
   static double CalculateThresholdMVS(std::vector<VAL_T>* gradients, data_size_t begin, data_size_t end,
                                              const double sample_size) {
+    auto& ref_gradients = *gradients;
     double current_sum_small = 0.0;
     data_size_t big_grad_size = 0;
 
@@ -200,10 +201,10 @@ class ArrayArgs {
       const data_size_t large_size = middle_begin - begin;
 
       const double sum_small = std::accumulate(gradients->begin() + middle_end, gradients->begin() + end, 0.0);
-      const double sum_middle = (*gradients)[middle_begin] * n_middle;
+      const double sum_middle = ref_gradients[middle_begin] * n_middle;
 
       const double
-          current_sampling_rate = (current_sum_small + sum_small) / (*gradients)[middle_begin] + big_grad_size + n_middle + large_size;
+          current_sampling_rate = (current_sum_small + sum_small) / ref_gradients[middle_begin] + big_grad_size + n_middle + large_size;
 
       if (current_sampling_rate > sample_size) {
         current_sum_small += sum_small + sum_middle;
