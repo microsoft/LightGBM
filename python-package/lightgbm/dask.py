@@ -1167,8 +1167,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         X: _DaskMatrixLike,
         y: _DaskCollection,
         sample_weight: Optional[_DaskVectorLike] = None,
-        init_score: Optional[_DaskVectorLike] = None,
-        group: Optional[_DaskVectorLike] = None,
+        init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
@@ -1176,11 +1175,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name: str = 'auto',
         categorical_feature: str = 'auto',
         callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None,
+        **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
         return self._lgb_dask_fit(
@@ -1189,7 +1188,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             y=y,
             sample_weight=sample_weight,
             init_score=init_score,
-            group=group,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
@@ -1197,11 +1195,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             eval_init_score=eval_init_score,
             eval_group=eval_group,
             eval_metric=eval_metric,
-            eval_at=eval_at,
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             callbacks=callbacks,
             init_model=init_model,
+            **kwargs
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
@@ -1530,8 +1528,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name: str = 'auto',
         categorical_feature: str = 'auto',
-        callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
+        **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         return self._lgb_dask_fit(
@@ -1551,8 +1548,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             eval_at=eval_at,
             feature_name=feature_name,
             categorical_feature=categorical_feature,
-            callbacks=callbacks,
-            init_model=init_model,
+            **kwargs
         )
 
     _base_doc = _lgbmmodel_doc_fit.format(
