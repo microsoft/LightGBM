@@ -704,7 +704,6 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
@@ -985,21 +984,17 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
         sample_weight=None,
         init_score=None,
-        group=None,
         eval_set=None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
-        eval_class_weight=None,
         eval_init_score=None,
-        eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
@@ -1011,15 +1006,11 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             y,
             sample_weight=sample_weight,
             init_score=init_score,
-            group=group,
             eval_set=eval_set,
             eval_names=eval_names,
             eval_sample_weight=eval_sample_weight,
-            eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
-            eval_group=eval_group,
             eval_metric=eval_metric,
-            eval_at=eval_at,
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             callbacks=callbacks,
@@ -1039,7 +1030,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1200,7 +1191,7 @@ class LGBMRanker(LGBMModel):
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
