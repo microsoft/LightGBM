@@ -57,7 +57,6 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
     pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Fails to run with CUDA Experimental interface')
 ]
 
@@ -1724,7 +1723,7 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
 
 @pytest.mark.parametrize('task', tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task, cluster):
-    with Client(cluster) as client:
+    with Client(cluster):
         _, _, _, _, dX, dy, dw, dg = _create_data(
             objective=task,
             output='dataframe',
@@ -1803,7 +1802,7 @@ def _tested_estimators():
 @pytest.mark.parametrize("estimator", _tested_estimators())
 @pytest.mark.parametrize("check", sklearn_checks_to_run())
 def test_sklearn_integration(estimator, check, cluster):
-    with Client(cluster) as client:
+    with Client(cluster):
         estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
