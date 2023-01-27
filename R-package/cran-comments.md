@@ -20,7 +20,7 @@ Submitted with the following comment:
 
 > Thank you very much for your time and consideration.
 
-## v3.3.4 - Submission 1 - (October 10, 2022)
+## v3.3.3 - Submission 1 - (October 10, 2022)
 
 ### CRAN response
 
