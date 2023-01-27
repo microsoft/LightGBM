@@ -440,11 +440,12 @@ void Config::CheckParamConflict() {
         "Will set min_data_in_leaf to 1.");
     min_data_in_leaf = 1;
   }
-  if (boosting == std::string("goss")) {
+  if (boosting == std::string("goss") || boosting == std::string("mvs")) {
+    std::string data_sample_strategy = boosting;
     boosting = std::string("gbdt");
-    data_sample_strategy = std::string("goss");
-    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
-                 "To suppress this warning, set data_sample_strategy=goss instead.");
+    Log::Warning("Found boosting=%s. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=%s."
+                 "To suppress this warning, set data_sample_strategy=%s instead.",
+                 data_sample_strategy.c_str(), data_sample_strategy.c_str(), data_sample_strategy.c_str());
   }
 }
 

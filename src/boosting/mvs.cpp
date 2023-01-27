@@ -159,7 +159,7 @@ void MVS::ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) {
   config_ = config;
   need_resize_gradients_ = false;
   if (objective_function_ == nullptr) {
-    // resize gradient vectors to copy the customized gradients for goss
+    // resize gradient vectors to copy the customized gradients for mvs
     need_resize_gradients_ = true;
   }
   balanced_bagging_ = false;

@@ -3592,7 +3592,8 @@ def test_force_split_with_feature_fraction(tmp_path):
         assert tree_structure['split_feature'] == 0
 
 
-def test_goss_boosting_and_strategy_equivalent():
+@pytest.mark.parametrize('data_samplie_strategy', ['goss', 'mvs'])
+def test_goss_boosting_and_strategy_equivalent(data_samplie_strategy):
     X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -3606,13 +3607,13 @@ def test_goss_boosting_and_strategy_equivalent():
         'force_row_wise': True,
         'gpu_use_dp': True,
     }
-    params1 = {**base_params, 'boosting': 'goss'}
+    params1 = {**base_params, 'boosting': data_samplie_strategy}
     evals_result1 = {}
     lgb.train(params1, lgb_train,
               num_boost_round=10,
               valid_sets=lgb_eval,
               callbacks=[lgb.record_evaluation(evals_result1)])
-    params2 = {**base_params, 'data_sample_strategy': 'goss'}
+    params2 = {**base_params, 'data_sample_strategy': data_samplie_strategy}
     evals_result2 = {}
     lgb.train(params2, lgb_train,
               num_boost_round=10,
@@ -3621,7 +3622,8 @@ def test_goss_boosting_and_strategy_equivalent():
     assert evals_result1['valid_0']['l2'] == evals_result2['valid_0']['l2']
 
 
-def test_sample_strategy_with_boosting():
+@pytest.mark.parametrize('data_samplie_strategy', ['goss', 'mvs'])
+def test_sample_strategy_with_boosting(data_samplie_strategy):
     X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -3635,7 +3637,7 @@ def test_sample_strategy_with_boosting():
         'gpu_use_dp': True,
     }
 
-    params1 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': 'goss'}
+    params1 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': data_samplie_strategy}
     evals_result = {}
     gbm = lgb.train(params1, lgb_train,
                     num_boost_round=10,
@@ -3646,7 +3648,7 @@ def test_sample_strategy_with_boosting():
     assert test_res1 == pytest.approx(3149.393862, abs=1.0)
     assert eval_res1 == pytest.approx(test_res1)
 
-    params2 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'goss'}
+    params2 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': data_samplie_strategy}
     evals_result = {}
     gbm = lgb.train(params2, lgb_train,
                     num_boost_round=10,
@@ -3657,7 +3659,7 @@ def test_sample_strategy_with_boosting():
     assert test_res2 == pytest.approx(2547.715968, abs=1.0)
     assert eval_res2 == pytest.approx(test_res2)
 
-    params3 = {**base_params, 'boosting': 'goss', 'data_sample_strategy': 'goss'}
+    params3 = {**base_params, 'boosting': data_samplie_strategy, 'data_sample_strategy': data_samplie_strategy}
     evals_result = {}
     gbm = lgb.train(params3, lgb_train,
                     num_boost_round=10,
@@ -3668,7 +3670,7 @@ def test_sample_strategy_with_boosting():
     assert test_res3 == pytest.approx(2547.715968, abs=1.0)
     assert eval_res3 == pytest.approx(test_res3)
 
-    params4 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': 'goss'}
+    params4 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': data_samplie_strategy}
     evals_result = {}
     gbm = lgb.train(params4, lgb_train,
                     num_boost_round=10,
