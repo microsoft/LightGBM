@@ -308,7 +308,7 @@ jobs:
           #
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
           #
-          add-apt-repository "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-15 main"
+          add-apt-repository "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
           apt-get install -y --no-install-recommends \
               clang-15 \
               clangd-15 \
