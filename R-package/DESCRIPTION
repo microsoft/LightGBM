@@ -62,5 +62,5 @@ Imports:
     parallel,
     utils
 SystemRequirements:
-    C++11
+    C++17
 RoxygenNote: 7.2.1
