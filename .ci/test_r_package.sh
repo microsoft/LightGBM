@@ -241,8 +241,13 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     fi
 fi
 
-
-if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
+# ignoring the following NOTE:
+#
+# * checking C++ specification ... NOTE
+#   Specified C++11: please update to current default of C++17
+#
+# until it's resolved (see https://github.com/microsoft/LightGBM/pull/5690)
+if $(grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME" | grep -v 'C++11'); then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
 fi
