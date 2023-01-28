@@ -387,6 +387,11 @@ description_contents <- gsub(
   , replacement = as.character(Sys.Date())
   , x = description_contents
 )
+description_contents <- gsub(
+  pattern = "~~CXXSTD~~"
+  , replacement = "C++11"
+  , x = description_contents
+)
 writeLines(description_contents, DESCRIPTION_FILE)
 
 # CMake-based builds can't currently use R's builtin routine registration,
