@@ -247,7 +247,7 @@ fi
 #   Specified C++11: please update to current default of C++17
 #
 # until it's resolved (see https://github.com/microsoft/LightGBM/pull/5690)
-if $(grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME" | grep -v 'C++11'); then
+if $(grep -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME" | grep -q -v 'please update to current default'); then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
 fi
