@@ -247,9 +247,14 @@ fi
 #   Specified C++11: please update to current default of C++17
 #
 # until it's resolved (see https://github.com/microsoft/LightGBM/pull/5690)
-any_issues=$(grep -v "C++ specification" "$LOG_FILE_NAME" | grep -v "1 NOTE" | grep -E "NOTE|WARNING|ERROR" | wc -l)
-if [[ $any_issues -ne 0 ]]; then
-    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
+ALLOWED_CHECK_NOTES=1
+NUM_CHECK_NOTES=$(
+    cat ${LOG_FILE_NAME} \
+        | grep -e '^Status: .* NOTE.*' \
+        | sed 's/[^0-9]*//g'
+)
+if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
+    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
     exit -1
 fi
 
