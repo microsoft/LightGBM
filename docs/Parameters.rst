@@ -207,7 +207,13 @@ Core Parameters
 
 -  ``device_type`` :raw-html:`<a id="device_type" title="Permalink to this parameter" href="#device_type">&#x1F517;&#xFE0E;</a>`, default = ``cpu``, type = enum, options: ``cpu``, ``gpu``, ``cuda``, aliases: ``device``
 
-   -  device for the tree learning, you can use GPU to achieve the faster learning
+   -  device for the tree learning
+
+   -  ``cpu`` supports all LightGBM functionality and is portable across the widest range of operating systems and hardware
+
+   -  ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA
+
+   -  ``gpu`` can be faster than ``cpu`` and works on a wider range of GPUs than CUDA
 
    -  **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
 

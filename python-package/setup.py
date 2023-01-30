@@ -21,7 +21,6 @@ LIGHTGBM_OPTIONS = [
     ('integrated-opencl', None, 'Compile integrated OpenCL version'),
     ('gpu', 'g', 'Compile GPU version'),
     ('cuda', None, 'Compile CUDA version'),
-    ('cuda-exp', None, '(deprecated) Alias for "cuda". Use "cuda" instead.'),
     ('mpi', None, 'Compile MPI version'),
     ('nomp', None, 'Compile version without OpenMP support'),
     ('hdfs', 'h', 'Compile HDFS version'),
@@ -106,7 +105,6 @@ def compile_cpp(
     use_mingw: bool = False,
     use_gpu: bool = False,
     use_cuda: bool = False,
-    use_cuda_exp: bool = False,
     use_mpi: bool = False,
     use_hdfs: bool = False,
     boost_root: Optional[str] = None,
@@ -127,9 +125,6 @@ def compile_cpp(
     chdir(build_dir)
 
     logger.info("Starting to compile the library.")
-
-    if use_cuda_exp:
-        use_cuda = True
 
     cmake_cmd = ["cmake", str(CURRENT_DIR / "compile")]
     if integrated_opencl:
@@ -236,7 +231,6 @@ class CustomInstall(install):
         self.integrated_opencl = False
         self.gpu = False
         self.cuda = False
-        self.cuda_exp = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -261,7 +255,7 @@ class CustomInstall(install):
         LOG_PATH.touch()
         if not self.precompile:
             copy_files(integrated_opencl=self.integrated_opencl, use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_cuda_exp=self.cuda_exp, use_mpi=self.mpi,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
@@ -282,7 +276,6 @@ class CustomBdistWheel(bdist_wheel):
         self.integrated_opencl = False
         self.gpu = False
         self.cuda = False
-        self.cuda_exp = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -305,7 +298,6 @@ class CustomBdistWheel(bdist_wheel):
         install.integrated_opencl = self.integrated_opencl
         install.gpu = self.gpu
         install.cuda = self.cuda
-        install.cuda_exp = self.cuda_exp
         install.boost_root = self.boost_root
         install.boost_dir = self.boost_dir
         install.boost_include_dir = self.boost_include_dir
