@@ -43,10 +43,10 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
       if (config->num_gpu == 1) {
         return new CUDASingleGPUTreeLearner(config, boosting_on_cuda);
       } else {
-        Log::Fatal("cuda only supports training on a single GPU.");
+        Log::Fatal("Currently cuda version only supports training on a single GPU.");
       }
     } else {
-      Log::Fatal("cuda only supports training on a single machine.");
+      Log::Fatal("Currently cuda version only supports training on a single machine.");
     }
   }
   return nullptr;
