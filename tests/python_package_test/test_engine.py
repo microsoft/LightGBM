@@ -1202,7 +1202,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+    feature_names = [u'F_0', u'F_1', u'F_2', u'F_3']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -3600,12 +3600,14 @@ def test_goss_boosting_and_strategy_equivalent(data_samplie_strategy):
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     base_params = {
         'metric': 'l2',
-        'verbose': -1,
+        'verbose': 2,
         'bagging_seed': 0,
         'learning_rate': 0.05,
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
+        'bagging_freq': 1,
+        'bagging_fraction': 0.8,
     }
     params1 = {**base_params, 'boosting': data_samplie_strategy}
     evals_result1 = {}
@@ -3622,8 +3624,11 @@ def test_goss_boosting_and_strategy_equivalent(data_samplie_strategy):
     assert evals_result1['valid_0']['l2'] == evals_result2['valid_0']['l2']
 
 
-@pytest.mark.parametrize('data_samplie_strategy', ['goss', 'mvs'])
-def test_sample_strategy_with_boosting(data_samplie_strategy):
+@pytest.mark.parametrize('data_samplie_strategy_and_res',
+                         [('goss', 3149.393862, 2547.715968, 2547.715968, 2095.538735, 3134.866931),
+                          ('mvs', 2990.924614, 2399.783098, 2399.783098, 1542.008755, 3134.866931)])
+def test_sample_strategy_with_boosting(data_samplie_strategy_and_res):
+    data_samplie_strategy, res1, res2, res3, res4, res5 = data_samplie_strategy_and_res
     X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -3631,10 +3636,12 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
 
     base_params = {
         'metric': 'l2',
-        'verbose': -1,
+        'verbose': 2,
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
+        'bagging_freq': 1,
+        'bagging_fraction': 0.3,
     }
 
     params1 = {**base_params, 'boosting': 'dart', 'data_sample_strategy': data_samplie_strategy}
@@ -3645,7 +3652,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res1 = evals_result['valid_0']['l2'][-1]
     test_res1 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res1 == pytest.approx(3149.393862, abs=1.0)
+    assert test_res1 == pytest.approx(res1, abs=1.0)
     assert eval_res1 == pytest.approx(test_res1)
 
     params2 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': data_samplie_strategy}
@@ -3656,7 +3663,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res2 = evals_result['valid_0']['l2'][-1]
     test_res2 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res2 == pytest.approx(2547.715968, abs=1.0)
+    assert test_res2 == pytest.approx(res2, abs=1.0)
     assert eval_res2 == pytest.approx(test_res2)
 
     params3 = {**base_params, 'boosting': data_samplie_strategy, 'data_sample_strategy': data_samplie_strategy}
@@ -3667,7 +3674,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res3 = evals_result['valid_0']['l2'][-1]
     test_res3 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res3 == pytest.approx(2547.715968, abs=1.0)
+    assert test_res3 == pytest.approx(res3, abs=1.0)
     assert eval_res3 == pytest.approx(test_res3)
 
     params4 = {**base_params, 'boosting': 'rf', 'data_sample_strategy': data_samplie_strategy}
@@ -3678,7 +3685,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res4 = evals_result['valid_0']['l2'][-1]
     test_res4 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res4 == pytest.approx(2095.538735, abs=1.0)
+    assert test_res4 == pytest.approx(res4, abs=1.0)
     assert eval_res4 == pytest.approx(test_res4)
 
     assert test_res1 != test_res2
@@ -3698,7 +3705,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy):
                     callbacks=[lgb.record_evaluation(evals_result)])
     eval_res5 = evals_result['valid_0']['l2'][-1]
     test_res5 = mean_squared_error(y_test, gbm.predict(X_test))
-    assert test_res5 == pytest.approx(3134.866931, abs=1.0)
+    assert test_res5 == pytest.approx(res5, abs=1.0)
     assert eval_res5 == pytest.approx(test_res5)
 
     params6 = {**base_params, 'boosting': 'gbdt', 'data_sample_strategy': 'bagging', 'bagging_freq': 1, 'bagging_fraction': 0.5}

@@ -36,7 +36,7 @@ class RF : public GBDT {
       CHECK((config->bagging_freq > 0 && config->bagging_fraction < 1.0f && config->bagging_fraction > 0.0f) ||
             (config->feature_fraction < 1.0f && config->feature_fraction > 0.0f));
     } else {
-      CHECK_EQ(config->data_sample_strategy, std::string("goss"));
+      CHECK((config->data_sample_strategy == std::string("goss")) || (config->data_sample_strategy == std::string("mvs")));
     }
     GBDT::Init(config, train_data, objective_function, training_metrics);
 

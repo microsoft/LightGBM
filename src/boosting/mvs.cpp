@@ -59,7 +59,8 @@ double MVS::GetLambda(int iter, const score_t* gradients, const score_t* hessian
 }
 
 void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians, const std::vector<std::unique_ptr<Tree>>& models) {
-  if (iter % config_->bagging_freq != 0 && !need_re_bagging_) {
+  if (config_->bagging_freq == 0 || (iter % config_->bagging_freq != 0 && !need_re_bagging_) ||
+      config_->bagging_fraction <= 0.0 || config_->bagging_fraction >= 1.0) {
     return;
   }
   need_re_bagging_ = false;
@@ -163,7 +164,6 @@ void MVS::ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) {
     need_resize_gradients_ = true;
   }
   balanced_bagging_ = false;
-  CHECK(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0);
   CHECK(config_->mvs_lambda >= 0.0f);
   bag_data_indices_.resize(num_data_);
   #ifdef USE_CUDA_EXP
@@ -172,6 +172,12 @@ void MVS::ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) {
   }
   #endif  // USE_CUDA_EXP
   tmp_derivatives_.resize(num_data_);
+  bagging_runner_.ReSize(num_data_);
+  bagging_rands_.clear();
+  for (int i = 0;
+        i < (num_data_ + bagging_rand_block_ - 1) / bagging_rand_block_; ++i) {
+    bagging_rands_.emplace_back(config_->bagging_seed + i);
+  }
   is_use_subset_ = false;
   bag_data_cnt_ = num_data_;
   Log::Info("Using MVS");

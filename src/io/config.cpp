@@ -109,6 +109,8 @@ void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& p
       *strategy = "goss";
     } else if (value == std::string("bagging")) {
       *strategy = "bagging";
+    } else if (value == std::string("mvs")) {
+      *strategy = "mvs";
     } else {
       Log::Fatal("Unknown sample strategy %s", value.c_str());
     }
@@ -441,9 +443,9 @@ void Config::CheckParamConflict() {
     min_data_in_leaf = 1;
   }
   if (boosting == std::string("goss") || boosting == std::string("mvs")) {
-    std::string data_sample_strategy = boosting;
+    data_sample_strategy = boosting;
     boosting = std::string("gbdt");
-    Log::Warning("Found boosting=%s. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=%s."
+    Log::Warning("Found boosting=%s. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=%s. "
                  "To suppress this warning, set data_sample_strategy=%s instead.",
                  data_sample_strategy.c_str(), data_sample_strategy.c_str(), data_sample_strategy.c_str());
   }

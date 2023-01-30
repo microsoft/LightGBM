@@ -22,6 +22,9 @@ class MVS : public SampleStrategy {
     train_data_ = train_data;
     num_tree_per_iteration_ = num_tree_per_iteration;
     num_data_ = train_data->num_data();
+    if (!(config_->bagging_fraction > 0.0f && config_->bagging_fraction < 1.0f && config_->bagging_freq > 0)) {
+      Log::Warning("To enable MVS, please set bagging_freq > 0 and bagging_fraction in (0, 1).");
+    }
   }
 
   ~MVS() {}
@@ -48,5 +51,7 @@ class MVS : public SampleStrategy {
 
   static constexpr double kMVSEps = 1e-20;
 };
+
+
 }  // namespace LightGBM
 #endif   // LIGHTGBM_BOOSTING_MVS_H_
