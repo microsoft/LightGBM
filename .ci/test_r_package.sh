@@ -241,20 +241,9 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     fi
 fi
 
-# ignoring the following NOTE:
-#
-# * checking C++ specification ... NOTE
-#   Specified C++11: please update to current default of C++17
-#
-# until it's resolved (see https://github.com/microsoft/LightGBM/pull/5690)
-ALLOWED_CHECK_NOTES=1
-NUM_CHECK_NOTES=$(
-    cat ${LOG_FILE_NAME} \
-        | grep -e '^Status: .* NOTE.*' \
-        | sed 's/[^0-9]*//g'
-)
-if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
-    echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
+
+if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
+    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit -1
 fi
 
