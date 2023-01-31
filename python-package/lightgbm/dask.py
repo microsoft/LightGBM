@@ -1161,7 +1161,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
@@ -1349,7 +1349,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,
@@ -1518,7 +1518,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     def __getstate__(self) -> Dict[Any, Any]:
         return self._lgb_dask_getstate()
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X: _DaskMatrixLike,
         y: _DaskCollection,

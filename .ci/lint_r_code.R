@@ -42,6 +42,7 @@ LINTERS_TO_USE <- list(
     , "implicit_integers"    = lintr::implicit_integer_linter()
     , "infix_spaces"         = lintr::infix_spaces_linter()
     , "inner_combine"        = lintr::inner_combine_linter()
+    , "fixed_regex"          = lintr::fixed_regex_linter()
     , "literal_coercion"     = lintr::literal_coercion_linter()
     , "long_lines"           = lintr::line_length_linter(length = 120L)
     , "missing_argument"     = lintr::missing_argument_linter()
