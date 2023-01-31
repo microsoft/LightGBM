@@ -984,7 +984,7 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1030,7 +1030,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1191,7 +1191,7 @@ class LGBMRanker(LGBMModel):
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
