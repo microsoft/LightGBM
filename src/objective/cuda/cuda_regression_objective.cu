@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_regression_objective.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
@@ -70,8 +70,12 @@ __global__ void ConvertOutputCUDAKernel_Regression(const bool sqrt, const data_s
 
 const double* CUDARegressionL2loss::LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const {
   const int num_blocks = (num_data + GET_GRADIENTS_BLOCK_SIZE_REGRESSION - 1) / GET_GRADIENTS_BLOCK_SIZE_REGRESSION;
-  ConvertOutputCUDAKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
-  return output;
+  if (sqrt_) {
+    ConvertOutputCUDAKernel_Regression<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_REGRESSION>>>(sqrt_, num_data, input, output);
+    return output;
+  } else {
+    return input;
+  }
 }
 
 template <bool USE_WEIGHT>
@@ -349,4 +353,4 @@ const double* CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const dat
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

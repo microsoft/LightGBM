@@ -345,9 +345,9 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   auto features_in_group = OneFeaturePerGroup(used_features);
 
   auto is_sparse = io_config.is_enable_sparse;
-  if (io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) {
+  if (io_config.device_type == std::string("cuda")) {
       LGBM_config_::current_device = lgbm_device_cuda;
-      if ((io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) && is_sparse) {
+      if ((io_config.device_type == std::string("cuda")) && is_sparse) {
         Log::Warning("Using sparse features with CUDA is currently not supported.");
         is_sparse = false;
       }
@@ -355,8 +355,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda")
-      || io_config.device_type == std::string("cuda_exp");
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
@@ -447,14 +446,14 @@ void Dataset::FinishLoad() {
   }
   metadata_.FinishLoad();
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
   is_finish_load_ = true;
 }
 
@@ -862,15 +861,15 @@ void Dataset::CopySubrow(const Dataset* fullset,
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
       metadata_.CreateCUDAMetadata(gpu_device_id_);
     }
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -1495,7 +1494,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
                    other->max_bin_by_feature_, other->num_total_features_, -1);
   num_total_features_ += other->num_total_features_;
   for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
-    int feat_ind = numeric_feature_map_[i];
+    int feat_ind = other->numeric_feature_map_[i];
     if (feat_ind > -1) {
       numeric_feature_map_.push_back(feat_ind + num_numeric_features_);
     } else {
@@ -1508,13 +1507,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 const void* Dataset::GetColWiseData(
@@ -1536,7 +1535,7 @@ const void* Dataset::GetColWiseData(
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
 }
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 void Dataset::CreateCUDAColumnData() {
   cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
@@ -1671,6 +1670,6 @@ void Dataset::CreateCUDAColumnData() {
                           feature_to_column);
 }
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 
 }  // namespace LightGBM

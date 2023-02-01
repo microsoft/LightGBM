@@ -97,14 +97,17 @@ class ObjectiveFunction {
   */
   virtual bool IsCUDAObjective() const { return false; }
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   /*!
   * \brief Convert output for CUDA version
   */
-  const double* ConvertOutputCUDA(data_size_t /*num_data*/, const double* input, double* /*output*/) const {
+  virtual const double* ConvertOutputCUDA(data_size_t /*num_data*/, const double* input, double* /*output*/) const {
     return input;
   }
-  #endif  // USE_CUDA_EXP
+
+  virtual bool NeedConvertOutputCUDA () const { return false; }
+
+  #endif  // USE_CUDA
 };
 
 }  // namespace LightGBM

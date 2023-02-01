@@ -16,6 +16,13 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      dt_DataTable, pd_DataFrame)
 from .engine import train
 
+__all__ = [
+    'LGBMClassifier',
+    'LGBMModel',
+    'LGBMRanker',
+    'LGBMRegressor',
+]
+
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
         [np.ndarray, np.ndarray],
@@ -382,7 +389,6 @@ class LGBMModel(_LGBMModelBase):
         boosting_type : str, optional (default='gbdt')
             'gbdt', traditional Gradient Boosting Decision Tree.
             'dart', Dropouts meet Multiple Additive Regression Trees.
-            'goss', Gradient-based One-Side Sampling.
             'rf', Random Forest.
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
@@ -978,7 +984,7 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1024,7 +1030,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1185,7 +1191,7 @@ class LGBMRanker(LGBMModel):
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1198,7 +1204,7 @@ class LGBMRanker(LGBMModel):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
         callbacks=None,
