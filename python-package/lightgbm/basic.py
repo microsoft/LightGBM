@@ -199,7 +199,7 @@ def _is_numpy_column_array(data: Any) -> bool:
     return len(shape) == 2 and shape[1] == 1
 
 
-def _cast_numpy_array_to_dtype(array, dtype):
+def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: np.dtype) -> np.ndarray:
     """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
@@ -514,7 +514,7 @@ _FEATURE_IMPORTANCE_TYPE_MAPPER = {
 }
 
 
-def _convert_from_sliced_object(data):
+def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
     """Fix the memory of multi-dimensional sliced object."""
     if isinstance(data, np.ndarray) and isinstance(data.base, np.ndarray):
         if not data.flags.c_contiguous:
@@ -564,7 +564,7 @@ def _c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _check_for_bad_pandas_dtypes(pandas_dtypes_series):
+def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
     float128 = getattr(np, 'float128', type(None))
 
     def is_allowed_numpy_dtype(dtype):
