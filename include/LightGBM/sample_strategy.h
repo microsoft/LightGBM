@@ -38,9 +38,9 @@ class SampleStrategy {
 
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() { return bag_data_indices_; }
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   CUDAVector<data_size_t>& cuda_bag_data_indices() { return cuda_bag_data_indices_; }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 
   void UpdateObjectiveFunction(const ObjectiveFunction* objective_function) {
     objective_function_ = objective_function;
@@ -72,10 +72,10 @@ class SampleStrategy {
   /*! \brief whether need to resize the gradient vectors */
   bool need_resize_gradients_;
 
-  #ifdef USE_CUDA_EXP
-  /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda_exp */
+  #ifdef USE_CUDA
+  /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda */
   CUDAVector<data_size_t> cuda_bag_data_indices_;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 };
 
 }  // namespace LightGBM
