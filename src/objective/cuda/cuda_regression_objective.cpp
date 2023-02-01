@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_regression_objective.hpp"
 
@@ -85,4 +85,4 @@ double CUDARegressionPoissonLoss::LaunchCalcInitScoreKernel(const int class_id) 
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_binary_metric.hpp"
 #include "cuda_pointwise_metric.hpp"
@@ -35,4 +35,4 @@ template void CUDAPointwiseMetricInterface<BinaryLoglossMetric, CUDABinaryLoglos
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

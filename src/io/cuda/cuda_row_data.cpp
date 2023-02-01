@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 
@@ -474,4 +474,4 @@ template const uint64_t* CUDARowData::GetPartitionPtr<uint64_t>() const;
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
