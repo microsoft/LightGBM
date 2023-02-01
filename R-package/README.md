@@ -367,7 +367,7 @@ At build time, `configure` will be run and used to create a file `Makevars`, usi
         --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
-        -t ubuntu:22.04 \
+        ubuntu:22.04 \
         ./R-package/recreate-configure.sh
     ```
 
