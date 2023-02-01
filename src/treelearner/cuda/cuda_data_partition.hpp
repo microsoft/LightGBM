@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
@@ -384,5 +384,5 @@ class CUDADataPartition {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_

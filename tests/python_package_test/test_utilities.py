@@ -91,15 +91,15 @@ WARNING | More than one metric available, picking one to plot.
         "INFO | [LightGBM] [Warning] CUDA currently requires double precision calculations.",
         "INFO | [LightGBM] [Info] LightGBM using CUDA trainer with DP float!!"
     ]
-    cuda_exp_lines = [
-        "INFO | [LightGBM] [Warning] Metric auc is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
-        "INFO | [LightGBM] [Warning] Metric binary_error is not implemented in cuda_exp version. Fall back to evaluation on CPU.",
+    cuda_lines = [
+        "INFO | [LightGBM] [Warning] Metric auc is not implemented in cuda version. Fall back to evaluation on CPU.",
+        "INFO | [LightGBM] [Warning] Metric binary_error is not implemented in cuda version. Fall back to evaluation on CPU.",
     ]
     with open(log_filename, "rt", encoding="utf-8") as f:
         actual_log = f.read().strip()
         actual_log_wo_gpu_stuff = []
         for line in actual_log.split("\n"):
-            if not any(line.startswith(gpu_or_cuda_exp_line) for gpu_or_cuda_exp_line in gpu_lines + cuda_exp_lines):
+            if not any(line.startswith(gpu_or_cuda_line) for gpu_or_cuda_line in gpu_lines + cuda_lines):
                 actual_log_wo_gpu_stuff.append(line)
 
     assert "\n".join(actual_log_wo_gpu_stuff) == expected_log
