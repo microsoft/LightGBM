@@ -10,7 +10,7 @@ from platform import system
 from shutil import copyfile, copytree, rmtree
 from typing import List, Optional, Union
 
-from setuptools import find_packages, setup
+from setuptools import setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
@@ -337,56 +337,19 @@ if __name__ == "__main__":
     if _version_src.is_file():
         copyfile(_version_src, _version_dst)
     version = _version_dst.read_text(encoding='utf-8').strip()
-    readme = (CURRENT_DIR / 'README.rst').read_text(encoding='utf-8')
 
     sys.path.insert(0, str(CURRENT_DIR))
 
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('LightGBM')
 
-    setup(name='lightgbm',
-          version=version,
-          description='LightGBM Python Package',
-          long_description=readme,
-          python_requires='>=3.6',
-          install_requires=[
-              'wheel',
-              'numpy',
-              'scipy',
-              'scikit-learn!=0.22.0'
-          ],
-          extras_require={
-              'dask': [
-                  'dask[array]>=2.0.0',
-                  'dask[dataframe]>=2.0.0',
-                  'dask[distributed]>=2.0.0',
-                  'pandas',
-              ],
-          },
-          maintainer='Yu Shi',
-          maintainer_email='yushi2@microsoft.com',
-          zip_safe=False,
-          cmdclass={
-              'install': CustomInstall,
-              'install_lib': CustomInstallLib,
-              'bdist_wheel': CustomBdistWheel,
-              'sdist': CustomSdist,
-          },
-          packages=find_packages(),
-          include_package_data=True,
-          license='The MIT License (Microsoft)',
-          url='https://github.com/microsoft/LightGBM',
-          classifiers=['Development Status :: 5 - Production/Stable',
-                       'Intended Audience :: Science/Research',
-                       'License :: OSI Approved :: MIT License',
-                       'Natural Language :: English',
-                       'Operating System :: MacOS',
-                       'Operating System :: Microsoft :: Windows',
-                       'Operating System :: POSIX',
-                       'Operating System :: Unix',
-                       'Programming Language :: Python :: 3',
-                       'Programming Language :: Python :: 3.7',
-                       'Programming Language :: Python :: 3.8',
-                       'Programming Language :: Python :: 3.9',
-                       'Programming Language :: Python :: 3.10',
-                       'Topic :: Scientific/Engineering :: Artificial Intelligence'])
+    setup(
+        version=version,
+        zip_safe=False,
+        cmdclass={
+            'install': CustomInstall,
+            'install_lib': CustomInstallLib,
+            'bdist_wheel': CustomBdistWheel,
+            'sdist': CustomSdist,
+        },
+    )
