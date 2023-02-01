@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #define GET_GRADIENTS_BLOCK_SIZE_REGRESSION (1024)
 
@@ -50,6 +50,8 @@ class CUDARegressionL2loss : public CUDARegressionObjectiveInterface<RegressionL
   void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
 
   const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
+
+  bool NeedConvertOutputCUDA() const override { return sqrt_; }
 };
 
 
@@ -123,6 +125,8 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
 
   const double* LaunchConvertOutputCUDAKernel(const data_size_t num_data, const double* input, double* output) const override;
 
+  bool NeedConvertOutputCUDA() const override { return true; }
+
   double LaunchCalcInitScoreKernel(const int class_id) const override;
 
   void LaunchCheckLabelKernel() const;
@@ -131,5 +135,5 @@ class CUDARegressionPoissonLoss : public CUDARegressionObjectiveInterface<Regres
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_

@@ -14,6 +14,13 @@ from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _Confi
                     _LGBM_CustomObjectiveFunction, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
+__all__ = [
+    'cv',
+    'CVBooster',
+    'train',
+]
+
+
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
     Tuple[str, float, bool]

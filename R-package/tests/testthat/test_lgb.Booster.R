@@ -705,7 +705,7 @@ test_that("Saving a model with different feature importance types works", {
     expect_true(lgb.is.Booster(bst))
 
     .feat_importance_from_string <- function(model_string) {
-        file_lines <- strsplit(model_string, "\n")[[1L]]
+        file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
         start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
         blank_line_indices <- which(file_lines == "")
         end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
@@ -771,7 +771,7 @@ test_that("Saving a model with unknown importance type fails", {
 
 
 .params_from_model_string <- function(model_str) {
-    file_lines <- strsplit(model_str, "\n")[[1L]]
+    file_lines <- strsplit(model_str, "\n", fixed = TRUE)[[1L]]
     start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
     blank_line_indices <- which(file_lines == "")
     end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
@@ -1286,7 +1286,7 @@ test_that("Booster's print, show, and summary work correctly", {
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {
       expect_true(any(grepl("^LightGBM Model$", printed_txt)))
-      expect_true(any(grepl("Booster handle is invalid", printed_txt)))
+      expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
     }
 
     .check_methods_work <- function(model) {

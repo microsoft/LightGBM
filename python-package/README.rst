@@ -121,11 +121,9 @@ Build CUDA Version
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
 
-**CUDA** library (version 9.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
+**CUDA** library (version 10.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
 
-Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``--cuda`` with ``--cuda-exp`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries. Note that this new version uses twice the memory, since it stores data row-wise as well as column-wise in memory to improve performance (see this `issue <https://github.com/microsoft/LightGBM/issues/5318>`__ for discussion). 
-
-To use the regular or experimental CUDA versions within Python, pass ``{"device": "cuda"}`` or ``{"device": "cuda_exp"}`` respectively as parameters.
+To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
@@ -210,8 +208,6 @@ Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **W
 Run ``python setup.py install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
 Run ``python setup.py install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
-
-Run ``python setup.py install --cuda-exp`` to enable the new experimental version of CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
 Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 

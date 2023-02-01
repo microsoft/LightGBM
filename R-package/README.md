@@ -352,22 +352,22 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 22.04.
 
-    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 22.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 22.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
-        -t ubuntu:20.04 \
+        ubuntu:22.04 \
         ./R-package/recreate-configure.sh
     ```
 
@@ -483,13 +483,6 @@ RDvalgrind \
 These tests can also be triggered on any pull request by leaving a comment in a pull request:
 
 > /gha run r-valgrind
-
-External (Unofficial) Repositories
-----------------------------------
-
-Projects listed here are not maintained or endorsed by the `LightGBM` development team, but may offer some features currently missing from the main R package.
-
-* [lightgbm.py](https://github.com/kapsner/lightgbm.py): This R package offers a wrapper built with `reticulate`, a package used to call Python code from R. If you are comfortable with the added installation complexity of installing `lightgbm`'s Python package and the performance cost of passing data between R and Python, you might find that this package offers some features that are not yet available in the native `lightgbm` R package.
 
 Known Issues
 ------------

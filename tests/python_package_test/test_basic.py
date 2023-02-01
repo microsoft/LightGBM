@@ -48,7 +48,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv('TASK', '') != 'cuda_exp':
+    if getenv('TASK', '') != 'cuda':
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -374,6 +374,29 @@ def test_add_features_from_different_sources():
             assert d1.get_data().shape == (n_row, n_col * idx)
             res_feature_names += [f'D{idx}_{name}' for name in names]
             assert d1.feature_name == res_feature_names
+
+
+def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys):
+
+    arr_a = np.zeros((100, 1), dtype=np.float32)
+    arr_b = np.random.normal(size=(100, 5))
+
+    dataset_a = lgb.Dataset(arr_a).construct()
+    expected_msg = (
+        '[LightGBM] [Warning] There are no meaningful features which satisfy '
+        'the provided configuration. Decreasing Dataset parameters min_data_in_bin '
+        'or min_data_in_leaf and re-constructing Dataset might resolve this warning.\n'
+    )
+    log_lines = capsys.readouterr().out
+    assert expected_msg in log_lines
+
+    dataset_b = lgb.Dataset(arr_b).construct()
+
+    original_handle = dataset_a.handle.value
+    dataset_a.add_features_from(dataset_b)
+    assert dataset_a.num_feature() == 6
+    assert dataset_a.num_data() == 100
+    assert dataset_a.handle.value == original_handle
 
 
 def test_cegb_affects_behavior(tmp_path):

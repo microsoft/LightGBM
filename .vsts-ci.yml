@@ -21,7 +21,7 @@ resources:
   - container: linux-artifact-builder
     image: lightgbm/vsts-agent:manylinux_2_28_x86_64
   - container: ubuntu-latest
-    image: 'ubuntu:20.04'
+    image: 'ubuntu:22.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
     image: wch1/r-debug
@@ -84,7 +84,7 @@ jobs:
   variables:
     COMPILER: clang
     DEBIAN_FRONTEND: 'noninteractive'
-    IN_UBUNTU_LATEST_CONTAINER: 'true'
+    IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
@@ -151,7 +151,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-22.04
   timeoutInMinutes: 180
   strategy:
     matrix:
@@ -192,7 +192,7 @@ jobs:
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
-      IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
+      IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
       docker pull "${IMAGE_URI}" || exit -1
       PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
       echo "detected image platform: ${PLATFORM}"
@@ -283,6 +283,8 @@ jobs:
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
   - script: |
+      cmd /c "conda config --remove channels defaults"
+      cmd /c "conda config --add channels nodefaults"
       cmd /c "conda config --add channels conda-forge"
       cmd /c "conda config --set channel_priority strict"
       cmd /c "conda init powershell"
@@ -299,7 +301,7 @@ jobs:
 ###########################################
   condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   container: rbase
   steps:
   - script: |
@@ -330,7 +332,7 @@ jobs:
   - R_artifact
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   steps:
   # Create archives with complete source code included (with git submodules)
   - task: ArchiveFiles@2

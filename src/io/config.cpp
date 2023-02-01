@@ -99,6 +99,20 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
   }
 }
 
+void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& params, std::string* strategy) {
+  std::string value;
+  if (Config::GetString(params, "data_sample_strategy", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("goss")) {
+      *strategy = "goss";
+    } else if (value == std::string("bagging")) {
+      *strategy = "bagging";
+    } else {
+      Log::Fatal("Unknown sample strategy %s", value.c_str());
+    }
+  }
+}
+
 void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric) {
   std::unordered_set<std::string> metric_sets;
   out_metric->clear();
@@ -163,8 +177,6 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
       *device_type = "gpu";
     } else if (value == std::string("cuda")) {
       *device_type = "cuda";
-    } else if (value == std::string("cuda_exp")) {
-      *device_type = "cuda_exp";
     } else {
       Log::Fatal("Unknown device type %s", value.c_str());
     }
@@ -242,10 +254,11 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
+  GetDataSampleStrategy(params, &data_sample_strategy);
   GetObjectiveType(params, &objective);
   GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
-  if (device_type == std::string("cuda") || device_type == std::string("cuda_exp")) {
+  if (device_type == std::string("cuda")) {
     LGBM_config_::current_device = lgbm_device_cuda;
   }
   GetTreeLearnerType(params, &tree_learner);
@@ -358,25 +371,20 @@ void Config::CheckParamConflict() {
       num_leaves = static_cast<int>(full_num_leaves);
     }
   }
-  if (device_type == std::string("gpu") || device_type == std::string("cuda")) {
+  if (device_type == std::string("gpu")) {
     // force col-wise for gpu, and cuda version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
-  } else if (device_type == std::string("cuda_exp")) {
-    // force row-wise for cuda_exp version
+  } else if (device_type == std::string("cuda")) {
+    // force row-wise for cuda version
     force_col_wise = false;
     force_row_wise = true;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
-  }
-  // force gpu_use_dp for CUDA
-  if (device_type == std::string("cuda") && !gpu_use_dp) {
-    Log::Warning("CUDA currently requires double precision calculations.");
-    gpu_use_dp = true;
   }
   // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
@@ -422,6 +430,12 @@ void Config::CheckParamConflict() {
         "Cannot set both min_data_in_leaf and min_sum_hessian_in_leaf to 0. "
         "Will set min_data_in_leaf to 1.");
     min_data_in_leaf = 1;
+  }
+  if (boosting == std::string("goss")) {
+    boosting = std::string("gbdt");
+    data_sample_strategy = std::string("goss");
+    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
+                 "To suppress this warning, set data_sample_strategy=goss instead.");
   }
 }
 
