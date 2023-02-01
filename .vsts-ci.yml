@@ -215,7 +215,7 @@ jobs:
 - job: macOS
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: gcc
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
@@ -235,7 +235,7 @@ jobs:
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
-        SANITIZERS: "address;undefined"
+        SANITIZERS: "address;undefined;thread"
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
