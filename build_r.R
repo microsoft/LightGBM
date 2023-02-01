@@ -394,6 +394,7 @@ description_contents <- gsub(
   pattern = "~~CXXSTD~~"
   , replacement = "C++11"
   , x = description_contents
+  , fixed = TRUE
 )
 writeLines(description_contents, DESCRIPTION_FILE)
 
