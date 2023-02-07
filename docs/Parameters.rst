@@ -354,7 +354,7 @@ Learning Control Parameters
 
    -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
 
-   -  **Note**: to enable bagging, ``bagging_fraction`` should be set to a value between ``0.0`` and ``1.0``
+   -  **Note**: bagging is only effective when ``0.0 < bagging_fraction < 1.0``
 
 -  ``bagging_seed`` :raw-html:`<a id="bagging_seed" title="Permalink to this parameter" href="#bagging_seed">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, aliases: ``bagging_fraction_seed``
 
