@@ -1154,7 +1154,7 @@ class _InnerPredictor:
             cs=csr,
             out_shape=out_shape,
             out_ptr_indptr=out_ptr_indptr,
-            out_ptr_indicies=out_ptr_indices,
+            out_ptr_indices=out_ptr_indices,
             out_ptr_data=out_ptr_data,
             indptr_type=type_ptr_indptr,
             data_type=type_ptr_data,
@@ -1165,7 +1165,6 @@ class _InnerPredictor:
 
     def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type):
         """Predict for a CSR data."""
-
         if predict_type == _C_API_PREDICT_CONTRIB:
             return self.__inner_predict_csr_sparse(
                 csr=csr,
