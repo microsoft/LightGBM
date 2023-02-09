@@ -93,7 +93,6 @@ def register_logger(
     warning_method_name : str, optional (default="warning")
         Method used to log warning messages.
     """
-
     if not _has_method(logger, info_method_name) or not _has_method(logger, warning_method_name):
         raise TypeError(
             f"Logger must provide '{info_method_name}' and '{warning_method_name}' method"
@@ -1259,7 +1258,7 @@ class _InnerPredictor:
             return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type)
         if predict_type == _C_API_PREDICT_CONTRIB:
             return self.__inner_predict_sparse_csc(
-                csv=csc,
+                csc=csc,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type
