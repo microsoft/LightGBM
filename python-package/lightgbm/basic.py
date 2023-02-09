@@ -570,6 +570,7 @@ def _c_int_array(data):
 
 
 def is_allowed_numpy_dtype(dtype) -> bool:
+    float128 = getattr(np, 'float128', type(None))
     return (
         issubclass(dtype, (np.integer, np.floating, np.bool_))
         and not issubclass(dtype, (np.timedelta64, float128))
@@ -577,7 +578,6 @@ def is_allowed_numpy_dtype(dtype) -> bool:
 
 
 def _check_for_bad_pandas_dtypes(pandas_dtypes_series) -> None:
-    float128 = getattr(np, 'float128', type(None))
     bad_pandas_dtypes = [
         f'{column_name}: {pandas_dtype}'
         for column_name, pandas_dtype in pandas_dtypes_series.items()
@@ -1196,7 +1196,8 @@ class _InnerPredictor:
                 csr=csr,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
-                predict_type=predict_type
+                predict_type=predict_type,
+                preds=None
             )
 
     def __inner_predict_sparse_csc(
