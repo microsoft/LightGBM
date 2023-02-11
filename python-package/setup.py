@@ -348,6 +348,7 @@ if __name__ == "__main__":
           version=version,
           description='LightGBM Python Package',
           long_description=readme,
+          long_description_content_type='text/x-rst',
           python_requires='>=3.6',
           install_requires=[
               'wheel',
