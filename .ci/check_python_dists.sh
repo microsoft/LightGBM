@@ -12,7 +12,9 @@ pip install \
 echo "twine check..."
 twine check --strict ${DIST_DIR}/* || exit -1
 
-echo "check-wheel-contents..."
-check-wheel-contents ${DIST_DIR}/* || exit -1
+if test "${METHOD}" = "wheel"; then
+    echo "check-wheel-contents..."
+    check-wheel-contents ${DIST_DIR}/*.whl || exit -1
+fi
 
 echo "done checking Python package distributions"
