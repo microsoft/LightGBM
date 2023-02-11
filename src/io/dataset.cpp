@@ -26,6 +26,7 @@ Dataset::Dataset() {
   data_filename_ = "noname";
   num_data_ = 0;
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   has_raw_ = false;
 }
 
@@ -35,13 +36,14 @@ Dataset::Dataset(data_size_t num_data) {
   num_data_ = num_data;
   metadata_.Init(num_data_, NO_SPECIFIC, NO_SPECIFIC);
   is_finish_load_ = false;
+  wait_for_manual_finish_ = false;
   group_bin_boundaries_.push_back(0);
   has_raw_ = false;
 }
 
 Dataset::~Dataset() {}
 
-std::vector<std::vector<int>> NoGroup(const std::vector<int>& used_features) {
+std::vector<std::vector<int>> OneFeaturePerGroup(const std::vector<int>& used_features) {
   std::vector<std::vector<int>> features_in_group;
   features_in_group.resize(used_features.size());
   for (size_t i = 0; i < used_features.size(); ++i) {
@@ -318,9 +320,12 @@ std::vector<std::vector<int>> FastFeatureBundling(
 void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
                         int num_total_features,
                         const std::vector<std::vector<double>>& forced_bins,
-                        int** sample_non_zero_indices, double** sample_values,
-                        const int* num_per_col, int num_sample_col,
-                        size_t total_sample_cnt, const Config& io_config) {
+                        int** sample_non_zero_indices,
+                        double** sample_values,
+                        const int* num_per_col,
+                        int num_sample_col,
+                        size_t total_sample_cnt,
+                        const Config& io_config) {
   num_total_features_ = num_total_features;
   CHECK_EQ(num_total_features_, static_cast<int>(bin_mappers->size()));
   // get num_features
@@ -337,12 +342,12 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
         "Decreasing Dataset parameters min_data_in_bin or min_data_in_leaf and re-constructing "
         "Dataset might resolve this warning.");
   }
-  auto features_in_group = NoGroup(used_features);
+  auto features_in_group = OneFeaturePerGroup(used_features);
 
   auto is_sparse = io_config.is_enable_sparse;
-  if (io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) {
+  if (io_config.device_type == std::string("cuda")) {
       LGBM_config_::current_device = lgbm_device_cuda;
-      if ((io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) && is_sparse) {
+      if ((io_config.device_type == std::string("cuda")) && is_sparse) {
         Log::Warning("Using sparse features with CUDA is currently not supported.");
         is_sparse = false;
       }
@@ -350,8 +355,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda")
-      || io_config.device_type == std::string("cuda_exp");
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
@@ -440,14 +444,16 @@ void Dataset::FinishLoad() {
       feature_groups_[i]->FinishLoad();
     }
   }
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  metadata_.FinishLoad();
+
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
   is_finish_load_ = true;
 }
 
@@ -733,6 +739,11 @@ void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   group_feature_cnt_ = dataset->group_feature_cnt_;
   forced_bin_bounds_ = dataset->forced_bin_bounds_;
   feature_need_push_zeros_ = dataset->feature_need_push_zeros_;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
 }
 
 void Dataset::CreateValid(const Dataset* dataset) {
@@ -850,15 +861,15 @@ void Dataset::CopySubrow(const Dataset* fullset,
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
       metadata_.CreateCUDAMetadata(gpu_device_id_);
     }
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -1483,7 +1494,7 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
                    other->max_bin_by_feature_, other->num_total_features_, -1);
   num_total_features_ += other->num_total_features_;
   for (size_t i = 0; i < (other->numeric_feature_map_).size(); ++i) {
-    int feat_ind = numeric_feature_map_[i];
+    int feat_ind = other->numeric_feature_map_[i];
     if (feat_ind > -1) {
       numeric_feature_map_.push_back(feat_ind + num_numeric_features_);
     } else {
@@ -1496,13 +1507,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 const void* Dataset::GetColWiseData(
@@ -1524,7 +1535,7 @@ const void* Dataset::GetColWiseData(
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
 }
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 void Dataset::CreateCUDAColumnData() {
   cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
@@ -1659,6 +1670,6 @@ void Dataset::CreateCUDAColumnData() {
                           feature_to_column);
 }
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 
 }  // namespace LightGBM

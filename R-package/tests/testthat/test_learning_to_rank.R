@@ -19,7 +19,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
+    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",", fixed = TRUE)[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"
@@ -81,7 +81,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , group = rep(150L, 40L)
     )
     ndcg_at <- "1,2,3"
-    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",")[[1L]])
+    eval_names <- paste0("ndcg@", strsplit(ndcg_at, ",", fixed = TRUE)[[1L]])
     params <- list(
         objective = "lambdarank"
         , metric = "ndcg"

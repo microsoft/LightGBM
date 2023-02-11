@@ -35,7 +35,7 @@ Run the following from the root of this repository to pull the relevant image an
         --env READTHEDOCS=true \
         --workdir=/opt/LightGBM/docs \
         --entrypoint="" \
-        -it readthedocs/build:ubuntu-20.04-2021.09.23 \
+        readthedocs/build:ubuntu-20.04-2021.09.23 \
         /bin/bash build-docs.sh
 
 When that code completes, open ``docs/_build/html/index.html`` in your browser.

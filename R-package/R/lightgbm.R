@@ -44,7 +44,7 @@
 #'                 }
 #'             }
 #' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
-#' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
+#' @param init_model path of model file or \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},

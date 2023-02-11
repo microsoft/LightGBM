@@ -36,7 +36,7 @@ Application::Application(int argc, char** argv) {
     Log::Fatal("No training/prediction data, application quit");
   }
 
-  if (config_.device_type == std::string("cuda") || config_.device_type == std::string("cuda_exp")) {
+  if (config_.device_type == std::string("cuda")) {
       LGBM_config_::current_device = lgbm_device_cuda;
   }
 }
@@ -48,15 +48,15 @@ Application::~Application() {
 }
 
 void Application::LoadParameters(int argc, char** argv) {
+  std::unordered_map<std::string, std::vector<std::string>> all_params;
   std::unordered_map<std::string, std::string> params;
   for (int i = 1; i < argc; ++i) {
-    Config::KV2Map(&params, argv[i]);
+    Config::KV2Map(&all_params, argv[i]);
   }
-  // check for alias
-  ParameterAlias::KeyAliasTransform(&params);
   // read parameters from config file
-  if (params.count("config") > 0) {
-    TextReader<size_t> config_reader(params["config"].c_str(), false);
+  bool config_file_ok = true;
+  if (all_params.count("config") > 0) {
+    TextReader<size_t> config_reader(all_params["config"][0].c_str(), false);
     config_reader.ReadAllLines();
     if (!config_reader.Lines().empty()) {
       for (auto& line : config_reader.Lines()) {
@@ -68,16 +68,19 @@ void Application::LoadParameters(int argc, char** argv) {
         if (line.size() == 0) {
           continue;
         }
-        Config::KV2Map(&params, line.c_str());
+        Config::KV2Map(&all_params, line.c_str());
       }
     } else {
-      Log::Warning("Config file %s doesn't exist, will ignore",
-                   params["config"].c_str());
+      config_file_ok = false;
     }
   }
-  // check for alias again
+  Config::SetVerbosity(all_params);
+  // de-duplicate params
+  Config::KeepFirstValues(all_params, &params);
+  if (!config_file_ok) {
+    Log::Warning("Config file %s doesn't exist, will ignore", params["config"].c_str());
+  }
   ParameterAlias::KeyAliasTransform(&params);
-  // load configs
   config_.Set(params);
   Log::Info("Finished loading parameters");
 }

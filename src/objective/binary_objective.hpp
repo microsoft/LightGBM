@@ -129,7 +129,7 @@ class BinaryLogloss: public ObjectiveFunction {
         // calculate gradients and hessians
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
-        gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
+        gradients[i] = static_cast<score_t>(response * label_weight * weights_[i]);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
@@ -160,7 +160,7 @@ class BinaryLogloss: public ObjectiveFunction {
     pavg = std::min(pavg, 1.0 - kEpsilon);
     pavg = std::max<double>(pavg, kEpsilon);
     double initscore = std::log(pavg / (1.0f - pavg)) / sigmoid_;
-    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
+    Log::Info("[%s:%s]: pavg=%f -> initscore=%f", GetName(), __func__, pavg, initscore);
     return initscore;
   }
 
@@ -189,7 +189,7 @@ class BinaryLogloss: public ObjectiveFunction {
 
   data_size_t NumPositiveData() const override { return num_pos_data_; }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of positive samples */

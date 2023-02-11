@@ -344,15 +344,7 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
-#ifdef USE_CUDA
-  if (LGBM_config_::current_learner == use_cpu_learner) {
-    SerialTreeLearner::ConstructHistograms(is_feature_used, use_subtract);
-  } else {
-    ConstructHistograms(is_feature_used, use_subtract);
-  }
-#else
   ConstructHistograms(is_feature_used, use_subtract);
-#endif
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
 }
 
@@ -719,7 +711,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const {
+                                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* /*train_score*/) const {
   if (obj != nullptr && obj->IsRenewTreeOutput()) {
     CHECK_LE(tree->num_leaves(), data_partition_->num_leaves());
     const data_size_t* bag_mapper = nullptr;

@@ -259,8 +259,14 @@ class Bin {
   /*! \brief virtual destructor */
   virtual ~Bin() {}
   /*!
+  * \brief Initialize for pushing.  By default, no action needed.
+  * \param num_thread The number of external threads that will be calling the push APIs
+  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
+  */
+  virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) { }
+  /*!
   * \brief Push one record
-  * \pram tid Thread id
+  * \param tid Thread id
   * \param idx Index of record
   * \param value bin value of record
   */
@@ -474,13 +480,13 @@ class MultiValBin {
 
   virtual MultiValBin* Clone() = 0;
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   virtual const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
     const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const = 0;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -17,6 +17,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   const hist_t* cuda_hist,
   const Dataset* train_data,
   const std::vector<uint32_t>& feature_hist_offsets,
+  const bool select_features_by_node,
   const Config* config):
   num_features_(train_data->num_features()),
   num_leaves_(config->num_leaves),
@@ -36,6 +37,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   use_smoothing_(config->path_smooth > 0),
   path_smooth_(config->path_smooth),
   num_total_bin_(feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back())),
+  select_features_by_node_(select_features_by_node),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
   cuda_leaf_best_split_info_ = nullptr;
@@ -104,6 +106,11 @@ void CUDABestSplitFinder::Init() {
       AllocateCUDAMemory<hist_t>(&cuda_feature_hist_stat_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
       AllocateCUDAMemory<data_size_t>(&cuda_feature_hist_index_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
     }
+  }
+
+  if (select_features_by_node_) {
+    is_feature_used_by_smaller_node_.Resize(num_features_);
+    is_feature_used_by_larger_node_.Resize(num_features_);
   }
 }
 
@@ -364,6 +371,16 @@ void CUDABestSplitFinder::AllocateCatVectors(CUDASplitInfo* cuda_split_infos, ui
   LaunchAllocateCatVectorsKernel(cuda_split_infos, cat_threshold_vec, cat_threshold_real_vec, len);
 }
 
+void CUDABestSplitFinder::SetUsedFeatureByNode(const std::vector<int8_t>& is_feature_used_by_smaller_node,
+                                               const std::vector<int8_t>& is_feature_used_by_larger_node) {
+  if (select_features_by_node_) {
+    CopyFromHostToCUDADevice<int8_t>(is_feature_used_by_smaller_node_.RawData(),
+                                     is_feature_used_by_smaller_node.data(), is_feature_used_by_smaller_node.size(), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<int8_t>(is_feature_used_by_larger_node_.RawData(),
+                                     is_feature_used_by_larger_node.data(), is_feature_used_by_larger_node.size(), __FILE__, __LINE__);
+  }
+}
+
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

@@ -172,15 +172,24 @@ test_that("Loading a Booster from a text file works", {
     data(agaricus.test, package = "lightgbm")
     train <- agaricus.train
     test <- agaricus.test
+    params <- list(
+        num_leaves = 4L
+        , boosting = "rf"
+        , bagging_fraction = 0.8
+        , bagging_freq = 1L
+        , boost_from_average = FALSE
+        , categorical_feature = c(1L, 2L)
+        , interaction_constraints = list(c(1L, 2L), 1L)
+        , feature_contri = rep(0.5, ncol(train$data))
+        , metric = c("mape", "average_precision")
+        , learning_rate = 1.0
+        , objective = "binary"
+        , verbosity = VERBOSITY
+    )
     bst <- lightgbm(
         data = as.matrix(train$data)
         , label = train$label
-        , params = list(
-            num_leaves = 4L
-            , learning_rate = 1.0
-            , objective = "binary"
-            , verbose = VERBOSITY
-        )
+        , params = params
         , nrounds = 2L
     )
     expect_true(lgb.is.Booster(bst))
@@ -199,6 +208,9 @@ test_that("Loading a Booster from a text file works", {
     )
     pred2 <- predict(bst2, test$data)
     expect_identical(pred, pred2)
+
+    # check that the parameters are loaded correctly
+    expect_equal(bst2$params[names(params)], params)
 })
 
 test_that("boosters with linear models at leaves can be written to text file and re-loaded successfully", {
@@ -693,7 +705,7 @@ test_that("Saving a model with different feature importance types works", {
     expect_true(lgb.is.Booster(bst))
 
     .feat_importance_from_string <- function(model_string) {
-        file_lines <- strsplit(model_string, "\n")[[1L]]
+        file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
         start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
         blank_line_indices <- which(file_lines == "")
         end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
@@ -759,7 +771,7 @@ test_that("Saving a model with unknown importance type fails", {
 
 
 .params_from_model_string <- function(model_str) {
-    file_lines <- strsplit(model_str, "\n")[[1L]]
+    file_lines <- strsplit(model_str, "\n", fixed = TRUE)[[1L]]
     start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
     blank_line_indices <- which(file_lines == "")
     end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
@@ -1274,7 +1286,7 @@ test_that("Booster's print, show, and summary work correctly", {
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {
       expect_true(any(grepl("^LightGBM Model$", printed_txt)))
-      expect_true(any(grepl("Booster handle is invalid", printed_txt)))
+      expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
     }
 
     .check_methods_work <- function(model) {

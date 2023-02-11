@@ -7,7 +7,7 @@ on:
 jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
-    timeout-minutes: 240
+    timeout-minutes: 300
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:
@@ -24,7 +24,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true
