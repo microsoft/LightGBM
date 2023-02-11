@@ -3541,8 +3541,8 @@ test_that("lightgbm() changes objective='auto' appropriately", {
     x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
-  expect_true(any(grepl("objective=regression", model_txt_lines)))
-  expect_false(any(grepl("objective=regression_l1", model_txt_lines)))
+  expect_true(any(grepl("objective=regression", model_txt_lines, fixed = TRUE)))
+  expect_false(any(grepl("objective=regression_l1", model_txt_lines, fixed = TRUE)))
 
   # Binary classification
   x <- train$data
@@ -3553,7 +3553,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
     x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
-  expect_true(any(grepl("objective=binary", model_txt_lines)))
+  expect_true(any(grepl("objective=binary", model_txt_lines, fixed = TRUE)))
 
   # Multi-class classification
   data("iris")
@@ -3566,7 +3566,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
     x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
-  expect_true(any(grepl("objective=multiclass", model_txt_lines)))
+  expect_true(any(grepl("objective=multiclass", model_txt_lines, fixed = TRUE)))
 })
 
 test_that("lightgbm() determines number of classes for non-default multiclass objectives", {
@@ -3580,7 +3580,7 @@ test_that("lightgbm() determines number of classes for non-default multiclass ob
     x = model$save_model_to_string()
     , split = "\n"
   )[[1L]]
-  expect_true(any(grepl("objective=multiclassova", model_txt_lines)))
+  expect_true(any(grepl("objective=multiclassova", model_txt_lines, fixed = TRUE)))
 })
 
 test_that("lightgbm() doesn't accept binary classification with non-binary factors", {
