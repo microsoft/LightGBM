@@ -3540,6 +3540,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(grepl("objective=regression", model_txt_lines, fixed = TRUE)))
   expect_false(any(grepl("objective=regression_l1", model_txt_lines, fixed = TRUE)))
@@ -3552,6 +3553,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(grepl("objective=binary", model_txt_lines, fixed = TRUE)))
 
@@ -3565,6 +3567,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(grepl("objective=multiclass", model_txt_lines, fixed = TRUE)))
 })
@@ -3579,6 +3582,7 @@ test_that("lightgbm() determines number of classes for non-default multiclass ob
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(grepl("objective=multiclassova", model_txt_lines, fixed = TRUE)))
 })
