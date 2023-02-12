@@ -55,7 +55,8 @@ If <= 0, all iterations from start_iteration are used (no limits).}
 
             If the model was fit through function \link{lightgbm} and it was passed a factor as labels,
             passing the prediction type through \code{params} instead of through this argument might
-            result in factor levels for classification objectives not being applied correctly to the resulting output.}
+            result in factor levels for classification objectives not being applied correctly to the
+            resulting output.}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{

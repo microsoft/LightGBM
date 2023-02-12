@@ -53,7 +53,8 @@
 
             If the model was fit through function \link{lightgbm} and it was passed a factor as labels,
             passing the prediction type through \code{params} instead of through this argument might
-            result in factor levels for classification objectives not being applied correctly to the resulting output.}
+            result in factor levels for classification objectives not being applied correctly to the
+            resulting output.}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
