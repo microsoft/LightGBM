@@ -48,7 +48,15 @@ DataProcessor <- R6::R6Class(
           if (length(present_num_class)) {
             for (num_class_alias in present_num_class) {
               if (params[[num_class_alias]] != data_num_class) {
-                warning("'num_class' was passed as parameter, but it is set automatically when passing factors as labels.")
+                warning(
+                  sprintf(
+                    "Found %s=%d in params, 'label' is a factor with %d levels. %s will be ignored."
+                    , num_class_alias
+                    , params[[num_class_alias]]
+                    , data_num_class
+                    , num_class_alias
+                  )
+                )
                 break
               }
             }
