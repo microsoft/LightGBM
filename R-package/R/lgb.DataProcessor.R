@@ -33,12 +33,12 @@ DataProcessor <- R6::R6Class(
           if (objective == "auto") {
             objective <- "multiclass"
           }
-          if (!(objective %in% .MULTICLASS_OBJECTIVES)) {
+          if (!(objective %in% .MULTICLASS_OBJECTIVES())) {
             stop(
               sprintf(
                 "Factors with >2 levels as labels only allowed for multi-class objectives. Got: %s (allowed: %s)"
                 , objective
-                , toString(.MULTICLASS_OBJECTIVES)
+                , toString(.MULTICLASS_OBJECTIVES())
               )
             )
           }

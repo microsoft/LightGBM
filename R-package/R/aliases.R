@@ -79,11 +79,15 @@
     )
 }
 
-.MULTICLASS_OBJECTIVES <- c(
-    "multiclass"
-    , "softmax"
-    , "multiclassova"
-    , "multiclass_ova"
-    , "ova"
-    , "ovr"
-)
+.MULTICLASS_OBJECTIVES <- function() {
+    return(
+        c(
+            "multiclass"
+            , "softmax"
+            , "multiclassova"
+            , "multiclass_ova"
+            , "ova"
+            , "ovr"
+        )
+    )
+}
