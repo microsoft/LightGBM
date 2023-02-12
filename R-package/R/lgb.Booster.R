@@ -839,9 +839,9 @@ Booster <- R6::R6Class(
 #'             Note that, if using custom objectives, types "class" and "response" will not be available and will
 #'             default towards using "raw" instead.
 #'
-#'             If the model was fit through function \link{lightgbm}, passing the prediction type through \code{params}
-#'             instead of through this argument might result in factor levels (for classification objectives) not being
-#'             applied correctly to the resulting output.
+#'             If the model was fit through function \link{lightgbm} and it was passed a factor as labels,
+#'             passing the prediction type through \code{params} instead of through this argument might
+#'             result in factor levels for classification objectives not being applied correctly to the resulting output.
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.

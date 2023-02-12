@@ -185,10 +185,15 @@ lightgbm <- function(data,
   # Process factors as labels and auto-determine objective
   if (!lgb.is.Dataset(data)) {
     data_processor <- DataProcessor$new()
-    temp <- data_processor$process_y(label, objective, params)
+    temp <- data_processor$process_y(
+        y = label
+        , objective = objective
+        , params = params
+    )
     label <- temp$y
     objective <- temp$objective
     params <- temp$params
+    rm(temp)
   } else {
     data_processor <- NULL
   }
