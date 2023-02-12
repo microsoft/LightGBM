@@ -3,25 +3,25 @@ DataProcessor <- R6::R6Class(
   public = list(
     factor_levels = NULL,
 
-    process_y = function(y, objective, params) {
+    process_label = function(label, objective, params) {
 
-      if (is.character(y)) {
-        y <- factor(y)
+      if (is.character(label)) {
+        label <- factor(label)
       }
 
-      if (is.factor(y)) {
+      if (is.factor(label)) {
 
-        if (is.ordered(y)) {
+        if (is.ordered(label)) {
           warning("Passed labels as ordered factor. Order of levels is ignored.")
         }
 
-        self$factor_levels <- levels(y)
+        self$factor_levels <- levels(label)
         if (length(self$factor_levels) <= 1L) {
           stop("Labels to predict is a factor with <2 possible values.")
         }
 
-        y <- as.numeric(y) - 1.0
-        out <- list(y = y)
+        label <- as.numeric(label) - 1.0
+        out <- list(label = label)
         if (length(self$factor_levels) == 2L) {
           if (objective == "auto") {
             objective <- "binary"
@@ -64,14 +64,14 @@ DataProcessor <- R6::R6Class(
 
       } else {
 
-        y <- as.numeric(y)
+        label <- as.numeric(label)
         if (objective == "auto") {
           objective <- "regression"
         }
         out <- list(
-          y = y,
-          objective = objective,
-          params = params
+          label = label
+          , objective = objective
+          , params = params
         )
         return(out)
 
