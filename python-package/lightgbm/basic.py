@@ -1083,7 +1083,7 @@ class _InnerPredictor:
             raise ValueError("Wrong length of pre-allocated predict array")
         out_num_preds = ctypes.c_int64(0)
 
-        ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
+        ptr_indptr, type_ptr_indptr, _ = _c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
 
         assert csr.shape[1] <= _MAX_INT32
