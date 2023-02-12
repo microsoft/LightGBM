@@ -189,6 +189,7 @@ lightgbm <- function(data,
     label <- temp$y
     objective <- temp$objective
     params <- temp$params
+    rm(temp)
   } else {
     data_processor <- NULL
   }
