@@ -42,29 +42,22 @@ DataProcessor <- R6::R6Class(
               )
             )
           }
-          aliases_num_class <- .PARAMETER_ALIASES()$num_class
-          present_num_class <- intersect(aliases_num_class, names(params))
           data_num_class <- length(self$factor_levels)
-          if (length(present_num_class)) {
-            for (num_class_alias in present_num_class) {
-              if (params[[num_class_alias]] != data_num_class) {
-                warning(
-                  sprintf(
-                    "Found %s=%d in params, 'label' is a factor with %d levels. %s will be ignored."
-                    , num_class_alias
-                    , params[[num_class_alias]]
-                    , data_num_class
-                    , num_class_alias
-                  )
-                )
-                break
-              }
-            }
-            params <- params[setdiff(names(params), present_num_class)]
+          params <- lgb.check.wrapper_param(
+              main_param_name = "num_class"
+              , params = params
+              , alternative_kwarg_value = data_num_class
+          )
+          if (params[["num_class"]] != data_num_class) {
+            warning(
+              sprintf(
+                "Found num_class=%d in params, but 'label' is a factor with %d levels. 'num_class' will be ignored."
+                , params[["num_class"]]
+                , data_num_class
+              )
+            )
+            params$num_class <- data_num_class
           }
-
-          params$num_class <- data_num_class
-
         }
         out$objective <- objective
         out$params <- params
