@@ -18,6 +18,7 @@ def find_lib_path() -> List[str]:
     curr_path = Path(__file__).absolute().parent
     dll_path = [curr_path,
                 curr_path.parents[1],
+                curr_path.parents[2],
                 curr_path / 'compile',
                 curr_path.parent / 'compile',
                 curr_path.parents[1] / 'lib']
