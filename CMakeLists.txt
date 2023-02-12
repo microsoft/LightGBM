@@ -421,8 +421,8 @@ endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
-add_executable(lightgbm src/main.cpp src/application/application.cpp)
-target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+# add_executable(lightgbm src/main.cpp src/application/application.cpp)
+# target_link_libraries(lightgbm PRIVATE lightgbm_objs)
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
@@ -544,19 +544,19 @@ if(USE_CUDA)
   # each target that contains or depends on cuda source.
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  #set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
 
   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Device linking is not supported for object libraries.
   # Thus we have to specify them on final targets.
-  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  #set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
-  target_link_libraries(lightgbm PRIVATE ${histograms})
+  #target_link_libraries(lightgbm PRIVATE ${histograms})
   target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
@@ -619,11 +619,22 @@ if(BUILD_CPP_TEST)
   target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
 endif()
 
-install(
-  TARGETS lightgbm _lightgbm
-  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-)
+# scikit-build-core, the build tool for the Python packages, runs "make install" without
+# the ability to specificy targets, so need to ensure that only targets the shared
+# library (not also the CLI)
+if(SKBUILD)
+    install(
+      TARGETS _lightgbm
+      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    )
+else()
+    install(
+      TARGETS lightgbm _lightgbm
+      RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    )
+endif()
 
 install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
