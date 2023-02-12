@@ -1008,12 +1008,15 @@ predict.lgb.Booster <- function(object,
   if (type == "class") {
     if (object$params$objective == "binary") {
       pred <- as.integer(pred >= 0.5)
-    } else if (object$params$objective %in% .MULTICLASS_OBJECTIVES) {
+    } else if (object$params$objective %in% .MULTICLASS_OBJECTIVES()) {
       pred <- max.col(pred) - 1L
     }
   }
   if (!is.null(object$data_processor)) {
-    pred <- object$data_processor$process_predictions(pred, type)
+    pred <- object$data_processor$process_predictions(
+      pred = pred
+      , type = type
+    )
   }
   return(pred)
 }
