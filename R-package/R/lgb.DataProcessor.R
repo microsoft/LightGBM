@@ -26,7 +26,7 @@ DataProcessor <- R6::R6Class(
           if (objective == "auto") {
             objective <- "binary"
           }
-          if (objective != "binary") {
+          if (!(objective %in% .BINARY_OBJECTIVES())) {
             stop("Two-level factors as labels only allowed for objective='binary' or objective='auto'.")
           }
         } else {
