@@ -3591,7 +3591,9 @@ test_that("lightgbm() doesn't accept binary classification with non-binary facto
   data("iris")
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
-  expect_error(lightgbm(x, y, objective = "binary", verbose = VERBOSITY, nrounds = 5L))
+  expect_error({
+    lightgbm(x, y, objective = "binary", verbose = VERBOSITY, nrounds = 5L)
+  }, regexp = "Factors with >2 levels as labels only allowed for multi-class objectives")
 })
 
 test_that("lightgbm() doesn't accept multi-class classification with binary factors", {
@@ -3600,7 +3602,9 @@ test_that("lightgbm() doesn't accept multi-class classification with binary fact
   y[y == "setosa"] <- "versicolor"
   y <- factor(y)
   x <- as.matrix(iris[, -5L])
-  expect_error(lightgbm(x, y, objective = "multiclass", verbose = VERBOSITY, nrounds = 5L))
+  expect_error({
+    lightgbm(x, y, objective = "multiclass", verbose = VERBOSITY, nrounds = 5L)
+  }, regexp = "Two-level factors as labels only allowed for objective='binary'")
 })
 
 test_that("lightgbm() model predictions retain factor levels for multiclass classification", {
