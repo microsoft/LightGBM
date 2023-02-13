@@ -618,6 +618,7 @@ test_that("lgb.cv() prefers objective in params to keyword argument", {
     model_txt_lines <- strsplit(
       x = bst$save_model_to_string()
       , split = "\n"
+      , fixed = TRUE
     )[[1L]]
     expect_true(any(model_txt_lines == "objective=regression_l1"))
     expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -780,6 +781,7 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression_l1"))
   expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -2296,8 +2298,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
       , verbose = 1L
     )
   })
-  expect_true(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
-  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+  expect_true(any(grepl("[LightGBM] [Info]", lgb_cv_logs, fixed = TRUE)))
+  expect_true(any(grepl("[LightGBM] [Warning]", lgb_cv_logs, fixed = TRUE)))
 
   # (verbose = 0) should be WARNING level logs only
   lgb_cv_logs <- capture.output({
@@ -2310,8 +2312,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
       , verbose = 0L
     )
   })
-  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
-  expect_true(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+  expect_false(any(grepl("[LightGBM] [Info]", lgb_cv_logs, fixed = TRUE)))
+  expect_true(any(grepl("[LightGBM] [Warning]", lgb_cv_logs, fixed = TRUE)))
 
   # (verbose = -1) no logs
   lgb_cv_logs <- capture.output({
@@ -2326,8 +2328,8 @@ test_that("lgb.cv() respects changes to logging verbosity", {
   })
   # NOTE: this is not length(lgb_cv_logs) == 0 because lightgbm's
   #       dependencies might print other messages
-  expect_false(any(grepl("\\[LightGBM\\] \\[Info\\]", lgb_cv_logs)))
-  expect_false(any(grepl("\\[LightGBM\\] \\[Warning\\]", lgb_cv_logs)))
+  expect_false(any(grepl("[LightGBM] [Info]", lgb_cv_logs, fixed = TRUE)))
+  expect_false(any(grepl("[LightGBM] [Warning]", lgb_cv_logs, fixed = TRUE)))
 })
 
 test_that("lgb.cv() updates params based on keyword arguments", {
@@ -2918,6 +2920,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
   model_txt_lines <- strsplit(
     x = bst1$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression_l1"))
   expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -2933,6 +2936,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
   model_txt_lines <- strsplit(
     x = bst2$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression_l1"))
   expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -2951,6 +2955,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
   model_txt_lines <- strsplit(
     x = bst1$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression_l1"))
   expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -2967,6 +2972,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
   model_txt_lines <- strsplit(
     x = bst2$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression_l1"))
   expect_false(any(model_txt_lines == "objective=regression_l2"))
@@ -3006,6 +3012,7 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
   expect_true(any(model_txt_lines == "objective=regression"))
   expect_false(any(model_txt_lines == "objective=regression_l1"))
@@ -3023,8 +3030,9 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
-  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+  expect_true(any(grepl("[num_threads: 1]", model_txt_lines, fixed = TRUE)))
 
   bst <- lightgbm(
     data = train$data
@@ -3037,8 +3045,9 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
-  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+  expect_true(any(grepl("[num_threads: 1]", model_txt_lines, fixed = TRUE)))
 
   bst <- lightgbm(
     data = train$data
@@ -3052,8 +3061,9 @@ test_that("lightgbm() accepts 'num_threads' as either top-level argument or unde
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
     , split = "\n"
+    , fixed = TRUE
   )[[1L]]
-  expect_true(any(grepl("\\[num_threads: 1\\]", model_txt_lines)))
+  expect_true(any(grepl("[num_threads: 1]", model_txt_lines, fixed = TRUE)))
 })
 
 test_that("lightgbm() accepts 'weight' and 'weights'", {
@@ -3090,19 +3100,19 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
 
 .assert_has_expected_logs <- function(log_txt, lgb_info, lgb_warn, early_stopping, valid_eval_msg) {
   expect_identical(
-    object = any(grepl("\\[LightGBM\\] \\[Info\\]", log_txt))
+    object = any(grepl("[LightGBM] [Info]", log_txt, fixed = TRUE))
     , expected = lgb_info
   )
   expect_identical(
-    object = any(grepl("\\[LightGBM\\] \\[Warning\\]", log_txt))
+    object = any(grepl("[LightGBM] [Warning]", log_txt, fixed = TRUE))
     , expected = lgb_warn
   )
   expect_identical(
-    object = any(grepl("Will train until there is no improvement in 5 rounds", log_txt))
+    object = any(grepl("Will train until there is no improvement in 5 rounds", log_txt, fixed = TRUE))
     , expected = early_stopping
   )
   expect_identical(
-    object = any(grepl("Did not meet early stopping", log_txt))
+    object = any(grepl("Did not meet early stopping", log_txt, fixed = TRUE))
     , expected = early_stopping
   )
   expect_identical(

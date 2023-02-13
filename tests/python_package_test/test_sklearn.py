@@ -121,7 +121,7 @@ def test_regression():
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_multiclass():
     X, y = load_digits(n_class=10, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -134,7 +134,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -445,8 +445,18 @@ def test_clone_and_property():
     gbm.fit(X, y)
 
     gbm_clone = clone(gbm)
+
+    # original estimator is unaffected
+    assert gbm.n_estimators == 10
+    assert gbm.verbose == -1
     assert isinstance(gbm.booster_, lgb.Booster)
     assert isinstance(gbm.feature_importances_, np.ndarray)
+
+    # new estimator is unfitted, but has the same parameters
+    assert gbm_clone.__sklearn_is_fitted__() is False
+    assert gbm_clone.n_estimators == 10
+    assert gbm_clone.verbose == -1
+    assert gbm_clone.get_params() == gbm.get_params()
 
     X, y = load_digits(n_class=2, return_X_y=True)
     clf = lgb.LGBMClassifier(n_estimators=10, verbose=-1)
@@ -1081,7 +1091,7 @@ def test_nan_handle():
     np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_first_metric_only():
 
     def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):

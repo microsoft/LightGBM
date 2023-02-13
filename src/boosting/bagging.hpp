@@ -47,33 +47,33 @@ class BaggingSampleStrategy : public SampleStrategy {
       Log::Debug("Re-bagging, using %d data to train", bag_data_cnt_);
       // set bagging data to tree learner
       if (!is_use_subset_) {
-        #ifdef USE_CUDA_EXP
-        if (config_->device_type == std::string("cuda_exp")) {
+        #ifdef USE_CUDA
+        if (config_->device_type == std::string("cuda")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
           tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
         } else {
-        #endif  // USE_CUDA_EXP
+        #endif  // USE_CUDA
           tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-        #ifdef USE_CUDA_EXP
+        #ifdef USE_CUDA
         }
-        #endif  // USE_CUDA_EXP
+        #endif  // USE_CUDA
       } else {
         // get subset
         tmp_subset_->ReSize(bag_data_cnt_);
         tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                                 bag_data_cnt_, false);
-        #ifdef USE_CUDA_EXP
-        if (config_->device_type == std::string("cuda_exp")) {
+        #ifdef USE_CUDA
+        if (config_->device_type == std::string("cuda")) {
           CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
           tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
                                        bag_data_cnt_);
         } else {
-        #endif  // USE_CUDA_EXP
+        #endif  // USE_CUDA
           tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
                                        bag_data_cnt_);
-        #ifdef USE_CUDA_EXP
+        #ifdef USE_CUDA
         }
-        #endif  // USE_CUDA_EXP
+        #endif  // USE_CUDA
       }
     }
   }
@@ -103,11 +103,11 @@ class BaggingSampleStrategy : public SampleStrategy {
         bag_data_cnt_ = static_cast<data_size_t>(config_->bagging_fraction * num_data_);
       }
       bag_data_indices_.resize(num_data_);
-      #ifdef USE_CUDA_EXP
-      if (config_->device_type == std::string("cuda_exp")) {
+      #ifdef USE_CUDA
+      if (config_->device_type == std::string("cuda")) {
         cuda_bag_data_indices_.Resize(num_data_);
       }
-      #endif  // USE_CUDA_EXP
+      #endif  // USE_CUDA
       bagging_runner_.ReSize(num_data_);
       bagging_rands_.clear();
       for (int i = 0;
@@ -118,7 +118,7 @@ class BaggingSampleStrategy : public SampleStrategy {
       double average_bag_rate =
           (static_cast<double>(bag_data_cnt_) / num_data_) / config_->bagging_freq;
       is_use_subset_ = false;
-      if (config_->device_type != std::string("cuda_exp")) {
+      if (config_->device_type != std::string("cuda")) {
         const int group_threshold_usesubset = 100;
         const double average_bag_rate_threshold = 0.5;
         if (average_bag_rate <= average_bag_rate_threshold
@@ -141,9 +141,9 @@ class BaggingSampleStrategy : public SampleStrategy {
     } else {
       bag_data_cnt_ = num_data_;
       bag_data_indices_.clear();
-      #ifdef USE_CUDA_EXP
+      #ifdef USE_CUDA
       cuda_bag_data_indices_.Clear();
-      #endif  // USE_CUDA_EXP
+      #endif  // USE_CUDA
       bagging_runner_.ReSize(0);
       is_use_subset_ = false;
     }
