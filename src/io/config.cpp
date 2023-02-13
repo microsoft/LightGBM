@@ -99,6 +99,20 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
   }
 }
 
+void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& params, std::string* strategy) {
+  std::string value;
+  if (Config::GetString(params, "data_sample_strategy", &value)) {
+    std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
+    if (value == std::string("goss")) {
+      *strategy = "goss";
+    } else if (value == std::string("bagging")) {
+      *strategy = "bagging";
+    } else {
+      Log::Fatal("Unknown sample strategy %s", value.c_str());
+    }
+  }
+}
+
 void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric) {
   std::unordered_set<std::string> metric_sets;
   out_metric->clear();
@@ -242,6 +256,7 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 
   GetTaskType(params, &task);
   GetBoostingType(params, &boosting);
+  GetDataSampleStrategy(params, &data_sample_strategy);
   GetObjectiveType(params, &objective);
   GetMetricType(params, objective, &metric);
   GetDeviceType(params, &device_type);
@@ -422,6 +437,12 @@ void Config::CheckParamConflict() {
         "Cannot set both min_data_in_leaf and min_sum_hessian_in_leaf to 0. "
         "Will set min_data_in_leaf to 1.");
     min_data_in_leaf = 1;
+  }
+  if (boosting == std::string("goss")) {
+    boosting = std::string("gbdt");
+    data_sample_strategy = std::string("goss");
+    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
+                 "To suppress this warning, set data_sample_strategy=goss instead.");
   }
 }
 
