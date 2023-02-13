@@ -11,10 +11,6 @@ DataProcessor <- R6::R6Class(
 
       if (is.factor(label)) {
 
-        if (is.ordered(label)) {
-          warning("Passed labels as ordered factor. Order of levels is ignored.")
-        }
-
         self$factor_levels <- levels(label)
         if (length(self$factor_levels) <= 1L) {
           stop("Labels to predict is a factor with <2 possible values.")
