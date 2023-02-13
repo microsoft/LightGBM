@@ -133,8 +133,8 @@ class FeatureGroup {
     // Now load the actual data
     if (is_multi_val_) {
       for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_.back()->LoadFromMemory(memory_ptr, local_used_indices);
-        memory_ptr += multi_bin_data_.back()->SizesInByte();
+        multi_bin_data_[i]->LoadFromMemory(memory_ptr, local_used_indices);
+        memory_ptr += multi_bin_data_[i]->SizesInByte();
       }
     } else {
       bin_data_->LoadFromMemory(memory_ptr, local_used_indices);

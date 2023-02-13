@@ -926,7 +926,9 @@ class Dataset {
 
  private:
   void SerializeHeader(BinaryWriter* serializer);
+
   size_t GetSerializedHeaderSize();
+
   void CreateCUDAColumnData();
 
   std::string data_filename_;
@@ -950,7 +952,7 @@ class Dataset {
   static const int kSerializedReferenceVersionLength;
   static const char* serialized_reference_version;
   static const char* binary_file_token;
-  static const char* binary_serialized_token;
+  static const char* binary_serialized_reference_token;
   int num_groups_;
   std::vector<int> real_feature_idx_;
   std::vector<int> feature2group_;

@@ -24,7 +24,7 @@ const char* Dataset::serialized_reference_version = "v1";
 
 const char* Dataset::binary_file_token =
     "______LightGBM_Binary_File_Token______\n";
-const char* Dataset::binary_serialized_token =
+const char* Dataset::binary_serialized_reference_token =
     "______LightGBM_Binary_Serialized_Token______\n";
 
 Dataset::Dataset() {
@@ -1034,10 +1034,10 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
 }
 
 void Dataset::SerializeReference(ByteBuffer* buffer) {
-  Log::Info("Saving data to binary buffer");
+  Log::Info("Saving data reference to binary buffer");
 
   // Calculate approximate size of output and reserve space
-  size_t size_of_token = std::strlen(binary_serialized_token);
+  size_t size_of_token = std::strlen(binary_serialized_reference_token);
   size_t initial_capacity = size_of_token + GetSerializedHeaderSize();
   // write feature group definitions
   for (int i = 0; i < num_groups_; ++i) {
@@ -1048,7 +1048,7 @@ void Dataset::SerializeReference(ByteBuffer* buffer) {
   buffer->Reserve(static_cast<size_t>(1.1 * static_cast<double>(initial_capacity)));
 
   // Write token that marks the data as binary reference, and the version
-  buffer->AlignedWrite(binary_serialized_token, size_of_token);
+  buffer->AlignedWrite(binary_serialized_reference_token, size_of_token);
   buffer->AlignedWrite(serialized_reference_version, kSerializedReferenceVersionLength);
 
   // Write the basic definition of the overall dataset

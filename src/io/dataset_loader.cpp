@@ -359,12 +359,12 @@ Dataset* DatasetLoader::LoadFromSerializedReference(const char* binary_data, siz
   auto mem_ptr = binary_data;
 
   // check token
-  const size_t size_of_token = std::strlen(Dataset::binary_serialized_token);
+  const size_t size_of_token = std::strlen(Dataset::binary_serialized_reference_token);
   size_t size_of_token_in_input = VirtualFileWriter::AlignedSize(sizeof(char) * size_of_token);
   if (buffer_size < size_of_token_in_input) {
     Log::Fatal("Binary definition file error: token has the wrong size");
   }
-  if (std::string(mem_ptr, size_of_token) != std::string(Dataset::binary_serialized_token)) {
+  if (std::string(mem_ptr, size_of_token) != std::string(Dataset::binary_serialized_reference_token)) {
     Log::Fatal("Input file is not LightGBM binary reference file");
   }
   mem_ptr += size_of_token_in_input;
