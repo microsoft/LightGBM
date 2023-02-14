@@ -92,13 +92,22 @@ void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score
 
   bag_data_cnt_ = left_cnt;
   if (!is_use_subset_) {
-    tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+    if (config_->device_type == std::string("cuda_exp")) {
+      CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+      tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
+    } else {
+      tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+    }
   } else {
     tmp_subset_->ReSize(bag_data_cnt_);
     tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                             bag_data_cnt_, false);
-    tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
-                                  bag_data_cnt_);
+    if (config_->device_type == std::string("cuda_exp")) {
+      CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+      tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(), bag_data_cnt_);
+    } else {
+      tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(), bag_data_cnt_);
+    }
   }
   threshold_ = 0.0;
   Log::Debug("MVS Sample size %d %d", left_cnt, static_cast<data_size_t>(config_->bagging_fraction * num_data_));
