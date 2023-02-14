@@ -348,6 +348,7 @@ if __name__ == "__main__":
           version=version,
           description='LightGBM Python Package',
           long_description=readme,
+          long_description_content_type='text/x-rst',
           python_requires='>=3.6',
           install_requires=[
               'wheel',
@@ -389,4 +390,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.8',
                        'Programming Language :: Python :: 3.9',
                        'Programming Language :: Python :: 3.10',
-                       'Topic :: Scientific/Engineering :: Artificial Intelligence'])
+                       'Topic :: Scientific/Engineering :: Artificial Intelligence',
+                       'Typing :: Typed'])
