@@ -7,9 +7,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_EvalFunctionResultType,
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType, _LGBM_EvalFunctionResultType,
                     _log_warning)
-from .callback import record_evaluation
+from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
@@ -519,18 +519,18 @@ class LGBMModel(_LGBMModelBase):
         self.n_jobs = n_jobs
         self.importance_type = importance_type
         self._Booster: Optional[Booster] = None
-        self._evals_result = None
-        self._best_score = None
-        self._best_iteration = None
+        self._evals_result: _EvalResultDict = {}
+        self._best_score: _LGBM_BoosterBestScoreType = {}
+        self._best_iteration: Optional[int] = None
         self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
-        self._class_weight = None
-        self._class_map = None
+        self._class_weight: Optional[Union[Dict, str]] = None
+        self._class_map: Optional[Dict[int, int]] = None
         self._n_features = None
         self._n_features_in = None
         self._classes = None
-        self._n_classes = None
+        self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
 
     def _more_tags(self) -> Dict[str, Any]:
@@ -797,7 +797,7 @@ class LGBMModel(_LGBMModelBase):
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
-        evals_result = {}
+        evals_result: _EvalResultDict = {}
         callbacks.append(record_evaluation(evals_result))
 
         self._Booster = train(
@@ -904,7 +904,7 @@ class LGBMModel(_LGBMModelBase):
         return self._n_features_in
 
     @property
-    def best_score_(self):
+    def best_score_(self) -> _LGBM_BoosterBestScoreType:
         """:obj:`dict`: The best score of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
@@ -954,7 +954,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster
 
     @property
-    def evals_result_(self):
+    def evals_result_(self) -> _EvalResultDict:
         """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
