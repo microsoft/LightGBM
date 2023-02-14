@@ -4,7 +4,7 @@ from pathlib import Path
 from platform import system
 from typing import List
 
-__all__ = []
+__all__: List[str] = []
 
 
 def find_lib_path() -> List[str]:

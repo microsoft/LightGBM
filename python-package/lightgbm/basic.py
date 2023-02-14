@@ -31,6 +31,7 @@ __all__ = [
 
 _DatasetHandle = ctypes.c_void_p
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
+_LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 _LGBM_LabelType = Union[
     list,
@@ -2857,7 +2858,7 @@ class Booster:
         self._train_data_name = "training"
         self.__set_objective_to_none = False
         self.best_iteration = -1
-        self.best_score = {}
+        self.best_score: _LGBM_BoosterBestScoreType = {}
         params = {} if params is None else deepcopy(params)
         if train_set is not None:
             # Training task
@@ -4210,7 +4211,7 @@ class Booster:
         result_array_like : numpy array or pandas DataFrame (if pandas is installed)
             If ``xgboost_style=True``, the histogram of used splitting values for the specified feature.
         """
-        def add(root):
+        def add(root: Dict[str, Any]) -> None:
             """Recursively add thresholds."""
             if 'split_index' in root:  # non-leaf
                 if feature_names is not None and isinstance(feature, str):

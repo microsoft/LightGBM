@@ -577,7 +577,7 @@ namespace LightGBM {
     }
   }
 
-  void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  void BinMapper::SaveBinaryToFile(BinaryWriter* writer) const {
     writer->AlignedWrite(&num_bin_, sizeof(num_bin_));
     writer->AlignedWrite(&missing_type_, sizeof(missing_type_));
     writer->AlignedWrite(&is_trivial_, sizeof(is_trivial_));
