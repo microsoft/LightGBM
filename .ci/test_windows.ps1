@@ -73,6 +73,7 @@ if ($env:TASK -eq "regular") {
 elseif ($env:TASK -eq "sdist") {
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py sdist --formats gztar ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -88,6 +89,7 @@ elseif ($env:TASK -eq "bdist") {
   conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
   cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
