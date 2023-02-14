@@ -198,13 +198,13 @@ if [[ $TASK == "gpu" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
+        pytest -vvv $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest -vvv $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON ..
@@ -253,7 +253,7 @@ fi
 make _lightgbm -j4 || exit -1
 
 cd $BUILD_DIRECTORY/python-package && python setup.py install --precompile --user || exit -1
-pytest $BUILD_DIRECTORY/tests || exit -1
+pytest -vvv $BUILD_DIRECTORY/tests || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
