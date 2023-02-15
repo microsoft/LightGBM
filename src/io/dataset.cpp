@@ -19,8 +19,13 @@
 
 namespace LightGBM {
 
+const int Dataset::kSerializedReferenceVersionLength = 2;
+const char* Dataset::serialized_reference_version = "v1";
+
 const char* Dataset::binary_file_token =
     "______LightGBM_Binary_File_Token______\n";
+const char* Dataset::binary_serialized_reference_token =
+    "______LightGBM_Binary_Serialized_Token______\n";
 
 Dataset::Dataset() {
   data_filename_ = "noname";
@@ -345,9 +350,9 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   auto features_in_group = OneFeaturePerGroup(used_features);
 
   auto is_sparse = io_config.is_enable_sparse;
-  if (io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) {
+  if (io_config.device_type == std::string("cuda")) {
       LGBM_config_::current_device = lgbm_device_cuda;
-      if ((io_config.device_type == std::string("cuda") || io_config.device_type == std::string("cuda_exp")) && is_sparse) {
+      if ((io_config.device_type == std::string("cuda")) && is_sparse) {
         Log::Warning("Using sparse features with CUDA is currently not supported.");
         is_sparse = false;
       }
@@ -355,8 +360,7 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
-    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda")
-      || io_config.device_type == std::string("cuda_exp");
+    bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
     features_in_group = FastFeatureBundling(
         *bin_mappers, sample_non_zero_indices, sample_values, num_per_col,
         num_sample_col, static_cast<data_size_t>(total_sample_cnt),
@@ -447,14 +451,14 @@ void Dataset::FinishLoad() {
   }
   metadata_.FinishLoad();
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
     metadata_.CreateCUDAMetadata(gpu_device_id_);
   } else {
     cuda_column_data_.reset(nullptr);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
   is_finish_load_ = true;
 }
 
@@ -862,15 +866,15 @@ void Dataset::CopySubrow(const Dataset* fullset,
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
 
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     if (cuda_column_data_ == nullptr) {
       cuda_column_data_.reset(new CUDAColumnData(fullset->num_data(), gpu_device_id_));
       metadata_.CreateCUDAMetadata(gpu_device_id_);
     }
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -995,80 +999,9 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
     Log::Info("Saving data to binary file %s", bin_filename);
     size_t size_of_token = std::strlen(binary_file_token);
     writer->AlignedWrite(binary_file_token, size_of_token);
-    // get size of header
-    size_t size_of_header =
-        VirtualFileWriter::AlignedSize(sizeof(num_data_)) +
-        VirtualFileWriter::AlignedSize(sizeof(num_features_)) +
-        VirtualFileWriter::AlignedSize(sizeof(num_total_features_)) +
-        VirtualFileWriter::AlignedSize(sizeof(int) * num_total_features_) +
-        VirtualFileWriter::AlignedSize(sizeof(label_idx_)) +
-        VirtualFileWriter::AlignedSize(sizeof(num_groups_)) +
-        3 * VirtualFileWriter::AlignedSize(sizeof(int) * num_features_) +
-        sizeof(uint64_t) * (num_groups_ + 1) +
-        2 * VirtualFileWriter::AlignedSize(sizeof(int) * num_groups_) +
-        VirtualFileWriter::AlignedSize(sizeof(int32_t) * num_total_features_) +
-        VirtualFileWriter::AlignedSize(sizeof(int)) * 3 +
-        VirtualFileWriter::AlignedSize(sizeof(bool)) * 3;
-    // size of feature names
-    for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header +=
-          VirtualFileWriter::AlignedSize(feature_names_[i].size()) +
-          VirtualFileWriter::AlignedSize(sizeof(int));
-    }
-    // size of forced bins
-    for (int i = 0; i < num_total_features_; ++i) {
-      size_of_header += forced_bin_bounds_[i].size() * sizeof(double) +
-                        VirtualFileWriter::AlignedSize(sizeof(int));
-    }
-    writer->Write(&size_of_header, sizeof(size_of_header));
-    // write header
-    writer->AlignedWrite(&num_data_, sizeof(num_data_));
-    writer->AlignedWrite(&num_features_, sizeof(num_features_));
-    writer->AlignedWrite(&num_total_features_, sizeof(num_total_features_));
-    writer->AlignedWrite(&label_idx_, sizeof(label_idx_));
-    writer->AlignedWrite(&max_bin_, sizeof(max_bin_));
-    writer->AlignedWrite(&bin_construct_sample_cnt_,
-                         sizeof(bin_construct_sample_cnt_));
-    writer->AlignedWrite(&min_data_in_bin_, sizeof(min_data_in_bin_));
-    writer->AlignedWrite(&use_missing_, sizeof(use_missing_));
-    writer->AlignedWrite(&zero_as_missing_, sizeof(zero_as_missing_));
-    writer->AlignedWrite(&has_raw_, sizeof(has_raw_));
-    writer->AlignedWrite(used_feature_map_.data(),
-                         sizeof(int) * num_total_features_);
-    writer->AlignedWrite(&num_groups_, sizeof(num_groups_));
-    writer->AlignedWrite(real_feature_idx_.data(), sizeof(int) * num_features_);
-    writer->AlignedWrite(feature2group_.data(), sizeof(int) * num_features_);
-    writer->AlignedWrite(feature2subfeature_.data(),
-                         sizeof(int) * num_features_);
-    writer->Write(group_bin_boundaries_.data(),
-                  sizeof(uint64_t) * (num_groups_ + 1));
-    writer->AlignedWrite(group_feature_start_.data(),
-                         sizeof(int) * num_groups_);
-    writer->AlignedWrite(group_feature_cnt_.data(), sizeof(int) * num_groups_);
-    if (max_bin_by_feature_.empty()) {
-      ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
-    }
-    writer->AlignedWrite(max_bin_by_feature_.data(),
-                  sizeof(int32_t) * num_total_features_);
-    if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
-      max_bin_by_feature_.clear();
-    }
-    // write feature names
-    for (int i = 0; i < num_total_features_; ++i) {
-      int str_len = static_cast<int>(feature_names_[i].size());
-      writer->AlignedWrite(&str_len, sizeof(int));
-      const char* c_str = feature_names_[i].c_str();
-      writer->AlignedWrite(c_str, sizeof(char) * str_len);
-    }
-    // write forced bins
-    for (int i = 0; i < num_total_features_; ++i) {
-      int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
-      writer->AlignedWrite(&num_bounds, sizeof(int));
 
-      for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
-        writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
-      }
-    }
+    // Write the basic header information for the dataset
+    SerializeHeader(writer.get());
 
     // get size of meta data
     size_t size_of_metadata = metadata_.SizesInByte();
@@ -1082,7 +1015,7 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
       size_t size_of_feature = feature_groups_[i]->SizesInByte();
       writer->Write(&size_of_feature, sizeof(size_of_feature));
       // write feature
-      feature_groups_[i]->SaveBinaryToFile(writer.get());
+      feature_groups_[i]->SerializeToBinary(writer.get());
     }
 
     // write raw data; use row-major order so we can read row-by-row
@@ -1095,6 +1028,117 @@ void Dataset::SaveBinaryFile(const char* bin_filename) {
           }
         }
       }
+    }
+  }
+}
+
+void Dataset::SerializeReference(ByteBuffer* buffer) {
+  Log::Info("Saving data reference to binary buffer");
+
+  // Calculate approximate size of output and reserve space
+  size_t size_of_token = std::strlen(binary_serialized_reference_token);
+  size_t initial_capacity = size_of_token + GetSerializedHeaderSize();
+  // write feature group definitions
+  for (int i = 0; i < num_groups_; ++i) {
+    initial_capacity += feature_groups_[i]->SizesInByte(/* include_data */ false);
+  }
+
+  // Give a little extra just in case, to avoid unnecessary resizes
+  buffer->Reserve(static_cast<size_t>(1.1 * static_cast<double>(initial_capacity)));
+
+  // Write token that marks the data as binary reference, and the version
+  buffer->AlignedWrite(binary_serialized_reference_token, size_of_token);
+  buffer->AlignedWrite(serialized_reference_version, kSerializedReferenceVersionLength);
+
+  // Write the basic definition of the overall dataset
+  SerializeHeader(buffer);
+
+  // write feature group definitions
+  for (int i = 0; i < num_groups_; ++i) {
+    // get size of feature
+    size_t size_of_feature = feature_groups_[i]->SizesInByte(false);
+    buffer->Write(&size_of_feature, sizeof(size_of_feature));
+    // write feature
+    feature_groups_[i]->SerializeToBinary(buffer, /* include_data */ false);
+  }
+}
+
+size_t Dataset::GetSerializedHeaderSize() {
+  size_t size_of_header =
+    VirtualFileWriter::AlignedSize(sizeof(num_data_)) +
+    VirtualFileWriter::AlignedSize(sizeof(num_features_)) +
+    VirtualFileWriter::AlignedSize(sizeof(num_total_features_)) +
+    VirtualFileWriter::AlignedSize(sizeof(int) * num_total_features_) +
+    VirtualFileWriter::AlignedSize(sizeof(label_idx_)) +
+    VirtualFileWriter::AlignedSize(sizeof(num_groups_)) +
+    3 * VirtualFileWriter::AlignedSize(sizeof(int) * num_features_) +
+    sizeof(uint64_t) * (num_groups_ + 1) +
+    2 * VirtualFileWriter::AlignedSize(sizeof(int) * num_groups_) +
+    VirtualFileWriter::AlignedSize(sizeof(int32_t) * num_total_features_) +
+    VirtualFileWriter::AlignedSize(sizeof(int)) * 3 +
+    VirtualFileWriter::AlignedSize(sizeof(bool)) * 3;
+  // size of feature names and forced bins
+  for (int i = 0; i < num_total_features_; ++i) {
+    size_of_header +=
+      VirtualFileWriter::AlignedSize(feature_names_[i].size()) +
+      VirtualFileWriter::AlignedSize(sizeof(int)) +
+      forced_bin_bounds_[i].size() * sizeof(double) +
+      VirtualFileWriter::AlignedSize(sizeof(int));
+  }
+
+  return size_of_header;
+}
+
+void Dataset::SerializeHeader(BinaryWriter* writer) {
+  size_t size_of_header = GetSerializedHeaderSize();
+  writer->Write(&size_of_header, sizeof(size_of_header));
+
+  // write header
+  writer->AlignedWrite(&num_data_, sizeof(num_data_));
+  writer->AlignedWrite(&num_features_, sizeof(num_features_));
+  writer->AlignedWrite(&num_total_features_, sizeof(num_total_features_));
+  writer->AlignedWrite(&label_idx_, sizeof(label_idx_));
+  writer->AlignedWrite(&max_bin_, sizeof(max_bin_));
+  writer->AlignedWrite(&bin_construct_sample_cnt_,
+    sizeof(bin_construct_sample_cnt_));
+  writer->AlignedWrite(&min_data_in_bin_, sizeof(min_data_in_bin_));
+  writer->AlignedWrite(&use_missing_, sizeof(use_missing_));
+  writer->AlignedWrite(&zero_as_missing_, sizeof(zero_as_missing_));
+  writer->AlignedWrite(&has_raw_, sizeof(has_raw_));
+  writer->AlignedWrite(used_feature_map_.data(),
+    sizeof(int) * num_total_features_);
+  writer->AlignedWrite(&num_groups_, sizeof(num_groups_));
+  writer->AlignedWrite(real_feature_idx_.data(), sizeof(int) * num_features_);
+  writer->AlignedWrite(feature2group_.data(), sizeof(int) * num_features_);
+  writer->AlignedWrite(feature2subfeature_.data(),
+    sizeof(int) * num_features_);
+  writer->Write(group_bin_boundaries_.data(),
+    sizeof(uint64_t) * (num_groups_ + 1));
+  writer->AlignedWrite(group_feature_start_.data(),
+    sizeof(int) * num_groups_);
+  writer->AlignedWrite(group_feature_cnt_.data(), sizeof(int) * num_groups_);
+  if (max_bin_by_feature_.empty()) {
+    ArrayArgs<int32_t>::Assign(&max_bin_by_feature_, -1, num_total_features_);
+  }
+  writer->AlignedWrite(max_bin_by_feature_.data(),
+    sizeof(int32_t) * num_total_features_);
+  if (ArrayArgs<int32_t>::CheckAll(max_bin_by_feature_, -1)) {
+    max_bin_by_feature_.clear();
+  }
+  // write feature names
+  for (int i = 0; i < num_total_features_; ++i) {
+    int str_len = static_cast<int>(feature_names_[i].size());
+    writer->AlignedWrite(&str_len, sizeof(int));
+    const char* c_str = feature_names_[i].c_str();
+    writer->AlignedWrite(c_str, sizeof(char) * str_len);
+  }
+  // write forced bins
+  for (int i = 0; i < num_total_features_; ++i) {
+    int num_bounds = static_cast<int>(forced_bin_bounds_[i].size());
+    writer->AlignedWrite(&num_bounds, sizeof(int));
+
+    for (size_t j = 0; j < forced_bin_bounds_[i].size(); ++j) {
+      writer->Write(&forced_bin_bounds_[i][j], sizeof(double));
     }
   }
 }
@@ -1508,13 +1552,13 @@ void Dataset::AddFeaturesFrom(Dataset* other) {
       raw_data_.push_back(other->raw_data_[i]);
     }
   }
-  #ifdef USE_CUDA_EXP
-  if (device_type_ == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (device_type_ == std::string("cuda")) {
     CreateCUDAColumnData();
   } else {
     cuda_column_data_ = nullptr;
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 const void* Dataset::GetColWiseData(
@@ -1536,7 +1580,7 @@ const void* Dataset::GetColWiseData(
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
 }
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 void Dataset::CreateCUDAColumnData() {
   cuda_column_data_.reset(new CUDAColumnData(num_data_, gpu_device_id_));
   int num_columns = 0;
@@ -1671,6 +1715,6 @@ void Dataset::CreateCUDAColumnData() {
                           feature_to_column);
 }
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 
 }  // namespace LightGBM

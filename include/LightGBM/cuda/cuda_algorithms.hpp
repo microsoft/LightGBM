@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
 #define LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -577,5 +577,5 @@ __device__ VAL_T PercentileDevice(const VAL_T* values,
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_CUDA_CUDA_ALGORITHMS_HPP_

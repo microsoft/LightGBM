@@ -56,7 +56,7 @@ With GUI
 
 1. Install `Visual Studio`_ (2015 or newer).
 
-2. Download `zip archive`_ and unzip it.
+2. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 3. Go to ``LightGBM-master/windows`` folder.
 
@@ -235,7 +235,7 @@ With GUI
 
 1. Install `Visual Studio`_ (2015 or newer).
 
-2. Download `zip archive`_ and unzip it.
+2. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 3. Go to ``LightGBM-master/windows`` folder.
 
@@ -385,7 +385,7 @@ With GUI
 
 2. Install `Visual Studio`_ (2015 or newer).
 
-3. Download `zip archive`_ and unzip it.
+3. Navigate to one of the releases at https://github.com/microsoft/LightGBM/releases, download ``LightGBM-complete_source_code_zip.zip``, and unzip it.
 
 4. Go to ``LightGBM-master/windows`` folder.
 
@@ -605,8 +605,8 @@ Docker
 
 Refer to `GPU Docker folder <https://github.com/microsoft/LightGBM/tree/master/docker/gpu>`__.
 
-Build CUDA Version (Experimental)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Build CUDA Version
+~~~~~~~~~~~~~~~~~~
 
 The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
@@ -621,7 +621,7 @@ On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and *
 
 The following dependencies should be installed before compilation:
 
--  **CUDA** 9.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
+-  **CUDA** 10.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
 
 -  **CMake** 3.16 or later.
 
@@ -635,8 +635,6 @@ To build LightGBM CUDA version, run the following commands:
   cd build
   cmake -DUSE_CUDA=1 ..
   make -j4
-
-Recently, a new CUDA version with better efficiency is implemented as an experimental feature. To build the new CUDA version, replace ``-DUSE_CUDA`` with ``-DUSE_CUDA_EXP`` in the above commands. Please note that new version requires **CUDA** 10.0 or later libraries.
 
 **Note**: glibc >= 2.14 is required.
 
@@ -923,8 +921,6 @@ gcc
 .. _Python-package: https://github.com/microsoft/LightGBM/tree/master/python-package
 
 .. _R-package: https://github.com/microsoft/LightGBM/tree/master/R-package
-
-.. _zip archive: https://github.com/microsoft/LightGBM/archive/master.zip
 
 .. _Visual Studio: https://visualstudio.microsoft.com/downloads/
 

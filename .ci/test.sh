@@ -34,7 +34,66 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-conda create -q -y -n $CONDA_ENV "python=$PYTHON_VERSION[build=*cpython]"
+CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
+
+if [[ $TASK == "if-else" ]]; then
+    conda create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
+    source activate $CONDA_ENV
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
+    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
+    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
+    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
+    exit 0
+fi
+
+if [[ $TASK == "swig" ]]; then
+    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+    if [[ $OS_NAME == "macos" ]]; then
+        cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
+    else
+        cmake -DUSE_SWIG=ON ..
+    fi
+    make -j4 || exit -1
+    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
+        objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
+        objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
+        python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
+    fi
+    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
+        cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
+    fi
+    exit 0
+fi
+
+if [[ $TASK == "lint" ]]; then
+    conda create -q -y -n $CONDA_ENV \
+        ${CONDA_PYTHON_REQUIREMENT} \
+        cmakelint \
+        cpplint \
+        flake8 \
+        isort \
+        mypy \
+        pydocstyle \
+        "r-lintr>=3.0"
+    source activate $CONDA_ENV
+    echo "Linting Python code"
+    flake8 \
+        --ignore=E501,W503 \
+        --exclude=./.nuget,./external_libs,./python-package/build \
+        . || exit -1
+    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
+    isort . --check-only || exit -1
+    mypy --ignore-missing-imports python-package/ || true
+    echo "Linting R code"
+    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
+    echo "Linting C++ code"
+    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
+    cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
+    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
+    exit 0
+fi
+
+conda create -q -y -n $CONDA_ENV "${CONDA_PYTHON_REQUIREMENT}"
 source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
@@ -72,60 +131,6 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-if [[ $TASK == "lint" ]]; then
-    conda install -q -y -n $CONDA_ENV \
-        cmakelint \
-        cpplint \
-        flake8 \
-        isort \
-        mypy \
-        pydocstyle \
-        "r-lintr>=3.0"
-    echo "Linting Python code"
-    flake8 \
-        --ignore=E501,W503 \
-        --exclude=./.nuget,./external_libs,./python-package/build \
-        . || exit -1
-    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    isort . --check-only || exit -1
-    mypy --ignore-missing-imports python-package/ || true
-    echo "Linting R code"
-    Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
-    echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
-    cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
-    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
-    exit 0
-fi
-
-if [[ $TASK == "if-else" ]]; then
-    conda install -q -y -n $CONDA_ENV numpy
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
-    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
-    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit -1
-    cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit -1
-    exit 0
-fi
-
-if [[ $TASK == "swig" ]]; then
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-    if [[ $OS_NAME == "macos" ]]; then
-        cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
-    else
-        cmake -DUSE_SWIG=ON ..
-    fi
-    make -j4 || exit -1
-    if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
-        objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit -1
-        objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit -1
-        python $BUILD_DIRECTORY/helpers/check_dynamic_dependencies.py $BUILD_DIRECTORY/objdump.log || exit -1
-    fi
-    if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp $BUILD_DIRECTORY/build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
-    fi
-    exit 0
-fi
-
 # re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda install -q -y -n $CONDA_ENV \
     cloudpickle \
@@ -137,7 +142,7 @@ conda install -q -y -n $CONDA_ENV \
     pandas \
     psutil \
     pytest \
-    "python=$PYTHON_VERSION[build=*cpython]" \
+    ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \
     scikit-learn \
     scipy || exit -1
@@ -149,6 +154,7 @@ fi
 
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+    sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
     pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
@@ -158,6 +164,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
@@ -170,6 +177,7 @@ elif [[ $TASK == "bdist" ]]; then
             PLATFORM="manylinux2014_$ARCH"
         fi
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --integrated-opencl --plat-name=$PLATFORM --python-tag py3 || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
@@ -188,61 +196,50 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --gpu || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_GPU=ON ..
     fi
-elif [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
-    if [[ $TASK == "cuda" ]]; then
-        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
-        grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
-    else
-        sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda_exp";/' $BUILD_DIRECTORY/include/LightGBM/config.h
-        grep -q 'std::string device_type = "cuda_exp"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
-        # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
-        sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
-        grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
-    fi
+elif [[ $TASK == "cuda" ]]; then
+    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
+    grep -q 'std::string device_type = "cuda"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
+    # by default ``gpu_use_dp=false`` for efficiency. change to ``true`` here for exact results in ci tests
+    sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
+    grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        if [[ $TASK == "cuda" ]]; then
-            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
-        else
-            pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda-exp || exit -1
-        fi
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
+        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
-        if [[ $TASK == "cuda" ]]; then
-            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
-        else
-            cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda-exp || exit -1
-        fi
+        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --cuda || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        if [[ $TASK == "cuda" ]]; then
-            cmake -DUSE_CUDA=ON ..
-        else
-            cmake -DUSE_CUDA_EXP=ON ..
-        fi
+        cmake -DUSE_CUDA=ON ..
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --mpi || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
         pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0

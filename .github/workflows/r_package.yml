@@ -308,7 +308,7 @@ jobs:
           #
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
           #
-          add-apt-repository "deb http://apt.llvm.org/bullseye/ llvm-toolchain-bullseye-15 main"
+          add-apt-repository "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
           apt-get install -y --no-install-recommends \
               clang-15 \
               clangd-15 \
@@ -335,7 +335,13 @@ jobs:
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
-          if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
+          # ignoring the following NOTE:
+          #
+          # * checking C++ specification ... NOTE
+          #   Specified C++11: please update to current default of C++17
+          #
+          # until it's resolved (see https://github.com/microsoft/LightGBM/pull/5690)
+          if $(grep -v "C++ specification" "$LOG_FILE_NAME" | grep -v "1 NOTE" | grep -E "NOTE|WARNING|ERROR"); then
               echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
               exit -1
           fi

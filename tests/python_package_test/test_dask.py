@@ -57,7 +57,7 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Fails to run with CUDA Experimental interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Fails to run with CUDA interface')
 ]
 
 

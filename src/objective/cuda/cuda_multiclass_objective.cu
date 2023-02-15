@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -105,4 +105,4 @@ const double* CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -206,4 +206,4 @@ void CUDABinaryLogloss::LaunchResetOVACUDALabelKernel() const {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

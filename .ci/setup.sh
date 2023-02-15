@@ -106,7 +106,7 @@ else  # Linux
             || exit -1
         fi
     fi
-    if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
+    if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_histogram_constructor.hpp"
 
@@ -193,4 +193,4 @@ void CUDAHistogramConstructor::ResetConfig(const Config* config) {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
