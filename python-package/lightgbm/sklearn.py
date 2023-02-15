@@ -521,14 +521,14 @@ class LGBMModel(_LGBMModelBase):
         self._Booster: Optional[Booster] = None
         self._evals_result: _EvalResultDict = {}
         self._best_score: _LGBM_BoosterBestScoreType = {}
-        self._best_iteration: Optional[int] = None
+        self._best_iteration: int = -1
         self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
-        self._n_features = None
-        self._n_features_in = None
+        self._n_features: int = -1
+        self._n_features_in: int = -1
         self._classes = None
         self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
