@@ -1064,10 +1064,10 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         if not callable(eval_metric):
             if isinstance(eval_metric, list):
                 eval_metric_list = eval_metric
+            elif isinstance(eval_metric, str):
+                eval_metric_list = [eval_metric]
             else:
                 eval_metric_list = []
-            if isinstance(eval_metric, (str, type(None))):
-                eval_metric_list = [eval_metric]
             if self._n_classes > 2:
                 for index, metric in enumerate(eval_metric_list):
                     if metric in {'logloss', 'binary_logloss'}:
