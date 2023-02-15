@@ -818,7 +818,7 @@ def test_regressor_custom_objective(output, cluster):
 @pytest.mark.parametrize('boosting_type', boosting_types)
 @pytest.mark.parametrize('tree_learner', distributed_training_algorithms)
 def test_ranker(output, group, boosting_type, tree_learner, cluster):
-    if os.getenv('TASK', '') == 'gpu':
+    if getenv('TASK', '') == 'gpu' and boosting_type == 'goss':
         pytest.skip("Dask learning-to-rank GPU tests are flaky")
     with Client(cluster) as client:
         if output == 'dataframe-with-categorical':
