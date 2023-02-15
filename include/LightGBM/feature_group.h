@@ -110,14 +110,56 @@ class FeatureGroup {
   }
 
   /*!
-   * \brief Constructor from memory
+   * \brief Constructor from memory when data is present
    * \param memory Pointer of memory
    * \param num_all_data Number of global data
    * \param local_used_indices Local used indices, empty means using all data
+   * \param group_id Id of group
    */
-  FeatureGroup(const void* memory, data_size_t num_all_data,
+  FeatureGroup(const void* memory,
+               data_size_t num_all_data,
                const std::vector<data_size_t>& local_used_indices,
                int group_id) {
+    // Load the definition schema first
+    const char* memory_ptr = LoadDefinitionFromMemory(memory, group_id);
+
+    // Allocate memory for the data
+    data_size_t num_data = num_all_data;
+    if (!local_used_indices.empty()) {
+      num_data = static_cast<data_size_t>(local_used_indices.size());
+    }
+    AllocateBins(num_data);
+
+    // Now load the actual data
+    if (is_multi_val_) {
+      for (int i = 0; i < num_feature_; ++i) {
+        multi_bin_data_[i]->LoadFromMemory(memory_ptr, local_used_indices);
+        memory_ptr += multi_bin_data_[i]->SizesInByte();
+      }
+    } else {
+      bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
+    }
+  }
+
+  /*!
+   * \brief Constructor from definition in memory (without data)
+   * \param memory Pointer of memory
+   * \param local_used_indices Local used indices, empty means using all data
+   */
+  FeatureGroup(const void* memory, data_size_t num_data, int group_id) {
+    LoadDefinitionFromMemory(memory, group_id);
+    AllocateBins(num_data);
+  }
+
+  /*! \brief Destructor */
+  ~FeatureGroup() {}
+
+  /*!
+   * \brief Load the overall definition of the feature group from binary serialized data
+   * \param memory Pointer of memory
+   * \param group_id Id of group
+   */
+  const char* LoadDefinitionFromMemory(const void* memory, int group_id) {
     const char* memory_ptr = reinterpret_cast<const char*>(memory);
     // get is_sparse
     is_multi_val_ = *(reinterpret_cast<const bool*>(memory_ptr));
@@ -128,9 +170,9 @@ class FeatureGroup {
     memory_ptr += VirtualFileWriter::AlignedSize(sizeof(is_sparse_));
     num_feature_ = *(reinterpret_cast<const int*>(memory_ptr));
     memory_ptr += VirtualFileWriter::AlignedSize(sizeof(num_feature_));
-    // get bin mapper
-    bin_mappers_.clear();
 
+    // get bin mapper(s)
+    bin_mappers_.clear();
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_.emplace_back(new BinMapper(memory_ptr));
       memory_ptr += bin_mappers_[i]->SizesInByte();
@@ -158,22 +200,23 @@ class FeatureGroup {
       num_total_bin_ += num_bin;
       bin_offsets_.emplace_back(num_total_bin_);
     }
-    data_size_t num_data = num_all_data;
-    if (!local_used_indices.empty()) {
-      num_data = static_cast<data_size_t>(local_used_indices.size());
-    }
+
+    return memory_ptr;
+  }
+
+  /*!
+   * \brief Allocate the bins
+   * \param num_all_data Number of global data
+   */
+  inline void AllocateBins(data_size_t num_data) {
     if (is_multi_val_) {
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(
-              num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         } else {
-          multi_bin_data_.emplace_back(
-              Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         }
-        multi_bin_data_.back()->LoadFromMemory(memory_ptr, local_used_indices);
-        memory_ptr += multi_bin_data_.back()->SizesInByte();
       }
     } else {
       if (is_sparse_) {
@@ -181,13 +224,8 @@ class FeatureGroup {
       } else {
         bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
       }
-      // get bin data
-      bin_data_->LoadFromMemory(memory_ptr, local_used_indices);
     }
   }
-
-  /*! \brief Destructor */
-  ~FeatureGroup() {}
 
   /*!
   * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
@@ -414,10 +452,11 @@ class FeatureGroup {
   }
 
   /*!
-   * \brief Save binary data to file
-   * \param file File want to write
+   * \brief Write to binary stream
+   * \param writer Writer
+   * \param include_data Whether to write data (true) or just header information (false)
    */
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  void SerializeToBinary(BinaryWriter* writer, bool include_data = true) const {
     writer->AlignedWrite(&is_multi_val_, sizeof(is_multi_val_));
     writer->AlignedWrite(&is_dense_multi_val_, sizeof(is_dense_multi_val_));
     writer->AlignedWrite(&is_sparse_, sizeof(is_sparse_));
@@ -425,19 +464,22 @@ class FeatureGroup {
     for (int i = 0; i < num_feature_; ++i) {
       bin_mappers_[i]->SaveBinaryToFile(writer);
     }
-    if (is_multi_val_) {
-      for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_[i]->SaveBinaryToFile(writer);
+
+    if (include_data) {
+      if (is_multi_val_) {
+        for (int i = 0; i < num_feature_; ++i) {
+          multi_bin_data_[i]->SaveBinaryToFile(writer);
+        }
+      } else {
+        bin_data_->SaveBinaryToFile(writer);
       }
-    } else {
-      bin_data_->SaveBinaryToFile(writer);
     }
   }
 
   /*!
    * \brief Get sizes in byte of this object
    */
-  size_t SizesInByte() const {
+  size_t SizesInByte(bool include_data = true) const {
     size_t ret = VirtualFileWriter::AlignedSize(sizeof(is_multi_val_)) +
                  VirtualFileWriter::AlignedSize(sizeof(is_dense_multi_val_)) +
                  VirtualFileWriter::AlignedSize(sizeof(is_sparse_)) +
@@ -445,11 +487,13 @@ class FeatureGroup {
     for (int i = 0; i < num_feature_; ++i) {
       ret += bin_mappers_[i]->SizesInByte();
     }
-    if (!is_multi_val_) {
-      ret += bin_data_->SizesInByte();
-    } else {
-      for (int i = 0; i < num_feature_; ++i) {
-        ret += multi_bin_data_[i]->SizesInByte();
+    if (include_data) {
+      if (!is_multi_val_) {
+        ret += bin_data_->SizesInByte();
+      } else {
+        for (int i = 0; i < num_feature_; ++i) {
+          ret += multi_bin_data_[i]->SizesInByte();
+        }
       }
     }
     return ret;
