@@ -46,7 +46,7 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return fread(buffer, 1, bytes, file_);
   }
 
-  size_t Write(const void* buffer, size_t bytes) const {
+  size_t Write(const void* buffer, size_t bytes) {
     return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
   }
 

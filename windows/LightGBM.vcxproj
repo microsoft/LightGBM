@@ -258,6 +258,8 @@
     <ClInclude Include="..\include\LightGBM\tree_learner.h" />
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp" />
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
+    <ClInclude Include="..\include\LightGBM\utils\binary_writer.h" />
+    <ClInclude Include="..\include\LightGBM\utils\byte_buffer.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\file_io.h" />
     <ClInclude Include="..\include\LightGBM\utils\json11.h" />
