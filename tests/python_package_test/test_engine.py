@@ -2625,6 +2625,7 @@ def test_multiclass_custom_eval(use_weight):
 
 
 @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason='not enough RAM')
+@pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Skipping large-models test on GPU')
 def test_model_size():
     X, y = make_synthetic_regression()
     data = lgb.Dataset(X, y)
