@@ -29,6 +29,7 @@
 typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
 typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
+typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
 
 #define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
@@ -95,6 +96,22 @@ LIGHTGBM_C_EXPORT int LGBM_SampleIndices(int32_t num_total_row,
                                          const char* parameters,
                                          void* out,
                                          int32_t* out_len);
+
+/*!
+ * \brief Get a ByteBuffer value at an index.
+ * \param handle Handle of byte buffer to be read
+ * \param index Index of value to return
+ * \param[out] out_val Byte value at index to return
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val);
+
+/*!
+ * \brief Free space for byte buffer.
+ * \param handle Handle of byte buffer to be freed
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ByteBufferFree(ByteBufferHandle handle);
 
 /* --- start Dataset interface */
 
@@ -163,6 +180,23 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetInitStreaming(DatasetHandle dataset,
                                                 int32_t nclasses,
                                                 int32_t nthreads,
                                                 int32_t omp_max_threads);
+
+/*!
+ * \brief Allocate the space for dataset and bucket feature bins according to serialized reference dataset.
+ * \param ref_buffer A binary representation of the dataset schema (feature groups, bins, etc.)
+ * \param ref_buffer_size The size of the reference array in bytes
+ * \param num_row Number of total rows the dataset will contain
+ * \param num_classes Number of classes (will be used only in case of multiclass and specifying initial scores)
+ * \param parameters Additional parameters
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
+                                                                int32_t ref_buffer_size,
+                                                                int64_t num_row,
+                                                                int32_t num_classes,
+                                                                const char* parameters,
+                                                                DatasetHandle* out);
 
 /*!
  * \brief Push data to existing dataset, if ``nrow + start_row == num_total_row``, will call ``dataset->FinishLoad``.
@@ -463,6 +497,17 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetFree(DatasetHandle handle);
  */
 LIGHTGBM_C_EXPORT int LGBM_DatasetSaveBinary(DatasetHandle handle,
                                              const char* filename);
+
+/*!
+ * \brief Create a dataset schema representation as a binary byte array (excluding data).
+ * \param handle Handle of dataset
+ * \param[out] out The output byte array
+ * \param[out] out_len The length of the output byte array (returned for convenience)
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,
+                                                             ByteBufferHandle* out,
+                                                             int32_t* out_len);
 
 /*!
  * \brief Save dataset to text file, intended for debugging use only.

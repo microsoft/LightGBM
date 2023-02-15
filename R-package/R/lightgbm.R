@@ -103,6 +103,15 @@ NULL
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
 #'                  the "objective" item of the "Parameters" section of the documentation}.
+#'
+#'                  If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+#'                  be determined according to what is passed for \code{label}:\itemize{
+#'                  \item If passing a factor with two variables, will use objective \code{"binary"}.
+#'                  \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+#'                  (note that parameter \code{num_class} in this case will also be determined automatically from
+#'                  \code{label}).
+#'                  \item Otherwise, will use objective \code{"regression"}.
+#'                  }
 #' @param init_score initial score is the base prediction lightgbm will boost from
 #' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
 #'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
@@ -149,7 +158,7 @@ lightgbm <- function(data,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
-                     objective = "regression",
+                     objective = "auto",
                      init_score = NULL,
                      num_threads = NULL,
                      ...) {
@@ -172,6 +181,22 @@ lightgbm <- function(data,
     , params = params
     , alternative_kwarg_value = verbose
   )
+
+  # Process factors as labels and auto-determine objective
+  if (!lgb.is.Dataset(data)) {
+    data_processor <- DataProcessor$new()
+    temp <- data_processor$process_label(
+        label = label
+        , objective = objective
+        , params = params
+    )
+    label <- temp$label
+    objective <- temp$objective
+    params <- temp$params
+    rm(temp)
+  } else {
+    data_processor <- NULL
+  }
 
   # Set data to a temporary variable
   dtrain <- data
@@ -204,6 +229,7 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
+  bst$data_processor <- data_processor
 
   return(bst)
 }

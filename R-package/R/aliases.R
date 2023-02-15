@@ -78,3 +78,27 @@
         )
     )
 }
+
+.MULTICLASS_OBJECTIVES <- function() {
+    return(
+        c(
+            "multi_logloss"
+            , "multiclass"
+            , "softmax"
+            , "multiclassova"
+            , "multiclass_ova"
+            , "ova"
+            , "ovr"
+        )
+    )
+}
+
+.BINARY_OBJECTIVES <- function() {
+    return(
+        c(
+            "binary_logloss"
+            , "binary"
+            , "binary_error"
+        )
+    )
+}

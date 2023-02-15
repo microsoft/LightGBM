@@ -333,7 +333,7 @@ struct Config {
   // alias = subsample_freq
   // desc = frequency for bagging
   // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
-  // desc = **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
+  // desc = **Note**: bagging is only effective when ``0.0 < bagging_fraction < 1.0``
   int bagging_freq = 0;
 
   // alias = bagging_fraction_seed

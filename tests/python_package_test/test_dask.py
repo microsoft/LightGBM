@@ -1127,7 +1127,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
                 # check that each eval_name and metric exists for all eval sets, allowing for the
                 # case when a worker receives a fully-padded eval_set component which is not evaluated.
-                if evals_result[eval_name] != 'not evaluated':
+                if evals_result[eval_name] != {}:
                     for metric in eval_metric_names:
                         assert metric in evals_result[eval_name]
                         assert metric in best_scores[eval_name]
