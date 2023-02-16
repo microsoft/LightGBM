@@ -1059,21 +1059,28 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
 
+        # adjust eval metrics to match whether binary or multiclass
+        # classification is being performed
         if not callable(eval_metric):
-            if isinstance(eval_metric, (str, type(None))):
-                eval_metric = [eval_metric]
-            if self._n_classes > 2:
-                for index, metric in enumerate(eval_metric):
-                    if metric in {'logloss', 'binary_logloss'}:
-                        eval_metric[index] = "multi_logloss"
-                    elif metric in {'error', 'binary_error'}:
-                        eval_metric[index] = "multi_error"
+            if isinstance(eval_metric, list):
+                eval_metric_list = eval_metric
+            elif isinstance(eval_metric, str):
+                eval_metric_list = [eval_metric]
             else:
-                for index, metric in enumerate(eval_metric):
+                eval_metric_list = []
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric_list):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric_list[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric_list[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric_list):
                     if metric in {'logloss', 'multi_logloss'}:
-                        eval_metric[index] = 'binary_logloss'
+                        eval_metric_list[index] = 'binary_logloss'
                     elif metric in {'error', 'multi_error'}:
-                        eval_metric[index] = 'binary_error'
+                        eval_metric_list[index] = 'binary_error'
+            eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
         valid_sets = None
