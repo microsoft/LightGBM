@@ -1,6 +1,8 @@
 # coding: utf-8
 """Compatibility library."""
 
+from typing import List
+
 """pandas"""
 try:
     from pandas import DataFrame as pd_DataFrame
@@ -147,11 +149,11 @@ try:
 except ImportError:
     DASK_INSTALLED = False
 
-    dask_array_from_delayed = None
-    dask_bag_from_delayed = None
+    dask_array_from_delayed = None  # type: ignore[assignment]
+    dask_bag_from_delayed = None  # type: ignore[assignment]
     delayed = None
-    default_client = None
-    wait = None
+    default_client = None  # type: ignore[assignment]
+    wait = None  # type: ignore[assignment]
 
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
@@ -195,4 +197,4 @@ except ImportError:
         def _LGBMCpuCount(only_physical_cores: bool = True):
             return cpu_count()
 
-__all__ = []
+__all__: List[str] = []

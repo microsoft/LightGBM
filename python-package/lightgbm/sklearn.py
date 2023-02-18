@@ -7,9 +7,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_EvalFunctionResultType,
-                    _log_warning)
-from .callback import record_evaluation
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
+                    _LGBM_EvalFunctionResultType, _log_warning)
+from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
@@ -178,7 +178,11 @@ class _EvalFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[str, float, bool]:
+    def __call__(
+        self,
+        preds: np.ndarray,
+        dataset: Dataset
+    ) -> Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -519,18 +523,18 @@ class LGBMModel(_LGBMModelBase):
         self.n_jobs = n_jobs
         self.importance_type = importance_type
         self._Booster: Optional[Booster] = None
-        self._evals_result = None
-        self._best_score = None
-        self._best_iteration = None
+        self._evals_result: _EvalResultDict = {}
+        self._best_score: _LGBM_BoosterBestScoreType = {}
+        self._best_iteration: Optional[int] = None
         self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
-        self._class_weight = None
-        self._class_map = None
+        self._class_weight: Optional[Union[Dict, str]] = None
+        self._class_map: Optional[Dict[int, int]] = None
         self._n_features = None
         self._n_features_in = None
         self._classes = None
-        self._n_classes = None
+        self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
 
     def _more_tags(self) -> Dict[str, Any]:
@@ -797,7 +801,7 @@ class LGBMModel(_LGBMModelBase):
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
-        evals_result = {}
+        evals_result: _EvalResultDict = {}
         callbacks.append(record_evaluation(evals_result))
 
         self._Booster = train(
@@ -904,7 +908,7 @@ class LGBMModel(_LGBMModelBase):
         return self._n_features_in
 
     @property
-    def best_score_(self):
+    def best_score_(self) -> _LGBM_BoosterBestScoreType:
         """:obj:`dict`: The best score of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
@@ -954,7 +958,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster
 
     @property
-    def evals_result_(self):
+    def evals_result_(self) -> _EvalResultDict:
         """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
@@ -1059,21 +1063,28 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)
 
+        # adjust eval metrics to match whether binary or multiclass
+        # classification is being performed
         if not callable(eval_metric):
-            if isinstance(eval_metric, (str, type(None))):
-                eval_metric = [eval_metric]
-            if self._n_classes > 2:
-                for index, metric in enumerate(eval_metric):
-                    if metric in {'logloss', 'binary_logloss'}:
-                        eval_metric[index] = "multi_logloss"
-                    elif metric in {'error', 'binary_error'}:
-                        eval_metric[index] = "multi_error"
+            if isinstance(eval_metric, list):
+                eval_metric_list = eval_metric
+            elif isinstance(eval_metric, str):
+                eval_metric_list = [eval_metric]
             else:
-                for index, metric in enumerate(eval_metric):
+                eval_metric_list = []
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric_list):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric_list[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric_list[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric_list):
                     if metric in {'logloss', 'multi_logloss'}:
-                        eval_metric[index] = 'binary_logloss'
+                        eval_metric_list[index] = 'binary_logloss'
                     elif metric in {'error', 'multi_error'}:
-                        eval_metric[index] = 'binary_error'
+                        eval_metric_list[index] = 'binary_error'
+            eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
         valid_sets = None

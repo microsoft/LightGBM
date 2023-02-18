@@ -9,6 +9,7 @@
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
 #include <LightGBM/train_share_states.h>
+#include <LightGBM/utils/byte_buffer.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
@@ -124,7 +125,7 @@ class Metadata {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+  void SaveBinaryToFile(BinaryWriter* writer) const;
 
   /*!
   * \brief Get sizes in byte of this object
@@ -621,6 +622,11 @@ class Dataset {
   */
   LIGHTGBM_EXPORT void SaveBinaryFile(const char* bin_filename);
 
+  /*!
+   * \brief Serialize the overall Dataset definition/schema to a binary buffer (i.e., without data)
+   */
+  LIGHTGBM_EXPORT void SerializeReference(ByteBuffer* out);
+
   LIGHTGBM_EXPORT void DumpTextFile(const char* text_filename);
 
   LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
@@ -919,6 +925,10 @@ class Dataset {
   #endif  // USE_CUDA
 
  private:
+  void SerializeHeader(BinaryWriter* serializer);
+
+  size_t GetSerializedHeaderSize();
+
   void CreateCUDAColumnData();
 
   std::string data_filename_;
@@ -938,8 +948,11 @@ class Dataset {
   int label_idx_ = 0;
   /*! \brief store feature names */
   std::vector<std::string> feature_names_;
-  /*! \brief store feature names */
+  /*! \brief serialized versions */
+  static const int kSerializedReferenceVersionLength;
+  static const char* serialized_reference_version;
   static const char* binary_file_token;
+  static const char* binary_serialized_reference_token;
   int num_groups_;
   std::vector<int> real_feature_idx_;
   std::vector<int> feature2group_;

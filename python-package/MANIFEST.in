@@ -1,7 +1,7 @@
 prune build
 include LICENSE
 include *.rst *.txt
-recursive-include lightgbm VERSION.txt *.py *.so
+recursive-include lightgbm VERSION.txt py.typed *.py *.so
 include lib_lightgbm.so
 include lib/lib_lightgbm.so
 include compile/CMakeLists.txt
