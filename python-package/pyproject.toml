@@ -17,16 +17,21 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 description = "LightGBM Python Package"
+license = {file = "LICENSE"}
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}
 ]
 name = "lightgbm"
+readme = "README.rst"
 
 # TODO: make this dynamic, or maybe template it through?
 version = "4.0.0"
 
 [project.urls]
+homepage = "https://github.com/microsoft/LightGBM"
+documentation = "https://lightgbm.readthedocs.io/en/latest/"
 repository = "https://github.com/microsoft/LightGBM.git"
+changelog = "https://github.com/microsoft/LightGBM/releases"
 
 [build-system]
 
@@ -40,11 +45,11 @@ cmake.minimum-version = "3.15"
 ninja.minimum-version = "1.5"
 ninja.make-fallback = true
 cmake.args = []
-cmake.verbose = true
+cmake.verbose = false
 cmake.build-type = "Release"
-logging.level = "DEBUG"
+logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
-experimental = true
+experimental = false
 strict-config = true
 minimum-version = "0.1.5"

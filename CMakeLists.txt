@@ -625,8 +625,7 @@ endif()
 if(SKBUILD)
     install(
       TARGETS _lightgbm
-      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+      LIBRARY DESTINATION lightgbm
     )
 else()
     install(
@@ -635,6 +634,5 @@ else()
       LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
       ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     )
+    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 endif()
-
-install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
