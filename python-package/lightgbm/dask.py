@@ -160,12 +160,11 @@ def _pad_eval_names(lgbm_model: LGBMModel, required_names: List[str]) -> LGBMMod
 
     Allows users to rely on expected eval_set names being present when fitting DaskLGBM estimators with ``eval_set``.
     """
-    not_evaluated = 'not evaluated'
     for eval_name in required_names:
         if eval_name not in lgbm_model.evals_result_:
-            lgbm_model.evals_result_[eval_name] = not_evaluated
+            lgbm_model.evals_result_[eval_name] = {}
         if eval_name not in lgbm_model.best_score_:
-            lgbm_model.best_score_[eval_name] = not_evaluated
+            lgbm_model.best_score_[eval_name] = {}
 
     return lgbm_model
 
@@ -444,7 +443,7 @@ def _train(
         List of (X, y) tuple pairs to use as validation sets.
         Note, that not all workers may receive chunks of every eval set within ``eval_set``. When the returned
         lightgbm estimator is not trained using any chunks of a particular eval set, its corresponding component
-        of evals_result_ and best_score_ will be 'not_evaluated'.
+        of ``evals_result_`` and ``best_score_`` will be empty dictionaries.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
     eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
