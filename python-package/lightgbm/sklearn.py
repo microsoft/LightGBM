@@ -897,7 +897,7 @@ class LGBMModel(_LGBMModelBase):
         return self._n_features
 
     @property
-    def n_features_in_(self) -> Optional[int]:
+    def n_features_in_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
@@ -911,7 +911,7 @@ class LGBMModel(_LGBMModelBase):
         return self._best_score
 
     @property
-    def best_iteration_(self) -> Optional[int]:
+    def best_iteration_(self) -> int:
         """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
