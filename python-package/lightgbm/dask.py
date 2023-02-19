@@ -1173,7 +1173,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskCollection]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         **kwargs: Any
-    ) -> "_DaskLGBMModel":
+    ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
         return self._lgb_dask_fit(
             model_factory=LGBMClassifier,
@@ -1360,7 +1360,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         **kwargs: Any
-    ) -> "_DaskLGBMModel":
+    ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
         return self._lgb_dask_fit(
             model_factory=LGBMRegressor,
@@ -1532,7 +1532,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         **kwargs: Any
-    ) -> "_DaskLGBMModel":
+    ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
         return self._lgb_dask_fit(
             model_factory=LGBMRanker,
