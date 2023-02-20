@@ -434,10 +434,10 @@ def _make_n_folds(
     nfold: int,
     params: Dict[str, Any],
     seed: int,
-    fpreproc: Optional[_LGBM_PreprocFunction] = None,
-    stratified: bool = True,
-    shuffle: bool = True,
-    eval_train_metric: bool = False
+    fpreproc: Optional[_LGBM_PreprocFunction],
+    stratified: bool,
+    shuffle: bool,
+    eval_train_metric: bool
 ) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
@@ -685,7 +685,7 @@ def cv(
              .set_categorical_feature(categorical_feature)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
+    cvfolds = _make_n_folds(full_data=train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
                             stratified=stratified, shuffle=shuffle,
                             eval_train_metric=eval_train_metric)
