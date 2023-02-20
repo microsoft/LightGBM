@@ -273,7 +273,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -281,7 +281,7 @@ def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -289,7 +289,7 @@ def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -297,7 +297,7 @@ def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def _cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -922,7 +922,13 @@ class _InnerPredictor:
                 raise ValueError(f'Length of predict result ({preds.size}) cannot be divide nrow ({nrow})')
         return preds
 
-    def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
+    def __get_num_preds(
+        self,
+        start_iteration: int,
+        num_iteration: int,
+        nrow: int,
+        predict_type: int
+    ) -> int:
         """Get size of prediction result."""
         if nrow > _MAX_INT32:
             raise LightGBMError('LightGBM cannot perform prediction for data '
@@ -1016,14 +1022,14 @@ class _InnerPredictor:
     def __create_sparse_native(
         self,
         cs: Union[scipy.sparse.csc_matrix, scipy.sparse.csr_matrix],
-        out_shape,
-        out_ptr_indptr,
-        out_ptr_indices,
-        out_ptr_data,
-        indptr_type,
-        data_type,
+        out_shape: np.ndarray,
+        out_ptr_indptr: "ctypes._Pointer",
+        out_ptr_indices: "ctypes._Pointer",
+        out_ptr_data: "ctypes._Pointer",
+        indptr_type: int,
+        data_type: int,
         is_csr: bool
-    ):
+    ) -> Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]]:
         # create numpy array from output arrays
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
@@ -1116,7 +1122,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int
-    ):
+    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
         csr_indices = csr.indices.astype(np.int32, copy=False)
