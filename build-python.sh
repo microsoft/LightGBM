@@ -39,7 +39,6 @@ rm -rf \
 cp -R ./python-package ./lightgbm-python
 cp -R ./cmake ./lightgbm-python/
 cp CMakeLists.txt ./lightgbm-python/
-#cp -R ./external_libs ./lightgbm-python/
 cp -R ./include ./lightgbm-python/
 cp LICENSE ./lightgbm-python/
 cp -R ./src ./lightgbm-python/
@@ -47,7 +46,9 @@ cp -R ./swig ./lightgbm-python/
 cp VERSION.txt ./lightgbm-python/
 cp -R ./windows ./lightgbm-python/
 
-
+# include only specific files from external_libs, to keep the package
+# small and avoid redistributing code with licenses incompatible with
+# LightGBM's license
 mkdir -p ./lightgbm-python/external_libs/fast_double_parser/include/
 cp \
     external_libs/fast_double_parser/include/fast_double_parser.h \
@@ -58,9 +59,6 @@ cp \
     external_libs/fmt/include/fmt/*.h \
     ./lightgbm-python/external_libs/fmt/include/fmt/
 
-# including only specific files from Eigen, to keep the package
-# small and avoid redistributing code with licenses incompatible with
-# LightGBM's license
 mkdir -p ./lightgbm-python/external_libs/eigen/Eigen
 
 modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
@@ -104,19 +102,6 @@ cp \
     ./lightgbm-python/external_libs/meta/
 
 pushd ./lightgbm-python
-
-    # Remove unnecessary files.
-    # 
-    # There's probably a better way to do this using a MANIFEST.in
-    # file, but this works well enough.
-    # BUILD_ARGS=""
-    # if ${BUILD_SDISTS}; then
-    #     BUILD_ARGS="${BUILD_ARGS} --sdist"
-    # fi
-    # if ${BUILD_WHEEL}; then
-    #     BUILD_ARGS="${BUILD_ARGS} --wheel"
-    # fi
-
     python -m build \
         ${BUILD_SDIST} \
         ${BUILD_WHEEL} \
