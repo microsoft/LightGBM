@@ -2,8 +2,9 @@
 
 set -e -u -o pipefail
 
+pydistcheck ./dist/*.whl
 pip uninstall --yes lightgbm
-pip install ./lightgbm-python/dist/*.whl
+pip install ./dist/*.whl
 python -c "import lightgbm"
 echo "success!"
 sleep 2
