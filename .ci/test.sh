@@ -153,7 +153,7 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
 fi
 
 if [[ $TASK == "sdist" ]]; then
-    sh ./build-python.sh --sdist || exit -1
+    cd $BUILD_DIRECTORY && sh ./build-python.sh --sdist || exit -1
     sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
     pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
@@ -163,7 +163,7 @@ if [[ $TASK == "sdist" ]]; then
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
-        sh ./build-python.sh --wheell || exit -1
+        cd $BUILD_DIRECTORY && sh ./build-python.sh --wheell || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         mv \
             dist/lightgbm-$LGB_VER-py3-none-macosx*.whl \
@@ -197,7 +197,7 @@ if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
-        sh ./build-python --sdist || exit -1
+        cd $BUILD_DIRECTORY && sh ./build-python --sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install \
             --user \
@@ -222,7 +222,7 @@ elif [[ $TASK == "cuda" ]]; then
     sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
-        sh ./build-python --sdist || exit -1
+        cd $BUILD_DIRECTORY && sh ./build-python --sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install \
             --user \
@@ -242,7 +242,7 @@ elif [[ $TASK == "cuda" ]]; then
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
-        sh ./build-python --sdist || exit -1
+        cd $BUILD_DIRECTORY && sh ./build-python --sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install \
             --user \
