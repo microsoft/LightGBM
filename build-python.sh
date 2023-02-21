@@ -24,6 +24,7 @@ done
 
 DIST_DIR="${PWD}/dist"
 
+pip install --prefer-binary build
 pip uninstall -y lightgbm
 
 rm -rf \
