@@ -153,9 +153,9 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
 fi
 
 if [[ $TASK == "sdist" ]]; then
-    cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-    sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
-    pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
+    sh ./build-python.sh --sdist || exit -1
+    sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
+    pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
     fi
@@ -163,9 +163,11 @@ if [[ $TASK == "sdist" ]]; then
     exit 0
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py bdist_wheel --plat-name=macosx --python-tag py3 || exit -1
-        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
-        mv dist/lightgbm-$LGB_VER-py3-none-macosx.whl dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
+        sh ./build-python.sh --wheell || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
+        mv \
+            dist/lightgbm-$LGB_VER-py3-none-macosx*.whl \
+            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
         fi
@@ -195,9 +197,13 @@ if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
+        sh ./build-python --sdist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
+        pip install \
+            --user \
+            -v \
+            --config-settings='cmake.define.USE_GPU=ON' \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
@@ -216,9 +222,13 @@ elif [[ $TASK == "cuda" ]]; then
     sed -i'.bak' 's/gpu_use_dp = false;/gpu_use_dp = true;/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'gpu_use_dp = true' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        sh ./build-python --sdist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
+        pip install \
+            --user \
+            -v \
+            --config-settings='cmake.define.USE_CUDA=ON' \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
@@ -232,9 +242,13 @@ elif [[ $TASK == "cuda" ]]; then
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
-        cd $BUILD_DIRECTORY/python-package && python setup.py sdist || exit -1
-        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/python-package/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/python-package/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+        sh ./build-python --sdist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
+        pip install \
+            --user \
+            -v \
+            --config-settings='cmake.define.USE_MPI=ON' \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then

@@ -620,7 +620,7 @@ if(BUILD_CPP_TEST)
 endif()
 
 # scikit-build-core, the build tool for the Python packages, runs "make install" without
-# the ability to specificy targets, so need to ensure that only targets the shared
+# the ability to specify targets, so need to ensure that only targets the shared
 # library (not also the CLI)
 if(SKBUILD)
     install(

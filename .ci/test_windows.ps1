@@ -72,8 +72,8 @@ if ($env:TASK -eq "regular") {
 }
 elseif ($env:TASK -eq "sdist") {
   cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py sdist --formats gztar ; Check-Output $?
-  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
+  sh build-python.sh --sdist ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
