@@ -60,7 +60,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     for (int i = 0; i < num_data_; ++i) {
       label_int_[i] = static_cast<int>(label_[i]);
       if (label_int_[i] < 0 || label_int_[i] >= num_class_) {
-        Log::Fatal("Label must be in [0, %d), but found %d in label", num_class_, label_int_[i]);
+        Log::Fatal("Label must be in [0, %d], but found %d in label", num_class_, label_int_[i]);
       }
       if (weights_ == nullptr) {
         class_init_probs_[label_int_[i]] += 1.0;
