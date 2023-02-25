@@ -23,7 +23,7 @@ __all__ = [
 
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
-    Tuple[str, float, bool]
+    Union[Tuple[str, float, bool], List[Tuple[str, float, bool]]]
 ]
 
 _LGBM_PreprocFunction = Callable[
@@ -501,8 +501,8 @@ def _agg_cv_result(
     raw_results: List[List[Tuple[str, str, float, bool]]]
 ) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
-    cvmap = collections.OrderedDict()
-    metric_type = {}
+    cvmap: Dict[str, List[float]] = collections.OrderedDict()
+    metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
             key = f"{one_line[0]} {one_line[1]}"
