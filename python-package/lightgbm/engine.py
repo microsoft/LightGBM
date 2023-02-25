@@ -23,7 +23,7 @@ __all__ = [
 
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
-    Tuple[str, float, bool]
+    Union[Tuple[str, float, bool], List[Tuple[str, float, bool]]]
 ]
 
 _LGBM_PreprocFunction = Callable[
