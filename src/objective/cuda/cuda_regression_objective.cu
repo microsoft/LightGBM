@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_regression_objective.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
@@ -353,4 +353,4 @@ const double* CUDARegressionPoissonLoss::LaunchConvertOutputCUDAKernel(const dat
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
 
@@ -323,7 +323,7 @@ void CUDARowData::GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::ve
         const int partition_column_end = feature_partition_column_index_offsets_[i + 1];
         const int num_columns_in_cur_partition = partition_column_end - partition_column_start;
         for (data_size_t data_index = start; data_index < end; ++data_index) {
-          const size_t data_offset = offset + data_index * num_columns_in_cur_partition;
+          const size_t data_offset = offset + static_cast<size_t>(data_index) * num_columns_in_cur_partition;
           const size_t read_data_offset = static_cast<size_t>(data_index) * num_total_columns;
           for (int column_index = 0; column_index < num_columns_in_cur_partition; ++column_index) {
             const size_t true_column_index = read_data_offset + column_index + partition_column_start;
@@ -474,4 +474,4 @@ template const uint64_t* CUDARowData::GetPartitionPtr<uint64_t>() const;
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

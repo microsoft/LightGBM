@@ -26,8 +26,8 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
   for (arg in args) {
     if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
         out_list[["make_args"]] <- arg
-    } else if (any(grepl("=", arg))) {
-      split_arg <- strsplit(arg, "=")[[1L]]
+    } else if (any(grepl("=", arg, fixed = TRUE))) {
+      split_arg <- strsplit(arg, "=", fixed = TRUE)[[1L]]
       arg_name <- split_arg[[1L]]
       arg_value <- split_arg[[2L]]
       out_list[["keyword_args"]][[arg_name]] <- arg_value
@@ -371,6 +371,7 @@ LGB_VERSION <- gsub(
   pattern = "rc"
   , replacement = "-"
   , x = LGB_VERSION
+  , fixed = TRUE
 )
 
 # DESCRIPTION has placeholders for version
@@ -381,11 +382,13 @@ description_contents <- gsub(
   pattern = "~~VERSION~~"
   , replacement = LGB_VERSION
   , x = description_contents
+  , fixed = TRUE
 )
 description_contents <- gsub(
   pattern = "~~DATE~~"
   , replacement = as.character(Sys.Date())
   , x = description_contents
+  , fixed = TRUE
 )
 writeLines(description_contents, DESCRIPTION_FILE)
 
@@ -410,6 +413,7 @@ c_api_contents <- gsub(
   pattern = "LIGHTGBM_C_EXPORT SEXP "
   , replacement = ""
   , x = c_api_contents
+  , fixed = TRUE
 )
 c_api_symbols <- gsub(
   pattern = "\\(.*"
@@ -435,13 +439,15 @@ if (isTRUE(SKIP_VIGNETTES)) {
 
 # Install the package
 version <- gsub(
-  "Version: ",
-  "",
-  grep(
-    "Version: "
-    , readLines(con = file.path(TEMP_R_DIR, "DESCRIPTION"))
+  pattern = "Version: ",
+  replacement = "",
+  x = grep(
+    pattern = "Version: "
+    , x = readLines(con = file.path(TEMP_R_DIR, "DESCRIPTION"))
     , value = TRUE
+    , fixed = TRUE
   )
+  , fixed = TRUE
 )
 tarball <- file.path(getwd(), sprintf("lightgbm_%s.tar.gz", version))
 

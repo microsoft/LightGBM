@@ -1,5 +1,54 @@
 # CRAN Submission History
 
+## v3.3.5 - Submission 2 - (January 16, 2023)
+
+### CRAN response
+
+> Reason was
+>
+> Flavor: r-devel-windows-x86_64
+> Check: OOverall checktime, Result: NOTE
+>  Overall checktime 14 min > 10 min
+>
+> but the maintainer cannot do much to reduce this, so I triggered revdep checks now.
+> Please reply to the archival message in case the issue is not fixable easily.
+>
+> Best,
+> Uwe Ligges
+
+### Maintainer Notes
+
+This was technically not a "resubmission".
+We asked CRAN why the first v3.3.5 submission had been archived, and they responded with the response above... and then v3.3.5 passed all checks with no further work from LightGBM maintainers.
+
+## v3.3.5 - Submission 1 - (January 11, 2023)
+
+### CRAN response
+
+Archived without a response.
+
+### Maintainer Notes
+
+Submitted with the following comment.
+
+> This submission contains {lightgbm} 3.3.5
+
+> Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
+
+> This submission includes patches to address the following warnings observed on the fedora and debian CRAN checks.
+
+> Found the following significant warnings:
+>  io/json11.cpp:207:47: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:216:51: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:225:53: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:268:60: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:272:36: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:276:37: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:381:41: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:150:39: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+
+Thank you very much for your time and consideration.
+
 ## v3.3.4 - Submission 1 - (December 15, 2022)
 
 ### CRAN response
@@ -10,7 +59,7 @@ Accepted to CRAN
 
 Submitted with the following comment:
 
-> This submission contains {lightgbm} 3.3.3.
+> This submission contains {lightgbm} 3.3.4
 
 > Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
 

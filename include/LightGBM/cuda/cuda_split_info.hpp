@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #ifndef LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 #define LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
@@ -102,4 +102,4 @@ class CUDASplitInfo {
 
 #endif  // LIGHTGBM_CUDA_CUDA_SPLIT_INFO_HPP_
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

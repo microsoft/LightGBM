@@ -6,6 +6,14 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
+__all__ = [
+    'early_stopping',
+    'log_evaluation',
+    'record_evaluation',
+    'reset_parameter',
+]
+
+_EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
     List[_LGBM_BoosterEvalMethodResultType],
     List[Tuple[str, str, float, bool, float]]
@@ -99,7 +107,7 @@ def log_evaluation(period: int = 1, show_stdv: bool = True) -> _LogEvaluationCal
 class _RecordEvaluationCallback:
     """Internal record evaluation callable class."""
 
-    def __init__(self, eval_result: Dict[str, Dict[str, List[Any]]]) -> None:
+    def __init__(self, eval_result: _EvalResultDict) -> None:
         self.order = 20
         self.before_iteration = False
 

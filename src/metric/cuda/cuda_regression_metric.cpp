@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <vector>
 
@@ -33,4 +33,4 @@ CUDAQuantileMetric::CUDAQuantileMetric(const Config& config): CUDARegressionMetr
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

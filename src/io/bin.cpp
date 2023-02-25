@@ -577,7 +577,7 @@ namespace LightGBM {
     }
   }
 
-  void BinMapper::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+  void BinMapper::SaveBinaryToFile(BinaryWriter* writer) const {
     writer->AlignedWrite(&num_bin_, sizeof(num_bin_));
     writer->AlignedWrite(&missing_type_, sizeof(missing_type_));
     writer->AlignedWrite(&is_trivial_, sizeof(is_trivial_));
@@ -886,7 +886,7 @@ namespace LightGBM {
     return nullptr;
   }
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   template <>
   const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,
       size_t* total_size,
@@ -1081,6 +1081,6 @@ namespace LightGBM {
     return to_return;
   }
 
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 
 }  // namespace LightGBM

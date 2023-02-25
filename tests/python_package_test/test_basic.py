@@ -48,7 +48,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv('TASK', '') != 'cuda_exp':
+    if getenv('TASK', '') != 'cuda':
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -793,3 +793,15 @@ def test_feature_num_bin_with_max_bin_by_feature():
     ds = lgb.Dataset(X, params={'max_bin_by_feature': max_bin_by_feature}).construct()
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     np.testing.assert_equal(actual_num_bins, max_bin_by_feature)
+
+
+def test_set_leaf_output():
+    X, y = load_breast_cancer(return_X_y=True)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.Booster({'num_leaves': 2}, ds)
+    bst.update()
+    y_pred = bst.predict(X)
+    for leaf_id in range(2):
+        leaf_output = bst.get_leaf_output(tree_id=0, leaf_id=leaf_id)
+        bst.set_leaf_output(tree_id=0, leaf_id=leaf_id, value=leaf_output + 1)
+    np.testing.assert_allclose(bst.predict(X), y_pred + 1)

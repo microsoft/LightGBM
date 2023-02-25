@@ -4,6 +4,8 @@ from pathlib import Path
 from platform import system
 from typing import List
 
+__all__: List[str] = []
+
 
 def find_lib_path() -> List[str]:
     """Find the path to LightGBM library files.

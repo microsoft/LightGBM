@@ -12,6 +12,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/prediction_early_stop.h>
+#include <LightGBM/utils/byte_buffer.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -951,6 +952,19 @@ int LGBM_SampleIndices(int32_t num_total_row,
   API_END();
 }
 
+int LGBM_ByteBufferGetAt(ByteBufferHandle handle, int32_t index, uint8_t* out_val) {
+  API_BEGIN();
+  LightGBM::ByteBuffer* byteBuffer = reinterpret_cast<LightGBM::ByteBuffer*>(handle);
+  *out_val = byteBuffer->GetAt(index);
+  API_END();
+}
+
+int LGBM_ByteBufferFree(ByteBufferHandle handle) {
+  API_BEGIN();
+  delete reinterpret_cast<LightGBM::ByteBuffer*>(handle);
+  API_END();
+}
+
 int LGBM_DatasetCreateFromFile(const char* filename,
                                const char* parameters,
                                const DatasetHandle reference,
@@ -1010,6 +1024,25 @@ int LGBM_DatasetCreateByReference(const DatasetHandle reference,
   ret->CreateValid(reference_dataset);
   ret->InitByReference(nrows, reference_dataset);
   *out = ret.release();
+  API_END();
+}
+
+int LGBM_DatasetCreateFromSerializedReference(const void* ref_buffer,
+                                              int32_t ref_buffer_size,
+                                              int64_t num_row,
+                                              int32_t num_classes,
+                                              const char* parameters,
+                                              DatasetHandle* out) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+  DatasetLoader loader(config, nullptr, 1, nullptr);
+  *out = loader.LoadFromSerializedReference(static_cast<const char*>(ref_buffer),
+    static_cast<size_t>(ref_buffer_size),
+    static_cast<data_size_t>(num_row),
+    num_classes);
   API_END();
 }
 
@@ -1610,6 +1643,19 @@ int LGBM_DatasetSaveBinary(DatasetHandle handle,
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   dataset->SaveBinaryFile(filename);
+  API_END();
+}
+
+int LGBM_DatasetSerializeReferenceToBinary(DatasetHandle handle,
+                                           ByteBufferHandle* out,
+                                           int32_t* out_len) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  std::unique_ptr<LightGBM::ByteBuffer> ret;
+  ret.reset(new LightGBM::ByteBuffer());
+  dataset->SerializeReference(ret.get());
+  *out_len = static_cast<int32_t>(ret->GetSize());
+  *out = ret.release();
   API_END();
 }
 

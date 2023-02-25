@@ -4,7 +4,7 @@
  */
 
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_tree.hpp>
 
@@ -456,4 +456,4 @@ void CUDATree::LaunchAddPredictionToScoreKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
