@@ -1091,7 +1091,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
-            for _, (valid_x, valid_y) in enumerate(eval_set):
+            for valid_x, valid_y in eval_set:
                 if valid_x is X and valid_y is y:
                     valid_sets.append((valid_x, _y))
                 else:
