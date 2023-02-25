@@ -104,6 +104,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -n $CONDA_ENV \
             doxygen \
             'rstcheck>=6.0.0' || exit -1
+    source activate $CONDA_ENV
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
     rstcheck --report-level warning $(find . -type f -name "*.rst") || exit -1
