@@ -95,7 +95,7 @@ fi
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda env update \
+    conda env create \
         -n $CONDA_ENV \
         --file ./env.yml || exit -1
     conda install \
