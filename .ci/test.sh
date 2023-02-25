@@ -93,11 +93,6 @@ if [[ $TASK == "lint" ]]; then
     exit 0
 fi
 
-conda create -q -y -n $CONDA_ENV "${CONDA_PYTHON_REQUIREMENT}"
-source activate $CONDA_ENV
-
-cd $BUILD_DIRECTORY
-
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
     conda env update \
@@ -131,8 +126,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-# re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-conda install -q -y -n $CONDA_ENV \
+# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
+conda create -q -y -n $CONDA_ENV \
     cloudpickle \
     dask-core \
     distributed \
@@ -146,6 +141,10 @@ conda install -q -y -n $CONDA_ENV \
     python-graphviz \
     scikit-learn \
     scipy || exit -1
+
+source activate $CONDA_ENV
+
+cd $BUILD_DIRECTORY
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
