@@ -1364,7 +1364,7 @@ class Dataset:
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
         """
-        self.handle: Optional[ctypes.c_void_p] = None
+        self.handle: Optional[_DatasetHandle] = None
         self.data = data
         self.label = label
         self.reference = reference
