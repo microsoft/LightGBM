@@ -70,6 +70,7 @@ if [[ $TASK == "lint" ]]; then
     LIGHTGBM_DEPS="dask-core datatable distributed matplotlib numpy pandas psutil python-graphviz scikit-learn scipy "
     conda create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
+        ${LIGHTGBM_DEPS} \
         cmakelint \
         cpplint \
         flake8 \
