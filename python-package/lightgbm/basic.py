@@ -33,6 +33,8 @@ _DatasetHandle = ctypes.c_void_p
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
+_LGBM_FeatureNameConfiguration = Union[List[str], str]
 _LGBM_LabelType = Union[
     list,
     np.ndarray,
@@ -588,7 +590,12 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
                          f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
-def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorical):
+def _data_from_pandas(
+    data,
+    feature_name: Optional[_LGBM_FeatureNameConfiguration],
+    categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
+    pandas_categorical: Optional[List[List]]
+):
     if isinstance(data, pd_DataFrame):
         if len(data.shape) != 2 or data.shape[0] < 1:
             raise ValueError('Input data must be 2 dimensional and non empty.')
@@ -638,7 +645,10 @@ def _data_from_pandas(data, feature_name, categorical_feature, pandas_categorica
     return data, feature_name, categorical_feature, pandas_categorical
 
 
-def _dump_pandas_categorical(pandas_categorical, file_name=None):
+def _dump_pandas_categorical(
+    pandas_categorical: Optional[List[List]],
+    file_name: Optional[Union[str, Path]] = None
+) -> str:
     categorical_json = json.dumps(pandas_categorical, default=_json_default_with_numpy)
     pandas_str = f'\npandas_categorical:{categorical_json}\n'
     if file_name is not None:
@@ -650,7 +660,7 @@ def _dump_pandas_categorical(pandas_categorical, file_name=None):
 def _load_pandas_categorical(
     file_name: Optional[Union[str, Path]] = None,
     model_str: Optional[str] = None
-) -> Optional[str]:
+) -> Optional[List[List]]:
     pandas_key = 'pandas_categorical:'
     offset = -len(pandas_key)
     if file_name is not None:
@@ -1388,8 +1398,8 @@ class Dataset:
         weight=None,
         group=None,
         init_score=None,
-        feature_name='auto',
-        categorical_feature='auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True
     ):
@@ -1432,23 +1442,22 @@ class Dataset:
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
         """
-        self.handle: Optional[ctypes.c_void_p] = None
+        self.handle: Optional[_DatasetHandle] = None
         self.data = data
         self.label = label
         self.reference = reference
         self.weight = weight
         self.group = group
         self.init_score = init_score
-        self.feature_name = feature_name
-        self.categorical_feature = categorical_feature
+        self.feature_name: _LGBM_FeatureNameConfiguration = feature_name
+        self.categorical_feature: _LGBM_CategoricalFeatureConfiguration = categorical_feature
         self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices: Optional[List[int]] = None
-        self.need_slice = True
+        self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
         self.pandas_categorical = None
-        self.params_back_up = None
-        self.monotone_constraints = None
+        self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
 
@@ -1646,7 +1655,7 @@ class Dataset:
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
-        self.need_slice = True
+        self._need_slice = True
         if self.used_indices is not None:
             self.data = None
         return self
@@ -1668,7 +1677,7 @@ class Dataset:
                                            data_has_header=data_has_header)
             init_score = init_score.ravel()
             if used_indices is not None:
-                assert not self.need_slice
+                assert not self._need_slice
                 if isinstance(data, (str, Path)):
                     sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float64)
                     assert num_data == len(used_indices)
@@ -1852,7 +1861,7 @@ class Dataset:
     def __init_from_seqs(
         self,
         seqs: List[Sequence],
-        ref_dataset: Optional[_DatasetHandle] = None
+        ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """
         Initialize data from list of Sequence objects.
@@ -2231,7 +2240,7 @@ class Dataset:
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = deepcopy(self.params)
+                self._params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -2251,8 +2260,8 @@ class Dataset:
 
     def _reverse_update_params(self) -> "Dataset":
         if self.handle is None:
-            self.params = deepcopy(self.params_back_up)
-            self.params_back_up = None
+            self.params = deepcopy(self._params_back_up)
+            self._params_back_up = None
         return self
 
     def set_field(
@@ -2363,13 +2372,13 @@ class Dataset:
 
     def set_categorical_feature(
         self,
-        categorical_feature: Union[List[int], List[str], str]
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration
     ) -> "Dataset":
         """Set categorical features.
 
         Parameters
         ----------
-        categorical_feature : list of int or str
+        categorical_feature : list of str or int, or 'auto'
             Names or indices of categorical features.
 
         Returns
@@ -2666,7 +2675,7 @@ class Dataset:
         """
         if self.handle is None:
             raise Exception("Cannot get data before construct Dataset")
-        if self.need_slice and self.used_indices is not None and self.reference is not None:
+        if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
@@ -2682,7 +2691,7 @@ class Dataset:
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
                                  "Returning original raw data")
-            self.need_slice = False
+            self._need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
@@ -2945,7 +2954,7 @@ class Booster:
             Model will be loaded from this string.
         """
         self.handle = None
-        self.network = False
+        self._network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
         self.__set_objective_to_none = False
@@ -3047,7 +3056,7 @@ class Booster:
 
     def __del__(self) -> None:
         try:
-            if self.network:
+            if self._network:
                 self.free_network()
         except AttributeError:
             pass
@@ -3157,7 +3166,7 @@ class Booster:
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
                                          ctypes.c_int(num_machines)))
-        self.network = True
+        self._network = True
         return self
 
     def free_network(self) -> "Booster":
@@ -3169,7 +3178,7 @@ class Booster:
             Booster with freed network.
         """
         _safe_call(_LIB.LGBM_NetworkFree())
-        self.network = False
+        self._network = False
         return self
 
     def trees_to_dataframe(self) -> pd_DataFrame:
@@ -4006,8 +4015,8 @@ class Booster:
         weight=None,
         group=None,
         init_score=None,
-        feature_name: Union[str, List[str]] = 'auto',
-        categorical_feature: Union[str, List[str], List[int]] = 'auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
@@ -4109,7 +4118,7 @@ class Booster:
             ptr_data,
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
-        new_booster.network = self.network
+        new_booster._network = self._network
         return new_booster
 
     def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
@@ -4343,7 +4352,7 @@ class Booster:
         self,
         data_name: str,
         data_idx: int,
-        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]]
     ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate training or validation data."""
         if data_idx >= self.__num_dataset:
