@@ -3948,7 +3948,7 @@ class Booster:
         group=None,
         init_score=None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration  = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
