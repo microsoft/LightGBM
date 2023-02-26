@@ -1376,11 +1376,10 @@ class Dataset:
         self.params = deepcopy(params)
         self.free_raw_data = free_raw_data
         self.used_indices: Optional[List[int]] = None
-        self.need_slice = True
+        self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
         self.pandas_categorical = None
-        self.params_back_up = None
-        self.monotone_constraints = None
+        self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
 
@@ -1578,7 +1577,7 @@ class Dataset:
         if self.handle is not None:
             _safe_call(_LIB.LGBM_DatasetFree(self.handle))
             self.handle = None
-        self.need_slice = True
+        self._need_slice = True
         if self.used_indices is not None:
             self.data = None
         return self
@@ -1600,7 +1599,7 @@ class Dataset:
                                            data_has_header=data_has_header)
             init_score = init_score.ravel()
             if used_indices is not None:
-                assert not self.need_slice
+                assert not self._need_slice
                 if isinstance(data, (str, Path)):
                     sub_init_score = np.empty(num_data * predictor.num_class, dtype=np.float64)
                     assert num_data == len(used_indices)
@@ -2163,7 +2162,7 @@ class Dataset:
             if not self.params:
                 self.params = params
             else:
-                self.params_back_up = deepcopy(self.params)
+                self._params_back_up = deepcopy(self.params)
                 self.params.update(params)
 
         if self.handle is None:
@@ -2183,8 +2182,8 @@ class Dataset:
 
     def _reverse_update_params(self) -> "Dataset":
         if self.handle is None:
-            self.params = deepcopy(self.params_back_up)
-            self.params_back_up = None
+            self.params = deepcopy(self._params_back_up)
+            self._params_back_up = None
         return self
 
     def set_field(
@@ -2598,7 +2597,7 @@ class Dataset:
         """
         if self.handle is None:
             raise Exception("Cannot get data before construct Dataset")
-        if self.need_slice and self.used_indices is not None and self.reference is not None:
+        if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
                 if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
@@ -2614,7 +2613,7 @@ class Dataset:
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
                                  "Returning original raw data")
-            self.need_slice = False
+            self._need_slice = False
         if self.data is None:
             raise LightGBMError("Cannot call `get_data` after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
@@ -2877,7 +2876,7 @@ class Booster:
             Model will be loaded from this string.
         """
         self.handle = None
-        self.network = False
+        self._network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
         self.__set_objective_to_none = False
@@ -2979,7 +2978,7 @@ class Booster:
 
     def __del__(self) -> None:
         try:
-            if self.network:
+            if self._network:
                 self.free_network()
         except AttributeError:
             pass
@@ -3089,7 +3088,7 @@ class Booster:
                                          ctypes.c_int(local_listen_port),
                                          ctypes.c_int(listen_time_out),
                                          ctypes.c_int(num_machines)))
-        self.network = True
+        self._network = True
         return self
 
     def free_network(self) -> "Booster":
@@ -3101,7 +3100,7 @@ class Booster:
             Booster with freed network.
         """
         _safe_call(_LIB.LGBM_NetworkFree())
-        self.network = False
+        self._network = False
         return self
 
     def trees_to_dataframe(self) -> pd_DataFrame:
@@ -4041,7 +4040,7 @@ class Booster:
             ptr_data,
             ctypes.c_int32(nrow),
             ctypes.c_int32(ncol)))
-        new_booster.network = self.network
+        new_booster._network = self._network
         return new_booster
 
     def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
