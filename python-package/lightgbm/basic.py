@@ -34,7 +34,7 @@ _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
-_LGBM_FeatureNameConfiguration = Union[List[str], List[int], str]
+_LGBM_FeatureNameConfiguration = Union[List[str], str]
 _LGBM_LabelType = Union[
     list,
     np.ndarray,
@@ -592,8 +592,8 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 def _data_from_pandas(
     data,
-    feature_name: _LGBM_FeatureNameConfiguration,
-    categorical_feature: _LGBM_CategoricalFeatureConfiguration,
+    feature_name: Optional[_LGBM_FeatureNameConfiguration],
+    categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
     pandas_categorical: Optional[List[List]]
 ):
     if isinstance(data, pd_DataFrame):
