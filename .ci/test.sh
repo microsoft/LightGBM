@@ -66,6 +66,8 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
+    # including lightgbm's dependencies to improve the ability of type checkers like mypy to find bugs
+    LIGHTGBM_DEPS="dask-core datatable distributed matplotlib numpy pandas psutil python-graphviz scikit-learn scipy "
     conda create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
         cmakelint \
