@@ -8,7 +8,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
-                    _LGBM_EvalFunctionResultType, _log_warning)
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
+                    _log_warning)
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -708,8 +709,8 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ) -> "LGBMModel":
@@ -999,8 +1000,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         eval_sample_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ) -> "LGBMRegressor":
@@ -1046,8 +1047,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         eval_class_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ) -> "LGBMClassifier":
@@ -1216,8 +1217,8 @@ class LGBMRanker(LGBMModel):
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
-        feature_name='auto',
-        categorical_feature='auto',
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
     ) -> "LGBMRanker":
