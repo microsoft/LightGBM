@@ -41,6 +41,14 @@ _LGBM_LabelType = Union[
     pd_Series,
     pd_DataFrame
 ]
+_LGBM_PredictDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix
+]
 
 ZERO_THRESHOLD = 1e-35
 
@@ -826,7 +834,7 @@ class _InnerPredictor:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: int = -1,
         raw_score: bool = False,
@@ -834,7 +842,7 @@ class _InnerPredictor:
         pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Predict logic.
 
         Parameters
@@ -3941,7 +3949,7 @@ class Booster:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
         raw_score: bool = False,
@@ -3950,7 +3958,7 @@ class Booster:
         data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Make a prediction.
 
         Parameters
@@ -4021,7 +4029,7 @@ class Booster:
         free_raw_data: bool = True,
         validate_features: bool = False,
         **kwargs
-    ):
+    ) -> "Booster":
         """Refit the existing Booster by new data.
 
         Parameters
