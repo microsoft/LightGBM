@@ -710,9 +710,9 @@ class LGBMModel(_LGBMModelBase):
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
-        callbacks=None,
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
-    ):
+    ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
 
@@ -1001,9 +1001,9 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
-        callbacks=None,
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
             X,
@@ -1048,9 +1048,9 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         feature_name='auto',
         categorical_feature='auto',
-        callbacks=None,
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -1218,9 +1218,9 @@ class LGBMRanker(LGBMModel):
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
         feature_name='auto',
         categorical_feature='auto',
-        callbacks=None,
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
