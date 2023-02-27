@@ -314,7 +314,7 @@ def _c_str(string: str) -> ctypes.c_char_p:
 
 def _c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
-    return (ctype * len(values))(*values)
+    return (ctype * len(values))(*values)  # type: ignore[operator]
 
 
 def _json_default_with_numpy(obj: Any) -> Any:
