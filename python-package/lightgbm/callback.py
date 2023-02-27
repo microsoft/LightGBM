@@ -13,6 +13,7 @@ __all__ = [
     'reset_parameter',
 ]
 
+_EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
     List[_LGBM_BoosterEvalMethodResultType],
     List[Tuple[str, str, float, bool, float]]
@@ -48,7 +49,7 @@ CallbackEnv = collections.namedtuple(
      "evaluation_result_list"])
 
 
-def _format_eval_result(value: _EvalResultTuple, show_stdv: bool = True) -> str:
+def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     """Format metric string."""
     if len(value) == 4:
         return f"{value[0]}'s {value[1]}: {value[2]:g}"
@@ -106,7 +107,7 @@ def log_evaluation(period: int = 1, show_stdv: bool = True) -> _LogEvaluationCal
 class _RecordEvaluationCallback:
     """Internal record evaluation callable class."""
 
-    def __init__(self, eval_result: Dict[str, Dict[str, List[Any]]]) -> None:
+    def __init__(self, eval_result: _EvalResultDict) -> None:
         self.order = 20
         self.before_iteration = False
 
@@ -337,7 +338,7 @@ class _EarlyStoppingCallback:
     def _final_iteration_check(self, env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
         if env.iteration == env.end_iteration - 1:
             if self.verbose:
-                best_score_str = '\t'.join([_format_eval_result(x) for x in self.best_score_list[i]])
+                best_score_str = '\t'.join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
                 _log_info('Did not meet early stopping. '
                           f'Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}')
                 if self.first_metric_only:
@@ -363,7 +364,7 @@ class _EarlyStoppingCallback:
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - self.best_iter[i] >= self.stopping_rounds:
                 if self.verbose:
-                    eval_result_str = '\t'.join([_format_eval_result(x) for x in self.best_score_list[i]])
+                    eval_result_str = '\t'.join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
                     _log_info(f"Early stopping, best iteration is:\n[{self.best_iter[i] + 1}]\t{eval_result_str}")
                     if self.first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
