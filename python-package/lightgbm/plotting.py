@@ -20,13 +20,13 @@ __all__ = [
 ]
 
 
-def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str) -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
-def _float2str(value: float, precision: Optional[int] = None) -> str:
+def _float2str(value: float, precision: Optional[int]) -> str:
     return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
