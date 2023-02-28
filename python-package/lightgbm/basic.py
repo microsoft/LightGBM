@@ -244,7 +244,11 @@ def _is_1d_collection(data: Any) -> bool:
     )
 
 
-def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(
+    data: Any,
+    dtype=np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -4028,7 +4032,7 @@ class Booster:
     def refit(
         self,
         data: _LGBM_TrainDataType,
-        label,
+        label: _LGBM_LabelType,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
         weight=None,
