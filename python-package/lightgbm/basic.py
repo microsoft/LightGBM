@@ -35,6 +35,19 @@ _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
 _LGBM_FeatureNameConfiguration = Union[List[str], str]
+_LGBM_GroupType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
+_LGBM_InitScoreType = Union[
+    List[float],
+    List[List[float]],
+    np.ndarray,
+    pd_Series,
+    pd_DataFrame,
+]
 _LGBM_TrainDataType = Union[
     str,
     Path,
@@ -60,7 +73,12 @@ _LGBM_PredictDataType = Union[
     dt_DataTable,
     scipy.sparse.spmatrix
 ]
-
+_LGBM_WeightType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
 ZERO_THRESHOLD = 1e-35
 
 
@@ -1414,9 +1432,9 @@ class Dataset:
         data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
@@ -1722,9 +1740,9 @@ class Dataset:
         data: Optional[_LGBM_TrainDataType],
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         predictor=None,
         feature_name='auto',
         categorical_feature='auto',
@@ -2159,9 +2177,9 @@ class Dataset:
         self,
         data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         """Create validation data align with current Dataset.
@@ -2545,7 +2563,10 @@ class Dataset:
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
-    def set_weight(self, weight) -> "Dataset":
+    def set_weight(
+        self,
+        weight: Optional[_LGBM_WeightType]
+    ) -> "Dataset":
         """Set weight of each instance.
 
         Parameters
@@ -2567,7 +2588,10 @@ class Dataset:
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
-    def set_init_score(self, init_score) -> "Dataset":
+    def set_init_score(
+        self,
+        init_score: Optional[_LGBM_InitScoreType]
+    ) -> "Dataset":
         """Set init score of Booster to start from.
 
         Parameters
@@ -2586,7 +2610,10 @@ class Dataset:
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
-    def set_group(self, group) -> "Dataset":
+    def set_group(
+        self,
+        group: Optional[_LGBM_GroupType]
+    ) -> "Dataset":
         """Set group size of Dataset (used for ranking).
 
         Parameters
@@ -2716,7 +2743,7 @@ class Dataset:
                                 "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
-    def get_group(self):
+    def get_group(self) -> Optional[np.ndarray]:
         """Get the group of the Dataset.
 
         Returns
@@ -4031,9 +4058,9 @@ class Booster:
         label,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         dataset_params: Optional[Dict[str, Any]] = None,
