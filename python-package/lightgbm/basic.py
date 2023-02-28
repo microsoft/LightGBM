@@ -48,6 +48,17 @@ _LGBM_InitScoreType = Union[
     pd_Series,
     pd_DataFrame,
 ]
+_LGBM_TrainDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix,
+    "Sequence",
+    List["Sequence"],
+    List[np.ndarray]
+]
 _LGBM_LabelType = Union[
     list,
     np.ndarray,
@@ -1418,7 +1429,7 @@ class Dataset:
 
     def __init__(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
         weight: Optional[_LGBM_WeightType] = None,
@@ -1726,7 +1737,7 @@ class Dataset:
 
     def _lazy_init(
         self,
-        data,
+        data: Optional[_LGBM_TrainDataType],
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
         weight: Optional[_LGBM_WeightType] = None,
@@ -2164,7 +2175,7 @@ class Dataset:
 
     def create_valid(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
@@ -2700,7 +2711,7 @@ class Dataset:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
-    def get_data(self):
+    def get_data(self) -> Optional[_LGBM_TrainDataType]:
         """Get the raw data of the Dataset.
 
         Returns
@@ -4043,7 +4054,7 @@ class Booster:
 
     def refit(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
@@ -4061,7 +4072,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
