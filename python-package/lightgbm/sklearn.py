@@ -8,7 +8,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
-                    _LGBM_EvalFunctionResultType, _log_warning)
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
+                    _log_warning)
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -525,14 +526,14 @@ class LGBMModel(_LGBMModelBase):
         self._Booster: Optional[Booster] = None
         self._evals_result: _EvalResultDict = {}
         self._best_score: _LGBM_BoosterBestScoreType = {}
-        self._best_iteration: Optional[int] = None
+        self._best_iteration: int = -1
         self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
         self._class_weight: Optional[Union[Dict, str]] = None
         self._class_map: Optional[Dict[int, int]] = None
-        self._n_features = None
-        self._n_features_in = None
+        self._n_features: int = -1
+        self._n_features_in: int = -1
         self._classes = None
         self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
@@ -708,11 +709,11 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
-    ):
+    ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
 
@@ -999,11 +1000,11 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         eval_sample_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
             X,
@@ -1046,11 +1047,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         eval_class_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -1216,11 +1217,11 @@ class LGBMRanker(LGBMModel):
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:
