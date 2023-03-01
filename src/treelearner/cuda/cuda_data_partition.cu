@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_data_partition.hpp"
 
@@ -1045,11 +1045,11 @@ __global__ void AddPredictionToScoreKernel(
       const data_size_t global_data_index = data_indices_in_leaf[local_data_index];
       const int leaf_index = cuda_data_index_to_leaf_index[global_data_index];
       const double leaf_prediction_value = leaf_value[leaf_index];
-      cuda_scores[local_data_index] = leaf_prediction_value;
+      cuda_scores[global_data_index] += leaf_prediction_value;
     } else {
       const int leaf_index = cuda_data_index_to_leaf_index[local_data_index];
       const double leaf_prediction_value = leaf_value[leaf_index];
-      cuda_scores[local_data_index] = leaf_prediction_value;
+      cuda_scores[local_data_index] += leaf_prediction_value;
     }
   }
 }
@@ -1071,4 +1071,4 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_valu
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

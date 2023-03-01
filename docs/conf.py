@@ -105,7 +105,7 @@ autodoc_mock_imports = [
     'scipy.sparse',
 ]
 try:
-    import sklearn
+    import sklearn  # noqa: F401
 except ImportError:
     autodoc_mock_imports.append('sklearn')
 # hide type hints in API docs
@@ -150,7 +150,7 @@ release = version
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

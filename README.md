@@ -43,7 +43,7 @@ Next you may want to read:
 - [**Distributed Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/Parallel-Learning-Guide.rst) and [**GPU Learning**](https://github.com/microsoft/LightGBM/blob/master/docs/GPU-Tutorial.rst) can speed up computation.
 - [**Laurae++ interactive documentation**](https://sites.google.com/view/lauraepp/parameters) is a detailed guide for hyperparameters.
 - [**FLAML**](https://www.microsoft.com/en-us/research/project/fast-and-lightweight-automl-for-large-scale-data/articles/flaml-a-fast-and-lightweight-automl-library/) provides automated tuning for LightGBM ([code examples](https://microsoft.github.io/FLAML/docs/Examples/AutoML-for-LightGBM/)).
-- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna/tree/master/examples/lightgbm)).
+- [**Optuna Hyperparameter Tuner**](https://medium.com/optuna/lightgbm-tuner-new-optuna-integration-for-hyperparameter-optimization-8b7095e99258) provides automated tuning for LightGBM hyperparameters ([code examples](https://github.com/optuna/optuna-examples/blob/main/lightgbm/lightgbm_tuner_simple.py)).
 - [**Understanding LightGBM Parameters (and How to Tune Them using Neptune)**](https://neptune.ai/blog/lightgbm-parameters-guide).
 
 Documentation for contributors:
@@ -60,6 +60,9 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 
 External (Unofficial) Repositories
 ----------------------------------
+
+Projects listed here offer alternative ways to use LightGBM.
+They are not maintained or officially endorsed by the `LightGBM` development team.
 
 FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
 
@@ -115,11 +118,13 @@ lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 
-`{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
+`{bonsai}` (R `{parsnip}`-compliant interface): https://github.com/tidymodels/bonsai
 
 `{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
 
 lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
+
+`postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
 
 Support
 -------

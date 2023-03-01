@@ -161,7 +161,7 @@ Dataset <- R6::R6Class(
             # Provided indices, but some indices are missing?
             if (sum(is.na(cate_indices)) > 0L) {
               stop(
-                "lgb.self.get.handle: supplied an unknown feature in categorical_feature: "
+                "lgb.Dataset.construct: supplied an unknown feature in categorical_feature: "
                 , sQuote(private$categorical_feature[is.na(cate_indices)])
               )
             }
@@ -172,7 +172,7 @@ Dataset <- R6::R6Class(
             data_is_not_filename <- !is.character(private$raw_data)
             if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
               stop(
-                "lgb.self.get.handle: supplied a too large value in categorical_feature: "
+                "lgb.Dataset.construct: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
                 , " but only "
                 , ncol(private$raw_data)
@@ -289,6 +289,13 @@ Dataset <- R6::R6Class(
         self$set_colnames(colnames = private$colnames)
       }
 
+      # Ensure that private$colnames matches the feature names on the C++ side. This line is necessary
+      # in cases like constructing from a file or from a matrix with no column names.
+      private$colnames <- .Call(
+          LGBM_DatasetGetFeatureNames_R
+          , private$handle
+      )
+
       # Load init score if requested
       if (!is.null(private$predictor) && is.null(private$used_indices)) {
 
@@ -381,6 +388,13 @@ Dataset <- R6::R6Class(
       if (lgb.is.null.handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
+      if (is.character(feature)) {
+        feature_name <- feature
+        feature <- which(private$colnames == feature_name)
+        if (length(feature) == 0L) {
+          stop(sprintf("feature '%s' not found", feature_name))
+        }
+      }
       num_bin <- integer(1L)
       .Call(
         LGBM_DatasetGetFeatureNumBin_R
@@ -457,7 +471,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$get_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , toString(sQuote(.INFO_KEYS()))
         )
       }
 
@@ -509,7 +523,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$set_field(): field_name must one of the following: "
-          , paste0(sQuote(.INFO_KEYS()), collapse = ", ")
+          , toString(sQuote(.INFO_KEYS()))
         )
       }
 
@@ -1236,11 +1250,11 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 lgb.Dataset.save <- function(dataset, fname) {
 
   if (!lgb.is.Dataset(x = dataset)) {
-    stop("lgb.Dataset.set: input dataset should be an lgb.Dataset object")
+    stop("lgb.Dataset.save: input dataset should be an lgb.Dataset object")
   }
 
   if (!is.character(fname)) {
-    stop("lgb.Dataset.set: fname should be a character or a file connection")
+    stop("lgb.Dataset.save: fname should be a character or a file connection")
   }
 
   return(invisible(dataset$save_binary(fname = fname)))

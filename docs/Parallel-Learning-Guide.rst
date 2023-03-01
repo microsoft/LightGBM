@@ -166,7 +166,7 @@ LightGBM supports a parameter ``machines``, a comma-delimited string where each 
 
 For example, consider the case where you are running one Dask worker process on each of the following IP addresses:
 
-::
+.. code:: text
 
   10.0.1.0
   10.0.2.0
@@ -209,7 +209,7 @@ If you are only running one Dask worker process on each host, and if you can rel
 
 For example, consider the case where you are running one Dask worker process on each of the following IP addresses:
 
-::
+.. code:: text
 
   10.0.1.0
   10.0.2.0
@@ -410,7 +410,7 @@ Socket Version
 It needs to collect IP of all machines that want to run distributed learning in and allocate one TCP port (assume 12345 here) for all machines,
 and change firewall rules to allow income of this port (12345). Then write these IP and ports in one file (assume ``mlist.txt``), like following:
 
-.. code::
+.. code:: text
 
     machine1_ip 12345
     machine2_ip 12345
@@ -421,7 +421,7 @@ MPI Version
 It needs to collect IP (or hostname) of all machines that want to run distributed learning in.
 Then write these IP in one file (assume ``mlist.txt``) like following:
 
-.. code::
+.. code:: text
 
     machine1_ip
     machine2_ip
@@ -471,13 +471,13 @@ MPI Version
 
    For Windows:
 
-   .. code::
+   .. code:: console
 
        mpiexec.exe /machinefile mlist.txt lightgbm.exe config=your_config_file
 
    For Linux:
 
-   .. code::
+   .. code:: console
 
        mpiexec --machinefile mlist.txt ./lightgbm config=your_config_file
 
@@ -542,7 +542,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _Ray: https://ray.io/
 
-.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/lightgbm-ray.html
+.. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/tune/api_docs/integration.html#lightgbm-tune-integration-lightgbm
 
 .. _Mars: https://docs.pymars.org/en/latest/index.html
 

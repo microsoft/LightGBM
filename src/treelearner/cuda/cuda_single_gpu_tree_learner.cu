@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 
@@ -258,4 +258,4 @@ void CUDASingleGPUTreeLearner::LaunchConstructBitsetForCategoricalSplitKernel(
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

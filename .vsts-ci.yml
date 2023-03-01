@@ -7,6 +7,7 @@ trigger:
     - v*
 pr:
 - master
+- release/*
 variables:
   AZURE: 'true'
   PYTHON_VERSION: '3.10'
@@ -17,10 +18,10 @@ variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
   containers:
-  - container: ubuntu1404
-    image: lightgbm/vsts-agent:ubuntu-14.04
+  - container: linux-artifact-builder
+    image: lightgbm/vsts-agent:manylinux_2_28_x86_64
   - container: ubuntu-latest
-    image: 'ubuntu:20.04'
+    image: 'ubuntu:22.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
   - container: rbase
     image: wch1/r-debug
@@ -34,7 +35,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool: sh-ubuntu
-  container: ubuntu1404
+  container: linux-artifact-builder
   strategy:
     matrix:
       regular:
@@ -55,21 +56,14 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-        # on Ubuntu 14.04, gpu_source build segfaults with newer version of Python
-        # (and newer version of scipy as a consequence)
-        PYTHON_VERSION: '3.7'
       swig:
         TASK: swig
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
       echo "##vso[task.prependpath]$CONDA/bin"
-      AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
-      echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
-      LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
-      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
-      echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
     displayName: 'Set variables'
   - script: |
       echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
@@ -90,7 +84,7 @@ jobs:
   variables:
     COMPILER: clang
     DEBIAN_FRONTEND: 'noninteractive'
-    IN_UBUNTU_LATEST_CONTAINER: 'true'
+    IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
   pool: sh-ubuntu
@@ -139,11 +133,6 @@ jobs:
       CONDA=$HOME/miniforge
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
-      AMDAPPSDK_PATH=$BUILD_SOURCESDIRECTORY/AMDAPPSDK
-      echo "##vso[task.setvariable variable=AMDAPPSDK_PATH]$AMDAPPSDK_PATH"
-      LD_LIBRARY_PATH=$AMDAPPSDK_PATH/lib/x86_64:$LD_LIBRARY_PATH
-      echo "##vso[task.setvariable variable=LD_LIBRARY_PATH]$LD_LIBRARY_PATH"
-      echo "##vso[task.setvariable variable=OPENCL_VENDOR_PATH]$AMDAPPSDK_PATH/etc/OpenCL/vendors"
     displayName: 'Set variables'
   # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
   - script: |
@@ -162,7 +151,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: ubuntu-latest
+    vmImage: ubuntu-22.04
   timeoutInMinutes: 180
   strategy:
     matrix:
@@ -198,11 +187,12 @@ jobs:
       EOF
       cat > docker-script.sh <<EOF
       export CONDA=\$HOME/miniforge
-      export PATH=\$CONDA/bin:\$PATH
+      export PATH=\$CONDA/bin:/opt/rh/llvm-toolset-7.0/root/usr/bin:\$PATH
+      export LD_LIBRARY_PATH=/opt/rh/llvm-toolset-7.0/root/usr/lib64:\$LD_LIBRARY_PATH
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
       EOF
-      IMAGE_URI="quay.io/pypa/manylinux2014_${ARCH}"
+      IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
       docker pull "${IMAGE_URI}" || exit -1
       PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
       echo "detected image platform: ${PLATFORM}"
@@ -229,12 +219,12 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-10.15'
+    vmImage: 'macOS-11'
   strategy:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: '3.7'
+        PYTHON_VERSION: '3.9'
       sdist:
         TASK: sdist
         PYTHON_VERSION: '3.8'
@@ -293,6 +283,8 @@ jobs:
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
   - script: |
+      cmd /c "conda config --remove channels defaults"
+      cmd /c "conda config --add channels nodefaults"
       cmd /c "conda config --add channels conda-forge"
       cmd /c "conda config --set channel_priority strict"
       cmd /c "conda init powershell"
@@ -309,7 +301,7 @@ jobs:
 ###########################################
   condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   container: rbase
   steps:
   - script: |
@@ -317,7 +309,7 @@ jobs:
       R_LIB_PATH=~/Rlib
       export R_LIBS=${R_LIB_PATH}
       mkdir -p ${R_LIB_PATH}
-      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit -1
       sh build-cran-package.sh --r-executable=RD || exit -1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
@@ -340,7 +332,7 @@ jobs:
   - R_artifact
   condition: and(succeeded(), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
   pool:
-    vmImage: 'ubuntu-latest'
+    vmImage: 'ubuntu-22.04'
   steps:
   # Create archives with complete source code included (with git submodules)
   - task: ArchiveFiles@2

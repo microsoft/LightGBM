@@ -57,7 +57,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 1. xgboost:
 
-   .. code::
+   .. code:: text
 
        eta = 0.1
        max_depth = 8
@@ -68,7 +68,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 2. xgboost\_hist (using histogram based algorithm):
 
-   .. code::
+   .. code:: text
 
        eta = 0.1
        num_round = 500
@@ -81,7 +81,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 3. LightGBM:
 
-   .. code::
+   .. code:: text
 
        learning_rate = 0.1
        num_leaves = 255
@@ -102,7 +102,7 @@ Result
 Speed
 '''''
 
-We compared speed using only the training task without any test or metric output. We didn't count the time for IO. 
+We compared speed using only the training task without any test or metric output. We didn't count the time for IO.
 For the ranking tasks, since XGBoost and LightGBM implement different ranking objective functions, we used ``regression`` objective for speed benchmark, for the fair comparison.
 
 The following table is the comparison of time cost:
@@ -212,7 +212,7 @@ We ran our experiments on 16 Windows servers with the following specifications:
 Settings
 ^^^^^^^^
 
-.. code::
+.. code:: text
 
     learning_rate = 0.1
     num_leaves = 255

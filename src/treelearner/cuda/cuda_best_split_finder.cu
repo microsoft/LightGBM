@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -1375,7 +1375,6 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
   is_larger_leaf_valid
 
 #define FindBestSplitsForLeafKernel_ARGS \
-    cuda_is_feature_used_bytree_, \
     num_tasks_, \
     cuda_split_find_tasks_.RawData(), \
     cuda_randoms_.RawData(), \
@@ -1430,29 +1429,35 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner1(LaunchFindBest
 
 template <bool USE_RAND, bool USE_L1, bool USE_SMOOTHING>
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBestSplitsForLeafKernel_PARAMS) {
+  const int8_t* is_feature_used_by_smaller_node = cuda_is_feature_used_bytree_;
+  const int8_t* is_feature_used_by_larger_node = cuda_is_feature_used_bytree_;
+  if (select_features_by_node_) {
+    is_feature_used_by_smaller_node = is_feature_used_by_smaller_node_.RawData();
+    is_feature_used_by_larger_node = is_feature_used_by_larger_node_.RawData();
+  }
   if (!use_global_memory_) {
     if (is_smaller_leaf_valid) {
       FindBestSplitsForLeafKernel<USE_RAND, USE_L1, USE_SMOOTHING, false>
         <<<num_tasks_, NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER, 0, cuda_streams_[0]>>>
-        (FindBestSplitsForLeafKernel_ARGS);
+        (is_feature_used_by_smaller_node, FindBestSplitsForLeafKernel_ARGS);
     }
     SynchronizeCUDADevice(__FILE__, __LINE__);
     if (is_larger_leaf_valid) {
       FindBestSplitsForLeafKernel<USE_RAND, USE_L1, USE_SMOOTHING, true>
         <<<num_tasks_, NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER, 0, cuda_streams_[1]>>>
-        (FindBestSplitsForLeafKernel_ARGS);
+        (is_feature_used_by_larger_node, FindBestSplitsForLeafKernel_ARGS);
     }
   } else {
     if (is_smaller_leaf_valid) {
       FindBestSplitsForLeafKernel_GlobalMemory<USE_RAND, USE_L1, USE_SMOOTHING, false>
         <<<num_tasks_, NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER, 0, cuda_streams_[0]>>>
-        (FindBestSplitsForLeafKernel_ARGS, GlobalMemory_Buffer_ARGS);
+        (is_feature_used_by_smaller_node, FindBestSplitsForLeafKernel_ARGS, GlobalMemory_Buffer_ARGS);
     }
     SynchronizeCUDADevice(__FILE__, __LINE__);
     if (is_larger_leaf_valid) {
       FindBestSplitsForLeafKernel_GlobalMemory<USE_RAND, USE_L1, USE_SMOOTHING, true>
         <<<num_tasks_, NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER, 0, cuda_streams_[1]>>>
-        (FindBestSplitsForLeafKernel_ARGS, GlobalMemory_Buffer_ARGS);
+        (is_feature_used_by_larger_node, FindBestSplitsForLeafKernel_ARGS, GlobalMemory_Buffer_ARGS);
     }
   }
 }
@@ -1797,4 +1802,4 @@ void CUDABestSplitFinder::LaunchInitCUDARandomKernel() {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

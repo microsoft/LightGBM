@@ -16,7 +16,7 @@ lightgbm(
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
-  objective = "regression",
+  objective = "auto",
   init_score = NULL,
   num_threads = NULL,
   ...
@@ -37,9 +37,10 @@ the "Parameters" section of the documentation} for a list of parameters and vali
 
 \item{nrounds}{number of training rounds}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
@@ -47,7 +48,7 @@ fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
 If training stops early, the returned model will have attribute \code{best_iter}
 set to the iteration number of the best iteration.}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
@@ -55,9 +56,18 @@ set to the iteration number of the best iteration.}
 \code{save} or \code{saveRDS} (see section "Model serialization").}
 
 \item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
-For a list of accepted objectives, see
-\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
-the "objective" item of the "Parameters" section of the documentation}.}
+                 For a list of accepted objectives, see
+                 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+                 the "objective" item of the "Parameters" section of the documentation}.
+
+                 If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+                 be determined according to what is passed for \code{label}:\itemize{
+                 \item If passing a factor with two variables, will use objective \code{"binary"}.
+                 \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+                 (note that parameter \code{num_class} in this case will also be determined automatically from
+                 \code{label}).
+                 \item Otherwise, will use objective \code{"regression"}.
+                 }}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
 
@@ -98,7 +108,12 @@ the "objective" item of the "Parameters" section of the documentation}.}
 a trained \code{lgb.Booster}
 }
 \description{
-Simple interface for training a LightGBM model.
+High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+             is focused on compatibility with other statistics and machine learning interfaces in R.
+             This focus on compatibility means that this interface may experience more frequent breaking API changes
+             than \code{\link{lgb.train}}.
+             For efficiency-sensitive applications, or for applications where breaking API changes across releases
+             is very expensive, use \code{\link{lgb.train}}.
 }
 \section{Early Stopping}{
 

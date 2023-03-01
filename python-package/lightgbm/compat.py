@@ -1,6 +1,8 @@
 # coding: utf-8
 """Compatibility library."""
 
+from typing import List
+
 """pandas"""
 try:
     from pandas import DataFrame as pd_DataFrame
@@ -36,14 +38,14 @@ except ImportError:
 
 """matplotlib"""
 try:
-    import matplotlib
+    import matplotlib  # noqa: F401
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 """graphviz"""
 try:
-    import graphviz
+    import graphviz  # noqa: F401
     GRAPHVIZ_INSTALLED = True
 except ImportError:
     GRAPHVIZ_INSTALLED = False
@@ -75,9 +77,9 @@ try:
     from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
     try:
         from sklearn.exceptions import NotFittedError
-        from sklearn.model_selection import GroupKFold, StratifiedKFold
+        from sklearn.model_selection import BaseCrossValidator, GroupKFold, StratifiedKFold
     except ImportError:
-        from sklearn.cross_validation import GroupKFold, StratifiedKFold
+        from sklearn.cross_validation import BaseCrossValidator, GroupKFold, StratifiedKFold
         from sklearn.utils.validation import NotFittedError
     try:
         from sklearn.utils.validation import _check_sample_weight
@@ -90,6 +92,7 @@ try:
             return sample_weight
 
     SKLEARN_INSTALLED = True
+    _LGBMBaseCrossValidator = BaseCrossValidator
     _LGBMModelBase = BaseEstimator
     _LGBMRegressorBase = RegressorMixin
     _LGBMClassifierBase = ClassifierMixin
@@ -121,6 +124,7 @@ except ImportError:
 
         pass
 
+    _LGBMBaseCrossValidator = None
     _LGBMLabelEncoder = None
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
@@ -145,11 +149,11 @@ try:
 except ImportError:
     DASK_INSTALLED = False
 
-    dask_array_from_delayed = None
-    dask_bag_from_delayed = None
+    dask_array_from_delayed = None  # type: ignore[assignment]
+    dask_bag_from_delayed = None  # type: ignore[assignment]
     delayed = None
-    default_client = None
-    wait = None
+    default_client = None  # type: ignore[assignment]
+    wait = None  # type: ignore[assignment]
 
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
@@ -174,3 +178,23 @@ except ImportError:
 
         def __init__(self, *args, **kwargs):
             pass
+
+"""cpu_count()"""
+try:
+    from joblib import cpu_count
+
+    def _LGBMCpuCount(only_physical_cores: bool = True):
+        return cpu_count(only_physical_cores=only_physical_cores)
+except ImportError:
+    try:
+        from psutil import cpu_count
+
+        def _LGBMCpuCount(only_physical_cores: bool = True):
+            return cpu_count(logical=not only_physical_cores)
+    except ImportError:
+        from multiprocessing import cpu_count
+
+        def _LGBMCpuCount(only_physical_cores: bool = True):
+            return cpu_count()
+
+__all__: List[str] = []

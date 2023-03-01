@@ -11,6 +11,7 @@
 #include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/threading.h>
+#include <LightGBM/sample_strategy.h>
 
 #include <string>
 #include <algorithm>
@@ -23,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "cuda/cuda_score_updater.hpp"
 #include "score_updater.hpp"
 
 namespace LightGBM {
@@ -55,6 +57,11 @@ class GBDT : public GBDTBase {
   void Init(const Config* gbdt_config, const Dataset* train_data,
             const ObjectiveFunction* objective_function,
             const std::vector<const Metric*>& training_metrics) override;
+
+  /*!
+  * \brief Traverse the tree of forced splits and check that all indices are less than the number of features.
+  */
+  void CheckForcedSplitFeatures();
 
   /*!
   * \brief Merge model from other boosting object. Will insert to the front of current boosting object
@@ -157,6 +164,60 @@ class GBDT : public GBDTBase {
   int GetCurrentIteration() const override { return static_cast<int>(models_.size()) / num_tree_per_iteration_; }
 
   /*!
+  * \brief Get parameters as a JSON string
+  */
+  std::string GetLoadedParam() const override {
+    if (loaded_parameter_.empty()) {
+      return std::string("{}");
+    }
+    const auto param_types = Config::ParameterTypes();
+    const auto lines = Common::Split(loaded_parameter_.c_str(), "\n");
+    bool first = true;
+    std::stringstream str_buf;
+    str_buf << "{";
+    for (const auto& line : lines) {
+      const auto pair = Common::Split(line.c_str(), ":");
+      if (pair[1] == " ]")
+        continue;
+      if (first) {
+        first = false;
+        str_buf << "\"";
+      } else {
+        str_buf << ",\"";
+      }
+      const auto param = pair[0].substr(1);
+      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
+      const auto param_type = param_types.at(param);
+      str_buf << param << "\": ";
+      if (param_type == "string") {
+        str_buf << "\"" << value_str << "\"";
+      } else if (param_type == "int") {
+        int value;
+        Common::Atoi(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "double") {
+        double value;
+        Common::Atof(value_str.c_str(), &value);
+        str_buf << value;
+      } else if (param_type == "bool") {
+        bool value = value_str == "1";
+        str_buf << std::boolalpha << value;
+      } else if (param_type.substr(0, 6) == "vector") {
+        str_buf << "[";
+        if (param_type.substr(7, 6) == "string") {
+          const auto parts = Common::Split(value_str.c_str(), ",");
+          str_buf << "\"" << Common::Join(parts, "\",\"") << "\"";
+        } else {
+          str_buf << value_str;
+        }
+        str_buf << "]";
+      }
+    }
+    str_buf << "}";
+    return str_buf.str();
+  }
+
+  /*!
   * \brief Can use early stopping for prediction or not
   * \return True if cannot use early stopping for prediction
   */
@@ -193,7 +254,7 @@ class GBDT : public GBDTBase {
     if (data_idx > 0) {
       num_data = valid_score_updater_[data_idx - 1]->num_data();
     }
-    return num_data * num_class_;
+    return static_cast<int64_t>(num_data) * num_class_;
   }
 
   /*!
@@ -398,7 +459,7 @@ class GBDT : public GBDTBase {
 
  protected:
   virtual bool GetIsConstHessian(const ObjectiveFunction* objective_function) {
-    if (objective_function != nullptr) {
+    if (objective_function != nullptr && !data_sample_strategy_->IsHessianChange()) {
       return objective_function->IsConstantHessian();
     } else {
       return false;
@@ -415,19 +476,7 @@ class GBDT : public GBDTBase {
   void ResetBaggingConfig(const Config* config, bool is_change_dataset);
 
   /*!
-  * \brief Implement bagging logic
-  * \param iter Current interation
-  */
-  virtual void Bagging(int iter);
-
-  virtual data_size_t BaggingHelper(data_size_t start, data_size_t cnt,
-                                    data_size_t* buffer);
-
-  data_size_t BalancedBaggingHelper(data_size_t start, data_size_t cnt,
-                                    data_size_t* buffer);
-
-  /*!
-  * \brief calculate the object function
+  * \brief calculate the objective function
   */
   virtual void Boosting();
 
@@ -442,7 +491,7 @@ class GBDT : public GBDTBase {
   * \brief eval results for one metric
 
   */
-  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score) const;
+  virtual std::vector<double> EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const;
 
   /*!
   * \brief Print metric result of current iteration
@@ -452,6 +501,11 @@ class GBDT : public GBDTBase {
   std::string OutputMetric(int iter);
 
   double BoostFromAverage(int class_id, bool update_scorer);
+
+  /*!
+  * \brief Reset gradient buffers, must be called after sample strategy is reset
+  */
+  void ResetGradientBuffers();
 
   /*! \brief current iteration */
   int iter_;
@@ -488,7 +542,7 @@ class GBDT : public GBDTBase {
   /*! \brief Parser config file content */
   std::string parser_config_str_ = "";
 
-#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
+#ifdef USE_CUDA
   /*! \brief First order derivative of training data */
   std::vector<score_t, CHAllocator<score_t>> gradients_;
   /*! \brief Second order derivative of training data */
@@ -499,11 +553,23 @@ class GBDT : public GBDTBase {
   /*! \brief Second order derivative of training data */
   std::vector<score_t, Common::AlignmentAllocator<score_t, kAlignedSize>> hessians_;
 #endif
+  /*! \brief Pointer to gradient vector, can be on CPU or GPU */
+  score_t* gradients_pointer_;
+  /*! \brief Pointer to hessian vector, can be on CPU or GPU */
+  score_t* hessians_pointer_;
+  /*! \brief Whether boosting is done on GPU, used for device_type=cuda */
+  bool boosting_on_gpu_;
+  #ifdef USE_CUDA
+  /*! \brief Gradient vector on GPU */
+  CUDAVector<score_t> cuda_gradients_;
+  /*! \brief Hessian vector on GPU */
+  CUDAVector<score_t> cuda_hessians_;
+  /*! \brief Buffer for scores when boosting is on GPU but evaluation is not, used only with device_type=cuda */
+  mutable std::vector<double> host_score_;
+  /*! \brief Buffer for scores when boosting is not on GPU but evaluation is, used only with device_type=cuda */
+  mutable CUDAVector<double> cuda_score_;
+  #endif  // USE_CUDA
 
-  /*! \brief Store the indices of in-bag data */
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
-  /*! \brief Number of in-bag data */
-  data_size_t bag_data_cnt_;
   /*! \brief Number of training data */
   data_size_t num_data_;
   /*! \brief Number of trees per iterations */
@@ -523,8 +589,6 @@ class GBDT : public GBDTBase {
   /*! \brief Feature names */
   std::vector<std::string> feature_names_;
   std::vector<std::string> feature_infos_;
-  std::unique_ptr<Dataset> tmp_subset_;
-  bool is_use_subset_;
   std::vector<bool> class_need_train_;
   bool is_constant_hessian_;
   std::unique_ptr<ObjectiveFunction> loaded_objective_;
@@ -533,11 +597,9 @@ class GBDT : public GBDTBase {
   bool balanced_bagging_;
   std::string loaded_parameter_;
   std::vector<int8_t> monotone_constraints_;
-  const int bagging_rand_block_ = 1024;
-  std::vector<Random> bagging_rands_;
-  ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   Json forced_splits_json_;
   bool linear_tree_;
+  std::unique_ptr<SampleStrategy> data_sample_strategy_;
 };
 
 }  // namespace LightGBM

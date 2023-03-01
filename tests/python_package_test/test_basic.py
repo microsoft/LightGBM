@@ -48,7 +48,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv('TASK', '') != 'cuda_exp':
+    if getenv('TASK', '') != 'cuda':
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -243,6 +243,14 @@ def test_chunked_dataset_linear():
     valid_data.construct()
 
 
+def test_save_dataset_subset_and_load_from_file(tmp_path):
+    data = np.random.rand(100, 2)
+    params = {'max_bin': 50, 'min_data_in_bin': 10}
+    ds = lgb.Dataset(data, params=params)
+    ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / 'subset.bin')
+    lgb.Dataset(tmp_path / 'subset.bin', params=params).construct()
+
+
 def test_subset_group():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -368,6 +376,29 @@ def test_add_features_from_different_sources():
             assert d1.feature_name == res_feature_names
 
 
+def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys):
+
+    arr_a = np.zeros((100, 1), dtype=np.float32)
+    arr_b = np.random.normal(size=(100, 5))
+
+    dataset_a = lgb.Dataset(arr_a).construct()
+    expected_msg = (
+        '[LightGBM] [Warning] There are no meaningful features which satisfy '
+        'the provided configuration. Decreasing Dataset parameters min_data_in_bin '
+        'or min_data_in_leaf and re-constructing Dataset might resolve this warning.\n'
+    )
+    log_lines = capsys.readouterr().out
+    assert expected_msg in log_lines
+
+    dataset_b = lgb.Dataset(arr_b).construct()
+
+    original_handle = dataset_a.handle.value
+    dataset_a.add_features_from(dataset_b)
+    assert dataset_a.num_feature() == 6
+    assert dataset_a.num_data() == 100
+    assert dataset_a.handle.value == original_handle
+
+
 def test_cegb_affects_behavior(tmp_path):
     X = np.random.random((100, 5))
     X[:, [1, 3]] = 0
@@ -473,7 +504,8 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
+        "n_iter": 13,
     }
 
     # should resolve duplicate aliases, and prefer the main parameter
@@ -485,15 +517,16 @@ def test_choose_param_value():
     assert params["local_listen_port"] == 1234
     assert "port" not in params
 
-    # should choose a value from an alias and set that value on main param
-    # if only an alias is used
+    # should choose the highest priority alias and set that value on main param
+    # if only aliases are used
     params = lgb.basic._choose_param_value(
         main_param_name="num_iterations",
         params=params,
         default_value=17
     )
-    assert params["num_iterations"] == 81
+    assert params["num_iterations"] == 13
     assert "num_trees" not in params
+    assert "n_iter" not in params
 
     # should use the default if main param and aliases are missing
     params = lgb.basic._choose_param_value(
@@ -508,9 +541,46 @@ def test_choose_param_value():
         "local_listen_port": 1234,
         "port": 2222,
         "metric": "auc",
-        "num_trees": 81
+        "num_trees": 81,
+        "n_iter": 13,
     }
     assert original_params == expected_params
+
+
+def test_choose_param_value_preserves_nones():
+
+    # preserves None found for main param and still removes aliases
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "num_threads": None,
+            "n_jobs": 4,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # correctly chooses value when only an alias is provided
+    params = lgb.basic._choose_param_value(
+        main_param_name="num_threads",
+        params={
+            "n_jobs": None,
+            "objective": "regression"
+        },
+        default_value=2
+    )
+    assert params == {"num_threads": None, "objective": "regression"}
+
+    # adds None if that's given as the default and param not found
+    params = lgb.basic._choose_param_value(
+        main_param_name="min_data_in_leaf",
+        params={
+            "objective": "regression"
+        },
+        default_value=None
+    )
+    assert params == {"objective": "regression", "min_data_in_leaf": None}
 
 
 @pytest.mark.parametrize("objective_alias", lgb.basic._ConfigAliases.get("objective"))
@@ -562,17 +632,17 @@ def test_list_to_1d_numpy(collection, dtype):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match='column-vector'):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
         with pytest.raises(TypeError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
         with pytest.raises(ValueError):
-            lgb.basic.list_to_1d_numpy(y)
+            lgb.basic._list_to_1d_numpy(y)
         return
-    result = lgb.basic.list_to_1d_numpy(y, dtype=dtype)
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype)
     assert result.size == 10
     assert result.dtype == dtype
 
@@ -608,10 +678,13 @@ def test_param_aliases():
     aliases = lgb.basic._ConfigAliases.aliases
     assert isinstance(aliases, dict)
     assert len(aliases) > 100
-    assert all(isinstance(i, set) for i in aliases.values())
+    assert all(isinstance(i, list) for i in aliases.values())
     assert all(len(i) >= 1 for i in aliases.values())
     assert all(k in v for k, v in aliases.items())
     assert lgb.basic._ConfigAliases.get('config', 'task') == {'config', 'config_file', 'task', 'task_type'}
+    assert lgb.basic._ConfigAliases.get_sorted('min_data_in_leaf') == [
+        'min_data_in_leaf', 'min_data', 'min_samples_leaf', 'min_child_samples', 'min_data_per_leaf'
+    ]
 
 
 def _bad_gradients(preds, _):
@@ -644,15 +717,27 @@ def test_custom_objective_safety():
 
 
 @pytest.mark.parametrize('dtype', [np.float32, np.float64])
-def test_no_copy_when_single_float_dtype_dataframe(dtype):
+@pytest.mark.parametrize('feature_name', [['x1', 'x2'], 'auto'])
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.rand(10, 2).astype(dtype)
     df = pd.DataFrame(X)
-    # feature names are required to not make a copy (rename makes a copy)
-    feature_name = ['x1', 'x2']
     built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
+
+
+@pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
+    pd = pytest.importorskip('pandas')
+    X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
+    column_name = 'a' if feature_name == 'auto' else feature_name[0]
+    df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
+    data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    # check that the original data wasn't modified
+    np.testing.assert_equal(df[column_name], X[:, 0])
+    # check that the built data has the codes
+    np.testing.assert_equal(df[column_name].cat.codes, data[:, 0])
 
 
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])
@@ -663,17 +748,33 @@ def test_feature_num_bin(min_data_in_bin):
         np.array([0, 1, 2] * 33 + [0]),
         np.array([1, 2] * 49 + 2 * [np.nan]),
         np.zeros(100),
+        np.random.choice([0, 1], 100),
     ]).T
-    ds = lgb.Dataset(X, params={'min_data_in_bin': min_data_in_bin}).construct()
+    n_continuous = X.shape[1] - 1
+    feature_name = [f'x{i}' for i in range(n_continuous)] + ['cat1']
+    ds_kwargs = dict(
+        params={'min_data_in_bin': min_data_in_bin},
+        categorical_feature=[n_continuous],  # last feature
+    )
+    ds = lgb.Dataset(X, feature_name=feature_name, **ds_kwargs).construct()
     expected_num_bins = [
         100 // min_data_in_bin + 1,  # extra bin for zero
         3,  # 0, 1, 2
         3,  # 0, 1, 2
         4,  # 0, 1, 2 + nan
         0,  # unused
+        3,  # 0, 1 + nan
     ]
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     assert actual_num_bins == expected_num_bins
+    # test using defined feature names
+    bins_by_name = [ds.feature_num_bin(name) for name in feature_name]
+    assert bins_by_name == expected_num_bins
+    # test using default feature names
+    ds_no_names = lgb.Dataset(X, **ds_kwargs).construct()
+    default_names = [f'Column_{i}' for i in range(X.shape[1])]
+    bins_by_default_name = [ds_no_names.feature_num_bin(name) for name in default_names]
+    assert bins_by_default_name == expected_num_bins
     # check for feature indices outside of range
     num_features = X.shape[1]
     with pytest.raises(
@@ -692,3 +793,15 @@ def test_feature_num_bin_with_max_bin_by_feature():
     ds = lgb.Dataset(X, params={'max_bin_by_feature': max_bin_by_feature}).construct()
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     np.testing.assert_equal(actual_num_bins, max_bin_by_feature)
+
+
+def test_set_leaf_output():
+    X, y = load_breast_cancer(return_X_y=True)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.Booster({'num_leaves': 2}, ds)
+    bst.update()
+    y_pred = bst.predict(X)
+    for leaf_id in range(2):
+        leaf_output = bst.get_leaf_output(tree_id=0, leaf_id=leaf_id)
+        bst.set_leaf_output(tree_id=0, leaf_id=leaf_id, value=leaf_output + 1)
+    np.testing.assert_allclose(bst.predict(X), y_pred + 1)

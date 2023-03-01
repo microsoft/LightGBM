@@ -4,8 +4,7 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
-option(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
-option(USE_CUDA_EXP "Enable CUDA-accelerated training with more acceleration (EXPERIMENTAL)" OFF)
+option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 set(
@@ -27,9 +26,11 @@ endif()
 
 if(__INTEGRATE_OPENCL)
   cmake_minimum_required(VERSION 3.11)
+elseif(USE_SWIG)
+  cmake_minimum_required(VERSION 3.8)
 elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA OR USE_CUDA_EXP)
+elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
 else()
   cmake_minimum_required(VERSION 3.0)
@@ -109,6 +110,7 @@ include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
+add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -134,14 +136,31 @@ else()
     add_definitions(-DUSE_SOCKET)
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
 
 if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    if(APPLE)
+        find_package(OpenMP)
+        if(NOT OpenMP_FOUND)
+            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+            execute_process(COMMAND brew --prefix libomp
+                            OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_C_LIB_NAMES omp)
+            set(OpenMP_CXX_LIB_NAMES omp)
+            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            find_package(OpenMP REQUIRED)
+        endif()
+    else()
+        find_package(OpenMP REQUIRED)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
@@ -164,20 +183,16 @@ if(USE_GPU)
 endif()
 
 if(__INTEGRATE_OPENCL)
-    if(WIN32)
+    if(APPLE)
+        message(FATAL_ERROR "Integrated OpenCL build is not available on macOS")
+    else()
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
-    else()
-        message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
     endif()
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
-    if(USE_CUDA)
-      find_package(CUDA 9.0 REQUIRED)
-    else()
-      find_package(CUDA 10.0 REQUIRED)
-    endif()
+if(USE_CUDA)
+    find_package(CUDA 10.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
@@ -204,11 +219,7 @@ if(USE_CUDA OR USE_CUDA_EXP)
     endif()
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
 
-    if(USE_CUDA)
-      add_definitions(-DUSE_CUDA)
-    elseif(USE_CUDA_EXP)
-      add_definitions(-DUSE_CUDA_EXP)
-    endif()
+    add_definitions(-DUSE_CUDA)
 
     if(NOT DEFINED CMAKE_CUDA_STANDARD)
       set(CMAKE_CUDA_STANDARD 11)
@@ -324,6 +335,18 @@ if(WIN32 AND MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif()
 
+# Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
+# As of 2022, MinGW started including a definition of inet_pton.
+if(WIN32)
+  include(CheckSymbolExists)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "ws2_32")
+  check_symbol_exists(inet_pton "ws2tcpip.h" WIN_INET_PTON_FOUND)
+  if(WIN_INET_PTON_FOUND)
+    add_definitions(-DWIN_HAS_INET_PTON)
+  endif()
+  list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES "ws2_32")
+endif()
+
 if(MSVC)
     set(
       variables
@@ -379,10 +402,14 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
       src/treelearner/*.cu
-endif()
-if(USE_CUDA_EXP)
+      src/boosting/cuda/*.cpp
+      src/boosting/cuda/*.cu
+      src/metric/cuda/*.cpp
+      src/metric/cuda/*.cu
+      src/objective/cuda/*.cpp
+      src/objective/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
@@ -423,7 +450,7 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
   list(APPEND swig_options -package com.microsoft.ml.lightgbm)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
-  swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
+  swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
   set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
@@ -508,10 +535,10 @@ if(__INTEGRATE_OPENCL)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
   # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
   # Custom target properties does not propagate, thus we need to specify for
   # each target that contains or depends on cuda source.
@@ -569,6 +596,10 @@ if(BUILD_CPP_TEST)
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
+
+  set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
+  include_directories(${LightGBM_TEST_HEADER_DIR})
+
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
     set(
@@ -585,7 +616,7 @@ if(BUILD_CPP_TEST)
     endforeach()
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
 endif()
 
 install(

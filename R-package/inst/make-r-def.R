@@ -24,7 +24,7 @@ message(sprintf("Creating '%s' from '%s'", OUT_DEF_FILE, IN_DLL_FILE))
 .pipe_shell_command_to_stdout <- function(command, args, out_file) {
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint
+        require("processx")  # nolint: undesirable_function
       })
     })
     if (has_processx) {
@@ -71,7 +71,7 @@ invisible(file.remove(OBJDUMP_FILE))
 # see https://www.cs.colorado.edu/~main/cs1300/doc/mingwfaq.html
 start_index <- which(
     grepl(
-        pattern = "[Ordinal/Name Pointer] Table"
+        pattern = "[Ordinal/Name Pointer] Table"  # nolint: non_portable_path
         , x = objdump_results
         , fixed = TRUE
     )
@@ -81,9 +81,9 @@ end_of_table <- empty_lines[empty_lines > start_index][1L]
 
 # Read the contents of the table
 exported_symbols <- objdump_results[(start_index + 1L):end_of_table]
-exported_symbols <- gsub("\t", "", exported_symbols)
+exported_symbols <- gsub("\t", "", exported_symbols, fixed = TRUE)
 exported_symbols <- gsub(".*\\] ", "", exported_symbols)
-exported_symbols <- gsub(" ", "", exported_symbols)
+exported_symbols <- gsub(" ", "", exported_symbols, fixed = TRUE)
 
 # Write R.def file
 writeLines(

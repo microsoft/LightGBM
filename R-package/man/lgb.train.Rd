@@ -73,13 +73,14 @@ may allow you to pass other types of data like \code{matrix} and then separately
                 }
             }}
 
-\item{verbose}{verbosity for output, if <= 0, also will disable the print of evaluation during training}
+\item{verbose}{verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+printing of evaluation during training}
 
 \item{record}{Boolean, TRUE will record iteration message to \code{booster$record_evals}}
 
-\item{eval_freq}{evaluation output frequency, only effect when verbose > 0}
+\item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
 
@@ -106,7 +107,9 @@ original datasets}
 a trained booster model \code{lgb.Booster}.
 }
 \description{
-Logic to train with LightGBM
+Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+             this function is focused on performance (e.g. speed, memory efficiency). It is also
+             less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 }
 \section{Early Stopping}{
 
