@@ -1135,9 +1135,16 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any
     ):
         """Docstring is inherited from the LGBMModel."""
-        result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
-                                    pred_leaf, pred_contrib, validate_features,
-                                    **kwargs)
+        result = self.predict_proba(
+            X=X,
+            raw_score=raw_score,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            validate_features=validate_features,
+            **kwargs
+        )
         if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
         else:
@@ -1158,7 +1165,16 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any
     ):
         """Docstring is set after definition, using a template."""
-        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, validate_features, **kwargs)
+        result = super().predict(
+            X=X,
+            raw_score=raw_score,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            validate_features=validate_features,
+            **kwargs
+        )
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             _log_warning("Cannot compute class probabilities or labels "
                          "due to the usage of customized objective function.\n"
