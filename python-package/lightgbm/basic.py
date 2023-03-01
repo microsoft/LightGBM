@@ -262,7 +262,11 @@ def _is_1d_collection(data: Any) -> bool:
     )
 
 
-def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(
+    data: Any,
+    dtype=np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -4048,14 +4052,21 @@ class Booster:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
-        return predictor.predict(data, start_iteration, num_iteration,
-                                 raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, validate_features)
+        return predictor.predict(
+            data=data,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            data_has_header=data_has_header,
+            validate_features=validate_features
+        )
 
     def refit(
         self,
         data: _LGBM_TrainDataType,
-        label,
+        label: _LGBM_LabelType,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
         weight: Optional[_LGBM_WeightType] = None,
@@ -4126,7 +4137,12 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
+        leaf_preds = predictor.predict(
+            data=data,
+            start_iteration=-1,
+            pred_leaf=True,
+            validate_features=validate_features
+        )
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
