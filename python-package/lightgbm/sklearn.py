@@ -847,15 +847,10 @@ class LGBMModel(_LGBMModelBase):
         eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
 
-    dt_DataTable,
-    List[float],
-    List[int],
-    np.ndarray,
-    pd_Series
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1139,7 +1134,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1162,7 +1157,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict_proba(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
