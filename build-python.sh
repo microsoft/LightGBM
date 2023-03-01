@@ -36,7 +36,7 @@ while [ $# -gt 0 ]; do
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
     --mingw)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=[-DCMAKE_GENERATOR=\"MinGW Makefiles\"]"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=[-G\"MinGW Makefiles\"]"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -166,6 +166,7 @@ if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ./dist/*.whl
     cd ./lightgbm-python
+    MAKEFLAGS="-j3" \
     python -m build \
         --wheel \
         --outdir ../dist \

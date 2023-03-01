@@ -194,8 +194,6 @@ elif [[ $TASK == "bdist" ]]; then
     exit 0
 fi
 
-mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-
 if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
@@ -217,6 +215,8 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
+        mkdir $BUILD_DIRECTORY/build
+        cd $BUILD_DIRECTORY/build
         cmake -DUSE_GPU=ON ..
     fi
 elif [[ $TASK == "cuda" ]]; then
@@ -243,6 +243,8 @@ elif [[ $TASK == "cuda" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
+        mkdir $BUILD_DIRECTORY/build
+        cd $BUILD_DIRECTORY/build
         cmake -DUSE_CUDA=ON ..
     fi
 elif [[ $TASK == "mpi" ]]; then
@@ -267,6 +269,8 @@ elif [[ $TASK == "mpi" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
     fi
 else
+    mkdir $BUILD_DIRECTORY/build
+    cd $BUILD_DIRECTORY/build
     cmake ..
 fi
 
