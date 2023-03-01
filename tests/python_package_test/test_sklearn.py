@@ -8,18 +8,20 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import scipy.sparse
 import pytest
+from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.ensemble import StackingClassifier, StackingRegressor
-from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
+from lightgbm.compat import DATATABLE_INSTALLED, dt_DataTable, PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
                     sklearn_multiclass_custom_objective, softmax)
@@ -27,20 +29,27 @@ from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, m
 decreasing_generator = itertools.count(0, -1)
 task_to_model_factory = {
     'ranking': lgb.LGBMRanker,
-    'classification': lgb.LGBMClassifier,
+    'binary-classification': lgb.LGBMClassifier,
+    'multiclass-classification': lgb.LGBMClassifier,
     'regression': lgb.LGBMRegressor,
 }
 
 
-def _create_data(task):
+def _create_data(task, n_samples=100, n_features=4):
     if task == 'ranking':
-        X, y, g = make_ranking(n_features=4)
+        X, y, g = make_ranking(n_features=4, n_samples=n_samples)
         g = np.bincount(g)
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
+    elif task.endswith('classification'):
+        if task == 'binary-classification':
+            centers = 2
+        elif task == 'multiclass-classification':
+            centers = 3
+        else:
+            ValueError(f"Unknown classification task '{task}'")
+        X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
         g = None
     elif task == 'regression':
-        X, y = make_synthetic_regression()
+        X, y = make_synthetic_regression(n_samples=n_samples, n_features=n_features)
         g = None
     return X, y, g
 
@@ -1268,7 +1277,7 @@ def test_sklearn_integration(estimator, check):
     check(estimator)
 
 
-@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
     X, y, g = _create_data(task)
@@ -1378,9 +1387,9 @@ def test_default_n_jobs(tmp_path):
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
-@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'ranking', 'regression'])
 def test_validate_features(task):
-    X, y, g = _create_data(task)
+    X, y, g = _create_data(task, n_features=4)
     features = ['x1', 'x2', 'x3', 'x4']
     df = pd_DataFrame(X, columns=features)
     model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
@@ -1397,3 +1406,94 @@ def test_validate_features(task):
 
     # check that disabling the check doesn't raise the error
     model.predict(df2, validate_features=False)
+
+
+@pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
+@pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_Series', 'pd_DataFrame'])
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'regression'])
+def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task):
+    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
+        pytest.skip('pandas is not installed')
+    if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
+        pytest.skip('datatable is not installed')
+    X, y, g = _create_data(task, n_samples=1_000)
+    if X_type == 'dt_DataTable':
+        X = dt_DataTable(X)
+    elif X_type == 'list2d':
+        X = X.tolist()
+    elif X_type == 'scipy_csc':
+        X = scipy.sparse.csc_matrix(X)
+    elif X_type == 'scipy_csr':
+        X = scipy.sparse.csr_matrix(X)
+    elif X_type == 'pd_DataFrame':
+        X = pd_DataFrame(X)
+    elif X_type != 'numpy':
+        raise ValueError(f"Unrecognized X_type: '{X_type}'")
+
+    if y_type == 'list1d':
+        y = y.tolist()
+    elif y_type == 'pd_DataFrame':
+        y = pd_DataFrame(y)
+    elif y_type == 'pd_Series':
+        y = pd_Series(y)
+    elif y_type != 'numpy':
+        raise ValueError(f"Unrecognized y_type: '{y_type}'")
+
+    model = task_to_model_factory[task](n_estimators=10, verbose=-1)
+    model.fit(X, y)
+
+    preds = model.predict(X)
+    if task == 'binary-classification':
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == 'multiclass-classification':
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == 'regression':
+        assert r2_score(y, preds) > 0.86
+    else:
+        raise ValueError(f"Unrecognized task: '{task}'")
+
+
+@pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
+@pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_DataFrame', 'pd_Series'])
+@pytest.mark.parametrize('g_type', ['list1d_float', 'list1d_int', 'numpy', 'pd_Series'])
+def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type):
+    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
+        pytest.skip('pandas is not installed')
+    if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
+        pytest.skip('datatable is not installed')
+    X, y, g = _create_data(task='ranking', n_samples=1_000)
+    if X_type == 'dt_DataTable':
+        X = dt_DataTable(X)
+    elif X_type == 'list2d':
+        X = X.tolist()
+    elif X_type == 'scipy_csc':
+        X = scipy.sparse.csc_matrix(X)
+    elif X_type == 'scipy_csr':
+        X = scipy.sparse.csr_matrix(X)
+    elif X_type == 'pd_DataFrame':
+        X = pd_DataFrame(X)
+    elif X_type != 'numpy':
+        raise ValueError(f"Unrecognized X_type: '{X_type}'")
+
+    if y_type == 'list1d':
+        y = y.tolist()
+    elif y_type == 'pd_DataFrame':
+        y = pd_DataFrame(y)
+    elif y_type == 'pd_Series':
+        y = pd_Series(y)
+    elif y_type != 'numpy':
+        raise ValueError(f"Unrecognized y_type: '{y_type}'")
+
+    if g_type == 'list1d_float':
+        g = g.astype("float").tolist()
+    elif g_type == 'list1d_int':
+        g = g.astype("int").tolist()
+    elif g_type == 'pd_Series':
+        g = pd_Series(g)
+    elif g_type != 'numpy':
+        raise ValueError(f"Unrecognized g_type: '{g_type}'")
+
+    model = task_to_model_factory['ranking'](n_estimators=10, verbose=-1)
+    model.fit(X, y, group=g)
+    preds = model.predict(X)
+    assert spearmanr(preds, y).correlation >= 0.99

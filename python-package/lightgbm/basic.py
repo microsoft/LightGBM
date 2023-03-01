@@ -60,7 +60,8 @@ _LGBM_TrainDataType = Union[
     List[np.ndarray]
 ]
 _LGBM_LabelType = Union[
-    list,
+    List[float],
+    List[int],
     np.ndarray,
     pd_Series,
     pd_DataFrame
