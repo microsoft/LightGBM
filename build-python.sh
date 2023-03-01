@@ -173,3 +173,6 @@ fi
 if test "${INSTALL}" = true; then
     pip install ./dist/*.whl
 fi
+
+echo "cleaning up"
+rm -rf ./lightgbm-python
