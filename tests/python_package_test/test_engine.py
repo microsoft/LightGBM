@@ -3593,14 +3593,14 @@ def test_force_split_with_feature_fraction(tmp_path):
 
 
 @pytest.mark.parametrize('data_samplie_strategy', ['goss', 'mvs'])
-def test_goss_boosting_and_strategy_equivalent(data_samplie_strategy):
+def test_boosting_and_sample_strategy_equivalent(data_samplie_strategy):
     X, y = make_synthetic_regression(n_samples=10_000, n_features=10, n_informative=5, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     base_params = {
         'metric': 'l2',
-        'verbose': 2,
+        'verbose': -1,
         'bagging_seed': 0,
         'learning_rate': 0.05,
         'num_threads': 1,
@@ -3636,7 +3636,7 @@ def test_sample_strategy_with_boosting(data_samplie_strategy_and_res):
 
     base_params = {
         'metric': 'l2',
-        'verbose': 2,
+        'verbose': -1,
         'num_threads': 1,
         'force_row_wise': True,
         'gpu_use_dp': True,
