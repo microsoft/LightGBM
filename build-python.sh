@@ -37,6 +37,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=[-DCMAKE_GENERATOR=\"MinGW Makefiles\"]"
+        ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
         ;;
@@ -177,4 +178,4 @@ if test "${INSTALL}" = true; then
 fi
 
 echo "cleaning up"
-rm -rf ./lightgbm-python
+#rm -rf ./lightgbm-python
