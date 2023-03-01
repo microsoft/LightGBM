@@ -7,8 +7,12 @@ INSTALL="false"
 BUILD_SDIST="false"
 BUILD_WHEEL="false"
 
+BUILD_ARGS=""
+ADDITIONAL_PIP_ARGS=""
+
 while [ $# -gt 0 ]; do
   case "$1" in
+    # sub-commands of setup.py
     install)
       INSTALL="true"
       ;;
@@ -18,6 +22,28 @@ while [ $# -gt 0 ]; do
     bdist_wheel)
       BUILD_WHEEL="true"
       ;;
+    # customizations
+    --cuda)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
+        ;;
+    --gpu)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
+        ;;
+    --hdfs)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HDFS=ON"
+        ;;
+    --integrated-opencl)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
+        ;;
+    --mpi)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
+        ;;
+    --nomp)
+      BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
+      ;;
+    --time-costs)
+      BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
+      ;;
     *)
       echo "invalid argument '${1}'"
       exit -1
@@ -26,6 +52,15 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# TODO:
+# --'mingw', -m
+# -- 'bit32'
+# --precompile, -p
+# --boost-root=
+# --boost-include-dir=
+# --boost-librarydir=
+# --opencl-include-dir=
+# --opencl-library=
 pip install --prefer-binary build
 
 # create a new directory that just contains the files needed
@@ -131,9 +166,10 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
+        ${BUILD_ARGS} \
         .
 fi
 
 if test "${INSTALL}" = true; then
-    pip install -y ./dist/*.whl
+    pip install ./dist/*.whl
 fi
