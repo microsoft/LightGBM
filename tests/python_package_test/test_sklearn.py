@@ -8,8 +8,8 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import scipy.sparse
 import pytest
+import scipy.sparse
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
@@ -21,7 +21,7 @@ from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
-from lightgbm.compat import DATATABLE_INSTALLED, dt_DataTable, PANDAS_INSTALLED, pd_DataFrame, pd_Series
+from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
 
 from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
                     sklearn_multiclass_custom_objective, softmax)

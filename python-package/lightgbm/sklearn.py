@@ -10,12 +10,12 @@ import scipy.sparse
 
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
                     _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _log_warning, _LGBM_GroupType, _LGBM_LabelType)
+                    _LGBM_GroupType, _LGBM_LabelType, _log_warning)
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
-                     dt_DataTable, pd_DataFrame, pd_Series)
+                     dt_DataTable, pd_DataFrame)
 from .engine import train
 
 __all__ = [
@@ -846,7 +846,6 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score_shape="list of array, or None, optional (default=None)",
         eval_group_shape="list of array, or None, optional (default=None)"
     ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
-
 
     def predict(
         self,
