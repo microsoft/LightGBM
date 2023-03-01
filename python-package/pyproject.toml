@@ -25,7 +25,7 @@ name = "lightgbm"
 readme = "README.rst"
 
 # TODO: make this dynamic, or maybe template it through?
-version = "4.0.0"
+version = "3.3.5.99"
 
 [project.urls]
 homepage = "https://github.com/microsoft/LightGBM"

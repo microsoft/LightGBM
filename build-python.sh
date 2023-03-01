@@ -35,6 +35,8 @@ while [ $# -gt 0 ]; do
     --integrated-opencl)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
+    --mingw)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=[-DCMAKE_GENERATOR=\"MinGW Makefiles\"]"
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
         ;;
