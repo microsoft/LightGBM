@@ -175,8 +175,8 @@ if test "${BUILD_WHEEL}" = true; then
 fi
 
 if test "${INSTALL}" = true; then
-    pip install ./dist/*.whl
+    pip install ../dist/*.whl
 fi
 
 echo "cleaning up"
-#rm -rf ./lightgbm-python
+rm -rf ./lightgbm-python
