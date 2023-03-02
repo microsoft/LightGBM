@@ -190,7 +190,7 @@ elif [[ $TASK == "bdist" ]]; then
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install --user $BUILD_DIRECTORY/dist/*.whl || exit -1
-    pytest $BUILD_DIRECTORY/tests || exit -1
+    pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
     exit 0
 fi
 
@@ -212,7 +212,7 @@ if [[ $TASK == "gpu" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/ist || exit -1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         mkdir $BUILD_DIRECTORY/build
@@ -240,7 +240,7 @@ elif [[ $TASK == "cuda" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         mkdir $BUILD_DIRECTORY/build
@@ -263,7 +263,7 @@ elif [[ $TASK == "mpi" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit -1
-        pytest $BUILD_DIRECTORY/tests || exit -1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
@@ -277,7 +277,7 @@ fi
 make _lightgbm -j4 || exit -1
 
 sh ./build-python.sh install --precompile --user || exit -1
-pytest $BUILD_DIRECTORY/tests || exit -1
+pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
