@@ -178,10 +178,10 @@ elif [[ $TASK == "bdist" ]]; then
         else
             PLATFORM="manylinux2014_$ARCH"
         fi
-        # --plat-name=$PLATFORM --python-tag py3
         sh ./build-python.sh bdist_wheel --integrated-opencl || exit -1
-        ls ./dist
-        exit 1
+        mv \
+            ./dist/*.whl \
+            ./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
