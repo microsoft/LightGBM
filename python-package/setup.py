@@ -10,7 +10,7 @@ from platform import system
 from shutil import copyfile, copytree, rmtree
 from typing import List, Optional, Union
 
-from setuptools import find_packages, setup
+from setuptools import setup
 from setuptools.command.install import install
 from setuptools.command.install_lib import install_lib
 from setuptools.command.sdist import sdist
@@ -349,32 +349,14 @@ if __name__ == "__main__":
           description='LightGBM Python Package',
           long_description=readme,
           long_description_content_type='text/x-rst',
-          python_requires='>=3.6',
-          install_requires=[
-              'wheel',
-              'numpy',
-              'scipy',
-              'scikit-learn!=0.22.0'
-          ],
-          extras_require={
-              'dask': [
-                  'dask[array]>=2.0.0',
-                  'dask[dataframe]>=2.0.0',
-                  'dask[distributed]>=2.0.0',
-                  'pandas',
-              ],
-          },
           maintainer='Yu Shi',
           maintainer_email='yushi2@microsoft.com',
-          zip_safe=False,
           cmdclass={
               'install': CustomInstall,
               'install_lib': CustomInstallLib,
               'bdist_wheel': CustomBdistWheel,
               'sdist': CustomSdist,
           },
-          packages=find_packages(),
-          include_package_data=True,
           license='The MIT License (Microsoft)',
           url='https://github.com/microsoft/LightGBM',
           classifiers=['Development Status :: 5 - Production/Stable',
