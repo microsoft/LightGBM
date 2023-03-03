@@ -7,8 +7,9 @@ INSTALL="false"
 BUILD_SDIST="false"
 BUILD_WHEEL="false"
 
-BUILD_ARGS=""
 ADDITIONAL_PIP_ARGS=""
+BUILD_ARGS=""
+PRECOMPILE="false"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -44,6 +45,9 @@ while [ $# -gt 0 ]; do
     --nomp)
       BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
       ;;
+    --precompile)
+      PRECOMPILE="true"
+      ;;
     --time-costs)
       BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
       ;;
@@ -71,7 +75,6 @@ pip install --prefer-binary build
 create_isolated_source_dir() {
     rm -rf \
         ./lightgbm-python \
-        ./lib_lightgbm.so \
         ./lightgbm \
         ./python-package/build \
         ./python-package/build_cpp \
@@ -147,15 +150,35 @@ create_isolated_source_dir() {
 
 create_isolated_source_dir
 
+cd ./lightgbm-python
+
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
-    BUILD_WHEEL=true
+    if test "${PRECOMPILE}" = true; then
+        BUILD_SDIST=true
+        BUILD_WHEEL=false
+        BUILD_ARGS=""
+        rm -rf \
+            ./cmake \
+            ./CMakeLists.txt \
+            ./external_libs \
+            ./include \
+            ./src \
+            ./swig \
+            ./windows
+        echo '[build-system]' > ./pyproject.toml
+        echo 'requires = ["setuptools"]' >> ./pyproject.toml
+        echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
+        echo "" >> ./pyproject.toml
+        cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
+    else
+        BUILD_WHEEL=true
+    fi
 fi
 
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
-    rm -f ./dist/*.tar.gz
-    cd ./lightgbm-python
+    rm -f ../dist/*.tar.gz
     python -m build \
         --sdist \
         --outdir ../dist \
@@ -164,8 +187,7 @@ fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
-    rm -f ./dist/*.whl
-    cd ./lightgbm-python
+    rm -f ../dist/*.whl
     MAKEFLAGS="-j3" \
     python -m build \
         --wheel \
@@ -175,7 +197,11 @@ if test "${BUILD_WHEEL}" = true; then
 fi
 
 if test "${INSTALL}" = true; then
-    pip install ../dist/*.whl
+    if test "${PRECOMPILE}" = true; then
+        pip install ../dist/*.tar.gz
+    else
+        pip install ../dist/*.whl
+    fi
 fi
 
 echo "cleaning up"

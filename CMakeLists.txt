@@ -421,8 +421,10 @@ endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
-# add_executable(lightgbm src/main.cpp src/application/application.cpp)
-# target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+if(NOT SKBUILD)
+    add_executable(lightgbm src/main.cpp src/application/application.cpp)
+    target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+endif()
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
@@ -544,7 +546,9 @@ if(USE_CUDA)
   # each target that contains or depends on cuda source.
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  #set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  if(NOT SKBUILD)
+    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  endif()
 
   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
@@ -556,7 +560,9 @@ if(USE_CUDA)
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
-  #target_link_libraries(lightgbm PRIVATE ${histograms})
+  if(NOT SKBUILD)
+    target_link_libraries(lightgbm PRIVATE ${histograms})
+  endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
