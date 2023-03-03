@@ -1175,7 +1175,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
             y=y,
@@ -1189,6 +1189,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             eval_metric=eval_metric,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
@@ -1378,7 +1379,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
             y=y,
@@ -1391,6 +1392,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             eval_metric=eval_metric,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
@@ -1550,7 +1552,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
@@ -1566,6 +1568,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             eval_at=eval_at,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
