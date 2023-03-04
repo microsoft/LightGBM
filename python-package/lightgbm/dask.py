@@ -42,7 +42,7 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 @dataclass
 class _HostWorkers:
     default: str
-    all_workers: Listr[str]
+    all_workers: List[str]
 
 
 class _DatasetNames(Enum):
