@@ -349,7 +349,7 @@ if __name__ == "__main__":
           description='LightGBM Python Package',
           long_description=readme,
           long_description_content_type='text/x-rst',
-          python_requires='>=3.6',
+          python_requires='>=3.7',
           install_requires=[
               'wheel',
               'numpy',

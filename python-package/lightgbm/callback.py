@@ -1,10 +1,11 @@
 # coding: utf-8
 """Callbacks library."""
 import collections
+from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+from .basic import Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
 __all__ = [
     'early_stopping',
@@ -39,14 +40,14 @@ class EarlyStopException(Exception):
 
 
 # Callback environment used by callbacks
-CallbackEnv = collections.namedtuple(
-    "CallbackEnv",
-    ["model",
-     "params",
-     "iteration",
-     "begin_iteration",
-     "end_iteration",
-     "evaluation_result_list"])
+@dataclass
+class CallbackEnv:
+    model: Booster
+    params: Dict[str, Any]
+    iteration: int
+    begin_iteration: int
+    end_iteration: int
+    evaluation_result_list: Optional[List[_LGBM_BoosterEvalMethodResultType]]
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
