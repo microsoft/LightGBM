@@ -166,10 +166,15 @@ if test "${INSTALL}" = true; then
             ./src \
             ./swig \
             ./windows
+        # use regular-old setuptools for these builds, to avoid
+        # trying to recompile the shared library
+        sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
         echo '[build-system]' > ./pyproject.toml
         echo 'requires = ["setuptools"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
+        echo "recursive-include lightgbm *.dll *.so" > ./MANIFEST.in
+        echo "" >> ./MANIFEST.in
         cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
     else
         BUILD_WHEEL=true

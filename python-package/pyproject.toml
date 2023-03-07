@@ -33,6 +33,7 @@ documentation = "https://lightgbm.readthedocs.io/en/latest/"
 repository = "https://github.com/microsoft/LightGBM.git"
 changelog = "https://github.com/microsoft/LightGBM/releases"
 
+# start:build-system
 [build-system]
 
 requires = ["scikit-build-core>=0.2.0"]
@@ -53,3 +54,5 @@ wheel.py-api = "py3"
 experimental = false
 strict-config = true
 minimum-version = "0.1.5"
+
+# end:build-system

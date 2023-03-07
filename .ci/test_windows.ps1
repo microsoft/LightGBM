@@ -66,7 +66,7 @@ if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY
-  $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
   cp $env:BUILD_SOURCESDIRECTORY/Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
