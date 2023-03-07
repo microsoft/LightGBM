@@ -7,7 +7,7 @@ INSTALL="false"
 BUILD_SDIST="false"
 BUILD_WHEEL="false"
 
-ADDITIONAL_PIP_ARGS=""
+PIP_INSTALL_ARGS=""
 BUILD_ARGS=""
 PRECOMPILE="false"
 
@@ -50,6 +50,9 @@ while [ $# -gt 0 ]; do
       ;;
     --time-costs)
       BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
+      ;;
+    --user)
+      PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
       ;;
     *)
       echo "invalid argument '${1}'"
@@ -203,9 +206,9 @@ fi
 
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
-        pip install ../dist/*.tar.gz
+        pip install ${PIP_INSTALL_ARGS} ../dist/*.tar.gz
     else
-        pip install ../dist/*.whl
+        pip install ${PIP_INSTALL_ARGS} ../dist/*.whl
     fi
 fi
 

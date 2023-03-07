@@ -210,7 +210,7 @@ if [[ $TASK == "gpu" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --gpu || exit -1
-        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/ist || exit -1
+        sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
