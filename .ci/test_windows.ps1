@@ -66,14 +66,14 @@ if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY
-  sh.exe build-python.sh install --precompile ; Check-Output $?
+  $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
   cp $env:BUILD_SOURCESDIRECTORY/Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 elseif ($env:TASK -eq "sdist") {
   cd $env:BUILD_SOURCESDIRECTORY
-  sh.exe build-python.sh sdist ; Check-Output $?
-  sh.exe $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/build-python.sh sdist ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -88,16 +88,16 @@ elseif ($env:TASK -eq "bdist") {
 
   conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY
-  sh.exe build-python.sh bdist_wheel --integrated-opencl ; Check-Output $?
-  sh.exe $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
+  sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
   cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    sh.exe build-python.sh install --mingw ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
   } else {
-    sh.exe build-python.sh install ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install ; Check-Output $?
   }
 }
 
