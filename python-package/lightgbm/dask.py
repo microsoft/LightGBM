@@ -44,6 +44,12 @@ class _HostWorkers:
         self.default = default
         self.all_workers = all_workers
 
+    def __eq__(self, other: "_HostWorkers") -> bool:
+        return (
+            self.default == other.default
+            and self.all_workers == other.all_workers
+        )
+
 
 class _DatasetNames(Enum):
     """Placeholder names used by lightgbm.dask internals to say 'also evaluate the training data'.
