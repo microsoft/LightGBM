@@ -631,7 +631,7 @@ endif()
 if(SKBUILD)
     install(
       TARGETS _lightgbm
-      LIBRARY DESTINATION lightgbm
+      DESTINATION lightgbm
     )
 else()
     install(
