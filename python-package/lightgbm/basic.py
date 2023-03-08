@@ -35,13 +35,50 @@ _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
 _LGBM_FeatureNameConfiguration = Union[List[str], str]
+_LGBM_GroupType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
+_LGBM_InitScoreType = Union[
+    List[float],
+    List[List[float]],
+    np.ndarray,
+    pd_Series,
+    pd_DataFrame,
+]
+_LGBM_TrainDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix,
+    "Sequence",
+    List["Sequence"],
+    List[np.ndarray]
+]
 _LGBM_LabelType = Union[
     list,
     np.ndarray,
     pd_Series,
     pd_DataFrame
 ]
-
+_LGBM_PredictDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix
+]
+_LGBM_WeightType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
 ZERO_THRESHOLD = 1e-35
 
 
@@ -225,7 +262,11 @@ def _is_1d_collection(data: Any) -> bool:
     )
 
 
-def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(
+    data: Any,
+    dtype=np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -826,7 +867,7 @@ class _InnerPredictor:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: int = -1,
         raw_score: bool = False,
@@ -834,7 +875,7 @@ class _InnerPredictor:
         pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Predict logic.
 
         Parameters
@@ -1392,12 +1433,12 @@ class Dataset:
 
     def __init__(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
@@ -1700,12 +1741,12 @@ class Dataset:
 
     def _lazy_init(
         self,
-        data,
+        data: Optional[_LGBM_TrainDataType],
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         predictor=None,
         feature_name='auto',
         categorical_feature='auto',
@@ -2138,11 +2179,11 @@ class Dataset:
 
     def create_valid(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         """Create validation data align with current Dataset.
@@ -2526,7 +2567,10 @@ class Dataset:
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
-    def set_weight(self, weight) -> "Dataset":
+    def set_weight(
+        self,
+        weight: Optional[_LGBM_WeightType]
+    ) -> "Dataset":
         """Set weight of each instance.
 
         Parameters
@@ -2548,7 +2592,10 @@ class Dataset:
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
-    def set_init_score(self, init_score) -> "Dataset":
+    def set_init_score(
+        self,
+        init_score: Optional[_LGBM_InitScoreType]
+    ) -> "Dataset":
         """Set init score of Booster to start from.
 
         Parameters
@@ -2567,7 +2614,10 @@ class Dataset:
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
-    def set_group(self, group) -> "Dataset":
+    def set_group(
+        self,
+        group: Optional[_LGBM_GroupType]
+    ) -> "Dataset":
         """Set group size of Dataset (used for ranking).
 
         Parameters
@@ -2665,7 +2715,7 @@ class Dataset:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
-    def get_data(self):
+    def get_data(self) -> Optional[_LGBM_TrainDataType]:
         """Get the raw data of the Dataset.
 
         Returns
@@ -2697,7 +2747,7 @@ class Dataset:
                                 "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
-    def get_group(self):
+    def get_group(self) -> Optional[np.ndarray]:
         """Get the group of the Dataset.
 
         Returns
@@ -3941,7 +3991,7 @@ class Booster:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
         raw_score: bool = False,
@@ -3950,7 +4000,7 @@ class Booster:
         data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Make a prediction.
 
         Parameters
@@ -4002,31 +4052,38 @@ class Booster:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
-        return predictor.predict(data, start_iteration, num_iteration,
-                                 raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, validate_features)
+        return predictor.predict(
+            data=data,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            data_has_header=data_has_header,
+            validate_features=validate_features
+        )
 
     def refit(
         self,
-        data,
-        label,
+        data: _LGBM_TrainDataType,
+        label: _LGBM_LabelType,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
         **kwargs
-    ):
+    ) -> "Booster":
         """Refit the existing Booster by new data.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
@@ -4080,7 +4137,12 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
+        leaf_preds = predictor.predict(
+            data=data,
+            start_iteration=-1,
+            pred_leaf=True,
+            validate_features=validate_features
+        )
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
