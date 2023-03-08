@@ -71,14 +71,13 @@ if [[ $TASK == "lint" ]]; then
     LIGHTGBM_DEPS="dask-core datatable distributed numpy pandas psutil scikit-learn scipy"
     conda create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
-        ${LIGHTGBM_DEPS} \
         cmakelint \
         cpplint \
         flake8 \
         isort \
         mypy \
         pydocstyle \
-        "r-lintr>=3.0"
+        "r-lintr>=3.0" || exit -1
     source activate $CONDA_ENV
     echo "Linting Python code"
     flake8 \
@@ -87,6 +86,7 @@ if [[ $TASK == "lint" ]]; then
         . || exit -1
     pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
     isort . --check-only || exit -1
+    pip install ${LIGHTGBM_DEPS}
     mypy --ignore-missing-imports python-package/ || true
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
