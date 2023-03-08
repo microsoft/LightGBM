@@ -23,8 +23,6 @@ maintainers = [
 ]
 name = "lightgbm"
 readme = "README.rst"
-
-# TODO: make this dynamic, or maybe template it through?
 version = "3.3.5.99"
 
 [project.urls]
@@ -36,7 +34,7 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.2.0"]
+requires = ["scikit-build-core>=0.2.1"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration

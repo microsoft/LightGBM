@@ -172,7 +172,7 @@ if test "${INSTALL}" = true; then
         # use regular-old setuptools for these builds, to avoid
         # trying to recompile the shared library
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
-        echo '[build-system]' > ./pyproject.toml
+        echo '[build-system]' >> ./pyproject.toml
         echo 'requires = ["setuptools"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
@@ -181,12 +181,10 @@ if test "${INSTALL}" = true; then
         if test -f ../lib_lightgbm.so; then
             cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
         fi
-        ls ..
-        ls ../Release
-        exit 123
         if test -f ../Release/lib_lightgbm.dll; then
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib_lightgbm.dll
         fi
+        rm -f ./*.bak
     else
         BUILD_WHEEL=true
     fi
