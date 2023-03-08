@@ -181,6 +181,9 @@ if test "${INSTALL}" = true; then
         if test -f ../lib_lightgbm.so; then
             cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
         fi
+        ls ..
+        ls ../Release
+        exit 123
         if test -f ../Release/lib_lightgbm.dll; then
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib_lightgbm.dll
         fi
