@@ -178,7 +178,12 @@ if test "${INSTALL}" = true; then
         echo "" >> ./pyproject.toml
         echo "recursive-include lightgbm *.dll *.so" > ./MANIFEST.in
         echo "" >> ./MANIFEST.in
-        cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
+        if test -f ../lib_lightgbm.so; then
+            cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
+        fi
+        if test -f ../Release/lib_lightgbm.dll; then
+            cp ../Release/lib_lightgbm.dll ./lightgbm/lib_lightgbm.dll
+        fi
     else
         BUILD_WHEEL=true
     fi
