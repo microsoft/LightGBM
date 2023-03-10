@@ -14,10 +14,10 @@ branches:
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: python
-    # - COMPILER: MINGW
+    # - COMPILER: MSVC
     #   TASK: python
+    - COMPILER: MINGW
+      TASK: python
 
 clone_depth: 5
 
