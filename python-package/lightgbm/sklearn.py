@@ -1088,10 +1088,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
-        valid_sets: List[Tuple] = []
+        valid_sets: Optional[List[Tuple]] = None
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
+            valid_sets = []
             for valid_x, valid_y in eval_set:
                 if valid_x is X and valid_y is y:
                     valid_sets.append((valid_x, _y))
