@@ -44,9 +44,10 @@ class _HostWorkers:
         self.default = default
         self.all_workers = all_workers
 
-    def __eq__(self, other: "_HostWorkers") -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
-            self.default == other.default
+            isinstance(other, type(self))
+            and self.default == other.default
             and self.all_workers == other.all_workers
         )
 
