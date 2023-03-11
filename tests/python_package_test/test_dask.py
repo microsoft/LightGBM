@@ -57,6 +57,7 @@ task_to_local_factory = {
 
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
+    pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
     pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Fails to run with CUDA interface')
 ]
 
@@ -524,7 +525,7 @@ def test_group_workers_by_host():
     expected = {
         host: lgb.dask._HostWorkers(
             default=f'tcp://{host}:0',
-            all=[f'tcp://{host}:0', f'tcp://{host}:1']
+            all_workers=[f'tcp://{host}:0', f'tcp://{host}:1']
         )
         for host in hosts
     }
@@ -1127,7 +1128,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
                 # check that each eval_name and metric exists for all eval sets, allowing for the
                 # case when a worker receives a fully-padded eval_set component which is not evaluated.
-                if evals_result[eval_name] != 'not evaluated':
+                if evals_result[eval_name] != {}:
                     for metric in eval_metric_names:
                         assert metric in evals_result[eval_name]
                         assert metric in best_scores[eval_name]
