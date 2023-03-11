@@ -534,7 +534,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_map: Optional[Dict[int, int]] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
-        self._classes = None
+        self._classes: Optional[np.ndarray] = None
         self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
 
@@ -952,7 +952,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.current_iteration()  # type: ignore
 
     @property
-    def booster_(self):
+    def booster_(self) -> Booster:
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
@@ -966,7 +966,7 @@ class LGBMModel(_LGBMModelBase):
         return self._evals_result
 
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: The feature importances (the higher, the more important).
 
         .. note::
@@ -979,8 +979,8 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.feature_importance(importance_type=self.importance_type)
 
     @property
-    def feature_name_(self):
-        """:obj:`array` of shape = [n_features]: The names of features."""
+    def feature_name_(self) -> List[str]:
+        """:obj:`list` of shape = [n_features]: The names of features."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
         return self._Booster.feature_name()
@@ -1194,7 +1194,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     )
 
     @property
-    def classes_(self):
+    def classes_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
