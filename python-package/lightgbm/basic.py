@@ -1011,7 +1011,7 @@ class _InnerPredictor:
             )
         if pred_leaf:
             preds = preds.astype(np.int32)
-        is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
+        is_sparse = isinstance(preds, scipy.sparse.spmatrix) or isinstance(preds, list)
         if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
@@ -2749,7 +2749,7 @@ class Dataset:
         if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
-                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                if isinstance(self.data, np.ndarray) or isinstance(self.data, scipy.sparse.spmatrix):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
@@ -2901,7 +2901,7 @@ class Dataset:
             if isinstance(self.data, np.ndarray):
                 if isinstance(other.data, np.ndarray):
                     self.data = np.hstack((self.data, other.data))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
@@ -2909,9 +2909,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
-            elif scipy.sparse.issparse(self.data):
+            elif isinstance(self.data, scipy.sparse.spmatrix):
                 sparse_format = self.data.getformat()
-                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                if isinstance(other.data, np.ndarray) or isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
@@ -2927,7 +2927,7 @@ class Dataset:
                 if isinstance(other.data, np.ndarray):
                     self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
@@ -2941,7 +2941,7 @@ class Dataset:
             elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
