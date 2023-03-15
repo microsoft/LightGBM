@@ -21,7 +21,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+from utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
@@ -112,7 +112,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson', 'quantile'])
 def test_regression(objective):
     X, y = make_synthetic_regression()
     y = np.abs(y)
@@ -139,6 +139,8 @@ def test_regression(objective):
         assert ret < 296
     elif objective == 'poisson':
         assert ret < 193
+    elif objective == 'quantile':
+        assert ret < 1311
     else:
         assert ret < 338
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -1202,7 +1204,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+    feature_names = [u'F_0', u'F_1', u'F_2', u'F_3']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -4007,3 +4009,5 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+test_regression('quantile')
