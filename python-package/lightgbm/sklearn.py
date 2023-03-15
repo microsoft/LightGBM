@@ -534,7 +534,7 @@ class LGBMModel(_LGBMModelBase):
         self._class_map: Optional[Dict[int, int]] = None
         self._n_features: int = -1
         self._n_features_in: int = -1
-        self._classes = None
+        self._classes: Optional[np.ndarray] = None
         self._n_classes: Optional[int] = None
         self.set_params(**kwargs)
 
@@ -756,7 +756,7 @@ class LGBMModel(_LGBMModelBase):
                             init_score=init_score, categorical_feature=categorical_feature,
                             params=params)
 
-        valid_sets = []
+        valid_sets: List[Dataset] = []
         if eval_set is not None:
 
             def _get_meta_data(collection, name, i):
@@ -952,7 +952,7 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.current_iteration()  # type: ignore
 
     @property
-    def booster_(self):
+    def booster_(self) -> Booster:
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
@@ -966,7 +966,7 @@ class LGBMModel(_LGBMModelBase):
         return self._evals_result
 
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: The feature importances (the higher, the more important).
 
         .. note::
@@ -979,8 +979,8 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.feature_importance(importance_type=self.importance_type)
 
     @property
-    def feature_name_(self):
-        """:obj:`array` of shape = [n_features]: The names of features."""
+    def feature_name_(self) -> List[str]:
+        """:obj:`list` of shape = [n_features]: The names of features."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
         return self._Booster.feature_name()
@@ -1088,16 +1088,16 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
-        valid_sets = None
+        valid_sets: Optional[List[Tuple]] = None
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
-            valid_sets = [None] * len(eval_set)
-            for i, (valid_x, valid_y) in enumerate(eval_set):
+            valid_sets = []
+            for valid_x, valid_y in eval_set:
                 if valid_x is X and valid_y is y:
-                    valid_sets[i] = (valid_x, _y)
+                    valid_sets.append((valid_x, _y))
                 else:
-                    valid_sets[i] = (valid_x, self._le.transform(valid_y))
+                    valid_sets.append((valid_x, self._le.transform(valid_y)))
 
         super().fit(
             X,
@@ -1195,7 +1195,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     )
 
     @property
-    def classes_(self):
+    def classes_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
