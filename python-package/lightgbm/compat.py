@@ -1,7 +1,7 @@
 # coding: utf-8
 """Compatibility library."""
 
-from typing import List, Optional
+from typing import List
 
 """pandas"""
 try:
