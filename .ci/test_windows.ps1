@@ -25,16 +25,6 @@ if ($env:TASK -eq "cpp-tests") {
   Exit 0
 }
 
-# setup for Python
-conda init powershell
-conda activate
-conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
-if ($env:TASK -ne "bdist") {
-  conda activate $env:CONDA_ENV
-}
-
 if ($env:TASK -eq "swig") {
   $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
@@ -50,8 +40,27 @@ if ($env:TASK -eq "swig") {
   Exit 0
 }
 
-# re-including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-conda install -q -y -n $env:CONDA_ENV cloudpickle joblib matplotlib numpy pandas psutil pytest "python=$env:PYTHON_VERSION[build=*cpython]" python-graphviz scikit-learn scipy ; Check-Output $?
+# setup for Python
+conda init powershell
+conda activate
+conda config --set always_yes yes --set changeps1 no
+conda update -q -y conda
+conda create -q -y -n $env:CONDA_ENV `
+  cloudpickle `
+  joblib `
+  matplotlib `
+  numpy `
+  pandas `
+  psutil `
+  pytest `
+  "python=$env:PYTHON_VERSION[build=*cpython]" `
+  python-graphviz `
+  scikit-learn `
+  scipy ; Check-Output $?
+
+if ($env:TASK -ne "bdist") {
+  conda activate $env:CONDA_ENV
+}
 
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
@@ -64,6 +73,7 @@ if ($env:TASK -eq "regular") {
 elseif ($env:TASK -eq "sdist") {
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py sdist --formats gztar ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -79,6 +89,7 @@ elseif ($env:TASK -eq "bdist") {
   conda activate $env:CONDA_ENV
   cd $env:BUILD_SOURCESDIRECTORY/python-package
   python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
   cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {

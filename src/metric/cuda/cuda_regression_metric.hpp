@@ -7,37 +7,27 @@
 #ifndef LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_
 #define LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_metric.hpp>
 #include <LightGBM/cuda/cuda_utils.h>
 
 #include <vector>
 
+#include "cuda_pointwise_metric.hpp"
 #include "../regression_metric.hpp"
-
-#define NUM_DATA_PER_EVAL_THREAD (1024)
 
 namespace LightGBM {
 
 template <typename HOST_METRIC, typename CUDA_METRIC>
-class CUDARegressionMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
+class CUDARegressionMetricInterface: public CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC> {
  public:
-  explicit CUDARegressionMetricInterface(const Config& config): CUDAMetricInterface<HOST_METRIC>(config), num_class_(config.num_class) {}
+  explicit CUDARegressionMetricInterface(const Config& config):
+    CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>(config) {}
 
   virtual ~CUDARegressionMetricInterface() {}
 
-  void Init(const Metadata& metadata, data_size_t num_data) override;
-
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
-
- protected:
-  double LaunchEvalKernel(const double* score_convert) const;
-
-  mutable CUDAVector<double> score_convert_buffer_;
-  CUDAVector<double> reduce_block_buffer_;
-  CUDAVector<double> reduce_block_buffer_inner_;
-  const int num_class_;
 };
 
 class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric> {
@@ -64,6 +54,6 @@ class CUDAL2Metric : public CUDARegressionMetricInterface<L2Metric, CUDAL2Metric
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 
 #endif  // LIGHTGBM_METRIC_CUDA_CUDA_REGRESSION_METRIC_HPP_

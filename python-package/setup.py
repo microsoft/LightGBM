@@ -21,7 +21,6 @@ LIGHTGBM_OPTIONS = [
     ('integrated-opencl', None, 'Compile integrated OpenCL version'),
     ('gpu', 'g', 'Compile GPU version'),
     ('cuda', None, 'Compile CUDA version'),
-    ('cuda-exp', None, 'Compile CUDA Experimental version'),
     ('mpi', None, 'Compile MPI version'),
     ('nomp', None, 'Compile version without OpenMP support'),
     ('hdfs', 'h', 'Compile HDFS version'),
@@ -96,7 +95,7 @@ def silent_call(cmd: List[str], raise_error: bool = False, error_msg: str = '') 
         with open(LOG_PATH, "ab") as log:
             subprocess.check_call(cmd, stderr=log, stdout=log)
         return 0
-    except Exception as err:
+    except Exception:
         if raise_error:
             raise Exception("\n".join((error_msg, LOG_NOTICE)))
         return 1
@@ -106,7 +105,6 @@ def compile_cpp(
     use_mingw: bool = False,
     use_gpu: bool = False,
     use_cuda: bool = False,
-    use_cuda_exp: bool = False,
     use_mpi: bool = False,
     use_hdfs: bool = False,
     boost_root: Optional[str] = None,
@@ -148,8 +146,6 @@ def compile_cpp(
             cmake_cmd.append(f"-DOpenCL_LIBRARY={opencl_library}")
     elif use_cuda:
         cmake_cmd.append("-DUSE_CUDA=ON")
-    elif use_cuda_exp:
-        cmake_cmd.append("-DUSE_CUDA_EXP=ON")
     if use_mpi:
         cmake_cmd.append("-DUSE_MPI=ON")
     if nomp:
@@ -171,7 +167,7 @@ def compile_cpp(
         else:
             status = 1
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
-            if not any((use_gpu, use_cuda, use_cuda_exp, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
+            if not any((use_gpu, use_cuda, use_mpi, use_hdfs, nomp, bit32, integrated_opencl)):
                 logger.info("Starting to compile with MSBuild from existing solution file.")
                 platform_toolsets = ("v143", "v142", "v141", "v140")
                 for pt in platform_toolsets:
@@ -235,7 +231,6 @@ class CustomInstall(install):
         self.integrated_opencl = False
         self.gpu = False
         self.cuda = False
-        self.cuda_exp = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -260,7 +255,7 @@ class CustomInstall(install):
         LOG_PATH.touch()
         if not self.precompile:
             copy_files(integrated_opencl=self.integrated_opencl, use_gpu=self.gpu)
-            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_cuda_exp=self.cuda_exp, use_mpi=self.mpi,
+            compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
                         opencl_include_dir=self.opencl_include_dir, opencl_library=self.opencl_library,
@@ -281,7 +276,6 @@ class CustomBdistWheel(bdist_wheel):
         self.integrated_opencl = False
         self.gpu = False
         self.cuda = False
-        self.cuda_exp = False
         self.boost_root = None
         self.boost_dir = None
         self.boost_include_dir = None
@@ -304,7 +298,6 @@ class CustomBdistWheel(bdist_wheel):
         install.integrated_opencl = self.integrated_opencl
         install.gpu = self.gpu
         install.cuda = self.cuda
-        install.cuda_exp = self.cuda_exp
         install.boost_root = self.boost_root
         install.boost_dir = self.boost_dir
         install.boost_include_dir = self.boost_include_dir
@@ -355,6 +348,7 @@ if __name__ == "__main__":
           version=version,
           description='LightGBM Python Package',
           long_description=readme,
+          long_description_content_type='text/x-rst',
           python_requires='>=3.6',
           install_requires=[
               'wheel',
@@ -396,4 +390,5 @@ if __name__ == "__main__":
                        'Programming Language :: Python :: 3.8',
                        'Programming Language :: Python :: 3.9',
                        'Programming Language :: Python :: 3.10',
-                       'Topic :: Scientific/Engineering :: Artificial Intelligence'])
+                       'Topic :: Scientific/Engineering :: Artificial Intelligence',
+                       'Typing :: Typed'])

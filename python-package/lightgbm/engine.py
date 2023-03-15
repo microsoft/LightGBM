@@ -11,12 +11,20 @@ import numpy as np
 
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_CustomObjectiveFunction, _log_warning)
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction,
+                    _LGBM_FeatureNameConfiguration, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
+
+__all__ = [
+    'cv',
+    'CVBooster',
+    'train',
+]
+
 
 _LGBM_CustomMetricFunction = Callable[
     [np.ndarray, Dataset],
-    Tuple[str, float, bool]
+    Union[Tuple[str, float, bool], List[Tuple[str, float, bool]]]
 ]
 
 _LGBM_PreprocFunction = Callable[
@@ -33,8 +41,8 @@ def train(
     valid_names: Optional[List[str]] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
-    feature_name: Union[List[str], str] = 'auto',
-    categorical_feature: Union[List[str], List[int], str] = 'auto',
+    feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -427,10 +435,10 @@ def _make_n_folds(
     nfold: int,
     params: Dict[str, Any],
     seed: int,
-    fpreproc: Optional[_LGBM_PreprocFunction] = None,
-    stratified: bool = True,
-    shuffle: bool = True,
-    eval_train_metric: bool = False
+    fpreproc: Optional[_LGBM_PreprocFunction],
+    stratified: bool,
+    shuffle: bool,
+    eval_train_metric: bool
 ) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
@@ -494,8 +502,8 @@ def _agg_cv_result(
     raw_results: List[List[Tuple[str, str, float, bool]]]
 ) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
-    cvmap = collections.OrderedDict()
-    metric_type = {}
+    cvmap: Dict[str, List[float]] = collections.OrderedDict()
+    metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
             key = f"{one_line[0]} {one_line[1]}"
@@ -516,8 +524,8 @@ def cv(
     metrics: Optional[Union[str, List[str]]] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
-    feature_name: Union[str, List[str]] = 'auto',
-    categorical_feature: Union[str, List[str], List[int]] = 'auto',
+    feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
     fpreproc: Optional[_LGBM_PreprocFunction] = None,
     seed: int = 0,
     callbacks: Optional[List[Callable]] = None,
@@ -678,7 +686,7 @@ def cv(
              .set_categorical_feature(categorical_feature)
 
     results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
+    cvfolds = _make_n_folds(full_data=train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
                             stratified=stratified, shuffle=shuffle,
                             eval_train_metric=eval_train_metric)

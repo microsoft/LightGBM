@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -1802,4 +1802,4 @@ void CUDABestSplitFinder::LaunchInitCUDARandomKernel() {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
