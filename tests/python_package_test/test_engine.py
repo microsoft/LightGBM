@@ -21,7 +21,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+from utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
@@ -1202,7 +1202,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+    feature_names = [u'F_0', u'F_1', u'F_2', u'F_3']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -2031,6 +2031,7 @@ def test_metrics():
     params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
     params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
     params_obj_metric_inv_verbose = {'objective': 'binary', 'metric': 'invalid_metric', 'verbose': -1}
+    params_obj_metric_quant_verbose = {'objective': 'regression', 'metric': 'quantile', 'verbose': 2}
     params_obj_metric_multi_verbose = {'objective': 'binary',
                                        'metric': ['binary_logloss', 'binary_error'],
                                        'verbose': -1}
@@ -2079,6 +2080,11 @@ def test_metrics():
     res = get_cv_result(params=params_obj_metric_inv_verbose, metrics='binary_error')
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
+
+    # metric in args overwrites one in params
+    res = get_cv_result(params=params_obj_metric_quant_verbose)
+    assert len(res) == 2
+    assert 'valid quantile-mean' in res
 
     # multiple metrics in params
     res = get_cv_result(params=params_obj_metric_multi_verbose)
@@ -4007,3 +4013,5 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+test_metrics()
