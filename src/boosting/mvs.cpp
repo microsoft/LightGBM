@@ -92,34 +92,30 @@ void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score
 
   bag_data_cnt_ = left_cnt;
   if (!is_use_subset_) {
-    #ifdef USE_CUDA_EXP
-    if (config_->device_type == std::string("cuda_exp")) {
-      Log::Warning("case 0 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
+    #ifdef USE_CUDA
+    if (config_->device_type == std::string("cuda")) {
       CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
       tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
     } else {
-    #endif  // USE_CUDA_EXP
-      Log::Warning("case 1 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
+    #endif  // USE_CUDA
       tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-    #ifdef USE_CUDA_EXP
+    #ifdef USE_CUDA
     }
-    #endif  // USE_CUDA_EXP
+    #endif  // USE_CUDA
   } else {
     tmp_subset_->ReSize(bag_data_cnt_);
     tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                             bag_data_cnt_, false);
-    #ifdef USE_CUDA_EXP
-    if (config_->device_type == std::string("cuda_exp")) {
-      Log::Warning("case 2 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
+    #ifdef USE_CUDA
+    if (config_->device_type == std::string("cuda")) {
       CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
       tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(), bag_data_cnt_);
     } else {
-    #endif  // USE_CUDA_EXP
-      Log::Warning("case 3 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
+    #endif  // USE_CUDA
       tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(), bag_data_cnt_);
-    #ifdef USE_CUDA_EXP
+    #ifdef USE_CUDA
     }
-    #endif  // USE_CUDA_EXP
+    #endif  // USE_CUDA
   }
   threshold_ = 0.0;
   Log::Debug("MVS Sample size %d %d", left_cnt, static_cast<data_size_t>(config_->bagging_fraction * num_data_));
@@ -187,11 +183,11 @@ void MVS::ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) {
   balanced_bagging_ = false;
   CHECK(config_->mvs_lambda >= 0.0f);
   bag_data_indices_.resize(num_data_);
-  #ifdef USE_CUDA_EXP
-  if (config_->device_type == std::string("cuda_exp")) {
+  #ifdef USE_CUDA
+  if (config_->device_type == std::string("cuda")) {
     cuda_bag_data_indices_.Resize(num_data_);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
   tmp_derivatives_.resize(num_data_);
   bagging_runner_.ReSize(num_data_);
   bagging_rands_.clear();
