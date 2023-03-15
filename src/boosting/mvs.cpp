@@ -94,10 +94,12 @@ void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score
   if (!is_use_subset_) {
     #ifdef USE_CUDA_EXP
     if (config_->device_type == std::string("cuda_exp")) {
+      Log::Warning("case 0 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
       CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
       tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
     } else {
     #endif  // USE_CUDA_EXP
+      Log::Warning("case 1 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
       tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
     #ifdef USE_CUDA_EXP
     }
@@ -108,10 +110,12 @@ void MVS::Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score
                             bag_data_cnt_, false);
     #ifdef USE_CUDA_EXP
     if (config_->device_type == std::string("cuda_exp")) {
+      Log::Warning("case 2 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
       CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
       tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(), bag_data_cnt_);
     } else {
     #endif  // USE_CUDA_EXP
+      Log::Warning("case 3 bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
       tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(), bag_data_cnt_);
     #ifdef USE_CUDA_EXP
     }
