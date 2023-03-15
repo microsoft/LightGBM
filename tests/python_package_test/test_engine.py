@@ -21,7 +21,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
@@ -4013,5 +4013,3 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
-
-test_metrics()
