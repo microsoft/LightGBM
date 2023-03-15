@@ -1728,7 +1728,7 @@ class Dataset:
         used_indices: Optional[List[int]]
     ):
         data_has_header = False
-        if isinstance(data, (str, Path)):
+        if isinstance(data, (str, Path)) and self.params is not None:
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
