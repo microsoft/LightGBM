@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #ifndef LIGHTGBM_CUDA_CUDA_TREE_HPP_
 #define LIGHTGBM_CUDA_CUDA_TREE_HPP_
@@ -170,4 +170,4 @@ class CUDATree : public Tree {
 
 #endif  // LIGHTGBM_CUDA_CUDA_TREE_HPP_
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

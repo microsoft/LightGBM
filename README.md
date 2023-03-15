@@ -61,6 +61,9 @@ Some old update logs are available at [Key Events](https://github.com/microsoft/
 External (Unofficial) Repositories
 ----------------------------------
 
+Projects listed here offer alternative ways to use LightGBM.
+They are not maintained or officially endorsed by the `LightGBM` development team.
+
 FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
@@ -115,7 +118,7 @@ lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 
-`{treesnip}` (R `{parsnip}`-compliant interface): https://github.com/curso-r/treesnip
+`{bonsai}` (R `{parsnip}`-compliant interface): https://github.com/tidymodels/bonsai
 
 `{mlr3extralearners}` (R `{mlr3}`-compliant interface): https://github.com/mlr-org/mlr3extralearners
 

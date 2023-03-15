@@ -451,7 +451,7 @@ class DenseBin : public Bin {
     }
   }
 
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const override {
+  void SaveBinaryToFile(BinaryWriter* writer) const override {
     writer->AlignedWrite(data_.data(), sizeof(VAL_T) * data_.size());
   }
 
@@ -467,7 +467,7 @@ class DenseBin : public Bin {
 
  private:
   data_size_t num_data_;
-#if defined(USE_CUDA) || defined(USE_CUDA_EXP)
+#ifdef USE_CUDA
   std::vector<VAL_T, CHAllocator<VAL_T>> data_;
 #else
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, kAlignedSize>> data_;

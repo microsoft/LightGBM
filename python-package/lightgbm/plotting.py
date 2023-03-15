@@ -11,14 +11,22 @@ from .basic import Booster, _data_from_pandas, _is_zero, _log_warning, _MissingT
 from .compat import GRAPHVIZ_INSTALLED, MATPLOTLIB_INSTALLED, pd_DataFrame
 from .sklearn import LGBMModel
 
+__all__ = [
+    'create_tree_digraph',
+    'plot_importance',
+    'plot_metric',
+    'plot_split_value_histogram',
+    'plot_tree',
+]
 
-def _check_not_tuple_of_2_elements(obj: Any, obj_name: str = 'obj') -> None:
+
+def _check_not_tuple_of_2_elements(obj: Any, obj_name: str) -> None:
     """Check object is not tuple or does not have 2 elements."""
     if not isinstance(obj, tuple) or len(obj) != 2:
         raise TypeError(f"{obj_name} must be a tuple of 2 elements.")
 
 
-def _float2str(value: float, precision: Optional[int] = None) -> str:
+def _float2str(value: float, precision: Optional[int]) -> str:
     return (f"{value:.{precision}f}"
             if precision is not None and not isinstance(value, str)
             else str(value))
@@ -443,10 +451,10 @@ def _to_graphviz(
     tree_info: Dict[str, Any],
     show_info: List[str],
     feature_names: Union[List[str], None],
-    precision: Optional[int] = 3,
-    orientation: str = 'horizontal',
-    constraints: Optional[List[int]] = None,
-    example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
+    precision: Optional[int],
+    orientation: str,
+    constraints: Optional[List[int]],
+    example_case: Optional[Union[np.ndarray, pd_DataFrame]],
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -459,7 +467,13 @@ def _to_graphviz(
     else:
         raise ImportError('You must install graphviz and restart your session to plot tree.')
 
-    def add(root, total_count, parent=None, decision=None, highlight=False):
+    def add(
+        root: Dict[str, Any],
+        total_count: int,
+        parent: Optional[str],
+        decision: Optional[str],
+        highlight: bool
+    ) -> None:
         """Recursively add node or edge."""
         fillcolor = 'white'
         style = ''
@@ -488,10 +502,16 @@ def _to_graphviz(
             direction = None
             if example_case is not None:
                 if root['decision_type'] == '==':
-                    direction = _determine_direction_for_categorical_split(example_case[split_feature], root['threshold'])
+                    direction = _determine_direction_for_categorical_split(
+                        fval=example_case[split_feature],
+                        thresholds=root['threshold']
+                    )
                 else:
                     direction = _determine_direction_for_numeric_split(
-                        example_case[split_feature], root['threshold'], root['missing_type'], root['default_left']
+                        fval=example_case[split_feature],
+                        threshold=root['threshold'],
+                        missing_type_str=root['missing_type'],
+                        default_left=root['default_left']
                     )
             label += f"<B>{_float2str(root['threshold'], precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
@@ -511,8 +531,20 @@ def _to_graphviz(
                     fillcolor = "#ffdddd"  # light red
                 style = "filled"
             label = f"<{label}>"
-            add(root['left_child'], total_count, name, l_dec, highlight and direction == "left")
-            add(root['right_child'], total_count, name, r_dec, highlight and direction == "right")
+            add(
+                root=root['left_child'],
+                total_count=total_count,
+                parent=name,
+                decision=l_dec,
+                highlight=highlight and direction == "left"
+            )
+            add(
+                root=root['right_child'],
+                total_count=total_count,
+                parent=name,
+                decision=r_dec,
+                highlight=highlight and direction == "right"
+            )
         else:  # leaf
             shape = "ellipse"
             name = f"leaf{root['leaf_index']}"
@@ -533,7 +565,13 @@ def _to_graphviz(
     rankdir = "LR" if orientation == "horizontal" else "TB"
     graph.attr("graph", nodesep="0.05", ranksep="0.3", rankdir=rankdir)
     if "internal_count" in tree_info['tree_structure']:
-        add(tree_info['tree_structure'], tree_info['tree_structure']["internal_count"], highlight=example_case is not None)
+        add(
+            root=tree_info['tree_structure'],
+            total_count=tree_info['tree_structure']["internal_count"],
+            parent=None,
+            decision=None,
+            highlight=example_case is not None
+        )
     else:
         raise Exception("Cannot plot trees with no split")
 
@@ -645,11 +683,24 @@ def create_tree_digraph(
         if example_case.shape[0] != 1:
             raise ValueError('example_case must have a single row.')
         if isinstance(example_case, pd_DataFrame):
-            example_case = _data_from_pandas(example_case, None, None, booster.pandas_categorical)[0]
+            example_case = _data_from_pandas(
+                data=example_case,
+                feature_name=None,
+                categorical_feature=None,
+                pandas_categorical=booster.pandas_categorical
+            )[0]
         example_case = example_case[0]
 
-    graph = _to_graphviz(tree_info, show_info, feature_names, precision,
-                         orientation, monotone_constraints, example_case=example_case, **kwargs)
+    graph = _to_graphviz(
+        tree_info=tree_info,
+        show_info=show_info,
+        feature_names=feature_names,
+        precision=precision,
+        orientation=orientation,
+        constraints=monotone_constraints,
+        example_case=example_case,
+        **kwargs
+    )
 
     return graph
 

@@ -9,6 +9,11 @@ on:
     - master
     - release/*
 
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
@@ -25,6 +30,7 @@ jobs:
   test:
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -33,58 +39,68 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-22.04
+            container: 'ubuntu:18.04'
+          - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 4.2
             build_type: cmake
-          - os: ubuntu-22.04
+            container: 'ubuntu:22.04'
+          - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-          - os: ubuntu-22.04
+            container: 'ubuntu:18.04'
+          - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 4.2
             build_type: cmake
+            container: 'ubuntu:22.04'
           - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 3.6
             build_type: cmake
+            container: null
           - os: macOS-latest
             task: r-package
             compiler: gcc
             r_version: 4.2
             build_type: cmake
+            container: null
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
+            container: null
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 4.2
             build_type: cmake
+            container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MINGW
             r_version: 3.6
             build_type: cmake
+            container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
             r_version: 4.2
             build_type: cmake
+            container: null
           # Visual Studio 2019
           - os: windows-2019
             task: r-package
@@ -92,6 +108,7 @@ jobs:
             toolchain: MSVC
             r_version: 3.6
             build_type: cmake
+            container: null
           # Visual Studio 2022
           - os: windows-2022
             task: r-package
@@ -99,6 +116,7 @@ jobs:
             toolchain: MSVC
             r_version: 4.2
             build_type: cmake
+            container: null
           ###############
           # CRAN builds #
           ###############
@@ -108,35 +126,64 @@ jobs:
             toolchain: MINGW
             r_version: 3.6
             build_type: cran
+            container: null
           - os: windows-latest
             task: r-package
             compiler: MINGW
             toolchain: MSYS
             r_version: 4.2
             build_type: cran
-          - os: ubuntu-22.04
+            container: null
+          - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 4.2
             build_type: cran
+            container: 'ubuntu:22.04'
           - os: macOS-latest
             task: r-package
             compiler: clang
             r_version: 4.2
             build_type: cran
+            container: null
           ################
           # Other checks #
           ################
-          - os: ubuntu-22.04
+          - os: ubuntu-latest
             task: r-rchk
             compiler: gcc
             r_version: 4.2
             build_type: cran
+            container: 'ubuntu:22.04'
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
         run: git config --global core.autocrlf false
+      - name: Install packages used by third-party actions
+        if: startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+            ca-certificates \
+            dirmngr \
+            gpg \
+            gpg-agent \
+            software-properties-common \
+            sudo
+          # install newest version of git
+          # ref:
+          #     - https://unix.stackexchange.com/a/170831/550004
+          #     - https://git-scm.com/download/linux
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+            git
+      - name: Trust git cloning LightGBM
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -151,7 +198,7 @@ jobs:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-22.04'
+        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
@@ -159,8 +206,14 @@ jobs:
           export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-22.04" ]]; then
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
+              export IN_UBUNTU_BASE_CONTAINER="true"
+              # the default version of cmake provided on Ubuntu 18.04 (v3.10.2), is not supported by LightGBM
+              # see https://github.com/microsoft/LightGBM/issues/5642
+              if [[ "${{ matrix.container }}" == "ubuntu:18.04" ]]; then
+                export INSTALL_CMAKE_FROM_RELEASES="true"
+              fi
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
@@ -181,9 +234,9 @@ jobs:
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
-    name: r-sanitizers (ubuntu-22.04, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
+    name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: wch1/r-debug
     strategy:
       fail-fast: false
@@ -219,7 +272,7 @@ jobs:
   test-r-debian-clang:
     name: r-package (debian, R-devel, clang)
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: rhub/debian-clang-devel
     steps:
       - name: Install Git before checkout
@@ -235,6 +288,46 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
+      - name: update to clang 15
+        shell: bash
+        run: |
+          # remove clang stuff that comes installed in the image
+          apt-get autoremove -y --purge \
+              clang-* \
+              libclang-* \
+              libunwind-* \
+              llvm-*
+          #
+          # replace it all with clang-15
+          apt-get update -y
+          apt-get install --no-install-recommends -y \
+              gnupg \
+              lsb-release \
+              software-properties-common \
+              wget
+          #
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          #
+          add-apt-repository "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
+          apt-get install -y --no-install-recommends \
+              clang-15 \
+              clangd-15 \
+              clang-format-15 \
+              clang-tidy-15 \
+              clang-tools-15 \
+              lldb-15 \
+              lld-15 \
+              llvm-15-dev \
+              llvm-15-tools \
+              libomp-15-dev \
+              libc++-15-dev \
+              libc++abi-15-dev \
+              libclang-common-15-dev \
+              libclang-15-dev \
+              libclang-cpp15-dev \
+              libunwind-15-dev
+          # overwrite everything in /usr/bin with the new v15 versions
+          cp --remove-destination /usr/lib/llvm-15/bin/* /usr/bin/
       - name: Install packages and run tests
         shell: bash
         run: |

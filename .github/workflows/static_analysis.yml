@@ -11,6 +11,11 @@ on:
     - master
     - release/*
 
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   COMPILER: 'gcc'
   CONDA_ENV: test-env
@@ -47,7 +52,7 @@ jobs:
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container: rocker/verse
     steps:
       - name: Trust git cloning LightGBM

@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #define GET_GRADIENTS_BLOCK_SIZE_REGRESSION (1024)
 
@@ -163,5 +163,5 @@ class CUDARegressionQuantileloss : public CUDARegressionObjectiveInterface<Regre
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_OBJECTIVE_CUDA_CUDA_REGRESSION_OBJECTIVE_HPP_

@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_regression_objective.hpp"
 
@@ -106,4 +106,4 @@ void CUDARegressionQuantileloss::Init(const Metadata& metadata, data_size_t num_
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

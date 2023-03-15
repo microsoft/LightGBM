@@ -18,9 +18,9 @@ Metadata::Metadata() {
   weight_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   cuda_metadata_ = nullptr;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 void Metadata::Init(const char* data_filename) {
@@ -344,11 +344,11 @@ void Metadata::SetInitScore(const double* init_score, data_size_t len) {
     init_score_[i] = Common::AvoidInf(init_score[i]);
   }
   init_score_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetInitScore(init_score_.data(), len);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
@@ -387,11 +387,11 @@ void Metadata::SetLabel(const label_t* label, data_size_t len) {
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(label[i]);
   }
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetLabel(label_.data(), len);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {
@@ -428,11 +428,11 @@ void Metadata::SetWeights(const label_t* weights, data_size_t len) {
   }
   CalculateQueryWeights();
   weight_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetWeights(weights_.data(), len);
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {
@@ -477,7 +477,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   }
   CalculateQueryWeights();
   query_load_from_file_ = false;
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     if (query_weights_.size() > 0) {
       CHECK_EQ(query_weights_.size(), static_cast<size_t>(num_queries_));
@@ -486,7 +486,7 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
       cuda_metadata_->SetQuery(query_boundaries_.data(), nullptr, num_queries_);
     }
   }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
@@ -635,12 +635,12 @@ void Metadata::FinishLoad() {
   CalculateQueryBoundaries();
 }
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 void Metadata::CreateCUDAMetadata(const int gpu_device_id) {
   cuda_metadata_.reset(new CUDAMetadata(gpu_device_id));
   cuda_metadata_->Init(label_, weights_, query_boundaries_, query_weights_, init_score_);
 }
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 
 void Metadata::LoadFromMemory(const void* memory) {
   const char* mem_ptr = reinterpret_cast<const char*>(memory);
@@ -675,7 +675,7 @@ void Metadata::LoadFromMemory(const void* memory) {
   CalculateQueryWeights();
 }
 
-void Metadata::SaveBinaryToFile(const VirtualFileWriter* writer) const {
+void Metadata::SaveBinaryToFile(BinaryWriter* writer) const {
   writer->AlignedWrite(&num_data_, sizeof(num_data_));
   writer->AlignedWrite(&num_weights_, sizeof(num_weights_));
   writer->AlignedWrite(&num_queries_, sizeof(num_queries_));
