@@ -292,6 +292,7 @@ void CUDADataPartition::SetUsedDataIndices(const data_size_t* used_indices, cons
   use_bagging_ = true;
   num_used_indices_ = num_used_indices;
   used_indices_ = used_indices;
+  Log::Warning("num_used_indices = %d", num_used_indices);
   CopyFromCUDADeviceToCUDADevice<data_size_t>(cuda_data_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
   LaunchFillDataIndexToLeafIndex();
 }
