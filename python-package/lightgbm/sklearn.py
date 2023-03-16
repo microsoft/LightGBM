@@ -535,7 +535,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
-        self._n_classes: Optional[int] = None
+        self._n_classes: int = -1
         self.set_params(**kwargs)
 
     def _more_tags(self) -> Dict[str, Any]:
@@ -641,7 +641,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
-        if self._n_classes is not None and self._n_classes > 2:
+        if self._n_classes > 2:
             for alias in _ConfigAliases.get('num_class'):
                 params.pop(alias, None)
             params['num_class'] = self._n_classes
@@ -881,9 +881,11 @@ class LGBMModel(_LGBMModelBase):
         predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
-        return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
-                                     **predict_params)
+        return self._Booster.predict(  # type: ignore[union-attr]
+            X,raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
+            pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
+            **predict_params
+        )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
@@ -956,7 +958,7 @@ class LGBMModel(_LGBMModelBase):
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
-        return self._Booster
+        return self._Booster  # type: ignore[return-value]
 
     @property
     def evals_result_(self) -> _EvalResultDict:
@@ -976,14 +978,14 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
-        return self._Booster.feature_importance(importance_type=self.importance_type)
+        return self._Booster.feature_importance(importance_type=self.importance_type)  # type: ignore[union-attr]
 
     @property
     def feature_name_(self) -> List[str]:
         """:obj:`list` of shape = [n_features]: The names of features."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
-        return self._Booster.feature_name()
+        return self._Booster.feature_name()  # type: ignore[union-attr]
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
@@ -1062,7 +1064,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
         self._classes = self._le.classes_
-        self._n_classes = len(self._classes)
+        self._n_classes = len(self._classes)  # type: ignore[arg-type]
 
         # adjust eval metrics to match whether binary or multiclass
         # classification is being performed
@@ -1180,7 +1182,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                          "due to the usage of customized objective function.\n"
                          "Returning raw scores instead.")
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
+        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1. - result, result)).transpose()
@@ -1199,7 +1201,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
-        return self._classes
+        return self._classes  # type: ignore[return-value]
 
     @property
     def n_classes_(self) -> int:
