@@ -27,8 +27,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       Log::Warning("Metric l1 is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new L1Metric(config);
     } else if (type == std::string("quantile")) {
-      Log::Warning("Metric quantile is not implemented in cuda version. Fall back to evaluation on CPU.");
-      return new QuantileMetric(config);
+      return new CUDAQuantileMetric(config);
     } else if (type == std::string("huber")) {
       Log::Warning("Metric huber is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new HuberLossMetric(config);

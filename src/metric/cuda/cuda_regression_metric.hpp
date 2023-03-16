@@ -36,7 +36,7 @@ class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEM
 
   virtual ~CUDARMSEMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double /*alpha*/) {
     return (score - label) * (score - label);
   }
 };
@@ -47,9 +47,32 @@ class CUDAL2Metric : public CUDARegressionMetricInterface<L2Metric, CUDAL2Metric
 
   virtual ~CUDAL2Metric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double /*alpha*/) {
     return (score - label) * (score - label);
   }
+};
+
+class CUDAQuantileMetric : public CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric> {
+ public:
+  explicit CUDAQuantileMetric(const Config& config);
+
+  virtual ~CUDAQuantileMetric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double alpha) {
+    double delta = label - score;
+    if (delta < 0) {
+      return (alpha - 1.0f) * delta;
+    } else {
+      return alpha * delta;
+    }
+  }
+
+  double GetParamFromConfig() const override {
+    return alpha_;
+  }
+
+ private:
+  const double alpha_;
 };
 
 }  // namespace LightGBM

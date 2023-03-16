@@ -2031,6 +2031,7 @@ def test_metrics():
     params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
     params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
     params_obj_metric_inv_verbose = {'objective': 'binary', 'metric': 'invalid_metric', 'verbose': -1}
+    params_obj_metric_quant_verbose = {'objective': 'regression', 'metric': 'quantile', 'verbose': 2}
     params_obj_metric_multi_verbose = {'objective': 'binary',
                                        'metric': ['binary_logloss', 'binary_error'],
                                        'verbose': -1}
@@ -2079,6 +2080,11 @@ def test_metrics():
     res = get_cv_result(params=params_obj_metric_inv_verbose, metrics='binary_error')
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
+
+    # metric in args overwrites one in params
+    res = get_cv_result(params=params_obj_metric_quant_verbose)
+    assert len(res) == 2
+    assert 'valid quantile-mean' in res
 
     # multiple metrics in params
     res = get_cv_result(params=params_obj_metric_multi_verbose)

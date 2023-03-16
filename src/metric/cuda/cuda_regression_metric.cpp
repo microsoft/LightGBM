@@ -29,6 +29,8 @@ CUDARMSEMetric::CUDARMSEMetric(const Config& config): CUDARegressionMetricInterf
 
 CUDAL2Metric::CUDAL2Metric(const Config& config): CUDARegressionMetricInterface<L2Metric, CUDAL2Metric>(config) {}
 
+CUDAQuantileMetric::CUDAQuantileMetric(const Config& config): CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric>(config), alpha_(config.alpha) {}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
