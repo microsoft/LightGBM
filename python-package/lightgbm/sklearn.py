@@ -882,7 +882,7 @@ class LGBMModel(_LGBMModelBase):
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
         return self._Booster.predict(  # type: ignore[union-attr]
-            X,raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
+            X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
             pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
             **predict_params
         )
