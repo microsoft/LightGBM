@@ -2356,6 +2356,7 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(_FIELD_TYPE_MAPPER[field_name])))
             return self
+        dtype: "np.typing.DTypeLike"
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
