@@ -3619,7 +3619,7 @@ def test_boosting_and_sample_strategy_equivalent(data_samplie_strategy):
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
     base_params = {
         'metric': 'l2',
-        'verbose': 2,
+        'verbose': -1,
         'bagging_seed': 0,
         'learning_rate': 0.05,
         'num_threads': 1,
