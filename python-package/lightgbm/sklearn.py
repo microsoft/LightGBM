@@ -127,11 +127,11 @@ class _ObjectiveFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            grad, hess = self.func(labels, preds)
+            grad, hess = self.func(labels, preds)  # type: ignore[arg-type, call-arg]
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())
+            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[arg-type, call-arg]
         elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[arg-type, call-arg]
         else:
             raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
@@ -205,11 +205,11 @@ class _EvalFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            return self.func(labels, preds)
+            return self.func(labels, preds)  # type: ignore[arg-type, call-arg]
         elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())
+            return self.func(labels, preds, dataset.get_weight())  # type: ignore[arg-type, call-arg]
         elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
+            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[arg-type, call-arg]
         else:
             raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
