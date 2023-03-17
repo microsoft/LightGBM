@@ -26,29 +26,29 @@ __all__ = [
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
-        [np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     Callable[
-        [np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray],
         Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
         Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
         Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
     ],
 ]
@@ -127,11 +127,11 @@ class _ObjectiveFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            grad, hess = self.func(labels, preds)  # type: ignore[arg-type, call-arg]
+            grad, hess = self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[arg-type, call-arg]
+            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
         elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[arg-type, call-arg]
+            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore [call-arg]
         else:
             raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
@@ -205,11 +205,11 @@ class _EvalFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            return self.func(labels, preds)  # type: ignore[arg-type, call-arg]
+            return self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())  # type: ignore[arg-type, call-arg]
+            return self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
         elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[arg-type, call-arg]
+            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[call-arg]
         else:
             raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
