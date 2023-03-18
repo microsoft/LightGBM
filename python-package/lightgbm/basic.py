@@ -1462,7 +1462,8 @@ class Dataset:
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
-        free_raw_data: bool = True
+        free_raw_data: bool = True,
+        categorical_feature_vecs: Optional[Dict[str, List[np.ndarray]]] = None
     ):
         """Initialize Dataset.
 
@@ -1521,6 +1522,7 @@ class Dataset:
         self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
+        self.categorical_feature_vecs = categorical_feature_vecs
 
     def __del__(self) -> None:
         try:
@@ -1770,7 +1772,8 @@ class Dataset:
         predictor=None,
         feature_name='auto',
         categorical_feature='auto',
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
+        categorical_feature_vecs: Optional[Dict[str, List[np.ndarray]]] = None
     ) -> "Dataset":
         if data is None:
             self.handle = None
@@ -1835,7 +1838,7 @@ class Dataset:
         elif isinstance(data, scipy.sparse.csc_matrix):
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
-            self.__init_from_np2d(data, params_str, ref_dataset)
+            self.__init_from_np2d(data, params_str, ref_dataset, categorical_feature_vecs=categorical_feature_vecs)
         elif isinstance(data, list) and len(data) > 0:
             if all(isinstance(x, np.ndarray) for x in data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
@@ -1846,7 +1849,7 @@ class Dataset:
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
         elif isinstance(data, dt_DataTable):
-            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
+            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset, categorical_feature_vecs=self.categorical_feature_vecs)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -1956,7 +1959,8 @@ class Dataset:
         self,
         mat: np.ndarray,
         params_str: str,
-        ref_dataset: Optional[_DatasetHandle]
+        ref_dataset: Optional[_DatasetHandle],
+        categorical_feature_vecs: Optional[Dict[str, np.array]] = None
     ) -> "Dataset":
         """Initialize data from a 2-D numpy matrix."""
         if len(mat.shape) != 2:
@@ -1968,6 +1972,14 @@ class Dataset:
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
 
+        if categorical_feature_vecs is not None:
+            # one feature supported for now
+            assert len(categorical_feature_vecs) == 1
+            vecs = list(categorical_feature_vecs.values())[0]
+            vecs_data = np.array(vecs.reshape(vecs.size), dtype=vecs.dtype, copy=False)
+            ptr_vecs, type_ptr_vecs, _ = _c_float_array(vecs_data)
+
+
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(_LIB.LGBM_DatasetCreateFromMat(
             ptr_data,
@@ -1977,7 +1989,13 @@ class Dataset:
             ctypes.c_int(_C_API_IS_ROW_MAJOR),
             _c_str(params_str),
             ref_dataset,
-            ctypes.byref(self.handle)))
+            ctypes.byref(self.handle),
+            # TODO prepare alternative LGBM_DatasetCreateFromMatWithVecs ?
+            # ptr_vecs,
+            # ctypes.c_int(type_ptr_vecs),
+            # ctypes.c_int32(vecs.shape[0]),
+            # ctypes.c_int32(vecs.shape[1]),
+            ))
         return self
 
     def __init_from_list_np2d(
@@ -2157,7 +2175,7 @@ class Dataset:
                     self._lazy_init(self.data, label=self.label, reference=self.reference,
                                     weight=self.weight, group=self.group,
                                     init_score=self.init_score, predictor=self._predictor,
-                                    feature_name=self.feature_name, params=self.params)
+                                    feature_name=self.feature_name, params=self.params, categorical_feature_vecs=self.categorical_feature_vecs)
                 else:
                     # construct subset
                     used_indices = _list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
@@ -2192,7 +2210,7 @@ class Dataset:
                 self._lazy_init(self.data, label=self.label,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
+                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params, categorical_feature_vecs=self.categorical_feature_vecs)
             if self.free_raw_data:
                 self.data = None
             self.feature_name = self.get_feature_name()
@@ -3010,7 +3028,8 @@ class Booster:
         params: Optional[Dict[str, Any]] = None,
         train_set: Optional[Dataset] = None,
         model_file: Optional[Union[str, Path]] = None,
-        model_str: Optional[str] = None
+        model_str: Optional[str] = None,
+        categorical_feature_vecs: Optional[Dict[str, np.array]] = None
     ):
         """Initialize the Booster.
 

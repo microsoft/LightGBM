@@ -4013,3 +4013,66 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+def test_categorical_embedding():
+    pd = pytest.importorskip('pandas')
+
+    def gen_data():
+        np.random.seed(0)
+        N0 = 9950
+        N1 = 50
+
+        x1 = np.random.randn(N0 + N1)
+        x2 = np.random.randn(N0 + N1)
+        x3 = np.random.randn(N0 + N1)
+
+        K = ['a', 'b', 'c']
+        c1 = np.hstack([np.random.choice(K, N0), np.full(N1, 'aa')])
+
+        X = pd.DataFrame({
+            'x1': x1,
+            'x2': x2,
+            'x3': x3,
+            'c1': c1,
+        })
+        X['c1'] = X['c1'].astype('category')
+
+        def f(x):
+            p = 1.
+            if x['c1'] == 'a':
+                p *= 0.1
+            if x['c1'] == 'b':
+                p *= 0.5
+            if x['c1'] == 'c':
+                p *= 0.3
+            if x['x1'] > 0.12:
+                p *= 0.9
+            if x['x2'] > 0:
+                p *= 0.7
+            if x['x3'] > 0.12:
+                p *= 0.44
+            return np.random.binomial(1, p)
+
+        y = np.array(X.apply(f, axis=1))
+
+        D = 30
+        vecs = np.random.randn(4, D)
+
+        # introduce some noise as well later
+        vecs[X.c1.cat.categories == 'aa'] = vecs[X.c1.cat.categories == 'a'] #+ 0.01 * np.random.randn(D)
+
+        return X, y, vecs
+
+    # categories 'a' and 'aa' are close in vector space. 'a' presented well in dataset, 'aa' presented poorly
+    X, y, vecs = gen_data()
+    ds = lgb.Dataset(X, y, categorical_feature_vecs={'c1': vecs})
+    bst = lgb.train({}, ds)
+
+    X_a = X[X['c1'] == 'a']
+    pred_a = bst.predict(X_a)
+
+    X_a['c1'] = 'aa'
+    X_a['c1'] = X_a['c1'].astype('category')
+    pred_aa = bst.predict(X_a)
+
+    np.testing.assert_allclose(pred_a, pred_aa)
