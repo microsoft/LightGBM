@@ -251,7 +251,7 @@ def train(
 
         booster.update(fobj=fobj)
 
-        evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []  # type: ignore[assignment]
+        evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:
