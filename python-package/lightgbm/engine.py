@@ -12,7 +12,7 @@ import numpy as np
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
                     _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction,
-                    _LGBM_FeatureNameConfiguration, _log_warning)
+                    _LGBM_FeatureNameConfiguration, _log_warning, _LGBM_BoosterEvalMethodResultType)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 __all__ = [
@@ -251,7 +251,7 @@ def train(
 
         booster.update(fobj=fobj)
 
-        evaluation_result_list = []
+        evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []  # type: ignore[assignment]
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:
