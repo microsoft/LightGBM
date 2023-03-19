@@ -25,32 +25,50 @@ __all__ = [
 ]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
+    # f(labels, preds)
     Callable[
         [Optional[np.ndarray], np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
+    # f(labels, preds, weights)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
+    # f(labels, preds, weights, group)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
+    # f(labels, preds)
     Callable[
         [Optional[np.ndarray], np.ndarray],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
+        _LGBM_EvalFunctionResultType
+    ],
+    Callable[
+        [Optional[np.ndarray], np.ndarray],
+        List[_LGBM_EvalFunctionResultType]
+    ],
+    # f(labels, preds, weights)
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
+        List[_LGBM_EvalFunctionResultType]
+    ],
+    # f(labels, preds, weights, group)
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
-    ],
+        List[_LGBM_EvalFunctionResultType]
+    ]
 ]
 _LGBM_ScikitEvalMetricType = Union[
     str,
@@ -811,7 +829,7 @@ class LGBMModel(_LGBMModelBase):
             num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            feval=eval_metrics_callable,
+            feval=eval_metrics_callable,  # type: ignore[arg-type]
             init_model=init_model,
             feature_name=feature_name,
             callbacks=callbacks
