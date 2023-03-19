@@ -211,7 +211,7 @@ def train(
     if "early_stopping_round" in params:
         callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
@@ -702,7 +702,7 @@ def cv(
     if "early_stopping_round" in params:
         callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
