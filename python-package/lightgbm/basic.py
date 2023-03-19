@@ -4414,7 +4414,7 @@ class Booster:
         model = self.dump_model()
         feature_names = model.get('feature_names')
         tree_infos = model['tree_info']
-        values = []
+        values: List[float] = []
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 
