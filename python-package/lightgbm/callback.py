@@ -254,10 +254,10 @@ class _EarlyStoppingCallback:
         self._reset_storages()
 
     def _reset_storages(self) -> None:
-        self.best_score = []
-        self.best_iter = []
-        self.best_score_list = []
-        self.cmp_op = []
+        self.best_score: List[float] = []
+        self.best_iter: List[int] = []
+        self.best_score_list: List[Union[_EvalResultTuple, None]] = []
+        self.cmp_op: List[Callable[[float, float], bool]] = []
         self.first_metric = ''
 
     def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:

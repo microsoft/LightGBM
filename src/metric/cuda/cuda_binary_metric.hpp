@@ -35,7 +35,7 @@ class CUDABinaryLoglossMetric: public CUDABinaryMetricInterface<BinaryLoglossMet
 
   virtual ~CUDABinaryLoglossMetric() {}
 
-  __device__ static double MetricOnPointCUDA(label_t label, double score) {
+  __device__ static double MetricOnPointCUDA(label_t label, double score, const double /*param*/) {
     // score should have been converted to probability
     if (label <= 0) {
       if (1.0f - score > kEpsilon) {
