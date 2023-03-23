@@ -612,6 +612,10 @@ struct Config {
   // desc = **Note**: can be used only with ``device_type = cpu``
   bool quant_train_renew_leaf = false;
 
+  // [no-save]
+  // desc = whether to use stochastic rounding in gradient quantization
+  bool stochastic_rounding = true;
+
   #ifndef __NVCC__
   #pragma endregion
 

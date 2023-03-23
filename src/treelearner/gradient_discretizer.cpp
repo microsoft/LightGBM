@@ -7,6 +7,10 @@
 #include "gradient_discretizer.hpp"
 #include <LightGBM/network.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 namespace LightGBM {
 
 void GradientDiscretizer::Init(
@@ -100,32 +104,54 @@ void GradientDiscretizer::DiscretizeGradients(
   if (is_constant_hessian_) {
     hessian_scale_ = max_hessian_abs_;
   } else {
-    hessian_scale_ = max_hessian_abs_ / static_cast<double>(2);
+    hessian_scale_ = max_hessian_abs_ / static_cast<double>(num_grad_quant_bins_);
   }
   inverse_gradient_scale_ = 1.0f / gradient_scale_;
   inverse_hessian_scale_ = 1.0f / hessian_scale_;
 
   const int random_values_use_start = random_values_use_start_dist_(random_values_use_start_eng_);
   int8_t* discretized_int8 = discretized_gradients_and_hessians_vector_.data();
-  if (is_constant_hessian_) {
-    #pragma omp parallel for schedule(static) num_threads(num_threads)
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const double gradient = input_gradients[i];
-      const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
-      discretized_int8[2 * i + 1] = gradient >= 0.0f ?
-        static_cast<int8_t>(gradient * inverse_gradient_scale_ + gradient_random_values_[random_value_pos]) :
-        static_cast<int8_t>(gradient * inverse_gradient_scale_ - gradient_random_values_[random_value_pos]);
-      discretized_int8[2 * i] = static_cast<int8_t>(1);
+  if (stochastic_rounding_) {
+    if (is_constant_hessian_) {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const double gradient = input_gradients[i];
+        const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
+        discretized_int8[2 * i + 1] = gradient >= 0.0f ?
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ + gradient_random_values_[random_value_pos]) :
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ - gradient_random_values_[random_value_pos]);
+        discretized_int8[2 * i] = static_cast<int8_t>(1);
+      }
+    } else {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const double gradient = input_gradients[i];
+        const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
+        discretized_int8[2 * i + 1] = gradient >= 0.0f ?
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ + gradient_random_values_[random_value_pos]) :
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ - gradient_random_values_[random_value_pos]);
+        discretized_int8[2 * i] = static_cast<int8_t>(input_hessians[i] * inverse_hessian_scale_ + hessian_random_values_[random_value_pos]);
+      }
     }
   } else {
-    #pragma omp parallel for schedule(static) num_threads(num_threads)
-    for (data_size_t i = 0; i < num_data; ++i) {
-      const double gradient = input_gradients[i];
-      const data_size_t random_value_pos = (i + random_values_use_start) % num_data;
-      discretized_int8[2 * i + 1] = gradient >= 0.0f ?
-        static_cast<int8_t>(gradient * inverse_gradient_scale_ + gradient_random_values_[random_value_pos]) :
-        static_cast<int8_t>(gradient * inverse_gradient_scale_ - gradient_random_values_[random_value_pos]);
-      discretized_int8[2 * i] = static_cast<int8_t>(input_hessians[i] * inverse_hessian_scale_ + hessian_random_values_[random_value_pos]);
+    if (is_constant_hessian_) {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const double gradient = input_gradients[i];
+        discretized_int8[2 * i + 1] = gradient >= 0.0f ?
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ + 0.5) :
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ - 0.5);
+        discretized_int8[2 * i] = static_cast<int8_t>(1);
+      }
+    } else {
+      #pragma omp parallel for schedule(static) num_threads(num_threads)
+      for (data_size_t i = 0; i < num_data; ++i) {
+        const double gradient = input_gradients[i];
+        discretized_int8[2 * i + 1] = gradient >= 0.0f ?
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ + 0.5) :
+          static_cast<int8_t>(gradient * inverse_gradient_scale_ - 0.5);
+        discretized_int8[2 * i] = static_cast<int8_t>(input_hessians[i] * inverse_hessian_scale_ + 0.5);
+      }
     }
   }
 }
@@ -189,7 +215,7 @@ void GradientDiscretizer::RenewIntGradTreeOutput(
       const double sum_gradient = global_leaf_grad_hess_stats[2 * leaf_id];
       const double sum_hessian = global_leaf_grad_hess_stats[2 * leaf_id + 1];
       const double leaf_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, false>(
-        sum_gradient, sum_hessian, 
+        sum_gradient, sum_hessian,
         config->lambda_l1, config->lambda_l2, config->max_delta_step, config->path_smooth,
         leaf_index_to_global_num_data(leaf_id), 0.0f);
       tree->SetLeafOutput(leaf_id, leaf_output);
@@ -207,7 +233,7 @@ void GradientDiscretizer::RenewIntGradTreeOutput(
         sum_gradient += grad;
         sum_hessian += hess;
       }
-      const double leaf_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, false>(sum_gradient, sum_hessian, 
+      const double leaf_output = FeatureHistogram::CalculateSplittedLeafOutput<true, true, false>(sum_gradient, sum_hessian,
         config->lambda_l1, config->lambda_l2, config->max_delta_step, config->path_smooth,
         leaf_cnt, 0.0f);
       tree->SetLeafOutput(leaf_id, leaf_output);

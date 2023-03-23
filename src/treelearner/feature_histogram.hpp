@@ -1313,7 +1313,6 @@ class FeatureHistogram {
             (static_cast<PACKED_HIST_ACC_T>(grad_and_hess & 0x0000ffff))) :
             ((static_cast<PACKED_HIST_ACC_T>(static_cast<HIST_BIN_T>(grad_and_hess >> HIST_BITS_BIN)) << HIST_BITS_ACC) |
             (static_cast<PACKED_HIST_ACC_T>(grad_and_hess & 0x00000000ffffffff)));
-          //Log::Warning("HIST_BITS_ACC = %d, HIST_BITS_BIN = %d, grad_and_hess_acc = %ld, grad_and_hess = %d", HIST_BITS_ACC, HIST_BITS_BIN, grad_and_hess_acc, grad_and_hess);
           sum_right_gradient_and_hessian += grad_and_hess_acc;
         } else {
           sum_right_gradient_and_hessian += grad_and_hess;

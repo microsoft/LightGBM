@@ -72,7 +72,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_->Init();
   }
 
-  gradient_discretizer_.reset(new GradientDiscretizer(config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian));
+  gradient_discretizer_.reset(new GradientDiscretizer(config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
   gradient_discretizer_->Init(num_data_, config_->num_leaves, num_features_, train_data_);
 }
 

@@ -10,7 +10,9 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/tree.h>
 #include <LightGBM/utils/threading.h>
+
 #include <random>
+#include <vector>
 
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
@@ -19,12 +21,13 @@ namespace LightGBM {
 
 class GradientDiscretizer {
  public:
-  GradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed, bool is_constant_hessian) {
+  GradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed, bool is_constant_hessian, const bool stochastic_rounding) {
     num_grad_quant_bins_ = num_grad_quant_bins;
     iter_ = 0;
     num_trees_ = num_trees;
     random_seed_ = random_seed;
     is_constant_hessian_ = is_constant_hessian;
+    stochastic_rounding_ = stochastic_rounding;
   }
 
   virtual void DiscretizeGradients(
@@ -78,6 +81,7 @@ class GradientDiscretizer {
   int iter_;
   int num_trees_;
   int random_seed_;
+  bool stochastic_rounding_;
 
   std::vector<double> gradient_random_values_;
   std::vector<double> hessian_random_values_;
@@ -104,6 +108,6 @@ class GradientDiscretizer {
   std::vector<std::vector<int32_t>> change_hist_bits_buffer_;
 };
 
-}
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_TREE_LEARNER_GRADIENT_DISCRETIZER_HPP_
