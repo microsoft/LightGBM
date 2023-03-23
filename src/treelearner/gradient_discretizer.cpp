@@ -63,7 +63,7 @@ void GradientDiscretizer::DiscretizeGradients(
   const score_t* input_hessians) {
   double max_gradient = std::fabs(input_gradients[0]);
   double max_hessian = std::fabs(input_hessians[0]);
-  int num_threads = OMP_NUM_THREADS();
+  const int num_threads = OMP_NUM_THREADS();
   std::vector<double> thread_max_gradient(num_threads, max_gradient);
   std::vector<double> thread_max_hessian(num_threads, max_hessian);
   Threading::For<data_size_t>(0, num_data, 1024,
@@ -105,7 +105,6 @@ void GradientDiscretizer::DiscretizeGradients(
   inverse_gradient_scale_ = 1.0f / gradient_scale_;
   inverse_hessian_scale_ = 1.0f / hessian_scale_;
 
-  const int num_threads = OMP_NUM_THREADS();
   const int random_values_use_start = random_values_use_start_dist_(random_values_use_start_eng_);
   int8_t* discretized_int8 = discretized_gradients_and_hessians_vector_.data();
   if (is_constant_hessian_) {

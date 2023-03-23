@@ -81,29 +81,29 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
                                        bool is_first_time) {
   if (is_first_time) {
     if (config_->use_quantized_grad) {
-      share_state_.reset(dataset->GetShareStates<true, 32, int8_t, int32_t>(
-        gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr,
+      share_state_.reset(dataset->GetShareStates<true, 32>(
+        reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-        config_->force_col_wise, config_->force_row_wise));
+        config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins));
     } else {
-      share_state_.reset(dataset->GetShareStates<false, 0, score_t, hist_t>(
+      share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(),
           col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-          config_->force_col_wise, config_->force_row_wise));
+          config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins));
     }
   } else {
     CHECK_NOTNULL(share_state_);
     // cannot change is_hist_col_wise during training
     if (config_->use_quantized_grad) {
-      share_state_.reset(dataset->GetShareStates<true, 32, int8_t, int32_t>(
-          gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr, col_sampler_.is_feature_used_bytree(),
-          is_constant_hessian, share_state_->is_col_wise,
-          !share_state_->is_col_wise));
+      share_state_.reset(dataset->GetShareStates<true, 32>(
+          reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
+          col_sampler_.is_feature_used_bytree(), is_constant_hessian,
+          share_state_->is_col_wise, !share_state_->is_col_wise, config_->num_grad_quant_bins));
     } else {
-      share_state_.reset(dataset->GetShareStates<false, 0, score_t, hist_t>(
+      share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
           is_constant_hessian, share_state_->is_col_wise,
-          !share_state_->is_col_wise));
+          !share_state_->is_col_wise, config_->num_grad_quant_bins));
     }
   }
   CHECK_NOTNULL(share_state_);
@@ -401,45 +401,51 @@ void SerialTreeLearner::ConstructHistograms(
   // construct smaller leaf
   if (config_->use_quantized_grad) {
     const uint8_t smaller_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf(smaller_leaf_splits_->leaf_index());
+    hist_t* ptr_smaller_leaf_hist_data =
+        smaller_leaf_num_bits <= 16 ?
+        reinterpret_cast<hist_t*>(smaller_leaf_histogram_array_[0].RawDataInt16() - kHistOffset) :
+        reinterpret_cast<hist_t*>(smaller_leaf_histogram_array_[0].RawDataInt32() - kHistOffset);
+    #define SMALLER_LEAF_ARGS \
+      is_feature_used, smaller_leaf_splits_->data_indices(), \
+      smaller_leaf_splits_->num_data_in_leaf(), \
+      reinterpret_cast<const score_t*>(gradient_discretizer_->discretized_gradients_and_hessians()), \
+      nullptr, \
+      reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), \
+      nullptr, \
+      share_state_.get(), \
+      reinterpret_cast<hist_t*>(ptr_smaller_leaf_hist_data)
     if (smaller_leaf_num_bits <= 16) {
-      int16_t* ptr_smaller_leaf_hist_data =
-        smaller_leaf_histogram_array_[0].RawDataInt16() - kHistOffset;
-      train_data_->ConstructHistograms<true, 16, int8_t, int16_t>(
-        is_feature_used, smaller_leaf_splits_->data_indices(),
-        smaller_leaf_splits_->num_data_in_leaf(), gradient_discretizer_->discretized_gradients_and_hessians(), nullptr,
-        gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr, share_state_.get(),
-        ptr_smaller_leaf_hist_data);
-      if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
-        int16_t* ptr_larger_leaf_hist_data =
-          larger_leaf_histogram_array_[0].RawDataInt16() - kHistOffset;
-        train_data_->ConstructHistograms<true, 16, int8_t, int16_t>(
-          is_feature_used, larger_leaf_splits_->data_indices(),
-          larger_leaf_splits_->num_data_in_leaf(), gradient_discretizer_->discretized_gradients_and_hessians(), nullptr,
-          gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr, share_state_.get(),
-          ptr_larger_leaf_hist_data);
-      }
+      train_data_->ConstructHistograms<true, 16>(SMALLER_LEAF_ARGS);
     } else {
-      int32_t* ptr_smaller_leaf_hist_data =
-        smaller_leaf_histogram_array_[0].RawDataInt32() - kHistOffset;
-      train_data_->ConstructHistograms<true, 32, int8_t, int32_t>(
-        is_feature_used, smaller_leaf_splits_->data_indices(),
-        smaller_leaf_splits_->num_data_in_leaf(), gradient_discretizer_->discretized_gradients_and_hessians(), nullptr,
-        gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr, share_state_.get(),
-        ptr_smaller_leaf_hist_data);
-      if (larger_leaf_histogram_array_ != nullptr && !use_subtract) {
-        int32_t* ptr_larger_leaf_hist_data =
-          larger_leaf_histogram_array_[0].RawDataInt32() - kHistOffset;
-        train_data_->ConstructHistograms<true, 32, int8_t, int32_t>(
-          is_feature_used, larger_leaf_splits_->data_indices(),
-          larger_leaf_splits_->num_data_in_leaf(), gradient_discretizer_->discretized_gradients_and_hessians(), nullptr,
-          gradient_discretizer_->ordered_int_gradients_and_hessians(), nullptr, share_state_.get(),
-          ptr_larger_leaf_hist_data);
+      train_data_->ConstructHistograms<true, 32>(SMALLER_LEAF_ARGS);
+    }
+    #undef SMALLER_LEAF_ARGS
+    if (larger_leaf_histogram_array_ && !use_subtract) {
+      const uint8_t larger_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf(larger_leaf_splits_->leaf_index());
+      hist_t* ptr_larger_leaf_hist_data =
+        larger_leaf_num_bits <= 16 ?
+        reinterpret_cast<hist_t*>(larger_leaf_histogram_array_[0].RawDataInt16() - kHistOffset) :
+        reinterpret_cast<hist_t*>(larger_leaf_histogram_array_[0].RawDataInt32() - kHistOffset);
+      #define LARGER_LEAF_ARGS \
+        is_feature_used, larger_leaf_splits_->data_indices(), \
+        larger_leaf_splits_->num_data_in_leaf(), \
+        reinterpret_cast<const score_t*>(gradient_discretizer_->discretized_gradients_and_hessians()), \
+        nullptr, \
+        reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), \
+        nullptr, \
+        share_state_.get(), \
+        reinterpret_cast<hist_t*>(ptr_larger_leaf_hist_data)
+      if (larger_leaf_num_bits <= 16) {
+        train_data_->ConstructHistograms<true, 16>(LARGER_LEAF_ARGS);
+      } else {
+        train_data_->ConstructHistograms<true, 32>(LARGER_LEAF_ARGS);
       }
+      #undef LARGER_LEAF_ARGS
     }
   } else {
     hist_t* ptr_smaller_leaf_hist_data =
         smaller_leaf_histogram_array_[0].RawData() - kHistOffset;
-    train_data_->ConstructHistograms<false, 0, score_t, hist_t>(
+    train_data_->ConstructHistograms<false, 0>(
         is_feature_used, smaller_leaf_splits_->data_indices(),
         smaller_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
         ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
@@ -448,7 +454,7 @@ void SerialTreeLearner::ConstructHistograms(
       // construct larger leaf
       hist_t* ptr_larger_leaf_hist_data =
           larger_leaf_histogram_array_[0].RawData() - kHistOffset;
-      train_data_->ConstructHistograms<false, 0, score_t, hist_t>(
+      train_data_->ConstructHistograms<false, 0>(
           is_feature_used, larger_leaf_splits_->data_indices(),
           larger_leaf_splits_->num_data_in_leaf(), gradients_, hessians_,
           ordered_gradients_.data(), ordered_hessians_.data(), share_state_.get(),
