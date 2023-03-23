@@ -92,10 +92,16 @@ void MultiValBinWrapper::HistMove(const std::vector<hist_t,
 template void MultiValBinWrapper::HistMove<false, 0, 0>(const std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
 
+template void MultiValBinWrapper::HistMove<false, 0, 8>(const std::vector<hist_t,
+  Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
+
 template void MultiValBinWrapper::HistMove<true, 16, 8>(const std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
 
 template void MultiValBinWrapper::HistMove<true, 16, 16>(const std::vector<hist_t,
+  Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
+
+template void MultiValBinWrapper::HistMove<true, 32, 8>(const std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>& hist_buf);
 
 template void MultiValBinWrapper::HistMove<true, 32, 32>(const std::vector<hist_t,
@@ -180,10 +186,16 @@ void MultiValBinWrapper::HistMerge(std::vector<hist_t,
 template void MultiValBinWrapper::HistMerge<false, 0, 0>(std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf);
 
+template void MultiValBinWrapper::HistMerge<false, 0, 8>(std::vector<hist_t,
+  Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf);
+
 template void MultiValBinWrapper::HistMerge<true, 16, 8>(std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf);
 
 template void MultiValBinWrapper::HistMerge<true, 16, 16>(std::vector<hist_t,
+  Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf);
+
+template void MultiValBinWrapper::HistMerge<true, 32, 8>(std::vector<hist_t,
   Common::AlignmentAllocator<hist_t, kAlignedSize>>* hist_buf);
 
 template void MultiValBinWrapper::HistMerge<true, 32, 32>(std::vector<hist_t,
