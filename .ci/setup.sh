@@ -23,7 +23,7 @@ if [[ $OS_NAME == "macos" ]]; then
         -o miniforge.sh \
         https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
-    if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+    if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
@@ -42,13 +42,14 @@ else  # Linux
             iputils-ping \
             jq \
             libcurl4 \
-            libicu66 \
-            libssl1.1 \
+            libicu-dev \
+            libssl-dev \
             libunwind8 \
             locales \
+            locales-all \
             netcat \
             unzip \
-            zip
+            zip || exit -1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
@@ -56,12 +57,15 @@ else  # Linux
         fi
 
         export LANG="en_US.UTF-8"
+        sudo update-locale LANG=${LANG}
         export LC_ALL="${LANG}"
-        sudo locale-gen ${LANG}
-        sudo update-locale
+    fi
+    if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
+        sudo apt-get install --no-install-recommends -y \
+            libomp-dev
     fi
     if [[ $TASK == "mpi" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libopenmpi-dev \
@@ -74,11 +78,11 @@ else  # Linux
         fi
     fi
     if [[ $TASK == "gpu" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
-            sudo add-apt-repository ppa:mhier/libboost-latest -y
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libboost1.74-dev \
+                libboost-filesystem1.74-dev \
                 ocl-icd-opencl-dev
         else  # in manylinux image
             sudo yum update -y
@@ -90,38 +94,10 @@ else  # Linux
         fi
     fi
     if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
-        if [[ $IN_UBUNTU_LATEST_CONTAINER == "true" ]]; then
+        if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 pocl-opencl-icd
-        elif [[ $(uname -m) == "aarch64" ]]; then
-            yum install -y \
-                epel-release \
-                gcc-c++ \
-                hwloc-devel \
-                sudo
-            yum install -y \
-                llvm-toolset-7.0-clang-devel \
-                llvm-toolset-7.0-llvm-devel \
-                ocl-icd-devel
-            git clone --depth 1 --branch v1.8 https://github.com/pocl/pocl.git
-            cmake \
-              -B pocl/build \
-              -S pocl \
-              -DCMAKE_BUILD_TYPE=release \
-              -DCMAKE_C_COMPILER=/usr/bin/gcc \
-              -DCMAKE_CXX_COMPILER=/usr/bin/g++ \
-              -DCMAKE_C_FLAGS=-std=gnu99 \
-              -DPOCL_INSTALL_ICD_VENDORDIR=/etc/OpenCL/vendors \
-              -DPOCL_DEBUG_MESSAGES=OFF \
-              -DINSTALL_OPENCL_HEADERS=OFF \
-              -DENABLE_SPIR=OFF \
-              -DENABLE_POCLCC=OFF \
-              -DENABLE_TESTS=OFF \
-              -DENABLE_EXAMPLES=OFF \
-              -DLLC_HOST_CPU=generic
-            cmake --build pocl/build -j4
-            sudo cmake --install pocl/build
         elif [[ $(uname -m) == "x86_64" ]]; then
             sudo yum update -y
             sudo yum install -y \
@@ -130,7 +106,7 @@ else  # Linux
             || exit -1
         fi
     fi
-    if [[ $TASK == "cuda" || $TASK == "cuda_exp" ]]; then
+    if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
         apt-get update
         apt-get install --no-install-recommends -y \

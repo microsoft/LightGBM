@@ -62,5 +62,5 @@ Imports:
     parallel,
     utils
 SystemRequirements:
-    C++11
-RoxygenNote: 7.2.1
+    ~~CXXSTD~~
+RoxygenNote: 7.2.3

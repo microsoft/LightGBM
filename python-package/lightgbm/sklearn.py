@@ -7,14 +7,22 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_EvalFunctionResultType,
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
                     _log_warning)
-from .callback import record_evaluation
+from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
                      dt_DataTable, pd_DataFrame)
 from .engine import train
+
+__all__ = [
+    'LGBMClassifier',
+    'LGBMModel',
+    'LGBMRanker',
+    'LGBMRegressor',
+]
 
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
@@ -171,7 +179,11 @@ class _EvalFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[str, float, bool]:
+    def __call__(
+        self,
+        preds: np.ndarray,
+        dataset: Dataset
+    ) -> Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -382,7 +394,6 @@ class LGBMModel(_LGBMModelBase):
         boosting_type : str, optional (default='gbdt')
             'gbdt', traditional Gradient Boosting Decision Tree.
             'dart', Dropouts meet Multiple Additive Regression Trees.
-            'goss', Gradient-based One-Side Sampling.
             'rf', Random Forest.
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
@@ -513,18 +524,18 @@ class LGBMModel(_LGBMModelBase):
         self.n_jobs = n_jobs
         self.importance_type = importance_type
         self._Booster: Optional[Booster] = None
-        self._evals_result = None
-        self._best_score = None
-        self._best_iteration = None
+        self._evals_result: _EvalResultDict = {}
+        self._best_score: _LGBM_BoosterBestScoreType = {}
+        self._best_iteration: int = -1
         self._other_params: Dict[str, Any] = {}
         self._objective = objective
         self.class_weight = class_weight
-        self._class_weight = None
-        self._class_map = None
-        self._n_features = None
-        self._n_features_in = None
-        self._classes = None
-        self._n_classes = None
+        self._class_weight: Optional[Union[Dict, str]] = None
+        self._class_map: Optional[Dict[int, int]] = None
+        self._n_features: int = -1
+        self._n_features_in: int = -1
+        self._classes: Optional[np.ndarray] = None
+        self._n_classes: int = -1
         self.set_params(**kwargs)
 
     def _more_tags(self) -> Dict[str, Any]:
@@ -630,7 +641,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
-        if self._n_classes is not None and self._n_classes > 2:
+        if self._n_classes > 2:
             for alias in _ConfigAliases.get('num_class'):
                 params.pop(alias, None)
             params['num_class'] = self._n_classes
@@ -698,11 +709,11 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
-    ):
+    ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
 
@@ -745,7 +756,7 @@ class LGBMModel(_LGBMModelBase):
                             init_score=init_score, categorical_feature=categorical_feature,
                             params=params)
 
-        valid_sets = []
+        valid_sets: List[Dataset] = []
         if eval_set is not None:
 
             def _get_meta_data(collection, name, i):
@@ -791,7 +802,7 @@ class LGBMModel(_LGBMModelBase):
         else:
             callbacks = copy.copy(callbacks)  # don't use deepcopy here to allow non-serializable objects
 
-        evals_result = {}
+        evals_result: _EvalResultDict = {}
         callbacks.append(record_evaluation(evals_result))
 
         self._Booster = train(
@@ -870,9 +881,11 @@ class LGBMModel(_LGBMModelBase):
         predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
-        return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
-                                     **predict_params)
+        return self._Booster.predict(  # type: ignore[union-attr]
+            X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
+            pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
+            **predict_params
+        )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
@@ -898,7 +911,7 @@ class LGBMModel(_LGBMModelBase):
         return self._n_features_in
 
     @property
-    def best_score_(self):
+    def best_score_(self) -> _LGBM_BoosterBestScoreType:
         """:obj:`dict`: The best score of fitted model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
@@ -941,21 +954,21 @@ class LGBMModel(_LGBMModelBase):
         return self._Booster.current_iteration()  # type: ignore
 
     @property
-    def booster_(self):
+    def booster_(self) -> Booster:
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
-        return self._Booster
+        return self._Booster  # type: ignore[return-value]
 
     @property
-    def evals_result_(self):
+    def evals_result_(self) -> _EvalResultDict:
         """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
         return self._evals_result
 
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_features]: The feature importances (the higher, the more important).
 
         .. note::
@@ -965,20 +978,20 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
-        return self._Booster.feature_importance(importance_type=self.importance_type)
+        return self._Booster.feature_importance(importance_type=self.importance_type)  # type: ignore[union-attr]
 
     @property
-    def feature_name_(self):
-        """:obj:`array` of shape = [n_features]: The names of features."""
+    def feature_name_(self) -> List[str]:
+        """:obj:`list` of shape = [n_features]: The names of features."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
-        return self._Booster.feature_name()
+        return self._Booster.feature_name()  # type: ignore[union-attr]
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -989,11 +1002,11 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         eval_sample_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
             X,
@@ -1024,7 +1037,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1036,11 +1049,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         eval_class_weight=None,
         eval_init_score=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
         _LGBMCheckClassificationTargets(y)
@@ -1051,35 +1064,42 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
         self._classes = self._le.classes_
-        self._n_classes = len(self._classes)
+        self._n_classes = len(self._classes)  # type: ignore[arg-type]
 
+        # adjust eval metrics to match whether binary or multiclass
+        # classification is being performed
         if not callable(eval_metric):
-            if isinstance(eval_metric, (str, type(None))):
-                eval_metric = [eval_metric]
-            if self._n_classes > 2:
-                for index, metric in enumerate(eval_metric):
-                    if metric in {'logloss', 'binary_logloss'}:
-                        eval_metric[index] = "multi_logloss"
-                    elif metric in {'error', 'binary_error'}:
-                        eval_metric[index] = "multi_error"
+            if isinstance(eval_metric, list):
+                eval_metric_list = eval_metric
+            elif isinstance(eval_metric, str):
+                eval_metric_list = [eval_metric]
             else:
-                for index, metric in enumerate(eval_metric):
+                eval_metric_list = []
+            if self._n_classes > 2:
+                for index, metric in enumerate(eval_metric_list):
+                    if metric in {'logloss', 'binary_logloss'}:
+                        eval_metric_list[index] = "multi_logloss"
+                    elif metric in {'error', 'binary_error'}:
+                        eval_metric_list[index] = "multi_error"
+            else:
+                for index, metric in enumerate(eval_metric_list):
                     if metric in {'logloss', 'multi_logloss'}:
-                        eval_metric[index] = 'binary_logloss'
+                        eval_metric_list[index] = 'binary_logloss'
                     elif metric in {'error', 'multi_error'}:
-                        eval_metric[index] = 'binary_error'
+                        eval_metric_list[index] = 'binary_error'
+            eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
-        valid_sets = None
+        valid_sets: Optional[List[Tuple]] = None
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
-            valid_sets = [None] * len(eval_set)
-            for i, (valid_x, valid_y) in enumerate(eval_set):
+            valid_sets = []
+            for valid_x, valid_y in eval_set:
                 if valid_x is X and valid_y is y:
-                    valid_sets[i] = (valid_x, _y)
+                    valid_sets.append((valid_x, _y))
                 else:
-                    valid_sets[i] = (valid_x, self._le.transform(valid_y))
+                    valid_sets.append((valid_x, self._le.transform(valid_y)))
 
         super().fit(
             X,
@@ -1117,9 +1137,16 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any
     ):
         """Docstring is inherited from the LGBMModel."""
-        result = self.predict_proba(X, raw_score, start_iteration, num_iteration,
-                                    pred_leaf, pred_contrib, validate_features,
-                                    **kwargs)
+        result = self.predict_proba(
+            X=X,
+            raw_score=raw_score,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            validate_features=validate_features,
+            **kwargs
+        )
         if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
         else:
@@ -1140,13 +1167,22 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         **kwargs: Any
     ):
         """Docstring is set after definition, using a template."""
-        result = super().predict(X, raw_score, start_iteration, num_iteration, pred_leaf, pred_contrib, validate_features, **kwargs)
+        result = super().predict(
+            X=X,
+            raw_score=raw_score,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            validate_features=validate_features,
+            **kwargs
+        )
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
             _log_warning("Cannot compute class probabilities or labels "
                          "due to the usage of customized objective function.\n"
                          "Returning raw scores instead.")
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
+        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1. - result, result)).transpose()
@@ -1161,11 +1197,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     )
 
     @property
-    def classes_(self):
+    def classes_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
-        return self._classes
+        return self._classes  # type: ignore[return-value]
 
     @property
     def n_classes_(self) -> int:
@@ -1185,7 +1221,7 @@ class LGBMRanker(LGBMModel):
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
 
-    def fit(
+    def fit(  # type: ignore[override]
         self,
         X,
         y,
@@ -1198,12 +1234,12 @@ class LGBMRanker(LGBMModel):
         eval_init_score=None,
         eval_group=None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        eval_at: Union[List[int], Tuple[int]] = (1, 2, 3, 4, 5),
-        feature_name='auto',
-        categorical_feature='auto',
-        callbacks=None,
+        eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        callbacks: Optional[List[Callable]] = None,
         init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
-    ):
+    ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
         if group is None:

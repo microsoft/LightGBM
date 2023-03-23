@@ -104,7 +104,7 @@ class BinMapper {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+  void SaveBinaryToFile(BinaryWriter* writer) const;
 
   /*!
   * \brief Mapping bin into feature value
@@ -286,7 +286,7 @@ class Bin {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  virtual void SaveBinaryToFile(const VirtualFileWriter* writer) const = 0;
+  virtual void SaveBinaryToFile(BinaryWriter* writer) const = 0;
 
   /*!
   * \brief Load from memory
@@ -480,13 +480,13 @@ class MultiValBin {
 
   virtual MultiValBin* Clone() = 0;
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   virtual const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
     const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const = 0;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

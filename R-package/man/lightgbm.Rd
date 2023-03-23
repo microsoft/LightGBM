@@ -16,7 +16,7 @@ lightgbm(
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
-  objective = "regression",
+  objective = "auto",
   init_score = NULL,
   num_threads = NULL,
   ...
@@ -56,9 +56,18 @@ set to the iteration number of the best iteration.}
 \code{save} or \code{saveRDS} (see section "Model serialization").}
 
 \item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
-For a list of accepted objectives, see
-\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
-the "objective" item of the "Parameters" section of the documentation}.}
+                 For a list of accepted objectives, see
+                 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+                 the "objective" item of the "Parameters" section of the documentation}.
+
+                 If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+                 be determined according to what is passed for \code{label}:\itemize{
+                 \item If passing a factor with two variables, will use objective \code{"binary"}.
+                 \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+                 (note that parameter \code{num_class} in this case will also be determined automatically from
+                 \code{label}).
+                 \item Otherwise, will use objective \code{"regression"}.
+                 }}
 
 \item{init_score}{initial score is the base prediction lightgbm will boost from}
 

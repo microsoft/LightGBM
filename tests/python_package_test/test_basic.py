@@ -48,7 +48,7 @@ def test_basic(tmp_path):
     assert bst.current_iteration() == 20
     assert bst.num_trees() == 20
     assert bst.num_model_per_iteration() == 1
-    if getenv('TASK', '') != 'cuda_exp':
+    if getenv('TASK', '') != 'cuda':
         assert bst.lower_bound() == pytest.approx(-2.9040190126976606)
         assert bst.upper_bound() == pytest.approx(3.3182142872462883)
 
@@ -374,6 +374,29 @@ def test_add_features_from_different_sources():
             assert d1.get_data().shape == (n_row, n_col * idx)
             res_feature_names += [f'D{idx}_{name}' for name in names]
             assert d1.feature_name == res_feature_names
+
+
+def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys):
+
+    arr_a = np.zeros((100, 1), dtype=np.float32)
+    arr_b = np.random.normal(size=(100, 5))
+
+    dataset_a = lgb.Dataset(arr_a).construct()
+    expected_msg = (
+        '[LightGBM] [Warning] There are no meaningful features which satisfy '
+        'the provided configuration. Decreasing Dataset parameters min_data_in_bin '
+        'or min_data_in_leaf and re-constructing Dataset might resolve this warning.\n'
+    )
+    log_lines = capsys.readouterr().out
+    assert expected_msg in log_lines
+
+    dataset_b = lgb.Dataset(arr_b).construct()
+
+    original_handle = dataset_a.handle.value
+    dataset_a.add_features_from(dataset_b)
+    assert dataset_a.num_feature() == 6
+    assert dataset_a.num_data() == 100
+    assert dataset_a.handle.value == original_handle
 
 
 def test_cegb_affects_behavior(tmp_path):
@@ -770,3 +793,15 @@ def test_feature_num_bin_with_max_bin_by_feature():
     ds = lgb.Dataset(X, params={'max_bin_by_feature': max_bin_by_feature}).construct()
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     np.testing.assert_equal(actual_num_bins, max_bin_by_feature)
+
+
+def test_set_leaf_output():
+    X, y = load_breast_cancer(return_X_y=True)
+    ds = lgb.Dataset(X, y)
+    bst = lgb.Booster({'num_leaves': 2}, ds)
+    bst.update()
+    y_pred = bst.predict(X)
+    for leaf_id in range(2):
+        leaf_output = bst.get_leaf_output(tree_id=0, leaf_id=leaf_id)
+        bst.set_leaf_output(tree_id=0, leaf_id=leaf_id, value=leaf_output + 1)
+    np.testing.assert_allclose(bst.predict(X), y_pred + 1)
