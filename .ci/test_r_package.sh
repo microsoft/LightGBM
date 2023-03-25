@@ -77,14 +77,13 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-    brew update-reset && brew update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install automake || exit -1
     fi
     brew install \
         checkbashisms \
         qpdf || exit -1
-    brew install --cask basictex || exit -1
+    brew install basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
     sudo tlmgr --verify-repo=none update --self || exit -1
     sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit -1
