@@ -94,8 +94,8 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
   }
 
   #ifdef DEBUG
-  CopyFromCUDADeviceToHost<score_t>(host_gradients.data(), gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-  CopyFromCUDADeviceToHost<score_t>(host_hessians.data(), hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  CopyFromCUDADeviceToHost<score_t>(host_gradients_.data(), gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+  CopyFromCUDADeviceToHost<score_t>(host_hessians_.data(), hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
   #endif  // DEBUG
 
   const data_size_t* leaf_splits_init_indices =

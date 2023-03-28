@@ -30,6 +30,8 @@ class CUDAPointwiseMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
  protected:
   void LaunchEvalKernel(const double* score_convert, double* sum_loss, double* sum_weight) const;
 
+  virtual double GetParamFromConfig() const { return 0.0; }
+
   mutable CUDAVector<double> score_convert_buffer_;
   CUDAVector<double> reduce_block_buffer_;
   CUDAVector<double> reduce_block_buffer_inner_;

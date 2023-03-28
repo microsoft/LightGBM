@@ -30,6 +30,18 @@ __all__ = [
 ]
 
 _DatasetHandle = ctypes.c_void_p
+_ctypes_int_ptr = Union[
+    "ctypes._Pointer[ctypes.c_int32]",
+    "ctypes._Pointer[ctypes.c_int64]"
+]
+_ctypes_float_ptr = Union[
+    "ctypes._Pointer[ctypes.c_float]",
+    "ctypes._Pointer[ctypes.c_double]"
+]
+_ctypes_float_array = Union[
+    "ctypes.Array[ctypes._Pointer[ctypes.c_float]]",
+    "ctypes.Array[ctypes._Pointer[ctypes.c_double]]"
+]
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
@@ -241,7 +253,7 @@ def _is_numpy_column_array(data: Any) -> bool:
     return len(shape) == 2 and shape[1] == 1
 
 
-def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: np.dtype) -> np.ndarray:
+def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: "np.typing.DTypeLike") -> np.ndarray:
     """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
@@ -265,7 +277,7 @@ def _is_1d_collection(data: Any) -> bool:
 
 def _list_to_1d_numpy(
     data: Any,
-    dtype=np.float32,
+    dtype: "np.typing.DTypeLike" = np.float32,
     name: str = 'list'
 ) -> np.ndarray:
     """Convert data to numpy 1-D array."""
@@ -304,7 +316,11 @@ def _is_2d_collection(data: Any) -> bool:
     )
 
 
-def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
+def _data_to_2d_numpy(
+    data: Any,
+    dtype: "np.typing.DTypeLike" = np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -613,7 +629,7 @@ def _c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _is_allowed_numpy_dtype(dtype) -> bool:
+def _is_allowed_numpy_dtype(dtype: type) -> bool:
     float128 = getattr(np, 'float128', type(None))
     return (
         issubclass(dtype, (np.integer, np.floating, np.bool_))
@@ -996,7 +1012,7 @@ class _InnerPredictor:
             )
         if pred_leaf:
             preds = preds.astype(np.int32)
-        is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
+        is_sparse = isinstance(preds, scipy.sparse.spmatrix) or isinstance(preds, list)
         if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
@@ -1219,11 +1235,13 @@ class _InnerPredictor:
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
         csr_indices = csr.indices.astype(np.int32, copy=False)
         matrix_type = _C_API_MATRIX_TYPE_CSR
+        out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
         else:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
         out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+        out_ptr_data: _ctypes_float_ptr
         if type_ptr_data == _C_API_DTYPE_FLOAT32:
             out_ptr_data = ctypes.POINTER(ctypes.c_float)()
         else:
@@ -1314,11 +1332,13 @@ class _InnerPredictor:
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
         matrix_type = _C_API_MATRIX_TYPE_CSC
+        out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
         else:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
         out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+        out_ptr_data: _ctypes_float_ptr
         if type_ptr_data == _C_API_DTYPE_FLOAT32:
             out_ptr_data = ctypes.POINTER(ctypes.c_float)()
         else:
@@ -1709,7 +1729,7 @@ class Dataset:
         used_indices: Optional[List[int]]
     ):
         data_has_header = False
-        if isinstance(data, (str, Path)):
+        if isinstance(data, (str, Path)) and self.params is not None:
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
@@ -1970,6 +1990,7 @@ class Dataset:
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
         nrow = np.empty((len(mats),), np.int32)
+        ptr_data: _ctypes_float_array
         if mats[0].dtype == np.float64:
             ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
         else:
@@ -2336,6 +2357,7 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(_FIELD_TYPE_MAPPER[field_name])))
             return self
+        dtype: "np.typing.DTypeLike"
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
@@ -2729,7 +2751,7 @@ class Dataset:
         if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
-                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                if isinstance(self.data, np.ndarray) or isinstance(self.data, scipy.sparse.spmatrix):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
@@ -2881,7 +2903,7 @@ class Dataset:
             if isinstance(self.data, np.ndarray):
                 if isinstance(other.data, np.ndarray):
                     self.data = np.hstack((self.data, other.data))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
@@ -2889,9 +2911,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
-            elif scipy.sparse.issparse(self.data):
+            elif isinstance(self.data, scipy.sparse.spmatrix):
                 sparse_format = self.data.getformat()
-                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                if isinstance(other.data, np.ndarray) or isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
@@ -2907,7 +2929,7 @@ class Dataset:
                 if isinstance(other.data, np.ndarray):
                     self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
@@ -2921,7 +2943,7 @@ class Dataset:
             elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))

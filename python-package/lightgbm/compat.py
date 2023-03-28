@@ -183,18 +183,18 @@ except ImportError:
 try:
     from joblib import cpu_count
 
-    def _LGBMCpuCount(only_physical_cores: bool = True):
+    def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
         return cpu_count(only_physical_cores=only_physical_cores)
 except ImportError:
     try:
         from psutil import cpu_count
 
-        def _LGBMCpuCount(only_physical_cores: bool = True):
-            return cpu_count(logical=not only_physical_cores)
+        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
+            return cpu_count(logical=not only_physical_cores) or 1
     except ImportError:
         from multiprocessing import cpu_count
 
-        def _LGBMCpuCount(only_physical_cores: bool = True):
+        def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
             return cpu_count()
 
 __all__: List[str] = []
