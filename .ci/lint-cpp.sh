@@ -8,7 +8,10 @@ cpplint \
 echo "done running cpplint"
 
 echo "running cmakelint"
-cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
+cmake_files=$(
+    find . -name CMakeLists.txt -o -path "./cmake/*.cmake" \
+    | grep -v external_libs
+)
 cmakelint \
     --linelength=120 \
     --filter=-convention/filename,-package/stdargs,-readability/wonkycase \

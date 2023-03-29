@@ -82,7 +82,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh ${BUILD_DIRECTORY} || exit -1
+    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit -1
     exit 0
 fi
 
