@@ -112,7 +112,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson', 'quantile'])
 def test_regression(objective):
     X, y = make_synthetic_regression()
     y = np.abs(y)
@@ -139,6 +139,8 @@ def test_regression(objective):
         assert ret < 296
     elif objective == 'poisson':
         assert ret < 193
+    elif objective == 'quantile':
+        assert ret < 1311
     else:
         assert ret < 338
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
