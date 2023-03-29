@@ -6,10 +6,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import scipy.sparse
 
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
                     _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _log_warning)
+                    _LGBM_GroupType, _LGBM_LabelType, _log_warning)
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -24,6 +25,13 @@ __all__ = [
     'LGBMRegressor',
 ]
 
+_LGBM_ScikitMatrixLike = Union[
+    dt_DataTable,
+    List[Union[List[float], List[int]]],
+    np.ndarray,
+    pd_DataFrame,
+    scipy.sparse.spmatrix
+]
 _LGBM_ScikitCustomObjectiveFunction = Union[
     Callable[
         [np.ndarray, np.ndarray],
@@ -535,7 +543,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_features: int = -1
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
-        self._n_classes: Optional[int] = None
+        self._n_classes: int = -1
         self.set_params(**kwargs)
 
     def _more_tags(self) -> Dict[str, Any]:
@@ -641,7 +649,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
-        if self._n_classes is not None and self._n_classes > 2:
+        if self._n_classes > 2:
             for alias in _ConfigAliases.get('num_class'):
                 params.pop(alias, None)
             params['num_class'] = self._n_classes
@@ -697,11 +705,11 @@ class LGBMModel(_LGBMModelBase):
 
     def fit(
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
-        group=None,
+        group: Optional[_LGBM_GroupType] = None,
         eval_set=None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
@@ -829,11 +837,11 @@ class LGBMModel(_LGBMModelBase):
         return self
 
     fit.__doc__ = _lgbmmodel_doc_fit.format(
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
-        y_shape="array-like of shape = [n_samples]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-        group_shape="array-like or None, optional (default=None)",
+        group_shape="numpy array, pandas Series, list of int or float, or None, optional (default=None)",
         eval_sample_weight_shape="list of array, or None, optional (default=None)",
         eval_init_score_shape="list of array, or None, optional (default=None)",
         eval_group_shape="list of array, or None, optional (default=None)"
@@ -841,7 +849,7 @@ class LGBMModel(_LGBMModelBase):
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -881,13 +889,15 @@ class LGBMModel(_LGBMModelBase):
         predict_params = _choose_param_value("num_threads", predict_params, self.n_jobs)
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
-        return self._Booster.predict(X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-                                     pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
-                                     **predict_params)
+        return self._Booster.predict(  # type: ignore[union-attr]
+            X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
+            pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
+            **predict_params
+        )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -956,7 +966,7 @@ class LGBMModel(_LGBMModelBase):
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
-        return self._Booster
+        return self._Booster  # type: ignore[return-value]
 
     @property
     def evals_result_(self) -> _EvalResultDict:
@@ -976,14 +986,14 @@ class LGBMModel(_LGBMModelBase):
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
-        return self._Booster.feature_importance(importance_type=self.importance_type)
+        return self._Booster.feature_importance(importance_type=self.importance_type)  # type: ignore[union-attr]
 
     @property
     def feature_name_(self) -> List[str]:
         """:obj:`list` of shape = [n_features]: The names of features."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
-        return self._Booster.feature_name()
+        return self._Booster.feature_name()  # type: ignore[union-attr]
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
@@ -991,8 +1001,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
         eval_set=None,
@@ -1037,8 +1047,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
         eval_set=None,
@@ -1062,7 +1072,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
         self._classes = self._le.classes_
-        self._n_classes = len(self._classes)
+        self._n_classes = len(self._classes)  # type: ignore[arg-type]
 
         # adjust eval metrics to match whether binary or multiclass
         # classification is being performed
@@ -1125,7 +1135,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1155,7 +1165,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict_proba(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1180,14 +1190,14 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                          "due to the usage of customized objective function.\n"
                          "Returning raw scores instead.")
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
+        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1. - result, result)).transpose()
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_probability",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -1199,7 +1209,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
-        return self._classes
+        return self._classes  # type: ignore[return-value]
 
     @property
     def n_classes_(self) -> int:
@@ -1221,11 +1231,11 @@ class LGBMRanker(LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
-        group=None,
+        group: Optional[_LGBM_GroupType] = None,
         eval_set=None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
