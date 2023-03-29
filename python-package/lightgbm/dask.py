@@ -921,7 +921,7 @@ def _predict(
     elif isinstance(data, dask_Array):
         # for multi-class classification with sparse matrices, pred_contrib predictions
         # are returned as a list of sparse matrices (one per class)
-        num_classes = model._n_classes or -1
+        num_classes = model._n_classes
 
         if (
             num_classes > 2
