@@ -30,6 +30,8 @@ class GradientDiscretizer {
     stochastic_rounding_ = stochastic_rounding;
   }
 
+  ~GradientDiscretizer() {}
+
   virtual void DiscretizeGradients(
     const data_size_t num_data,
     const score_t* input_gradients,

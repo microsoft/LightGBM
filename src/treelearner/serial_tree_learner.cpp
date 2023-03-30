@@ -61,6 +61,11 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   ordered_gradients_.resize(num_data_);
   ordered_hessians_.resize(num_data_);
 
+  if (config_->use_quantized_grad) {
+    gradient_discretizer_.reset(new GradientDiscretizer(config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
+    gradient_discretizer_->Init(num_data_, config_->num_leaves, num_features_, train_data_);
+  }
+
   GetShareStates(train_data_, is_constant_hessian, true);
   histogram_pool_.DynamicChangeSize(train_data_,
   share_state_->num_hist_total_bin(),
@@ -71,9 +76,6 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
-
-  gradient_discretizer_.reset(new GradientDiscretizer(config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
-  gradient_discretizer_->Init(num_data_, config_->num_leaves, num_features_, train_data_);
 }
 
 void SerialTreeLearner::GetShareStates(const Dataset* dataset,
@@ -325,7 +327,7 @@ void SerialTreeLearner::BeforeTrain() {
     cegb_->BeforeTrain();
   }
 
-  if (config_->tree_learner != std::string("data")) {
+  if (config_->use_quantized_grad && config_->tree_learner != std::string("data")) {
     gradient_discretizer_->SetNumBitsInHistogramBin(0, -1, data_partition_->leaf_count(0), 0);
   }
 }
