@@ -11,7 +11,7 @@ import numpy as np
 
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction,
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType,
                     _LGBM_FeatureNameConfiguration, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
@@ -22,9 +22,15 @@ __all__ = [
 ]
 
 
-_LGBM_CustomMetricFunction = Callable[
-    [np.ndarray, Dataset],
-    Union[Tuple[str, float, bool], List[Tuple[str, float, bool]]]
+_LGBM_CustomMetricFunction = Union[
+    Callable[
+        [np.ndarray, Dataset],
+        _LGBM_EvalFunctionResultType,
+    ],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalFunctionResultType]
+    ],
 ]
 
 _LGBM_PreprocFunction = Callable[
@@ -211,7 +217,7 @@ def train(
     if "early_stopping_round" in params:
         callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
@@ -702,7 +708,7 @@ def cv(
     if "early_stopping_round" in params:
         callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",

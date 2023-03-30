@@ -72,7 +72,8 @@ _LGBM_TrainDataType = Union[
     List[np.ndarray]
 ]
 _LGBM_LabelType = Union[
-    list,
+    List[float],
+    List[int],
     np.ndarray,
     pd_Series,
     pd_DataFrame
@@ -4414,7 +4415,7 @@ class Booster:
         model = self.dump_model()
         feature_names = model.get('feature_names')
         tree_infos = model['tree_info']
-        values = []
+        values: List[float] = []
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 
