@@ -1440,6 +1440,8 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
     elif X_type != 'numpy':
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
+    # make weights and init_score same types as y, just to avoid
+    # a huge number of combinations and therefore test cases
     if y_type == 'list1d':
         y = y.tolist()
         weights = weights.tolist()
@@ -1483,7 +1485,6 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task: '{task}'")
 
 
-# NOTE: 'same_as_g' below just to reduce the number of distinct combinations and therefore test cases
 @pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
 @pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_DataFrame', 'pd_Series'])
 @pytest.mark.parametrize('g_type', ['list1d_float', 'list1d_int', 'numpy', 'pd_Series'])
@@ -1510,29 +1511,29 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
     elif X_type != 'numpy':
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
+    # make weights and init_score same types as y, just to avoid
+    # a huge number of combinations and therefore test cases
     if y_type == 'list1d':
         y = y.tolist()
+        weights = weights.tolist()
+        init_score = init_score.tolist()
     elif y_type == 'pd_DataFrame':
         y = pd_DataFrame(y)
+        weights = pd_Series(weights)
+        init_score = pd_Series(init_score)
     elif y_type == 'pd_Series':
         y = pd_Series(y)
+        weights = pd_Series(weights)
+        init_score = pd_Series(init_score)
     elif y_type != 'numpy':
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
-    # make weights and init_score same types as group, just to avoid
-    # a huge number of combinations and therefore test cases
     if g_type == 'list1d_float':
         g = g.astype("float").tolist()
-        weights = weights.astype("float").tolist()
-        init_score = init_score.astype("float").tolist()
     elif g_type == 'list1d_int':
         g = g.astype("int").tolist()
-        weights = weights.astype("int").tolist()
-        init_score = init_score.astype("int").tolist()
     elif g_type == 'pd_Series':
         g = pd_Series(g)
-        weights = pd_Series(weights)
-        init_score = pd_Series(init_score)
     elif g_type != 'numpy':
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
