@@ -1417,6 +1417,16 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
     if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
         pytest.skip('datatable is not installed')
     X, y, g = _create_data(task, n_samples=1_000)
+    weights = np.abs(np.random.randn(y.shape[0]))
+
+    if task == 'binary-classification' or task == 'regression':
+        init_score = np.full_like(y, np.mean(y))
+    elif task == 'multiclass-classification':
+        init_score = np.outer(y, np.array([0.1, 0.2, 0.7]))
+    else:
+        raise ValueError(f"Unrecognized task '{task}'")
+
+    X_valid = X * 2
     if X_type == 'dt_DataTable':
         X = dt_DataTable(X)
     elif X_type == 'list2d':
@@ -1432,15 +1442,35 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
 
     if y_type == 'list1d':
         y = y.tolist()
+        weights = weights.tolist()
+        init_score = init_score.tolist()
     elif y_type == 'pd_DataFrame':
         y = pd_DataFrame(y)
+        weights = pd_Series(weights)
+        if task == 'multiclass-classification':
+            init_score = pd_DataFrame(init_score)
+        else:
+            init_score = pd_Series(init_score)
     elif y_type == 'pd_Series':
         y = pd_Series(y)
+        weights = pd_Series(weights)
+        if task == 'multiclass-classification':
+            init_score = pd_DataFrame(init_score)
+        else:
+            init_score = pd_Series(init_score)
     elif y_type != 'numpy':
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
     model = task_to_model_factory[task](n_estimators=10, verbose=-1)
-    model.fit(X, y)
+    model.fit(
+        X=X,
+        y=y,
+        sample_weight=weights,
+        init_score=init_score,
+        eval_set=[(X_valid, y)],
+        eval_sample_weight=[weights],
+        eval_init_score=[init_score]
+    )
 
     preds = model.predict(X)
     if task == 'binary-classification':
@@ -1453,6 +1483,7 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task: '{task}'")
 
 
+# NOTE: 'same_as_g' below just to reduce the number of distinct combinations and therefore test cases
 @pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
 @pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_DataFrame', 'pd_Series'])
 @pytest.mark.parametrize('g_type', ['list1d_float', 'list1d_int', 'numpy', 'pd_Series'])
@@ -1462,6 +1493,10 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
     if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
         pytest.skip('datatable is not installed')
     X, y, g = _create_data(task='ranking', n_samples=1_000)
+    weights = np.abs(np.random.randn(y.shape[0]))
+    init_score = np.full_like(y, np.mean(y))
+    X_valid = X * 2
+
     if X_type == 'dt_DataTable':
         X = dt_DataTable(X)
     elif X_type == 'list2d':
@@ -1484,16 +1519,34 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
     elif y_type != 'numpy':
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
+    # make weights and init_score same types as group, just to avoid
+    # a huge number of combinations and therefore test cases
     if g_type == 'list1d_float':
         g = g.astype("float").tolist()
+        weights = weights.astype("float").tolist()
+        init_score = init_score.astype("float").tolist()
     elif g_type == 'list1d_int':
         g = g.astype("int").tolist()
+        weights = weights.astype("int").tolist()
+        init_score = init_score.astype("int").tolist()
     elif g_type == 'pd_Series':
         g = pd_Series(g)
+        weights = pd_Series(weights)
+        init_score = pd_Series(init_score)
     elif g_type != 'numpy':
         raise ValueError(f"Unrecognized g_type: '{g_type}'")
 
     model = task_to_model_factory['ranking'](n_estimators=10, verbose=-1)
-    model.fit(X, y, group=g)
+    model.fit(
+        X=X,
+        y=y,
+        sample_weight=weights,
+        init_score=init_score,
+        group=g,
+        eval_set=[(X_valid, y)],
+        eval_sample_weight=[weights],
+        eval_init_score=[init_score],
+        eval_group=[g]
+    )
     preds = model.predict(X)
     assert spearmanr(preds, y).correlation >= 0.99
