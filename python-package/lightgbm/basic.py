@@ -1735,9 +1735,9 @@ class Dataset:
     def _set_init_score_by_predictor(
         self,
         predictor: Optional[_InnerPredictor],
-        data,
+        data: _LGBM_TrainDataType,
         used_indices: Optional[List[int]]
-    ):
+    ) -> "Dataset":
         data_has_header = False
         if isinstance(data, (str, Path)) and self.params is not None:
             # check data has header or not
@@ -1769,6 +1769,7 @@ class Dataset:
         else:
             return self
         self.set_init_score(init_score)
+        return self
 
     def _lazy_init(
         self,
@@ -1778,9 +1779,9 @@ class Dataset:
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
         init_score: Optional[_LGBM_InitScoreType] = None,
-        predictor=None,
-        feature_name='auto',
-        categorical_feature='auto',
+        predictor: Optional[_InnerPredictor] = None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         if data is None:
@@ -1789,10 +1790,10 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
-                                                                                             feature_name,
-                                                                                             categorical_feature,
-                                                                                             self.pandas_categorical)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data=data,
+                                                                                             feature_name=feature_name,
+                                                                                             categorical_feature=categorical_feature,
+                                                                                             pandas_categorical=self.pandas_categorical)
 
         # process for args
         params = {} if params is None else params
@@ -2340,7 +2341,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2540,7 +2541,7 @@ class Dataset:
             raise LightGBMError("Cannot set reference after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_feature_name(self, feature_name: Union[List[str], str]) -> "Dataset":
+    def set_feature_name(self, feature_name: _LGBM_FeatureNameConfiguration) -> "Dataset":
         """Set feature name.
 
         Parameters
