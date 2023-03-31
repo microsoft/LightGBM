@@ -2331,7 +2331,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
