@@ -1416,7 +1416,7 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         pytest.skip('pandas is not installed')
     if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
         pytest.skip('datatable is not installed')
-    X, y, g = _create_data(task, n_samples=1_000)
+    X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(np.random.randn(y.shape[0]))
 
     if task == 'binary-classification' or task == 'regression':
