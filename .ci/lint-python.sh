@@ -36,6 +36,6 @@ mypy \
     --exclude 'examples/' \
     --exclude 'external_libs/' \
     --exclude 'tests/' \
-    "${DIR_TO_CHECK}" \
+    "${DIR_TO_CHECK}/python-package" \
 || true
 echo "done running mypy"
