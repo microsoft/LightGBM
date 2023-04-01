@@ -256,7 +256,7 @@ The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps
 
 The package's documentation strings (docstrings) are written in the `numpydoc style <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
 
-To check thatt a contribution to the package matches its style expectations, run the following from the root of the repo.
+To check that a contribution to the package matches its style expectations, run the following from the root of the repo.
 
 .. code:: sh
 
