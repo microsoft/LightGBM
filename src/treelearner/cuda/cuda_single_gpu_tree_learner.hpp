@@ -68,7 +68,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void SelectFeatureByNode(const Tree* tree);
 
-  #ifdef DEUBG
+  #ifdef DEBUG
   void CheckSplitValid(
     const int left_leaf, const int right_leaf,
     const double sum_left_gradients, const double sum_right_gradients);

@@ -31,6 +31,7 @@ void CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>::Init(const Metadata
 
 template void CUDAPointwiseMetricInterface<RMSEMetric, CUDARMSEMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<L2Metric, CUDAL2Metric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<QuantileMetric, CUDAQuantileMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric>::Init(const Metadata& metadata, data_size_t num_data);
 
 }  // namespace LightGBM
