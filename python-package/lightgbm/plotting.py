@@ -453,6 +453,7 @@ def _to_graphviz(
     feature_names: Union[List[str], None],
     precision: Optional[int],
     orientation: str,
+    max_category_values: Optional[int],
     constraints: Optional[List[int]],
     example_case: Optional[Union[np.ndarray, pd_DataFrame]],
     **kwargs: Any
@@ -477,6 +478,7 @@ def _to_graphviz(
         """Recursively add node or edge."""
         fillcolor = 'white'
         style = ''
+        tooltip = None
         if highlight:
             color = 'blue'
             penwidth = '3'
@@ -513,7 +515,13 @@ def _to_graphviz(
                         missing_type_str=root['missing_type'],
                         default_left=root['default_left']
                     )
-            label += f"<B>{_float2str(root['threshold'], precision)}</B>"
+            if max_category_values and root['decision_type'] == '==' and len(root['threshold'].split('||')) > max_category_values:
+                tooltip = root['threshold']
+                threshold = '...'
+            else:
+                threshold = root['threshold']
+
+            label += f"<B>{_float2str(threshold, precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
                     output = info.split('_')[-1]
@@ -557,7 +565,7 @@ def _to_graphviz(
             if "data_percentage" in show_info:
                 label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
             label = f"<{label}>"
-        graph.node(name, label=label, shape=shape, style=style, fillcolor=fillcolor, color=color, penwidth=penwidth)
+        graph.node(name, label=label, shape=shape, style=style, fillcolor=fillcolor, color=color, penwidth=penwidth, tooltip=tooltip)
         if parent is not None:
             graph.edge(parent, name, decision, color=color, penwidth=penwidth)
 
@@ -602,6 +610,7 @@ def create_tree_digraph(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
+    max_category_values: Optional[int] = None,
     example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
     **kwargs: Any
 ) -> Any:
@@ -643,6 +652,8 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
+    max_category_values : int, optional (default=None)
+        The maximum number of category values to display in tree nodes.
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
@@ -697,6 +708,7 @@ def create_tree_digraph(
         feature_names=feature_names,
         precision=precision,
         orientation=orientation,
+        max_category_values=max_category_values,
         constraints=monotone_constraints,
         example_case=example_case,
         **kwargs
