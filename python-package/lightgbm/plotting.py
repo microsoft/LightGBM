@@ -654,6 +654,20 @@ def create_tree_digraph(
         Can be 'horizontal' or 'vertical'.
     max_category_values : int, optional (default=None)
         The maximum number of category values to display in tree nodes.
+
+        .. warning::
+
+            Consider wrapping the SVG string of the tree graph with ``IPython.display.HTML`` when running on JupyterLab to get the `tooltip <https://graphviz.org/docs/attrs/tooltip>`_ working right.
+
+            Example:
+
+            .. code-block:: python
+
+                from IPython.display import HTML
+
+                graph = lgb.create_tree_digraph(clf, max_category_values=5)
+                HTML(graph._repr_image_svg_xml())
+
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
