@@ -722,9 +722,9 @@ def create_tree_digraph(
         feature_names=feature_names,
         precision=precision,
         orientation=orientation,
-        max_category_values=max_category_values,
         constraints=monotone_constraints,
         example_case=example_case,
+        max_category_values=max_category_values,
         **kwargs
     )
 
