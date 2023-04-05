@@ -51,6 +51,8 @@ void GradientDiscretizer::Init(
   num_leaves_ = num_leaves;
   leaf_num_bits_in_histogram_bin_.resize(num_leaves_, 0);
   node_num_bits_in_histogram_bin_.resize(num_leaves_, 0);
+  global_leaf_num_bits_in_histogram_bin_.resize(num_leaves_, 0);
+  global_node_num_bits_in_histogram_bin_.resize(num_leaves_, 0);
 
   leaf_grad_hess_stats_.resize(num_leaves_ * 2, 0.0);
   change_hist_bits_buffer_.resize(num_features);
@@ -156,38 +158,51 @@ void GradientDiscretizer::DiscretizeGradients(
   }
 }
 
+template <bool IS_GLOBAL>
 void GradientDiscretizer::SetNumBitsInHistogramBin(
   const int left_leaf_index, const int right_leaf_index,
   const data_size_t num_data_in_left_leaf, const data_size_t num_data_in_right_leaf) {
+  std::vector<int8_t>& leaf_num_bits_in_histogram_bin = IS_GLOBAL ?
+    global_leaf_num_bits_in_histogram_bin_ : leaf_num_bits_in_histogram_bin_;
+  std::vector<int8_t>& node_num_bits_in_histogram_bin = IS_GLOBAL ?
+    global_node_num_bits_in_histogram_bin_ : node_num_bits_in_histogram_bin_;
   if (right_leaf_index == -1) {
     const uint64_t max_stat_per_bin = static_cast<uint64_t>(num_data_in_left_leaf) * static_cast<uint64_t>(num_grad_quant_bins_);
     if (max_stat_per_bin < 256) {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 8;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 8;
     } else if (max_stat_per_bin < 65536) {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 16;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 16;
     } else {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 32;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 32;
     }
   } else {
     const uint64_t max_stat_left_per_bin = static_cast<uint64_t>(num_data_in_left_leaf) * static_cast<uint64_t>(num_grad_quant_bins_);
     const uint64_t max_stat_right_per_bin = static_cast<uint64_t>(num_data_in_right_leaf) * static_cast<uint64_t>(num_grad_quant_bins_);
-    node_num_bits_in_histogram_bin_[left_leaf_index] = leaf_num_bits_in_histogram_bin_[left_leaf_index];
+    node_num_bits_in_histogram_bin[left_leaf_index] = leaf_num_bits_in_histogram_bin[left_leaf_index];
     if (max_stat_left_per_bin < 256) {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 8;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 8;
     } else if (max_stat_left_per_bin < 65536) {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 16;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 16;
     } else {
-      leaf_num_bits_in_histogram_bin_[left_leaf_index] = 32;
+      leaf_num_bits_in_histogram_bin[left_leaf_index] = 32;
     }
     if (max_stat_right_per_bin < 256) {
-      leaf_num_bits_in_histogram_bin_[right_leaf_index] = 8;
+      leaf_num_bits_in_histogram_bin[right_leaf_index] = 8;
     } else if (max_stat_right_per_bin < 65536) {
-      leaf_num_bits_in_histogram_bin_[right_leaf_index] = 16;
+      leaf_num_bits_in_histogram_bin[right_leaf_index] = 16;
     } else {
-      leaf_num_bits_in_histogram_bin_[right_leaf_index] = 32;
+      leaf_num_bits_in_histogram_bin[right_leaf_index] = 32;
     }
   }
 }
+
+template void GradientDiscretizer::SetNumBitsInHistogramBin<false>(
+  const int left_leaf_index, const int right_leaf_index,
+  const data_size_t num_data_in_left_leaf, const data_size_t num_data_in_right_leaf);
+
+template void GradientDiscretizer::SetNumBitsInHistogramBin<true>(
+  const int left_leaf_index, const int right_leaf_index,
+  const data_size_t num_data_in_left_leaf, const data_size_t num_data_in_right_leaf);
 
 void GradientDiscretizer::RenewIntGradTreeOutput(
   Tree* tree, const Config* config, const DataPartition* data_partition,

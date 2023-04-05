@@ -691,6 +691,9 @@ class Dataset {
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
 
+  template <typename PACKED_HIST_BIN_T, typename PACKED_HIST_ACC_T, int HIST_BITS_BIN, int HIST_BITS_ACC>
+  void FixHistogramInt(int feature_idx, int64_t sum_gradient_and_hessian, hist_t* data) const;
+
   inline data_size_t Split(int feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
                            const data_size_t* data_indices,

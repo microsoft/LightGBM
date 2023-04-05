@@ -93,9 +93,54 @@ class FeatureHistogram {
    * \brief Subtract current histograms with other
    * \param other The histogram that want to subtract
    */
-  void Subtract(const FeatureHistogram& other) {
-    for (int i = 0; i < (meta_->num_bin - meta_->offset) * 2; ++i) {
-      data_[i] -= other.data_[i];
+  template <bool USE_DIST_GRAD = false,
+    typename THIS_HIST_T = hist_t, typename OTHER_HIST_T = hist_t, typename RESULT_HIST_T = hist_t,
+    int THIS_HIST_BITS = 0, int OTHER_HIST_BITS = 0, int RESULT_HIST_BITS = 0>
+  void Subtract(const FeatureHistogram& other, const int32_t* buffer = nullptr) {
+    if (USE_DIST_GRAD) {
+      const THIS_HIST_T* this_int_data = THIS_HIST_BITS == 16 ?
+        reinterpret_cast<const THIS_HIST_T*>(data_int16_) :
+        (RESULT_HIST_BITS == 16 ?
+          reinterpret_cast<const THIS_HIST_T*>(buffer) :
+          reinterpret_cast<const THIS_HIST_T*>(data_));
+      const OTHER_HIST_T* other_int_data = OTHER_HIST_BITS == 16 ?
+        reinterpret_cast<OTHER_HIST_T*>(other.data_int16_) :
+        reinterpret_cast<OTHER_HIST_T*>(other.data_);
+      RESULT_HIST_T* result_int_data = RESULT_HIST_BITS == 16 ?
+        reinterpret_cast<RESULT_HIST_T*>(data_int16_) :
+        reinterpret_cast<RESULT_HIST_T*>(data_);
+      if (THIS_HIST_BITS == 32 && OTHER_HIST_BITS == 16 && RESULT_HIST_BITS == 32) {
+        for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
+          const int32_t other_grad_hess = static_cast<int32_t>(other_int_data[i]);
+          const int64_t this_grad_hess = this_int_data[i];
+          const int64_t other_grad_hess_int64 =
+            (static_cast<int64_t>(static_cast<int16_t>(other_grad_hess >> 16)) << 32) |
+            (static_cast<int64_t>(other_grad_hess & 0x0000ffff));
+          const int64_t result_grad_hess = this_grad_hess - other_grad_hess_int64;
+          result_int_data[i] = result_grad_hess;
+        }
+      } else if (THIS_HIST_BITS == 32 && OTHER_HIST_BITS == 16 && RESULT_HIST_BITS == 16) {
+        for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
+          const int32_t other_grad_hess = static_cast<int32_t>(other_int_data[i]);
+          const int64_t this_grad_hess = this_int_data[i];
+          const int64_t other_grad_hess_int64 =
+            (static_cast<int64_t>(static_cast<int16_t>(other_grad_hess >> 16)) << 32) |
+            (static_cast<int64_t>(other_grad_hess & 0x0000ffff));
+          const int64_t result_grad_hess = this_grad_hess - other_grad_hess_int64;
+          const int32_t result_grad_hess_int32 =
+            (static_cast<int32_t>(result_grad_hess >> 32) << 16) |
+            static_cast<int32_t>(result_grad_hess & 0x00000000ffffffff);
+          result_int_data[i] = result_grad_hess_int32;
+        }
+      } else {
+        for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
+          result_int_data[i] = this_int_data[i] - other_int_data[i];
+        }
+      }
+    } else {
+      for (int i = 0; i < (meta_->num_bin - meta_->offset) * 2; ++i) {
+        data_[i] -= other.data_[i];
+      }
     }
   }
 
@@ -104,6 +149,16 @@ class FeatureHistogram {
     int64_t* buffer_ptr = reinterpret_cast<int64_t*>(buffer);
     for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
       buffer_ptr[i] = data_ptr[i];
+    }
+  }
+
+  void CopyFromInt16ToInt32(char* buffer) {
+    const int32_t* int16_data = reinterpret_cast<const int32_t*>(RawDataInt16());
+    int64_t* int32_data = reinterpret_cast<int64_t*>(buffer);
+    for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
+      const int32_t int16_val = int16_data[i];
+      int32_data[i] = (static_cast<int64_t>(static_cast<int16_t>(int16_val >> 16)) << 32) |
+        static_cast<int64_t>(int16_val & 0x0000ffff);
     }
   }
 
@@ -129,8 +184,10 @@ class FeatureHistogram {
                             SplitInfo* output) {
     output->default_left = true;
     output->gain = kMinScore;
+    Log::Warning("before int_find_best_threshold_fun_ = %ld", int_find_best_threshold_fun_);
     int_find_best_threshold_fun_(sum_gradient_and_hessian, grad_scale, hess_scale, num_bits_bin, num_bits_acc, num_data,
                              constraints, parent_output, output);
+    Log::Warning("after int_find_best_threshold_fun_");
     output->gain *= meta_->penalty;
   }
 
@@ -161,15 +218,18 @@ class FeatureHistogram {
     const uint32_t int_sum_hessian = static_cast<uint32_t>(sum_gradient_and_hessian & 0x00000000ffffffff);
     const double sum_gradient = static_cast<double>(int_sum_gradient) * grad_scale;
     const double sum_hessian = static_cast<double>(int_sum_hessian) * hess_scale;
+    Log::Warning("BeforeNumericalInt step 0");
     double gain_shift = GetLeafGain<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2,
         meta_->config->max_delta_step, meta_->config->path_smooth, num_data, parent_output);
     *rand_threshold = 0;
+    Log::Warning("BeforeNumericalInt step 1");
     if (USE_RAND) {
       if (meta_->num_bin - 2 > 0) {
         *rand_threshold = meta_->rand.NextInt(0, meta_->num_bin - 2);
       }
     }
+    Log::Warning("BeforeNumericalInt step 2");
     return gain_shift + meta_->config->min_gain_to_split;
   }
 
@@ -229,6 +289,7 @@ class FeatureHistogram {
       if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
         if (meta_->missing_type == MissingType::Zero) {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+            Log::Warning("case 0");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -255,6 +316,7 @@ class FeatureHistogram {
           };
         } else {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+            Log::Warning("case 1");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -283,6 +345,7 @@ class FeatureHistogram {
       } else {
         if (meta_->missing_type != MissingType::NaN) {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+            Log::Warning("case 2");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -303,6 +366,7 @@ class FeatureHistogram {
           };
         } else {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
+            Log::Warning("case 3");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -891,12 +955,30 @@ class FeatureHistogram {
     return (meta_->num_bin - meta_->offset) * kHistEntrySize;
   }
 
+  int SizeOfInt32Histgram() const {
+    return (meta_->num_bin - meta_->offset) * kInt32HistEntrySize;
+  }
+
+  int SizeOfInt16Histgram() const {
+    return (meta_->num_bin - meta_->offset) * kInt16HistEntrySize;
+  }
+
   /*!
    * \brief Restore histogram from memory
    */
   void FromMemory(char* memory_data) {
     std::memcpy(data_, memory_data,
                 (meta_->num_bin - meta_->offset) * kHistEntrySize);
+  }
+
+  void FromMemoryInt32(char* memory_data) {
+    std::memcpy(data_, memory_data,
+                (meta_->num_bin - meta_->offset) * kInt32HistEntrySize);
+  }
+
+  void FromMemoryInt16(char* memory_data) {
+    std::memcpy(data_int16_, memory_data,
+                (meta_->num_bin - meta_->offset) * kInt16HistEntrySize);
   }
 
   /*!
@@ -1266,6 +1348,7 @@ class FeatureHistogram {
                                         const FeatureConstraint* constraints,
                                         double min_gain_shift, SplitInfo* output,
                                         int rand_threshold, double parent_output) {
+    Log::Warning("FindBestThresholdSequentiallyInt step 0");
     const int8_t offset = meta_->offset;
     PACKED_HIST_ACC_T best_sum_left_gradient_and_hessian = 0;
     PACKED_HIST_ACC_T local_int_sum_gradient_and_hessian =
@@ -1286,6 +1369,7 @@ class FeatureHistogram {
       constraints->InitCumulativeConstraints(REVERSE);
     }
 
+    Log::Warning("FindBestThresholdSequentiallyInt step 1");
     const PACKED_HIST_BIN_T* data_ptr = nullptr;
     if (HIST_BITS_BIN == 16) {
       data_ptr = reinterpret_cast<const PACKED_HIST_BIN_T*>(data_int16_);

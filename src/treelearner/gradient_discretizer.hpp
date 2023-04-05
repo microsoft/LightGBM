@@ -53,16 +53,27 @@ class GradientDiscretizer {
     const data_size_t num_data, const int num_leaves,
     const int num_features, const Dataset* train_data);
 
+  template <bool IS_GLOBAL>
   void SetNumBitsInHistogramBin(
     const int left_leaf_index, const int right_leaf_index,
     const data_size_t num_data_in_left_leaf, const data_size_t num_data_in_right_leaf);
 
-  uint8_t GetHistBitsInLeaf(const int leaf_index) {
-    return leaf_num_bits_in_histogram_bin_[leaf_index];
+  template <bool IS_GLOBAL>
+  int8_t GetHistBitsInLeaf(const int leaf_index) {
+    if (IS_GLOBAL) {
+      return global_leaf_num_bits_in_histogram_bin_[leaf_index];
+    } else {
+      return leaf_num_bits_in_histogram_bin_[leaf_index];
+    }
   }
 
-  uint8_t GetHistBitsInNode(const int node_index) {
-    return node_num_bits_in_histogram_bin_[node_index];
+  template <bool IS_GLOBAL>
+  int8_t GetHistBitsInNode(const int node_index) {
+    if (IS_GLOBAL) {
+      return global_node_num_bits_in_histogram_bin_[node_index];
+    } else {
+      return node_num_bits_in_histogram_bin_[node_index];
+    }
   }
 
   int8_t* ordered_int_gradients_and_hessians() {
@@ -103,8 +114,10 @@ class GradientDiscretizer {
   bool is_constant_hessian_;
   int num_leaves_;
 
-  std::vector<uint8_t> leaf_num_bits_in_histogram_bin_;
-  std::vector<uint8_t> node_num_bits_in_histogram_bin_;
+  std::vector<int8_t> leaf_num_bits_in_histogram_bin_;
+  std::vector<int8_t> node_num_bits_in_histogram_bin_;
+  std::vector<int8_t> global_leaf_num_bits_in_histogram_bin_;
+  std::vector<int8_t> global_node_num_bits_in_histogram_bin_;
 
   std::vector<double> leaf_grad_hess_stats_;
   std::vector<std::vector<int32_t>> change_hist_bits_buffer_;

@@ -328,7 +328,7 @@ void SerialTreeLearner::BeforeTrain() {
   }
 
   if (config_->use_quantized_grad && config_->tree_learner != std::string("data")) {
-    gradient_discretizer_->SetNumBitsInHistogramBin(0, -1, data_partition_->leaf_count(0), 0);
+    gradient_discretizer_->SetNumBitsInHistogramBin<false>(0, -1, data_partition_->leaf_count(0), 0);
   }
 }
 
@@ -402,7 +402,7 @@ void SerialTreeLearner::ConstructHistograms(
                                   global_timer);
   // construct smaller leaf
   if (config_->use_quantized_grad) {
-    const uint8_t smaller_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf(smaller_leaf_splits_->leaf_index());
+    const uint8_t smaller_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
     hist_t* ptr_smaller_leaf_hist_data =
         smaller_leaf_num_bits <= 16 ?
         reinterpret_cast<hist_t*>(smaller_leaf_histogram_array_[0].RawDataInt16() - kHistOffset) :
@@ -423,7 +423,7 @@ void SerialTreeLearner::ConstructHistograms(
     }
     #undef SMALLER_LEAF_ARGS
     if (larger_leaf_histogram_array_ && !use_subtract) {
-      const uint8_t larger_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf(larger_leaf_splits_->leaf_index());
+      const uint8_t larger_leaf_num_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_splits_->leaf_index());
       hist_t* ptr_larger_leaf_hist_data =
         larger_leaf_num_bits <= 16 ?
         reinterpret_cast<hist_t*>(larger_leaf_histogram_array_[0].RawDataInt16() - kHistOffset) :
@@ -484,8 +484,8 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
 
   if (use_subtract && config_->use_quantized_grad) {
     const int parent_index = std::min(smaller_leaf_splits_->leaf_index(), larger_leaf_splits_->leaf_index());
-    const uint8_t parent_hist_bits = gradient_discretizer_->GetHistBitsInNode(parent_index);
-    const uint8_t larger_hist_bits = gradient_discretizer_->GetHistBitsInLeaf(larger_leaf_splits_->leaf_index());
+    const uint8_t parent_hist_bits = gradient_discretizer_->GetHistBitsInNode<false>(parent_index);
+    const uint8_t larger_hist_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_splits_->leaf_index());
     if (parent_hist_bits > 16 && larger_hist_bits <= 16) {
       OMP_INIT_EX();
       #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
@@ -503,6 +503,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
 
   OMP_INIT_EX();
 // find splits
+const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
 #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
@@ -510,11 +511,28 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       continue;
     }
     const int tid = omp_get_thread_num();
-    train_data_->FixHistogram(
-        feature_index, smaller_leaf_splits_->sum_gradients(),
-        smaller_leaf_splits_->sum_hessians(),
-        smaller_leaf_histogram_array_[feature_index].RawData());
+    if (config_->use_quantized_grad) {
+      const int64_t int_sum_gradient_and_hessian = smaller_leaf_splits_->int_sum_gradients_and_hessians();
+      if (hist_bits_bin <= 16) {
+        train_data_->FixHistogramInt<int32_t, int32_t, 16, 16>(
+            feature_index, int_sum_gradient_and_hessian,
+            reinterpret_cast<hist_t*>(smaller_leaf_histogram_array_[feature_index].RawDataInt16()));
+      } else {
+        train_data_->FixHistogramInt<int64_t, int64_t, 32, 32>(
+            feature_index, int_sum_gradient_and_hessian,
+            reinterpret_cast<hist_t*>(smaller_leaf_histogram_array_[feature_index].RawDataInt32()));
+      }
+    } else {
+      train_data_->FixHistogram(
+          feature_index, smaller_leaf_splits_->sum_gradients(),
+          smaller_leaf_splits_->sum_hessians(),
+          smaller_leaf_histogram_array_[feature_index].RawData());
+    }
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
+
+    if (feature_index == 9) {
+      Log::Warning("feature index 9 here");
+    }
 
     ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
                                real_fidx,
@@ -530,13 +548,50 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     }
 
     if (use_subtract) {
-      larger_leaf_histogram_array_[feature_index].Subtract(
-          smaller_leaf_histogram_array_[feature_index]);
+      if (config_->use_quantized_grad) {
+        const int parent_index = std::min(smaller_leaf_splits_->leaf_index(), larger_leaf_splits_->leaf_index());
+        const uint8_t parent_hist_bits = gradient_discretizer_->GetHistBitsInNode<false>(parent_index);
+        const uint8_t smaller_hist_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
+        const uint8_t larger_hist_bits = gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_splits_->leaf_index());
+        if (parent_hist_bits <= 16) {
+          CHECK_LE(smaller_hist_bits, 16);
+          CHECK_LE(larger_hist_bits, 16);
+          larger_leaf_histogram_array_[feature_index].Subtract<true, int32_t, int32_t, int32_t, 16, 16, 16>(
+              smaller_leaf_histogram_array_[feature_index]);
+        } else if (larger_hist_bits <= 16) {
+          CHECK_LE(smaller_hist_bits, 16);
+          larger_leaf_histogram_array_[feature_index].Subtract<true, int64_t, int32_t, int32_t, 32, 16, 16>(
+              smaller_leaf_histogram_array_[feature_index], gradient_discretizer_->GetChangeHistBitsBuffer(feature_index));
+        } else if (smaller_hist_bits <= 16) {
+          larger_leaf_histogram_array_[feature_index].Subtract<true, int64_t, int32_t, int64_t, 32, 16, 32>(
+              smaller_leaf_histogram_array_[feature_index]);
+        } else {
+          larger_leaf_histogram_array_[feature_index].Subtract<true, int64_t, int64_t, int64_t, 32, 32, 32>(
+              smaller_leaf_histogram_array_[feature_index]);
+        }
+      } else {
+        larger_leaf_histogram_array_[feature_index].Subtract<false>(
+            smaller_leaf_histogram_array_[feature_index]);
+      }
     } else {
-      train_data_->FixHistogram(
-          feature_index, larger_leaf_splits_->sum_gradients(),
-          larger_leaf_splits_->sum_hessians(),
-          larger_leaf_histogram_array_[feature_index].RawData());
+      if (config_->use_quantized_grad) {
+        const int64_t int_sum_gradient_and_hessian = larger_leaf_splits_->int_sum_gradients_and_hessians();
+        const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_splits_->leaf_index());
+        if (hist_bits_bin <= 16) {
+          train_data_->FixHistogramInt<int32_t, int32_t, 16, 16>(
+              feature_index, int_sum_gradient_and_hessian,
+              reinterpret_cast<hist_t*>(larger_leaf_histogram_array_[feature_index].RawDataInt16()));
+        } else {
+          train_data_->FixHistogramInt<int64_t, int64_t, 32, 32>(
+              feature_index, int_sum_gradient_and_hessian,
+              reinterpret_cast<hist_t*>(larger_leaf_histogram_array_[feature_index].RawDataInt32()));
+        }
+      } else {
+        train_data_->FixHistogram(
+            feature_index, larger_leaf_splits_->sum_gradients(),
+            larger_leaf_splits_->sum_hessians(),
+            larger_leaf_histogram_array_[feature_index].RawData());
+      }
     }
 
     ComputeBestSplitForFeature(larger_leaf_histogram_array_, feature_index,
@@ -786,6 +841,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
 
+  //CheckSplit(best_split_info, *left_leaf, *right_leaf);
+
 #ifdef DEBUG
   CHECK(*right_leaf == next_leaf_id);
 #endif
@@ -812,6 +869,11 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.left_sum_hessian,
                               best_split_info.left_output);
   }
+  if (config_->tree_learner != std::string("data")) {
+    gradient_discretizer_->SetNumBitsInHistogramBin<false>(*left_leaf, *right_leaf,
+                                                    data_partition_->leaf_count(*left_leaf),
+                                                    data_partition_->leaf_count(*right_leaf));
+  }
   auto leaves_need_update = constraints_->Update(
       is_numerical_split, *left_leaf, *right_leaf,
       best_split_info.monotone_type, best_split_info.right_output,
@@ -821,6 +883,53 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   for (auto leaf : leaves_need_update) {
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
+}
+
+void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index) {
+  data_size_t num_data_in_left = 0;
+  data_size_t num_data_in_right = 0;
+  const data_size_t* data_indices_in_left = data_partition_->GetIndexOnLeaf(left_leaf_index, &num_data_in_left);
+  const data_size_t* data_indices_in_right = data_partition_->GetIndexOnLeaf(right_leaf_index, &num_data_in_right);
+  double sum_left_gradient = 0.0;
+  double sum_right_gradient = 0.0;
+  double sum_left_hessian = 0.0;
+  double sum_right_hessian = 0.0;
+  double sum_gradient = 0.0;
+  double sum_hessian = 0.0;
+  const int num_threads = OMP_NUM_THREADS();
+  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_left_gradient,sum_left_hessian)
+  for (data_size_t i = 0; i < num_data_in_left; ++i) {
+    const data_size_t index = data_indices_in_left[i];
+    const double gradient = static_cast<double>(gradients_[index]);
+    const double hessian = static_cast<double>(hessians_[index]);
+    sum_left_gradient += gradient;
+    sum_left_hessian += hessian;
+  }
+  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_right_gradient,sum_right_hessian)
+  for (data_size_t i = 0; i < num_data_in_right; ++i) {
+    const data_size_t index = data_indices_in_right[i];
+    const double gradient = static_cast<double>(gradients_[index]);
+    const double hessian = static_cast<double>(hessians_[index]);
+    sum_right_gradient += gradient;
+    sum_right_hessian += hessian;
+  }
+  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_gradient,sum_hessian)
+  for (data_size_t i = 0; i < num_data_; ++i) {
+    const double gradient = static_cast<double>(gradients_[i]);
+    const double hessian = static_cast<double>(hessians_[i]);
+    sum_gradient += gradient;
+    sum_hessian += hessian;
+  }
+  for (data_size_t i = 0; i < num_data_in_right; ++i) {
+    Log::Warning("data_indices_in_right[%d] = %d", i, data_indices_in_right[i]);
+  }
+  Log::Warning("sum_gradient = %f, sum_hessian = %f", sum_gradient, sum_hessian);
+  CHECK_EQ(num_data_in_left, best_split_info.left_count);
+  CHECK_EQ(num_data_in_right, best_split_info.right_count);
+  CHECK_LE(std::fabs(sum_left_gradient - best_split_info.left_sum_gradient), 1.0);
+  CHECK_LE(std::fabs(sum_left_hessian - best_split_info.left_sum_hessian), 1.0);
+  CHECK_LE(std::fabs(sum_right_gradient - best_split_info.right_sum_gradient), 1.0);
+  CHECK_LE(std::fabs(sum_right_hessian - best_split_info.right_sum_hessian), 1.0);
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
@@ -876,7 +985,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   }
   SplitInfo new_split;
   if (config_->use_quantized_grad) {
-    const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf(leaf_splits->leaf_index());
+    const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(leaf_splits->leaf_index());
     histogram_array_[feature_index].FindBestThresholdInt(
         leaf_splits->int_sum_gradients_and_hessians(),
         *gradient_discretizer_->grad_scale(),

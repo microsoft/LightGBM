@@ -1470,6 +1470,49 @@ void Dataset::FixHistogram(int feature_idx, double sum_gradient,
   }
 }
 
+template <typename PACKED_HIST_BIN_T, typename PACKED_HIST_ACC_T, int HIST_BITS_BIN, int HIST_BITS_ACC>
+void Dataset::FixHistogramInt(int feature_idx, int64_t int_sum_gradient_and_hessian, hist_t* data) const {
+  const int group = feature2group_[feature_idx];
+  const int sub_feature = feature2subfeature_[feature_idx];
+  const BinMapper* bin_mapper =
+      feature_groups_[group]->bin_mappers_[sub_feature].get();
+  const int most_freq_bin = bin_mapper->GetMostFreqBin();
+  PACKED_HIST_BIN_T* data_ptr = reinterpret_cast<PACKED_HIST_BIN_T*>(data);
+  PACKED_HIST_ACC_T int_sum_gradient_and_hessian_local = HIST_BITS_ACC == 16 ?
+    ((static_cast<int32_t>(int_sum_gradient_and_hessian >> 32) << 16) |
+    static_cast<int32_t>(int_sum_gradient_and_hessian & 0x0000ffff)) :
+    int_sum_gradient_and_hessian;
+  if (most_freq_bin > 0) {
+    const int num_bin = bin_mapper->num_bin();
+    if (HIST_BITS_BIN == HIST_BITS_ACC) {
+      for (int i = 0; i < num_bin; ++i) {
+        if (i != most_freq_bin) {
+          int_sum_gradient_and_hessian_local -= data_ptr[i];
+        }
+      }
+      data_ptr[most_freq_bin] = int_sum_gradient_and_hessian_local;
+    } else {
+      CHECK_EQ(HIST_BITS_ACC, 32);
+      CHECK_EQ(HIST_BITS_BIN, 16);
+      for (int i = 0; i < num_bin; ++i) {
+        if (i != most_freq_bin) {
+          const PACKED_HIST_BIN_T packed_hist = data_ptr[i];
+          const PACKED_HIST_ACC_T packed_hist_acc = (static_cast<int64_t>(static_cast<int16_t>(packed_hist >> 16)) << 32) |
+            static_cast<int64_t>(packed_hist & 0x0000ffff);
+          int_sum_gradient_and_hessian_local -= packed_hist_acc;
+        }
+      }
+      PACKED_HIST_BIN_T int_sum_gradient_and_hessian_local_bin =
+        (static_cast<int32_t>(int_sum_gradient_and_hessian_local >> 32) << 16) | static_cast<int32_t>(int_sum_gradient_and_hessian_local & 0x0000ffff);
+      data_ptr[most_freq_bin] = int_sum_gradient_and_hessian_local_bin;
+    }
+  }
+}
+
+template void Dataset::FixHistogramInt<int64_t, int64_t, 32, 32>(int feature_idx, int64_t int_sum_gradient_and_hessian, hist_t* data) const;
+
+template void Dataset::FixHistogramInt<int32_t, int32_t, 16, 16>(int feature_idx, int64_t int_sum_gradient_and_hessian, hist_t* data) const;
+
 template <typename T>
 void PushVector(std::vector<T>* dest, const std::vector<T>& src) {
   dest->reserve(dest->size() + src.size());
