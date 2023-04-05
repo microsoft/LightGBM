@@ -21,7 +21,7 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
 
-from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
+from utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
@@ -1204,7 +1204,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = [u'F_零', u'F_一', u'F_二', u'F_三']
+    feature_names = [u'F_0', u'F_1', u'F_2', u'F_3']
     params = {'verbose': -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
@@ -4023,3 +4023,13 @@ def test_train_raises_informative_error_for_params_of_wrong_type():
     dtrain = lgb.Dataset(X, label=y)
     with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
+
+def test_quantized_training():
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, label=y)
+    bst = lgb.train({'num_leaves': 15, 'verbose': 2, 'metric': 'rmse'}, ds, num_boost_round=10, valid_sets=[ds], callbacks=[lgb.log_evaluation()])
+    rmse = np.sqrt(np.mean((bst.predict(X) - y) ** 2))
+    print(rmse)
+    quant_bst = lgb.train({'num_leaves': 15, 'verbose': -1, 'use_quantized_grad': True}, ds, num_boost_round=10)
+    quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
+    print(rmse, quant_rmse)
