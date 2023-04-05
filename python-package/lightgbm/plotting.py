@@ -453,9 +453,9 @@ def _to_graphviz(
     feature_names: Union[List[str], None],
     precision: Optional[int],
     orientation: str,
-    max_category_values: Optional[int],
     constraints: Optional[List[int]],
     example_case: Optional[Union[np.ndarray, pd_DataFrame]],
+    max_category_values: Optional[int],
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -479,6 +479,7 @@ def _to_graphviz(
         fillcolor = 'white'
         style = ''
         tooltip = None
+        threshold = root['threshold']
         if highlight:
             color = 'blue'
             penwidth = '3'
@@ -515,11 +516,10 @@ def _to_graphviz(
                         missing_type_str=root['missing_type'],
                         default_left=root['default_left']
                     )
-            if max_category_values and root['decision_type'] == '==' and len(root['threshold'].split('||')) > max_category_values:
-                tooltip = root['threshold']
-                threshold = '...'
-            else:
-                threshold = root['threshold']
+            if max_category_values is not None:
+                if root['decision_type'] == '==' and len(root['threshold'].split('||')) > max_category_values:
+                    tooltip = root['threshold']
+                    threshold = '...'
 
             label += f"<B>{_float2str(threshold, precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
@@ -610,8 +610,8 @@ def create_tree_digraph(
     show_info: Optional[List[str]] = None,
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
-    max_category_values: Optional[int] = None,
     example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
+    max_category_values: Optional[int] = None,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -652,6 +652,9 @@ def create_tree_digraph(
     orientation : str, optional (default='horizontal')
         Orientation of the tree.
         Can be 'horizontal' or 'vertical'.
+    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
+        Single row with the same structure as the training data.
+        If not None, the plot will highlight the path that sample takes through the tree.
     max_category_values : int, optional (default=None)
         The maximum number of category values to display in tree nodes.
 
@@ -668,9 +671,6 @@ def create_tree_digraph(
                 graph = lgb.create_tree_digraph(clf, max_category_values=5)
                 HTML(graph._repr_image_svg_xml())
 
-    example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
-        Single row with the same structure as the training data.
-        If not None, the plot will highlight the path that sample takes through the tree.
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
