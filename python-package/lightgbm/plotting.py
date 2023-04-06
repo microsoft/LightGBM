@@ -479,7 +479,6 @@ def _to_graphviz(
         fillcolor = 'white'
         style = ''
         tooltip = None
-        threshold = root['threshold']
         if highlight:
             color = 'blue'
             penwidth = '3'
@@ -490,6 +489,7 @@ def _to_graphviz(
             shape = "rectangle"
             l_dec = 'yes'
             r_dec = 'no'
+            threshold = root['threshold']
             if root['decision_type'] == '<=':
                 operator = "&#8804;"
             elif root['decision_type'] == '==':
