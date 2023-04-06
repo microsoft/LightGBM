@@ -197,9 +197,6 @@ jobs:
         env:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
-          # pinning to an old version to address breaking changes to paths not being available yet
-          # (ref: https://github.com/r-lib/actions/issues/713#issuecomment-1481293175)
-          TINYTEX_VERSION: '2023.03'
       - name: Setup and run tests on Linux and macOS
         if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
         shell: bash
