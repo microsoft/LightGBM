@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cran.rstudio.com"
+CRAN_MIRROR="https://cran.r-project.org"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
