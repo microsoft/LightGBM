@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cran.r-project.org"
+CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
@@ -116,6 +116,12 @@ if [[ $OS_NAME == "macos" ]]; then
             "$(brew --cellar libomp)"/*/lib/libomp.dylib \
             /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
     fi
+fi
+
+# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# "Warning: dependency ‘lattice’ is not available"
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    Rscript --vanilla -e "install.packages('lattice', repos = 'https://mran.microsoft.com', lib = '${R_LIB_PATH}')"
 fi
 
 # Manually install Depends and Imports libraries + 'knitr', 'RhpcBLASctl', 'rmarkdown', 'testthat'
