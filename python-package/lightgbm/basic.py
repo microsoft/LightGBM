@@ -34,6 +34,10 @@ _ctypes_int_ptr = Union[
     "ctypes._Pointer[ctypes.c_int32]",
     "ctypes._Pointer[ctypes.c_int64]"
 ]
+_ctypes_int_array = Union[
+    "ctypes.Array[ctypes._Pointer[ctypes.c_int32]]",
+    "ctypes.Array[ctypes._Pointer[ctypes.c_int64]]"
+]
 _ctypes_float_ptr = Union[
     "ctypes._Pointer[ctypes.c_float]",
     "ctypes._Pointer[ctypes.c_double]"
@@ -72,7 +76,8 @@ _LGBM_TrainDataType = Union[
     List[np.ndarray]
 ]
 _LGBM_LabelType = Union[
-    list,
+    List[float],
+    List[int],
     np.ndarray,
     pd_Series,
     pd_DataFrame
@@ -588,13 +593,16 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
     return data
 
 
-def _c_float_array(data):
+def _c_float_array(
+    data: np.ndarray
+) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
+        ptr_data: _ctypes_float_ptr
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = _C_API_DTYPE_FLOAT32
@@ -608,13 +616,16 @@ def _c_float_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _c_int_array(data):
+def _c_int_array(
+    data: np.ndarray
+) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
+        ptr_data: _ctypes_int_ptr
         if data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = _C_API_DTYPE_INT32
@@ -1623,10 +1634,10 @@ class Dataset:
 
         # c type: double**
         # each double* element points to start of each column of sample data.
-        sample_col_ptr = (ctypes.POINTER(ctypes.c_double) * ncol)()
+        sample_col_ptr: _ctypes_float_array = (ctypes.POINTER(ctypes.c_double) * ncol)()
         # c type int**
         # each int* points to start of indices for each column
-        indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
+        indices_col_ptr: _ctypes_int_array = (ctypes.POINTER(ctypes.c_int32) * ncol)()
         for i in range(ncol):
             sample_col_ptr[i] = _c_float_array(sample_data[i])[0]
             indices_col_ptr[i] = _c_int_array(sample_indices[i])[0]
@@ -1724,9 +1735,9 @@ class Dataset:
     def _set_init_score_by_predictor(
         self,
         predictor: Optional[_InnerPredictor],
-        data,
+        data: _LGBM_TrainDataType,
         used_indices: Optional[List[int]]
-    ):
+    ) -> "Dataset":
         data_has_header = False
         if isinstance(data, (str, Path)) and self.params is not None:
             # check data has header or not
@@ -1758,6 +1769,7 @@ class Dataset:
         else:
             return self
         self.set_init_score(init_score)
+        return self
 
     def _lazy_init(
         self,
@@ -1767,9 +1779,9 @@ class Dataset:
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
         init_score: Optional[_LGBM_InitScoreType] = None,
-        predictor=None,
-        feature_name='auto',
-        categorical_feature='auto',
+        predictor: Optional[_InnerPredictor] = None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         if data is None:
@@ -1778,10 +1790,10 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
-                                                                                             feature_name,
-                                                                                             categorical_feature,
-                                                                                             self.pandas_categorical)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data=data,
+                                                                                             feature_name=feature_name,
+                                                                                             categorical_feature=categorical_feature,
+                                                                                             pandas_categorical=self.pandas_categorical)
 
         # process for args
         params = {} if params is None else params
@@ -2329,7 +2341,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2373,6 +2385,7 @@ class Dataset:
             dtype = np.int32 if field_name == 'group' else np.float32
             data = _list_to_1d_numpy(data, dtype, name=field_name)
 
+        ptr_data: Union[_ctypes_float_ptr, _ctypes_int_ptr]
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = _c_float_array(data)
         elif data.dtype == np.int32:
@@ -2528,7 +2541,7 @@ class Dataset:
             raise LightGBMError("Cannot set reference after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_feature_name(self, feature_name: Union[List[str], str]) -> "Dataset":
+    def set_feature_name(self, feature_name: _LGBM_FeatureNameConfiguration) -> "Dataset":
         """Set feature name.
 
         Parameters
@@ -3288,13 +3301,21 @@ class Booster:
         if self.num_trees() == 0:
             raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
 
-        def _is_split_node(tree):
+        def _is_split_node(tree: Dict[str, Any]) -> bool:
             return 'split_index' in tree.keys()
 
-        def create_node_record(tree, node_depth=1, tree_index=None,
-                               feature_names=None, parent_node=None):
+        def create_node_record(
+            tree: Dict[str, Any],
+            node_depth: int = 1,
+            tree_index: Optional[int] = None,
+            feature_names: Optional[List[str]] = None,
+            parent_node: Optional[str] = None
+        ) -> Dict[str, Any]:
 
-            def _get_node_index(tree, tree_index):
+            def _get_node_index(
+                tree: Dict[str, Any],
+                tree_index: Optional[int]
+            ) -> str:
                 tree_num = f'{tree_index}-' if tree_index is not None else ''
                 is_split = _is_split_node(tree)
                 node_type = 'S' if is_split else 'L'
@@ -3302,7 +3323,10 @@ class Booster:
                 node_num = tree.get('split_index' if is_split else 'leaf_index', 0)
                 return f"{tree_num}{node_type}{node_num}"
 
-            def _get_split_feature(tree, feature_names):
+            def _get_split_feature(
+                tree: Dict[str, Any],
+                feature_names: Optional[List[str]]
+            ) -> Optional[str]:
                 if _is_split_node(tree):
                     if feature_names is not None:
                         feature_name = feature_names[tree['split_feature']]
@@ -3312,11 +3336,11 @@ class Booster:
                     feature_name = None
                 return feature_name
 
-            def _is_single_node_tree(tree):
+            def _is_single_node_tree(tree: Dict[str, Any]) -> bool:
                 return set(tree.keys()) == {'leaf_value'}
 
             # Create the node record, and populate universal data members
-            node = OrderedDict()
+            node: Dict[str, Union[int, str, None]] = OrderedDict()
             node['tree_index'] = tree_index
             node['node_depth'] = node_depth
             node['node_index'] = _get_node_index(tree, tree_index)
@@ -3353,10 +3377,15 @@ class Booster:
 
             return node
 
-        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
-                                   feature_names=None, parent_node=None):
+        def tree_dict_to_node_list(
+            tree: Dict[str, Any],
+            node_depth: int = 1,
+            tree_index: Optional[int] = None,
+            feature_names: Optional[List[str]] = None,
+            parent_node: Optional[str] = None
+        ) -> List[Dict[str, Any]]:
 
-            node = create_node_record(tree,
+            node = create_node_record(tree=tree,
                                       node_depth=node_depth,
                                       tree_index=tree_index,
                                       feature_names=feature_names,
@@ -3369,11 +3398,12 @@ class Booster:
                 children = ['left_child', 'right_child']
                 for child in children:
                     subtree_list = tree_dict_to_node_list(
-                        tree[child],
+                        tree=tree[child],
                         node_depth=node_depth + 1,
                         tree_index=tree_index,
                         feature_names=feature_names,
-                        parent_node=node['node_index'])
+                        parent_node=node['node_index']
+                    )
                     # In tree format, "subtree_list" is a list of node records (dicts),
                     # and we add node to the list.
                     res.extend(subtree_list)
@@ -3383,7 +3413,7 @@ class Booster:
         feature_names = model_dict['feature_names']
         model_list = []
         for tree in model_dict['tree_info']:
-            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
+            model_list.extend(tree_dict_to_node_list(tree=tree['tree_structure'],
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
@@ -4414,7 +4444,7 @@ class Booster:
         model = self.dump_model()
         feature_names = model.get('feature_names')
         tree_infos = model['tree_info']
-        values = []
+        values: List[float] = []
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 

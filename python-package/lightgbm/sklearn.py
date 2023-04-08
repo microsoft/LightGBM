@@ -6,10 +6,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import scipy.sparse
 
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
                     _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _log_warning)
+                    _LGBM_GroupType, _LGBM_LabelType, _log_warning)
 from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
@@ -24,33 +25,58 @@ __all__ = [
     'LGBMRegressor',
 ]
 
+_LGBM_ScikitMatrixLike = Union[
+    dt_DataTable,
+    List[Union[List[float], List[int]]],
+    np.ndarray,
+    pd_DataFrame,
+    scipy.sparse.spmatrix
+]
 _LGBM_ScikitCustomObjectiveFunction = Union[
+    # f(labels, preds)
     Callable[
-        [np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray],
         Tuple[np.ndarray, np.ndarray]
     ],
+    # f(labels, preds, weights)
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
+    # f(labels, preds, weights, group)
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
         Tuple[np.ndarray, np.ndarray]
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
+    # f(labels, preds)
     Callable[
-        [np.ndarray, np.ndarray],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
+        [Optional[np.ndarray], np.ndarray],
+        _LGBM_EvalFunctionResultType
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
+        [Optional[np.ndarray], np.ndarray],
+        List[_LGBM_EvalFunctionResultType]
+    ],
+    # f(labels, preds, weights)
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType
     ],
     Callable[
-        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-        Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        List[_LGBM_EvalFunctionResultType]
     ],
+    # f(labels, preds, weights, group)
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType
+    ],
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+        List[_LGBM_EvalFunctionResultType]
+    ]
 ]
 _LGBM_ScikitEvalMetricType = Union[
     str,
@@ -127,11 +153,11 @@ class _ObjectiveFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            grad, hess = self.func(labels, preds)
+            grad, hess = self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())
+            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
         elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())
+            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore [call-arg]
         else:
             raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
@@ -205,11 +231,11 @@ class _EvalFunctionWrapper:
         labels = dataset.get_label()
         argc = len(signature(self.func).parameters)
         if argc == 2:
-            return self.func(labels, preds)
+            return self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())
+            return self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
         elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())
+            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[call-arg]
         else:
             raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
@@ -697,11 +723,11 @@ class LGBMModel(_LGBMModelBase):
 
     def fit(
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
-        group=None,
+        group: Optional[_LGBM_GroupType] = None,
         eval_set=None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,
@@ -811,7 +837,7 @@ class LGBMModel(_LGBMModelBase):
             num_boost_round=self.n_estimators,
             valid_sets=valid_sets,
             valid_names=eval_names,
-            feval=eval_metrics_callable,
+            feval=eval_metrics_callable,  # type: ignore[arg-type]
             init_model=init_model,
             feature_name=feature_name,
             callbacks=callbacks
@@ -829,11 +855,11 @@ class LGBMModel(_LGBMModelBase):
         return self
 
     fit.__doc__ = _lgbmmodel_doc_fit.format(
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
-        y_shape="array-like of shape = [n_samples]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
         sample_weight_shape="array-like of shape = [n_samples] or None, optional (default=None)",
         init_score_shape="array-like of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-        group_shape="array-like or None, optional (default=None)",
+        group_shape="numpy array, pandas Series, list of int or float, or None, optional (default=None)",
         eval_sample_weight_shape="list of array, or None, optional (default=None)",
         eval_init_score_shape="list of array, or None, optional (default=None)",
         eval_group_shape="list of array, or None, optional (default=None)"
@@ -841,7 +867,7 @@ class LGBMModel(_LGBMModelBase):
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -889,7 +915,7 @@ class LGBMModel(_LGBMModelBase):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -993,8 +1019,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
         eval_set=None,
@@ -1039,8 +1065,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
         eval_set=None,
@@ -1127,7 +1153,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1157,7 +1183,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     def predict_proba(
         self,
-        X,
+        X: _LGBM_ScikitMatrixLike,
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1189,7 +1215,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="array-like or sparse matrix of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_probability",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -1223,11 +1249,11 @@ class LGBMRanker(LGBMModel):
 
     def fit(  # type: ignore[override]
         self,
-        X,
-        y,
+        X: _LGBM_ScikitMatrixLike,
+        y: _LGBM_LabelType,
         sample_weight=None,
         init_score=None,
-        group=None,
+        group: Optional[_LGBM_GroupType] = None,
         eval_set=None,
         eval_names: Optional[List[str]] = None,
         eval_sample_weight=None,

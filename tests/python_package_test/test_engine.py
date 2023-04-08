@@ -4015,3 +4015,11 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+
+def test_train_raises_informative_error_for_params_of_wrong_type():
+    X, y = make_synthetic_regression()
+    params = {"early_stopping_round": "too-many"}
+    dtrain = lgb.Dataset(X, label=y)
+    with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
+        lgb.train(params, dtrain)
