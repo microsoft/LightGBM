@@ -732,8 +732,8 @@ def cv(
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
-        cvfolds.update(fobj=fobj)
-        res = _agg_cv_result(cvfolds.eval_valid(feval))
+        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
             results[f'{key}-mean'].append(mean)
             results[f'{key}-stdv'].append(std)
