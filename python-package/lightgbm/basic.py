@@ -2008,7 +2008,7 @@ class Dataset:
             ptr_data = (ctypes.POINTER(ctypes.c_float) * len(mats))()
 
         holders = []
-        type_ptr_data = None
+        type_ptr_data = -1
 
         for i, mat in enumerate(mats):
             if len(mat.shape) != 2:
