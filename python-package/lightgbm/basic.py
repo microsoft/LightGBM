@@ -30,18 +30,72 @@ __all__ = [
 ]
 
 _DatasetHandle = ctypes.c_void_p
+_ctypes_int_ptr = Union[
+    "ctypes._Pointer[ctypes.c_int32]",
+    "ctypes._Pointer[ctypes.c_int64]"
+]
+_ctypes_int_array = Union[
+    "ctypes.Array[ctypes._Pointer[ctypes.c_int32]]",
+    "ctypes.Array[ctypes._Pointer[ctypes.c_int64]]"
+]
+_ctypes_float_ptr = Union[
+    "ctypes._Pointer[ctypes.c_float]",
+    "ctypes._Pointer[ctypes.c_double]"
+]
+_ctypes_float_array = Union[
+    "ctypes.Array[ctypes._Pointer[ctypes.c_float]]",
+    "ctypes.Array[ctypes._Pointer[ctypes.c_double]]"
+]
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
 _LGBM_FeatureNameConfiguration = Union[List[str], str]
+_LGBM_GroupType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
+_LGBM_InitScoreType = Union[
+    List[float],
+    List[List[float]],
+    np.ndarray,
+    pd_Series,
+    pd_DataFrame,
+]
+_LGBM_TrainDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix,
+    "Sequence",
+    List["Sequence"],
+    List[np.ndarray]
+]
 _LGBM_LabelType = Union[
-    list,
+    List[float],
+    List[int],
     np.ndarray,
     pd_Series,
     pd_DataFrame
 ]
-
+_LGBM_PredictDataType = Union[
+    str,
+    Path,
+    np.ndarray,
+    pd_DataFrame,
+    dt_DataTable,
+    scipy.sparse.spmatrix
+]
+_LGBM_WeightType = Union[
+    List[float],
+    List[int],
+    np.ndarray,
+    pd_Series
+]
 ZERO_THRESHOLD = 1e-35
 
 
@@ -203,7 +257,7 @@ def _is_numpy_column_array(data: Any) -> bool:
     return len(shape) == 2 and shape[1] == 1
 
 
-def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: np.dtype) -> np.ndarray:
+def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: "np.typing.DTypeLike") -> np.ndarray:
     """Cast numpy array to given dtype."""
     if array.dtype == dtype:
         return array
@@ -225,7 +279,11 @@ def _is_1d_collection(data: Any) -> bool:
     )
 
 
-def _list_to_1d_numpy(data, dtype=np.float32, name='list'):
+def _list_to_1d_numpy(
+    data: Any,
+    dtype: "np.typing.DTypeLike" = np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -262,7 +320,11 @@ def _is_2d_collection(data: Any) -> bool:
     )
 
 
-def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -> np.ndarray:
+def _data_to_2d_numpy(
+    data: Any,
+    dtype: "np.typing.DTypeLike" = np.float32,
+    name: str = 'list'
+) -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -275,7 +337,7 @@ def _data_to_2d_numpy(data: Any, dtype: type = np.float32, name: str = 'list') -
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -283,7 +345,7 @@ def _cfloat32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected float pointer')
 
 
-def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cfloat64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -291,7 +353,7 @@ def _cfloat64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected double pointer')
 
 
-def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -299,7 +361,7 @@ def _cint32_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def _cint64_array_to_numpy(cptr: Any, length: int) -> np.ndarray:
+def _cint64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -314,7 +376,7 @@ def _c_str(string: str) -> ctypes.c_char_p:
 
 def _c_array(ctype: type, values: List[Any]) -> ctypes.Array:
     """Convert a Python array to C array."""
-    return (ctype * len(values))(*values)
+    return (ctype * len(values))(*values)  # type: ignore[operator]
 
 
 def _json_default_with_numpy(obj: Any) -> Any:
@@ -531,13 +593,16 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
     return data
 
 
-def _c_float_array(data):
+def _c_float_array(
+    data: np.ndarray
+) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
+        ptr_data: _ctypes_float_ptr
         if data.dtype == np.float32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
             type_data = _C_API_DTYPE_FLOAT32
@@ -551,13 +616,16 @@ def _c_float_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _c_int_array(data):
+def _c_int_array(
+    data: np.ndarray
+) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
         data = np.array(data, copy=False)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
+        ptr_data: _ctypes_int_ptr
         if data.dtype == np.int32:
             ptr_data = data.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
             type_data = _C_API_DTYPE_INT32
@@ -571,7 +639,7 @@ def _c_int_array(data):
     return (ptr_data, type_data, data)  # return `data` to avoid the temporary copy is freed
 
 
-def _is_allowed_numpy_dtype(dtype) -> bool:
+def _is_allowed_numpy_dtype(dtype: type) -> bool:
     float128 = getattr(np, 'float128', type(None))
     return (
         issubclass(dtype, (np.integer, np.floating, np.bool_))
@@ -826,7 +894,7 @@ class _InnerPredictor:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: int = -1,
         raw_score: bool = False,
@@ -834,7 +902,7 @@ class _InnerPredictor:
         pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Predict logic.
 
         Parameters
@@ -902,29 +970,59 @@ class _InnerPredictor:
                 preds = np.loadtxt(f.name, dtype=np.float64)
                 nrow = preds.shape[0]
         elif isinstance(data, scipy.sparse.csr_matrix):
-            preds, nrow = self.__pred_for_csr(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csr(
+                csr=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         elif isinstance(data, scipy.sparse.csc_matrix):
-            preds, nrow = self.__pred_for_csc(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csc(
+                csc=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         elif isinstance(data, np.ndarray):
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(
+                mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         elif isinstance(data, list):
             try:
                 data = np.array(data)
             except BaseException:
                 raise ValueError('Cannot convert data list to numpy array.')
-            preds, nrow = self.__pred_for_np2d(data, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(
+                mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         elif isinstance(data, dt_DataTable):
-            preds, nrow = self.__pred_for_np2d(data.to_numpy(), start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_np2d(
+                mat=data.to_numpy(),
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         else:
             try:
                 _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
             except BaseException:
                 raise TypeError(f'Cannot predict data for type {type(data).__name__}')
-            preds, nrow = self.__pred_for_csr(csr, start_iteration, num_iteration, predict_type)
+            preds, nrow = self.__pred_for_csr(
+                csr=csr,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         if pred_leaf:
             preds = preds.astype(np.int32)
-        is_sparse = scipy.sparse.issparse(preds) or isinstance(preds, list)
+        is_sparse = isinstance(preds, scipy.sparse.spmatrix) or isinstance(preds, list)
         if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
@@ -932,7 +1030,13 @@ class _InnerPredictor:
                 raise ValueError(f'Length of predict result ({preds.size}) cannot be divide nrow ({nrow})')
         return preds
 
-    def __get_num_preds(self, start_iteration, num_iteration, nrow, predict_type):
+    def __get_num_preds(
+        self,
+        start_iteration: int,
+        num_iteration: int,
+        nrow: int,
+        predict_type: int
+    ) -> int:
         """Get size of prediction result."""
         if nrow > _MAX_INT32:
             raise LightGBMError('LightGBM cannot perform prediction for data '
@@ -962,7 +1066,12 @@ class _InnerPredictor:
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
-        n_preds = self.__get_num_preds(start_iteration, num_iteration, mat.shape[0], predict_type)
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=mat.shape[0],
+            predict_type=predict_type
+        )
         if preds is None:
             preds = np.empty(n_preds, dtype=np.float64)
         elif len(preds.shape) != 1 or len(preds) != n_preds:
@@ -1026,14 +1135,14 @@ class _InnerPredictor:
     def __create_sparse_native(
         self,
         cs: Union[scipy.sparse.csc_matrix, scipy.sparse.csr_matrix],
-        out_shape,
-        out_ptr_indptr,
-        out_ptr_indices,
-        out_ptr_data,
-        indptr_type,
-        data_type,
+        out_shape: np.ndarray,
+        out_ptr_indptr: "ctypes._Pointer",
+        out_ptr_indices: "ctypes._Pointer",
+        out_ptr_data: "ctypes._Pointer",
+        indptr_type: int,
+        data_type: int,
         is_csr: bool
-    ):
+    ) -> Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]]:
         # create numpy array from output arrays
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
@@ -1087,7 +1196,12 @@ class _InnerPredictor:
         preds: Optional[np.ndarray]
     ) -> Tuple[np.ndarray, int]:
         nrow = len(csr.indptr) - 1
-        n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=nrow,
+            predict_type=predict_type
+        )
         if preds is None:
             preds = np.empty(n_preds, dtype=np.float64)
         elif len(preds.shape) != 1 or len(preds) != n_preds:
@@ -1126,16 +1240,18 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int
-    ):
+    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
         csr_indices = csr.indices.astype(np.int32, copy=False)
         matrix_type = _C_API_MATRIX_TYPE_CSR
+        out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
         else:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
         out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+        out_ptr_data: _ctypes_float_ptr
         if type_ptr_data == _C_API_DTYPE_FLOAT32:
             out_ptr_data = ctypes.POINTER(ctypes.c_float)()
         else:
@@ -1173,7 +1289,13 @@ class _InnerPredictor:
         nrow = len(csr.indptr) - 1
         return matrices, nrow
 
-    def __pred_for_csr(self, csr, start_iteration, num_iteration, predict_type):
+    def __pred_for_csr(
+        self,
+        csr: scipy.sparse.csr_matrix,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
         """Predict for a CSR data."""
         if predict_type == _C_API_PREDICT_CONTRIB:
             return self.__inner_predict_csr_sparse(
@@ -1211,20 +1333,22 @@ class _InnerPredictor:
 
     def __inner_predict_sparse_csc(
         self,
-        csc,
-        start_iteration,
-        num_iteration,
-        predict_type
+        csc: scipy.sparse.csc_matrix,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
     ):
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
         matrix_type = _C_API_MATRIX_TYPE_CSC
+        out_ptr_indptr: _ctypes_int_ptr
         if type_ptr_indptr == _C_API_DTYPE_INT32:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int32)()
         else:
             out_ptr_indptr = ctypes.POINTER(ctypes.c_int64)()
         out_ptr_indices = ctypes.POINTER(ctypes.c_int32)()
+        out_ptr_data: _ctypes_float_ptr
         if type_ptr_data == _C_API_DTYPE_FLOAT32:
             out_ptr_data = ctypes.POINTER(ctypes.c_float)()
         else:
@@ -1262,11 +1386,22 @@ class _InnerPredictor:
         nrow = csc.shape[0]
         return matrices, nrow
 
-    def __pred_for_csc(self, csc, start_iteration, num_iteration, predict_type):
+    def __pred_for_csc(
+        self,
+        csc: scipy.sparse.csc_matrix,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
         """Predict for a CSC data."""
         nrow = csc.shape[0]
         if nrow > _MAX_INT32:
-            return self.__pred_for_csr(csc.tocsr(), start_iteration, num_iteration, predict_type)
+            return self.__pred_for_csr(
+                csr=csc.tocsr(),
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
         if predict_type == _C_API_PREDICT_CONTRIB:
             return self.__inner_predict_sparse_csc(
                 csc=csc,
@@ -1274,7 +1409,12 @@ class _InnerPredictor:
                 num_iteration=num_iteration,
                 predict_type=predict_type
             )
-        n_preds = self.__get_num_preds(start_iteration, num_iteration, nrow, predict_type)
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=nrow,
+            predict_type=predict_type
+        )
         preds = np.empty(n_preds, dtype=np.float64)
         out_num_preds = ctypes.c_int64(0)
 
@@ -1324,12 +1464,12 @@ class Dataset:
 
     def __init__(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
@@ -1494,10 +1634,10 @@ class Dataset:
 
         # c type: double**
         # each double* element points to start of each column of sample data.
-        sample_col_ptr = (ctypes.POINTER(ctypes.c_double) * ncol)()
+        sample_col_ptr: _ctypes_float_array = (ctypes.POINTER(ctypes.c_double) * ncol)()
         # c type int**
         # each int* points to start of indices for each column
-        indices_col_ptr = (ctypes.POINTER(ctypes.c_int32) * ncol)()
+        indices_col_ptr: _ctypes_int_array = (ctypes.POINTER(ctypes.c_int32) * ncol)()
         for i in range(ncol):
             sample_col_ptr[i] = _c_float_array(sample_data[i])[0]
             indices_col_ptr[i] = _c_int_array(sample_indices[i])[0]
@@ -1595,11 +1735,11 @@ class Dataset:
     def _set_init_score_by_predictor(
         self,
         predictor: Optional[_InnerPredictor],
-        data,
+        data: _LGBM_TrainDataType,
         used_indices: Optional[List[int]]
-    ):
+    ) -> "Dataset":
         data_has_header = False
-        if isinstance(data, (str, Path)):
+        if isinstance(data, (str, Path)) and self.params is not None:
             # check data has header or not
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
@@ -1629,18 +1769,19 @@ class Dataset:
         else:
             return self
         self.set_init_score(init_score)
+        return self
 
     def _lazy_init(
         self,
-        data,
+        data: Optional[_LGBM_TrainDataType],
         label: Optional[_LGBM_LabelType] = None,
         reference: Optional["Dataset"] = None,
-        weight=None,
-        group=None,
-        init_score=None,
-        predictor=None,
-        feature_name='auto',
-        categorical_feature='auto',
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
+        predictor: Optional[_InnerPredictor] = None,
+        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         if data is None:
@@ -1649,10 +1790,10 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data,
-                                                                                             feature_name,
-                                                                                             categorical_feature,
-                                                                                             self.pandas_categorical)
+        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data=data,
+                                                                                             feature_name=feature_name,
+                                                                                             categorical_feature=categorical_feature,
+                                                                                             pandas_categorical=self.pandas_categorical)
 
         # process for args
         params = {} if params is None else params
@@ -1860,6 +2001,7 @@ class Dataset:
         """Initialize data from a list of 2-D numpy matrices."""
         ncol = mats[0].shape[1]
         nrow = np.empty((len(mats),), np.int32)
+        ptr_data: _ctypes_float_array
         if mats[0].dtype == np.float64:
             ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
         else:
@@ -2070,11 +2212,11 @@ class Dataset:
 
     def create_valid(
         self,
-        data,
+        data: _LGBM_TrainDataType,
         label: Optional[_LGBM_LabelType] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         params: Optional[Dict[str, Any]] = None
     ) -> "Dataset":
         """Create validation data align with current Dataset.
@@ -2199,7 +2341,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2226,6 +2368,7 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(_FIELD_TYPE_MAPPER[field_name])))
             return self
+        dtype: "np.typing.DTypeLike"
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
@@ -2242,6 +2385,7 @@ class Dataset:
             dtype = np.int32 if field_name == 'group' else np.float32
             data = _list_to_1d_numpy(data, dtype, name=field_name)
 
+        ptr_data: Union[_ctypes_float_ptr, _ctypes_int_ptr]
         if data.dtype == np.float32 or data.dtype == np.float64:
             ptr_data, type_data, _ = _c_float_array(data)
         elif data.dtype == np.int32:
@@ -2397,7 +2541,7 @@ class Dataset:
             raise LightGBMError("Cannot set reference after freed raw data, "
                                 "set free_raw_data=False when construct Dataset to avoid this.")
 
-    def set_feature_name(self, feature_name: Union[List[str], str]) -> "Dataset":
+    def set_feature_name(self, feature_name: _LGBM_FeatureNameConfiguration) -> "Dataset":
         """Set feature name.
 
         Parameters
@@ -2458,7 +2602,10 @@ class Dataset:
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
 
-    def set_weight(self, weight) -> "Dataset":
+    def set_weight(
+        self,
+        weight: Optional[_LGBM_WeightType]
+    ) -> "Dataset":
         """Set weight of each instance.
 
         Parameters
@@ -2480,7 +2627,10 @@ class Dataset:
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
 
-    def set_init_score(self, init_score) -> "Dataset":
+    def set_init_score(
+        self,
+        init_score: Optional[_LGBM_InitScoreType]
+    ) -> "Dataset":
         """Set init score of Booster to start from.
 
         Parameters
@@ -2499,7 +2649,10 @@ class Dataset:
             self.init_score = self.get_field('init_score')  # original values can be modified at cpp side
         return self
 
-    def set_group(self, group) -> "Dataset":
+    def set_group(
+        self,
+        group: Optional[_LGBM_GroupType]
+    ) -> "Dataset":
         """Set group size of Dataset (used for ranking).
 
         Parameters
@@ -2597,7 +2750,7 @@ class Dataset:
             self.init_score = self.get_field('init_score')
         return self.init_score
 
-    def get_data(self):
+    def get_data(self) -> Optional[_LGBM_TrainDataType]:
         """Get the raw data of the Dataset.
 
         Returns
@@ -2610,7 +2763,7 @@ class Dataset:
         if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
-                if isinstance(self.data, np.ndarray) or scipy.sparse.issparse(self.data):
+                if isinstance(self.data, np.ndarray) or isinstance(self.data, scipy.sparse.spmatrix):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
@@ -2629,7 +2782,7 @@ class Dataset:
                                 "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
-    def get_group(self):
+    def get_group(self) -> Optional[np.ndarray]:
         """Get the group of the Dataset.
 
         Returns
@@ -2762,7 +2915,7 @@ class Dataset:
             if isinstance(self.data, np.ndarray):
                 if isinstance(other.data, np.ndarray):
                     self.data = np.hstack((self.data, other.data))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
@@ -2770,9 +2923,9 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
-            elif scipy.sparse.issparse(self.data):
+            elif isinstance(self.data, scipy.sparse.spmatrix):
                 sparse_format = self.data.getformat()
-                if isinstance(other.data, np.ndarray) or scipy.sparse.issparse(other.data):
+                if isinstance(other.data, np.ndarray) or isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
@@ -2788,7 +2941,7 @@ class Dataset:
                 if isinstance(other.data, np.ndarray):
                     self.data = concat((self.data, pd_DataFrame(other.data)),
                                        axis=1, ignore_index=True)
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())),
                                        axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
@@ -2802,7 +2955,7 @@ class Dataset:
             elif isinstance(self.data, dt_DataTable):
                 if isinstance(other.data, np.ndarray):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif scipy.sparse.issparse(other.data):
+                elif isinstance(other.data, scipy.sparse.spmatrix):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
@@ -3148,13 +3301,21 @@ class Booster:
         if self.num_trees() == 0:
             raise LightGBMError('There are no trees in this Booster and thus nothing to parse')
 
-        def _is_split_node(tree):
+        def _is_split_node(tree: Dict[str, Any]) -> bool:
             return 'split_index' in tree.keys()
 
-        def create_node_record(tree, node_depth=1, tree_index=None,
-                               feature_names=None, parent_node=None):
+        def create_node_record(
+            tree: Dict[str, Any],
+            node_depth: int = 1,
+            tree_index: Optional[int] = None,
+            feature_names: Optional[List[str]] = None,
+            parent_node: Optional[str] = None
+        ) -> Dict[str, Any]:
 
-            def _get_node_index(tree, tree_index):
+            def _get_node_index(
+                tree: Dict[str, Any],
+                tree_index: Optional[int]
+            ) -> str:
                 tree_num = f'{tree_index}-' if tree_index is not None else ''
                 is_split = _is_split_node(tree)
                 node_type = 'S' if is_split else 'L'
@@ -3162,7 +3323,10 @@ class Booster:
                 node_num = tree.get('split_index' if is_split else 'leaf_index', 0)
                 return f"{tree_num}{node_type}{node_num}"
 
-            def _get_split_feature(tree, feature_names):
+            def _get_split_feature(
+                tree: Dict[str, Any],
+                feature_names: Optional[List[str]]
+            ) -> Optional[str]:
                 if _is_split_node(tree):
                     if feature_names is not None:
                         feature_name = feature_names[tree['split_feature']]
@@ -3172,11 +3336,11 @@ class Booster:
                     feature_name = None
                 return feature_name
 
-            def _is_single_node_tree(tree):
+            def _is_single_node_tree(tree: Dict[str, Any]) -> bool:
                 return set(tree.keys()) == {'leaf_value'}
 
             # Create the node record, and populate universal data members
-            node = OrderedDict()
+            node: Dict[str, Union[int, str, None]] = OrderedDict()
             node['tree_index'] = tree_index
             node['node_depth'] = node_depth
             node['node_index'] = _get_node_index(tree, tree_index)
@@ -3213,10 +3377,15 @@ class Booster:
 
             return node
 
-        def tree_dict_to_node_list(tree, node_depth=1, tree_index=None,
-                                   feature_names=None, parent_node=None):
+        def tree_dict_to_node_list(
+            tree: Dict[str, Any],
+            node_depth: int = 1,
+            tree_index: Optional[int] = None,
+            feature_names: Optional[List[str]] = None,
+            parent_node: Optional[str] = None
+        ) -> List[Dict[str, Any]]:
 
-            node = create_node_record(tree,
+            node = create_node_record(tree=tree,
                                       node_depth=node_depth,
                                       tree_index=tree_index,
                                       feature_names=feature_names,
@@ -3229,11 +3398,12 @@ class Booster:
                 children = ['left_child', 'right_child']
                 for child in children:
                     subtree_list = tree_dict_to_node_list(
-                        tree[child],
+                        tree=tree[child],
                         node_depth=node_depth + 1,
                         tree_index=tree_index,
                         feature_names=feature_names,
-                        parent_node=node['node_index'])
+                        parent_node=node['node_index']
+                    )
                     # In tree format, "subtree_list" is a list of node records (dicts),
                     # and we add node to the list.
                     res.extend(subtree_list)
@@ -3243,7 +3413,7 @@ class Booster:
         feature_names = model_dict['feature_names']
         model_list = []
         for tree in model_dict['tree_info']:
-            model_list.extend(tree_dict_to_node_list(tree['tree_structure'],
+            model_list.extend(tree_dict_to_node_list(tree=tree['tree_structure'],
                                                      tree_index=tree['tree_index'],
                                                      feature_names=feature_names))
 
@@ -3873,7 +4043,7 @@ class Booster:
 
     def predict(
         self,
-        data,
+        data: _LGBM_PredictDataType,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
         raw_score: bool = False,
@@ -3882,7 +4052,7 @@ class Booster:
         data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any
-    ):
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
         """Make a prediction.
 
         Parameters
@@ -3934,31 +4104,38 @@ class Booster:
                 num_iteration = self.best_iteration
             else:
                 num_iteration = -1
-        return predictor.predict(data, start_iteration, num_iteration,
-                                 raw_score, pred_leaf, pred_contrib,
-                                 data_has_header, validate_features)
+        return predictor.predict(
+            data=data,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            data_has_header=data_has_header,
+            validate_features=validate_features
+        )
 
     def refit(
         self,
-        data,
-        label,
+        data: _LGBM_TrainDataType,
+        label: _LGBM_LabelType,
         decay_rate: float = 0.9,
         reference: Optional[Dataset] = None,
-        weight=None,
-        group=None,
-        init_score=None,
+        weight: Optional[_LGBM_WeightType] = None,
+        group: Optional[_LGBM_GroupType] = None,
+        init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
         **kwargs
-    ):
+    ) -> "Booster":
         """Refit the existing Booster by new data.
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array or pandas Series / one-column DataFrame
@@ -4012,7 +4189,12 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(deepcopy(kwargs))
-        leaf_preds = predictor.predict(data, -1, pred_leaf=True, validate_features=validate_features)
+        leaf_preds = predictor.predict(
+            data=data,
+            start_iteration=-1,
+            pred_leaf=True,
+            validate_features=validate_features
+        )
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
         _safe_call(_LIB.LGBM_BoosterGetLinear(
@@ -4262,7 +4444,7 @@ class Booster:
         model = self.dump_model()
         feature_names = model.get('feature_names')
         tree_infos = model['tree_info']
-        values = []
+        values: List[float] = []
         for tree_info in tree_infos:
             add(tree_info['tree_structure'])
 

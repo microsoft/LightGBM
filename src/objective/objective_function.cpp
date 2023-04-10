@@ -27,8 +27,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("regression_l1")) {
       return new CUDARegressionL1loss(config);
     } else if (type == std::string("quantile")) {
-      Log::Warning("Objective quantile is not implemented in cuda version. Fall back to boosting on CPU.");
-      return new RegressionQuantileloss(config);
+      return new CUDARegressionQuantileloss(config);
     } else if (type == std::string("huber")) {
       return new CUDARegressionHuberLoss(config);
     } else if (type == std::string("fair")) {

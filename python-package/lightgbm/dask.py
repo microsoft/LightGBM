@@ -7,7 +7,7 @@ dask.Array and dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from copy import deepcopy
 from enum import Enum, auto
 from functools import partial
@@ -37,7 +37,19 @@ _DaskVectorLike = Union[dask_Array, dask_Series]
 _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
-_HostWorkers = namedtuple('_HostWorkers', ['default', 'all'])
+
+class _HostWorkers:
+
+    def __init__(self, default: str, all_workers: List[str]):
+        self.default = default
+        self.all_workers = all_workers
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, type(self))
+            and self.default == other.default
+            and self.all_workers == other.all_workers
+        )
 
 
 class _DatasetNames(Enum):
@@ -105,9 +117,9 @@ def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWo
         if not hostname:
             raise ValueError(f"Could not parse host name from worker address '{address}'")
         if hostname not in host_to_workers:
-            host_to_workers[hostname] = _HostWorkers(default=address, all=[address])
+            host_to_workers[hostname] = _HostWorkers(default=address, all_workers=[address])
         else:
-            host_to_workers[hostname].all.append(address)
+            host_to_workers[hostname].all_workers.append(address)
     return host_to_workers
 
 
@@ -124,7 +136,7 @@ def _assign_open_ports_to_workers(
     """
     host_ports_futures = {}
     for hostname, workers in host_to_workers.items():
-        n_workers_in_host = len(workers.all)
+        n_workers_in_host = len(workers.all_workers)
         host_ports_futures[hostname] = client.submit(
             _find_n_open_ports,
             n=n_workers_in_host,
@@ -135,7 +147,7 @@ def _assign_open_ports_to_workers(
     found_ports = client.gather(host_ports_futures)
     worker_to_port = {}
     for hostname, workers in host_to_workers.items():
-        for worker, port in zip(workers.all, found_ports[hostname]):
+        for worker, port in zip(workers.all_workers, found_ports[hostname]):
             worker_to_port[worker] = port
     return worker_to_port
 
@@ -909,7 +921,7 @@ def _predict(
     elif isinstance(data, dask_Array):
         # for multi-class classification with sparse matrices, pred_contrib predictions
         # are returned as a list of sparse matrices (one per class)
-        num_classes = model._n_classes or -1
+        num_classes = model._n_classes
 
         if (
             num_classes > 2
@@ -1023,7 +1035,7 @@ class _DaskLGBMModel:
     def _lgb_dask_getstate(self) -> Dict[Any, Any]:
         """Remove un-picklable attributes before serialization."""
         client = self.__dict__.pop("client", None)
-        self._other_params.pop("client", None)
+        self._other_params.pop("client", None)  # type: ignore[attr-defined]
         out = deepcopy(self.__dict__)
         out.update({"client": None})
         self.client = client
@@ -1052,7 +1064,7 @@ class _DaskLGBMModel:
         if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
             raise LightGBMError('dask, pandas and scikit-learn are required for lightgbm.dask')
 
-        params = self.get_params(True)
+        params = self.get_params(True)  # type: ignore[attr-defined]
         params.pop("client", None)
 
         model = _train(
@@ -1075,13 +1087,13 @@ class _DaskLGBMModel:
             **kwargs
         )
 
-        self.set_params(**model.get_params())
-        self._lgb_dask_copy_extra_params(model, self)
+        self.set_params(**model.get_params())  # type: ignore[attr-defined]
+        self._lgb_dask_copy_extra_params(model, self)  # type: ignore[attr-defined]
 
         return self
 
     def _lgb_dask_to_local(self, model_factory: Type[LGBMModel]) -> LGBMModel:
-        params = self.get_params()
+        params = self.get_params()  # type: ignore[attr-defined]
         params.pop("client", None)
         model = model_factory(**params)
         self._lgb_dask_copy_extra_params(self, model)
@@ -1090,7 +1102,7 @@ class _DaskLGBMModel:
 
     @staticmethod
     def _lgb_dask_copy_extra_params(source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]) -> None:
-        params = source.get_params()
+        params = source.get_params()  # type: ignore[union-attr]
         attributes = source.__dict__
         extra_param_names = set(attributes.keys()).difference(params.keys())
         for name in extra_param_names:
@@ -1175,7 +1187,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMClassifier":
         """Docstring is inherited from the lightgbm.LGBMClassifier.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMClassifier,
             X=X,
             y=y,
@@ -1189,6 +1201,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             eval_metric=eval_metric,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
@@ -1378,7 +1391,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRegressor":
         """Docstring is inherited from the lightgbm.LGBMRegressor.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMRegressor,
             X=X,
             y=y,
@@ -1391,6 +1404,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             eval_metric=eval_metric,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",
@@ -1550,7 +1564,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         **kwargs: Any
     ) -> "DaskLGBMRanker":
         """Docstring is inherited from the lightgbm.LGBMRanker.fit."""
-        return self._lgb_dask_fit(
+        self._lgb_dask_fit(
             model_factory=LGBMRanker,
             X=X,
             y=y,
@@ -1566,6 +1580,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             eval_at=eval_at,
             **kwargs
         )
+        return self
 
     _base_doc = _lgbmmodel_doc_fit.format(
         X_shape="Dask Array or Dask DataFrame of shape = [n_samples, n_features]",

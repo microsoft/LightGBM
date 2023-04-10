@@ -112,7 +112,7 @@ def test_rf():
     assert evals_result['valid_0']['binary_logloss'][-1] == pytest.approx(ret)
 
 
-@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson'])
+@pytest.mark.parametrize('objective', ['regression', 'regression_l1', 'huber', 'fair', 'poisson', 'quantile'])
 def test_regression(objective):
     X, y = make_synthetic_regression()
     y = np.abs(y)
@@ -139,6 +139,8 @@ def test_regression(objective):
         assert ret < 296
     elif objective == 'poisson':
         assert ret < 193
+    elif objective == 'quantile':
+        assert ret < 1311
     else:
         assert ret < 338
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
@@ -2031,6 +2033,7 @@ def test_metrics():
     params_obj_metric_log_verbose = {'objective': 'binary', 'metric': 'binary_logloss', 'verbose': -1}
     params_obj_metric_err_verbose = {'objective': 'binary', 'metric': 'binary_error', 'verbose': -1}
     params_obj_metric_inv_verbose = {'objective': 'binary', 'metric': 'invalid_metric', 'verbose': -1}
+    params_obj_metric_quant_verbose = {'objective': 'regression', 'metric': 'quantile', 'verbose': 2}
     params_obj_metric_multi_verbose = {'objective': 'binary',
                                        'metric': ['binary_logloss', 'binary_error'],
                                        'verbose': -1}
@@ -2079,6 +2082,11 @@ def test_metrics():
     res = get_cv_result(params=params_obj_metric_inv_verbose, metrics='binary_error')
     assert len(res) == 2
     assert 'valid binary_error-mean' in res
+
+    # metric in args overwrites one in params
+    res = get_cv_result(params=params_obj_metric_quant_verbose)
+    assert len(res) == 2
+    assert 'valid quantile-mean' in res
 
     # multiple metrics in params
     res = get_cv_result(params=params_obj_metric_multi_verbose)
@@ -4007,3 +4015,11 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+
+def test_train_raises_informative_error_for_params_of_wrong_type():
+    X, y = make_synthetic_regression()
+    params = {"early_stopping_round": "too-many"}
+    dtrain = lgb.Dataset(X, label=y)
+    with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
+        lgb.train(params, dtrain)
