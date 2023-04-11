@@ -1235,7 +1235,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     def predict(
         self,
-        X: _DaskMatrixLike,
+        X: _DaskMatrixLike,  # type: ignore[override]
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1270,7 +1270,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
 
     def predict_proba(
         self,
-        X: _DaskMatrixLike,
+        X: _DaskMatrixLike,  # type: ignore[override]
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1441,7 +1441,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
 
     def predict(
         self,
-        X: _DaskMatrixLike,
+        X: _DaskMatrixLike,  # type: ignore[override]
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
@@ -1616,7 +1616,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
 
     def predict(
         self,
-        X: _DaskMatrixLike,
+        X: _DaskMatrixLike,  # type: ignore[override]
         raw_score: bool = False,
         start_iteration: int = 0,
         num_iteration: Optional[int] = None,
