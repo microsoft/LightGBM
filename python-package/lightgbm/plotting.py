@@ -455,7 +455,7 @@ def _to_graphviz(
     orientation: str,
     constraints: Optional[List[int]],
     example_case: Optional[Union[np.ndarray, pd_DataFrame]],
-    max_category_values: Optional[int],
+    max_category_values: int,
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -516,10 +516,11 @@ def _to_graphviz(
                         missing_type_str=root['missing_type'],
                         default_left=root['default_left']
                     )
-            if max_category_values is not None:
-                if root['decision_type'] == '==' and len(root['threshold'].split('||')) > max_category_values:
+            if root['decision_type'] == '==':
+                category_values = root['threshold'].split('||')
+                if len(category_values) > max_category_values:
                     tooltip = root['threshold']
-                    threshold = '...'
+                    threshold = '||'.join(category_values[:2]) + '||...||' + category_values[-1]
 
             label += f"<B>{_float2str(threshold, precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
@@ -611,7 +612,7 @@ def create_tree_digraph(
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
-    max_category_values: Optional[int] = None,
+    max_category_values: int = 32,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -655,7 +656,7 @@ def create_tree_digraph(
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
-    max_category_values : int, optional (default=None)
+    max_category_values : int, optional (default=32)
         The maximum number of category values to display in tree nodes.
 
         .. warning::
