@@ -2008,7 +2008,7 @@ class Dataset:
             ptr_data = (ctypes.POINTER(ctypes.c_float) * len(mats))()
 
         holders = []
-        type_ptr_data = None
+        type_ptr_data = -1
 
         for i, mat in enumerate(mats):
             if len(mat.shape) != 2:
@@ -2025,7 +2025,7 @@ class Dataset:
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
             chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mats[i])
-            if type_ptr_data is not None and chunk_type_ptr_data != type_ptr_data:
+            if type_ptr_data != -1 and chunk_type_ptr_data != type_ptr_data:
                 raise ValueError('Input chunks must have same type')
             ptr_data[i] = chunk_ptr_data
             type_ptr_data = chunk_type_ptr_data
