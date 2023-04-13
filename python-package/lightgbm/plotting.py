@@ -612,7 +612,7 @@ def create_tree_digraph(
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
-    max_category_values: int = 32,
+    max_category_values: int = 10,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -656,7 +656,7 @@ def create_tree_digraph(
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
-    max_category_values : int, optional (default=32)
+    max_category_values : int, optional (default=10)
         The maximum number of category values to display in tree nodes, if the number of thresholds is greater than this value, thresholds will be collapsed and displayed on the label tooltip instead.
 
         .. warning::
