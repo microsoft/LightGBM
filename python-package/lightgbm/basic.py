@@ -1736,7 +1736,7 @@ class Dataset:
         self,
         predictor: Optional[_InnerPredictor],
         data: _LGBM_TrainDataType,
-        used_indices: Optional[List[int]]
+        used_indices: Optional[Union[List[int], np.ndarray]]
     ) -> "Dataset":
         data_has_header = False
         if isinstance(data, (str, Path)) and self.params is not None:
