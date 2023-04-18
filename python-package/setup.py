@@ -7,8 +7,8 @@ import sys
 from os import chdir
 from pathlib import Path
 from platform import system
-from shutil import copyfile, copytree, rmtree
-from typing import List, Optional, Union
+from shutil import rmtree
+from typing import List, Optional
 
 from setuptools import find_packages, setup
 from setuptools.command.install import install
