@@ -231,26 +231,8 @@ cd ./lightgbm-python
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
-        BUILD_SDIST=true
-        BUILD_WHEEL=false
-        BUILD_ARGS=""
-        rm -rf \
-            ./cmake \
-            ./CMakeLists.txt \
-            ./external_libs \
-            ./include \
-            ./src \
-            ./swig \
-            ./windows
-        if test -f ../lib_lightgbm.so; then
-            cp ../lib_lightgbm.so ./lightgbm/lib_lightgbm.so
-        fi
-        if test -f ../Release/lib_lightgbm.dll; then
-            cp ../Release/lib_lightgbm.dll ./lightgbm/lib_lightgbm.dll
-        fi
-        rm -f ./*.bak
-    else
-        BUILD_WHEEL=true
+        python setup.py install ${PIP_INSTALL_ARGS} --precompile
+        exit 0
     fi
 fi
 
