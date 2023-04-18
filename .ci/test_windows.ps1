@@ -95,9 +95,9 @@ elseif ($env:TASK -eq "bdist") {
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
+    $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
   } else {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install ; Check-Output $?
+    $env:BUILD_SOURCESDIRECTORY/build-python.sh install ; Check-Output $?
   }
 }
 

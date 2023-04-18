@@ -277,6 +277,10 @@ Python-package
 1. ``Error: setup script specifies an absolute path`` when installing from GitHub using ``python setup.py install``.
 --------------------------------------------------------------------------------------------------------------------
 
+.. note::
+    As of v4.0.0, ``lightgbm`` does not contain a ``setup.py``.
+    This answer refers only to versions of ``lightgbm`` prior to v4.0.0.
+
 .. code-block:: console
 
    error: Error: setup script specifies an absolute path:
