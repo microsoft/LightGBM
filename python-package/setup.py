@@ -46,41 +46,6 @@ def find_lib() -> List[str]:
     return LIB_PATH
 
 
-def copy_files(integrated_opencl: bool = False, use_gpu: bool = False) -> None:
-
-    def copy_files_helper(folder_name: Union[str, Path]) -> None:
-        src = CURRENT_DIR.parent / folder_name
-        if src.is_dir():
-            dst = CURRENT_DIR / 'compile' / folder_name
-            if dst.is_dir():
-                rmtree(dst)
-            copytree(src, dst)
-        else:
-            raise Exception(f'Cannot copy {src} folder')
-
-    if not IS_SOURCE_FLAG_PATH.is_file():
-        copy_files_helper('include')
-        copy_files_helper('src')
-        for submodule in (CURRENT_DIR.parent / 'external_libs').iterdir():
-            submodule_stem = submodule.stem
-            if submodule_stem == 'compute' and not use_gpu:
-                continue
-            copy_files_helper(Path('external_libs') / submodule_stem)
-        (CURRENT_DIR / "compile" / "windows").mkdir(parents=True, exist_ok=True)
-        copyfile(CURRENT_DIR.parent / "windows" / "LightGBM.sln",
-                 CURRENT_DIR / "compile" / "windows" / "LightGBM.sln")
-        copyfile(CURRENT_DIR.parent / "windows" / "LightGBM.vcxproj",
-                 CURRENT_DIR / "compile" / "windows" / "LightGBM.vcxproj")
-        copyfile(CURRENT_DIR.parent / "LICENSE",
-                 CURRENT_DIR / "LICENSE")
-        copyfile(CURRENT_DIR.parent / "CMakeLists.txt",
-                 CURRENT_DIR / "compile" / "CMakeLists.txt")
-        if integrated_opencl:
-            (CURRENT_DIR / "compile" / "cmake").mkdir(parents=True, exist_ok=True)
-            copyfile(CURRENT_DIR.parent / "cmake" / "IntegratedOpenCL.cmake",
-                     CURRENT_DIR / "compile" / "cmake" / "IntegratedOpenCL.cmake")
-
-
 def clear_path(path: Path) -> None:
     if path.is_dir():
         for file_name in path.iterdir():
@@ -254,7 +219,6 @@ class CustomInstall(install):
                                 "please use 64-bit Python instead.")
         LOG_PATH.touch()
         if not self.precompile:
-            copy_files(integrated_opencl=self.integrated_opencl, use_gpu=self.gpu)
             compile_cpp(use_mingw=self.mingw, use_gpu=self.gpu, use_cuda=self.cuda, use_mpi=self.mpi,
                         use_hdfs=self.hdfs, boost_root=self.boost_root, boost_dir=self.boost_dir,
                         boost_include_dir=self.boost_include_dir, boost_librarydir=self.boost_librarydir,
@@ -315,7 +279,6 @@ class CustomBdistWheel(bdist_wheel):
 class CustomSdist(sdist):
 
     def run(self) -> None:
-        copy_files(integrated_opencl=True, use_gpu=True)
         IS_SOURCE_FLAG_PATH.touch()
         rmtree(CURRENT_DIR / 'lightgbm' / 'Release', ignore_errors=True)
         rmtree(CURRENT_DIR / 'lightgbm' / 'windows' / 'x64', ignore_errors=True)
@@ -332,11 +295,8 @@ if __name__ == "__main__":
     LOG_PATH = Path.home() / 'LightGBM_compilation.log'
     LOG_NOTICE = f"The full version of error log was saved into {LOG_PATH}"
     IS_SOURCE_FLAG_PATH = CURRENT_DIR / '_IS_SOURCE_PACKAGE.txt'
-    _version_src = CURRENT_DIR.parent / 'VERSION.txt'
-    _version_dst = CURRENT_DIR / 'lightgbm' / 'VERSION.txt'
-    if _version_src.is_file():
-        copyfile(_version_src, _version_dst)
-    version = _version_dst.read_text(encoding='utf-8').strip()
+    _version_file = CURRENT_DIR / 'lightgbm' / 'VERSION.txt'
+    version = _version_file.read_text(encoding='utf-8').strip()
     readme = (CURRENT_DIR / 'README.rst').read_text(encoding='utf-8')
 
     sys.path.insert(0, str(CURRENT_DIR))
