@@ -118,6 +118,12 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
+# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# "Warning: dependency ‘lattice’ is not available"
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    Rscript --vanilla -e "install.packages('lattice', repos = 'https://mran.microsoft.com', lib = '${R_LIB_PATH}')"
+fi
+
 # Manually install Depends and Imports libraries + 'knitr', 'RhpcBLASctl', 'rmarkdown', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
