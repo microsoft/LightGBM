@@ -125,10 +125,14 @@ def compile_cpp(
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
             logger.info("Starting to compile with CMake and MinGW.")
-            silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
-                        error_msg='Please install CMake and all required dependencies first')
-            silent_call(["mingw32-make.exe", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
-                        error_msg='Please install MinGW first')
+            subprocess.check_call(cmake_cmd + ["-G", "MinGW Makefiles"], stderr=sys.stderr, stdout=sys.stdout)
+            # silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
+            #             error_msg='Please install CMake and all required dependencies first')
+            logger.info("---- made it here ----")
+            # silent_call(["mingw32-make.exe", "_lightgbm", f"-I{build_dir}", "-j4"], raise_error=True,
+            #             error_msg='Please install MinGW first')
+            subprocess.check_call(["mingw32-make.exe", "_lightgbm", f"-I{build_dir}", "-j4"], stderr=sys.stderr, stdout=sys.stdout)
+            logger.info("---- made it past mingw32-make.exe ----")
         else:
             status = 1
             lib_path = CURRENT_DIR / "compile" / "windows" / "x64" / "DLL" / "lib_lightgbm.dll"
