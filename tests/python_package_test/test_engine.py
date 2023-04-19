@@ -4017,6 +4017,38 @@ def test_validate_features():
     bst.refit(df2, y, validate_features=False)
 
 
+def test_train_and_cv_raise_informative_error_for_train_set_of_wrong_type():
+    with pytest.raises(TypeError, match=r"train\(\) only accepts Dataset object, train_set has type 'list'\."):
+        lgb.train({}, train_set=[])
+    with pytest.raises(TypeError, match=r"cv\(\) only accepts Dataset object, train_set has type 'list'\."):
+        lgb.cv({}, train_set=[])
+
+
+@pytest.mark.parametrize('num_boost_round', [-7, -1, 0])
+def test_train_and_cv_raise_informative_error_for_impossible_num_boost_round(num_boost_round):
+    X, y = make_synthetic_regression(n_samples=100)
+    error_msg = rf"num_boost_round must be greater than 0\. Got {num_boost_round}\."
+    with pytest.raises(ValueError, match=error_msg):
+        lgb.train({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
+    with pytest.raises(ValueError, match=error_msg):
+        lgb.cv({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
+
+
+def test_train_raises_informative_error_if_any_valid_sets_are_not_dataset_objects():
+    X, y = make_synthetic_regression(n_samples=100)
+    X_valid = X * 2.0
+    with pytest.raises(TypeError, match=r"Every item in valid_sets must be a Dataset object\. Item 1 has type 'tuple'\."):
+        lgb.train(
+            params={},
+            train_set=lgb.Dataset(X, y),
+            valid_sets=[
+                lgb.Dataset(X_valid, y),
+                ([1.0], [2.0]),
+                [5.6, 5.7, 5.8]
+            ]
+        )
+
+
 def test_train_raises_informative_error_for_params_of_wrong_type():
     X, y = make_synthetic_regression()
     params = {"early_stopping_round": "too-many"}

@@ -66,6 +66,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
+    cd ${BUILD_DIRECTORY}
     conda create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
         cmakelint \
@@ -77,19 +78,11 @@ if [[ $TASK == "lint" ]]; then
         "r-lintr>=3.0"
     source activate $CONDA_ENV
     echo "Linting Python code"
-    flake8 \
-        --ignore=E501,W503 \
-        --exclude=./.nuget,./external_libs,./python-package/build \
-        . || exit -1
-    pydocstyle --convention=numpy --add-ignore=D105 --match-dir="^(?!^external_libs|test|example).*" --match="(?!^test_|setup).*\.py" . || exit -1
-    isort . --check-only || exit -1
-    mypy --ignore-missing-imports python-package/ || true
+    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh ${BUILD_DIRECTORY} || exit -1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"
-    cpplint --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length --recursive ./src ./include ./R-package ./swig ./tests || exit -1
-    cmake_files=$(find . -name CMakeLists.txt -o -path "*/cmake/*.cmake")
-    cmakelint --linelength=120 --filter=-convention/filename,-package/stdargs,-readability/wonkycase ${cmake_files} || exit -1
+    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit -1
     exit 0
 fi
 
@@ -190,6 +183,12 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
+
+# temporarily pin pip to versions that support 'pip install --install-option'
+# ref: https://github.com/microsoft/LightGBM/issues/5061#issuecomment-1510642287
+if [[ $METHOD == "pip" ]]; then
+    pip install 'pip<23.1'
+fi
 
 if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h

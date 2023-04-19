@@ -252,9 +252,15 @@ Refer to the walk through examples in `Python guide folder <https://github.com/m
 Development Guide
 -----------------
 
-The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_. If you would like to make a contribution and not familiar with PEP 8, please check the PEP 8 style guide first. Otherwise, the check won't pass. Only E501 (line too long) and W503 (line break occurred before a binary operator) can be ignored.
+The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_.
 
-Documentation strings (docstrings) are written in the NumPy style.
+The package's documentation strings (docstrings) are written in the `numpydoc style <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
+
+To check that a contribution to the package matches its style expectations, run the following from the root of the repo.
+
+.. code:: sh
+
+    sh .ci/lint-python.sh .
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
