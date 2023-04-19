@@ -259,11 +259,11 @@ if test "${BUILD_WHEEL}" = true; then
 fi
 
 if test "${INSTALL}" = true; then
-    if test "${PRECOMPILE}" = true; then
-        pip install ${PIP_INSTALL_ARGS} ../dist/*.tar.gz
-    else
-        pip install ${PIP_INSTALL_ARGS} ../dist/*.whl
-    fi
+    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
+    pip install \
+        ${PIP_INSTALL_ARGS} \
+        --find-links ../dist \
+        lightgbm
 fi
 
 echo "cleaning up"
