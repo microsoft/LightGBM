@@ -235,6 +235,9 @@ if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
         python setup.py install ${PIP_INSTALL_ARGS} --precompile
         exit 0
+    else
+        BUILD_SDIST="false"
+        BUILD_WHEEL="true"
     fi
 fi
 
