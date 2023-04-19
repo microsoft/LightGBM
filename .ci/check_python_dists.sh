@@ -7,7 +7,7 @@ echo "checking Python package distributions in '${DIST_DIR}'"
 pip install \
     -qq \
     check-wheel-contents \
-    pydistcheck \
+    'pydistcheck; python_version>=3.8' \
     twine || exit -1
 
 echo "twine check..."
@@ -18,12 +18,17 @@ if { test "${TASK}" = "bdist" || test "${METHOD}" = "wheel"; }; then
     check-wheel-contents ${DIST_DIR}/*.whl || exit -1
 fi
 
-echo "pydistcheck..."
-pydistcheck \
-    --inspect \
-    --max-allowed-size-compressed '5M' \
-    --max-allowed-size-uncompressed '15M' \
-    --max-allowed-files 800 \
-    ${DIST_DIR}/* || exit -1
+PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
+if [ $PY_MINOR_VER -gt 7 ]; then
+    echo "pydistcheck..."
+    pydistcheck \
+        --inspect \
+        --max-allowed-size-compressed '5M' \
+        --max-allowed-size-uncompressed '15M' \
+        --max-allowed-files 800 \
+        ${DIST_DIR}/* || exit -1
+else
+    echo "skipping pydistcheck (does not support Python 3.${PY_MINOR_VER})"
+fi
 
 echo "done checking Python package distributions"
