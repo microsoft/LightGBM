@@ -93,6 +93,7 @@ elseif ($env:TASK -eq "bdist") {
   cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
   cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
+  Write-Ouput "building with build-python.sh"
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
     sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?

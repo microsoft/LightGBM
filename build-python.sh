@@ -245,7 +245,7 @@ fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
-    rm -f ../dist/*.whl
+    rm -f ../dist/*.whl || true
     python setup.py bdist_wheel \
         --dist-dir ../dist \
         ${BUILD_ARGS}
