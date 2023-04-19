@@ -2,6 +2,8 @@
 
 set -e -u
 
+echo "building lightgbm"
+
 # Default values of arguments
 INSTALL="false"
 BUILD_SDIST="false"
@@ -245,7 +247,12 @@ fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
-    rm -f ../dist/*.whl || true
+    # avoid the following on Windows:
+    #
+    # WARNING: Requirement '../dist/*.whl' looks like a filename, but the file does not exist
+    # ERROR: *.whl is not a valid wheel filename.
+    #
+    #rm -f ../dist/*.whl || true
     python setup.py bdist_wheel \
         --dist-dir ../dist \
         ${BUILD_ARGS}
