@@ -21,9 +21,9 @@ fi
 echo "pydistcheck..."
 pydistcheck \
     --inspect \
-    --max-allow-size-compressed '5M' \
-    --max-allow-size-uncompressed '15M' \
+    --max-allowed-size-compressed '5M' \
+    --max-allowed-size-uncompressed '15M' \
     --max-allowed-files 800 \
-    ${DIST_DIR}/*
+    ${DIST_DIR}/* || exit -1
 
 echo "done checking Python package distributions"
