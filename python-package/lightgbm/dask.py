@@ -189,7 +189,7 @@ def _train_part(
     local_listen_port: int,
     num_machines: int,
     return_model: bool,
-    time_out: int = 120,
+    time_out: int,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
