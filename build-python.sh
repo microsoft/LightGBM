@@ -260,9 +260,10 @@ fi
 
 if test "${INSTALL}" = true; then
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
+    cd ../dist
     pip install \
         ${PIP_INSTALL_ARGS} \
-        --find-links ../dist \
+        --find-links=. \
         lightgbm
 fi
 
