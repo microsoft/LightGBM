@@ -7,7 +7,6 @@ echo "checking Python package distributions in '${DIST_DIR}'"
 pip install \
     -qq \
     check-wheel-contents \
-    'pydistcheck; python_version>=3.8' \
     twine || exit -1
 
 echo "twine check..."
@@ -21,6 +20,7 @@ fi
 PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ $PY_MINOR_VER -gt 7 ]; then
     echo "pydistcheck..."
+    pip install pydistcheck
     pydistcheck \
         --inspect \
         --max-allowed-size-compressed '5M' \
