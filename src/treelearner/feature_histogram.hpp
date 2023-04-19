@@ -184,10 +184,8 @@ class FeatureHistogram {
                             SplitInfo* output) {
     output->default_left = true;
     output->gain = kMinScore;
-    Log::Warning("before int_find_best_threshold_fun_ = %ld", int_find_best_threshold_fun_);
     int_find_best_threshold_fun_(sum_gradient_and_hessian, grad_scale, hess_scale, num_bits_bin, num_bits_acc, num_data,
                              constraints, parent_output, output);
-    Log::Warning("after int_find_best_threshold_fun_");
     output->gain *= meta_->penalty;
   }
 
@@ -218,18 +216,15 @@ class FeatureHistogram {
     const uint32_t int_sum_hessian = static_cast<uint32_t>(sum_gradient_and_hessian & 0x00000000ffffffff);
     const double sum_gradient = static_cast<double>(int_sum_gradient) * grad_scale;
     const double sum_hessian = static_cast<double>(int_sum_hessian) * hess_scale;
-    Log::Warning("BeforeNumericalInt step 0");
     double gain_shift = GetLeafGain<USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
         sum_gradient, sum_hessian, meta_->config->lambda_l1, meta_->config->lambda_l2,
         meta_->config->max_delta_step, meta_->config->path_smooth, num_data, parent_output);
     *rand_threshold = 0;
-    Log::Warning("BeforeNumericalInt step 1");
     if (USE_RAND) {
       if (meta_->num_bin - 2 > 0) {
         *rand_threshold = meta_->rand.NextInt(0, meta_->num_bin - 2);
       }
     }
-    Log::Warning("BeforeNumericalInt step 2");
     return gain_shift + meta_->config->min_gain_to_split;
   }
 
@@ -289,7 +284,6 @@ class FeatureHistogram {
       if (meta_->num_bin > 2 && meta_->missing_type != MissingType::None) {
         if (meta_->missing_type == MissingType::Zero) {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
-            Log::Warning("case 0");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -316,7 +310,6 @@ class FeatureHistogram {
           };
         } else {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
-            Log::Warning("case 1");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -345,7 +338,6 @@ class FeatureHistogram {
       } else {
         if (meta_->missing_type != MissingType::NaN) {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
-            Log::Warning("case 2");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -366,7 +358,6 @@ class FeatureHistogram {
           };
         } else {
           int_find_best_threshold_fun_ = [=](LAMBDA_ARGUMENTS_INT) {
-            Log::Warning("case 3");
             int rand_threshold = 0;
             double min_gain_shift =
                 BeforeNumericalInt<USE_RAND, USE_L1, USE_MAX_OUTPUT, USE_SMOOTHING>(
@@ -1348,7 +1339,6 @@ class FeatureHistogram {
                                         const FeatureConstraint* constraints,
                                         double min_gain_shift, SplitInfo* output,
                                         int rand_threshold, double parent_output) {
-    Log::Warning("FindBestThresholdSequentiallyInt step 0");
     const int8_t offset = meta_->offset;
     PACKED_HIST_ACC_T best_sum_left_gradient_and_hessian = 0;
     PACKED_HIST_ACC_T local_int_sum_gradient_and_hessian =
@@ -1369,7 +1359,6 @@ class FeatureHistogram {
       constraints->InitCumulativeConstraints(REVERSE);
     }
 
-    Log::Warning("FindBestThresholdSequentiallyInt step 1");
     const PACKED_HIST_BIN_T* data_ptr = nullptr;
     if (HIST_BITS_BIN == 16) {
       data_ptr = reinterpret_cast<const PACKED_HIST_BIN_T*>(data_int16_);

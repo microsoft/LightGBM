@@ -530,10 +530,6 @@ const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(sm
     }
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
-    if (feature_index == 9) {
-      Log::Warning("feature index 9 here");
-    }
-
     ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
                                real_fidx,
                                smaller_node_used_features[feature_index],
