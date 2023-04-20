@@ -1,5 +1,62 @@
 #!/bin/sh
 
+# [description]
+#
+#     Prepare a source distribution (sdist) or built distribution (wheel)
+#     of the Python package, and optionally install it.
+#
+# [usage]
+#
+#     # build sdist and put it in dist/
+#     sh ./build-python.sh sdist
+#
+#     # build wheel and put it in dist/
+#     sh ./build-python.sh bdist_wheel [OPTIONS]
+#
+#     # compile lib_lightgbm and install the Python package wrapping it
+#     sh ./build-python.sh install [OPTIONS]
+#
+#     # install the Python package using a pre-compiled lib_lightgbm
+#     # (assumes lib_lightgbm.{dll,so} is located at the root of the repo)
+#     sh ./build-python.sh install --precompile
+#
+# [options]
+#
+#     --boost-include-dir=FILEPATH
+#                                   Directory containing Boost headers.
+#     --boost-librarydir=FILEPATH
+#                                   Preferred Boost library directory.
+#     --boost-root=FILEPATH
+#                                   Boost preferred installation prefix.
+#     --opencl-include-dir=FILEPATH
+#                                   OpenCL include directory.
+#     --opencl-library=FILEPATH
+#                                   Path to OpenCL library.
+#     --bit32
+#                                   Compile 32-bit version.
+#     --cuda
+#                                   Compile CUDA version.
+#     --gpu
+#                                   Compile GPU version.
+#     --hdfs
+#                                   Compile HDFS version.
+#     --integrated-opencl
+#                                   Compile integrated OpenCL version.
+#     --mingw
+#                                   Compile with MinGW.
+#     --mpi
+#                                   Compile MPI version.
+#     --nomp
+#                                   Compile version without OpenMP support.
+#     --precompile
+#                                   Use precompiled library.
+#                                   Only used with 'install' command.
+#     --time-costs
+#                                   Output time costs for different internal routines.
+#     --user
+#                                   Install into user-specific instead of global site-packages directory.
+#                                   Only used with 'install' command.
+
 set -e -u
 
 echo "building lightgbm"
@@ -41,30 +98,35 @@ while [ $# -gt 0 ]; do
             then shift;
         fi
         BOOST_INCLUDE_DIR="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --boost-include-dir='${BOOST_INCLUDE_DIR}'"
         ;;
     --boost-librarydir|--boost-librarydir=*)
         if [[ "$1" != *=* ]];
             then shift;
         fi
         BOOST_LIBRARY_DIR="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --boost-librarydir='${BOOST_LIBRARY_DIR}'"
         ;;
     --boost-root|--boost-root=*)
         if [[ "$1" != *=* ]];
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --boost-root='${BOOST_ROOT}'"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
         if [[ "$1" != *=* ]];
             then shift;
         fi
         OPENCL_INCLUDE_DIR="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --opencl-include-dir='${OPENCL_INCLUDE_DIR}'"
         ;;
     --opencl-library|--opencl-library=*)
         if [[ "$1" != *=* ]];
             then shift;
         fi
         OPENCL_LIBRARY="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --opencl-library='${OPENCL_LIBRARY}'"
         ;;
     #########
     # flags #
@@ -91,21 +153,21 @@ while [ $# -gt 0 ]; do
         BUILD_ARGS="${BUILD_ARGS} --mpi"
         ;;
     --nomp)
-      BUILD_ARGS="${BUILD_ARGS} --nomp"
-      ;;
+        BUILD_ARGS="${BUILD_ARGS} --nomp"
+        ;;
     --precompile)
-      PRECOMPILE="true"
-      ;;
+        PRECOMPILE="true"
+        ;;
     --time-costs)
-      BUILD_ARGS="${PIP_INSTALL_ARGS} --time-costs"
-      ;;
+        BUILD_ARGS="${PIP_INSTALL_ARGS} --time-costs"
+        ;;
     --user)
-      PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
-      ;;
+        PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
+        ;;
     *)
-      echo "invalid argument '${1}'"
-      exit -1
-      ;;
+        echo "invalid argument '${1}'"
+        exit -1
+        ;;
   esac
   shift
 done
@@ -233,6 +295,7 @@ cd ./lightgbm-python
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
+        echo "--- installing lightgbm (from precompiled lib_lightgbm) ---"
         python setup.py install ${PIP_INSTALL_ARGS} --precompile
         exit 0
     else
@@ -249,25 +312,22 @@ if test "${BUILD_SDIST}" = true; then
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"
-    # avoid the following on Windows:
-    #
-    # WARNING: Requirement '../dist/*.whl' looks like a filename, but the file does not exist
-    # ERROR: *.whl is not a valid wheel filename.
-    #
-    #rm -f ../dist/*.whl || true
+    echo "--- building wheel ---"#
+    rm -f ../dist/*.whl || true
     python setup.py bdist_wheel \
         --dist-dir ../dist \
         ${BUILD_ARGS}
 fi
 
 if test "${INSTALL}" = true; then
+    echo "--- installing lightgbm ---"
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     cd ../dist
     pip install \
         ${PIP_INSTALL_ARGS} \
         --find-links=. \
         lightgbm
+    cd ../
 fi
 
 echo "cleaning up"

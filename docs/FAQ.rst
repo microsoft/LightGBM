@@ -278,7 +278,7 @@ Python-package
 --------------------------------------------------------------------------------------------------------------------
 
 .. note::
-    As of v4.0.0, ``lightgbm`` does not contain a ``setup.py``.
+    As of v4.0.0, ``lightgbm`` does not support directly invoked ``setup.py``.
     This answer refers only to versions of ``lightgbm`` prior to v4.0.0.
 
 .. code-block:: console
