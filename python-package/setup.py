@@ -125,6 +125,7 @@ def compile_cpp(
             if use_mpi:
                 raise Exception('MPI version cannot be compiled by MinGW due to the miss of MPI library in it')
             logger.info("Starting to compile with CMake and MinGW.")
+            # ref: https://stackoverflow.com/a/45104058/3986677
             subprocess.check_call(cmake_cmd + ["-G", "MinGW Makefiles", "-DCMAKE_SH=CMAKE_SH-NOTFOUND"], stderr=sys.stderr, stdout=sys.stdout)
             # silent_call(cmake_cmd + ["-G", "MinGW Makefiles"], raise_error=True,
             #             error_msg='Please install CMake and all required dependencies first')
