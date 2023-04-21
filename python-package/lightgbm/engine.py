@@ -545,7 +545,7 @@ def cv(
     callbacks: Optional[List[Callable]] = None,
     eval_train_metric: bool = False,
     return_cvbooster: bool = False
-) -> Dict[str, Any]:
+) -> Dict[str, Union[List[float], CVBooster]]:
     """Perform the cross-validation with given parameters.
 
     Parameters
@@ -651,7 +651,7 @@ def cv(
         {'metric1-mean': [values], 'metric1-stdv': [values],
         'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
-        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
+        If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
@@ -763,6 +763,6 @@ def cv(
             break
 
     if return_cvbooster:
-        results['cvbooster'] = cvfolds
+        results['cvbooster'] = cvfolds  # type: ignore[assignment]
 
     return dict(results)
