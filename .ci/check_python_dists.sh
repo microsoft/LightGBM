@@ -21,14 +21,14 @@ PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ $PY_MINOR_VER -gt 7 ]; then
     echo "pydistcheck..."
     pip install pydistcheck
-    if [[ "${TASK}" == "cuda" ]] && [[ "${METHOD}" == "wheel" ]]; then
+    if { test "${TASK}" = "cuda" || test "${METHOD}" = "wheel"; }; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols,max-allowed-size-compressed' \
             --max-allowed-size-uncompressed '60M' \
             --max-allowed-files 800 \
             ${DIST_DIR}/* || exit -1
-    elif [[ $(uname -m) == "aarch64" ]]; then
+    elif { test $(uname -m) = "aarch64"; }; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols' \
