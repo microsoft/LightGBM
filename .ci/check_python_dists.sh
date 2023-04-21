@@ -21,7 +21,7 @@ PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ $PY_MINOR_VER -gt 7 ]; then
     echo "pydistcheck..."
     pip install pydistcheck
-    if [ $TASK == "CUDA" ] && [ $METHOD == "wheel" ]; then
+    if [ $TASK == "cuda" ] && [ $METHOD == "wheel" ]; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols,max-allowed-size-compressed' \
