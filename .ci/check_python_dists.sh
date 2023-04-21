@@ -24,7 +24,7 @@ if [ $PY_MINOR_VER -gt 7 ]; then
     if { test "${TASK}" = "cuda" || test "${METHOD}" = "wheel"; }; then
         pydistcheck \
             --inspect \
-            --ignore 'compiled-objects-have-debug-symbols,max-allowed-size-compressed' \
+            --ignore 'compiled-objects-have-debug-symbols,distro-too-large-compressed' \
             --max-allowed-size-uncompressed '60M' \
             --max-allowed-files 800 \
             ${DIST_DIR}/* || exit -1
