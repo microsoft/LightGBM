@@ -281,8 +281,8 @@ def _is_1d_collection(data: Any) -> bool:
 
 def _list_to_1d_numpy(
     data: Any,
-    dtype: "np.typing.DTypeLike" = np.float32,
-    name: str = 'list'
+    dtype: "np.typing.DTypeLike",
+    name: str
 ) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
@@ -322,8 +322,8 @@ def _is_2d_collection(data: Any) -> bool:
 
 def _data_to_2d_numpy(
     data: Any,
-    dtype: "np.typing.DTypeLike" = np.float32,
-    name: str = 'list'
+    dtype: "np.typing.DTypeLike",
+    name: str
 ) -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
@@ -1736,7 +1736,7 @@ class Dataset:
         self,
         predictor: Optional[_InnerPredictor],
         data: _LGBM_TrainDataType,
-        used_indices: Optional[List[int]]
+        used_indices: Optional[Union[List[int], np.ndarray]]
     ) -> "Dataset":
         data_has_header = False
         if isinstance(data, (str, Path)) and self.params is not None:
@@ -1774,15 +1774,15 @@ class Dataset:
     def _lazy_init(
         self,
         data: Optional[_LGBM_TrainDataType],
-        label: Optional[_LGBM_LabelType] = None,
-        reference: Optional["Dataset"] = None,
-        weight: Optional[_LGBM_WeightType] = None,
-        group: Optional[_LGBM_GroupType] = None,
-        init_score: Optional[_LGBM_InitScoreType] = None,
-        predictor: Optional[_InnerPredictor] = None,
-        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
-        params: Optional[Dict[str, Any]] = None
+        label: Optional[_LGBM_LabelType],
+        reference: Optional["Dataset"],
+        weight: Optional[_LGBM_WeightType],
+        group: Optional[_LGBM_GroupType],
+        init_score: Optional[_LGBM_InitScoreType],
+        predictor: Optional[_InnerPredictor],
+        feature_name: _LGBM_FeatureNameConfiguration,
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration,
+        params: Optional[Dict[str, Any]]
     ) -> "Dataset":
         if data is None:
             self.handle = None
@@ -2166,13 +2166,13 @@ class Dataset:
                     self._update_params(reference_params)
                 if self.used_indices is None:
                     # create valid
-                    self._lazy_init(self.data, label=self.label, reference=self.reference,
+                    self._lazy_init(data=self.data, label=self.label, reference=self.reference,
                                     weight=self.weight, group=self.group,
                                     init_score=self.init_score, predictor=self._predictor,
-                                    feature_name=self.feature_name, params=self.params)
+                                    feature_name=self.feature_name, categorical_feature='auto', params=self.params)
                 else:
                     # construct subset
-                    used_indices = _list_to_1d_numpy(self.used_indices, np.int32, name='used_indices')
+                    used_indices = _list_to_1d_numpy(self.used_indices, dtype=np.int32, name='used_indices')
                     assert used_indices.flags.c_contiguous
                     if self.reference.group is not None:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
@@ -2201,7 +2201,7 @@ class Dataset:
                         )
             else:
                 # create train
-                self._lazy_init(self.data, label=self.label,
+                self._lazy_init(data=self.data, label=self.label, reference=None,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
                                 feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
@@ -2372,9 +2372,9 @@ class Dataset:
         if field_name == 'init_score':
             dtype = np.float64
             if _is_1d_collection(data):
-                data = _list_to_1d_numpy(data, dtype, name=field_name)
+                data = _list_to_1d_numpy(data, dtype=dtype, name=field_name)
             elif _is_2d_collection(data):
-                data = _data_to_2d_numpy(data, dtype, name=field_name)
+                data = _data_to_2d_numpy(data, dtype=dtype, name=field_name)
                 data = data.ravel(order='F')
             else:
                 raise TypeError(
@@ -2383,7 +2383,7 @@ class Dataset:
                 )
         else:
             dtype = np.int32 if field_name == 'group' else np.float32
-            data = _list_to_1d_numpy(data, dtype, name=field_name)
+            data = _list_to_1d_numpy(data, dtype=dtype, name=field_name)
 
         ptr_data: Union[_ctypes_float_ptr, _ctypes_int_ptr]
         if data.dtype == np.float32 or data.dtype == np.float64:
@@ -2597,7 +2597,7 @@ class Dataset:
                     label = label.to_numpy(dtype=np.float32, na_value=np.nan)
                 label_array = np.ravel(label)
             else:
-                label_array = _list_to_1d_numpy(label, name='label')
+                label_array = _list_to_1d_numpy(label, dtype=np.float32, name='label')
             self.set_field('label', label_array)
             self.label = self.get_field('label')  # original values can be modified at cpp side
         return self
@@ -2622,7 +2622,7 @@ class Dataset:
             weight = None
         self.weight = weight
         if self.handle is not None and weight is not None:
-            weight = _list_to_1d_numpy(weight, name='weight')
+            weight = _list_to_1d_numpy(weight, dtype=np.float32, name='weight')
             self.set_field('weight', weight)
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
@@ -2671,7 +2671,7 @@ class Dataset:
         """
         self.group = group
         if self.handle is not None and group is not None:
-            group = _list_to_1d_numpy(group, np.int32, name='group')
+            group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
             self.set_field('group', group)
         return self
 
@@ -3588,8 +3588,8 @@ class Booster:
         if self.__num_class > 1:
             grad = grad.ravel(order='F')
             hess = hess.ravel(order='F')
-        grad = _list_to_1d_numpy(grad, name='gradient')
-        hess = _list_to_1d_numpy(hess, name='hessian')
+        grad = _list_to_1d_numpy(grad, dtype=np.float32, name='gradient')
+        hess = _list_to_1d_numpy(hess, dtype=np.float32, name='hessian')
         assert grad.flags.c_contiguous
         assert hess.flags.c_contiguous
         if len(grad) != len(hess):
@@ -4098,7 +4098,7 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(deepcopy(kwargs))
+        predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -4188,7 +4188,7 @@ class Booster:
             raise LightGBMError('Cannot refit due to null objective function.')
         if dataset_params is None:
             dataset_params = {}
-        predictor = self._to_predictor(deepcopy(kwargs))
+        predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
         leaf_preds = predictor.predict(
             data=data,
             start_iteration=-1,
@@ -4292,7 +4292,7 @@ class Booster:
 
     def _to_predictor(
         self,
-        pred_parameter: Optional[Dict[str, Any]] = None
+        pred_parameter: Dict[str, Any]
     ) -> _InnerPredictor:
         """Convert to predictor."""
         predictor = _InnerPredictor(booster_handle=self.handle, pred_parameter=pred_parameter)
