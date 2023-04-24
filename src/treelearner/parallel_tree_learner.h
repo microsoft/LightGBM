@@ -86,9 +86,9 @@ class DataParallelTreeLearner: public TREELEARNER_T {
   /*! \brief Number of machines of this parallel task */
   int num_machines_;
   /*! \brief Buffer for network send */
-  std::vector<char, Common::AlignmentAllocator<uint32_t, 32>> input_buffer_;
+  std::vector<char, Common::AlignmentAllocator<char, 32>> input_buffer_;
   /*! \brief Buffer for network receive */
-  std::vector<char, Common::AlignmentAllocator<uint32_t, 32>> output_buffer_;
+  std::vector<char, Common::AlignmentAllocator<char, 32>> output_buffer_;
   /*! \brief different machines will aggregate histograms for different features,
        use this to mark local aggregate features*/
   std::vector<bool> is_feature_aggregated_;
