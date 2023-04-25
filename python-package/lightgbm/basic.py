@@ -4189,7 +4189,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
-        leaf_preds = predictor.predict(
+        leaf_preds: np.ndarray = predictor.predict(  # type: ignore[assignment]
             data=data,
             start_iteration=-1,
             pred_leaf=True,
