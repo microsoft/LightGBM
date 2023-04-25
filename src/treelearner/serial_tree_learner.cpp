@@ -503,7 +503,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
 
   OMP_INIT_EX();
 // find splits
-const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
 #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
@@ -512,6 +511,7 @@ const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(sm
     }
     const int tid = omp_get_thread_num();
     if (config_->use_quantized_grad) {
+      const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
       const int64_t int_sum_gradient_and_hessian = smaller_leaf_splits_->int_sum_gradients_and_hessians();
       if (hist_bits_bin <= 16) {
         train_data_->FixHistogramInt<int32_t, int32_t, 16, 16>(
@@ -837,8 +837,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
 
-  //CheckSplit(best_split_info, *left_leaf, *right_leaf);
-
 #ifdef DEBUG
   CHECK(*right_leaf == next_leaf_id);
 #endif
@@ -865,7 +863,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                               best_split_info.left_sum_hessian,
                               best_split_info.left_output);
   }
-  if (config_->tree_learner != std::string("data")) {
+  if (config_->use_quantized_grad && config_->tree_learner != std::string("data")) {
     gradient_discretizer_->SetNumBitsInHistogramBin<false>(*left_leaf, *right_leaf,
                                                     data_partition_->leaf_count(*left_leaf),
                                                     data_partition_->leaf_count(*right_leaf));
@@ -879,53 +877,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   for (auto leaf : leaves_need_update) {
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
-}
-
-void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index) {
-  data_size_t num_data_in_left = 0;
-  data_size_t num_data_in_right = 0;
-  const data_size_t* data_indices_in_left = data_partition_->GetIndexOnLeaf(left_leaf_index, &num_data_in_left);
-  const data_size_t* data_indices_in_right = data_partition_->GetIndexOnLeaf(right_leaf_index, &num_data_in_right);
-  double sum_left_gradient = 0.0;
-  double sum_right_gradient = 0.0;
-  double sum_left_hessian = 0.0;
-  double sum_right_hessian = 0.0;
-  double sum_gradient = 0.0;
-  double sum_hessian = 0.0;
-  const int num_threads = OMP_NUM_THREADS();
-  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_left_gradient,sum_left_hessian)
-  for (data_size_t i = 0; i < num_data_in_left; ++i) {
-    const data_size_t index = data_indices_in_left[i];
-    const double gradient = static_cast<double>(gradients_[index]);
-    const double hessian = static_cast<double>(hessians_[index]);
-    sum_left_gradient += gradient;
-    sum_left_hessian += hessian;
-  }
-  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_right_gradient,sum_right_hessian)
-  for (data_size_t i = 0; i < num_data_in_right; ++i) {
-    const data_size_t index = data_indices_in_right[i];
-    const double gradient = static_cast<double>(gradients_[index]);
-    const double hessian = static_cast<double>(hessians_[index]);
-    sum_right_gradient += gradient;
-    sum_right_hessian += hessian;
-  }
-  #pragma omp parallel for schedule(static) num_threads(num_threads) reduction(+:sum_gradient,sum_hessian)
-  for (data_size_t i = 0; i < num_data_; ++i) {
-    const double gradient = static_cast<double>(gradients_[i]);
-    const double hessian = static_cast<double>(hessians_[i]);
-    sum_gradient += gradient;
-    sum_hessian += hessian;
-  }
-  for (data_size_t i = 0; i < num_data_in_right; ++i) {
-    Log::Warning("data_indices_in_right[%d] = %d", i, data_indices_in_right[i]);
-  }
-  Log::Warning("sum_gradient = %f, sum_hessian = %f", sum_gradient, sum_hessian);
-  CHECK_EQ(num_data_in_left, best_split_info.left_count);
-  CHECK_EQ(num_data_in_right, best_split_info.right_count);
-  CHECK_LE(std::fabs(sum_left_gradient - best_split_info.left_sum_gradient), 1.0);
-  CHECK_LE(std::fabs(sum_left_hessian - best_split_info.left_sum_hessian), 1.0);
-  CHECK_LE(std::fabs(sum_right_gradient - best_split_info.right_sum_gradient), 1.0);
-  CHECK_LE(std::fabs(sum_right_hessian - best_split_info.right_sum_hessian), 1.0);
 }
 
 void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
