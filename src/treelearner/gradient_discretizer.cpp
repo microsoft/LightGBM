@@ -61,6 +61,8 @@ void GradientDiscretizer::Init(
     const BinMapper* bin_mapper = train_data->FeatureBinMapper(feature_index);
     change_hist_bits_buffer_[feature_index].resize((bin_mapper->num_bin() - static_cast<int>(bin_mapper->GetMostFreqBin() == 0)) * 2);
   }
+
+  ordered_int_gradients_and_hessians_.resize(2 * num_data);
 }
 
 void GradientDiscretizer::DiscretizeGradients(
