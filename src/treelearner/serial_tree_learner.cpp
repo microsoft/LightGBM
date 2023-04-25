@@ -304,10 +304,9 @@ void SerialTreeLearner::BeforeTrain() {
     } else {
       smaller_leaf_splits_->Init(
         gradient_discretizer_->discretized_gradients_and_hessians(),
-        *gradient_discretizer_->grad_scale(),
-        *gradient_discretizer_->hess_scale());
+        gradient_discretizer_->grad_scale(),
+        gradient_discretizer_->hess_scale());
     }
-
   } else {
     // use bagging, only use part of data
     if (!config_->use_quantized_grad) {
@@ -316,8 +315,8 @@ void SerialTreeLearner::BeforeTrain() {
       smaller_leaf_splits_->Init(
         0, data_partition_.get(),
         gradient_discretizer_->discretized_gradients_and_hessians(),
-        *gradient_discretizer_->grad_scale(),
-        *gradient_discretizer_->hess_scale());
+        gradient_discretizer_->grad_scale(),
+        gradient_discretizer_->hess_scale());
     }
   }
 
@@ -935,8 +934,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(leaf_splits->leaf_index());
     histogram_array_[feature_index].FindBestThresholdInt(
         leaf_splits->int_sum_gradients_and_hessians(),
-        *gradient_discretizer_->grad_scale(),
-        *gradient_discretizer_->hess_scale(),
+        gradient_discretizer_->grad_scale(),
+        gradient_discretizer_->hess_scale(),
         hist_bits_bin,
         hist_bits_bin,
         num_data,

@@ -93,7 +93,7 @@ class LeafSplits {
    * \param hess_scale Scaling factor to recover original hessians from discretized hessians
    */
   void Init(const int8_t* int_gradients_and_hessians,
-    const score_t grad_scale, const score_t hess_scale) {
+    const double grad_scale, const double hess_scale) {
     num_data_in_leaf_ = num_data_;
     leaf_index_ = 0;
     data_indices_ = nullptr;

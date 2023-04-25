@@ -41,12 +41,12 @@ class GradientDiscretizer {
     return discretized_gradients_and_hessians_vector_.data();
   }
 
-  virtual const score_t* grad_scale() const {
-    return &gradient_scale_;
+  virtual double grad_scale() const {
+    return gradient_scale_;
   }
 
-  virtual const score_t* hess_scale() const {
-    return &hessian_scale_;
+  virtual double hess_scale() const {
+    return hessian_scale_;
   }
 
   virtual void Init(
@@ -106,8 +106,8 @@ class GradientDiscretizer {
   double max_gradient_abs_;
   double max_hessian_abs_;
 
-  score_t gradient_scale_;
-  score_t hessian_scale_;
+  double gradient_scale_;
+  double hessian_scale_;
   double inverse_gradient_scale_;
   double inverse_hessian_scale_;
 
