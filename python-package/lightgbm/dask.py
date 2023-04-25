@@ -836,6 +836,7 @@ def _predict_part(
     **kwargs: Any
 ) -> _DaskPart:
 
+    result: _DaskPart
     if part.shape[0] == 0:
         result = np.array([])
     elif pred_proba:
