@@ -133,7 +133,7 @@ else
     packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat')"
 fi
 compile_from_source="both"
-if [[ $OS_NAME == "macos" ]]; then
+if [[ $OS_NAME == "macos" ]] && [[ "${R_MAJOR_VERSION}" != "3" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
