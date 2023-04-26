@@ -4191,7 +4191,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
-        leaf_preds: np.ndarray = predictor.predict(  # type: ignore[assignment]
+        leaf_preds: np.ndarray = predictor.predict(
             data=data,
             start_iteration=-1,
             pred_leaf=True,
@@ -4529,7 +4529,7 @@ class Booster:
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):  # type: ignore[arg-type]
                 raise ValueError(f"Wrong length of predict results for data {data_idx}")
             self.__is_predicted_cur_iter[data_idx] = True
-        result: np.ndarray = self.__inner_predict_buffer[data_idx]  # type: ignore[assignment]
+        result: np.ndarray = self.__inner_predict_buffer[data_idx]
         if self.__num_class > 1:
             num_data = result.size // self.__num_class
             result = result.reshape(num_data, self.__num_class, order='F')

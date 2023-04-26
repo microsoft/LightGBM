@@ -1091,7 +1091,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             self._class_weight = {self._class_map[k]: v for k, v in self.class_weight.items()}
 
         self._classes = self._le.classes_
-        self._n_classes = len(self._classes)  # type: ignore[arg-type]
+        self._n_classes = len(self._classes)
 
         # adjust eval metrics to match whether binary or multiclass
         # classification is being performed
