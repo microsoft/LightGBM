@@ -212,7 +212,7 @@ def _load_lib() -> ctypes.CDLL:
 _LIB: ctypes.CDLL
 if environ.get('LIGHTGBM_BUILD_DOC', False):
     from unittest.mock import Mock  # isort: skip
-    _LIB = Mock(ctypes.CDLL)  # type: ignore
+    _LIB = Mock(ctypes.CDLL)
 else:
     _LIB = _load_lib()
 

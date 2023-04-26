@@ -1089,7 +1089,7 @@ class _DaskLGBMModel:
         )
 
         self.set_params(**model.get_params())  # type: ignore[attr-defined]
-        self._lgb_dask_copy_extra_params(model, self)  # type: ignore[attr-defined]
+        self._lgb_dask_copy_extra_params(model, self)
 
         return self
 

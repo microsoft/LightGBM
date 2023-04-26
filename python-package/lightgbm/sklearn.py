@@ -1053,8 +1053,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")  # type: ignore
-    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
-                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
     _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
                  + _base_doc[_base_doc.find('eval_init_score :'):])
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
@@ -1147,8 +1147,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")  # type: ignore
-    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
-                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
+    _base_doc = (_base_doc[:_base_doc.find('group :')]
+                 + _base_doc[_base_doc.find('eval_set :'):])
     fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
                    + _base_doc[_base_doc.find('eval_metric :'):])
 
@@ -1209,7 +1209,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                          "due to the usage of customized objective function.\n"
                          "Returning raw scores instead.")
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:
             return result
         else:
             return np.vstack((1. - result, result)).transpose()
@@ -1305,8 +1305,8 @@ class LGBMRanker(LGBMModel):
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")  # type: ignore
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
-                   + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
+    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]
+                   + _base_doc[_base_doc.find('eval_init_score :'):])
     _base_doc = fit.__doc__
     _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition('feature_name :')
     fit.__doc__ = f"""{_before_feature_name}eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))

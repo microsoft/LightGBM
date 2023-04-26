@@ -30,6 +30,7 @@ echo "done running isort"
 echo "running mypy"
 mypy \
     --ignore-missing-imports \
+    --warn-unused-ignores \
     --exclude 'build/' \
     --exclude 'compile/' \
     --exclude 'docs/' \
