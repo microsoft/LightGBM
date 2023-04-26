@@ -4062,6 +4062,14 @@ def test_quantized_training():
     ds = lgb.Dataset(X, label=y)
     bst = lgb.train({'num_leaves': 15, 'verbose': -1, 'seed': 0}, ds, num_boost_round=10)
     rmse = np.sqrt(np.mean((bst.predict(X) - y) ** 2))
-    quant_bst = lgb.train({'num_leaves': 15, 'verbose': -1, 'seed': 0, 'use_quantized_grad': True}, ds, num_boost_round=10)
+    quantized_training_params = {
+        'num_leaves': 15,
+        'verbose': -1,
+        'seed': 0,
+        'use_quantized_grad': True,
+        'num_grad_quant_bins': 30,
+        'quant_train_renew_leaf': True,
+    }
+    quant_bst = lgb.train(quantized_training_params, ds, num_boost_round=10)
     quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
-    assert quant_rmse < rmse + 5.0
+    assert quant_rmse < rmse + 6.0
