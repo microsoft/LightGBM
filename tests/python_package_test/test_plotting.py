@@ -1,5 +1,6 @@
 # coding: utf-8
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.model_selection import train_test_split
 
@@ -19,6 +20,20 @@ from .utils import load_breast_cancer, make_synthetic_regression
 def breast_cancer_split():
     return train_test_split(*load_breast_cancer(return_X_y=True),
                             test_size=0.1, random_state=1)
+
+
+@pytest.fixture(scope="module")
+def categorical_data():
+    def _categorical_data(category_values_lower_bound, category_values_upper_bound):
+        X, y = load_breast_cancer(return_X_y=True)
+        X_df = pd.DataFrame()
+        rnd = np.random.RandomState(0)
+        n_cat_values = rnd.randint(category_values_lower_bound, category_values_upper_bound, size=X.shape[1])
+        for i in range(X.shape[1]):
+            bins = np.linspace(0, 1, num=n_cat_values[i]+1)
+            X_df[f"cat_col_{i}"] = pd.qcut(X[:, i], q=bins, labels=range(n_cat_values[i])).as_unordered()
+        return train_test_split(X_df, y, test_size=0.1, random_state=1)
+    return _categorical_data
 
 
 @pytest.fixture(scope="module")
@@ -186,6 +201,37 @@ def test_create_tree_digraph(breast_cancer_split):
     assert '#ddffdd' in graph_body
     assert 'data' not in graph_body
     assert 'count' not in graph_body
+
+
+@pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason='graphviz is not installed')
+def test_tree_with_categories_below_max_category_values(categorical_data):
+    X_train, _, y_train, _ = categorical_data(2, 10)
+    gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
+    gbm.fit(X_train, y_train)
+
+    with pytest.raises(IndexError):
+        lgb.create_tree_digraph(gbm, tree_index=83)
+
+    graph = lgb.create_tree_digraph(gbm, tree_index=3,
+                                    show_info=['split_gain', 'internal_value', 'internal_weight'],
+                                    name='Tree4', node_attr={'color': 'red'},
+                                    max_category_values=10)
+    graph.render(view=False)
+    assert isinstance(graph, graphviz.Digraph)
+    assert graph.name == 'Tree4'
+    assert len(graph.node_attr) == 1
+    assert graph.node_attr['color'] == 'red'
+    assert len(graph.graph_attr) == 0
+    assert len(graph.edge_attr) == 0
+    graph_body = ''.join(graph.body)
+    assert 'leaf' in graph_body
+    assert 'gain' in graph_body
+    assert 'value' in graph_body
+    assert 'weight' in graph_body
+    assert 'data' not in graph_body
+    assert 'count' not in graph_body
+    assert '||...||' not in graph_body
+    
 
 
 @pytest.mark.parametrize('use_missing', [True, False])
