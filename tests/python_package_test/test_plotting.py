@@ -28,7 +28,7 @@ def _categorical_data(category_values_lower_bound, category_values_upper_bound):
     rnd = np.random.RandomState(0)
     n_cat_values = rnd.randint(category_values_lower_bound, category_values_upper_bound, size=X.shape[1])
     for i in range(X.shape[1]):
-        bins = np.linspace(0, 1, num=n_cat_values[i]+1)
+        bins = np.linspace(0, 1, num=n_cat_values[i] + 1)
         X_df[f"cat_col_{i}"] = pd.qcut(X[:, i], q=bins, labels=range(n_cat_values[i])).as_unordered()
     return X_df, y
 
@@ -204,14 +204,14 @@ def test_create_tree_digraph(breast_cancer_split):
 def test_tree_with_categories_below_max_category_values():
     X_train, y_train = _categorical_data(2, 10)
     params = {
-    "n_estimators": 10,
-    "num_leaves": 3,
-    "min_data_in_bin": 1,
-    "force_col_wise": True,
-    "deterministic": True,
-    "num_threads": 1,
-    "seed": 708,
-    "verbose": -1
+        "n_estimators": 10,
+        "num_leaves": 3,
+        "min_data_in_bin": 1,
+        "force_col_wise": True,
+        "deterministic": True,
+        "num_threads": 1,
+        "seed": 708,
+        "verbose": -1
     }
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
@@ -244,14 +244,14 @@ def test_tree_with_categories_below_max_category_values():
 def test_tree_with_categories_above_max_category_values():
     X_train, y_train = _categorical_data(20, 30)
     params = {
-    "n_estimators": 10,
-    "num_leaves": 3,
-    "min_data_in_bin": 1,
-    "force_col_wise": True,
-    "deterministic": True,
-    "num_threads": 1,
-    "seed": 708,
-    "verbose": -1
+        "n_estimators": 10,
+        "num_leaves": 3,
+        "min_data_in_bin": 1,
+        "force_col_wise": True,
+        "deterministic": True,
+        "num_threads": 1,
+        "seed": 708,
+        "verbose": -1
     }
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
