@@ -183,11 +183,7 @@ elif [[ $TASK == "bdist" ]]; then
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
     pip install --user $BUILD_DIRECTORY/dist/*.whl || exit -1
-<<<<<<< HEAD
-    pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
-=======
     pytest $BUILD_DIRECTORY/tests || exit -1
->>>>>>> python/use-a-script
     exit 0
 fi
 
