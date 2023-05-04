@@ -187,6 +187,19 @@ class LeafSplits {
   }
 
   /*!
+  * \brief Init splits on current leaf, only update sum_gradients and sum_hessians
+  * \param sum_gradients
+  * \param sum_hessians
+  * \param int_sum_gradients_and_hessians
+  */
+  void Init(double sum_gradients, double sum_hessians, int64_t int_sum_gradients_and_hessians) {
+    leaf_index_ = 0;
+    sum_gradients_ = sum_gradients;
+    sum_hessians_ = sum_hessians;
+    int_sum_gradients_and_hessians_ = int_sum_gradients_and_hessians;
+  }
+
+  /*!
   * \brief Init splits on current leaf
   */
   void Init() {

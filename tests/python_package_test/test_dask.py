@@ -1854,3 +1854,33 @@ def test_predict_with_raw_score(task, output, cluster):
         if task.endswith('classification'):
             pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
             assert_eq(raw_predictions, pred_proba_raw)
+
+
+def test_distributed_quantized_training():
+    with Client(LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output='array'
+        )
+
+        np.savetxt("data_dask.csv", np.hstack([np.array([y]).T, X]), fmt="%f,%f,%f,%f,%f")
+
+        params = {
+            "boosting_type": 'gbdt',
+            "n_estimators": 50,
+            "num_leaves": 31,
+            'use_quantized_grad': True,
+            'num_grad_quant_bins': 30,
+            'quant_train_renew_leaf': True,
+            'verbose': -1,
+            'force_row_wise': True,
+        }
+
+        dask_classifier = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        p1 = dask_classifier.predict(dX)
+        rmse = np.sqrt(np.mean((p1.compute() - y) ** 2))
