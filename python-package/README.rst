@@ -193,34 +193,33 @@ For **Windows** users, if you get any errors during installation and there is th
 .. code:: sh
 
     git clone --recursive https://github.com/microsoft/LightGBM.git
-    cd LightGBM/python-package
     # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
-    python setup.py install
+    sh ./build-python.sh install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
 
-Run ``python setup.py install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
 
-Run ``python setup.py install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
+Run ``sh ./build-python.sh install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
-Run ``python setup.py install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
-Run ``python setup.py install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
-If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
+If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
 ****************
 
-You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+You can use ``sh ./build-python.sh install bdist_wheel`` instead of ``sh ./build-python.sh install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
 
 Install Dask-package
 ''''''''''''''''''''
@@ -235,7 +234,7 @@ To install all additional dependencies required for Dask-package, you can append
 
     pip install lightgbm[dask]
 
-Or replace ``python setup.py install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
+Or replace ``sh ./build-python.sh install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
 
 Troubleshooting
 ---------------
