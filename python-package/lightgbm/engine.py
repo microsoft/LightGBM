@@ -141,6 +141,20 @@ def train(
     booster : Booster
         The trained Booster model.
     """
+    if not isinstance(train_set, Dataset):
+        raise TypeError(f"train() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
+
+    if num_boost_round <= 0:
+        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
+
+    if isinstance(valid_sets, list):
+        for i, valid_item in enumerate(valid_sets):
+            if not isinstance(valid_item, Dataset):
+                raise TypeError(
+                    "Every item in valid_sets must be a Dataset object. "
+                    f"Item {i} has type '{type(valid_item).__name__}'."
+                )
+
     # create predictor first
     params = copy.deepcopy(params)
     params = _choose_param_value(
@@ -167,17 +181,12 @@ def train(
         params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
-    if num_boost_round <= 0:
-        raise ValueError("num_boost_round should be greater than zero.")
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(dict(init_model.params, **params))
+        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
-    # check dataset
-    if not isinstance(train_set, Dataset):
-        raise TypeError("Training only accepts Dataset object")
 
     train_set._update_params(params) \
              ._set_predictor(predictor) \
@@ -200,8 +209,6 @@ def train(
                 if valid_names is not None:
                     train_data_name = valid_names[i]
                 continue
-            if not isinstance(valid_data, Dataset):
-                raise TypeError("Training only accepts Dataset object")
             reduced_valid_sets.append(valid_data._update_params(params).set_reference(train_set))
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
@@ -538,7 +545,7 @@ def cv(
     callbacks: Optional[List[Callable]] = None,
     eval_train_metric: bool = False,
     return_cvbooster: bool = False
-) -> Dict[str, Any]:
+) -> Dict[str, Union[List[float], CVBooster]]:
     """Perform the cross-validation with given parameters.
 
     Parameters
@@ -644,10 +651,14 @@ def cv(
         {'metric1-mean': [values], 'metric1-stdv': [values],
         'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
-        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
+        If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
     """
     if not isinstance(train_set, Dataset):
-        raise TypeError("Training only accepts Dataset object")
+        raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
+
+    if num_boost_round <= 0:
+        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
+
     params = copy.deepcopy(params)
     params = _choose_param_value(
         main_param_name='objective',
@@ -673,12 +684,10 @@ def cv(
         params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
-    if num_boost_round <= 0:
-        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(dict(init_model.params, **params))
+        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
     else:
         predictor = None
 
@@ -754,6 +763,6 @@ def cv(
             break
 
     if return_cvbooster:
-        results['cvbooster'] = cvfolds
+        results['cvbooster'] = cvfolds  # type: ignore[assignment]
 
     return dict(results)

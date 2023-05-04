@@ -189,7 +189,7 @@ def _train_part(
     local_listen_port: int,
     num_machines: int,
     return_model: bool,
-    time_out: int = 120,
+    time_out: int,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -836,6 +836,7 @@ def _predict_part(
     **kwargs: Any
 ) -> _DaskPart:
 
+    result: _DaskPart
     if part.shape[0] == 0:
         result = np.array([])
     elif pred_proba:
