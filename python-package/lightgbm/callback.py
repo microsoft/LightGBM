@@ -454,6 +454,8 @@ class _ProgressBarCallback:
                 callbacks = [early_stopping_callback, ProgressBarCallback(early_stopping_callback=early_stopping_callback)]
                 estimator.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=callbacks)
         """
+        self.order = 40
+        self.before_iteration = False
         if isinstance(tqdm_cls, str):
             try:
                 tqdm_module = importlib.import_module(f"tqdm.{tqdm_cls}")
