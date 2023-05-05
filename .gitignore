@@ -399,6 +399,7 @@ lightgbm.model
 /cmake-build-debug/
 
 # Files from local Python install
+lightgbm-python/
 python-package/LICENSE
 python-package/build_cpp/
 python-package/compile/
