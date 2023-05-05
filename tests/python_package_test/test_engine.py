@@ -4116,3 +4116,19 @@ def test_train_raises_informative_error_for_params_of_wrong_type():
     dtrain = lgb.Dataset(X, label=y)
     with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
+
+
+def test_quantized_training():
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, label=y)
+    bst_params = {'num_leaves': 15, 'verbose': -1, 'seed': 0}
+    bst = lgb.train(bst_params, ds, num_boost_round=10)
+    rmse = np.sqrt(np.mean((bst.predict(X) - y) ** 2))
+    bst_params.update({
+        'use_quantized_grad': True,
+        'num_grad_quant_bins': 30,
+        'quant_train_renew_leaf': True,
+    })
+    quant_bst = lgb.train(bst_params, ds, num_boost_round=10)
+    quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
+    assert quant_rmse < rmse + 6.0
