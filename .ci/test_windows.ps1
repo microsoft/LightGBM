@@ -57,7 +57,8 @@ conda create -q -y -n $env:CONDA_ENV `
   python-graphviz `
   scikit-learn `
   scipy `
-  tqdm ; Check-Output $?
+  tqdm `
+  types-tqdm ; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
