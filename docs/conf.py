@@ -103,6 +103,7 @@ autodoc_mock_imports = [
     'pandas',
     'scipy',
     'scipy.sparse',
+    'tqdm'
 ]
 try:
     import sklearn  # noqa: F401

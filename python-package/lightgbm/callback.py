@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import collections
 import importlib
+import sys
 import warnings
 from collections import OrderedDict
 from functools import partial
 from typing import Any, Callable, Dict, List, Tuple, Type, Union
-import sys
 
 from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
@@ -429,6 +429,7 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
 
 class _ProgressBarCallback:
     """Internal class to handle progress bar."""
+
     tqdm_cls: "Type[tqdm.std.tqdm]"
     pbar: "tqdm.std.tqdm" | None
 
@@ -513,23 +514,25 @@ class _ProgressBarCallback:
         # update pbar
         self.pbar.update()
         self.pbar.refresh()
-    
+
     # do not pickle tqdm instance
     def __getstate__(self) -> dict[str, Any]:
         state = self.__dict__.copy()
         state["pbar"] = None
         # class should be picklable
         return state
-    
+
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
         self.pbar = None
 
+
 if sys.version_info >= (3, 8):
     from typing import Literal, overload
-    
-    @overload
-    def progress_bar(tqdm_cls: Literal[
+
+    @overload  # type: ignore
+    def progress_bar(  # type: ignore
+        tqdm_cls: Literal[
             "auto",
             "autonotebook",
             "std",
@@ -544,10 +547,36 @@ if sys.version_info >= (3, 8):
             "contrib.discord",
             "contrib.telegram",
             "contrib.bells",
-        ], early_stopping_callback: _EarlyStoppingCallback | None = None, **tqdm_kwargs: Any) -> _ProgressBarCallback:
+        ],
+        early_stopping_callback: _EarlyStoppingCallback | None = None,
+        **tqdm_kwargs: Any
+    ) -> _ProgressBarCallback:
+        """Progress bar callback for LightGBM training.
+
+        Parameters
+        ----------
+        tqdm_cls : Literal[ &quot;auto&quot;, &quot;autonotebook&quot;, &quot;std&quot;, &quot;notebook&quot;, &quot;asyncio&quot;, &quot;keras&quot;, &quot;dask&quot;, &quot;tk&quot;, &quot;gui&quot;, &quot;rich&quot;, &quot;contrib.slack&quot;, &quot;contrib.discord&quot;, &quot;contrib.telegram&quot;, &quot;contrib.bells&quot;, ] | Type[tqdm.std.tqdm], optional
+            The tqdm class or module name, by default &quot;auto&quot;
+        early_stopping_callback : Any | None, optional
+            The early stopping callback, by default None
+
+            .. rubric:: Example
+
+            .. code-block:: python
+                early_stopping_callback = early_stopping(stopping_rounds=50)
+                callbacks = [early_stopping_callback, progress_bar(early_stopping_callback=early_stopping_callback)]
+                estimator.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=callbacks)
+
+        Returns
+        -------
+        callback : _ProgressBarCallback
+            The callback that displays the progress bar.
+        """
         ...
 
-def progress_bar(tqdm_cls: str | Type["tqdm.std.tqdm"] = "auto",
+
+def progress_bar(  # type: ignore
+    tqdm_cls: str | Type["tqdm.std.tqdm"] = "auto",
     early_stopping_callback: _EarlyStoppingCallback | None = None,
     **tqdm_kwargs: Any,
 ) -> _ProgressBarCallback:
