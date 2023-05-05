@@ -63,13 +63,12 @@ def test_reset_parameter_callback_is_picklable(serializer):
 def test_progress_bar_callback_is_picklable(serializer):
     callback = lgb.progress_bar()
     callback_from_disk = pickle_and_unpickle_object(obj=callback, serializer=serializer)
-    callback.CallbackEnv(model=None,
+    callback(lightgbm.callback.CallbackEnv(model=None,
                          params={},
                          iteration=1,
                          begin_iteration=0,
                          end_iteration=100,
-                         evaluation_result_list=[])
-    callback.pbar = tqdm.tqdm(total=100)
+                         evaluation_result_list=[]))
     assert callback_from_disk.order == 40
     assert callback_from_disk.before_iteration is False
 
