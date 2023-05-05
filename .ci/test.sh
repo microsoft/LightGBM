@@ -134,7 +134,8 @@ conda create -q -y -n $CONDA_ENV \
     ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \
     scikit-learn \
-    scipy || exit -1
+    scipy \
+    tqdm || exit -1
 
 source activate $CONDA_ENV
 
