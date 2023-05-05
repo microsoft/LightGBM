@@ -7,7 +7,8 @@ import importlib
 import warnings
 from collections import OrderedDict
 from functools import partial
-from typing import Any, Callable, Dict, List, Literal, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Tuple, Type, Union
+import sys
 
 from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
 
@@ -426,14 +427,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     return _EarlyStoppingCallback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
 
 
-class _ProgressBarCallback:
-    """Internal class to handle progress bar."""
-    tqdm_cls: "Type[tqdm.std.tqdm]"
-    pbar: "tqdm.std.tqdm" | None
-
-    def __init__(
-        self,
-        tqdm_cls: Literal[
+if sys.version_info >= (3, 8):
+    from typing import Literal
+    _tqdm_module_name_str = Literal[
             "auto",
             "autonotebook",
             "std",
@@ -449,6 +445,17 @@ class _ProgressBarCallback:
             "contrib.telegram",
             "contrib.bells",
         ]
+else:
+    _tqdm_module_name_str = str
+
+class _ProgressBarCallback:
+    """Internal class to handle progress bar."""
+    tqdm_cls: "Type[tqdm.std.tqdm]"
+    pbar: "tqdm.std.tqdm" | None
+
+    def __init__(
+        self,
+        tqdm_cls: _tqdm_module_name_str
         | "Type[tqdm.std.tqdm]" = "auto",
         early_stopping_callback: Any | None = None,
         **tqdm_kwargs: Any,
@@ -528,22 +535,7 @@ class _ProgressBarCallback:
         self.pbar.refresh()
 
 
-def progress_bar(tqdm_cls: Literal[
-    "auto",
-    "autonotebook",
-    "std",
-    "notebook",
-    "asyncio",
-    "keras",
-    "dask",
-    "tk",
-    "gui",
-    "rich",
-    "contrib.slack",
-    "contrib.discord",
-    "contrib.telegram",
-    "contrib.bells",
-]
+def progress_bar(tqdm_cls: _tqdm_module_name_str
     | "Type[tqdm.std.tqdm]" = "auto",
     early_stopping_callback: _EarlyStoppingCallback | None = None,
     **tqdm_kwargs: Any,
