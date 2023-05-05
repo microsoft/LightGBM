@@ -98,7 +98,7 @@ while [ $# -gt 0 ]; do
             then shift;
         fi
         BOOST_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_DIR='${BOOST_IR}'"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'"
         ;;
     --boost-include-dir|--boost-include-dir=*)
         if [[ "$1" != *=* ]];
@@ -156,6 +156,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         export CMAKE_GENERATOR='MinGW Makefiles'
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -213,18 +214,18 @@ create_isolated_source_dir() {
     ######################
     # fast_double_parser #
     ######################
-    mkdir -p ./lightgbm-python/external_libs/fast_double_parser
+    mkdir -p ./lightgbm-python/compile/external_libs/fast_double_parser
     cp \
         external_libs/fast_double_parser/CMakeLists.txt \
-        ./lightgbm-python/external_libs/fast_double_parser/CMakeLists.txt
+        ./lightgbm-python/compile/external_libs/fast_double_parser/CMakeLists.txt
     cp \
         external_libs/fast_double_parser/LICENSE* \
-        ./lightgbm-python/external_libs/fast_double_parser/
+        ./lightgbm-python/compile/external_libs/fast_double_parser/
 
-    mkdir -p ./lightgbm-python/external_libs/fast_double_parser/include/
+    mkdir -p ./lightgbm-python/compile/external_libs/fast_double_parser/include/
     cp \
         external_libs/fast_double_parser/include/fast_double_parser.h \
-        ./lightgbm-python/external_libs/fast_double_parser/include/
+        ./lightgbm-python/compile/external_libs/fast_double_parser/include/
 
     #######
     # fmt #
@@ -347,7 +348,7 @@ fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
-    rm -f ../dist/*.whl
+    rm -f ../dist/*.whl || true
     MAKEFLAGS="-j3" \
     python -m build \
         --wheel \
@@ -357,11 +358,14 @@ if test "${BUILD_WHEEL}" = true; then
 fi
 
 if test "${INSTALL}" = true; then
-    if test "${PRECOMPILE}" = true; then
-        pip install ${PIP_INSTALL_ARGS} ../dist/*.tar.gz
-    else
-        pip install ${PIP_INSTALL_ARGS} ../dist/*.whl
-    fi
+    echo "--- installing lightgbm ---"
+    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
+    cd ../dist
+    pip install \
+        ${PIP_INSTALL_ARGS} \
+        --find-links=. \
+        lightgbm
+    cd ../
 fi
 
 echo "cleaning up"

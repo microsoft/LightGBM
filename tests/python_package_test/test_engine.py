@@ -1075,6 +1075,67 @@ def test_cv():
     np.testing.assert_allclose(cv_res_lambda['valid ndcg@3-mean'], cv_res_lambda_obj['valid ndcg@3-mean'])
 
 
+def test_cv_works_with_init_model(tmp_path):
+    X, y = make_synthetic_regression()
+    params = {'objective': 'regression', 'verbose': -1}
+    num_train_rounds = 2
+    lgb_train = lgb.Dataset(X, y, free_raw_data=False)
+    bst = lgb.train(
+        params=params,
+        train_set=lgb_train,
+        num_boost_round=num_train_rounds
+    )
+    preds_raw = bst.predict(X, raw_score=True)
+    model_path_txt = str(tmp_path / 'lgb.model')
+    bst.save_model(model_path_txt)
+
+    num_cv_rounds = 5
+    cv_kwargs = {
+        "num_boost_round": num_cv_rounds,
+        "nfold": 3,
+        "stratified": False,
+        "shuffle": False,
+        "seed": 708,
+        "return_cvbooster": True,
+        "params": params
+    }
+
+    # init_model from an in-memory Booster
+    cv_res = lgb.cv(
+        train_set=lgb_train,
+        init_model=bst,
+        **cv_kwargs
+    )
+    cv_bst_w_in_mem_init_model = cv_res["cvbooster"]
+    assert cv_bst_w_in_mem_init_model.current_iteration() == [num_train_rounds + num_cv_rounds] * 3
+    for booster in cv_bst_w_in_mem_init_model.boosters:
+        np.testing.assert_allclose(
+            preds_raw,
+            booster.predict(X, raw_score=True, num_iteration=num_train_rounds)
+        )
+
+    # init_model from a text file
+    cv_res = lgb.cv(
+        train_set=lgb_train,
+        init_model=model_path_txt,
+        **cv_kwargs
+    )
+    cv_bst_w_file_init_model = cv_res["cvbooster"]
+    assert cv_bst_w_file_init_model.current_iteration() == [num_train_rounds + num_cv_rounds] * 3
+    for booster in cv_bst_w_file_init_model.boosters:
+        np.testing.assert_allclose(
+            preds_raw,
+            booster.predict(X, raw_score=True, num_iteration=num_train_rounds)
+        )
+
+    # predictions should be identical
+    for i in range(3):
+        np.testing.assert_allclose(
+            cv_bst_w_in_mem_init_model.boosters[i].predict(X),
+            cv_bst_w_file_init_model.boosters[i].predict(X)
+        )
+
+
 def test_cvbooster():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -4015,6 +4076,38 @@ def test_validate_features():
 
     # check that disabling the check doesn't raise the error
     bst.refit(df2, y, validate_features=False)
+
+
+def test_train_and_cv_raise_informative_error_for_train_set_of_wrong_type():
+    with pytest.raises(TypeError, match=r"train\(\) only accepts Dataset object, train_set has type 'list'\."):
+        lgb.train({}, train_set=[])
+    with pytest.raises(TypeError, match=r"cv\(\) only accepts Dataset object, train_set has type 'list'\."):
+        lgb.cv({}, train_set=[])
+
+
+@pytest.mark.parametrize('num_boost_round', [-7, -1, 0])
+def test_train_and_cv_raise_informative_error_for_impossible_num_boost_round(num_boost_round):
+    X, y = make_synthetic_regression(n_samples=100)
+    error_msg = rf"num_boost_round must be greater than 0\. Got {num_boost_round}\."
+    with pytest.raises(ValueError, match=error_msg):
+        lgb.train({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
+    with pytest.raises(ValueError, match=error_msg):
+        lgb.cv({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
+
+
+def test_train_raises_informative_error_if_any_valid_sets_are_not_dataset_objects():
+    X, y = make_synthetic_regression(n_samples=100)
+    X_valid = X * 2.0
+    with pytest.raises(TypeError, match=r"Every item in valid_sets must be a Dataset object\. Item 1 has type 'tuple'\."):
+        lgb.train(
+            params={},
+            train_set=lgb.Dataset(X, y),
+            valid_sets=[
+                lgb.Dataset(X_valid, y),
+                ([1.0], [2.0]),
+                [5.6, 5.7, 5.8]
+            ]
+        )
 
 
 def test_train_raises_informative_error_for_params_of_wrong_type():
