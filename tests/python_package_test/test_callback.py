@@ -55,3 +55,17 @@ def test_reset_parameter_callback_is_picklable(serializer):
     assert callback_from_disk.before_iteration is True
     assert callback.kwargs == callback_from_disk.kwargs
     assert callback.kwargs == params
+
+@pytest.mark.parametrize('serializer', SERIALIZERS)
+def test_progress_bar_callback_is_picklable(serializer):
+    rounds = 5
+    callback = lgb.progress_bar()
+    callback_from_disk = pickle_and_unpickle_object(obj=callback, serializer=serializer)
+    assert callback_from_disk.order == 30
+    assert callback_from_disk.before_iteration is False
+    assert callback.stopping_rounds == callback_from_disk.stopping_rounds
+    assert callback.stopping_rounds == rounds
+
+def test_progress_bar_warn_override() -> None:
+    with pytest.warns(UserWarning):
+        lgb.progress_bar(total=100)
