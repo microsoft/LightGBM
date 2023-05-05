@@ -65,7 +65,7 @@ def test_progress_bar_callback_is_picklable(serializer):
     callback_from_disk = pickle_and_unpickle_object(obj=callback, serializer=serializer)
     callback(lightgbm.callback.CallbackEnv(model=None,
                          params={},
-                         iteration=1,
+                         iteration=0,
                          begin_iteration=0,
                          end_iteration=100,
                          evaluation_result_list=[]))
