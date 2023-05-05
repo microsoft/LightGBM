@@ -1856,8 +1856,8 @@ def test_predict_with_raw_score(task, output, cluster):
             assert_eq(raw_predictions, pred_proba_raw)
 
 
-def test_distributed_quantized_training():
-    with Client(LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)) as client:
+def test_distributed_quantized_training(cluster):
+    with Client(cluster) as client:
         X, y, w, _, dX, dy, dw, _ = _create_data(
             objective='regression',
             output='array'
@@ -1876,6 +1876,16 @@ def test_distributed_quantized_training():
             'force_row_wise': True,
         }
 
+        quant_dask_classifier = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            **params
+        )
+        quant_dask_classifier = quant_dask_classifier.fit(dX, dy, sample_weight=dw)
+        quant_p1 = quant_dask_classifier.predict(dX)
+        quant_rmse = np.sqrt(np.mean((quant_p1.compute() - y) ** 2))
+
+        params["use_quantized_grad"] = False
         dask_classifier = lgb.DaskLGBMRegressor(
             client=client,
             time_out=5,
@@ -1884,3 +1894,4 @@ def test_distributed_quantized_training():
         dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
         p1 = dask_classifier.predict(dX)
         rmse = np.sqrt(np.mean((p1.compute() - y) ** 2))
+        assert quant_rmse < rmse + 7.0
