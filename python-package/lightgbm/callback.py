@@ -513,6 +513,17 @@ class _ProgressBarCallback:
         # update pbar
         self.pbar.update()
         self.pbar.refresh()
+    
+    # do not pickle tqdm instance
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        state["pbar"] = None
+        # class should be picklable
+        return state
+    
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.pbar = None
 
 if sys.version_info >= (3, 8):
     from typing import Literal, overload
