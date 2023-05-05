@@ -22,6 +22,8 @@
 #
 # [options]
 #
+#     --boost-dir=FILEPATH
+#                                   Directory with Boost package configuration file.
 #     --boost-include-dir=FILEPATH
 #                                   Directory containing Boost headers.
 #     --boost-librarydir=FILEPATH
@@ -69,12 +71,6 @@ BUILD_WHEEL="false"
 PIP_INSTALL_ARGS=""
 BUILD_ARGS=""
 PRECOMPILE="false"
-
-BOOST_INCLUDE_DIR=""
-BOOST_LIBRARY_DIR=""
-BOOST_ROOT=""
-OPENCL_INCLUDE_DIR=""
-OPENCL_LIBRARY=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -156,6 +152,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         export CMAKE_GENERATOR='MinGW Makefiles'
+        # ref: https://stackoverflow.com/a/45104058/3986677
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND"
         ;;
     --mpi)
@@ -350,7 +347,6 @@ fi
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    MAKEFLAGS="-j3" \
     python -m build \
         --wheel \
         --outdir ../dist \
