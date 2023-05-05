@@ -1,9 +1,11 @@
 # coding: utf-8
 import pytest
+from sklearn.model_selection import train_test_split
+import tqdm
 
 import lightgbm as lgb
 
-from .utils import SERIALIZERS, pickle_and_unpickle_object
+from .utils import SERIALIZERS, load_breast_cancer, pickle_and_unpickle_object
 
 
 def reset_feature_fraction(boosting_round):
@@ -69,3 +71,31 @@ def test_progress_bar_callback_is_picklable(serializer):
 def test_progress_bar_warn_override() -> None:
     with pytest.warns(UserWarning):
         lgb.progress_bar(total=100)
+
+def test_progress_bar_binary():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1)
+    callback = lgb.progress_bar()
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5), callback])
+    
+    assert issubclass(callback.tqdm_cls, tqdm.std.tqdm)
+    assert isinstance(callback.pbar, tqdm.std.tqdm)
+    assert callback.pbar is not None
+    assert callback.pbar.total == gbm.n_estimators
+    assert callback.pbar.n == gbm.n_estimators
+
+def test_progress_bar_early_stopping_binary():
+    X, y = load_breast_cancer(return_X_y=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1)
+    early_stopping = lgb.early_stopping(5)
+    callback = lgb.progress_bar(early_stopping=early_stopping)
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[early_stopping, callback])
+    
+    assert issubclass(callback.tqdm_cls, tqdm.std.tqdm)
+    assert isinstance(callback.pbar, tqdm.std.tqdm)
+    assert callback.pbar is not None
+    assert callback.pbar.total == gbm.n_estimators
+    assert callback.pbar.n >= 0
+    assert callback.pbar.n <= gbm.n_estimators
