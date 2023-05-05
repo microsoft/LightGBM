@@ -333,7 +333,8 @@ if test "${INSTALL}" = true; then
         fi
         rm -f ./*.bak
     else
-        BUILD_WHEEL=true
+        BUILD_SDIST="false"
+        BUILD_WHEEL="true"
     fi
 fi
 
