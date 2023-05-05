@@ -81,7 +81,7 @@ def test_progress_bar_binary():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMClassifier(n_estimators=50, verbose=-1)
     callback = lgb.progress_bar()
-    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5), callback])
+    gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[callback])
     
     assert issubclass(callback.tqdm_cls, tqdm.std.tqdm)
     assert isinstance(callback.pbar, tqdm.std.tqdm)
