@@ -427,27 +427,6 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     return _EarlyStoppingCallback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
 
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
-    _tqdm_module_name_str = Literal[
-            "auto",
-            "autonotebook",
-            "std",
-            "notebook",
-            "asyncio",
-            "keras",
-            "dask",
-            "tk",
-            "gui",
-            "rich",
-            "contrib.slack",
-            "contrib.discord",
-            "contrib.telegram",
-            "contrib.bells",
-        ]
-else:
-    _tqdm_module_name_str = str
-
 class _ProgressBarCallback:
     """Internal class to handle progress bar."""
     tqdm_cls: "Type[tqdm.std.tqdm]"
@@ -455,8 +434,7 @@ class _ProgressBarCallback:
 
     def __init__(
         self,
-        tqdm_cls: _tqdm_module_name_str
-        | "Type[tqdm.std.tqdm]" = "auto",
+        tqdm_cls: str | Type["tqdm.std.tqdm"] = "auto",
         early_stopping_callback: Any | None = None,
         **tqdm_kwargs: Any,
     ) -> None:
@@ -534,9 +512,29 @@ class _ProgressBarCallback:
         self.pbar.update()
         self.pbar.refresh()
 
+if sys.version_info >= (3, 8):
+    from typing import Literal, overload
+    
+    @overload
+    def progress_bar(tqdm_cls: Literal[
+            "auto",
+            "autonotebook",
+            "std",
+            "notebook",
+            "asyncio",
+            "keras",
+            "dask",
+            "tk",
+            "gui",
+            "rich",
+            "contrib.slack",
+            "contrib.discord",
+            "contrib.telegram",
+            "contrib.bells",
+        ], early_stopping_callback: _EarlyStoppingCallback | None = None, **tqdm_kwargs: Any) -> _ProgressBarCallback:
+        ...
 
-def progress_bar(tqdm_cls: _tqdm_module_name_str
-    | "Type[tqdm.std.tqdm]" = "auto",
+def progress_bar(tqdm_cls: str | Type["tqdm.std.tqdm"] = "auto",
     early_stopping_callback: _EarlyStoppingCallback | None = None,
     **tqdm_kwargs: Any,
 ) -> _ProgressBarCallback:
