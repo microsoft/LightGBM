@@ -22,6 +22,8 @@
 #
 # [options]
 #
+#     --boost-dir=FILEPATH
+#                                   Directory with Boost package configuration file.
 #     --boost-include-dir=FILEPATH
 #                                   Directory containing Boost headers.
 #     --boost-librarydir=FILEPATH
@@ -70,12 +72,6 @@ PIP_INSTALL_ARGS=""
 BUILD_ARGS=""
 PRECOMPILE="false"
 
-BOOST_INCLUDE_DIR=""
-BOOST_LIBRARY_DIR=""
-BOOST_ROOT=""
-OPENCL_INCLUDE_DIR=""
-OPENCL_LIBRARY=""
-
 while [ $# -gt 0 ]; do
   case "$1" in
     ############################
@@ -93,6 +89,13 @@ while [ $# -gt 0 ]; do
     ############################
     # customized library paths #
     ############################
+    --boost-dir|--boost-dir=*)
+        if [[ "$1" != *=* ]];
+            then shift;
+        fi
+        BOOST_DIR="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --boost-dir='${BOOST_DIR}'"
+        ;;
     --boost-include-dir|--boost-include-dir=*)
         if [[ "$1" != *=* ]];
             then shift;
@@ -312,7 +315,7 @@ if test "${BUILD_SDIST}" = true; then
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"#
+    echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     python setup.py bdist_wheel \
         --dist-dir ../dist \
