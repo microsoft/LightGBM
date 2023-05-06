@@ -658,6 +658,38 @@ Learning Control Parameters
 
    -  **Note**: can be used only in CLI version
 
+-  ``use_quantized_grad`` :raw-html:`<a id="use_quantized_grad" title="Permalink to this parameter" href="#use_quantized_grad">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use gradient quantization when training
+
+   -  enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
+
+   -  with quantized training, most arithmetics in the training process will be integer operations
+
+   -  gradient quantization can accelerate training, with little accuracy drop in most cases
+
+   -  **Note**: can be used only with ``device_type = cpu``
+
+-  ``num_grad_quant_bins`` :raw-html:`<a id="num_grad_quant_bins" title="Permalink to this parameter" href="#num_grad_quant_bins">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
+
+   -  number of bins to quantization gradients and hessians
+
+   -  with more bins, the quantized training will be closer to full precision training
+
+   -  **Note**: can be used only with ``device_type = cpu``
+
+-  ``quant_train_renew_leaf`` :raw-html:`<a id="quant_train_renew_leaf" title="Permalink to this parameter" href="#quant_train_renew_leaf">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to renew the leaf values with original gradients when quantized training
+
+   -  renewing is very helpful for good quantized training accuracy for ranking objectives
+
+   -  **Note**: can be used only with ``device_type = cpu``
+
+-  ``stochastic_rounding`` :raw-html:`<a id="stochastic_rounding" title="Permalink to this parameter" href="#stochastic_rounding">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  whether to use stochastic rounding in gradient quantization
+
 IO Parameters
 -------------
 

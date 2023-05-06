@@ -378,12 +378,20 @@ void Config::CheckParamConflict() {
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
+    if (use_quantized_grad) {
+      Log::Warning("Quantized training is not supported by GPU tree learner. Switch to full precision training.");
+      use_quantized_grad = false;
+    }
   } else if (device_type == std::string("cuda")) {
     // force row-wise for cuda version
     force_col_wise = false;
     force_row_wise = true;
     if (deterministic) {
       Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+    }
+    if (use_quantized_grad) {
+      Log::Warning("Quantized training is not supported by CUDA tree learner. Switch to full precision training.");
+      use_quantized_grad = false;
     }
   }
   // linear tree learner must be serial type and run on CPU device

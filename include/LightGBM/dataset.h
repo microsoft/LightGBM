@@ -598,10 +598,11 @@ class Dataset {
 
   MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
 
+  template <bool USE_QUANT_GRAD, int HIST_BITS>
   TrainingShareStates* GetShareStates(
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_col_wise, bool force_row_wise) const;
+      bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
@@ -636,7 +637,7 @@ class Dataset {
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;
 
-  template <bool USE_INDICES, bool USE_HESSIAN>
+  template <bool USE_INDICES, bool USE_HESSIAN, bool USE_QUANT_GRAD, int HIST_BITS>
   void ConstructHistogramsInner(const std::vector<int8_t>& is_feature_used,
                                 const data_size_t* data_indices,
                                 data_size_t num_data, const score_t* gradients,
@@ -646,7 +647,7 @@ class Dataset {
                                 TrainingShareStates* share_state,
                                 hist_t* hist_data) const;
 
-  template <bool USE_INDICES, bool ORDERED>
+  template <bool USE_INDICES, bool ORDERED, bool USE_QUANT_GRAD, int HIST_BITS>
   void ConstructHistogramsMultiVal(const data_size_t* data_indices,
                                    data_size_t num_data,
                                    const score_t* gradients,
@@ -654,6 +655,7 @@ class Dataset {
                                    TrainingShareStates* share_state,
                                    hist_t* hist_data) const;
 
+  template <bool USE_QUANT_GRAD, int HIST_BITS>
   inline void ConstructHistograms(
       const std::vector<int8_t>& is_feature_used,
       const data_size_t* data_indices, data_size_t num_data,
@@ -666,21 +668,21 @@ class Dataset {
     bool use_indices = data_indices != nullptr && (num_data < num_data_);
     if (share_state->is_constant_hessian) {
       if (use_indices) {
-        ConstructHistogramsInner<true, false>(
+        ConstructHistogramsInner<true, false, USE_QUANT_GRAD, HIST_BITS>(
             is_feature_used, data_indices, num_data, gradients, hessians,
             ordered_gradients, ordered_hessians, share_state, hist_data);
       } else {
-        ConstructHistogramsInner<false, false>(
+        ConstructHistogramsInner<false, false, USE_QUANT_GRAD, HIST_BITS>(
             is_feature_used, data_indices, num_data, gradients, hessians,
             ordered_gradients, ordered_hessians, share_state, hist_data);
       }
     } else {
       if (use_indices) {
-        ConstructHistogramsInner<true, true>(
+        ConstructHistogramsInner<true, true, USE_QUANT_GRAD, HIST_BITS>(
             is_feature_used, data_indices, num_data, gradients, hessians,
             ordered_gradients, ordered_hessians, share_state, hist_data);
       } else {
-        ConstructHistogramsInner<false, true>(
+        ConstructHistogramsInner<false, true, USE_QUANT_GRAD, HIST_BITS>(
             is_feature_used, data_indices, num_data, gradients, hessians,
             ordered_gradients, ordered_hessians, share_state, hist_data);
       }
@@ -688,6 +690,9 @@ class Dataset {
   }
 
   void FixHistogram(int feature_idx, double sum_gradient, double sum_hessian, hist_t* data) const;
+
+  template <typename PACKED_HIST_BIN_T, typename PACKED_HIST_ACC_T, int HIST_BITS_BIN, int HIST_BITS_ACC>
+  void FixHistogramInt(int feature_idx, int64_t sum_gradient_and_hessian, hist_t* data) const;
 
   inline data_size_t Split(int feature, const uint32_t* threshold,
                            int num_threshold, bool default_left,
