@@ -211,18 +211,18 @@ create_isolated_source_dir() {
     ######################
     # fast_double_parser #
     ######################
-    mkdir -p ./lightgbm-python/compile/external_libs/fast_double_parser
+    mkdir -p ./lightgbm-python/external_libs/fast_double_parser
     cp \
         external_libs/fast_double_parser/CMakeLists.txt \
-        ./lightgbm-python/compile/external_libs/fast_double_parser/CMakeLists.txt
+        ./lightgbm-python/external_libs/fast_double_parser/CMakeLists.txt
     cp \
         external_libs/fast_double_parser/LICENSE* \
-        ./lightgbm-python/compile/external_libs/fast_double_parser/
+        ./lightgbm-python/external_libs/fast_double_parser/
 
-    mkdir -p ./lightgbm-python/compile/external_libs/fast_double_parser/include/
+    mkdir -p ./lightgbm-python/external_libs/fast_double_parser/include/
     cp \
         external_libs/fast_double_parser/include/fast_double_parser.h \
-        ./lightgbm-python/compile/external_libs/fast_double_parser/include/
+        ./lightgbm-python/external_libs/fast_double_parser/include/
 
     #######
     # fmt #
