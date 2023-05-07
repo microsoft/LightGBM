@@ -135,8 +135,9 @@ while [ $# -gt 0 ]; do
     # flags #
     #########
     --bit32)
-        BUILD_ARGS="${BUILD_ARGS} --bit32"
-        # TODO
+        export CMAKE_GENERATOR="Visual Studio 17 2022"
+        export CMAKE_GENERATOR_PLATFORM="Win32"
+        echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with generator '${CMAKE_GENERATOR}'."
         ;;
     --cuda)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
