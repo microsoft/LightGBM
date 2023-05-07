@@ -1,3 +1,8 @@
+[tool.isort]
+skip_glob = [
+    "external_libs/*"
+]
+
 [tool.mypy]
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|tests/*'
 ignore_missing_imports = true
