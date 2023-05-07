@@ -886,13 +886,13 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         min_delta = metric2min_delta[metric[0]]
     else:
         min_delta = [metric2min_delta[m] for m in metric]
-    train_kwargs = dict(
-        params=params,
-        train_set=train_ds,
-        num_boost_round=50,
-        valid_sets=[train_ds, valid_ds],
-        valid_names=['training', 'valid'],
-    )
+    train_kwargs = {
+        "params": params,
+        "train_set": train_ds,
+        "num_boost_round": 50,
+        "valid_sets": [train_ds, valid_ds],
+        "valid_names": ['training', 'valid'],
+    }
 
     # regular early stopping
     evals_result = {}
@@ -1771,7 +1771,7 @@ def test_monotone_constraints(test_with_categorical_variable):
             for tree in tree_str:
                 # split_features are in 4th line.
                 features = tree.splitlines()[3].split("=")[1].split(" ")
-                features = set(f"Column_{f}" for f in features)
+                features = {f"Column_{f}" for f in features}
                 feature_sets.append(features)
             return np.array(feature_sets)
 
@@ -2860,14 +2860,14 @@ def test_early_stopping_for_only_first_metric():
     iter_valid1_l2 = 3
     iter_valid2_l1 = 3
     iter_valid2_l2 = 15
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 2
+    assert len({iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2}) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
     iter_cv_l1 = 15
     iter_cv_l2 = 13
-    assert len(set([iter_cv_l1, iter_cv_l2])) == 2
+    assert len({iter_cv_l1, iter_cv_l2}) == 2
     iter_cv_min = min([iter_cv_l1, iter_cv_l2])
 
     # test for lgb.train

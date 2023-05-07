@@ -72,6 +72,8 @@ if [[ $TASK == "lint" ]]; then
         cmakelint \
         cpplint \
         flake8 \
+        flake8-bugbear \
+        flake8-comprehensions \
         isort \
         mypy \
         pydocstyle \
