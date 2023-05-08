@@ -15,6 +15,7 @@ set(
   "Semicolon separated list of sanitizer names, e.g., 'address;leak'. \
 Supported sanitizers are address, leak, undefined and thread."
 )
+option(BUILD_CLI "Build the 'lightbgm' command-line interface in addition to lib_lightgbm" ON)
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
@@ -421,7 +422,7 @@ endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
-if(NOT SKBUILD)
+if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
     target_link_libraries(lightgbm PRIVATE lightgbm_objs)
 endif()
@@ -546,7 +547,7 @@ if(USE_CUDA)
   # each target that contains or depends on cuda source.
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  if(NOT SKBUILD)
+  if(BUILD_CLI)
     set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
   endif()
 
@@ -554,13 +555,15 @@ if(USE_CUDA)
 
   # Device linking is not supported for object libraries.
   # Thus we have to specify them on final targets.
-  #set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  if(BUILD_CLI)
+    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  endif()
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
-  if(NOT SKBUILD)
+  if(BUILD_CLI)
     target_link_libraries(lightgbm PRIVATE ${histograms})
   endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
@@ -628,17 +631,20 @@ endif()
 # scikit-build-core, the build tool for the Python packages, runs "make install" without
 # the ability to specify targets, so need to ensure that only targets the shared
 # library (not also the CLI)
-if(SKBUILD)
+if(BUILD_CLI)
     install(
-      TARGETS _lightgbm
-      DESTINATION lightgbm
-    )
-else()
-    install(
-      TARGETS lightgbm _lightgbm
+      TARGETS lightgbm
       RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
-      LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     )
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
 endif()
+
+install(
+  TARGETS _lightgbm
+  RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+  LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+install(
+    DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)

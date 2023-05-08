@@ -44,7 +44,9 @@ build-backend = "scikit_build_core.build"
 cmake.minimum-version = "3.15"
 ninja.minimum-version = "1.5"
 ninja.make-fallback = true
-cmake.args = []
+cmake.args = [
+    "-DBUILD_CLI:BOOL=OFF"
+]
 cmake.verbose = false
 cmake.build-type = "Release"
 logging.level = "INFO"
