@@ -3,8 +3,6 @@
 echo "running flake8"
 flake8 \
     --config=./python-package/setup.cfg \
-    --ignore=E501,W503 \
-    --exclude=./.nuget,./external_libs,./python-package/build,./python-package/compile \
     . \
 || exit -1
 echo "done running flake8"
