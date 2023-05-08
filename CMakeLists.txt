@@ -572,7 +572,7 @@ endif()
 
 if(WIN32)
     if(MINGW OR CYGWIN)
-      target_link_libraries(lightgbm_objs PUBLIC Ws2_32 IPHLPAPI)
+      target_link_libraries(lightgbm_objs PUBLIC ws2_32 iphlpapi)
     endif()
 endif()
 
