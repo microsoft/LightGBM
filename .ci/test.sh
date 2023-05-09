@@ -78,7 +78,7 @@ if [[ $TASK == "lint" ]]; then
         "r-lintr>=3.0"
     source activate $CONDA_ENV
     echo "Linting Python code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh ${BUILD_DIRECTORY} || exit -1
+    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit -1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit -1
     echo "Linting C++ code"

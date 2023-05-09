@@ -259,7 +259,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    sh .ci/lint-python.sh .
+    sh .ci/lint-python.sh
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
