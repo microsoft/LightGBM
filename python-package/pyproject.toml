@@ -45,7 +45,7 @@ cmake.minimum-version = "3.15"
 ninja.minimum-version = "1.5"
 ninja.make-fallback = true
 cmake.args = [
-    "-DBUILD_CLI:BOOL=OFF"
+    "-D__BUILD_FOR_PYTHON:BOOL=ON"
 ]
 cmake.verbose = false
 cmake.build-type = "Release"
