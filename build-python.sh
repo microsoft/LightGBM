@@ -195,11 +195,6 @@ create_isolated_source_dir() {
 
     cp -R ./python-package ./lightgbm-python
 
-    # temporarily remove these files until
-    # https://github.com/microsoft/LightGBM/issues/5061 is done
-    rm ./lightgbm-python/pyproject.toml
-    rm ./lightgbm-python/setup.cfg
-
     cp LICENSE ./lightgbm-python/
     cp VERSION.txt ./lightgbm-python/lightgbm/VERSION.txt
 
