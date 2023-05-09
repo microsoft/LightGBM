@@ -691,7 +691,7 @@ def _data_from_pandas(
             if categorical_feature == 'auto':  # use cat cols from DataFrame
                 categorical_feature = cat_cols_not_ordered
             else:  # use cat cols specified by user
-                categorical_feature = list(categorical_feature)
+                categorical_feature = list(categorical_feature)  # type: ignore[assignment]
         if feature_name == 'auto':
             feature_name = list(data.columns)
         _check_for_bad_pandas_dtypes(data.dtypes)
