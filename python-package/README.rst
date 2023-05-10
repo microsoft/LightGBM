@@ -60,7 +60,7 @@ Build Threadless Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--nomp
+    pip install lightgbm --config-setting=cmake.define.USE_OPENMP=OFF
 
 All requirements, except the **OpenMP** requirement, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -71,7 +71,7 @@ Build MPI Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--mpi
+    pip install lightgbm --config-setting=cmake.define.USE_MPI=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -84,7 +84,7 @@ Build GPU Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--gpu
+    pip install lightgbm --config-setting=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -94,21 +94,24 @@ For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--gpu --install-option="--opencl-include-dir=/usr/local/cuda/include/" --install-option="--opencl-library=/usr/local/cuda/lib64/libOpenCL.so"
+    pip install lightgbm \
+      --config-setting=cmake.define.USE_GPU=ON \
+      --config-setting=cmake.define.OpenCL_INCLUDE_DIR='/usr/local/cuda/include/'" \
+      --config-setting=cmake.define.OpenCL_LIBRARY='/usr/local/cuda/lib64/libOpenCL.so'"
 
-All available options:
+All available options that can be passed via ``cmake.define.{option}``.
 
-- boost-root
+- Boost_ROOT
 
-- boost-dir
+- Boost_DIR
 
-- boost-include-dir
+- Boost_INCLUDE_DIR
 
-- boost-librarydir
+- BOOST_LIBRARYDIR
 
-- opencl-include-dir
+- OpenCL_INCLUDE_DIR
 
-- opencl-library
+- OpenCL_LIBRARY
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
@@ -117,7 +120,7 @@ Build CUDA Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--cuda
+    pip install lightgbm --config-setting=cmake.define.USE_CUDA=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
 
@@ -130,7 +133,7 @@ Build HDFS Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--hdfs
+    pip install lightgbm --config-setting=cmake.define.USE_HDFS=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -143,7 +146,9 @@ Build with MinGW-w64 on Windows
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--mingw
+    # in sh.exe, git bash, or other Unix-like shell
+    export CMAKE_GENERATOR='MinGW Makefiles'
+    pip install lightgbm --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
 `CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
@@ -155,7 +160,10 @@ Build 32-bit Version with 32-bit Python
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--bit32
+    # in sh.exe, git bash, or other Unix-like shell
+    export CMAKE_GENERATOR='Visual Studio 17 2022'
+    export CMAKE_GENERATOR_PLATFORM='Win32'
+    pip install --no-binary lightgbm lightgbm
 
 By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
 
@@ -166,7 +174,7 @@ Build with Time Costs Output
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--time-costs
+    pip install lightgbm --config-setting=cmake.define.USE_TIMETAG=ON
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
 
