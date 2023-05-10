@@ -333,7 +333,7 @@ So, if you want to:
 We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
-Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
+Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary lightgbm lightgbm``.
 For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
