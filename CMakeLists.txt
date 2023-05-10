@@ -646,7 +646,7 @@ if(BUILD_CLI)
 endif()
 
 if(__BUILD_FOR_PYTHON)
-    SET(CMAKE_INSTALL_PREFIX "lightgbm")
+    set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
 install(
