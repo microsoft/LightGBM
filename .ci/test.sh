@@ -150,7 +150,7 @@ if [[ $TASK == "sdist" ]]; then
     sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
     pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit -1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY
+        cp $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY || exit -1
     fi
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
     exit 0
@@ -159,10 +159,10 @@ elif [[ $TASK == "bdist" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         mv \
-            dist/lightgbm-$LGB_VER-py3-none-macosx*.whl \
-            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl
+            ./dist/*.whl \
+            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit -1
         fi
     else
         ARCH=$(uname -m)
@@ -174,10 +174,10 @@ elif [[ $TASK == "bdist" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --integrated-opencl || exit -1
         mv \
             ./dist/*.whl \
-            ./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl
+            ./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY
+            cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit -1
         fi
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
