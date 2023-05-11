@@ -325,10 +325,15 @@ if test "${INSTALL}" = true; then
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
+            echo "found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
-        fi
-        if test -f ../Release/lib_lightgbm.dll; then
+        elif test -f ../Release/lib_lightgbm.dll; then
+            echo "found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
+        elif test -f ../windows/x64/DLL/lib_lightgbm.dll; then
+            echo "found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
+            cp ../windows/x64/DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
+            cp ../windows/x64/DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
         fi
         rm -f ./*.bak
     else
