@@ -2478,7 +2478,7 @@ class Dataset:
             else:
                 if self.categorical_feature != 'auto':
                     _log_warning('categorical_feature in Dataset is overridden.\n'
-                                 f'New categorical_feature is {sorted(list(categorical_feature))}')
+                                 f'New categorical_feature is {list(categorical_feature)}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
