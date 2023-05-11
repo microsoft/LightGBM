@@ -996,8 +996,8 @@ class _InnerPredictor:
         elif isinstance(data, list):
             try:
                 data = np.array(data)
-            except BaseException:
-                raise ValueError('Cannot convert data list to numpy array.')
+            except BaseException as err:
+                raise ValueError('Cannot convert data list to numpy array.') from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
                 start_iteration=start_iteration,
@@ -1015,8 +1015,8 @@ class _InnerPredictor:
             try:
                 _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
-            except BaseException:
-                raise TypeError(f'Cannot predict data for type {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot predict data for type {type(data).__name__}') from err
             preds, nrow = self.__pred_for_csr(
                 csr=csr,
                 start_iteration=start_iteration,
@@ -1868,8 +1868,8 @@ class Dataset:
             try:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
-            except BaseException:
-                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}') from err
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:

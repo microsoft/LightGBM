@@ -1,18 +1,11 @@
 #!/bin/sh
 
-echo "running flake8"
-flake8 \
-    --config=./python-package/setup.cfg \
-    . \
-|| exit -1
-echo "done running flake8"
-
-echo "running pydocstyle"
-pydocstyle \
+echo "running ruff"
+ruff check \
     --config=./python-package/pyproject.toml \
     . \
 || exit -1
-echo "done running pydocstyle"
+echo "done running ruff"
 
 echo "running isort"
 isort \
