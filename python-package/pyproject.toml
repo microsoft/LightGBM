@@ -1,0 +1,18 @@
+[tool.isort]
+line_length = 120
+skip_glob = [
+    "external_libs/*",
+    "lightgbm-python/*"
+]
+
+[tool.mypy]
+exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
+ignore_missing_imports = true
+
+[tool.pydocstyle]
+add_ignore = [
+    'D105'
+]
+convention = 'numpy'
+match = '(?!^test_|setup).*\.py'
+match_dir = '^(?!^external_libs|lightgbm-python|test|example).*'

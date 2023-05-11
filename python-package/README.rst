@@ -41,7 +41,7 @@ Build from Sources
 
 .. code:: sh
 
-    pip install --no-binary :all: lightgbm
+    pip install --no-binary lightgbm lightgbm
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
@@ -259,7 +259,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    sh .ci/lint-python.sh .
+    sh .ci/lint-python.sh
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE

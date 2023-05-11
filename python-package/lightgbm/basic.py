@@ -12,13 +12,16 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
+
+if TYPE_CHECKING:
+    from typing import Literal
 
 __all__ = [
     'Booster',
@@ -49,8 +52,8 @@ _ctypes_float_array = Union[
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
-_LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
-_LGBM_FeatureNameConfiguration = Union[List[str], str]
+_LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
+_LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
     List[float],
     List[int],
@@ -688,7 +691,7 @@ def _data_from_pandas(
             if categorical_feature == 'auto':  # use cat cols from DataFrame
                 categorical_feature = cat_cols_not_ordered
             else:  # use cat cols specified by user
-                categorical_feature = list(categorical_feature)
+                categorical_feature = list(categorical_feature)  # type: ignore[assignment]
         if feature_name == 'auto':
             feature_name = list(data.columns)
         _check_for_bad_pandas_dtypes(data.dtypes)
@@ -2475,7 +2478,7 @@ class Dataset:
             else:
                 if self.categorical_feature != 'auto':
                     _log_warning('categorical_feature in Dataset is overridden.\n'
-                                 f'New categorical_feature is {sorted(list(categorical_feature))}')  # noqa: C414
+                                 f'New categorical_feature is {list(categorical_feature)}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
