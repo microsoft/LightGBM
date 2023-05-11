@@ -229,6 +229,21 @@ Build Wheel File
 
 You can use ``sh ./build-python.sh install bdist_wheel`` instead of ``sh ./build-python.sh install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
 
+Build With MSBuild
+******************
+
+To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running the following from the root of the repo.
+
+.. code:: sh
+
+  MSBuild windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=vs143
+
+Then install the Python package using that library.
+
+.. code:: sh
+
+  sh ./build-python.sh install --precompile
+
 Install Dask-package
 ''''''''''''''''''''
 
