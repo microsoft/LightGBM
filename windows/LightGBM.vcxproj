@@ -306,6 +306,7 @@
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
+    <ClInclude Include="..\src\treelearner\gradient_discretizer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp" />
@@ -341,6 +342,7 @@
     <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\gradient_discretizer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

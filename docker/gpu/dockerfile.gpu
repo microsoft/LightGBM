@@ -88,7 +88,7 @@ RUN cd /usr/local/src && mkdir lightgbm && cd lightgbm && \
 
 ENV PATH /usr/local/src/lightgbm/LightGBM:${PATH}
 
-RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM/python-package && python setup.py install --precompile && source deactivate"
+RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM && sh ./build-python.sh install --precompile && source deactivate"
 
 #################################################################################################################
 #           System CleanUp
