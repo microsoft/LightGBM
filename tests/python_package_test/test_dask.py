@@ -1062,9 +1062,9 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                 eval_class_weight.append({0: n_neg / n_pos, 1: n_pos / n_neg})
                 init_score_value = np.log(np.mean(y_e) / (1 - np.mean(y_e)))
                 if 'dataframe' in output:
-                    d_init_score = dy_e.map_partitions(lambda x: pd.Series([init_score_value] * x.size))
+                    d_init_score = dy_e.map_partitions(lambda x, val=init_score_value: pd.Series([val] * x.size))
                 else:
-                    d_init_score = dy_e.map_blocks(lambda x: np.repeat(init_score_value, x.size))
+                    d_init_score = dy_e.map_blocks(lambda x, val=init_score_value: np.repeat(val, x.size))
 
                 eval_init_score.append(d_init_score)
 
