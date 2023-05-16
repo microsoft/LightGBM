@@ -2,6 +2,7 @@
 """Wrapper for C API of LightGBM."""
 import abc
 import ctypes
+import inspect
 import json
 import warnings
 from collections import OrderedDict
@@ -1802,9 +1803,7 @@ class Dataset:
 
         # process for args
         params = {} if params is None else params
-        args_names = (self.__class__._lazy_init
-                      .__code__
-                      .co_varnames[:self.__class__._lazy_init.__code__.co_argcount])
+        args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
         for key in params.keys():
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
