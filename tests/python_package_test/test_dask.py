@@ -1555,7 +1555,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
         workers = list(client.scheduler_info()['workers'])
         workers_hostname = _get_workers_hostname(cluster)
         remote_sockets, open_ports = lgb.dask._assign_open_ports_to_workers(client, workers)
-        for s in remote_sockets:
+        for s in remote_sockets.values():
             s.release()
         time.sleep(0.1)
         dask_model2 = dask_model_factory(
@@ -1563,7 +1563,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
             num_leaves=5,
             machines=",".join([
                 f"{workers_hostname}:{port}"
-                for port in open_ports
+                for port in open_ports.values()
             ]),
         )
 

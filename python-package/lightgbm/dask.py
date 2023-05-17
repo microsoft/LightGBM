@@ -280,8 +280,9 @@ def _train_part(
         if eval_class_weight:
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
-    remote_socket.release()
-    time.sleep(0.1)
+    if remote_socket is not None:
+        remote_socket.release()
+        time.sleep(0.1)
     model = model_factory(**params)
     try:
         if is_ranker:
@@ -740,6 +741,7 @@ def _train(
     machines = params.pop("machines")
 
     # figure out network params
+    remote_sockets = {}
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
@@ -793,7 +795,7 @@ def _train(
             local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
-            remote_socket=remote_sockets[worker],
+            remote_socket=remote_sockets.get(worker, None),
             return_model=(worker == master_worker),
             workers=[worker],
             allow_other_workers=False,
