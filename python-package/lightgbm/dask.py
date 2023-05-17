@@ -7,6 +7,7 @@ dask.Array and dask.DataFrame collections.
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import socket
+import time
 from collections import defaultdict
 from copy import deepcopy
 from enum import Enum, auto
@@ -38,18 +39,14 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-class _HostWorkers:
+class _RemoteSocket:
+    def acquire(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind(('', 0))
+        return self.socket.getsockname()[1]
 
-    def __init__(self, default: str, all_workers: List[str]):
-        self.default = default
-        self.all_workers = all_workers
-
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, type(self))
-            and self.default == other.default
-            and self.all_workers == other.all_workers
-        )
+    def release(self):
+        self.socket.close()
 
 
 class _DatasetNames(Enum):
@@ -83,49 +80,9 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_n_open_ports(n: int) -> List[int]:
-    """Find n random open ports on localhost.
-
-    Returns
-    -------
-    ports : list of int
-        n random open ports on localhost.
-    """
-    sockets = []
-    for _ in range(n):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('', 0))
-        sockets.append(s)
-    ports = []
-    for s in sockets:
-        ports.append(s.getsockname()[1])
-        s.close()
-    return ports
-
-
-def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWorkers]:
-    """Group all worker addresses by hostname.
-
-    Returns
-    -------
-    host_to_workers : dict
-        mapping from hostname to all its workers.
-    """
-    host_to_workers: Dict[str, _HostWorkers] = {}
-    for address in worker_addresses:
-        hostname = urlparse(address).hostname
-        if not hostname:
-            raise ValueError(f"Could not parse host name from worker address '{address}'")
-        if hostname not in host_to_workers:
-            host_to_workers[hostname] = _HostWorkers(default=address, all_workers=[address])
-        else:
-            host_to_workers[hostname].all_workers.append(address)
-    return host_to_workers
-
-
 def _assign_open_ports_to_workers(
     client: Client,
-    host_to_workers: Dict[str, _HostWorkers]
+    workers: List[str],
 ) -> Dict[str, int]:
     """Assign an open port to each worker.
 
@@ -134,22 +91,25 @@ def _assign_open_ports_to_workers(
     worker_to_port: dict
         mapping from worker address to an open port.
     """
-    host_ports_futures = {}
-    for hostname, workers in host_to_workers.items():
-        n_workers_in_host = len(workers.all_workers)
-        host_ports_futures[hostname] = client.submit(
-            _find_n_open_ports,
-            n=n_workers_in_host,
-            workers=[workers.default],
-            pure=False,
+    # Create remote sockets
+    remote_socket_futures = {}
+    for worker in workers:
+        remote_socket_futures[worker] = client.submit(
+            _RemoteSocket,
+            workers=[worker],
+            actor=True,
             allow_other_workers=False,
         )
-    found_ports = client.gather(host_ports_futures)
-    worker_to_port = {}
-    for hostname, workers in host_to_workers.items():
-        for worker, port in zip(workers.all_workers, found_ports[hostname]):
-            worker_to_port[worker] = port
-    return worker_to_port
+    remote_sockets = client.gather(remote_socket_futures)
+
+    # Acquire ports
+    worker_to_ports = {}
+    for worker, remote_socket in remote_sockets.items():
+        worker_to_ports[worker] = remote_socket.acquire()
+
+    for worker, remote_port in worker_to_ports.items():
+        worker_to_ports[worker] = remote_port.result()
+    return remote_sockets, worker_to_ports
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -190,6 +150,7 @@ def _train_part(
     num_machines: int,
     return_model: bool,
     time_out: int,
+    remote_socket,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -319,6 +280,8 @@ def _train_part(
         if eval_class_weight:
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
+    remote_socket.release()
+    time.sleep(0.1)
     model = model_factory(**params)
     try:
         if is_ranker:
@@ -802,8 +765,7 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            host_to_workers = _group_workers_by_host(worker_map.keys())
-            worker_address_to_port = _assign_open_ports_to_workers(client, host_to_workers)
+            remote_sockets, worker_address_to_port = _assign_open_ports_to_workers(client, list(worker_map.keys()))
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'
@@ -831,6 +793,7 @@ def _train(
             local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
+            remote_socket=remote_sockets[worker],
             return_model=(worker == master_worker),
             workers=[worker],
             allow_other_workers=False,
