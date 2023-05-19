@@ -6,6 +6,7 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
+import operator
 import socket
 import time
 from collections import defaultdict
@@ -47,6 +48,12 @@ class _RemoteSocket:
 
     def release(self):
         self.socket.close()
+
+
+def _acquire_port() -> Tuple[_RemoteSocket, int]:
+    s = _RemoteSocket()
+    port = s.acquire()
+    return s, port
 
 
 class _DatasetNames(Enum):
@@ -91,25 +98,27 @@ def _assign_open_ports_to_workers(
     worker_to_port: dict
         mapping from worker address to an open port.
     """
-    # Create remote sockets
-    remote_socket_futures = {}
+    # Acquire port in worker
+    worker_to_future = {}
     for worker in workers:
-        remote_socket_futures[worker] = client.submit(
-            _RemoteSocket,
+        worker_to_future[worker] = client.submit(
+            _acquire_port,
             workers=[worker],
-            actor=True,
             allow_other_workers=False,
+            pure=False,
         )
-    remote_sockets = client.gather(remote_socket_futures)
 
-    # Acquire ports
-    worker_to_ports = {}
-    for worker, remote_socket in remote_sockets.items():
-        worker_to_ports[worker] = remote_socket.acquire()
+    # schedule futures to retrieve each element of the tuple
+    worker_to_socket_future = {}
+    worker_to_port_future = {}
+    for worker, socket_future in worker_to_future.items():
+        worker_to_socket_future[worker] = client.submit(operator.itemgetter(0), socket_future)
+        worker_to_port_future[worker] = client.submit(operator.itemgetter(1), socket_future)
 
-    for worker, remote_port in worker_to_ports.items():
-        worker_to_ports[worker] = remote_port.result()
-    return remote_sockets, worker_to_ports
+    # retrieve ports
+    worker_to_port = client.gather(worker_to_port_future)
+
+    return worker_to_socket_future, worker_to_port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -150,7 +159,7 @@ def _train_part(
     num_machines: int,
     return_model: bool,
     time_out: int,
-    remote_socket,
+    remote_socket: _RemoteSocket,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -741,7 +750,7 @@ def _train(
     machines = params.pop("machines")
 
     # figure out network params
-    remote_sockets = {}
+    worker_to_socket_future = {}
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
@@ -767,7 +776,7 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            remote_sockets, worker_address_to_port = _assign_open_ports_to_workers(client, list(worker_map.keys()))
+            worker_to_socket_future, worker_address_to_port = _assign_open_ports_to_workers(client, list(worker_map.keys()))
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'
@@ -795,7 +804,7 @@ def _train(
             local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
-            remote_socket=remote_sockets.get(worker, None),
+            remote_socket=worker_to_socket_future.get(worker, None),
             return_model=(worker == master_worker),
             workers=[worker],
             allow_other_workers=False,
