@@ -198,7 +198,12 @@ if [[ $TASK == "gpu" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--gpu || exit -1
+        pip install \
+            --user \
+            -v \
+            --install-option=--gpu \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
+        || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
@@ -221,7 +226,12 @@ elif [[ $TASK == "cuda" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--cuda || exit -1
+        pip install \
+            --user \
+            -v \
+            --install-option=--cuda \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
+        || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
@@ -239,7 +249,12 @@ elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit -1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit -1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v --install-option=--mpi || exit -1
+        pip install \
+            --user \
+            -v \
+            --install-option=--mpi \
+            $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
+        || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
