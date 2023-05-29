@@ -186,12 +186,6 @@ elif [[ $TASK == "bdist" ]]; then
     exit 0
 fi
 
-# temporarily pin pip to versions that support 'pip install --install-option'
-# ref: https://github.com/microsoft/LightGBM/issues/5061#issuecomment-1510642287
-if [[ $METHOD == "pip" ]]; then
-    pip install 'pip<23.1'
-fi
-
 if [[ $TASK == "gpu" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' $BUILD_DIRECTORY/include/LightGBM/config.h
     grep -q 'std::string device_type = "gpu"' $BUILD_DIRECTORY/include/LightGBM/config.h || exit -1  # make sure that changes were really done
