@@ -41,7 +41,7 @@ Build from Sources
 
 .. code:: sh
 
-    pip install --no-binary :all: lightgbm
+    pip install --no-binary lightgbm lightgbm
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
