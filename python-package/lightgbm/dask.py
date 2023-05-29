@@ -8,7 +8,6 @@ It is based on dask-lightgbm, which was based on dask-xgboost.
 """
 import operator
 import socket
-import time
 from collections import defaultdict
 from copy import deepcopy
 from enum import Enum, auto
