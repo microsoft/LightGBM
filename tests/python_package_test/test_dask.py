@@ -4,7 +4,6 @@
 import inspect
 import random
 import socket
-import time
 from itertools import groupby
 from os import getenv
 from platform import machine
@@ -1557,7 +1556,6 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
         remote_sockets, open_ports = lgb.dask._assign_open_ports_to_workers(client, workers)
         for s in remote_sockets.values():
             s.release()
-        time.sleep(0.1)
         dask_model2 = dask_model_factory(
             n_estimators=5,
             num_leaves=5,

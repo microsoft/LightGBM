@@ -43,6 +43,7 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 class _RemoteSocket:
     def acquire(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(('', 0))
         return self.socket.getsockname()[1]
 
@@ -291,7 +292,6 @@ def _train_part(
 
     if remote_socket is not None:
         remote_socket.release()
-        time.sleep(0.1)
     model = model_factory(**params)
     try:
         if is_ranker:
