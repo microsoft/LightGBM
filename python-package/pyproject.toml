@@ -49,7 +49,7 @@ cmake.args = [
 ]
 cmake.verbose = false
 cmake.build-type = "Release"
-logging.level = "INFO"
+logging.level = "DEBUG"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
