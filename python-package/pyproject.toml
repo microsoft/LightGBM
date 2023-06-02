@@ -35,7 +35,7 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.2.1"]
+requires = ["scikit-build-core<0.4"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
