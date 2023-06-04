@@ -333,6 +333,7 @@ if test "${INSTALL}" = true; then
     cd ../dist
     pip install \
         ${PIP_INSTALL_ARGS} \
+        --force-reinstall \
         --find-links=. \
         lightgbm
     cd ../
