@@ -51,6 +51,7 @@ cmake.args = [
 ]
 cmake.verbose = false
 cmake.build-type = "Release"
+settings.cmake.source_dir = "."
 logging.level = "DEBUG"
 sdist.reproducible = true
 wheel.py-api = "py3"
