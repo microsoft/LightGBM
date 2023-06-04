@@ -35,7 +35,7 @@ if ($env:TASK -eq "swig") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 -DUSE_SWIG=ON .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
-    cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
+    cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
   }
   Exit 0
 }
@@ -44,6 +44,12 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
+
+# ref:
+# * https://stackoverflow.com/a/62897729/3986677
+# * https://github.com/microsoft/LightGBM/issues/5899
+conda install brotlipy
+
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV `
   cloudpickle `

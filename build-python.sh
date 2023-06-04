@@ -22,6 +22,8 @@
 #
 # [options]
 #
+#     --boost-dir=FILEPATH
+#                                   Directory with Boost package configuration file.
 #     --boost-include-dir=FILEPATH
 #                                   Directory containing Boost headers.
 #     --boost-librarydir=FILEPATH
@@ -70,12 +72,6 @@ PIP_INSTALL_ARGS=""
 BUILD_ARGS=""
 PRECOMPILE="false"
 
-BOOST_INCLUDE_DIR=""
-BOOST_LIBRARY_DIR=""
-BOOST_ROOT=""
-OPENCL_INCLUDE_DIR=""
-OPENCL_LIBRARY=""
-
 while [ $# -gt 0 ]; do
   case "$1" in
     ############################
@@ -93,6 +89,13 @@ while [ $# -gt 0 ]; do
     ############################
     # customized library paths #
     ############################
+    --boost-dir|--boost-dir=*)
+        if [[ "$1" != *=* ]];
+            then shift;
+        fi
+        BOOST_DIR="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --boost-dir='${BOOST_DIR}'"
+        ;;
     --boost-include-dir|--boost-include-dir=*)
         if [[ "$1" != *=* ]];
             then shift;
@@ -185,6 +188,11 @@ create_isolated_source_dir() {
         ./python-package/lightgbm.egg-info
 
     cp -R ./python-package ./lightgbm-python
+
+    # temporarily remove these files until
+    # https://github.com/microsoft/LightGBM/issues/5061 is done
+    rm ./lightgbm-python/pyproject.toml
+    rm ./lightgbm-python/setup.cfg
 
     cp LICENSE ./lightgbm-python/
     cp VERSION.txt ./lightgbm-python/lightgbm/VERSION.txt
@@ -312,7 +320,7 @@ if test "${BUILD_SDIST}" = true; then
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"#
+    echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     python setup.py bdist_wheel \
         --dist-dir ../dist \

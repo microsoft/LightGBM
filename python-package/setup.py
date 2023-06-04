@@ -91,7 +91,7 @@ def compile_cpp(
 
     logger.info("Starting to compile the library.")
 
-    cmake_cmd = ["cmake", str(CURRENT_DIR / "compile")]
+    cmake_cmd = ["cmake", str(CURRENT_DIR / "compile"), "-D__BUILD_FOR_PYTHON=ON"]
     if integrated_opencl:
         use_gpu = False
         cmake_cmd.append("-D__INTEGRATE_OPENCL=ON")

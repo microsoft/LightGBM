@@ -746,9 +746,13 @@ class LGBMModel(_LGBMModelBase):
 
         # Do not modify original args in fit function
         # Refer to https://github.com/microsoft/LightGBM/pull/2619
-        eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric_list, list):
-            eval_metric_list = [eval_metric_list]
+        eval_metric_list: List[Union[str, _LGBM_ScikitCustomEvalFunction]]
+        if eval_metric is None:
+            eval_metric_list = []
+        elif isinstance(eval_metric, list):
+            eval_metric_list = copy.deepcopy(eval_metric)
+        else:
+            eval_metric_list = [copy.deepcopy(eval_metric)]
 
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
@@ -956,7 +960,7 @@ class LGBMModel(_LGBMModelBase):
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
-        return self._objective
+        return self._objective  # type: ignore[return-value]
 
     @property
     def n_estimators_(self) -> int:
