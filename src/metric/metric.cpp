@@ -29,11 +29,9 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("quantile")) {
       return new CUDAQuantileMetric(config);
     } else if (type == std::string("huber")) {
-      Log::Warning("Metric huber is not implemented in cuda version. Fall back to evaluation on CPU.");
-      return new HuberLossMetric(config);
+      return new CUDAHuberLossMetric(config);
     } else if (type == std::string("fair")) {
-      Log::Warning("Metric fair is not implemented in cuda version. Fall back to evaluation on CPU.");
-      return new FairLossMetric(config);
+      return new CUDAFairLossMetric(config);
     } else if (type == std::string("poisson")) {
       Log::Warning("Metric poisson is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new PoissonMetric(config);

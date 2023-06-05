@@ -65,6 +65,8 @@ template void CUDAPointwiseMetricInterface<L2Metric, CUDAL2Metric>::LaunchEvalKe
 template void CUDAPointwiseMetricInterface<QuantileMetric, CUDAQuantileMetric>::LaunchEvalKernel(const double* score, double* sum_loss, double* sum_weight) const;
 template void CUDAPointwiseMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric>::LaunchEvalKernel(const double* score, double* sum_loss, double* sum_weight) const;
 template void CUDAPointwiseMetricInterface<L1Metric, CUDAL1Metric>::LaunchEvalKernel(const double* score, double* sum_loss, double* sum_weight) const;
+template void CUDAPointwiseMetricInterface<HuberLossMetric, CUDAHuberLossMetric>::LaunchEvalKernel(const double* score, double* sum_loss, double* sum_weight) const;
+template void CUDAPointwiseMetricInterface<FairLossMetric, CUDAFairLossMetric>::LaunchEvalKernel(const double* score, double* sum_loss, double* sum_weight) const;
 
 }  // namespace LightGBM
 

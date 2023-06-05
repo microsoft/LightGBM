@@ -33,6 +33,10 @@ CUDAQuantileMetric::CUDAQuantileMetric(const Config& config): CUDARegressionMetr
 
 CUDAL1Metric::CUDAL1Metric(const Config& config): CUDARegressionMetricInterface<L1Metric, CUDAL1Metric>(config) {}
 
+CUDAHuberLossMetric::CUDAHuberLossMetric(const Config& config): CUDARegressionMetricInterface<HuberLossMetric, CUDAHuberLossMetric>(config), alpha_(config.alpha) {}
+
+CUDAFairLossMetric::CUDAFairLossMetric(const Config& config): CUDARegressionMetricInterface<FairLossMetric, CUDAFairLossMetric>(config) , fair_c_(config.fair_c){}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

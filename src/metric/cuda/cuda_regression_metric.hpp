@@ -86,6 +86,48 @@ class CUDAL1Metric : public CUDARegressionMetricInterface<L1Metric, CUDAL1Metric
   }
 };
 
+class CUDAHuberLossMetric : public CUDARegressionMetricInterface<HuberLossMetric, CUDAHuberLossMetric> {
+ public:
+  explicit CUDAHuberLossMetric(const Config& config);
+
+  virtual ~CUDAHuberLossMetric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double alpha) {
+    const double diff = score - label;
+    if (std::abs(diff) <= alpha) {
+      return 0.5f * diff * diff;
+    } else {
+      return alpha * (std::abs(diff) - 0.5f * alpha);
+    }
+  }
+
+  double GetParamFromConfig() const override {
+    return alpha_;
+  }
+ private:
+  const double alpha_;
+};
+
+class CUDAFairLossMetric : public CUDARegressionMetricInterface<FairLossMetric, CUDAFairLossMetric> {
+ public:
+  explicit CUDAFairLossMetric(const Config& config);
+
+  virtual ~CUDAFairLossMetric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double fair_c) {
+    const double x = std::fabs(score - label);
+    const double c =  fair_c;
+    return c * x - c * c * std::log1p(x / c);
+  }
+
+  double GetParamFromConfig() const override {
+    return fair_c_;
+  }
+
+ private:
+  const double fair_c_;
+};
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA
