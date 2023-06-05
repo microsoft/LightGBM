@@ -65,6 +65,11 @@ else()
   set(BOOST_BUILD "${BOOST_BASE}/source/b2")
   set(BOOST_FLAGS "-fPIC")
 endif()
+# v0.4.0:
+# -- beepboop BOOST_BASE: '/tmp/tmpc97a42v0/build/Boost'
+# -- beepboop BOOST_BOOTSTRAP: '/tmp/tmpc97a42v0/build/Boost/source/bootstrap.sh'
+# -- beepboop BOOST_BUILD: '/tmp/tmpc97a42v0/build/Boost/source/b2'
+# -- beepboop BOOST_FLAGS: '-fPIC'
 message(STATUS "beepboop BOOST_BASE: '${BOOST_BASE}'")
 message(STATUS "beepboop BOOST_BOOTSTRAP: '${BOOST_BOOTSTRAP}'")
 message(STATUS "beepboop BOOST_BUILD: '${BOOST_BUILD}'")
