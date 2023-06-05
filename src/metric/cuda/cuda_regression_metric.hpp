@@ -75,6 +75,17 @@ class CUDAQuantileMetric : public CUDARegressionMetricInterface<QuantileMetric, 
   const double alpha_;
 };
 
+class CUDAL1Metric : public CUDARegressionMetricInterface<L1Metric, CUDAL1Metric> {
+ public:
+  explicit CUDAL1Metric(const Config& config);
+
+  virtual ~CUDAL1Metric() {}
+
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+    return std::fabs(score - label);
+  }
+};
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

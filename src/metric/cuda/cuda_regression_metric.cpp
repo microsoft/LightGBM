@@ -31,6 +31,8 @@ CUDAL2Metric::CUDAL2Metric(const Config& config): CUDARegressionMetricInterface<
 
 CUDAQuantileMetric::CUDAQuantileMetric(const Config& config): CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric>(config), alpha_(config.alpha) {}
 
+CUDAL1Metric::CUDAL1Metric(const Config& config): CUDARegressionMetricInterface<L1Metric, CUDAL1Metric>(config) {}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

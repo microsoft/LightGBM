@@ -24,7 +24,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("rmse")) {
       return new CUDARMSEMetric(config);
     } else if (type == std::string("l1")) {
-      Log::Warning("Metric l1 is not implemented in cuda version. Fall back to evaluation on CPU.");
+      return new CUDAL1Metric(config);
       return new L1Metric(config);
     } else if (type == std::string("quantile")) {
       return new CUDAQuantileMetric(config);
