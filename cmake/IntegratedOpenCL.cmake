@@ -65,6 +65,10 @@ else()
   set(BOOST_BUILD "${BOOST_BASE}/source/b2")
   set(BOOST_FLAGS "-fPIC")
 endif()
+message(STATUS "beepboop BOOST_BASE: '${BOOST_BASE}'")
+message(STATUS "beepboop BOOST_BOOTSTRAP: '${BOOST_BOOTSTRAP}'")
+message(STATUS "beepboop BOOST_BUILD: '${BOOST_BUILD}'")
+message(STATUS "beepboop BOOST_FLAGS: '${BOOST_FLAGS}'")
 list(
   APPEND
   BOOST_SUBMODULES

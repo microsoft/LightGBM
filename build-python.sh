@@ -279,9 +279,9 @@ create_isolated_source_dir() {
     # compute (Boost) #
     ###################
     mkdir -p ./lightgbm-python/external_libs/compute
-    # cp \
-    #     external_libs/compute/CMakeLists.txt \
-    #     ./lightgbm-python/external_libs/compute/
+    cp \
+        external_libs/compute/CMakeLists.txt \
+        ./lightgbm-python/external_libs/compute/
     # cp \
     #     -R \
     #     external_libs/compute/cmake \
