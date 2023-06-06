@@ -19,7 +19,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning
-from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, Future, LGBMNotFittedError, concat,
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
 from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomObjectiveFunction,
@@ -40,13 +40,13 @@ _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Typ
 
 
 class _RemoteSocket:
-    def acquire(self):
+    def acquire(self) -> int:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(('', 0))
         return self.socket.getsockname()[1]
 
-    def release(self):
+    def release(self) -> None:
         self.socket.close()
 
 
@@ -90,13 +90,15 @@ def _get_dask_client(client: Optional[Client]) -> Client:
 def _assign_open_ports_to_workers(
     client: Client,
     workers: List[str],
-) -> Dict[str, int]:
+) -> Tuple[Dict[str, Future], Dict[str, int]]:
     """Assign an open port to each worker.
 
     Returns
     -------
+    worker_to_socket_future: dict
+        mapping from worker address to a future pointing to the remote socket.
     worker_to_port: dict
-        mapping from worker address to an open port.
+        mapping from worker address to an open port in the worker's host.
     """
     # Acquire port in worker
     worker_to_future = {}
@@ -749,7 +751,7 @@ def _train(
     machines = params.pop("machines")
 
     # figure out network params
-    worker_to_socket_future = {}
+    worker_to_socket_future: Dict[str, Future] = {}
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
