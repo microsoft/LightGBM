@@ -56,24 +56,31 @@ include(ExternalProject)
 include(ProcessorCount)
 ProcessorCount(J)
 set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
+set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
+set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 if(WIN32)
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
   set(BOOST_FLAGS "")
+  list(
+    APPEND
+    BOOST_BUILD_BYPRODUCTS
+      ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+      ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+      ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+  )
 else()
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.sh")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2")
   set(BOOST_FLAGS "-fPIC")
+  list(
+    APPEND
+    BOOST_BUILD_BYPRODUCTS
+      ${BOOST_LIBRARY}/libboost_filesystem.a
+      ${BOOST_LIBRARY}/libboost_system.a
+      ${BOOST_LIBRARY}/libboost_chrono.a
+  )
 endif()
-# v0.4.0:
-# -- beepboop BOOST_BASE: '/tmp/tmpc97a42v0/build/Boost'
-# -- beepboop BOOST_BOOTSTRAP: '/tmp/tmpc97a42v0/build/Boost/source/bootstrap.sh'
-# -- beepboop BOOST_BUILD: '/tmp/tmpc97a42v0/build/Boost/source/b2'
-# -- beepboop BOOST_FLAGS: '-fPIC'
-message(STATUS "beepboop BOOST_BASE: '${BOOST_BASE}'")
-message(STATUS "beepboop BOOST_BOOTSTRAP: '${BOOST_BOOTSTRAP}'")
-message(STATUS "beepboop BOOST_BUILD: '${BOOST_BUILD}'")
-message(STATUS "beepboop BOOST_FLAGS: '${BOOST_FLAGS}'")
 list(
   APPEND
   BOOST_SUBMODULES
@@ -159,9 +166,12 @@ ExternalProject_Add(
     threading=multi
     cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
+  # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
+  # ref:
+  #  - https://cmake.org/cmake/help/latest/module/ExternalProject.html
+  #  - https://stackoverflow.com/a/65803911/3986677
+  BUILD_BYPRODUCTS ${BOOST_BUILD_BYPRODUCTS}
 )
-set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
-set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${BOOST_INCLUDE})
 if(WIN32)
   if(MSVC)
