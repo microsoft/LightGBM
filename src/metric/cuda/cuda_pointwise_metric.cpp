@@ -36,6 +36,11 @@ template void CUDAPointwiseMetricInterface<BinaryLoglossMetric, CUDABinaryLoglos
 template void CUDAPointwiseMetricInterface<L1Metric, CUDAL1Metric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<HuberLossMetric, CUDAHuberLossMetric>::Init(const Metadata& metadata, data_size_t num_data);
 template void CUDAPointwiseMetricInterface<FairLossMetric, CUDAFairLossMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<PoissonMetric, CUDAPoissonMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<MAPEMetric, CUDAMAPEMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<GammaMetric, CUDAGammaMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<GammaDevianceMetric, CUDAGammaDevianceMetric>::Init(const Metadata& metadata, data_size_t num_data);
+template void CUDAPointwiseMetricInterface<TweedieMetric, CUDATweedieMetric>::Init(const Metadata& metadata, data_size_t num_data);
 
 }  // namespace LightGBM
 
