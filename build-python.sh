@@ -280,20 +280,9 @@ create_isolated_source_dir() {
     ###################
     mkdir -p ./lightgbm-python/compile/external_libs/compute
     cp \
-        external_libs/compute/CMakeLists.txt \
-        ./lightgbm-python/compile/external_libs/compute/
-    cp \
-        -R \
-        external_libs/compute/cmake \
-        ./lightgbm-python/compile/external_libs/compute/cmake/
-    cp \
         -R \
         external_libs/compute/include \
         ./lightgbm-python/compile/external_libs/compute/include/
-    cp \
-        -R \
-        external_libs/compute/meta \
-        ./lightgbm-python/compile/external_libs/compute/meta/
 }
 
 create_isolated_source_dir
