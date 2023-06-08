@@ -2,6 +2,7 @@
 """Wrapper for C API of LightGBM."""
 import abc
 import ctypes
+import inspect
 import json
 import warnings
 from collections import OrderedDict
@@ -996,8 +997,8 @@ class _InnerPredictor:
         elif isinstance(data, list):
             try:
                 data = np.array(data)
-            except BaseException:
-                raise ValueError('Cannot convert data list to numpy array.')
+            except BaseException as err:
+                raise ValueError('Cannot convert data list to numpy array.') from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
                 start_iteration=start_iteration,
@@ -1015,8 +1016,8 @@ class _InnerPredictor:
             try:
                 _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
-            except BaseException:
-                raise TypeError(f'Cannot predict data for type {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot predict data for type {type(data).__name__}') from err
             preds, nrow = self.__pred_for_csr(
                 csr=csr,
                 start_iteration=start_iteration,
@@ -1802,9 +1803,7 @@ class Dataset:
 
         # process for args
         params = {} if params is None else params
-        args_names = (getattr(self.__class__, '_lazy_init')
-                      .__code__
-                      .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
+        args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
         for key in params.keys():
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
@@ -1868,8 +1867,8 @@ class Dataset:
             try:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
-            except BaseException:
-                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}') from err
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
@@ -1920,7 +1919,7 @@ class Dataset:
         indices = self._create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = np.array([row for row in self._yield_row_from_seqlist(seqs, indices)])
+        sampled = np.array(list(self._yield_row_from_seqlist(seqs, indices)))
         sampled = sampled.T
 
         filtered = []
@@ -2478,7 +2477,7 @@ class Dataset:
             else:
                 if self.categorical_feature != 'auto':
                     _log_warning('categorical_feature in Dataset is overridden.\n'
-                                 f'New categorical_feature is {sorted(list(categorical_feature))}')
+                                 f'New categorical_feature is {list(categorical_feature)}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -2777,7 +2776,7 @@ class Dataset:
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
-                    self.data = np.array([row for row in self._yield_row_from_seqlist(self.data, self.used_indices)])
+                    self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
                                  "Returning original raw data")

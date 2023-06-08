@@ -301,7 +301,7 @@ class _EarlyStoppingCallback:
 
         self._reset_storages()
 
-        n_metrics = len(set(m[1] for m in env.evaluation_result_list))
+        n_metrics = len({m[1] for m in env.evaluation_result_list})
         n_datasets = len(env.evaluation_result_list) // n_metrics
         if isinstance(self.min_delta, list):
             if not all(t >= 0 for t in self.min_delta):
