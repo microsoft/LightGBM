@@ -84,13 +84,6 @@ if(WIN32)
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
   set(BOOST_FLAGS "")
-  list(
-    APPEND
-    BOOST_BUILD_BYPRODUCTS
-      ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-      ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-      ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-  )
 else()
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.sh")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2")
