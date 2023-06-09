@@ -60,7 +60,7 @@ Build Threadless Version
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_OPENMP=OFF
+    pip install lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
 
 All requirements, except the **OpenMP** requirement, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -71,7 +71,7 @@ Build MPI Version
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_MPI=ON
+    pip install lightgbm --config-settings=cmake.define.USE_MPI=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -84,7 +84,7 @@ Build GPU Version
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_GPU=ON
+    pip install lightgbm --config-settings=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -95,9 +95,9 @@ For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 .. code:: sh
 
     pip install lightgbm \
-      --config-setting=cmake.define.USE_GPU=ON \
-      --config-setting=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
-      --config-setting=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
+      --config-settings=cmake.define.USE_GPU=ON \
+      --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
+      --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
 
 All available options that can be passed via ``cmake.define.{option}``.
 
@@ -120,7 +120,7 @@ Build CUDA Version
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_CUDA=ON
+    pip install lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
 
@@ -133,7 +133,7 @@ Build HDFS Version
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_HDFS=ON
+    pip install lightgbm --config-settings=cmake.define.USE_HDFS=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -148,7 +148,7 @@ Build with MinGW-w64 on Windows
 
     # in sh.exe, git bash, or other Unix-like shell
     export CMAKE_GENERATOR='MinGW Makefiles'
-    pip install lightgbm --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
+    pip install lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
 `CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
@@ -174,7 +174,7 @@ Build with Time Costs Output
 
 .. code:: sh
 
-    pip install lightgbm --config-setting=cmake.define.USE_TIMETAG=ON
+    pip install lightgbm --config-settings=cmake.define.USE_TIMETAG=ON
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
 

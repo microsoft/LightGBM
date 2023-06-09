@@ -201,7 +201,7 @@ if [[ $TASK == "gpu" ]]; then
         pip install \
             --user \
             -v \
-            --config-setting=cmake.define.USE_GPU=ON \
+            --config-settings=cmake.define.USE_GPU=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
@@ -229,7 +229,7 @@ elif [[ $TASK == "cuda" ]]; then
         pip install \
             --user \
             -v \
-            --config-setting=cmake.define.USE_CUDA=ON \
+            --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1
@@ -252,7 +252,7 @@ elif [[ $TASK == "mpi" ]]; then
         pip install \
             --user \
             -v \
-            --config-setting=cmake.define.USE_MPI=ON \
+            --config-settings=cmake.define.USE_MPI=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit -1
         pytest $BUILD_DIRECTORY/tests/python_package_test || exit -1

@@ -166,7 +166,7 @@ while [ $# -gt 0 ]; do
         PRECOMPILE="true"
         ;;
     --time-costs)
-        BUILD_ARGS="${PIP_INSTALL_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
         ;;
     --user)
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
