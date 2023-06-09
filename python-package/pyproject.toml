@@ -35,9 +35,7 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-# v0.3.3: works
-# v0.4.0:
-requires = ["scikit-build-core>=0.4"]
+requires = ["scikit-build-core>=0.4.4"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
@@ -51,12 +49,12 @@ cmake.args = [
 ]
 cmake.verbose = false
 cmake.build-type = "Release"
-logging.level = "DEBUG"
+logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
 strict-config = true
-minimum-version = "0.1.5"
+minimum-version = "0.4.4"
 
 # end:build-system
 

@@ -96,8 +96,8 @@ For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
     pip install lightgbm \
       --config-setting=cmake.define.USE_GPU=ON \
-      --config-setting=cmake.define.OpenCL_INCLUDE_DIR='/usr/local/cuda/include/'" \
-      --config-setting=cmake.define.OpenCL_LIBRARY='/usr/local/cuda/lib64/libOpenCL.so'"
+      --config-setting=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
+      --config-setting=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
 
 All available options that can be passed via ``cmake.define.{option}``.
 
@@ -236,7 +236,7 @@ To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running t
 
 .. code:: sh
 
-  MSBuild windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=vs143
+  MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
 Then install the Python package using that library.
 

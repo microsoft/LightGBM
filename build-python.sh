@@ -179,7 +179,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-pip install --prefer-binary build
+pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed
 # to build the Python package
@@ -282,7 +282,7 @@ create_isolated_source_dir() {
     cp \
         -R \
         external_libs/compute/include \
-        ./lightgbm-python/compile/external_libs/compute/include/
+        ./lightgbm-python/external_libs/compute/include/
 }
 
 create_isolated_source_dir
