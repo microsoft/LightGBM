@@ -94,4 +94,27 @@
         return reinterpret_cast<StringArray *>(handle)->get_num_elements();
     }
 
+          /**
+     * @brief Appends a new string to the StringArray.
+     * 
+     * @param handle StringArray handle.
+     * @param content The string to append.
+     * @return 0 (success) or -1 (error) in case of failure.
+     */
+    int StringArrayHandle_append_string(StringArrayHandle handle, const char* content)
+    {
+        return reinterpret_cast<StringArray *>(handle)->append(std::string(content));
+    }
+
+    /**
+     * @brief Clears the content of the StringArray.
+     * 
+     * @param handle StringArray handle.
+     */
+    void StringArrayHandle_clear(StringArrayHandle handle)
+    {
+        reinterpret_cast<StringArray *>(handle)->clear();
+    }
+
+
 %}
