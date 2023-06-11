@@ -10,7 +10,7 @@ pr:
 - release/*
 variables:
   AZURE: 'true'
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.11'
   CONDA_ENV: test-env
   runCodesignValidationInjection: false
   skipComponentGovernanceDetection: true
@@ -97,7 +97,7 @@ jobs:
         TASK: sdist
       bdist:
         TASK: bdist
-        PYTHON_VERSION: '3.8'
+        PYTHON_VERSION: '3.9'
       inference:
         TASK: if-else
       mpi_source:
@@ -106,23 +106,23 @@ jobs:
       mpi_pip:
         TASK: mpi
         METHOD: pip
-        PYTHON_VERSION: '3.9'
+        PYTHON_VERSION: '3.10'
       mpi_wheel:
         TASK: mpi
         METHOD: wheel
-        PYTHON_VERSION: '3.7'
+        PYTHON_VERSION: '3.8'
       gpu_source:
         TASK: gpu
         METHOD: source
-        PYTHON_VERSION: '3.9'
+        PYTHON_VERSION: '3.10'
       gpu_pip:
         TASK: gpu
         METHOD: pip
-        PYTHON_VERSION: '3.8'
+        PYTHON_VERSION: '3.9'
       gpu_wheel:
         TASK: gpu
         METHOD: wheel
-        PYTHON_VERSION: '3.7'
+        PYTHON_VERSION: '3.8'
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
@@ -224,10 +224,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: '3.9'
+        PYTHON_VERSION: '3.10'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: '3.8'
+        PYTHON_VERSION: '3.9'
       bdist:
         TASK: bdist
       swig:
@@ -264,10 +264,10 @@ jobs:
     matrix:
       regular:
         TASK: regular
-        PYTHON_VERSION: '3.9'
+        PYTHON_VERSION: '3.10'
       sdist:
         TASK: sdist
-        PYTHON_VERSION: '3.8'
+        PYTHON_VERSION: '3.9'
       bdist:
         TASK: bdist
       swig:
