@@ -206,7 +206,6 @@ class CUDATweedieMetric : public CUDARegressionMetricInterface<TweedieMetric, CU
 
  private:
   const double tweedie_variance_power_;
-
 };
 
 }  // namespace LightGBM
