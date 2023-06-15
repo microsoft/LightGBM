@@ -28,6 +28,7 @@ void Metadata::Init(const char* data_filename) {
   // for lambdarank, it needs query data for partition data in distributed learning
   LoadQueryBoundaries();
   LoadWeights();
+  LoadPositions();
   CalculateQueryWeights();
   LoadInitialScore(data_filename_);
 }
@@ -214,6 +215,13 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       Log::Fatal("Weights size doesn't match data size");
     }
 
+    // check positions
+    if (!positions_.empty() && num_positions_ != num_data_) {
+      positions_.clear();
+      num_positions_ = 0;
+      Log::Fatal("Positions size doesn't match data size");
+    }
+
     // check query boundries
     if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_data_) {
       query_boundaries_.clear();
@@ -249,6 +257,25 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
           weights_[i] = old_weights[used_data_indices[i]];
         }
         old_weights.clear();
+      }
+    }
+    // check positions
+    if (position_load_from_file_) {
+      if (positions_.size() > 0 && num_positions_ != num_all_data) {
+        positions_.clear();
+        num_positions_ = 0;
+        Log::Fatal("Positions size doesn't match data size");
+      }
+      // get local weights
+      if (!positions_.empty()) {
+        auto old_positions = positions_;
+        num_positions_ = num_data_;
+        positions_ = std::vector<size_t>(num_data_);
+        #pragma omp parallel for schedule(static, 512)
+        for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {
+          positions_[i] = old_positions[used_data_indices[i]];
+        }
+        old_positions.clear();
       }
     }
     if (query_load_from_file_) {
@@ -527,6 +554,32 @@ void Metadata::LoadWeights() {
   }
   weight_load_from_file_ = true;
 }
+
+void Metadata::LoadPositions() {
+  num_positions_ = 0;
+  std::string position_filename(data_filename_);
+  // default position file name
+  position_filename.append(".position");
+  TextReader<size_t> reader(position_filename.c_str(), false);
+  reader.ReadAllLines();
+  if (reader.Lines().empty()) {
+    return;
+  }
+  Log::Info("Loading positions...");
+  num_positions_ = static_cast<data_size_t>(reader.Lines().size());
+  positions_ = std::vector<size_t>(num_positions_);
+  position_ids_ = std::vector<std::string>();
+  std::unordered_map<std::string, size_t> map_id2pos;
+  for (data_size_t i = 0; i < num_positions_; ++i) {
+    if (map_id2pos.count(reader.Lines()[i]) == 0) {
+      map_id2pos[reader.Lines()[i]] = position_ids_.size();
+      position_ids_.push_back(reader.Lines()[i]);      
+    }
+    positions_[i] = map_id2pos.at(reader.Lines()[i]);
+  }
+  position_load_from_file_ = true;
+}
+
 
 void Metadata::LoadInitialScore(const std::string& data_filename) {
   num_init_score_ = 0;
