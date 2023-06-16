@@ -16,6 +16,7 @@
 #include "cuda_data_partition.hpp"
 #include "cuda_best_split_finder.hpp"
 
+#include "cuda_gradient_discretizer.hpp"
 #include "../serial_tree_learner.h"
 
 namespace LightGBM {
@@ -74,6 +75,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
     const double sum_left_gradients, const double sum_right_gradients);
   #endif  // DEBUG
 
+  void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
+
   // GPU device ID
   int gpu_device_id_;
   // number of threads on CPU
@@ -90,6 +93,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   std::unique_ptr<CUDAHistogramConstructor> cuda_histogram_constructor_;
   // for best split information finding, given the histograms
   std::unique_ptr<CUDABestSplitFinder> cuda_best_split_finder_;
+  // gradient discretizer for quantized training
+  std::unique_ptr<CUDAGradientDiscretizer> cuda_gradient_discretizer_;
 
   std::vector<int> leaf_best_split_feature_;
   std::vector<uint32_t> leaf_best_split_threshold_;
@@ -108,8 +113,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   std::vector<int> categorical_bin_to_value_;
   std::vector<int> categorical_bin_offsets_;
 
-  mutable double* cuda_leaf_gradient_stat_buffer_;
-  mutable double* cuda_leaf_hessian_stat_buffer_;
+  mutable CUDAVector<double> cuda_leaf_gradient_stat_buffer_;
+  mutable CUDAVector<double> cuda_leaf_hessian_stat_buffer_;
   mutable data_size_t leaf_stat_buffer_size_;
   mutable data_size_t refit_num_data_;
   uint32_t* cuda_bitset_;

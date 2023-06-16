@@ -73,10 +73,19 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   }
   AllocateBitset();
 
-  cuda_leaf_gradient_stat_buffer_ = nullptr;
-  cuda_leaf_hessian_stat_buffer_ = nullptr;
   leaf_stat_buffer_size_ = 0;
   num_cat_threshold_ = 0;
+
+  if (config_->use_discretized_grad) {
+    cuda_leaf_gradient_stat_buffer_.Resize(config_->num_leaves);
+    cuda_leaf_hessian_stat_buffer_.Resize(config_->num_leaves);
+    cuda_gradient_discretizer_.reset(new CUDAGradientDiscretizer(
+      config_->grad_discretize_bins, config_->num_iterations, config_->seed, false, is_constant_hessian, config_->stochastic_rounding));
+    cuda_gradient_discretizer_->SetNCCL(nccl_comm_);
+    cuda_gradient_discretizer_->Init(num_data_);
+  } else {
+    cuda_gradient_discretizer_.reset(nullptr);
+  }
 
   #ifdef DEBUG
   host_gradients_.resize(num_data_, 0.0f);
@@ -101,19 +110,36 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
   const data_size_t* leaf_splits_init_indices =
     cuda_data_partition_->use_bagging() ? cuda_data_partition_->cuda_data_indices() : nullptr;
   cuda_data_partition_->BeforeTrain();
-  cuda_smaller_leaf_splits_->InitValues(
-    config_->lambda_l1,
-    config_->lambda_l2,
-    gradients_,
-    hessians_,
-    leaf_splits_init_indices,
-    cuda_data_partition_->cuda_data_indices(),
-    root_num_data,
-    cuda_histogram_constructor_->cuda_hist_pointer(),
-    &leaf_sum_hessians_[0]);
+  if (config_->use_discretized_grad) {
+    cuda_gradient_discretizer_->DiscretizeGradients(num_data_, gradients_, hessians_);
+    cuda_histogram_constructor_->BeforeTrain(
+      reinterpret_cast<const score_t*>(cuda_gradient_discretizer_->discretized_gradients_and_hessians()), nullptr);
+    cuda_smaller_leaf_splits_->InitValues(
+      config_->lambda_l1,
+      config_->lambda_l2,
+      reinterpret_cast<const int16_t*>(cuda_gradient_discretizer_->discretized_gradients_and_hessians()),
+      leaf_splits_init_indices,
+      cuda_data_partition_->cuda_data_indices(),
+      root_num_data,
+      cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_hessians_[0],
+      cuda_gradient_discretizer_->grad_scale(),
+      cuda_gradient_discretizer_->hess_scale());
+  } else {
+    cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
+    cuda_smaller_leaf_splits_->InitValues(
+      config_->lambda_l1,
+      config_->lambda_l2,
+      gradients_,
+      hessians_,
+      leaf_splits_init_indices,
+      cuda_data_partition_->cuda_data_indices(),
+      root_num_data,
+      cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_hessians_[0]);
+  }
   leaf_num_data_[0] = root_num_data;
   cuda_larger_leaf_splits_->InitValues();
-  cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
   col_sampler_.ResetByTree();
   cuda_best_split_finder_->BeforeTrain(col_sampler_.is_feature_used_bytree());
   leaf_data_start_[0] = 0;
@@ -357,8 +383,8 @@ void CUDASingleGPUTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFuncti
 
 Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const {
   std::unique_ptr<CUDATree> cuda_tree(new CUDATree(old_tree));
-  SetCUDAMemory<double>(cuda_leaf_gradient_stat_buffer_, 0, static_cast<size_t>(old_tree->num_leaves()), __FILE__, __LINE__);
-  SetCUDAMemory<double>(cuda_leaf_hessian_stat_buffer_, 0, static_cast<size_t>(old_tree->num_leaves()), __FILE__, __LINE__);
+  cuda_leaf_gradient_stat_buffer_.SetValue(0);
+  cuda_leaf_hessian_stat_buffer_.SetValue(0);
   ReduceLeafStat(cuda_tree.get(), gradients, hessians, cuda_data_partition_->cuda_data_indices());
   cuda_tree->SyncLeafOutputFromCUDAToHost();
   return cuda_tree.release();
@@ -373,13 +399,9 @@ Tree* CUDASingleGPUTreeLearner::FitByExistingTree(const Tree* old_tree, const st
     const int num_block = (refit_num_data_ + CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE - 1) / CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE;
     buffer_size *= static_cast<data_size_t>(num_block + 1);
   }
-  if (buffer_size != leaf_stat_buffer_size_) {
-    if (leaf_stat_buffer_size_ != 0) {
-      DeallocateCUDAMemory<double>(&cuda_leaf_gradient_stat_buffer_, __FILE__, __LINE__);
-      DeallocateCUDAMemory<double>(&cuda_leaf_hessian_stat_buffer_, __FILE__, __LINE__);
-    }
-    AllocateCUDAMemory<double>(&cuda_leaf_gradient_stat_buffer_, static_cast<size_t>(buffer_size), __FILE__, __LINE__);
-    AllocateCUDAMemory<double>(&cuda_leaf_hessian_stat_buffer_, static_cast<size_t>(buffer_size), __FILE__, __LINE__);
+  if (static_cast<size_t>(buffer_size) > cuda_leaf_gradient_stat_buffer_.Size()) {
+    cuda_leaf_gradient_stat_buffer_.Resize(buffer_size);
+    cuda_leaf_hessian_stat_buffer_.Resize(buffer_size);
   }
   return FitByExistingTree(old_tree, gradients, hessians);
 }
@@ -512,6 +534,15 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
   CHECK_LE(std::fabs(sum_right_hessians - leaf_sum_hessians_[right_leaf]), 1e-6f);
 }
 #endif  // DEBUG
+
+void CUDASingleGPUTreeLearner::RenewDiscretizedTreeLeaves(CUDATree* cuda_tree) {
+  cuda_data_partition_->ReduceLeafGradStat(
+    gradients_, hessians_, cuda_tree,
+    cuda_leaf_gradient_stat_buffer_.RawData(),
+    cuda_leaf_hessian_stat_buffer_.RawData());
+  LaunchCalcLeafValuesGivenGradStat(cuda_tree, cuda_data_partition_->cuda_data_indices());
+  SynchronizeCUDADevice(__FILE__, __LINE__);
+}
 
 }  // namespace LightGBM
 
