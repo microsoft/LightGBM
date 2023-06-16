@@ -25,7 +25,6 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDARMSEMetric(config);
     } else if (type == std::string("l1")) {
       return new CUDAL1Metric(config);
-      return new L1Metric(config);
     } else if (type == std::string("quantile")) {
       return new CUDAQuantileMetric(config);
     } else if (type == std::string("huber")) {
