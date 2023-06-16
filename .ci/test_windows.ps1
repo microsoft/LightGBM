@@ -35,7 +35,7 @@ if ($env:TASK -eq "swig") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 -DUSE_SWIG=ON .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
-    cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar
+    cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
   }
   Exit 0
 }
@@ -44,6 +44,12 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
+
+# ref:
+# * https://stackoverflow.com/a/62897729/3986677
+# * https://github.com/microsoft/LightGBM/issues/5899
+conda install brotlipy
+
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV `
   cloudpickle `
@@ -65,15 +71,15 @@ if ($env:TASK -ne "bdist") {
 if ($env:TASK -eq "regular") {
   mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
   cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
-  cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py install --precompile ; Check-Output $?
+  cd $env:BUILD_SOURCESDIRECTORY
+  sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
   cp $env:BUILD_SOURCESDIRECTORY/Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
   cp $env:BUILD_SOURCESDIRECTORY/Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 }
 elseif ($env:TASK -eq "sdist") {
-  cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py sdist --formats gztar ; Check-Output $?
-  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
+  cd $env:BUILD_SOURCESDIRECTORY
+  sh $env:BUILD_SOURCESDIRECTORY/build-python.sh sdist ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -87,17 +93,17 @@ elseif ($env:TASK -eq "bdist") {
   Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
   conda activate $env:CONDA_ENV
-  cd $env:BUILD_SOURCESDIRECTORY/python-package
-  python setup.py bdist_wheel --integrated-opencl --plat-name=win-amd64 --python-tag py3 ; Check-Output $?
-  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/python-package/dist ; Check-Output $?
-  cd dist; pip install --user @(Get-ChildItem *.whl) ; Check-Output $?
-  cp @(Get-ChildItem *.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+  cd $env:BUILD_SOURCESDIRECTORY
+  sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
+  sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
+  cd dist; pip install --user @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
+  cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
-  cd $env:BUILD_SOURCESDIRECTORY\python-package
+  cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    python setup.py install --mingw ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user --mingw ; Check-Output $?
   } else {
-    python setup.py install ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user; Check-Output $?
   }
 }
 

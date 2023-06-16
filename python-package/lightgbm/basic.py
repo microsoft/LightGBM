@@ -2,6 +2,7 @@
 """Wrapper for C API of LightGBM."""
 import abc
 import ctypes
+import inspect
 import json
 import warnings
 from collections import OrderedDict
@@ -12,13 +13,16 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
 
 from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
 from .libpath import find_lib_path
+
+if TYPE_CHECKING:
+    from typing import Literal
 
 __all__ = [
     'Booster',
@@ -49,8 +53,8 @@ _ctypes_float_array = Union[
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
-_LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], str]
-_LGBM_FeatureNameConfiguration = Union[List[str], str]
+_LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
+_LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
     List[float],
     List[int],
@@ -688,7 +692,7 @@ def _data_from_pandas(
             if categorical_feature == 'auto':  # use cat cols from DataFrame
                 categorical_feature = cat_cols_not_ordered
             else:  # use cat cols specified by user
-                categorical_feature = list(categorical_feature)
+                categorical_feature = list(categorical_feature)  # type: ignore[assignment]
         if feature_name == 'auto':
             feature_name = list(data.columns)
         _check_for_bad_pandas_dtypes(data.dtypes)
@@ -993,8 +997,8 @@ class _InnerPredictor:
         elif isinstance(data, list):
             try:
                 data = np.array(data)
-            except BaseException:
-                raise ValueError('Cannot convert data list to numpy array.')
+            except BaseException as err:
+                raise ValueError('Cannot convert data list to numpy array.') from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
                 start_iteration=start_iteration,
@@ -1012,8 +1016,8 @@ class _InnerPredictor:
             try:
                 _log_warning('Converting data to scipy sparse matrix.')
                 csr = scipy.sparse.csr_matrix(data)
-            except BaseException:
-                raise TypeError(f'Cannot predict data for type {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot predict data for type {type(data).__name__}') from err
             preds, nrow = self.__pred_for_csr(
                 csr=csr,
                 start_iteration=start_iteration,
@@ -1744,9 +1748,11 @@ class Dataset:
             data_has_header = any(self.params.get(alias, False) for alias in _ConfigAliases.get("header"))
         num_data = self.num_data()
         if predictor is not None:
-            init_score = predictor.predict(data,
-                                           raw_score=True,
-                                           data_has_header=data_has_header)
+            init_score: Union[np.ndarray, scipy.sparse.spmatrix] = predictor.predict(
+                data=data,
+                raw_score=True,
+                data_has_header=data_has_header
+            )
             init_score = init_score.ravel()
             if used_indices is not None:
                 assert not self._need_slice
@@ -1765,7 +1771,7 @@ class Dataset:
                         new_init_score[j * num_data + i] = init_score[i * predictor.num_class + j]
                 init_score = new_init_score
         elif self.init_score is not None:
-            init_score = np.zeros(self.init_score.shape, dtype=np.float64)
+            init_score = np.full_like(self.init_score, fill_value=0.0, dtype=np.float64)
         else:
             return self
         self.set_init_score(init_score)
@@ -1797,9 +1803,7 @@ class Dataset:
 
         # process for args
         params = {} if params is None else params
-        args_names = (getattr(self.__class__, '_lazy_init')
-                      .__code__
-                      .co_varnames[:getattr(self.__class__, '_lazy_init').__code__.co_argcount])
+        args_names = inspect.signature(self.__class__._lazy_init).parameters.keys()
         for key in params.keys():
             if key in args_names:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
@@ -1863,8 +1867,8 @@ class Dataset:
             try:
                 csr = scipy.sparse.csr_matrix(data)
                 self.__init_from_csr(csr, params_str, ref_dataset)
-            except BaseException:
-                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}')
+            except BaseException as err:
+                raise TypeError(f'Cannot initialize Dataset from {type(data).__name__}') from err
         if label is not None:
             self.set_label(label)
         if self.get_label() is None:
@@ -1915,7 +1919,7 @@ class Dataset:
         indices = self._create_sample_indices(total_nrow)
 
         # Select sampled rows, transpose to column order.
-        sampled = np.array([row for row in self._yield_row_from_seqlist(seqs, indices)])
+        sampled = np.array(list(self._yield_row_from_seqlist(seqs, indices)))
         sampled = sampled.T
 
         filtered = []
@@ -2473,7 +2477,7 @@ class Dataset:
             else:
                 if self.categorical_feature != 'auto':
                     _log_warning('categorical_feature in Dataset is overridden.\n'
-                                 f'New categorical_feature is {sorted(list(categorical_feature))}')
+                                 f'New categorical_feature is {list(categorical_feature)}')
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
         else:
@@ -2772,7 +2776,7 @@ class Dataset:
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
-                    self.data = np.array([row for row in self._yield_row_from_seqlist(self.data, self.used_indices)])
+                    self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
                                  "Returning original raw data")
@@ -3110,7 +3114,7 @@ class Booster:
                 ctypes.byref(out_num_class)))
             self.__num_class = out_num_class.value
             # buffer for inner predict
-            self.__inner_predict_buffer = [None]
+            self.__inner_predict_buffer: List[Optional[np.ndarray]] = [None]
             self.__is_predicted_cur_iter = [False]
             self.__get_eval_info()
             self.pandas_categorical = train_set.pandas_categorical
@@ -4189,7 +4193,7 @@ class Booster:
         if dataset_params is None:
             dataset_params = {}
         predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
-        leaf_preds = predictor.predict(
+        leaf_preds: np.ndarray = predictor.predict(  # type: ignore[assignment]
             data=data,
             start_iteration=-1,
             pred_leaf=True,
@@ -4518,16 +4522,16 @@ class Booster:
         # avoid to predict many time in one iteration
         if not self.__is_predicted_cur_iter[data_idx]:
             tmp_out_len = ctypes.c_int64(0)
-            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+            data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))  # type: ignore[union-attr]
             _safe_call(_LIB.LGBM_BoosterGetPredict(
                 self.handle,
                 ctypes.c_int(data_idx),
                 ctypes.byref(tmp_out_len),
                 data_ptr))
-            if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):
+            if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):  # type: ignore[arg-type]
                 raise ValueError(f"Wrong length of predict results for data {data_idx}")
             self.__is_predicted_cur_iter[data_idx] = True
-        result = self.__inner_predict_buffer[data_idx]
+        result: np.ndarray = self.__inner_predict_buffer[data_idx]  # type: ignore[assignment]
         if self.__num_class > 1:
             num_data = result.size // self.__num_class
             result = result.reshape(num_data, self.__num_class, order='F')

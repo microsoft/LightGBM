@@ -56,7 +56,31 @@ include(ExternalProject)
 include(ProcessorCount)
 ProcessorCount(J)
 set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
+set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
+set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 if(WIN32)
+  if(MSVC)
+    if(${MSVC_VERSION} GREATER 1929)
+      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    elseif(${MSVC_VERSION} GREATER 1919)
+      set(MSVC_TOOLCHAIN_ID "142")
+    elseif(${MSVC_VERSION} GREATER 1909)
+      set(MSVC_TOOLCHAIN_ID "141")
+    elseif(${MSVC_VERSION} GREATER 1899)
+      set(MSVC_TOOLCHAIN_ID "140")
+    else()
+      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    endif()
+    list(
+      APPEND
+        BOOST_BUILD_BYPRODUCTS
+          ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+          ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+          ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
+    )
+  else()
+    message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
+  endif()
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.bat")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2.exe")
   set(BOOST_FLAGS "")
@@ -64,6 +88,13 @@ else()
   set(BOOST_BOOTSTRAP "${BOOST_BASE}/source/bootstrap.sh")
   set(BOOST_BUILD "${BOOST_BASE}/source/b2")
   set(BOOST_FLAGS "-fPIC")
+  list(
+    APPEND
+    BOOST_BUILD_BYPRODUCTS
+      ${BOOST_LIBRARY}/libboost_filesystem.a
+      ${BOOST_LIBRARY}/libboost_system.a
+      ${BOOST_LIBRARY}/libboost_chrono.a
+  )
 endif()
 list(
   APPEND
@@ -150,41 +181,13 @@ ExternalProject_Add(
     threading=multi
     cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
+  # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
+  # ref:
+  #  - https://cmake.org/cmake/help/latest/module/ExternalProject.html
+  #  - https://stackoverflow.com/a/65803911/3986677
+  BUILD_BYPRODUCTS ${BOOST_BUILD_BYPRODUCTS}
 )
-set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
-set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${BOOST_INCLUDE})
-if(WIN32)
-  if(MSVC)
-    if(${MSVC_VERSION} GREATER 1929)
-      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
-    elseif(${MSVC_VERSION} GREATER 1919)
-      set(MSVC_TOOLCHAIN_ID "142")
-    elseif(${MSVC_VERSION} GREATER 1909)
-      set(MSVC_TOOLCHAIN_ID "141")
-    elseif(${MSVC_VERSION} GREATER 1899)
-      set(MSVC_TOOLCHAIN_ID "140")
-    else()
-      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
-    endif()
-    list(
-      APPEND
-      INTEGRATED_OPENCL_LIBRARIES
-      ${BOOST_LIBRARY}/libboost_filesystem-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-      ${BOOST_LIBRARY}/libboost_system-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-      ${BOOST_LIBRARY}/libboost_chrono-vc${MSVC_TOOLCHAIN_ID}-mt-x64-${BOOST_VERSION_UNDERSCORE}.lib
-    )
-  else()
-    message(FATAL_ERROR "Integrated OpenCL build is not yet available for MinGW")
-  endif()
-else()
-  list(
-    APPEND
-    INTEGRATED_OPENCL_LIBRARIES
-    ${BOOST_LIBRARY}/libboost_filesystem.a
-    ${BOOST_LIBRARY}/libboost_system.a
-    ${BOOST_LIBRARY}/libboost_chrono.a
-  )
-endif()
+list(APPEND INTEGRATED_OPENCL_LIBRARIES ${BOOST_BUILD_BYPRODUCTS})
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)

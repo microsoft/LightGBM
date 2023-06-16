@@ -133,6 +133,20 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
+Using ``Ninja``
+^^^^^^^^^^^^^^^
+
+On Linux, LightGBM can also be built with `Ninja <https://ninja-build.org/>`__ instead of ``make``.
+
+.. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     mkdir build
+     cd build
+     cmake -G 'Ninja' ..
+     ninja -j2
+
 macOS
 ~~~~~
 

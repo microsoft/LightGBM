@@ -19,7 +19,7 @@ PKG_LIBS = \
     ${SHLIB_OPENMP_CXXFLAGS} \
     ${SHLIB_PTHREAD_FLAGS} \
     -lws2_32 \
-    -lIphlpapi
+    -liphlpapi
 
 OBJECTS = \
     boosting/boosting.o \
