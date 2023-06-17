@@ -220,21 +220,19 @@ class Metadata {
   inline const size_t* positions() const {
     if (!positions_.empty()) {
       return positions_.data();
-    }
-    else {
+    } else {
       return nullptr;
     }
   }
 
   /*!
   * \brief Get position IDs, if does not exist then return nullptr
-  * \return Pointer of positions
+  * \return Pointer of position IDs
   */
   inline const std::string* position_ids() const {
     if (!position_ids_.empty()) {
       return position_ids_.data();
-    }
-    else {
+    } else {
       return nullptr;
     }
   }
