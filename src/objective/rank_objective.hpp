@@ -42,7 +42,7 @@ class RankingObjective : public ObjectiveFunction {
     // get position ids
     position_ids_ = metadata.position_ids();
     // get number of different position ids
-    num_position_ids_ = metadata.num_position_ids();
+    num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
     // get boundries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
@@ -278,18 +278,38 @@ class LambdarankNDCG : public RankingObjective {
   }
 
   void UpdatePositionBiasFactors(const score_t* lambdas, const score_t* hessians) const override {
-    std::vector<double> bias_first_derivatives(num_position_ids_, 0.0);
-    std::vector<double> bias_second_derivatives(num_position_ids_, 0.0);
+    /// get number of threads
+    int num_threads = 1;
+    #pragma omp parallel
+    #pragma omp master
+    {
+      num_threads = omp_get_num_threads();
+    }
+    // create per-thread buffers for first and second derivatives of utility w.r.t. position bias factors
+    std::vector<double> bias_first_derivatives(num_position_ids_ * num_threads, 0.0);
+    std::vector<double> bias_second_derivatives(num_position_ids_ * num_threads, 0.0);
+    #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_data_; i++) {
-      // accumilate first derivatives of utility w.r.t. position bias factors, for each position
-      bias_first_derivatives[positions_[i]] -= lambdas[i];
-      // accumilate second derivatives of utility w.r.t. position bias factors, for each position
-      bias_second_derivatives[positions_[i]] -= hessians[i];
+      // get thread ID
+      const int tid = omp_get_thread_num();
+      size_t offset = static_cast<size_t>(positions_[i] + tid * num_threads);
+      // accumulate first derivatives of utility w.r.t. position bias factors, for each position
+      bias_first_derivatives[offset] -= lambdas[i];
+      // accumulate second derivatives of utility w.r.t. position bias factors, for each position
+      bias_second_derivatives[offset] -= hessians[i];
     }
     #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_position_ids_; i++) {
+      double bias_first_derivative = 0.0;
+      double bias_second_derivative = 0.0;
+      // aggregate derivatives from per-thread buffers
+      for (int tid = 0; tid < num_threads; tid++) {
+        size_t offset = static_cast<size_t>(i + tid * num_threads);
+        bias_first_derivative += bias_first_derivatives[offset];
+        bias_second_derivative += bias_second_derivatives[offset];
+      }
       // do Newton-Rhapson step to update position bias factors
-      pos_biases_[i] += learning_rate_ * bias_first_derivatives[i] / (std::abs(bias_second_derivatives[i]) + 0.001);
+      pos_biases_[i] += learning_rate_ * bias_first_derivative / (std::abs(bias_second_derivative) + 0.001);
     }
     LogDebugPositionBiasFactors();
   }
@@ -304,7 +324,6 @@ class LambdarankNDCG : public RankingObjective {
       << std::endl;
     Log::Debug(message_stream.str().c_str());
     message_stream.str("");
-
     for (int i = 0; i < num_position_ids_; ++i) {
       message_stream << std::setw(15) << position_ids_[i]
         << std::setw(15) << pos_biases_[i];
@@ -334,6 +353,7 @@ class LambdarankNDCG : public RankingObjective {
   double sigmoid_table_idx_factor_;
   /*! \brief Position bias factors */
   mutable std::vector<label_t> pos_biases_;
+  /*! \brief Learning rate to update position bias factors */
   double learning_rate_;
 };
 
