@@ -15,7 +15,9 @@ Metadata::Metadata() {
   num_init_score_ = 0;
   num_data_ = 0;
   num_queries_ = 0;
+  num_positions_ = 0;
   weight_load_from_file_ = false;
+  position_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
   #ifdef USE_CUDA
@@ -266,7 +268,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         num_positions_ = 0;
         Log::Fatal("Positions size doesn't match data size");
       }
-      // get local positions
+      // get local weights
       if (!positions_.empty()) {
         auto old_positions = positions_;
         num_positions_ = num_data_;
@@ -571,11 +573,12 @@ void Metadata::LoadPositions() {
   position_ids_ = std::vector<std::string>();
   std::unordered_map<std::string, size_t> map_id2pos;
   for (data_size_t i = 0; i < num_positions_; ++i) {
-    if (map_id2pos.count(reader.Lines()[i]) == 0) {
-      map_id2pos[reader.Lines()[i]] = position_ids_.size();
-      position_ids_.push_back(reader.Lines()[i]);      
+    std::string& line = reader.Lines()[i];
+    if (map_id2pos.count(line) == 0) {
+      map_id2pos[line] = position_ids_.size();
+      position_ids_.push_back(line);
     }
-    positions_[i] = map_id2pos.at(reader.Lines()[i]);
+    positions_[i] = map_id2pos.at(line);
   }
   position_load_from_file_ = true;
 }
