@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <LightGBM/utils/log.h>
 #include <vector>
+#include <cmath>
 
 namespace LightGBM {
 
@@ -176,6 +177,15 @@ class CUDAVector {
   T* data_;
   size_t size_;
 };
+
+template <typename T>
+static __device__ T SafeLog(T x) {
+  if (x > 0) {
+    return std::log(x);
+  } else {
+    return -INFINITY;
+  }
+}
 
 }  // namespace LightGBM
 
