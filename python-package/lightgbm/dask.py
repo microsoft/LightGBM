@@ -291,9 +291,9 @@ def _train_part(
         if eval_class_weight:
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
+    model = model_factory(**params)
     if remote_socket is not None:
         remote_socket.release()
-    model = model_factory(**params)
     try:
         if is_ranker:
             model.fit(
