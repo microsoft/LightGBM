@@ -25,6 +25,9 @@ from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, loa
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
+from shutil import copyfile
+from os import remove
+
 decreasing_generator = itertools.count(0, -1)
 
 
@@ -752,8 +755,10 @@ def test_ranking_with_position_information():
         'objective': 'lambdarank',
         'verbose': -1
     }
+    copyfile(str(rank_example_dir / '_rank.train.position', str(rank_example_dir / 'rank.train.position')
     lgb_train = lgb.Dataset(str(rank_example_dir / 'rank.train'), params=params)
     gbm = lgb.train(params, lgb_train, num_boost_round=50)
+    remove(str(rank_example_dir / 'rank.train.position')
 
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)
