@@ -758,6 +758,11 @@ def test_ranking_with_position_information():
     copyfile(str(rank_example_dir / '_rank.train.position'), str(rank_example_dir / 'rank.train.position'))
     lgb_train = lgb.Dataset(str(rank_example_dir / 'rank.train'), params=params)
     gbm = lgb.train(params, lgb_train, num_boost_round=50)
+
+    open(str(rank_example_dir / 'rank.train.position'), 'w').close()
+    with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Positions size doesn't match data size"):
+        lgb.train(params, lgb_train, num_boost_round=50)
+
     remove(str(rank_example_dir / 'rank.train.position'))
 
 def test_early_stopping():
