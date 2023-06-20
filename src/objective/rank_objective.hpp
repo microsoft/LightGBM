@@ -292,7 +292,7 @@ class LambdarankNDCG : public RankingObjective {
     for (data_size_t i = 0; i < num_data_; i++) {
       // get thread ID
       const int tid = omp_get_thread_num();
-      size_t offset = static_cast<size_t>(positions_[i] + tid * num_threads);
+      size_t offset = static_cast<size_t>(positions_[i] + tid * num_position_ids_);
       // accumulate first derivatives of utility w.r.t. position bias factors, for each position
       bias_first_derivatives[offset] -= lambdas[i];
       // accumulate second derivatives of utility w.r.t. position bias factors, for each position
@@ -304,7 +304,7 @@ class LambdarankNDCG : public RankingObjective {
       double bias_second_derivative = 0.0;
       // aggregate derivatives from per-thread buffers
       for (int tid = 0; tid < num_threads; tid++) {
-        size_t offset = static_cast<size_t>(i + tid * num_threads);
+        size_t offset = static_cast<size_t>(i + tid * num_position_ids_);
         bias_first_derivative += bias_first_derivatives[offset];
         bias_second_derivative += bias_second_derivatives[offset];
       }
