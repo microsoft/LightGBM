@@ -4,15 +4,15 @@
 # minimum supported Python version's first release
 echo "installing lightgbm's dependencies"
 pip install \
-  'numpy==1.12.0' \
-  'pandas==0.19.2' \
+  'numpy==1.13.3' \
+  'pandas==1.0.0' \
   'scikit-learn==0.18.2' \
   'scipy==0.19.0' \
 || exit -1
 echo "done installing lightgbm's dependencies"
 
 echo "installing lightgbm"
-pip install dist/*.whl || exit -1
+pip install --no-deps dist/*.whl || exit -1
 echo "done installing lightgbm"
 
 echo "installed package versions:"
@@ -22,13 +22,21 @@ echo ""
 echo "checking that examples run without error"
 
 # run a few examples to test that Python package minimally works
-echo "--- simple_example.py"
-#python ./examples/python-guide/simple_example.py || exit -1
-
-echo "--- sklearn_example.py"
-python ./examples/python-guide/sklearn_example.py || exit -1
-
-echo "--- advanced_example.py"
+echo ""
+echo "--- advanced_example.py ---"
+echo ""
 python ./examples/python-guide/advanced_example.py || exit -1
 
+echo ""
+echo "--- simple_example.py ---"
+echo ""
+python ./examples/python-guide/simple_example.py || exit -1
+
+
+echo ""
+echo "--- sklearn_example.py ---"
+echo ""
+python ./examples/python-guide/sklearn_example.py || exit -1
+
+echo ""
 echo "done testing on oldest supported Python version"
