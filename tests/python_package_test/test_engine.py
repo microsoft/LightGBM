@@ -763,8 +763,9 @@ def test_ranking_with_position_information(tmp_path):
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
         file.write('pos_1000')
         file.close()
-   # with pytest.raises(lgb.basic.LightGBMError, match="Positions size doesn't match data size"):
-    lgb.train(params, lgb_train, num_boost_round=50)
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    with pytest.raises(lgb.basic.LightGBMError, match="Positions size doesn't match data size"):
+        lgb.train(params, lgb_train, num_boost_round=50)
 
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)
