@@ -761,6 +761,7 @@ def test_ranking_with_position_information():
 
     with open(str(rank_example_dir / 'rank.train.position'), 'a') as file:
         file.write('pos_1000')
+        file.close()
     with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Positions size doesn't match data size"):
         lgb.train(params, lgb_train, num_boost_round=50)
 
