@@ -179,7 +179,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-pip install --prefer-binary 'build>=0.9.0'
+pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed
 # to build the Python package
