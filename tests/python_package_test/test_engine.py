@@ -26,7 +26,6 @@ from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, loa
                     softmax)
 
 from shutil import copyfile
-from os import remove
 
 decreasing_generator = itertools.count(0, -1)
 
@@ -749,23 +748,23 @@ def test_ranking_prediction_early_stopping():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
-def test_ranking_with_position_information():
+def test_ranking_with_position_information(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     params = {
         'objective': 'lambdarank',
         'verbose': -1
     }
-    copyfile(str(rank_example_dir / '_rank.train.position'), str(rank_example_dir / 'rank.train.position'))
-    lgb_train = lgb.Dataset(str(rank_example_dir / 'rank.train'), params=params)
+    copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
     gbm = lgb.train(params, lgb_train, num_boost_round=50)
 
-    with open(str(rank_example_dir / 'rank.train.position'), 'a') as file:
+    with open(str(tmp_path / 'rank.train.position'), 'a') as file:
         file.write('pos_1000')
         file.close()
     with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Positions size doesn't match data size"):
         lgb.train(params, lgb_train, num_boost_round=50)
-
-    remove(str(rank_example_dir / 'rank.train.position'))
 
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)
