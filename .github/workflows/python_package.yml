@@ -76,6 +76,70 @@ jobs:
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+  test-oldest-versions:
+    name: Python - oldest supported versions (${{ matrix.os }})
+    runs-on: ubuntu-latest
+    container: 'python:3.6'
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Create wheel
+        run: |
+          docker run \
+            --rm \
+            -v $(pwd):/opt/lgb-build \
+            -w /opt/lgb-build \
+            lightgbm/vsts-agent:manylinux_2_28_x86_64 \
+            /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
+      - name: Test compatibility
+        run: |
+          cat > docker-script.sh <<EOF
+          # downgrade to oldest versions of dependencies published after
+          # minimum supported Python version's first release
+          pip install \
+              'numpy==1.12.0' \
+              'pandas==0.19.2' \
+              'scikit-learn==0.18.2' \
+              'scipy==0.19.0'
+          pip install dist/*.whl
+          EOF
+          docker run \
+            --rm \
+            -v $(pwd):/opt/lgb-build \
+            -w /opt/lgb-build \
+            -it python:3.6 \
+            /bin/bash ./.ci/test-python-oldest.sh
+
+          # git clone --recursive https://github.com/microsoft/LightGBM.git
+          apt-get update
+          apt-get install --no-install-recommends -y \
+            cmake \
+            ninja-build
+
+          mkdir build
+          cd build
+          cmake -DUSE_OPENMP=OFF -G Ninja ..
+          ninja -j2 _lightgbm
+          cd ..
+          sh ./build-python.sh install --precompile
+
+          # downgrade to oldest versions of dependencies published after
+          # minimum supported Python version's first release
+          pip install \
+              'numpy==1.12.0' \
+              'pandas==0.19.2' \
+              'scikit-learn==0.18.2' \
+              'scipy==0.19.0'
+
+          # run a few examples to test that Python package minimally works
+          python ./examples/python-guide/simple_example.py
+          python ./examples/python-guide/sklearn_example.py
+          python ./examples/python-guide/advanced_example.py
+
   all-python-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
