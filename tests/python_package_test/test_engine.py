@@ -770,7 +770,7 @@ def test_ranking_with_position_information(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    assert gbm_baseline.eval_valid()['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.eval_valid()['valid_0']['ndcg@3'], 0.02)
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.best_score['valid_0']['ndcg@3'], 0.02)
 
     # add extra row to position file
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
