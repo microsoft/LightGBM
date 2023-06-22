@@ -753,7 +753,7 @@ def test_ranking_with_position_information(tmp_path):
     params = {
         'objective': 'lambdarank',
         'verbose': -1,
-        'eval_at': 3,
+        'eval_at': [3],
         'eval_metric': 'ndcg'
     }
     copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
