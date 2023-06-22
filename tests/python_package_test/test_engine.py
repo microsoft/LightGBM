@@ -756,16 +756,28 @@ def test_ranking_with_position_information(tmp_path):
     }
     copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50, eval_at=[3], eval_metric='ndcg')
+
     copyfile(str(rank_example_dir / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
-    gbm = lgb.train(params, lgb_train, num_boost_round=50)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50, eval_at=[3], eval_metric='ndcg')
 
+    assert gbm_baseline.eval_valid()['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.eval_valid()['valid_0']['ndcg@3'], 0.02)
+
+    # add extra row to position file
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
         file.write('pos_1000')
         file.close()
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     with pytest.raises(lgb.basic.LightGBMError, match="Positions size doesn't match data size"):
-        lgb.train(params, lgb_train, num_boost_round=50)
+        lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50, eval_at=[3], eval_metric='ndcg')
 
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)
