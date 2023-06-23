@@ -79,7 +79,6 @@ jobs:
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
     runs-on: ubuntu-latest
-    container: 'python:3.6'
     timeout-minutes: 60
     steps:
       - name: Checkout repository
@@ -99,11 +98,12 @@ jobs:
           #   "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
           #   tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-          apt-get update
-          apt-get install -y --no-install-recommends \
-            docker-ce \
-            docker-ce-cli \
-            containerd.io
+          # apt-get update
+          # apt-get install -y --no-install-recommends \
+          #   docker-ce \
+          #   docker-ce-cli \
+          #   containerd.io
+          echo "this is unnecessary"
       - name: Create wheel
         run: |
           docker run \
