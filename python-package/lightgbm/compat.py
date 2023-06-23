@@ -144,7 +144,7 @@ try:
     from dask.bag import from_delayed as dask_bag_from_delayed
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
-    from dask.distributed import Client, default_client, wait
+    from dask.distributed import Client, Future, default_client, wait
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
@@ -157,6 +157,12 @@ except ImportError:
 
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class Future:  # type: ignore
+        """Dummy class for dask.distributed.Future."""
 
         def __init__(self, *args, **kwargs):
             pass

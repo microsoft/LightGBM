@@ -519,48 +519,11 @@ def test_classifier_custom_objective(output, task, cluster):
         assert_eq(p1_proba, p1_proba_local)
 
 
-def test_group_workers_by_host():
-    hosts = [f'0.0.0.{i}' for i in range(2)]
-    workers = [f'tcp://{host}:{p}' for p in range(2) for host in hosts]
-    expected = {
-        host: lgb.dask._HostWorkers(
-            default=f'tcp://{host}:0',
-            all_workers=[f'tcp://{host}:0', f'tcp://{host}:1']
-        )
-        for host in hosts
-    }
-    host_to_workers = lgb.dask._group_workers_by_host(workers)
-    assert host_to_workers == expected
-
-
-def test_group_workers_by_host_unparseable_host_names():
-    workers_without_protocol = ['0.0.0.1:80', '0.0.0.2:80']
-    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
-        lgb.dask._group_workers_by_host(workers_without_protocol)
-
-
 def test_machines_to_worker_map_unparseable_host_names():
     workers = {'0.0.0.1:80': {}, '0.0.0.2:80': {}}
     machines = "0.0.0.1:80,0.0.0.2:80"
     with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
         lgb.dask._machines_to_worker_map(machines=machines, worker_addresses=workers.keys())
-
-
-def test_assign_open_ports_to_workers(cluster):
-    with Client(cluster) as client:
-        workers = client.scheduler_info()['workers'].keys()
-        n_workers = len(workers)
-        host_to_workers = lgb.dask._group_workers_by_host(workers)
-        for _ in range(25):
-            worker_address_to_port = lgb.dask._assign_open_ports_to_workers(client, host_to_workers)
-            found_ports = worker_address_to_port.values()
-            assert len(found_ports) == n_workers
-            # check that found ports are different for same address (LocalCluster)
-            assert len(set(found_ports)) == len(found_ports)
-            # check that the ports are indeed open
-            for port in found_ports:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('', port))
 
 
 def test_training_does_not_fail_on_port_conflicts(cluster):
@@ -1588,15 +1551,17 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
         assert 'machines' not in params
 
         # model 2 - machines given
+        workers = list(client.scheduler_info()['workers'])
         workers_hostname = _get_workers_hostname(cluster)
-        n_workers = len(client.scheduler_info()['workers'])
-        open_ports = lgb.dask._find_n_open_ports(n_workers)
+        remote_sockets, open_ports = lgb.dask._assign_open_ports_to_workers(client, workers)
+        for s in remote_sockets.values():
+            s.release()
         dask_model2 = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
                 f"{workers_hostname}:{port}"
-                for port in open_ports
+                for port in open_ports.values()
             ]),
         )
 
