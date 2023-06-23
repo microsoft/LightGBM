@@ -520,7 +520,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _the Dask prediction example: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask/prediction.py
 
-.. _the Dask worker documentation: https://distributed.dask.org/en/latest/worker.html#memory-management
+.. _the Dask worker documentation: https://distributed.dask.org/en/stable/worker-memory.html
 
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
