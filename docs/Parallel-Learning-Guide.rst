@@ -544,6 +544,6 @@ See `the mars documentation`_ for usage examples.
 
 .. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/tune/api_docs/integration.html#lightgbm-tune-integration-lightgbm
 
-.. _Mars: https://docs.pymars.org/en/latest/index.html
+.. _Mars: https://mars-project.readthedocs.io/en/latest/
 
-.. _the mars documentation: https://docs.pymars.org/en/latest/user_guide/learn/lightgbm.html
+.. _the mars documentation: https://mars-project.readthedocs.io/en/latest/user_guide/learn/lightgbm.html
