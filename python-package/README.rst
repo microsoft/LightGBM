@@ -56,6 +56,15 @@ To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pand
 
     pip install 'lightgbm[pandas]'
 
+Use LightGBM with scikit-learn
+******************************
+
+To install all dependencies needed to use ``scikit-learn`` in LightGBM, append ``[scikit-learn]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[scikit-learn]'
+
 Build from Sources
 ******************
 

@@ -16,6 +16,10 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
+dependencies = [
+    "numpy",
+    "scipy"
+]
 description = "LightGBM Python Package"
 license = {file = "LICENSE"}
 maintainers = [
@@ -33,6 +37,9 @@ dask = [
 ]
 pandas = [
     "pandas>=0.24.0"
+]
+scikit-learn = [
+    "scikit-learn!=0.22.0"
 ]
 
 [project.urls]
