@@ -357,6 +357,7 @@ if test "${INSTALL}" = true; then
     pip install \
         ${PIP_INSTALL_ARGS} \
         --force-reinstall \
+        --no-cache-dir \
         --find-links=. \
         lightgbm
     cd ../
