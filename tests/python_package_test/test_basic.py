@@ -25,7 +25,6 @@ def test_basic(tmp_path):
     feature_names[1] = "a" * 1000  # set one name to a value longer than default buffer size
     train_data = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
     valid_data = train_data.create_valid(X_test, label=y_test)
-
     params = {
         "objective": "binary",
         "metric": "auc",
@@ -36,6 +35,7 @@ def test_basic(tmp_path):
         "max_bin": 255,
         "gpu_use_dp": True
     }
+    raise RuntimeError
     bst = lgb.Booster(params, train_data)
     bst.add_valid(valid_data, "valid_1")
 
@@ -393,11 +393,11 @@ def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_feat
 
     dataset_b = lgb.Dataset(arr_b).construct()
 
-    original_handle = dataset_a.handle.value
+    original_handle = dataset_a._handle.value
     dataset_a.add_features_from(dataset_b)
     assert dataset_a.num_feature() == 6
     assert dataset_a.num_data() == 100
-    assert dataset_a.handle.value == original_handle
+    assert dataset_a._handle.value == original_handle
 
 
 def test_cegb_affects_behavior(tmp_path):
