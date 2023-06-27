@@ -106,9 +106,9 @@ if (length(keyword_args) > 0L) {
   install_libs_content <- gsub(
     pattern = paste0("command_line_args <- NULL")
     , replacement = paste0(
-      "command_line_args <- c(\'"
-      , paste(cmake_args_to_add, collapse = "', '")
-      , "')"
+      "command_line_args <- c(\""
+      , paste(cmake_args_to_add, collapse = "\", \"")
+      , "\")"
     )
     , x = install_libs_content
     , fixed = TRUE
