@@ -972,7 +972,6 @@ class LGBMModel(_LGBMModelBase):
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
         
-        # https://github.com/microsoft/LightGBM/pull/4753
         .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
