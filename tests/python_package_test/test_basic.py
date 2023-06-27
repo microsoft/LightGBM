@@ -35,7 +35,6 @@ def test_basic(tmp_path):
         "max_bin": 255,
         "gpu_use_dp": True
     }
-    raise RuntimeError
     bst = lgb.Booster(params, train_data)
     bst.add_valid(valid_data, "valid_1")
 
