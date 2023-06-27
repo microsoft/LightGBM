@@ -25,7 +25,10 @@ namespace LightGBM {
 class RankingObjective : public ObjectiveFunction {
  public:
   explicit RankingObjective(const Config& config)
-      : seed_(config.objective_seed) {}
+      : seed_(config.objective_seed) {
+    learning_rate_ = config.learning_rate;
+    position_bias_regularizer_ = config.lambdarank_position_bias_regularizer;
+  }
 
   explicit RankingObjective(const std::vector<std::string>&) : seed_(0) {}
 
@@ -49,6 +52,8 @@ class RankingObjective : public ObjectiveFunction {
       Log::Fatal("Ranking tasks require query information");
     }
     num_queries_ = metadata.num_queries();
+    // initialize position bias vectors
+    pos_biases_.resize(num_position_ids_, 0.0);
   }
 
   void GetGradients(const double* score, score_t* gradients,
@@ -57,7 +62,13 @@ class RankingObjective : public ObjectiveFunction {
     for (data_size_t i = 0; i < num_queries_; ++i) {
       const data_size_t start = query_boundaries_[i];
       const data_size_t cnt = query_boundaries_[i + 1] - query_boundaries_[i];
-      GetGradientsForOneQuery(i, cnt, label_ + start, score + start,
+      std::vector<double> score_adjusted;
+      if (num_position_ids_ > 0) {
+        for (data_size_t j = 0; j < cnt; ++j) {
+          score_adjusted.push_back(score[start + j] + pos_biases_[positions_[start + j]]);
+        }
+      }
+      GetGradientsForOneQuery(i, cnt, label_ + start, num_position_ids_ > 0? score_adjusted.data(): score + start,
                               gradients + start, hessians + start);
       if (weights_ != nullptr) {
         for (data_size_t j = 0; j < cnt; ++j) {
@@ -107,6 +118,12 @@ class RankingObjective : public ObjectiveFunction {
   data_size_t num_position_ids_;
   /*! \brief Query boundaries */
   const data_size_t* query_boundaries_;
+  /*! \brief Position bias factors */
+  mutable std::vector<label_t> pos_biases_;
+  /*! \brief Learning rate to update position bias factors */
+  double learning_rate_;
+  /*! \brief Position bias regularizer */
+  double position_bias_regularizer_;
 };
 
 /*!
@@ -128,7 +145,6 @@ class LambdarankNDCG : public RankingObjective {
     if (sigmoid_ <= 0.0) {
       Log::Fatal("Sigmoid param %f should be greater than zero", sigmoid_);
     }
-    learning_rate_ = config.learning_rate;
   }
 
   explicit LambdarankNDCG(const std::vector<std::string>& strs)
@@ -153,8 +169,6 @@ class LambdarankNDCG : public RankingObjective {
     }
     // construct Sigmoid table to speed up Sigmoid transform
     ConstructSigmoidTable();
-    // initialize position bias vectors
-    pos_biases_.resize(num_position_ids_, 0.0);
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -174,8 +188,8 @@ class LambdarankNDCG : public RankingObjective {
       sorted_idx[i] = i;
     }
     std::stable_sort(
-        sorted_idx.begin(), sorted_idx.end(),
-        [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });
+      sorted_idx.begin(), sorted_idx.end(),
+      [score](data_size_t a, data_size_t b) { return score[a] > score[b]; });    
     // get best and worst score
     const double best_score = score[sorted_idx[0]];
     data_size_t worst_idx = cnt - 1;
@@ -201,18 +215,14 @@ class LambdarankNDCG : public RankingObjective {
         }
         const data_size_t high = sorted_idx[high_rank];
         const int high_label = static_cast<int>(label[high]);
-        double high_score = score[high];
+        const double high_score = score[high];
         const double high_label_gain = label_gain_[high_label];
         const double high_discount = DCGCalculator::GetDiscount(high_rank);
         const data_size_t low = sorted_idx[low_rank];
         const int low_label = static_cast<int>(label[low]);
-        double low_score = score[low];
+        const double low_score = score[low];
         const double low_label_gain = label_gain_[low_label];
         const double low_discount = DCGCalculator::GetDiscount(low_rank);
-        if (num_position_ids_ > 0) {
-          high_score += pos_biases_[positions_[query_boundaries_[query_id] + high]];
-          low_score += pos_biases_[positions_[query_boundaries_[query_id] + low]];
-        }
 
         const double delta_score = high_score - low_score;
 
@@ -288,6 +298,7 @@ class LambdarankNDCG : public RankingObjective {
     // create per-thread buffers for first and second derivatives of utility w.r.t. position bias factors
     std::vector<double> bias_first_derivatives(num_position_ids_ * num_threads, 0.0);
     std::vector<double> bias_second_derivatives(num_position_ids_ * num_threads, 0.0);
+    std::vector<int> instance_counts(num_position_ids_ * num_threads, 0);
     #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_data_; i++) {
       // get thread ID
@@ -297,17 +308,23 @@ class LambdarankNDCG : public RankingObjective {
       bias_first_derivatives[offset] -= lambdas[i];
       // accumulate second derivatives of utility w.r.t. position bias factors, for each position
       bias_second_derivatives[offset] -= hessians[i];
+      instance_counts[offset]++;
     }
     #pragma omp parallel for schedule(guided)
     for (data_size_t i = 0; i < num_position_ids_; i++) {
       double bias_first_derivative = 0.0;
       double bias_second_derivative = 0.0;
+      int instance_count = 0;
       // aggregate derivatives from per-thread buffers
       for (int tid = 0; tid < num_threads; tid++) {
         size_t offset = static_cast<size_t>(i + tid * num_position_ids_);
         bias_first_derivative += bias_first_derivatives[offset];
         bias_second_derivative += bias_second_derivatives[offset];
+        instance_count += instance_counts[offset];
       }
+      // L2 regularization on position bias factors
+      bias_first_derivative -= pos_biases_[i] * position_bias_regularizer_ * instance_count;
+      bias_second_derivative -= position_bias_regularizer_ * instance_count;
       // do Newton-Rhapson step to update position bias factors
       pos_biases_[i] += learning_rate_ * bias_first_derivative / (std::abs(bias_second_derivative) + 0.001);
     }
@@ -351,10 +368,6 @@ class LambdarankNDCG : public RankingObjective {
   double max_sigmoid_input_ = 50;
   /*! \brief Factor that covert score to bin in Sigmoid table */
   double sigmoid_table_idx_factor_;
-  /*! \brief Position bias factors */
-  mutable std::vector<label_t> pos_biases_;
-  /*! \brief Learning rate to update position bias factors */
-  double learning_rate_;
 };
 
 /*!
