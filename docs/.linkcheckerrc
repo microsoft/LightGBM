@@ -9,6 +9,7 @@ threads=1
 ignore=
   pythonapi/lightgbm\..*\.html.*
   http.*amd.com/.*
+  https.*tandfonline.com/.*
 ignorewarnings=http-robots-denied,https-certificate-error
 checkextern=1
 

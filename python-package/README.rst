@@ -20,8 +20,6 @@ Install from `PyPI <https://pypi.org/project/lightgbm>`_
 
     pip install lightgbm
 
-You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
-
 Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** and **Linux** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <http://portablecl.org>`_ on **Linux**. Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
@@ -35,6 +33,37 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 - For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
+
+Use LightGBM with Dask
+**********************
+
+.. warning::
+
+    Dask-package is only tested on Linux.
+
+To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[dask]'
+
+Use LightGBM with pandas
+************************
+
+To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pandas]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[pandas]'
+
+Use LightGBM with scikit-learn
+******************************
+
+To install all dependencies needed to use ``scikit-learn`` in LightGBM, append ``[scikit-learn]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[scikit-learn]'
 
 Build from Sources
 ******************
@@ -243,21 +272,6 @@ Then install the Python package using that library.
 .. code:: sh
 
   sh ./build-python.sh install --precompile
-
-Install Dask-package
-''''''''''''''''''''
-
-.. warning::
-
-    Dask-package is only tested on Linux.
-
-To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
-
-.. code:: sh
-
-    pip install lightgbm[dask]
-
-Or replace ``sh ./build-python.sh install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
 
 Troubleshooting
 ---------------
