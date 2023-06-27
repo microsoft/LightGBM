@@ -484,6 +484,9 @@ class LGBMModel(_LGBMModelBase):
             threads configured for OpenMP in the system. A value of ``None`` (the default) corresponds
             to using the number of physical cores in the system (its correct detection requires
             either the ``joblib`` or the ``psutil`` util libraries to be installed).
+
+            .. versionchanged:: 4.0.0
+
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -968,6 +971,9 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        
+        # https://github.com/microsoft/LightGBM/pull/4753
+        .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
@@ -979,6 +985,9 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        
+        # https://github.com/microsoft/LightGBM/pull/4753
+        .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
