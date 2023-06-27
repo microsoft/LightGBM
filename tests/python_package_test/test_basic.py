@@ -25,6 +25,7 @@ def test_basic(tmp_path):
     feature_names[1] = "a" * 1000  # set one name to a value longer than default buffer size
     train_data = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
     valid_data = train_data.create_valid(X_test, label=y_test)
+
     params = {
         "objective": "binary",
         "metric": "auc",
