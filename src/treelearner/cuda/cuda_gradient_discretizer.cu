@@ -94,7 +94,7 @@ __global__ void DiscretizeGradientsKernel(
   const score_t* gradient_random_values,
   const score_t* hessian_random_values,
   const int grad_discretize_bins,
-  int32_t* output_gradients_and_hessians) {
+  int8_t* output_gradients_and_hessians) {
   const int start = random_values_use_start[iter];
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   const score_t grad_scale = *grad_scale_ptr;
@@ -135,33 +135,12 @@ void CUDAGradientDiscretizer::DiscretizeGradients(
     SynchronizeCUDADevice(__FILE__, __LINE__);
   ReduceBlockMinMaxKernel<<<1, CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE>>>(
     num_reduce_blocks_,
-    grad_discretize_bins_,
+    num_grad_quant_bins_,
     grad_min_block_buffer_.RawData(),
     grad_max_block_buffer_.RawData(),
     hess_min_block_buffer_.RawData(),
     hess_max_block_buffer_.RawData());
     SynchronizeCUDADevice(__FILE__, __LINE__);
-  if (nccl_comm_ != nullptr) {
-    SynchronizeCUDADevice(__FILE__, __LINE__);
-    cudaStream_t cuda_stream;
-    CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream));
-    NCCLCHECK(ncclGroupStart());
-    NCCLCHECK(ncclAllReduce(
-      grad_min_block_buffer_.RawData(),
-      grad_min_block_buffer_.RawData(), 1, ncclFloat32, ncclMin, *nccl_comm_, cuda_stream));
-    NCCLCHECK(ncclAllReduce(
-      hess_min_block_buffer_.RawData(),
-      hess_min_block_buffer_.RawData(), 1, ncclFloat32, ncclMin, *nccl_comm_, cuda_stream));
-    NCCLCHECK(ncclAllReduce(
-      grad_max_block_buffer_.RawData(),
-      grad_max_block_buffer_.RawData(), 1, ncclFloat32, ncclMax, *nccl_comm_, cuda_stream));
-    NCCLCHECK(ncclAllReduce(
-      hess_max_block_buffer_.RawData(),
-      hess_max_block_buffer_.RawData(), 1, ncclFloat32, ncclMax, *nccl_comm_, cuda_stream));
-    NCCLCHECK(ncclGroupEnd());
-    CUDASUCCESS_OR_FATAL(cudaStreamSynchronize(cuda_stream));
-    CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_stream));
-  }
 
   #define DiscretizeGradientsKernel_ARGS \
     num_data, \
@@ -173,7 +152,7 @@ void CUDAGradientDiscretizer::DiscretizeGradients(
     random_values_use_start_.RawData(), \
     gradient_random_values_.RawData(), \
     hessian_random_values_.RawData(), \
-    grad_discretize_bins_, \
+    num_grad_quant_bins_, \
     discretized_gradients_and_hessians_.RawData()
 
   if (stochastic_rounding_) {

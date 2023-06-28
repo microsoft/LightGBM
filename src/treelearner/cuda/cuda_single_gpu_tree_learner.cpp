@@ -39,13 +39,14 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
 
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
-  cuda_smaller_leaf_splits_->Init();
+  cuda_smaller_leaf_splits_->Init(config_->use_quantized_grad);
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
-  cuda_larger_leaf_splits_->Init();
+  cuda_larger_leaf_splits_->Init(config_->use_quantized_grad);
 
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, config_->num_leaves, num_threads_,
     share_state_->feature_hist_offsets(),
-    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id_, config_->gpu_use_dp));
+    config_->min_data_in_leaf, config_->min_sum_hessian_in_leaf, gpu_device_id_, config_->gpu_use_dp,
+    config_->use_quantized_grad, config_->num_grad_quant_bins));
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
   const auto& feature_hist_offsets = share_state_->feature_hist_offsets();
@@ -76,13 +77,12 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   leaf_stat_buffer_size_ = 0;
   num_cat_threshold_ = 0;
 
-  if (config_->use_discretized_grad) {
+  if (config_->use_quantized_grad) {
     cuda_leaf_gradient_stat_buffer_.Resize(config_->num_leaves);
     cuda_leaf_hessian_stat_buffer_.Resize(config_->num_leaves);
     cuda_gradient_discretizer_.reset(new CUDAGradientDiscretizer(
-      config_->grad_discretize_bins, config_->num_iterations, config_->seed, false, is_constant_hessian, config_->stochastic_rounding));
-    cuda_gradient_discretizer_->SetNCCL(nccl_comm_);
-    cuda_gradient_discretizer_->Init(num_data_);
+      config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
+    cuda_gradient_discretizer_->Init(num_data_, config_->num_leaves, train_data_->num_features(), train_data_);
   } else {
     cuda_gradient_discretizer_.reset(nullptr);
   }
@@ -110,7 +110,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
   const data_size_t* leaf_splits_init_indices =
     cuda_data_partition_->use_bagging() ? cuda_data_partition_->cuda_data_indices() : nullptr;
   cuda_data_partition_->BeforeTrain();
-  if (config_->use_discretized_grad) {
+  if (config_->use_quantized_grad) {
     cuda_gradient_discretizer_->DiscretizeGradients(num_data_, gradients_, hessians_);
     cuda_histogram_constructor_->BeforeTrain(
       reinterpret_cast<const score_t*>(cuda_gradient_discretizer_->discretized_gradients_and_hessians()), nullptr);
@@ -123,8 +123,8 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
       root_num_data,
       cuda_histogram_constructor_->cuda_hist_pointer(),
       &leaf_sum_hessians_[0],
-      cuda_gradient_discretizer_->grad_scale(),
-      cuda_gradient_discretizer_->hess_scale());
+      cuda_gradient_discretizer_->grad_scale_ptr(),
+      cuda_gradient_discretizer_->hess_scale_ptr());
   } else {
     cuda_histogram_constructor_->BeforeTrain(gradients_, hessians_);
     cuda_smaller_leaf_splits_->InitValues(
@@ -145,6 +145,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
   leaf_data_start_[0] = 0;
   smaller_leaf_index_ = 0;
   larger_leaf_index_ = -1;
+  cuda_gradient_discretizer_->SetNumBitsInHistogramBin<false>(0, -1, root_num_data, 0);
 }
 
 void CUDASingleGPUTreeLearner::AddPredictionToScore(const Tree* tree, double* out_score) const {
@@ -173,18 +174,59 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
       num_data_in_smaller_leaf,
       num_data_in_larger_leaf,
       sum_hessians_in_smaller_leaf,
-      sum_hessians_in_larger_leaf);
+      sum_hessians_in_larger_leaf,
+      cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_index_));
     global_timer.Stop("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     global_timer.Start("CUDASingleGPUTreeLearner::FindBestSplitsForLeaf");
 
-    SelectFeatureByNode(tree.get());
-
-    cuda_best_split_finder_->FindBestSplitsForLeaf(
+    uint8_t parent_num_bits_bin = 0;
+    uint8_t smaller_num_bits_bin = 0;
+    uint8_t larger_num_bits_bin = 0;
+    if (larger_leaf_index_ != -1) {
+      const int parent_leaf_index = std::min(smaller_leaf_index_, larger_leaf_index_);
+      parent_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInNode<false>(parent_leaf_index);
+      smaller_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_index_);
+      larger_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_index_);
+    } else {
+      parent_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(0);
+      smaller_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(0);
+      larger_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(0);
+    }
+    cuda_histogram_constructor_->SubtractHistogramForLeaf(
       cuda_smaller_leaf_splits_->GetCUDAStruct(),
       cuda_larger_leaf_splits_->GetCUDAStruct(),
-      smaller_leaf_index_, larger_leaf_index_,
-      num_data_in_smaller_leaf, num_data_in_larger_leaf,
-      sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf);
+      config_->use_quantized_grad,
+      parent_num_bits_bin,
+      smaller_num_bits_bin,
+      larger_num_bits_bin);
+
+    SelectFeatureByNode(tree.get());
+
+    const uint8_t smaller_leaf_num_bits_bin = cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_index_);
+    const uint8_t larger_leaf_num_bits_bin = larger_leaf_index_ < 0 ? 32 : cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(larger_leaf_index_);
+    if (config_->use_quantized_grad) {
+      cuda_best_split_finder_->FindBestSplitsForLeaf(
+        cuda_smaller_leaf_splits_->GetCUDAStruct(),
+        cuda_larger_leaf_splits_->GetCUDAStruct(),
+        smaller_leaf_index_, larger_leaf_index_,
+        num_data_in_smaller_leaf, num_data_in_larger_leaf,
+        sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf,
+        cuda_gradient_discretizer_->grad_scale_ptr(),
+        cuda_gradient_discretizer_->hess_scale_ptr(),
+        smaller_leaf_num_bits_bin,
+        larger_leaf_num_bits_bin);
+    } else {
+      cuda_best_split_finder_->FindBestSplitsForLeaf(
+        cuda_smaller_leaf_splits_->GetCUDAStruct(),
+        cuda_larger_leaf_splits_->GetCUDAStruct(),
+        smaller_leaf_index_, larger_leaf_index_,
+        num_data_in_smaller_leaf, num_data_in_larger_leaf,
+        sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf,
+        nullptr, nullptr,
+        smaller_leaf_num_bits_bin,
+        larger_leaf_num_bits_bin);
+    }
+
     global_timer.Stop("CUDASingleGPUTreeLearner::FindBestSplitsForLeaf");
     global_timer.Start("CUDASingleGPUTreeLearner::FindBestFromAllSplits");
     const CUDASplitInfo* best_split_info = nullptr;
@@ -273,9 +315,18 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
     #endif  // DEBUG
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
+
+    cuda_gradient_discretizer_->SetNumBitsInHistogramBin<false>(
+      best_leaf_index_, right_leaf_index, leaf_num_data_[best_leaf_index_], leaf_num_data_[right_leaf_index]);
+
     global_timer.Stop("CUDASingleGPUTreeLearner::Split");
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
+  if (config_->use_quantized_grad && config_->quant_train_renew_leaf) {
+    global_timer.Start("CUDASingleGPUTreeLearner::RenewDiscretizedTreeLeaves");
+    RenewDiscretizedTreeLeaves(tree.get());
+    global_timer.Stop("CUDASingleGPUTreeLearner::RenewDiscretizedTreeLeaves");
+  }
   tree->ToHost();
   return tree.release();
 }

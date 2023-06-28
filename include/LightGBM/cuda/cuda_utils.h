@@ -130,6 +130,11 @@ class CUDAVector {
     size_ = size;
   }
 
+  void InitFromHostVector(const std::vector<T>& host_vector) {
+    Resize(host_vector.size());
+    CopyFromHostToCUDADevice(data_, host_vector.data(), host_vector.size(), __FILE__, __LINE__);
+  }
+
   void Clear() {
     if (size_ > 0 && data_ != nullptr) {
       DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
@@ -167,6 +172,10 @@ class CUDAVector {
 
   T* RawData() const {
     return data_;
+  }
+
+  void SetValue(int value) {
+    SetCUDAMemory<T>(data_, value, size_, __FILE__, __LINE__);
   }
 
   const T* RawDataReadOnly() const {

@@ -77,6 +77,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
 
+  void LaunchCalcLeafValuesGivenGradStat(CUDATree* cuda_tree, const data_size_t* num_data_in_leaf);
+
   // GPU device ID
   int gpu_device_id_;
   // number of threads on CPU
