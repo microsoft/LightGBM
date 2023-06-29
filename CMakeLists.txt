@@ -645,6 +645,10 @@ if(BUILD_CLI)
     )
 endif()
 
+if(__BUILD_FOR_PYTHON)
+    set(CMAKE_INSTALL_PREFIX "lightgbm")
+endif()
+
 install(
   TARGETS _lightgbm
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin

@@ -31,6 +31,22 @@ CUDAL2Metric::CUDAL2Metric(const Config& config): CUDARegressionMetricInterface<
 
 CUDAQuantileMetric::CUDAQuantileMetric(const Config& config): CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric>(config), alpha_(config.alpha) {}
 
+CUDAL1Metric::CUDAL1Metric(const Config& config): CUDARegressionMetricInterface<L1Metric, CUDAL1Metric>(config) {}
+
+CUDAHuberLossMetric::CUDAHuberLossMetric(const Config& config): CUDARegressionMetricInterface<HuberLossMetric, CUDAHuberLossMetric>(config), alpha_(config.alpha) {}
+
+CUDAFairLossMetric::CUDAFairLossMetric(const Config& config): CUDARegressionMetricInterface<FairLossMetric, CUDAFairLossMetric>(config) , fair_c_(config.fair_c) {}
+
+CUDAPoissonMetric::CUDAPoissonMetric(const Config& config): CUDARegressionMetricInterface<PoissonMetric, CUDAPoissonMetric>(config) {}
+
+CUDAMAPEMetric::CUDAMAPEMetric(const Config& config): CUDARegressionMetricInterface<MAPEMetric, CUDAMAPEMetric>(config) {}
+
+CUDAGammaMetric::CUDAGammaMetric(const Config& config): CUDARegressionMetricInterface<GammaMetric, CUDAGammaMetric>(config) {}
+
+CUDAGammaDevianceMetric::CUDAGammaDevianceMetric(const Config& config): CUDARegressionMetricInterface<GammaDevianceMetric, CUDAGammaDevianceMetric>(config) {}
+
+CUDATweedieMetric::CUDATweedieMetric(const Config& config): CUDARegressionMetricInterface<TweedieMetric, CUDATweedieMetric>(config) , tweedie_variance_power_(config.tweedie_variance_power) {}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

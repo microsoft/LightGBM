@@ -176,8 +176,8 @@ For C/C++ users, any OpenMP feature cannot be used before the fork happens. If a
 fork happens (example: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
 and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
-Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a 
-single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent 
+Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a
+single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent
 <https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
 
 12. Why is early stopping not enabled by default in LightGBM?
@@ -220,7 +220,7 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 .. code-block:: console
 
-    /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning: 
+    /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning:
     Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
     the same time. Both libraries are known to be incompatible and this
     can cause random crashes or deadlocks on Linux when loaded in the
@@ -231,7 +231,7 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 Detailed description of conflicts between multiple OpenMP instances is provided in the `following document <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__.
 
-**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
+**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#user-content-workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
