@@ -26,7 +26,6 @@ from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, loa
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
                     softmax)
 
-
 decreasing_generator = itertools.count(0, -1)
 
 
