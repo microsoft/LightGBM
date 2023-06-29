@@ -1125,6 +1125,10 @@ Objective Parameters
 
    -  separate by ``,``
 
+-  ``lambdarank_position_bias_regularizer`` :raw-html:`<a id="lambdarank_position_bias_regularizer" title="Permalink to this parameter" href="#lambdarank_position_bias_regularizer">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``lambdarank_position_bias_regularizer >= 0.0``
+
+   -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
+
 Metric Parameters
 -----------------
 
