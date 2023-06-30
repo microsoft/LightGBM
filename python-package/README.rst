@@ -34,6 +34,37 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
 
+Use LightGBM with Dask
+**********************
+
+.. warning::
+
+    Dask-package is only tested on Linux.
+
+To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[dask]'
+
+Use LightGBM with pandas
+************************
+
+To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pandas]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[pandas]'
+
+Use LightGBM with scikit-learn
+******************************
+
+To install all dependencies needed to use ``scikit-learn`` in LightGBM, append ``[scikit-learn]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[scikit-learn]'
+
 Build from Sources
 ******************
 
@@ -241,21 +272,6 @@ Then install the Python package using that library.
 .. code:: sh
 
   sh ./build-python.sh install --precompile
-
-Install Dask-package
-''''''''''''''''''''
-
-.. warning::
-
-    Dask-package is only tested on Linux.
-
-To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
-
-.. code:: sh
-
-    pip install lightgbm[dask]
-
-Or replace ``sh ./build-python.sh install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
 
 Troubleshooting
 ---------------

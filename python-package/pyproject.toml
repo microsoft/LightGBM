@@ -16,6 +16,10 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
+dependencies = [
+    "numpy",
+    "scipy"
+]
 description = "LightGBM Python Package"
 license = {file = "LICENSE"}
 maintainers = [
@@ -25,6 +29,18 @@ name = "lightgbm"
 readme = "README.rst"
 requires-python = ">=3.6"
 version = "3.3.5.99"
+
+[project.optional-dependencies]
+dask = [
+    "dask[array,dataframe,distributed]>=2.0.0",
+    "pandas>=0.24.0"
+]
+pandas = [
+    "pandas>=0.24.0"
+]
+scikit-learn = [
+    "scikit-learn!=0.22.0"
+]
 
 [project.urls]
 homepage = "https://github.com/microsoft/LightGBM"
