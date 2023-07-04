@@ -84,6 +84,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    "sphinx.ext.intersphinx",
 ]
 
 autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
@@ -206,6 +207,10 @@ htmlhelp_basename = 'LightGBMdoc'
 # the title page.
 latex_logo = str(CURR_PATH / 'logo' / 'LightGBM_logo_black_text_small.png')
 
+# intersphinx configuration
+intersphinx_mapping = {
+    "sklearn": ("https://scikit-learn.org/stable/", None),
+}
 
 def generate_doxygen_xml(app: Sphinx) -> None:
     """Generate XML documentation for C API by Doxygen.
