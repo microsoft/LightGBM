@@ -393,11 +393,11 @@ def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_feat
 
     dataset_b = lgb.Dataset(arr_b).construct()
 
-    original_handle = dataset_a.handle.value
+    original_handle = dataset_a._handle.value
     dataset_a.add_features_from(dataset_b)
     assert dataset_a.num_feature() == 6
     assert dataset_a.num_data() == 100
-    assert dataset_a.handle.value == original_handle
+    assert dataset_a._handle.value == original_handle
 
 
 def test_cegb_affects_behavior(tmp_path):

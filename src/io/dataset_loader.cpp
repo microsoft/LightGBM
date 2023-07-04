@@ -15,7 +15,7 @@
 
 namespace LightGBM {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 DatasetLoader::DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename)
   :config_(io_config), random_(config_.data_random_seed), predict_fun_(predict_fun), num_class_(num_class) {

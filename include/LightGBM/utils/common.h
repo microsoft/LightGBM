@@ -58,7 +58,7 @@ namespace LightGBM {
 
 namespace Common {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 /*!
 * Imbues the stream with the C locale.

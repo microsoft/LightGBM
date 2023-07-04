@@ -29,7 +29,7 @@
 
 namespace LightGBM {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 /*!
 * \brief GBDT algorithm implementation. including Training, prediction, bagging.
