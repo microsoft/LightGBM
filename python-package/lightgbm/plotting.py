@@ -797,6 +797,9 @@ def plot_tree(
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
+
+        .. versionadded:: 4.0.0
+
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
