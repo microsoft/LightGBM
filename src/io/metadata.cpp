@@ -221,7 +221,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
     if (!positions_.empty() && num_positions_ != num_data_) {
       positions_.clear();
       num_positions_ = 0;
-      Log::Fatal("Positions size doesn't match data size");
+      Log::Fatal("Positions size (%i) doesn't match data size (%i)", num_positions_, num_data_);
     }
 
     // check query boundries
