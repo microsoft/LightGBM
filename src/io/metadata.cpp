@@ -266,7 +266,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       if (positions_.size() > 0 && num_positions_ != num_all_data) {
         positions_.clear();
         num_positions_ = 0;
-        Log::Fatal("Positions size doesn't match data size");
+       Log::Fatal("Positions size (%i) doesn't match data size (%i)", num_positions_, num_data_);
       }
       // get local positions
       if (!positions_.empty()) {
