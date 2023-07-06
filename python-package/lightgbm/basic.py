@@ -932,6 +932,8 @@ class _InnerPredictor:
             If True, ensure that the features used to predict match the ones used to train.
             Used only if data is pandas DataFrame.
 
+            .. versionadded:: 4.0.0
+
         Returns
         -------
         result : numpy array, scipy.sparse or list of scipy.sparse
@@ -2841,6 +2843,8 @@ class Dataset:
     def feature_num_bin(self, feature: Union[int, str]) -> int:
         """Get the number of bins for a feature.
 
+        .. versionadded:: 4.0.0
+
         Parameters
         ----------
         feature : int or str
@@ -4150,19 +4154,34 @@ class Booster:
             will use ``leaf_output = decay_rate * old_leaf_output + (1.0 - decay_rate) * new_leaf_output`` to refit trees.
         reference : Dataset or None, optional (default=None)
             Reference for ``data``.
+
+            .. versionadded:: 4.0.0
+
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
+
+            .. versionadded:: 4.0.0
+
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+
+            .. versionadded:: 4.0.0
+
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for ``data``.
+
+            .. versionadded:: 4.0.0
+
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names for ``data``.
             If 'auto' and data is pandas DataFrame, data columns names are used.
+
+            .. versionadded:: 4.0.0
+
         categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features for ``data``.
             If list of int, interpreted as indices.
@@ -4173,13 +4192,25 @@ class Booster:
             All negative values in categorical features will be treated as missing values.
             The output cannot be monotonically constrained with respect to a categorical feature.
             Floating point numbers in categorical features will be rounded towards 0.
+
+            .. versionadded:: 4.0.0
+
         dataset_params : dict or None, optional (default=None)
             Other parameters for Dataset ``data``.
+
+            .. versionadded:: 4.0.0
+
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset for ``data``.
+
+            .. versionadded:: 4.0.0
+
         validate_features : bool, optional (default=False)
             If True, ensure that the features used to refit the model match the original ones.
             Used only if data is pandas DataFrame.
+
+            .. versionadded:: 4.0.0
+
         **kwargs
             Other parameters for refit.
             These parameters will be passed to ``predict`` method.
@@ -4270,6 +4301,8 @@ class Booster:
         value: float,
     ) -> 'Booster':
         """Set the output of a leaf.
+
+        .. versionadded:: 4.0.0
 
         Parameters
         ----------

@@ -407,6 +407,8 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         If float, this single value is used for all metrics.
         If list, its length should match the total number of metrics.
 
+        .. versionadded:: 4.0.0
+
     Returns
     -------
     callback : _EarlyStoppingCallback
