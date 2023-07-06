@@ -84,6 +84,9 @@
 #'          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
 #'          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
 #'          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
+#'
+#'          \emph{New in version 4.0.0}
+#'
 #' @keywords internal
 NULL
 
@@ -99,6 +102,9 @@ NULL
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
 #'                observations / rows have the same importance / weight.
+#'
+#'                \emph{Changed from 'weight', in version 4.0.0}
+#'
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
@@ -112,7 +118,13 @@ NULL
 #'                  \code{label}).
 #'                  \item Otherwise, will use objective \code{"regression"}.
 #'                  }
+#'
+#'                  \emph{New in version 4.0.0}
+#'
 #' @param init_score initial score is the base prediction lightgbm will boost from
+#'
+#'                   \emph{New in version 4.0.0}
+#'
 #' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
 #'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
 #'                    number of maximum threads.
@@ -129,6 +141,9 @@ NULL
 #'
 #'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
 #'                    if passed there.
+#'
+#'                    \emph{New in version 4.0.0}
+#'
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}

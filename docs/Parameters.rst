@@ -145,6 +145,8 @@ Core Parameters
 
    -  ``goss``, Gradient-based One-Side Sampling
 
+   -  *New in 4.0.0*
+
 -  ``data`` :raw-html:`<a id="data" title="Permalink to this parameter" href="#data">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string, aliases: ``train``, ``train_data``, ``train_data_file``, ``data_filename``
 
    -  path of training data, LightGBM will train from this data
@@ -670,6 +672,8 @@ Learning Control Parameters
 
    -  **Note**: can be used only with ``device_type = cpu``
 
+   -  *New in version 4.0.0*
+
 -  ``num_grad_quant_bins`` :raw-html:`<a id="num_grad_quant_bins" title="Permalink to this parameter" href="#num_grad_quant_bins">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
 
    -  number of bins to quantization gradients and hessians
@@ -677,6 +681,8 @@ Learning Control Parameters
    -  with more bins, the quantized training will be closer to full precision training
 
    -  **Note**: can be used only with ``device_type = cpu``
+
+   -  *New in 4.0.0*
 
 -  ``quant_train_renew_leaf`` :raw-html:`<a id="quant_train_renew_leaf" title="Permalink to this parameter" href="#quant_train_renew_leaf">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -686,9 +692,13 @@ Learning Control Parameters
 
    -  **Note**: can be used only with ``device_type = cpu``
 
+   -  *New in 4.0.0*
+
 -  ``stochastic_rounding`` :raw-html:`<a id="stochastic_rounding" title="Permalink to this parameter" href="#stochastic_rounding">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
    -  whether to use stochastic rounding in gradient quantization
+
+   -  *New in 4.0.0*
 
 IO Parameters
 -------------
@@ -907,6 +917,8 @@ Dataset Parameters
    -  see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
 
    -  **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
+
+   -  *New in 4.0.0*
 
 Predict Parameters
 ~~~~~~~~~~~~~~~~~~
