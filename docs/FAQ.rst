@@ -23,7 +23,7 @@ You may also ping a member of the core team according to the relevant area of ex
 -  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
 -  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
 -  `@shiyu1994 <https://github.com/shiyu1994>`__ **Yu Shi** (C++ code / Python-package)
--  `@tongwu-msft <https://github.com/tongwu-msft>`__ **Tong Wu** (C++ code / Python-package)
+-  `@tongwu-msft` **Tong Wu** (C++ code / Python-package)
 -  `@hzy46 <https://github.com/hzy46>`__ **Zhiyuan He** (C++ code / Python-package)
 -  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
 -  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
