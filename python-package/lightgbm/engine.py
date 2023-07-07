@@ -183,7 +183,10 @@ def train(
 
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
     init_iteration = predictor.num_total_iteration if predictor is not None else 0
@@ -685,7 +688,10 @@ def cv(
     first_metric_only = params.get('first_metric_only', False)
 
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
         predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
     else:

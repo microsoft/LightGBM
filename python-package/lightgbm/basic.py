@@ -837,9 +837,11 @@ class _InnerPredictor:
 
     def __init__(
         self,
-        model_file: Optional[Union[str, Path]] = None,
-        booster_handle: Optional[ctypes.c_void_p] = None,
-        pred_parameter: Optional[Dict[str, Any]] = None
+        booster_handle: ctypes.c_void_p,
+        num_iterations: int,
+        pandas_categorical,
+        pred_parameter: Dict[str, Any],
+        manage_handle: bool
     ):
         """Initialize the _InnerPredictor.
 
@@ -852,37 +854,56 @@ class _InnerPredictor:
         pred_parameter: dict or None, optional (default=None)
             Other parameters for the prediction.
         """
-        self._handle = ctypes.c_void_p()
-        self.__is_manage_handle = True
-        if model_file is not None:
-            """Prediction task"""
-            out_num_iterations = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
+        self._handle = booster_handle
+        self.__is_manage_handle = manage_handle
+        self.num_total_iteration = num_iterations
+        self.pandas_categorical = pandas_categorical
+        self.pred_parameter = _param_dict_to_str(pred_parameter)
+
+        out_num_class = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumClasses(
+                self._handle,
+                ctypes.byref(out_num_class)
+            )
+        )
+        self.num_class = out_num_class.value
+
+    @classmethod
+    def from_booster(cls, booster_handle: ctypes.c_void_p, pred_parameter: Dict[str, Any]) -> "_InnerPredictor":
+        out_cur_iter = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterGetCurrentIteration(
+                booster_handle,
+                ctypes.byref(out_cur_iter)
+            )
+        )
+        return cls(
+            booster_handle=booster_handle,
+            num_iterations=out_cur_iter.value,
+            pandas_categorical=None,
+            pred_parameter=pred_parameter,
+            manage_handle=False
+        )
+
+    @classmethod
+    def from_model_file(cls, model_file: Union[str, Path], pred_parameter: Dict[str, Any]) -> "_InnerPredictor":
+        booster_handle = ctypes.c_void_p()
+        out_num_iterations = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_BoosterCreateFromModelfile(
                 _c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
-                ctypes.byref(self._handle)))
-            out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self._handle,
-                ctypes.byref(out_num_class)))
-            self.num_class = out_num_class.value
-            self.num_total_iteration = out_num_iterations.value
-            self.pandas_categorical = _load_pandas_categorical(file_name=model_file)
-        elif booster_handle is not None:
-            self.__is_manage_handle = False
-            self._handle = booster_handle
-            out_num_class = ctypes.c_int(0)
-            _safe_call(_LIB.LGBM_BoosterGetNumClasses(
-                self._handle,
-                ctypes.byref(out_num_class)))
-            self.num_class = out_num_class.value
-            self.num_total_iteration = self.current_iteration()
-            self.pandas_categorical = None
-        else:
-            raise TypeError('Need model_file or booster_handle to create a predictor')
-
-        pred_parameter = {} if pred_parameter is None else pred_parameter
-        self.pred_parameter = _param_dict_to_str(pred_parameter)
+                ctypes.byref(booster_handle)
+            )
+        )
+        return cls(
+            booster_handle=booster_handle,
+            num_iterations=out_num_iterations.value,
+            pandas_categorical=_load_pandas_categorical(file_name=model_file),
+            pred_parameter=pred_parameter,
+            manage_handle=True
+        )
 
     def __del__(self) -> None:
         try:
@@ -4333,7 +4354,10 @@ class Booster:
         pred_parameter: Dict[str, Any]
     ) -> _InnerPredictor:
         """Convert to predictor."""
-        predictor = _InnerPredictor(booster_handle=self._handle, pred_parameter=pred_parameter)
+        predictor = _InnerPredictor.from_booster(
+            booster_handle=self._handle,
+            pred_parameter=pred_parameter
+        )
         predictor.pandas_categorical = self.pandas_categorical
         return predictor
 
