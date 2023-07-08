@@ -33,6 +33,7 @@ __all__ = [
     'Sequence',
 ]
 
+_BoosterHandle = ctypes.c_void_p
 _DatasetHandle = ctypes.c_void_p
 _ctypes_int_ptr = Union[
     "ctypes._Pointer[ctypes.c_int32]",
@@ -837,9 +838,8 @@ class _InnerPredictor:
 
     def __init__(
         self,
-        booster_handle: ctypes.c_void_p,
-        num_iterations: int,
-        pandas_categorical,
+        booster_handle: _BoosterHandle,
+        pandas_categorical: Optional[List[List]],
         pred_parameter: Dict[str, Any],
         manage_handle: bool
     ):
@@ -847,16 +847,18 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        model_file : str, pathlib.Path or None, optional (default=None)
-            Path to the model file.
-        booster_handle : object or None, optional (default=None)
+        booster : Booster
             Handle of Booster.
-        pred_parameter: dict or None, optional (default=None)
+        pandas_categorical : list of list, or None
+            If provided, list of categories for ``pandas`` categorical columns.
+            Where the ``i``th element of the list contains the categories for the ``i``th categorical feature.
+        pred_parameter: dict
             Other parameters for the prediction.
+        manage_handle : bool
+            If ``True``, free the corresponding Booster on the C++ side when this Python object is deleted.
         """
         self._handle = booster_handle
         self.__is_manage_handle = manage_handle
-        self.num_total_iteration = num_iterations
         self.pandas_categorical = pandas_categorical
         self.pred_parameter = _param_dict_to_str(pred_parameter)
 
@@ -870,24 +872,49 @@ class _InnerPredictor:
         self.num_class = out_num_class.value
 
     @classmethod
-    def from_booster(cls, booster_handle: ctypes.c_void_p, pred_parameter: Dict[str, Any]) -> "_InnerPredictor":
+    def from_booster(
+        cls,
+        booster: "Booster",
+        pred_parameter: Dict[str, Any]
+    ) -> "_InnerPredictor":
+        """Initialize an ``_InnerPredictor`` from a ``Booster``.
+
+        Parameters
+        ----------
+        booster : Booster
+            Handle of Booster.
+        pred_parameter: dict
+            Other parameters for the prediction.
+        """
         out_cur_iter = ctypes.c_int(0)
         _safe_call(
             _LIB.LGBM_BoosterGetCurrentIteration(
-                booster_handle,
+                booster._handle,
                 ctypes.byref(out_cur_iter)
             )
         )
         return cls(
-            booster_handle=booster_handle,
-            num_iterations=out_cur_iter.value,
-            pandas_categorical=None,
+            booster_handle=booster._handle,
+            pandas_categorical=booster.pandas_categorical,
             pred_parameter=pred_parameter,
             manage_handle=False
         )
 
     @classmethod
-    def from_model_file(cls, model_file: Union[str, Path], pred_parameter: Dict[str, Any]) -> "_InnerPredictor":
+    def from_model_file(
+        cls,
+        model_file: Union[str, Path],
+        pred_parameter: Dict[str, Any]
+    ) -> "_InnerPredictor":
+        """Initialize an ``_InnerPredictor`` from a text file contained a LightGBM model.
+
+        Parameters
+        ----------
+        model_file : str or pathlib.Path
+            Path to the model file.
+        pred_parameter: dict
+            Other parameters for the prediction.
+        """
         booster_handle = ctypes.c_void_p()
         out_num_iterations = ctypes.c_int(0)
         _safe_call(
@@ -899,7 +926,6 @@ class _InnerPredictor:
         )
         return cls(
             booster_handle=booster_handle,
-            num_iterations=out_num_iterations.value,
             pandas_categorical=_load_pandas_categorical(file_name=model_file),
             pred_parameter=pred_parameter,
             manage_handle=True
@@ -3068,7 +3094,7 @@ class Booster:
         model_str : str or None, optional (default=None)
             Model will be loaded from this string.
         """
-        self._handle = None
+        self._handle = ctypes.c_void_p()
         self._network = False
         self.__need_reload_eval_info = True
         self._train_data_name = "training"
@@ -3119,7 +3145,6 @@ class Booster:
             # copy the parameters from train_set
             params.update(train_set.get_params())
             params_str = _param_dict_to_str(params)
-            self._handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreate(
                 train_set._handle,
                 _c_str(params_str),
@@ -3148,7 +3173,6 @@ class Booster:
         elif model_file is not None:
             # Prediction task
             out_num_iterations = ctypes.c_int(0)
-            self._handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_BoosterCreateFromModelfile(
                 _c_str(str(model_file)),
                 ctypes.byref(out_num_iterations),
@@ -3927,8 +3951,9 @@ class Booster:
         self : Booster
             Loaded Booster object.
         """
-        if self._handle is not None:
-            _safe_call(_LIB.LGBM_BoosterFree(self._handle))
+        # ensure that existing Booster is freed before replacing it
+        # with a new one createdfrom file
+        _safe_call(_LIB.LGBM_BoosterFree(self._handle))
         self._free_buffer()
         self._handle = ctypes.c_void_p()
         out_num_iterations = ctypes.c_int(0)
@@ -4128,7 +4153,10 @@ class Booster:
             Prediction result.
             Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
         """
-        predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
+        predictor = _InnerPredictor.from_booster(
+            booster=self,
+            pred_parameter=deepcopy(kwargs),
+        )
         if num_iteration is None:
             if start_iteration <= 0:
                 num_iteration = self.best_iteration
@@ -4245,7 +4273,10 @@ class Booster:
             raise LightGBMError('Cannot refit due to null objective function.')
         if dataset_params is None:
             dataset_params = {}
-        predictor = self._to_predictor(pred_parameter=deepcopy(kwargs))
+        predictor = _InnerPredictor.from_booster(
+            booster=self,
+            pred_parameter=deepcopy(kwargs)
+        )
         leaf_preds: np.ndarray = predictor.predict(  # type: ignore[assignment]
             data=data,
             start_iteration=-1,
@@ -4348,18 +4379,6 @@ class Booster:
             )
         )
         return self
-
-    def _to_predictor(
-        self,
-        pred_parameter: Dict[str, Any]
-    ) -> _InnerPredictor:
-        """Convert to predictor."""
-        predictor = _InnerPredictor.from_booster(
-            booster_handle=self._handle,
-            pred_parameter=pred_parameter
-        )
-        predictor.pandas_categorical = self.pandas_categorical
-        return predictor
 
     def num_feature(self) -> int:
         """Get number of features.
