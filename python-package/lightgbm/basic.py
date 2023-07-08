@@ -906,7 +906,7 @@ class _InnerPredictor:
         model_file: Union[str, Path],
         pred_parameter: Dict[str, Any]
     ) -> "_InnerPredictor":
-        """Initialize an ``_InnerPredictor`` from a text file contained a LightGBM model.
+        """Initialize an ``_InnerPredictor`` from a text file containing a LightGBM model.
 
         Parameters
         ----------
