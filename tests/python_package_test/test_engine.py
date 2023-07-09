@@ -3597,24 +3597,39 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     assert new_bst.params == expected_params
 
 
-def test_dump_model():
+@pytest.mark.parametrize("stump", [True, False])
+def test_dump_model(stump):
     X, y = load_breast_cancer(return_X_y=True)
+    if stump:
+        # intentionally create a stump (tree with only a root-node)
+        # using restricted # samples
+        subidx = random.sample(range(len(y)), 30)
+        X = X[subidx]
+        y = y[subidx]
+
     train_data = lgb.Dataset(X, label=y)
     params = {
         "objective": "binary",
-        "verbose": -1
+        "verbose": -1,
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    if stump:
+        assert len(dumped_model["tree_structure"]) == 1
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
+
     params['linear_tree'] = True
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    if stump:
+        assert len(dumped_model["tree_structure"]) == 1
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str
