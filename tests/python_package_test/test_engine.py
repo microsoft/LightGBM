@@ -764,7 +764,12 @@ def test_ranking_with_position_information(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    copyfile(str(rank_example_dir / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
+    with open(str(tmp_path / 'rank.train.position'), "w") as out_file:
+        np.random.seed(0)
+        for _ in range(lgb_train.num_data()):
+            position = np.random.randint(28)
+            out_file.write(f"pos_{position}\n")
+
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
@@ -778,7 +783,7 @@ def test_ranking_with_position_information(tmp_path):
         file.close()
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
-    with pytest.raises(lgb.basic.LightGBMError, match="Positions size doesn't match data size"):
+    with pytest.raises(lgb.basic.LightGBMError, match="Positions size \(3006\) doesn't match data size"):
         lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
 def test_early_stopping():

@@ -68,7 +68,7 @@ class RankingObjective : public ObjectiveFunction {
           score_adjusted.push_back(score[start + j] + pos_biases_[positions_[start + j]]);
         }
       }
-      GetGradientsForOneQuery(i, cnt, label_ + start, num_position_ids_ > 0? score_adjusted.data(): score + start,
+      GetGradientsForOneQuery(i, cnt, label_ + start, num_position_ids_ > 0 ? score_adjusted.data() : score + start,
                               gradients + start, hessians + start);
       if (weights_ != nullptr) {
         for (data_size_t j = 0; j < cnt; ++j) {
