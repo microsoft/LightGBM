@@ -847,12 +847,12 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        booster_handle : Booster
+        booster_handle : object
             Handle of Booster.
         pandas_categorical : list of list, or None
             If provided, list of categories for ``pandas`` categorical columns.
             Where the ``i``th element of the list contains the categories for the ``i``th categorical feature.
-        pred_parameter: dict
+        pred_parameter : dict
             Other parameters for the prediction.
         manage_handle : bool
             If ``True``, free the corresponding Booster on the C++ side when this Python object is deleted.
@@ -883,7 +883,7 @@ class _InnerPredictor:
         ----------
         booster : Booster
             Booster.
-        pred_parameter: dict
+        pred_parameter : dict
             Other parameters for the prediction.
         """
         out_cur_iter = ctypes.c_int(0)
@@ -912,7 +912,7 @@ class _InnerPredictor:
         ----------
         model_file : str or pathlib.Path
             Path to the model file.
-        pred_parameter: dict
+        pred_parameter : dict
             Other parameters for the prediction.
         """
         booster_handle = ctypes.c_void_p()
