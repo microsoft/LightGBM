@@ -2722,7 +2722,7 @@ class Dataset:
             Dataset with set position.
         """
         self.position = position
-        if self.handle is not None and position is not None:
+        if self._handle is not None and position is not None:
             position = _list_to_1d_numpy(position, dtype=np.int32, name='position')
             self.set_field('position', position)
         return self
