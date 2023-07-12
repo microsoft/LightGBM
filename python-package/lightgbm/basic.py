@@ -967,7 +967,7 @@ class _InnerPredictor:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self._handle,
                     _c_str(str(data)),
-                    ctypes.c_int(int(data_has_header)),
+                    ctypes.c_int(data_has_header),
                     ctypes.c_int(predict_type),
                     ctypes.c_int(start_iteration),
                     ctypes.c_int(num_iteration),
