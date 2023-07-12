@@ -233,6 +233,8 @@ You could edit your firewall rules to allow communication between any of the wor
 Using Custom Objective Functions with Dask
 ******************************************
 
+.. versionadded:: 4.0.0
+
 It is possible to customize the boosting process by providing a custom objective function written in Python.
 See the Dask API's documentation for details on how to implement such functions.
 
