@@ -753,7 +753,7 @@ def test_ranking_with_position_information(tmp_path):
         'objective': 'lambdarank',
         'verbose': -1,
         'eval_at': [3],
-        'eval_metric': 'ndcg'
+        'metric': 'ndcg'
     }
     copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
@@ -764,18 +764,26 @@ def test_ranking_with_position_information(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    with open(str(tmp_path / 'rank.train.position'), "w") as out_file:
+    positions = []
+    with open(str(tmp_path / '_rank.train.position'), "w") as out_file:
         np.random.seed(0)
         for _ in range(lgb_train.num_data()):
             position = np.random.randint(28)
+            positions.append(position)
             out_file.write(f"pos_{position}\n")
 
-    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=positions)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
     # the performance of the baseline LambdaMART should not differ much from the case when positions are randomly assigned
     assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.best_score['valid_0']['ndcg@3'], 0.02)
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    copyfile(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
 
     # add extra row to position file
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:

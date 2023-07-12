@@ -89,7 +89,7 @@ class RankingObjective : public ObjectiveFunction {
                                        const double* score, score_t* lambdas,
                                        score_t* hessians) const = 0;
 
-  virtual void UpdatePositionBiasFactors(const score_t* lambdas, const score_t* hessians) const {}
+  virtual void UpdatePositionBiasFactors(const score_t* /*lambdas*/, const score_t* /*hessians*/) const {}
 
   const char* GetName() const override = 0;
 
@@ -111,7 +111,7 @@ class RankingObjective : public ObjectiveFunction {
   /*! \brief Pointer of weights */
   const label_t* weights_;
   /*! \brief Pointer of positions */
-  const size_t* positions_;
+  const data_size_t* positions_;
   /*! \brief Pointer of position IDs */
   const std::string* position_ids_;
   /*! \brief Pointer of label */

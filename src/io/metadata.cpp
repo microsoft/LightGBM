@@ -5,6 +5,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -266,13 +267,13 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       if (positions_.size() > 0 && num_positions_ != num_all_data) {
         positions_.clear();
         num_positions_ = 0;
-       Log::Fatal("Positions size (%i) doesn't match data size (%i)", num_positions_, num_data_);
+        Log::Fatal("Positions size (%i) doesn't match data size (%i)", num_positions_, num_data_);
       }
       // get local positions
       if (!positions_.empty()) {
         auto old_positions = positions_;
         num_positions_ = num_data_;
-        positions_ = std::vector<size_t>(num_data_);
+        positions_ = std::vector<data_size_t>(num_data_);
         #pragma omp parallel for schedule(static, 512)
         for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {
           positions_[i] = old_positions[used_data_indices[i]];
@@ -518,6 +519,41 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
   #endif  // USE_CUDA
 }
 
+void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  // save to nullptr
+  if (positions == nullptr || len == 0) {
+    positions_.clear();
+    num_positions_ = 0;
+    return;
+  }
+  if (num_data_ != len) {
+    Log::Fatal("Length of positions is not same with #data");
+  }
+  if (positions_.empty()) { positions_.resize(num_data_); }
+  num_positions_ = num_data_;
+
+  position_load_from_file_ = false;
+  #ifdef USE_CUDA
+  Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
+  #endif  // USE_CUDA
+
+  #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
+  for (data_size_t i = 0; i < num_positions_; ++i) {
+    positions_[i] = positions[i];
+  }
+
+  position_ids_.clear();
+  std::set<int> position_set;
+  for (int position : positions_) {
+    position_set.insert(position);
+  }
+  Log::Warning("position_set.size() = %ld", position_set.size());
+  for (int position : position_set) {
+    position_ids_.push_back(std::to_string(position));
+  }
+}
+
 void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
   if (!queries) {
     Log::Fatal("Passed null queries");
@@ -569,13 +605,13 @@ void Metadata::LoadPositions() {
   }
   Log::Info("Loading positions...");
   num_positions_ = static_cast<data_size_t>(reader.Lines().size());
-  positions_ = std::vector<size_t>(num_positions_);
+  positions_ = std::vector<data_size_t>(num_positions_);
   position_ids_ = std::vector<std::string>();
-  std::unordered_map<std::string, size_t> map_id2pos;
+  std::unordered_map<std::string, data_size_t> map_id2pos;
   for (data_size_t i = 0; i < num_positions_; ++i) {
     std::string& line = reader.Lines()[i];
     if (map_id2pos.count(line) == 0) {
-      map_id2pos[line] = position_ids_.size();
+      map_id2pos[line] = static_cast<data_size_t>(position_ids_.size());
       position_ids_.push_back(line);
     }
     positions_[i] = map_id2pos.at(line);

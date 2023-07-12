@@ -114,6 +114,8 @@ class Metadata {
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
+  void SetPosition(const data_size_t* position, data_size_t len);
+
   /*!
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
@@ -217,7 +219,7 @@ class Metadata {
   * \brief Get positions, if does not exist then return nullptr
   * \return Pointer of positions
   */
-  inline const size_t* positions() const {
+  inline const data_size_t* positions() const {
     if (!positions_.empty()) {
       return positions_.data();
     } else {
@@ -241,7 +243,7 @@ class Metadata {
   * \brief Get Number of different position IDs
   * \return number of different position IDs
   */
-  inline const size_t num_position_ids() const {
+  inline size_t num_position_ids() const {
       return position_ids_.size();
   }
 
@@ -350,7 +352,7 @@ class Metadata {
   /*! \brief Weights data */
   std::vector<label_t> weights_;
   /*! \brief Positions data */
-  std::vector<size_t> positions_;
+  std::vector<data_size_t> positions_;
   /*! \brief Position identifiers */
   std::vector<std::string> position_ids_;
   /*! \brief Query boundaries */
