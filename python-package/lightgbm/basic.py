@@ -847,7 +847,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        booster : Booster
+        booster_handle : Booster
             Handle of Booster.
         pandas_categorical : list of list, or None
             If provided, list of categories for ``pandas`` categorical columns.
@@ -882,7 +882,7 @@ class _InnerPredictor:
         Parameters
         ----------
         booster : Booster
-            Handle of Booster.
+            Booster.
         pred_parameter: dict
             Other parameters for the prediction.
         """
