@@ -79,7 +79,7 @@ Recommendations for gcc Users (MinGW, \*nix)
 -  Refer to `gcc Tips <./gcc-Tips.rst>`__.
 
 Support for Position Bias Treatment
---------------------------------------------
+------------------------------------
 
 Often the relevance labels provided in Learning-to-Rank taks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position on the screen when having been presented to a user. LightGBM uses an additional file to store positional data, like the following:
 
