@@ -90,7 +90,7 @@ Often the relevance labels provided in Learning-to-Rank taks might be derived fr
     1
     ...
 
-It means the position of the document from the first data row, when presented to a user, was ``3``, second was ``4``, and so on. The positions could be any (arbitrary) integer number and could encode a position of an item even in complex layouts (it is up to the LightGBM user to perform such encoding/enumeration).
+It means the position of the document from the first data row, when presented to a user, was ``3``, second was ``4``, and so on. The positions could be any (arbitrary) integer number and could encode the position of an item even in complex layouts (it is up to the LightGBM user to perform such encoding/enumeration).
 
 The position file corresponds with training data file line by line, and has one position per line.
 
