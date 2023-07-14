@@ -81,7 +81,8 @@ Recommendations for gcc Users (MinGW, \*nix)
 Support for Position Bias Treatment
 ------------------------------------
 
-Often the relevance labels provided in Learning-to-Rank taks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position on the screen when having been presented to a user. LightGBM uses an additional file to store positional data, like the following:
+Often the relevance labels provided in Learning-to-Rank taks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position/location on the screen when having been presented to a user. 
+LightGBM uses an additional file to store positional data, like the following:
 
 ::
 
@@ -90,7 +91,8 @@ Often the relevance labels provided in Learning-to-Rank taks might be derived fr
     1
     ...
 
-It means the position of the document from the first data row, when presented to a user, was encoded as ``3``, second was encoded as ``4``, and so on. A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consiting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
+It means the position of the document from the first data row, when presented to a user, was encoded as ``3``, second was encoded as ``4``, and so on. 
+A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consiting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
 
 The position file corresponds with training data file line by line, and has one position per line.
 
