@@ -655,7 +655,7 @@ def cv(
 
     Returns
     -------
-    eval_hist : dict
+    eval_results : dict
         Evaluation history.
         The dictionary has the following format:
         {'metric1-mean': [values], 'metric1-stdv': [values],
