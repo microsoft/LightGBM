@@ -1008,14 +1008,13 @@ class _InnerPredictor:
             predict_type = _C_API_PREDICT_LEAF_INDEX
         if pred_contrib:
             predict_type = _C_API_PREDICT_CONTRIB
-        int_data_has_header = 1 if data_has_header else 0
 
         if isinstance(data, (str, Path)):
             with _TempFile() as f:
                 _safe_call(_LIB.LGBM_BoosterPredictForFile(
                     self._handle,
                     _c_str(str(data)),
-                    ctypes.c_int(int_data_has_header),
+                    ctypes.c_int(data_has_header),
                     ctypes.c_int(predict_type),
                     ctypes.c_int(start_iteration),
                     ctypes.c_int(num_iteration),
