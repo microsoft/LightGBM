@@ -322,9 +322,14 @@ if(${MM_MALLOC})
 endif()
 
 if(UNIX OR MINGW OR CYGWIN)
+  if(BUILD_CPP_TEST)
+    set(CMAKE_CXX_STANDARD 20)
+  else()
+    set(CMAKE_CXX_STANDARD 11)
+  endif()
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+    "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
   if(USE_DEBUG)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
@@ -345,6 +350,8 @@ endif()
 if(WIN32 AND MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif()
+
+message(FATAL_ERROR "CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 # Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
 # As of 2022, MinGW started including a definition of inet_pton.
