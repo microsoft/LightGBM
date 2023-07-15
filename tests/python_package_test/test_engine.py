@@ -3623,15 +3623,13 @@ def test_dump_model_stump():
 
 def test_dump_model():
     X, y = load_breast_cancer(return_X_y=True)
-
     train_data = lgb.Dataset(X, label=y)
     params = {
         "objective": "binary",
         "verbose": -1,
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model = bst.dump_model(5, 0)
-    dumped_model_str = str(dumped_model)
+    dumped_model_str = str(bst.dump_model(5, 0))
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
@@ -3641,8 +3639,7 @@ def test_dump_model():
     params['linear_tree'] = True
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model = bst.dump_model(5, 0)
-    dumped_model_str = str(dumped_model)
+    dumped_model_str = str(bst.dump_model(5, 0))
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str
