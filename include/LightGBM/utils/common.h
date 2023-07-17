@@ -1197,10 +1197,12 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 *       This safety check serves to prevent incorrect internal API usage.
 *       Correct usage will never incur in this problem:
 *         - The received buffer size shall be sufficient at all times for the input format string and value.
+* /Users/jlamb/repos/LightGBM/include/LightGBM/utils/common.h:1203:35:   in 'constexpr' expansion of 'fmt::v8::basic_format_string<char, const unsigned int&>(format)'
+* /Users/jlamb/repos/LightGBM/include/LightGBM/utils/common.h:1203:35: error: 'format' is not a constant expression
 */
 template <typename T>
 inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
-    auto result = fmt::format_to_n(buffer, buf_len, format, value);
+    const auto result = fmt::format_to_n(buffer, buf_len, format, value);
     if (result.size >= buf_len) {
       Log::Fatal("Numerical conversion failed. Buffer is too small.");
     }

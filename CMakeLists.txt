@@ -351,8 +351,6 @@ if(WIN32 AND MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif()
 
-message(FATAL_ERROR "CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
-
 # Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
 # As of 2022, MinGW started including a definition of inet_pton.
 if(WIN32)
