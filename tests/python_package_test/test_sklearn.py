@@ -313,20 +313,24 @@ def test_grid_search():
     y = y.astype(str)  # utilize label encoder at it's max power
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
-    params = dict(subsample=0.8,
-                  subsample_freq=1)
-    grid_params = dict(boosting_type=['rf', 'gbdt'],
-                       n_estimators=[4, 6],
-                       reg_alpha=[0.01, 0.005])
+    params = {
+        "subsample": 0.8,
+        "subsample_freq": 1
+    }
+    grid_params = {
+        "boosting_type": ['rf', 'gbdt'],
+        "n_estimators": [4, 6],
+        "reg_alpha": [0.01, 0.005]
+    }
     evals_result = {}
-    fit_params = dict(
-        eval_set=[(X_val, y_val)],
-        eval_metric=constant_metric,
-        callbacks=[
+    fit_params = {
+        "eval_set": [(X_val, y_val)],
+        "eval_metric": constant_metric,
+        "callbacks": [
             lgb.early_stopping(2),
             lgb.record_evaluation(evals_result)
         ]
-    )
+    }
     grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params, cv=2)
     grid.fit(X_train, y_train, **fit_params)
     score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
@@ -350,14 +354,20 @@ def test_random_search():
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
                                                       random_state=42)
     n_iter = 3  # Number of samples
-    params = dict(subsample=0.8,
-                  subsample_freq=1)
-    param_dist = dict(boosting_type=['rf', 'gbdt'],
-                      n_estimators=[np.random.randint(low=3, high=10) for i in range(n_iter)],
-                      reg_alpha=[np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)])
-    fit_params = dict(eval_set=[(X_val, y_val)],
-                      eval_metric=constant_metric,
-                      callbacks=[lgb.early_stopping(2)])
+    params = {
+        "subsample": 0.8,
+        "subsample_freq": 1
+    }
+    param_dist = {
+        "boosting_type": ['rf', 'gbdt'],
+        "n_estimators": [np.random.randint(low=3, high=10) for i in range(n_iter)],
+        "reg_alpha": [np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)]
+    }
+    fit_params = {
+        "eval_set": [(X_val, y_val)],
+        "eval_metric": constant_metric,
+        "callbacks": [lgb.early_stopping(2)]
+    }
     rand = RandomizedSearchCV(estimator=lgb.LGBMClassifier(**params),
                               param_distributions=param_dist, cv=2,
                               n_iter=n_iter, random_state=42)
@@ -1139,7 +1149,7 @@ def test_first_metric_only():
     iter_valid1_l2 = 4
     iter_valid2_l1 = 2
     iter_valid2_l2 = 2
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 2
+    assert len({iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2}) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min = min([iter_min_l1, iter_min_l2])

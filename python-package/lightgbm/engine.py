@@ -183,10 +183,20 @@ def train(
 
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
-    init_iteration = predictor.num_total_iteration if predictor is not None else 0
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
+
+    if predictor is not None:
+        init_iteration = predictor.current_iteration()
+    else:
+        init_iteration = 0
 
     train_set._update_params(params) \
              ._set_predictor(predictor) \
@@ -545,7 +555,7 @@ def cv(
     callbacks: Optional[List[Callable]] = None,
     eval_train_metric: bool = False,
     return_cvbooster: bool = False
-) -> Dict[str, Any]:
+) -> Dict[str, Union[List[float], CVBooster]]:
     """Perform the cross-validation with given parameters.
 
     Parameters
@@ -651,7 +661,7 @@ def cv(
         {'metric1-mean': [values], 'metric1-stdv': [values],
         'metric2-mean': [values], 'metric2-stdv': [values],
         ...}.
-        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
+        If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
@@ -685,9 +695,15 @@ def cv(
     first_metric_only = params.get('first_metric_only', False)
 
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
     else:
         predictor = None
 
@@ -763,6 +779,6 @@ def cv(
             break
 
     if return_cvbooster:
-        results['cvbooster'] = cvfolds
+        results['cvbooster'] = cvfolds  # type: ignore[assignment]
 
     return dict(results)

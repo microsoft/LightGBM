@@ -455,6 +455,7 @@ def _to_graphviz(
     orientation: str,
     constraints: Optional[List[int]],
     example_case: Optional[Union[np.ndarray, pd_DataFrame]],
+    max_category_values: int,
     **kwargs: Any
 ) -> Any:
     """Convert specified tree to graphviz instance.
@@ -477,6 +478,7 @@ def _to_graphviz(
         """Recursively add node or edge."""
         fillcolor = 'white'
         style = ''
+        tooltip = None
         if highlight:
             color = 'blue'
             penwidth = '3'
@@ -487,6 +489,7 @@ def _to_graphviz(
             shape = "rectangle"
             l_dec = 'yes'
             r_dec = 'no'
+            threshold = root['threshold']
             if root['decision_type'] == '<=':
                 operator = "&#8804;"
             elif root['decision_type'] == '==':
@@ -513,7 +516,13 @@ def _to_graphviz(
                         missing_type_str=root['missing_type'],
                         default_left=root['default_left']
                     )
-            label += f"<B>{_float2str(root['threshold'], precision)}</B>"
+            if root['decision_type'] == '==':
+                category_values = root['threshold'].split('||')
+                if len(category_values) > max_category_values:
+                    tooltip = root['threshold']
+                    threshold = '||'.join(category_values[:2]) + '||...||' + category_values[-1]
+
+            label += f"<B>{_float2str(threshold, precision)}</B>"
             for info in ['split_gain', 'internal_value', 'internal_weight', "internal_count", "data_percentage"]:
                 if info in show_info:
                     output = info.split('_')[-1]
@@ -557,7 +566,7 @@ def _to_graphviz(
             if "data_percentage" in show_info:
                 label += f"<br/>{_float2str(root['leaf_count'] / total_count * 100, 2)}% of data"
             label = f"<{label}>"
-        graph.node(name, label=label, shape=shape, style=style, fillcolor=fillcolor, color=color, penwidth=penwidth)
+        graph.node(name, label=label, shape=shape, style=style, fillcolor=fillcolor, color=color, penwidth=penwidth, tooltip=tooltip)
         if parent is not None:
             graph.edge(parent, name, decision, color=color, penwidth=penwidth)
 
@@ -603,6 +612,7 @@ def create_tree_digraph(
     precision: Optional[int] = 3,
     orientation: str = 'horizontal',
     example_case: Optional[Union[np.ndarray, pd_DataFrame]] = None,
+    max_category_values: int = 10,
     **kwargs: Any
 ) -> Any:
     """Create a digraph representation of specified tree.
@@ -646,6 +656,27 @@ def create_tree_digraph(
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
+
+        .. versionadded:: 4.0.0
+
+    max_category_values : int, optional (default=10)
+        The maximum number of category values to display in tree nodes, if the number of thresholds is greater than this value, thresholds will be collapsed and displayed on the label tooltip instead.
+
+        .. warning::
+
+            Consider wrapping the SVG string of the tree graph with ``IPython.display.HTML`` when running on JupyterLab to get the `tooltip <https://graphviz.org/docs/attrs/tooltip>`_ working right.
+
+            Example:
+
+            .. code-block:: python
+
+                from IPython.display import HTML
+
+                graph = lgb.create_tree_digraph(clf, max_category_values=5)
+                HTML(graph._repr_image_svg_xml())
+
+        .. versionadded:: 4.0.0
+
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.
@@ -699,6 +730,7 @@ def create_tree_digraph(
         orientation=orientation,
         constraints=monotone_constraints,
         example_case=example_case,
+        max_category_values=max_category_values,
         **kwargs
     )
 
@@ -765,6 +797,9 @@ def plot_tree(
     example_case : numpy 2-D array, pandas DataFrame or None, optional (default=None)
         Single row with the same structure as the training data.
         If not None, the plot will highlight the path that sample takes through the tree.
+
+        .. versionadded:: 4.0.0
+
     **kwargs
         Other parameters passed to ``Digraph`` constructor.
         Check https://graphviz.readthedocs.io/en/stable/api.html#digraph for the full list of supported parameters.

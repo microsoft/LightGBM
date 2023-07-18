@@ -59,14 +59,14 @@ Run LightGBM
 
 ::
 
-    "./lightgbm" config=your_config_file other_args ...
+    lightgbm config=your_config_file other_args ...
 
 Parameters can be set both in the config file and command line, and the parameters in command line have higher priority than in the config file.
 For example, the following command line will keep ``num_trees=10`` and ignore the same parameter in the config file.
 
 ::
 
-    "./lightgbm" config=train.conf num_trees=10
+    lightgbm config=train.conf num_trees=10
 
 Examples
 --------
