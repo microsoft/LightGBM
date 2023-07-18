@@ -166,6 +166,7 @@ model <- lgb.cv(
   , data = dtrain
   , nrounds = 5L
   , nfold = 3L
+  , num_threads = 2L
 )
 }
 }

@@ -27,6 +27,23 @@ Booster <- R6::R6Class(
                           modelfile = NULL,
                           model_str = NULL) {
 
+      # LightGBM-internal fix to comply with CRAN policy of only using up to 2 threads in tests and example.
+      #
+      # per https://cran.r-project.org/web/packages/policies.html:
+      #
+      # "If running a package uses multiple threads/cores it must never use more than two simultaneously:
+      #  the check farm is a shared resource and will typically be running many checks simultaneously."
+      #
+      # This mechanism could be removed at any time, and isn't considered part of the public API.
+      #
+      threads_from_opts <- options("lightgbm.cran.testing.threads")[[1L]]
+      if (!is.null(threads_from_opts)) {
+          # put an upper limit on num_threads
+          params[["num_threads"]] <- min(params[["num_threads"]], as.integer(threads_from_opts))
+          # handle the case where 0 is passed to mean "use OpenMP default number of threads"
+          params[["num_threads"]] <- max(params[["num_threads"]], 1L)
+      }
+
       handle <- NULL
 
       if (!is.null(train_set)) {
@@ -928,6 +945,7 @@ NULL
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1086,7 +1104,10 @@ predict.lgb.Booster <- function(object,
 #' X <- as.matrix(mtcars[, -1L])
 #' y <- mtcars[, 1L]
 #' dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-#' params <- list(min_data_in_leaf = 2L)
+#' params <- list(
+#'   min_data_in_leaf = 2L
+#'   , num_threads = 2L
+#' )
 #' model <- lgb.train(
 #'   params = params
 #'  , data = dtrain
@@ -1231,6 +1252,7 @@ summary.lgb.Booster <- function(object, ...) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1296,6 +1318,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1351,6 +1374,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1401,6 +1425,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(

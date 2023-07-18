@@ -65,6 +65,7 @@ CVBooster <- R6::R6Class(
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
+#'   , num_threads = 2L
 #' )
 #' }
 #' @importFrom data.table data.table setorderv

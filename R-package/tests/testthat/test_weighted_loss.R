@@ -3,6 +3,8 @@ VERBOSITY <- as.integer(
 )
 
 test_that("Gamma regression reacts on 'weight'", {
+
+  stop(options("lightgbm.cran.testing.threads")[[1L]])
   n <- 100L
   set.seed(87L)
   X <- matrix(runif(2L * n), ncol = 2L)

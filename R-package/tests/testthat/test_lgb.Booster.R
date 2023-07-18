@@ -631,6 +631,7 @@ test_that("Booster should store parameters and Booster$reset_parameter() should 
         , boosting = "gbdt"
         , num_class = 5L
         , verbose = VERBOSITY
+        , num_threads = 2L
     )
     bst <- Booster$new(
         params = params
@@ -658,6 +659,7 @@ test_that("Booster$params should include dataset params, before and after Booste
         , max_depth = 4L
         , bagging_fraction = 0.8
         , verbose = VERBOSITY
+        , num_threads = 2L
     )
     bst <- Booster$new(
         params = params
@@ -670,6 +672,7 @@ test_that("Booster$params should include dataset params, before and after Booste
             , max_depth = 4L
             , bagging_fraction = 0.8
             , verbose = VERBOSITY
+            , num_threads = 2L
             , max_bin = 17L
         )
     )
@@ -681,6 +684,7 @@ test_that("Booster$params should include dataset params, before and after Booste
         , max_depth = 4L
         , bagging_fraction = 0.9
         , verbose = VERBOSITY
+        , num_threads = 2L
         , max_bin = 17L
     )
     expect_identical(ret_bst$params, expected_params)
