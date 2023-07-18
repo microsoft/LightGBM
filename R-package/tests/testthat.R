@@ -2,7 +2,7 @@ library(testthat)
 library(lightgbm)
 
 options(
-    "lightgbm.cran.testing.threads" = 2.0
+    "lightgbm.cran.testing.threads" = 2L
 )
 
 test_check(

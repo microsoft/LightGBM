@@ -36,12 +36,12 @@ Booster <- R6::R6Class(
       #
       # This mechanism could be removed at any time, and isn't considered part of the public API.
       #
-      threads_from_opts <- options("lightgbm.cran.testing.threads")[[1L]]
+      threads_from_opts <- getOption("lightgbm.cran.testing.threads")
       if (!is.null(threads_from_opts)) {
           # put an upper limit on num_threads
-          params[["num_threads"]] <- min(params[["num_threads"]], as.integer(threads_from_opts))
+          params[["num_threads"]] <- min(params[["num_threads"]], threads_from_opts)
           # handle the case where 0 is passed to mean "use OpenMP default number of threads"
-          params[["num_threads"]] <- max(params[["num_threads"]], 1L)
+          # params[["num_threads"]] <- max(params[["num_threads"]], 1L)
       }
 
       handle <- NULL
