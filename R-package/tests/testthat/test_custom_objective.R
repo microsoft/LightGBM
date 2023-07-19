@@ -4,8 +4,8 @@ VERBOSITY <- as.integer(
 
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
-dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label, params = list(num_threads = .LGB_MAX_THREADS))
-dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label, params = list(num_threads = .LGB_MAX_THREADS))
+dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
+dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
 watchlist <- list(eval = dtest, train = dtrain)
 
 TOLERANCE <- 1e-6
