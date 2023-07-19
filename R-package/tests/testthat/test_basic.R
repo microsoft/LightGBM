@@ -3708,7 +3708,14 @@ test_that("lightgbm() determines number of classes for non-default multiclass ob
   data("iris")
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
-  model <- lightgbm(x, y, objective = "multiclassova", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
+  model <- lightgbm(
+    x
+    , y
+    , objective = "multiclassova"
+    , verbose = VERBOSITY
+    , nrounds = 5L
+    , num_threads = .LGB_MAX_THREADS
+  )
   expect_equal(model$params$objective, "multiclassova")
   expect_equal(model$params$num_class, 3L)
   model_txt_lines <- strsplit(
