@@ -59,13 +59,13 @@ CVBooster <- R6::R6Class(
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' model <- lgb.cv(
 #'   params = params
 #'   , data = dtrain
 #'   , nrounds = 5L
 #'   , nfold = 3L
-#'   , num_threads = 2L
 #' )
 #' }
 #' @importFrom data.table data.table setorderv
