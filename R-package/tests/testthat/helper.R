@@ -1,5 +1,6 @@
 # ref for this file:
 #
+# * https://r-pkgs.org/testing-design.html#testthat-helper-files
 # * https://r-pkgs.org/testing-design.html#testthat-setup-files
 
 # LightGBM-internal fix to comply with CRAN policy of only using up to 2 threads in tests and example.
