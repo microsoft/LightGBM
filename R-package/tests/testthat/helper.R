@@ -10,3 +10,21 @@
 #   the check farm is a shared resource and will typically be running many checks simultaneously.
 #
 .LGB_MAX_THREADS <- 2L
+
+# by default, how much should results in tests be allowed to differ from hard-coded expected numbers?
+.LGB_NUMERIC_TOLERANCE <- 1e-6
+
+# are the tests running on Windows?
+.LGB_ON_WINDOWS <- .Platform$OS.type == "windows"
+.LGB_ON_32_BIT_WINDOWS <- .LGB_ON_WINDOWS && .Machine$sizeof.pointer != 8L
+
+# are the tests running in a UTF-8 locale?
+.LGB_UTF8_LOCALE <- all(endsWith(
+  Sys.getlocale(category = "LC_CTYPE")
+  , "UTF-8"
+))
+
+# control how many loud LightGBM's logger is in tests
+.LGB_VERBOSITY <- as.integer(
+  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
+)

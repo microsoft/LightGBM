@@ -1,7 +1,3 @@
-VERBOSITY <- as.integer(
-  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
-)
-
 data(agaricus.train, package = "lightgbm")
 train_data <- agaricus.train$data[seq_len(1000L), ]
 train_label <- agaricus.train$label[seq_len(1000L)]
@@ -16,7 +12,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
     test_data
     , label = test_label
     , params = list(
-      verbose = VERBOSITY
+      verbose = .LGB_VERBOSITY
     )
   )
   # from dense matrix
@@ -30,7 +26,7 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   dtest3 <- lgb.Dataset(
     tmp_file
     , params = list(
-      verbose = VERBOSITY
+      verbose = .LGB_VERBOSITY
     )
   )
   lgb.Dataset.construct(dtest3)
@@ -376,7 +372,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     data = test_data
     , label = test_label
     , params = list(
-      verbose = VERBOSITY
+      verbose = .LGB_VERBOSITY
     )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
@@ -393,7 +389,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
     , num_threads = .LGB_MAX_THREADS
   )
 
@@ -411,7 +407,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     data = test_data
     , label = test_label
     , params = list(
-      verbosity = VERBOSITY
+      verbosity = .LGB_VERBOSITY
     )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
@@ -429,7 +425,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , num_leaves = 5L
     , learning_rate = 1.0
     , num_iterations = 5L
-    , verbosity = VERBOSITY
+    , verbosity = .LGB_VERBOSITY
     , num_threads = .LGB_MAX_THREADS
   )
 
@@ -475,7 +471,7 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
     data = train_file
     , params = list(
       header = TRUE
-      , verbosity = VERBOSITY
+      , verbosity = .LGB_VERBOSITY
     )
   )
   dtrain$construct()
@@ -499,7 +495,7 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
     data = train_file
     , params = list(
       header = FALSE
-      , verbosity = VERBOSITY
+      , verbosity = .LGB_VERBOSITY
     )
   )
   dtrain$construct()

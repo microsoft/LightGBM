@@ -1,7 +1,3 @@
-VERBOSITY <- as.integer(
-  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
-)
-
 test_that("Gamma regression reacts on 'weight'", {
   n <- 100L
   set.seed(87L)
@@ -17,7 +13,7 @@ test_that("Gamma regression reacts on 'weight'", {
     params = params
     , data = dtrain
     , nrounds = 4L
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
   )
   pred_unweighted <- predict(bst, X_pred)
 
@@ -31,7 +27,7 @@ test_that("Gamma regression reacts on 'weight'", {
     params = params
     , data = dtrain
     , nrounds = 4L
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
   )
   pred_weighted_1 <- predict(bst, X_pred)
 
@@ -45,7 +41,7 @@ test_that("Gamma regression reacts on 'weight'", {
     params = params
     , data = dtrain
     , nrounds = 4L
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
   )
   pred_weighted_2 <- predict(bst, X_pred)
 
@@ -59,7 +55,7 @@ test_that("Gamma regression reacts on 'weight'", {
     params = params
     , data = dtrain
     , nrounds = 4L
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
   )
   pred_weighted <- predict(bst, X_pred)
 
