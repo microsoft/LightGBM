@@ -14,6 +14,7 @@ test_that("Predictor$finalize() should not fail", {
         data = dtrain
         , params = list(
             objective = "regression"
+            , num_threads = .LGB_MAX_THREADS
         )
         , verbose = VERBOSITY
         , nrounds = 3L
@@ -42,6 +43,7 @@ test_that("predictions do not fail for integer input", {
         data = dtrain
         , params = list(
             objective = "regression"
+            , num_threads = .LGB_MAX_THREADS
         )
         , verbose = VERBOSITY
         , nrounds = 3L
@@ -77,6 +79,7 @@ test_that("start_iteration works correctly", {
             , learning_rate = 0.6
             , objective = "binary"
             , verbosity = VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 50L
         , valids = list("test" = dtest)
@@ -126,7 +129,7 @@ test_that("Feature contributions from sparse inputs produce sparse outputs", {
       , obj = "regression"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(min_data_in_leaf = 5L)
+      , params = list(min_data_in_leaf = 5L, num_threads = .LGB_MAX_THREADS)
     )
 
     pred_dense <- predict(bst, X, type = "contrib")
@@ -157,7 +160,7 @@ test_that("Sparse feature contribution predictions do not take inputs with wrong
       , obj = "regression"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(min_data_in_leaf = 5L)
+      , params = list(min_data_in_leaf = 5L, num_threads = .LGB_MAX_THREADS)
     )
 
     X_wrong <- X[, c(1L:10L, 1L:10L)]
@@ -187,7 +190,7 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
       , obj = "regression"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(min_data_in_leaf = 5L)
+      , params = list(min_data_in_leaf = 5L, num_threads = .LGB_MAX_THREADS)
     )
 
     expect_error(predict(bst, SmatC, type = "contrib"))
@@ -211,6 +214,7 @@ test_that("predict() params should override keyword argument for raw-score predi
       objective = "binary"
       , min_data_in_leaf = 1L
       , seed = 708L
+      , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 10L
     , verbose = VERBOSITY
@@ -262,6 +266,7 @@ test_that("predict() params should override keyword argument for leaf-index pred
       objective = "regression"
       , min_data_in_leaf = 1L
       , seed = 708L
+      , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 10L
     , verbose = VERBOSITY
@@ -315,6 +320,7 @@ test_that("predict() params should override keyword argument for feature contrib
       objective = "regression"
       , min_data_in_leaf = 1L
       , seed = 708L
+      , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 10L
     , verbose = VERBOSITY
@@ -426,7 +432,7 @@ test_that("predict() keeps row names from data (regression)", {
         , obj = "regression"
         , nrounds = 5L
         , verbose = VERBOSITY
-        , params = list(min_data_in_leaf = 1L)
+        , params = list(min_data_in_leaf = 1L, num_threads = .LGB_MAX_THREADS)
     )
     .check_all_row_name_expectations(bst, X)
 })
@@ -442,6 +448,7 @@ test_that("predict() keeps row names from data (binary classification)", {
         , obj = "binary"
         , nrounds = 5L
         , verbose = VERBOSITY
+        , params = list(num_threads = .LGB_MAX_THREADS)
     )
     .check_all_row_name_expectations(bst, X)
 })
@@ -455,7 +462,7 @@ test_that("predict() keeps row names from data (multi-class classification)", {
     bst <- lgb.train(
         data = dtrain
         , obj = "multiclass"
-        , params = list(num_class = 3L)
+        , params = list(num_class = 3L, num_threads = .LGB_MAX_THREADS)
         , nrounds = 5L
         , verbose = VERBOSITY
     )
@@ -479,7 +486,7 @@ test_that("predictions for regression and binary classification are returned as 
       , obj = "regression"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(min_data_in_leaf = 1L)
+      , params = list(min_data_in_leaf = 1L, num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(model, X)
     expect_true(is.vector(pred))
@@ -497,6 +504,7 @@ test_that("predictions for regression and binary classification are returned as 
       , obj = "binary"
       , nrounds = 5L
       , verbose = VERBOSITY
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(model, X)
     expect_true(is.vector(pred))
@@ -516,7 +524,7 @@ test_that("predictions for multiclass classification are returned as matrix", {
       , obj = "multiclass"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(num_class = 3L)
+      , params = list(num_class = 3L, num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(model, X)
     expect_true(is.matrix(pred))
@@ -533,7 +541,7 @@ test_that("Single-row predictions are identical to multi-row ones", {
     X <- as.matrix(mtcars[, -1L])
     y <- mtcars[, 1L]
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-    params <- list(min_data_in_leaf = 2L)
+    params <- list(min_data_in_leaf = 2L, num_threads = .LGB_MAX_THREADS)
     model <- lgb.train(
       params = params
      , data = dtrain
@@ -594,7 +602,7 @@ test_that("Fast-predict configuration accepts non-default prediction types", {
     X <- as.matrix(mtcars[, -1L])
     y <- mtcars[, 1L]
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-    params <- list(min_data_in_leaf = 2L)
+    params <- list(min_data_in_leaf = 2L, num_threads = .LGB_MAX_THREADS)
     model <- lgb.train(
       params = params
      , data = dtrain
@@ -624,7 +632,7 @@ test_that("Fast-predict configuration does not block other prediction types", {
     X <- as.matrix(mtcars[, -1L])
     y <- mtcars[, 1L]
     dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-    params <- list(min_data_in_leaf = 2L)
+    params <- list(min_data_in_leaf = 2L, num_threads = .LGB_MAX_THREADS)
     model <- lgb.train(
       params = params
      , data = dtrain
@@ -661,6 +669,7 @@ test_that("predict type='class' returns predicted class for classification objec
         , obj = "binary"
         , nrounds = 5L
         , verbose = VERBOSITY
+        , params = list(num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(bst, X, type = "class")
     expect_true(all(pred %in% c(0L, 1L)))
@@ -674,7 +683,7 @@ test_that("predict type='class' returns predicted class for classification objec
       , obj = "multiclass"
       , nrounds = 5L
       , verbose = VERBOSITY
-      , params = list(num_class = 3L)
+      , params = list(num_class = 3L, num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(model, X, type = "class")
     expect_true(all(pred %in% c(0L, 1L, 2L)))
@@ -690,6 +699,7 @@ test_that("predict type='class' returns values in the target's range for regress
         , obj = "regression"
         , nrounds = 5L
         , verbose = VERBOSITY
+        , params = list(num_threads = .LGB_MAX_THREADS)
     )
     pred <- predict(bst, X, type = "class")
     expect_true(!any(pred %in% c(0.0, 1.0)))

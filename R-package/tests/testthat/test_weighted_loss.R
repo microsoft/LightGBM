@@ -3,15 +3,13 @@ VERBOSITY <- as.integer(
 )
 
 test_that("Gamma regression reacts on 'weight'", {
-
-  stop(options()[["lightgbm.cran_testing_max_thread"]][[1L]])
   n <- 100L
   set.seed(87L)
   X <- matrix(runif(2L * n), ncol = 2L)
   y <- X[, 1L] + X[, 2L] + runif(n)
   X_pred <- X[1L:5L, ]
 
-  params <- list(objective = "gamma")
+  params <- list(objective = "gamma", num_threads = .LGB_MAX_THREADS)
 
   # Unweighted
   dtrain <- lgb.Dataset(X, label = y)

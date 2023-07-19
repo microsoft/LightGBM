@@ -31,6 +31,7 @@ test_that("lgb.intereprete works as expected for binary classification", {
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     model <- lgb.train(
         params = params
@@ -83,6 +84,7 @@ test_that("lgb.intereprete works as expected for multiclass classification", {
         , learning_rate = 0.00001
         , min_data = 1L
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     model <- lgb.train(
         params = params

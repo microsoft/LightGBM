@@ -1181,6 +1181,7 @@ test_that("params (including dataset params) should be stored in .rds file for B
         , max_depth = 4L
         , bagging_fraction = 0.8
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- Booster$new(
         params = params
@@ -1197,6 +1198,7 @@ test_that("params (including dataset params) should be stored in .rds file for B
             , max_depth = 4L
             , bagging_fraction = 0.8
             , verbose = VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
             , max_bin = 17L
         )
     )
@@ -1212,6 +1214,7 @@ test_that("Handle is automatically restored when calling predict", {
         , params = list(
             verbose = VERBOSITY
         )
+        , num_threads = .LGB_MAX_THREADS
     )
     bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
@@ -1237,6 +1240,7 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
         , metric = "mse"
         , seed = 0L
         , num_leaves = 2L
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
@@ -1276,6 +1280,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
         , metric = "mse"
         , seed = 0L
         , num_leaves = 2L
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
@@ -1372,6 +1377,7 @@ test_that("Booster's print, show, and summary work correctly", {
         params = list(
           objective = "regression"
           , min_data_in_leaf = 1L
+          , num_threads = .LGB_MAX_THREADS
         )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
@@ -1387,7 +1393,7 @@ test_that("Booster's print, show, and summary work correctly", {
 
     data("iris")
     model <- lgb.train(
-        params = list(objective = "multiclass", num_class = 3L)
+        params = list(objective = "multiclass", num_class = 3L, num_threads = .LGB_MAX_THREADS)
         , data = lgb.Dataset(
             as.matrix(iris[, -5L])
             , label = as.numeric(factor(iris$Species)) - 1.0
@@ -1427,6 +1433,7 @@ test_that("Booster's print, show, and summary work correctly", {
         , eval = .evalerror
         , verbose = VERBOSITY
         , nrounds = 5L
+        , params = list(num_threads = .LGB_MAX_THREADS)
     )
 
     .check_methods_work(model)
@@ -1438,6 +1445,7 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
         params = list(
           objective = "regression"
           , min_data_in_leaf = 1L
+          , num_threads = .LGB_MAX_THREADS
         )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
