@@ -1341,7 +1341,7 @@ test_that("Booster's print, show, and summary work correctly", {
         .has_expected_content_for_fitted_model(log_txt)
 
         # summary()
-        log_text <- capture.output({
+        log_txt <- capture.output({
           ret <- summary(model)
         })
         .have_same_handle(ret, model)
