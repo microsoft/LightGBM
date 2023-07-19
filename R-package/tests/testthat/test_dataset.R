@@ -133,7 +133,7 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
   dtrain$construct()
   bst <- Booster$new(
     train_set = dtrain
-    , params = list(verbose = -1L)
+    , params = list(verbose = -1L, num_threads = .LGB_MAX_THREADS)
   )
   dtrain$.__enclos_env__$private$predictor <- bst$to_predictor()
 
@@ -394,6 +394,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , num_leaves = 5L
     , learning_rate = 1.0
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # should be able to train right away
@@ -429,6 +430,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , learning_rate = 1.0
     , num_iterations = 5L
     , verbosity = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # should be able to train right away

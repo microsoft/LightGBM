@@ -55,18 +55,22 @@ CONSTANT_METRIC_VALUE <- 0.2
 DTRAIN_RANDOM_REGRESSION <- lgb.Dataset(
   data = as.matrix(rnorm(100L), ncol = 1L, drop = FALSE)
   , label = rnorm(100L)
+  , params = list(num_threads = .LGB_MAX_THREADS)
 )
 DVALID_RANDOM_REGRESSION <- lgb.Dataset(
   data = as.matrix(rnorm(50L), ncol = 1L, drop = FALSE)
   , label = rnorm(50L)
+  , params = list(num_threads = .LGB_MAX_THREADS)
 )
 DTRAIN_RANDOM_CLASSIFICATION <- lgb.Dataset(
   data = as.matrix(rnorm(120L), ncol = 1L, drop = FALSE)
   , label = sample(c(0L, 1L), size = 120L, replace = TRUE)
+  , params = list(num_threads = .LGB_MAX_THREADS)
 )
 DVALID_RANDOM_CLASSIFICATION <- lgb.Dataset(
   data = as.matrix(rnorm(37L), ncol = 1L, drop = FALSE)
   , label = sample(c(0L, 1L), size = 37L, replace = TRUE)
+  , params = list(num_threads = .LGB_MAX_THREADS)
 )
 
 test_that("train and predict binary classification", {
@@ -79,6 +83,7 @@ test_that("train and predict binary classification", {
         , objective = "binary"
         , metric = "binary_error"
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = nrounds
     , valids = list(
@@ -120,6 +125,7 @@ test_that("train and predict softmax", {
         , metric = "multi_error"
         , num_class = 3L
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 20L
     , valids = list(
@@ -150,12 +156,14 @@ test_that("use of multiple eval metrics works", {
         , objective = "binary"
         , metric = metrics
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 10L
     , valids = list(
       "train" = lgb.Dataset(
         data = train$data
         , label = train$label
+        , params = list(num_threads = .LGB_MAX_THREADS)
       )
     )
   )
@@ -179,6 +187,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , objective = "binary"
         , metric = "binary_error"
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = nrounds
   )
@@ -197,6 +206,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
         , objective = "regression"
         , metric = "l2"
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = nrounds
   )
@@ -206,7 +216,7 @@ test_that("lgb.Booster.upper_bound() and lgb.Booster.lower_bound() work as expec
 
 test_that("lightgbm() rejects negative or 0 value passed to nrounds", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
-  params <- list(objective = "regression", metric = "l2,l1")
+  params <- list(objective = "regression", metric = "l2,l1", num_threads = .LGB_MAX_THREADS)
   for (nround_value in c(-10L, 0L)) {
     expect_error({
       bst <- lightgbm(
@@ -231,6 +241,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , metric = "l2"
       , num_leaves = 5L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -244,6 +255,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -258,6 +270,7 @@ test_that("lightgbm() accepts nrounds as either a top-level argument or paramete
       , num_leaves = 5L
       , nrounds = nrounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -285,10 +298,12 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
   dvalid1 <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid2 <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
   bst <- lightgbm(
@@ -302,6 +317,7 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
             , "auc"
         )
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = nrounds
     , valids = list(
@@ -310,6 +326,7 @@ test_that("lightgbm() performs evaluation on validation sets if they are provide
       , "train" = lgb.Dataset(
         data = train$data
         , label = train$label
+        , params = list(num_threads = .LGB_MAX_THREADS)
       )
     )
   )
@@ -334,6 +351,7 @@ test_that("training continuation works", {
     train$data
     , label = train$label
     , free_raw_data = FALSE
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   watchlist <- list(train = dtrain)
   param <- list(
@@ -342,6 +360,7 @@ test_that("training continuation works", {
     , num_leaves = 5L
     , learning_rate = 1.0
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # train for 10 consecutive iterations
@@ -368,6 +387,7 @@ test_that("cv works", {
     , min_data = 1L
     , learning_rate = 1.0
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lgb.cv(
     params
@@ -388,6 +408,7 @@ test_that("CVBooster$reset_parameter() works as expected", {
       , min_data = 1L
       , num_leaves = 7L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = 3L
@@ -405,11 +426,12 @@ test_that("CVBooster$reset_parameter() works as expected", {
 })
 
 test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
-  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = 2L))
   params <- list(
     objective = "regression"
     , metric = "l2,l1"
     , min_data = 1L
+    , num_threads = .LGB_MAX_THREADS
   )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
@@ -453,6 +475,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
   dtrain <- lgb.Dataset(
     data = as.matrix(runif(n = 500L, min = 0.0, max = 15.0), drop = FALSE)
     , label = rep(c(0L, 1L), 250L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
   cv_bst <- lgb.cv(
@@ -465,6 +488,7 @@ test_that("lightgbm.cv() gives the correct best_score and best_iter for a metric
       , learning_rate = 1.5
       , num_leaves = 5L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
   expect_true(methods::is(cv_bst, "lgb.CVBooster"))
@@ -487,6 +511,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     return(lgb.Dataset(
       data = X
       , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , params = list(num_threads = .LGB_MAX_THREADS)
     ))
   }
 
@@ -496,6 +521,7 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -520,12 +546,13 @@ test_that("lgb.cv() fit on linearly-relatead data improves when using linear lea
 })
 
 test_that("lgb.cv() respects showsd argument", {
-  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = .LGB_MAX_THREADS))
   params <- list(
     objective = "regression"
     , metric = "l2"
     , min_data = 1L
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   nrounds <- 5L
   set.seed(708L)
@@ -559,6 +586,7 @@ test_that("lgb.cv() raises an informative error for unrecognized objectives", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   expect_error({
     capture.output({
@@ -567,6 +595,7 @@ test_that("lgb.cv() raises an informative error for unrecognized objectives", {
         , params = list(
           objective_type = "not_a_real_objective"
           , verbosity = VERBOSITY
+          , num_threads = .LGB_MAX_THREADS
         )
       )
     }, type = "message")
@@ -579,6 +608,7 @@ test_that("lgb.cv() respects parameter aliases for objective", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   cv_bst <- lgb.cv(
     data = dtrain
@@ -587,6 +617,7 @@ test_that("lgb.cv() respects parameter aliases for objective", {
       , application = "binary"
       , num_iterations = nrounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , nfold = nfold
   )
@@ -602,10 +633,12 @@ test_that("lgb.cv() prefers objective in params to keyword argument", {
     data = lgb.Dataset(
       data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
       , label = EuStockMarkets[, "DAX"]
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , params = list(
       application = "regression_l1"
       , verbosity = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 5L
     , obj = "regression_l2"
@@ -631,6 +664,7 @@ test_that("lgb.cv() respects parameter aliases for metric", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   cv_bst <- lgb.cv(
     data = dtrain
@@ -640,6 +674,7 @@ test_that("lgb.cv() respects parameter aliases for metric", {
       , num_iterations = nrounds
       , metric_types = c("auc", "binary_logloss")
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , nfold = nfold
   )
@@ -657,6 +692,7 @@ test_that("lgb.cv() respects eval_train_metric argument", {
     , metric = "l2"
     , min_data = 1L
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   nrounds <- 5L
   set.seed(708L)
@@ -696,6 +732,7 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
     data = lgb.Dataset(
       train$data
       , label = train$label
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , nrounds = 10L
     , params = list(
@@ -703,11 +740,13 @@ test_that("lgb.train() works as expected with multiple eval metrics", {
       , metric = metrics
       , learning_rate = 1.0
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , valids = list(
       "train" = lgb.Dataset(
         train$data
         , label = train$label
+        , params = list(num_threads = .LGB_MAX_THREADS)
       )
     )
   )
@@ -743,6 +782,7 @@ test_that("lgb.train() respects parameter aliases for objective", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   bst <- lgb.train(
     data = dtrain
@@ -751,6 +791,7 @@ test_that("lgb.train() respects parameter aliases for objective", {
       , application = "binary"
       , num_iterations = nrounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , valids = list(
       "the_training_data" = dtrain
@@ -767,10 +808,12 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
     data = lgb.Dataset(
       data = EuStockMarkets[, c("SMI", "CAC", "FTSE")]
       , label = EuStockMarkets[, "DAX"]
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , params = list(
         loss = "regression_l1"
         , verbosity = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     , nrounds = 5L
     , obj = "regression_l2"
@@ -792,6 +835,7 @@ test_that("lgb.train() respects parameter aliases for metric", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   bst <- lgb.train(
     data = dtrain
@@ -801,6 +845,7 @@ test_that("lgb.train() respects parameter aliases for metric", {
       , num_iterations = nrounds
       , metric_types = c("auc", "binary_logloss")
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , valids = list(
       "train" = dtrain
@@ -814,11 +859,12 @@ test_that("lgb.train() respects parameter aliases for metric", {
 })
 
 test_that("lgb.train() rejects negative or 0 value passed to nrounds", {
-  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = .LGB_MAX_THREADS))
   params <- list(
     objective = "regression"
     , metric = "l2,l1"
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   for (nround_value in c(-10L, 0L)) {
     expect_error({
@@ -840,6 +886,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
     data = lgb.Dataset(
       train$data
       , label = train$label
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , nrounds = nrounds
     , params = list(
@@ -847,6 +894,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , metric = "l2"
       , num_leaves = 5L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -855,6 +903,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
     data = lgb.Dataset(
       train$data
       , label = train$label
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , params = list(
       objective = "regression"
@@ -870,6 +919,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
     data = lgb.Dataset(
       train$data
       , label = train$label
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     , nrounds = 20L
     , params = list(
@@ -878,6 +928,7 @@ test_that("lgb.train() accepts nrounds as either a top-level argument or paramet
       , num_leaves = 5L
       , nrounds = nrounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -988,12 +1039,14 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
   dtrain <- lgb.Dataset(
     train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   params <- list(
     objective = "binary"
     , metric = "binary_error"
     , force_col_wise = TRUE
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst_col_wise <- lgb.train(
     params = params
@@ -1006,6 +1059,7 @@ test_that("lgb.train() works with force_col_wise and force_row_wise", {
     , metric = "binary_error"
     , force_row_wise = TRUE
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst_row_wise <- lgb.train(
     params = params
@@ -1037,6 +1091,7 @@ test_that("lgb.train() works as expected with sparse features", {
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["x"]], drop = FALSE)
     , label = trainDF[["y"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 1L
   bst <- lgb.train(
@@ -1045,6 +1100,7 @@ test_that("lgb.train() works as expected with sparse features", {
       , min_data = 1L
       , min_data_in_bin = 1L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1071,10 +1127,12 @@ test_that("lgb.train() works with early stopping for classification", {
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid <- lgb.Dataset(
     data = as.matrix(validDF[["feat1"]], drop = FALSE)
     , label = validDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
 
@@ -1086,6 +1144,7 @@ test_that("lgb.train() works with early stopping for classification", {
       objective = "binary"
       , metric = "binary_error"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1110,6 +1169,7 @@ test_that("lgb.train() works with early stopping for classification", {
       , metric = "binary_error"
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1142,10 +1202,12 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid <- lgb.Dataset(
     data = as.matrix(validDF[["feat1"]], drop = FALSE)
     , label = validDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 5L
 
@@ -1159,6 +1221,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
         objective = "binary"
         , metric = "binary_error"
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
       )
       , data = dtrain
       , nrounds = nrounds
@@ -1183,6 +1246,7 @@ test_that("lgb.train() treats early_stopping_rounds<=0 as disabling early stoppi
         , metric = "binary_error"
         , n_iter_no_change = value
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
       )
       , data = dtrain
       , nrounds = nrounds
@@ -1204,10 +1268,12 @@ test_that("lgb.train() works with early stopping for classification with a metri
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid <- lgb.Dataset(
     data = test$data
     , label = test$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
 
@@ -1223,6 +1289,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1237,6 +1304,7 @@ test_that("lgb.train() works with early stopping for classification with a metri
       , max_depth = 3L
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1281,10 +1349,12 @@ test_that("lgb.train() works with early stopping for regression", {
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid <- lgb.Dataset(
     data = as.matrix(validDF[["feat1"]], drop = FALSE)
     , label = validDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
 
@@ -1296,6 +1366,7 @@ test_that("lgb.train() works with early stopping for regression", {
       objective = "regression"
       , metric = "rmse"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1320,6 +1391,7 @@ test_that("lgb.train() works with early stopping for regression", {
       , metric = "rmse"
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1355,6 +1427,7 @@ test_that("lgb.train() does not stop early if early_stopping_rounds is not given
       objective = "regression"
       , metric = "None"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1399,6 +1472,7 @@ test_that("If first_metric_only is not given or is FALSE, lgb.train() decides to
       , metric = "None"
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , list(
       objective = "regression"
@@ -1406,6 +1480,7 @@ test_that("If first_metric_only is not given or is FALSE, lgb.train() decides to
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = FALSE
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
 
@@ -1469,6 +1544,7 @@ test_that("If first_metric_only is TRUE, lgb.train() decides to stop early based
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1515,6 +1591,7 @@ test_that("lgb.train() works when a mixture of functions and strings are passed 
       objective = "regression"
       , metric = "None"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nrounds = nrounds
@@ -1571,6 +1648,7 @@ test_that("lgb.train() works when a list of strings or a character vector is pas
         objective = "binary"
         , metric = "None"
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
       )
       , data = DTRAIN_RANDOM_CLASSIFICATION
       , nrounds = nrounds
@@ -1608,6 +1686,7 @@ test_that("lgb.train() works when you specify both 'metric' and 'eval' with stri
       objective = "binary"
       , metric = "binary_error"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1640,6 +1719,7 @@ test_that("lgb.train() works when you give a function for eval", {
       objective = "binary"
       , metric = "None"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -1667,10 +1747,12 @@ test_that("lgb.train() works with early stopping for regression with a metric th
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid <- lgb.Dataset(
     data = as.matrix(validDF[["feat1"]], drop = FALSE)
     , label = validDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
 
@@ -1689,6 +1771,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
       , min_data_in_bin = 5L
       , early_stopping_rounds = early_stopping_rounds
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = nrounds
@@ -1720,6 +1803,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   # content below is equivalent to
   #
@@ -1740,6 +1824,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
     , params = list(
       metric = "rmse"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , colnames = feature_names
   )
@@ -1800,6 +1885,7 @@ test_that("lgb.train() updates params based on keyword arguments", {
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
 
   # defaults from keyword arguments should be used if not specified in params
@@ -1808,7 +1894,7 @@ test_that("lgb.train() updates params based on keyword arguments", {
       bst <- lgb.train(
         data = dtrain
         , obj = "regression"
-        , params = list()
+        , params = list(num_threads = .LGB_MAX_THREADS)
       )
     })
   )
@@ -1824,6 +1910,7 @@ test_that("lgb.train() updates params based on keyword arguments", {
         , params = list(
           "verbosity" = 5L
           , "num_iterations" = 2L
+          , num_threads = .LGB_MAX_THREADS
         )
       )
     })
@@ -1840,6 +1927,7 @@ test_that("lgb.train() updates params based on keyword arguments", {
         , params = list(
           "verbose" = 5L
           , "num_boost_round" = 2L
+          , num_threads = .LGB_MAX_THREADS
         )
       )
     })
@@ -1863,14 +1951,17 @@ test_that("when early stopping is not activated, best_iter and best_score come f
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid1 <- lgb.Dataset(
     data = as.matrix(validDF[["feat1"]], drop = FALSE)
     , label = validDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid2 <- lgb.Dataset(
     data = as.matrix(validDF[1L:10L, "feat1"], drop = FALSE)
     , label = validDF[1L:10L, "target"]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
   train_params <- list(
@@ -1879,6 +1970,7 @@ test_that("when early stopping is not activated, best_iter and best_score come f
     , learning_rate = 1.5
     , num_leaves = 5L
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # example 1: two valids, neither are the training data
@@ -2020,10 +2112,12 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid1 <- lgb.Dataset(
     data = as.matrix(validDF[1L:25L, "feat1"], drop = FALSE)
     , label = validDF[1L:25L, "target"]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
   bst <- lgb.train(
@@ -2039,6 +2133,7 @@ test_that("lightgbm.train() gives the correct best_score and best_iter for a met
       , learning_rate = 1.5
       , num_leaves = 5L
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
   )
   # note that "something-random-we-would-not-hardcode" was recognized as the training
@@ -2070,14 +2165,17 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
   dtrain <- lgb.Dataset(
     data = as.matrix(trainDF[["feat1"]], drop = FALSE)
     , label = trainDF[["target"]]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid1 <- lgb.Dataset(
     data = as.matrix(validDF[1L:25L, "feat1"], drop = FALSE)
     , label = validDF[1L:25L, "target"]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dvalid2 <- lgb.Dataset(
     data = as.matrix(validDF[26L:50L, "feat1"], drop = FALSE)
     , label = validDF[26L:50L, "target"]
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   nrounds <- 10L
   bst <- lightgbm(
@@ -2093,6 +2191,7 @@ test_that("using lightgbm() without early stopping, best_iter and best_score com
       , metric = "auc"
       , learning_rate = 1.5
       , num_leaves = 5L
+      , num_threads = .LGB_MAX_THREADS
     )
     , verbose = -7L
   )
@@ -2120,6 +2219,7 @@ test_that("lgb.cv() works when you specify both 'metric' and 'eval' with strings
       objective = "binary"
       , metric = "binary_error"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nrounds = nrounds
@@ -2154,6 +2254,7 @@ test_that("lgb.cv() works when you give a function for eval", {
       objective = "binary"
       , metric = "None"
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_CLASSIFICATION
     , nfold = nfolds
@@ -2180,6 +2281,7 @@ test_that("If first_metric_only is TRUE, lgb.cv() decides to stop early based on
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
@@ -2237,6 +2339,7 @@ test_that("early stopping works with lgb.cv()", {
       , early_stopping_rounds = early_stopping_rounds
       , first_metric_only = TRUE
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = DTRAIN_RANDOM_REGRESSION
     , nfold = nfolds
@@ -2286,11 +2389,12 @@ test_that("lgb.cv() respects changes to logging verbosity", {
   dtrain <- lgb.Dataset(
     data = train$data
     , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   # (verbose = 1) should be INFO and WARNING level logs
   lgb_cv_logs <- capture.output({
     cv_bst <- lgb.cv(
-      params = list()
+      params = list(num_threads = .LGB_MAX_THREADS)
       , nfold = 2L
       , nrounds = 5L
       , data = dtrain
@@ -2304,7 +2408,7 @@ test_that("lgb.cv() respects changes to logging verbosity", {
   # (verbose = 0) should be WARNING level logs only
   lgb_cv_logs <- capture.output({
     cv_bst <- lgb.cv(
-      params = list()
+      params = list(num_threads = .LGB_MAX_THREADS)
       , nfold = 2L
       , nrounds = 5L
       , data = dtrain
@@ -2318,7 +2422,7 @@ test_that("lgb.cv() respects changes to logging verbosity", {
   # (verbose = -1) no logs
   lgb_cv_logs <- capture.output({
     cv_bst <- lgb.cv(
-      params = list()
+      params = list(num_threads = .LGB_MAX_THREADS)
       , nfold = 2L
       , nrounds = 5L
       , data = dtrain
@@ -2336,6 +2440,7 @@ test_that("lgb.cv() updates params based on keyword arguments", {
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(400L), ncol =  4L)
     , label = rnorm(100L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
 
   # defaults from keyword arguments should be used if not specified in params
@@ -2344,7 +2449,7 @@ test_that("lgb.cv() updates params based on keyword arguments", {
       cv_bst <- lgb.cv(
         data = dtrain
         , obj = "regression"
-        , params = list()
+        , params = list(num_threads = .LGB_MAX_THREADS)
         , nfold = 2L
       )
     })
@@ -2365,6 +2470,7 @@ test_that("lgb.cv() updates params based on keyword arguments", {
         , params = list(
           "verbosity" = 5L
           , "num_iterations" = 2L
+          , num_threads = .LGB_MAX_THREADS
         )
         , nfold = 2L
       )
@@ -2385,6 +2491,7 @@ test_that("lgb.cv() updates params based on keyword arguments", {
         , params = list(
           "verbose" = 5L
           , "num_boost_round" = 2L
+          , num_threads = .LGB_MAX_THREADS
         )
         , nfold = 2L
       )
@@ -2407,6 +2514,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
     return(lgb.Dataset(
       data = X
       , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , params = list(num_threads = .LGB_MAX_THREADS)
     ))
   }
 
@@ -2416,6 +2524,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -2450,11 +2559,13 @@ test_that("lgb.train() with linear learner fails already-constructed dataset wit
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- lgb.Dataset(
     data = matrix(rnorm(100L), ncol = 1L)
     , label = rnorm(100L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   dtrain$construct()
   expect_error({
@@ -2480,6 +2591,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
     return(lgb.Dataset(
       data = X
       , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , params = list(num_threads = .LGB_MAX_THREADS)
     ))
   }
 
@@ -2489,6 +2601,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -2526,6 +2639,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     return(lgb.Dataset(
       data = X
       , label = 2L * X + runif(nrow(X), 0L, 0.1)
+      , params = list(num_threads = .LGB_MAX_THREADS)
     ))
   }
 
@@ -2537,6 +2651,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     , num_leaves = 2L
     , bagging_freq = 1L
     , subsample = 0.8
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -2576,6 +2691,7 @@ test_that("lgb.train() works with linear learners and data where a feature has o
       , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
       , params = list(
         feature_pre_filter = FALSE
+        , num_threads = .LGB_MAX_THREADS
       )
     ))
   }
@@ -2586,6 +2702,7 @@ test_that("lgb.train() works with linear learners and data where a feature has o
     , metric = "mse"
     , seed = 0L
     , num_leaves = 2L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -2606,6 +2723,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     return(lgb.Dataset(
       data = X
       , label = 2L * X[, 1L] + runif(nrow(X), 0L, 0.1)
+      , params = list(num_threads = .LGB_MAX_THREADS)
     ))
   }
 
@@ -2616,6 +2734,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , seed = 0L
     , num_leaves = 2L
     , categorical_feature = 1L
+    , num_threads = .LGB_MAX_THREADS
   )
 
   dtrain <- .new_dataset()
@@ -2682,12 +2801,13 @@ test_that("lgb.train() throws an informative error if interaction_constraints co
 test_that(paste0("lgb.train() gives same result when interaction_constraints is specified as a list of ",
                  "character vectors, numeric vectors, or a combination"), {
   set.seed(1L)
-  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = .LGB_MAX_THREADS))
 
   params <- list(
     objective = "regression"
     , interaction_constraints = list(c(1L, 2L), 3L)
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lightgbm(
     data = dtrain
@@ -2701,6 +2821,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
     objective = "regression"
     , interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), cnames[[3L]])
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lightgbm(
     data = dtrain
@@ -2713,6 +2834,7 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
     objective = "regression"
     , interaction_constraints = list(c(cnames[[1L]], cnames[[2L]]), 3L)
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lightgbm(
     data = dtrain
@@ -2728,12 +2850,13 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
 
 test_that(paste0("lgb.train() gives same results when using interaction_constraints and specifying colnames"), {
   set.seed(1L)
-  dtrain <- lgb.Dataset(train$data, label = train$label)
+  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = .LGB_MAX_THREADS))
 
   params <- list(
     objective = "regression"
     , interaction_constraints = list(c(1L, 2L), 3L)
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lightgbm(
     data = dtrain
@@ -2747,6 +2870,7 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
     objective = "regression"
     , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L])
     , verbose = VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
   bst <- lightgbm(
     data = dtrain
@@ -2796,6 +2920,7 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
     , categorical_feature = categorical_features
     , free_raw_data = FALSE
     , colnames = c("feature_1", "feature_2", "feature_3")
+    , params = list(num_threads = .LGB_MAX_THREADS)
   ))
 }
 
@@ -2891,6 +3016,7 @@ for (x3_to_categorical in c(TRUE, FALSE)) {
         , monotone_constraints_method = monotone_constraints_method
         , use_missing = FALSE
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
       )
       constrained_model <- lgb.train(
         params = params
@@ -2912,7 +3038,7 @@ test_that("lightgbm() accepts objective as function argument and under params", 
   bst1 <- lightgbm(
     data = train$data
     , label = train$label
-    , params = list(objective = "regression_l1")
+    , params = list(objective = "regression_l1", num_threads = .LGB_MAX_THREADS)
     , nrounds = 5L
     , verbose = VERBOSITY
   )
@@ -2947,7 +3073,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     data = train$data
     , label = train$label
     , objective = "regression"
-    , params = list(objective = "regression_l1")
+    , params = list(objective = "regression_l1", num_threads = .LGB_MAX_THREADS)
     , nrounds = 5L
     , verbose = VERBOSITY
   )
@@ -2964,7 +3090,7 @@ test_that("lightgbm() prioritizes objective under params over objective as funct
     data = train$data
     , label = train$label
     , objective = "regression"
-    , params = list(loss = "regression_l1")
+    , params = list(loss = "regression_l1", num_threads = .LGB_MAX_THREADS)
     , nrounds = 5L
     , verbose = VERBOSITY
   )
@@ -2985,6 +3111,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , objective = "binary"
     , nrounds = 5L
     , verbose = VERBOSITY
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   pred1 <- predict(bst1, train$data, type = "raw")
 
@@ -2995,6 +3122,7 @@ test_that("lightgbm() accepts init_score as function argument", {
     , objective = "binary"
     , nrounds = 5L
     , verbose = VERBOSITY
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   pred2 <- predict(bst2, train$data, type = "raw")
 
@@ -3007,6 +3135,7 @@ test_that("lightgbm() defaults to 'regression' objective if objective not otherw
     , label = train$label
     , nrounds = 5L
     , verbose = VERBOSITY
+    , params = list(num_threads = .LGB_MAX_THREADS)
   )
   expect_equal(bst$params$objective, "regression")
   model_txt_lines <- strsplit(
@@ -3081,6 +3210,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , params = list(
       min_data_in_bin = 1L
       , min_data_in_leaf = 1L
+      , num_threads = .LGB_MAX_THREADS
     )
   )
   expect_equal(model$.__enclos_env__$private$train_set$get_field("weight"), w)
@@ -3146,6 +3276,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , objective = "binary"
     , metric =  "auc"
     , early_stopping_round = nrounds
+    , num_threads = .LGB_MAX_THREADS
   )
   if (!is.null(verbose_param)) {
     params[["verbose"]] <- verbose_param
@@ -3162,6 +3293,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     train_kwargs[["data"]] <- lgb.Dataset(
       data = train$data
       , label = train$label
+      , params = list(num_threads = .LGB_MAX_THREADS)
     )
     train_kwargs[["valids"]] <- list(
       "valid" = lgb.Dataset(data = test$data, label = test$label)
@@ -3535,7 +3667,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   data("mtcars")
   y <- mtcars$mpg
   x <- as.matrix(mtcars[, -1L])
-  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   expect_equal(model$params$objective, "regression")
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
@@ -3548,7 +3680,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   # Binary classification
   x <- train$data
   y <- factor(train$label)
-  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   expect_equal(model$params$objective, "binary")
   model_txt_lines <- strsplit(
     x = model$save_model_to_string()
@@ -3561,7 +3693,7 @@ test_that("lightgbm() changes objective='auto' appropriately", {
   data("iris")
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
-  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   expect_equal(model$params$objective, "multiclass")
   expect_equal(model$params$num_class, 3L)
   model_txt_lines <- strsplit(
@@ -3576,7 +3708,7 @@ test_that("lightgbm() determines number of classes for non-default multiclass ob
   data("iris")
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
-  model <- lightgbm(x, y, objective = "multiclassova", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "multiclassova", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   expect_equal(model$params$objective, "multiclassova")
   expect_equal(model$params$num_class, 3L)
   model_txt_lines <- strsplit(
@@ -3592,7 +3724,7 @@ test_that("lightgbm() doesn't accept binary classification with non-binary facto
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
   expect_error({
-    lightgbm(x, y, objective = "binary", verbose = VERBOSITY, nrounds = 5L)
+    lightgbm(x, y, objective = "binary", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   }, regexp = "Factors with >2 levels as labels only allowed for multi-class objectives")
 })
 
@@ -3603,7 +3735,7 @@ test_that("lightgbm() doesn't accept multi-class classification with binary fact
   y <- factor(y)
   x <- as.matrix(iris[, -5L])
   expect_error({
-    lightgbm(x, y, objective = "multiclass", verbose = VERBOSITY, nrounds = 5L)
+    lightgbm(x, y, objective = "multiclass", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
   }, regexp = "Two-level factors as labels only allowed for objective='binary'")
 })
 
@@ -3611,7 +3743,7 @@ test_that("lightgbm() model predictions retain factor levels for multiclass clas
   data("iris")
   y <- factor(iris$Species)
   x <- as.matrix(iris[, -5L])
-  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
 
   pred <- predict(model, x, type = "class")
   expect_true(is.factor(pred))
@@ -3630,7 +3762,7 @@ test_that("lightgbm() model predictions retain factor levels for binary classifi
   y[y == "setosa"] <- "versicolor"
   y <- factor(y)
   x <- as.matrix(iris[, -5L])
-  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L)
+  model <- lightgbm(x, y, objective = "auto", verbose = VERBOSITY, nrounds = 5L, num_threads = .LGB_MAX_THREADS)
 
   pred <- predict(model, x, type = "class")
   expect_true(is.factor(pred))

@@ -4,8 +4,8 @@ VERBOSITY <- as.integer(
 
 data(agaricus.train, package = "lightgbm")
 data(agaricus.test, package = "lightgbm")
-dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label)
-dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label)
+dtrain <- lgb.Dataset(agaricus.train$data, label = agaricus.train$label, params = list(num_threads = .LGB_MAX_THREADS))
+dtest <- lgb.Dataset(agaricus.test$data, label = agaricus.test$label, params = list(num_threads = .LGB_MAX_THREADS))
 watchlist <- list(eval = dtest, train = dtrain)
 
 TOLERANCE <- 1e-6
@@ -39,6 +39,7 @@ param <- list(
   , objective = logregobj
   , metric = "auc"
   , verbose = VERBOSITY
+  , num_threads = .LGB_MAX_THREADS
 )
 num_round <- 10L
 
@@ -54,6 +55,7 @@ test_that("using a custom objective, custom eval, and no other metrics works", {
       num_leaves = 8L
       , learning_rate = 1.0
       , verbose = VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
     )
     , data = dtrain
     , nrounds = 4L

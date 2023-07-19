@@ -27,23 +27,6 @@ Booster <- R6::R6Class(
                           modelfile = NULL,
                           model_str = NULL) {
 
-      # LightGBM-internal fix to comply with CRAN policy of only using up to 2 threads in tests and example.
-      #
-      # per https://cran.r-project.org/web/packages/policies.html:
-      #
-      # "If running a package uses multiple threads/cores it must never use more than two simultaneously:
-      #  the check farm is a shared resource and will typically be running many checks simultaneously."
-      #
-      # This mechanism could be removed at any time, and isn't considered part of the public API.
-      #
-      threads_from_opts <- getOption("lightgbm.cran.testing.threads")
-      if (!is.null(threads_from_opts)) {
-          # put an upper limit on num_threads
-          params[["num_threads"]] <- min(params[["num_threads"]], threads_from_opts)
-          # handle the case where 0 is passed to mean "use OpenMP default number of threads"
-          # params[["num_threads"]] <- max(params[["num_threads"]], 1L)
-      }
-
       handle <- NULL
 
       if (!is.null(train_set)) {
