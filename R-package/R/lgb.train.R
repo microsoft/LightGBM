@@ -30,6 +30,7 @@
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(

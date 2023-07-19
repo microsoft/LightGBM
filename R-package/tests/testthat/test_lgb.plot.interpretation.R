@@ -31,6 +31,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
         , min_data_in_leaf = 1L
         , min_sum_hessian_in_leaf = 1.0
         , verbosity = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     model <- lgb.train(
         params = params
@@ -80,6 +81,7 @@ test_that("lgb.plot.interepretation works as expected for multiclass classificat
         , num_class = 3L
         , learning_rate = 0.00001
         , min_data = 1L
+        , num_threads = .LGB_MAX_THREADS
     )
     model <- lgb.train(
         params = params

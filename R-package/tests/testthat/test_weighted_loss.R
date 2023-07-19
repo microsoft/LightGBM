@@ -9,7 +9,7 @@ test_that("Gamma regression reacts on 'weight'", {
   y <- X[, 1L] + X[, 2L] + runif(n)
   X_pred <- X[1L:5L, ]
 
-  params <- list(objective = "gamma")
+  params <- list(objective = "gamma", num_threads = .LGB_MAX_THREADS)
 
   # Unweighted
   dtrain <- lgb.Dataset(X, label = y)

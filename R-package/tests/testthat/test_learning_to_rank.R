@@ -27,6 +27,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , lambdarank_truncation_level = 3L
         , learning_rate = 0.001
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     model <- lgb.train(
         params = params
@@ -91,6 +92,7 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
         , min_data = 1L
         , learning_rate = 0.01
         , verbose = VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     nfold <- 4L
     nrounds <- 10L
