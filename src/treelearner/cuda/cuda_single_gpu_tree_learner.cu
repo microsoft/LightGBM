@@ -162,6 +162,7 @@ void CUDASingleGPUTreeLearner::LaunchReduceLeafStatKernel(
         <<<num_block, CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE>>>(CalcRefitLeafOutputKernel_ARGS);
     }
   }
+  #undef CalcRefitLeafOutputKernel_ARGS
 }
 
 template <typename T, bool IS_INNER>
