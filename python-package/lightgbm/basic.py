@@ -1481,12 +1481,12 @@ class Dataset:
         reference: Optional["Dataset"] = None,
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
-        position: Optional[_LGBM_PositionType] = None,
         init_score: Optional[_LGBM_InitScoreType] = None,
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
-        free_raw_data: bool = True
+        free_raw_data: bool = True,
+        position: Optional[_LGBM_PositionType] = None,
     ):
         """Initialize Dataset.
 
