@@ -77,3 +77,32 @@ Recommendations for gcc Users (MinGW, \*nix)
 --------------------------------------------
 
 -  Refer to `gcc Tips <./gcc-Tips.rst>`__.
+
+Support for Position Bias Treatment
+------------------------------------
+
+Often the relevance labels provided in Learning-to-Rank taks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position/location on the screen when having been presented to a user. 
+LightGBM uses an additional file to store positional data, like the following:
+
+::
+
+    3
+    4
+    1
+    ...
+
+It means the position of the document from the first data row, when presented to a user, was encoded as ``3``, second was encoded as ``4``, and so on. 
+A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consiting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
+
+The position file corresponds with training data file line by line, and has one position per line.
+
+And if the name of training data file is ``train.txt``, the position file should be named as ``train.txt.position`` and placed in the same folder as the data file.
+In this case, LightGBM will load the position file automatically if it exists.
+
+Also, you can include position column in your data file. Please refer to the ``position_column`` `parameter <#position_column>`__.
+
+Currently, implemented is an approach to model position bias by using an idea of Generalized Additive Models (`GAM <https://en.wikipedia.org/wiki/Generalized_additive_model>`_) to linearly decompose the document score ``s`` into the sum of a relevance component ``f`` and a positional component ``g``:  ``s(x, pos) = f(x) + g(pos)`` where the former component depends on the original query-document features and the latter depends on the position of an item. 
+During the training, the compound scoring function ``s(x, pos)`` is fit with a standard ranking algorithm (e.g., LambdaMART) which boils down to jointly learning the relevance component ``f(x)`` (it is later returned as an unbiased model) and the position factors ``g(pos)`` that help better explain the observed (biased) labels. 
+Similar score decomposition ideas have previously been applied for classification & pointwise ranking tasks with assumptions of binary labels and binary relevance (a.k.a. "two-tower" models, refer to the papers: `Towards Disentangling Relevance and Bias in Unbiased Learning to Rank <https://arxiv.org/abs/2212.13937>`_, `PAL: a position-bias aware learning framework for CTR prediction in live recommender systems <https://dl.acm.org/doi/10.1145/3298689.3347033>`_, `A General Framework for Debiasing in CTR Prediction <https://arxiv.org/abs/2112.02767>`_). 
+In LightGBM, we adapt this idea to general pairwise Lerarning-to-Rank with arbitrary ordinal relevance labels. 
+Besides, GAMs have been used in the context of explainable ML (`Accurate Intelligible Models with Pairwise Interactions <https://www.cs.cornell.edu/~yinlou/papers/lou-kdd13.pdf>`_) to linearly decompose the contribution of each feature (and possibly their pairwise interactions) to the overall score, for subsequent analysis and interpretation of their effects in the trained models.
