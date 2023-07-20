@@ -62,8 +62,6 @@ _LGBM_GroupType = Union[
     pd_Series
 ]
 _LGBM_PositionType = Union[
-    List[float],
-    List[int],
     np.ndarray,
     pd_Series
 ]
