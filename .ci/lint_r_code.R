@@ -59,7 +59,7 @@ LINTERS_TO_USE <- list(
     , "package_hooks"        = lintr::package_hooks_linter()
     , "paste"                = lintr::paste_linter()
     , "quotes"               = lintr::quotes_linter()
-    , "redundant_equals"     = redundant_equals_linter()
+    , "redundant_equals"     = lintr::redundant_equals_linter()
     , "regex_subset"         = lintr::regex_subset_linter()
     , "routine_registration" = lintr::routine_registration_linter()
     , "semicolon"            = lintr::semicolon_linter()
