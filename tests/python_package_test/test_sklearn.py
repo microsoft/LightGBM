@@ -1561,3 +1561,20 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
     )
     preds = model.predict(X)
     assert spearmanr(preds, y).correlation >= 0.99
+
+
+def test_classifier_fit_detects_classes_every_time():
+    rng = np.random.default_rng(seed=123)
+    nrows = 1000
+    ncols = 20
+
+    X = rng.standard_normal(size=(nrows, ncols))
+    y_bin = (rng.random(size=nrows) <= .3).astype(np.float64)
+    y_multi = rng.integers(4, size=nrows)
+
+    model = LGBMClassifier(verbose=-1)
+    for repetition in range(2):
+        model.fit(X, y_multi)
+        assert model.objective_ == "multiclass"
+        model.fit(X, y_bin)
+        assert model.objective_ == "binary"
