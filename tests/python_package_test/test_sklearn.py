@@ -1573,7 +1573,7 @@ def test_classifier_fit_detects_classes_every_time():
     y_multi = rng.integers(4, size=nrows)
 
     model = lgb.LGBMClassifier(verbose=-1)
-    for repetition in range(2):
+    for _ in range(2):
         model.fit(X, y_multi)
         assert model.objective_ == "multiclass"
         model.fit(X, y_bin)
