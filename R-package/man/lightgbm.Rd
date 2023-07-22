@@ -68,7 +68,7 @@ set to the iteration number of the best iteration.}
                  \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
                  (note that parameter \code{num_class} in this case will also be determined automatically from
                  \code{label}).
-                 \item Otherwise, will use objective \code{"regression"}.
+                 \item Otherwise (or if passing \code{lgb.Dataset} as input), will use objective \code{"regression"}.
                  }
 
                  \emph{New in version 4.0.0}}
