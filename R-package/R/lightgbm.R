@@ -218,13 +218,7 @@ lightgbm <- function(data,
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
   if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(
-      data = data
-      , label = label
-      , weight = weights
-      , init_score = init_score
-      , free_raw_data = FALSE
-    )
+    dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
   }
 
   train_args <- list(
@@ -251,11 +245,6 @@ lightgbm <- function(data,
     , args = train_args
   )
   bst$data_processor <- data_processor
-
-  # Since the dataset got passed 'free_raw_data = FALSE', need to do the step manually
-  if (!lgb.is.Dataset(data)) {
-    bst$.__enclos_env__$private$train_set$drop_raw_data()
-  }
 
   return(bst)
 }

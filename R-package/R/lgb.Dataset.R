@@ -313,7 +313,7 @@ Dataset <- R6::R6Class(
 
       # Should we free raw data?
       if (isTRUE(private$free_raw_data)) {
-        self$drop_raw_data()
+        private$raw_data <- NULL
       }
 
       # Get private information
@@ -692,10 +692,6 @@ Dataset <- R6::R6Class(
         , path.expand(fname)
       )
       return(invisible(self))
-    },
-
-    drop_raw_data = function() {
-      private$raw_data <- NULL
     }
 
   ),
