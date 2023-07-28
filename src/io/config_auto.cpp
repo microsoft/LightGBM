@@ -305,6 +305,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_norm",
   "label_gain",
   "lambdarank_position_bias_regularizer",
+  "position_filename",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -623,6 +624,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "lambdarank_position_bias_regularizer", &lambdarank_position_bias_regularizer);
   CHECK_GE(lambdarank_position_bias_regularizer, 0.0);
 
+  GetString(params, "position_filename", &position_filename);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -759,6 +762,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[lambdarank_position_bias_regularizer: " << lambdarank_position_bias_regularizer << "]\n";
+  str_buf << "[position_filename: " << position_filename << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -899,6 +903,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"lambdarank_norm", {}},
     {"label_gain", {}},
     {"lambdarank_position_bias_regularizer", {}},
+    {"position_filename", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -1042,6 +1047,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"lambdarank_norm", "bool"},
     {"label_gain", "vector<double>"},
     {"lambdarank_position_bias_regularizer", "double"},
+    {"position_filename", "string"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},

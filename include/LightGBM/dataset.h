@@ -52,8 +52,9 @@ class Metadata {
   /*!
   * \brief Initialization will load query level information, since it is need for sampling data
   * \param data_filename Filename of data
+  * \param position_filename Filename of positions
   */
-  void Init(const char* data_filename);
+  void Init(const char* data_filename, const char* position_filename);
   /*!
   * \brief init as subset
   * \param metadata Filename of data
@@ -341,6 +342,8 @@ class Metadata {
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Filename of current data */
   std::string data_filename_;
+  /*! \brief Filename of ranking positions */
+  std::string position_filename_;
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */

@@ -21,13 +21,15 @@ Metadata::Metadata() {
   position_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
+  position_filename_ = "";
   #ifdef USE_CUDA
   cuda_metadata_ = nullptr;
   #endif  // USE_CUDA
 }
 
-void Metadata::Init(const char* data_filename) {
+void Metadata::Init(const char* data_filename, const char* position_filename) {
   data_filename_ = data_filename;
+  position_filename_ = position_filename;
   // for lambdarank, it needs query data for partition data in distributed learning
   LoadQueryBoundaries();
   LoadWeights();
@@ -595,12 +597,13 @@ void Metadata::LoadWeights() {
 
 void Metadata::LoadPositions() {
   num_positions_ = 0;
-  std::string position_filename(data_filename_);
-  // default position file name
-  position_filename.append(".position");
-  TextReader<size_t> reader(position_filename.c_str(), false);
+  if (position_filename_ == std::string("")) {
+    return;
+  }
+  TextReader<size_t> reader(position_filename_.c_str(), false);
   reader.ReadAllLines();
   if (reader.Lines().empty()) {
+    Log::Warning("Position file %s is not found.", position_filename_.c_str());
     return;
   }
   Log::Info("Loading positions...");
