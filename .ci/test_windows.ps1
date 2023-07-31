@@ -52,12 +52,14 @@ conda install brotlipy
 
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV `
+  cffi `
   cloudpickle `
   joblib `
   matplotlib `
   numpy `
   pandas `
   psutil `
+  pyarrow `
   pytest `
   "python=$env:PYTHON_VERSION[build=*cpython]" `
   python-graphviz `

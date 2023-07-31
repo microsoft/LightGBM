@@ -185,6 +185,33 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+"""pyarrow"""
+try:
+    from pyarrow import Table as pa_Table
+    from pyarrow import Array as pa_Array
+    from pyarrow import ChunkedArray as pa_ChunkedArray
+    PYARROW_INSTALLED = True
+except ImportError:
+    PYARROW_INSTALLED = False
+
+    class pa_Table:  # type: ignore
+        """Dummy class for pa.Table."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pa_Array:  # type: ignore
+        """Dummy class for pa.Array."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pa_ChunkedArray:  # type: ignore
+        """Dummy class for pa.ChunkedArray."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
 """cpu_count()"""
 try:
     from joblib import cpu_count

@@ -121,6 +121,7 @@ fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda create -q -y -n $CONDA_ENV \
+    cffi \
     cloudpickle \
     dask-core \
     distributed \
@@ -129,6 +130,7 @@ conda create -q -y -n $CONDA_ENV \
     numpy \
     pandas \
     psutil \
+    pyarrow \
     pytest \
     ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \

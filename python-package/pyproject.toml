@@ -32,6 +32,10 @@ requires-python = ">=3.6"
 version = "4.0.0.99"
 
 [project.optional-dependencies]
+arrow = [
+    "cffi>=1.15.1",
+    "pyarrow>=12.0.0"
+]
 dask = [
     "dask[array,dataframe,distributed]>=2.0.0",
     "pandas>=0.24.0"
