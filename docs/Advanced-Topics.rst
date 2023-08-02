@@ -82,7 +82,7 @@ Support for Position Bias Treatment
 ------------------------------------
 
 Often the relevance labels provided in Learning-to-Rank tasks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position/location on the screen when having been presented to a user.
-LightGBM uses an additional file to store positional data, like the following:
+LightGBM can make use of positional data, for example provided in an additional file like the following:
 
 ::
 
@@ -98,8 +98,6 @@ The position file corresponds with training data file line by line, and has one 
 
 And if the name of training data file is ``train.txt``, the position file should be named as ``train.txt.position`` and placed in the same folder as the data file.
 In this case, LightGBM will load the position file automatically if it exists.
-
-Also, you can include position column in your data file. Please refer to the ``position_column`` `parameter <#position_column>`__.
 
 Currently, implemented is an approach to model position bias by using an idea of Generalized Additive Models (`GAM <https://en.wikipedia.org/wiki/Generalized_additive_model>`_) to linearly decompose the document score ``s`` into the sum of a relevance component ``f`` and a positional component ``g``:  ``s(x, pos) = f(x) + g(pos)`` where the former component depends on the original query-document features and the latter depends on the position of an item. 
 During the training, the compound scoring function ``s(x, pos)`` is fit with a standard ranking algorithm (e.g., LambdaMART) which boils down to jointly learning the relevance component ``f(x)`` (it is later returned as an unbiased model) and the position factors ``g(pos)`` that help better explain the observed (biased) labels. 
