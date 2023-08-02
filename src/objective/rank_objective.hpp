@@ -325,7 +325,7 @@ class LambdarankNDCG : public RankingObjective {
       // L2 regularization on position bias factors
       bias_first_derivative -= pos_biases_[i] * position_bias_regularizer_ * instance_count;
       bias_second_derivative -= position_bias_regularizer_ * instance_count;
-      // do Newton-Rhapson step to update position bias factors
+      // do Newton-Raphson step to update position bias factors
       pos_biases_[i] += learning_rate_ * bias_first_derivative / (std::abs(bias_second_derivative) + 0.001);
     }
     LogDebugPositionBiasFactors();
