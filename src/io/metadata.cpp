@@ -603,8 +603,7 @@ void Metadata::LoadPositions() {
   TextReader<size_t> reader(position_filename_.c_str(), false);
   reader.ReadAllLines();
   if (reader.Lines().empty()) {
-    Log::Warning("Position file %s is not found.", position_filename_.c_str());
-    return;
+    Log::Fatal("Position file '%s' is not found.", position_filename_.c_str());
   }
   Log::Info("Loading positions...");
   num_positions_ = static_cast<data_size_t>(reader.Lines().size());
