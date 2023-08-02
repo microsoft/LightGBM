@@ -673,6 +673,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[max_depth: " << max_depth << "]\n";
   str_buf << "[min_data_in_leaf: " << min_data_in_leaf << "]\n";
   str_buf << "[min_sum_hessian_in_leaf: " << min_sum_hessian_in_leaf << "]\n";
+  str_buf << "[data_sample_strategy: " << data_sample_strategy << "]\n";
   str_buf << "[bagging_fraction: " << bagging_fraction << "]\n";
   str_buf << "[pos_bagging_fraction: " << pos_bagging_fraction << "]\n";
   str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
