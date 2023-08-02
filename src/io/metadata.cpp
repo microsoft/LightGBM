@@ -596,10 +596,10 @@ void Metadata::LoadWeights() {
 }
 
 void Metadata::LoadPositions() {
-  num_positions_ = 0;
   if (position_filename_ == std::string("")) {
     return;
   }
+  num_positions_ = 0;
   TextReader<size_t> reader(position_filename_.c_str(), false);
   reader.ReadAllLines();
   if (reader.Lines().empty()) {
