@@ -92,7 +92,7 @@ LightGBM uses an additional file to store positional data, like the following:
     ...
 
 It means the position of the document from the first data row, when presented to a user, was encoded as ``3``, second was encoded as ``4``, and so on. 
-A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consiting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
+A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consisting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
 
 The position file corresponds with training data file line by line, and has one position per line.
 
