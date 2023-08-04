@@ -73,7 +73,7 @@ if [[ $TASK == "lint" ]]; then
         cpplint \
         isort \
         mypy \
-        'r-lintr>=3.0' \
+        'r-lintr>=3.1' \
         ruff
     source activate $CONDA_ENV
     echo "Linting Python code"
