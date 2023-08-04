@@ -225,8 +225,6 @@ lgb.cv <- function(params = list()
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
 
-    nfold <- length(folds)
-
   } else {
 
     if (nfold <= 1L) {

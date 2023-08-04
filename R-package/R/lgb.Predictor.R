@@ -98,8 +98,6 @@ Predictor <- R6::R6Class(
         start_iteration <- 0L
       }
 
-      num_row <- 0L
-
       # Check if data is a file name and not a matrix
       if (identical(class(data), "character") && length(data) == 1L) {
 
