@@ -1507,8 +1507,6 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        position : numpy 1-D array, pandas Series or None, optional (default=None)
-            Position of items used in unbiased learning-to-rank task.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
@@ -1528,6 +1526,8 @@ class Dataset:
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
+            Position of items used in unbiased learning-to-rank task.
         """
         self._handle: Optional[_DatasetHandle] = None
         self.data = data
@@ -2263,12 +2263,12 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        position : numpy 1-D array, pandas Series or None, optional (default=None)
-            Position of items used in unbiased learning-to-rank task.
         init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
+            Position of items used in unbiased learning-to-rank task.
 
         Returns
         -------

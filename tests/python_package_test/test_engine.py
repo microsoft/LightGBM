@@ -747,6 +747,7 @@ def test_ranking_prediction_early_stopping():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
+
 def test_ranking_with_position_information(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     params = {
@@ -771,7 +772,9 @@ def test_ranking_with_position_information(tmp_path):
             position = np.random.randint(28)
             positions.append(position)
             out_file.write(f"pos_{position}\n")
+    positions = np.array(positions)
 
+    # test setting positions through Dataset constructor
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=positions)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
@@ -785,6 +788,17 @@ def test_ranking_with_position_information(tmp_path):
     gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
     assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
 
+    # test setting positions through set_position
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    lgb_train.set_position(positions)
+    gbm_unbiased_set_position = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_set_position.best_score['valid_0']['ndcg@3']
+
+    # test get_position works
+    positions_from_get = lgb_train.get_position()
+    np.testing.assert_array_equal(positions_from_get, positions)
+
     # add extra row to position file
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
         file.write('pos_1000')
@@ -793,6 +807,7 @@ def test_ranking_with_position_information(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     with pytest.raises(lgb.basic.LightGBMError, match="Positions size \(3006\) doesn't match data size"):
         lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
 
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)

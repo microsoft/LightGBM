@@ -540,19 +540,21 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
 
   position_load_from_file_ = false;
 
-  #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
+  position_ids_.clear();
+  std::unordered_map<data_size_t, int> map_id2pos;
   for (data_size_t i = 0; i < num_positions_; ++i) {
-    positions_[i] = positions[i];
+    if (map_id2pos.count(positions[i]) == 0) {
+      int pos = static_cast<int>(map_id2pos.size());
+      map_id2pos[positions[i]] = pos;
+      position_ids_.push_back(std::to_string(positions[i]));
+    }
   }
 
-  position_ids_.clear();
-  std::set<int> position_set;
-  for (int position : positions_) {
-    position_set.insert(position);
-  }
-  Log::Debug("number of unique positions found = %ld", position_set.size());
-  for (int position : position_set) {
-    position_ids_.push_back(std::to_string(position));
+  Log::Debug("number of unique positions found = %ld", position_ids_.size());
+
+  #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
+  for (data_size_t i = 0; i < num_positions_; ++i) {
+    positions_[i] = map_id2pos.at(positions[i]);
   }
 }
 
