@@ -1796,12 +1796,12 @@ class Dataset:
         reference: Optional["Dataset"],
         weight: Optional[_LGBM_WeightType],
         group: Optional[_LGBM_GroupType],
-        position: Optional[_LGBM_PositionType],
         init_score: Optional[_LGBM_InitScoreType],
         predictor: Optional[_InnerPredictor],
         feature_name: _LGBM_FeatureNameConfiguration,
         categorical_feature: _LGBM_CategoricalFeatureConfiguration,
-        params: Optional[Dict[str, Any]]
+        params: Optional[Dict[str, Any]],
+        position: Optional[_LGBM_PositionType]
     ) -> "Dataset":
         if data is None:
             self._handle = None
@@ -2227,9 +2227,10 @@ class Dataset:
             else:
                 # create train
                 self._lazy_init(data=self.data, label=self.label, reference=None,
-                                weight=self.weight, group=self.group, position=self.position,
+                                weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
+                                feature_name=self.feature_name, categorical_feature=self.categorical_feature,
+                                params=self.params, position=self.position)
             if self.free_raw_data:
                 self.data = None
             self.feature_name = self.get_feature_name()
@@ -2241,9 +2242,9 @@ class Dataset:
         label: Optional[_LGBM_LabelType] = None,
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
-        position: Optional[_LGBM_PositionType] = None,
         init_score: Optional[_LGBM_InitScoreType] = None,
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
+        position: Optional[_LGBM_PositionType] = None
     ) -> "Dataset":
         """Create validation data align with current Dataset.
 

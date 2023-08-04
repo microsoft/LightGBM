@@ -529,16 +529,16 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
     num_positions_ = 0;
     return;
   }
+  #ifdef USE_CUDA
+  Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
+  #endif  // USE_CUDA
   if (num_data_ != len) {
-    Log::Fatal("Length of positions is not same with #data");
+      Log::Fatal("Positions size (%i) doesn't match data size (%i)", len, num_data_);
   }
   if (positions_.empty()) { positions_.resize(num_data_); }
   num_positions_ = num_data_;
 
   position_load_from_file_ = false;
-  #ifdef USE_CUDA
-  Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
-  #endif  // USE_CUDA
 
   #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
   for (data_size_t i = 0; i < num_positions_; ++i) {
