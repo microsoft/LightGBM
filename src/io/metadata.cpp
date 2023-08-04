@@ -550,7 +550,7 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
   for (int position : positions_) {
     position_set.insert(position);
   }
-  Log::Warning("position_set.size() = %ld", position_set.size());
+  Log::Debug("number of unique positions found = %ld", position_set.size());
   for (int position : position_set) {
     position_ids_.push_back(std::to_string(position));
   }
