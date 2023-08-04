@@ -2711,7 +2711,7 @@ class Dataset:
 
         Parameters
         ----------
-        position : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
             Position of items used in unbiased learning-to-rank task.
 
         Returns
