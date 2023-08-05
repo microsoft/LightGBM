@@ -187,9 +187,9 @@ except ImportError:
 
 """pyarrow"""
 try:
-    from pyarrow import Table as pa_Table
     from pyarrow import Array as pa_Array
     from pyarrow import ChunkedArray as pa_ChunkedArray
+    from pyarrow import Table as pa_Table
     PYARROW_INSTALLED = True
 except ImportError:
     PYARROW_INSTALLED = False

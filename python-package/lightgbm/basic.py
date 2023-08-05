@@ -23,6 +23,7 @@ from .libpath import find_lib_path
 
 try:
     import pyarrow as pa
+
     from .arrow import export_arrow_to_c
 except ImportError:
     pass

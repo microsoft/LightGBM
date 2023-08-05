@@ -4,10 +4,11 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict
 
-import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
+
+import lightgbm as lgb
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
