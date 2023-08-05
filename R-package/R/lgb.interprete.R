@@ -72,7 +72,9 @@ lgb.interprete <- function(model,
   leaf_index_dt <- data.table::as.data.table(x = pred_mat)
   leaf_index_mat_list <- lapply(
     X = leaf_index_dt
-    , FUN = function(x) matrix(x, ncol = num_class, byrow = TRUE)
+    , FUN = matrix
+    , ncol = num_class
+    , byrow = TRUE
   )
 
   # Get list of trees
