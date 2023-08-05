@@ -1,3 +1,5 @@
+# coding: utf-8
+"""Utilities for handling Arrow in LightGBM."""
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Iterator, Union
@@ -16,10 +18,12 @@ class ArrowCArray:
 
     @property
     def chunks_ptr(self) -> int:
+        """Returns the address of the pointer to the list of chunks making up the array."""
         return int(ffi.cast("uintptr_t", ffi.addressof(self.chunks[0])))
 
     @property
     def schema_ptr(self) -> int:
+        """Returns the address of the pointer to the schema of the array."""
         return int(ffi.cast("uintptr_t", self.schema))
 
 

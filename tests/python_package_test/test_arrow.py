@@ -6,7 +6,6 @@ from typing import Any, Dict
 
 import lightgbm as lgb
 import numpy as np
-import pandas as pd
 import pyarrow as pa
 import pytest
 
