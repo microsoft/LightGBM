@@ -2440,7 +2440,7 @@ int LGBM_BoosterPredictForMatSingleRowFastInit(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
 
   std::unique_ptr<SingleRowPredictor> single_row_predictor =
-    ref_booster->InitSingleRowPredictor(start_iteration, num_iteration, predict_type, data_type, ncol, parameter);
+    ref_booster->InitSingleRowPredictor(predict_type, start_iteration, num_iteration, data_type, ncol, parameter);
 
   OMP_SET_NUM_THREADS(single_row_predictor->config.num_threads);
 
