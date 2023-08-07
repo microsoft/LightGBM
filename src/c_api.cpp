@@ -146,6 +146,7 @@ struct SingleRowPredictor {
   Config config;
   const int data_type;
   const int32_t num_cols;
+
  private:
   SingleRowPredictorInner single_row_predictor_inner;
 
@@ -437,8 +438,7 @@ class Booster {
 
   std::unique_ptr<SingleRowPredictor> InitSingleRowPredictor(int predict_type, int start_iteration, int num_iteration, int data_type, int32_t num_cols, const char *parameters) {
     return std::unique_ptr<SingleRowPredictor>(new SingleRowPredictor(
-      &mutex_, parameters, data_type, num_cols, predict_type, boosting_.get(), start_iteration, num_iteration
-    ));
+      &mutex_, parameters, data_type, num_cols, predict_type, boosting_.get(), start_iteration, num_iteration));
   }
 
   void PredictSingleRow(int predict_type, int ncol,

@@ -34,7 +34,7 @@ const int kDefaultNumLeaves = 31;
 struct Config {
  public:
   Config() {}
-  Config(std::unordered_map<std::string, std::string> parameters_map) {
+  explicit Config(std::unordered_map<std::string, std::string> parameters_map) {
     Set(parameters_map);
   }
   std::string ToString() const;
