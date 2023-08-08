@@ -354,6 +354,7 @@ if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     cd ../dist
+<<<<<<< Updated upstream
     if test "${BUILD_SDIST}" = true; then
         pip install \
             ${PIP_INSTALL_ARGS} \
@@ -370,6 +371,20 @@ if test "${INSTALL}" = true; then
             --find-links=. \
             lightgbm-*.whl
     fi
+=======
+    LGB_VER=$(head -n 1 ../VERSION.txt)
+    if test "${BUILD_SDIST}" = true; then
+        SUFFIX="tar.gz"
+    elif test "${BUILD_WHEEL}" = true; then
+        SUFFIX="whl"
+    fi
+    pip install \
+        ${PIP_INSTALL_ARGS} \
+        --force-reinstall \
+        --no-cache-dir \
+        --find-links=. \
+        lightgbm-${LGB_VER}-*.${SUFFIX}
+>>>>>>> Stashed changes
     cd ../
 fi
 
