@@ -748,6 +748,7 @@ def test_ranking_prediction_early_stopping():
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
 def test_ranking_with_position_information(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     params = {
