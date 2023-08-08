@@ -9,7 +9,7 @@ import random
 import re
 from os import getenv
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, move
 
 import numpy as np
 import psutil
@@ -783,10 +783,11 @@ def test_ranking_with_position_information(tmp_path):
     assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.best_score['valid_0']['ndcg@3'], 0.02)
 
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
-    copyfile(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
+    move(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
     assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
+    move(str(tmp_path / 'rank.train.position'), str(tmp_path / '_rank.train.position'))
 
     # test setting positions through set_position
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
@@ -800,8 +801,9 @@ def test_ranking_with_position_information(tmp_path):
     np.testing.assert_array_equal(positions_from_get, positions)
 
     # add extra row to position file
+    move(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
-        file.write('pos_1000')
+        file.write('pos_1000\n')
         file.close()
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
