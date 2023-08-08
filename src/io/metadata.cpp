@@ -531,9 +531,13 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
   Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
   #endif  // USE_CUDA
   if (num_data_ != len) {
-      Log::Fatal("Positions size (%i) doesn't match data size (%i)", len, num_data_);
+    Log::Fatal("Positions size (%i) doesn't match data size (%i)", len, num_data_);
   }
-  if (positions_.empty()) { positions_.resize(num_data_); }
+  if (positions_.empty()) {
+    positions_.resize(num_data_);
+  } else {
+    Log::Warning("Overwritting positions in dataset.");
+  }
   num_positions_ = num_data_;
 
   position_load_from_file_ = false;
@@ -605,7 +609,7 @@ void Metadata::LoadPositions() {
   if (reader.Lines().empty()) {
     return;
   }
-  Log::Info("Loading positions...");
+  Log::Info("Loading positions from %s ...", position_filename.c_str());
   num_positions_ = static_cast<data_size_t>(reader.Lines().size());
   positions_ = std::vector<data_size_t>(num_positions_);
   position_ids_ = std::vector<std::string>();
