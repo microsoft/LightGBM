@@ -2197,10 +2197,6 @@ class Dataset:
                         group_info = np.array(self.reference.group).astype(np.int32, copy=False)
                         _, self.group = np.unique(np.repeat(range(len(group_info)), repeats=group_info)[self.used_indices],
                                                   return_counts=True)
-                    if self.reference.position is not None:
-                        position_info = np.array(self.reference.position).astype(np.int32, copy=False)
-                        _, self.position = np.unique(np.repeat(range(len(position_info)), repeats=position_info)[self.used_indices],
-                                                     return_counts=True)
                     self._handle = ctypes.c_void_p()
                     params_str = _param_dict_to_str(self.params)
                     _safe_call(_LIB.LGBM_DatasetGetSubset(
