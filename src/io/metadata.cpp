@@ -552,7 +552,7 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
 
   #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
   for (data_size_t i = 0; i < num_positions_; ++i) {
-    positions_[i] = positions[i];//map_id2pos.at(positions[i]);
+    positions_[i] = map_id2pos.at(positions[i]);
   }
 }
 
