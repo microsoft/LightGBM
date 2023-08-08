@@ -354,12 +354,22 @@ if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     cd ../dist
-    pip install \
-        ${PIP_INSTALL_ARGS} \
-        --force-reinstall \
-        --no-cache-dir \
-        --find-links=. \
-        lightgbm-*.tar.gz
+    if test "${BUILD_SDIST}" = true; then
+        pip install \
+            ${PIP_INSTALL_ARGS} \
+            --force-reinstall \
+            --no-cache-dir \
+            --find-links=. \
+            lightgbm-*.tar.gz
+    fi
+    if test "${BUILD_WHEEL}" = true; then
+        pip install \
+            ${PIP_INSTALL_ARGS} \
+            --force-reinstall \
+            --no-cache-dir \
+            --find-links=. \
+            lightgbm-*.whl
+    fi
     cd ../
 fi
 
