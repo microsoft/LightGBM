@@ -21,15 +21,13 @@ Metadata::Metadata() {
   position_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
-  position_filename_ = "";
   #ifdef USE_CUDA
   cuda_metadata_ = nullptr;
   #endif  // USE_CUDA
 }
 
-void Metadata::Init(const char* data_filename, const char* position_filename) {
+void Metadata::Init(const char* data_filename) {
   data_filename_ = data_filename;
-  position_filename_ = position_filename;
   // for lambdarank, it needs query data for partition data in distributed learning
   LoadQueryBoundaries();
   LoadWeights();
@@ -554,7 +552,7 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
 
   #pragma omp parallel for schedule(static, 512) if (num_positions_ >= 1024)
   for (data_size_t i = 0; i < num_positions_; ++i) {
-    positions_[i] = map_id2pos.at(positions[i]);
+    positions_[i] = positions[i];//map_id2pos.at(positions[i]);
   }
 }
 
@@ -598,14 +596,14 @@ void Metadata::LoadWeights() {
 }
 
 void Metadata::LoadPositions() {
-  if (position_filename_ == std::string("")) {
-    return;
-  }
   num_positions_ = 0;
-  TextReader<size_t> reader(position_filename_.c_str(), false);
+  std::string position_filename(data_filename_);
+  // default position file name
+  position_filename.append(".position");
+  TextReader<size_t> reader(position_filename.c_str(), false);
   reader.ReadAllLines();
   if (reader.Lines().empty()) {
-    Log::Fatal("Position file '%s' is not found.", position_filename_.c_str());
+    return;
   }
   Log::Info("Loading positions...");
   num_positions_ = static_cast<data_size_t>(reader.Lines().size());
@@ -622,7 +620,6 @@ void Metadata::LoadPositions() {
   }
   position_load_from_file_ = true;
 }
-
 
 void Metadata::LoadInitialScore(const std::string& data_filename) {
   num_init_score_ = 0;

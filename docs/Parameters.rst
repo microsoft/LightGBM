@@ -1141,10 +1141,6 @@ Objective Parameters
 
    -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
 
--  ``position_filename`` :raw-html:`<a id="position_filename" title="Permalink to this parameter" href="#position_filename">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = str
-
-   -  path to the file storing positions used in lambdarank
-
 Metric Parameters
 -----------------
 

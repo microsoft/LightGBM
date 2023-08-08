@@ -225,7 +225,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, config_.position_filename.c_str());
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data to memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, rank, num_machines, &num_global_data, &used_data_indices);
@@ -312,7 +312,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     }
     dataset->data_filename_ = filename;
     dataset->label_idx_ = label_idx_;
-    dataset->metadata_.Init(filename, config_.position_filename.c_str());
+    dataset->metadata_.Init(filename);
     if (!config_.two_round) {
       // read data in memory
       auto text_data = LoadTextDataToMemory(filename, dataset->metadata_, 0, 1, &num_global_data, &used_data_indices);
