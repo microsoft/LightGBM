@@ -9,7 +9,7 @@
 #include "cuda_single_gpu_tree_learner.hpp"
 
 #include <LightGBM/cuda/cuda_tree.hpp>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/network.h>
 #include <LightGBM/objective_function.h>

@@ -40,6 +40,9 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   select_features_by_node_(select_features_by_node),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
+  if (has_categorical_feature_ && config->use_quantized_grad) {
+    Log::Fatal("Quantized training on GPU with categorical features is not supported yet.");
+  }
   cuda_leaf_best_split_info_ = nullptr;
   cuda_best_split_info_ = nullptr;
   cuda_best_split_info_buffer_ = nullptr;

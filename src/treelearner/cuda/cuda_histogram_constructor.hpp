@@ -9,7 +9,7 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/tree.h>
 

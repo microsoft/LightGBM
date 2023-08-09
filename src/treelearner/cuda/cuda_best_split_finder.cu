@@ -929,7 +929,7 @@ __global__ void FindBestSplitsDiscretizedForLeafKernel(
   const bool use_16bit_bin = IS_LARGER ? (larger_leaf_num_bits_in_histogram_bin <= 16) : (smaller_leaf_num_bits_in_histogram_bin <= 16);
   if (is_feature_used_bytree[inner_feature_index]) {
     if (task->is_categorical) {
-      __threadfence();         // ensure store issued before trap
+      __threadfence();  // ensure store issued before trap
       asm("trap;");
     } else {
       if (!task->reverse) {

@@ -11,7 +11,7 @@
 
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/utils/threading.h>
 
 #include <algorithm>
