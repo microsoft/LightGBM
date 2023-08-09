@@ -14,7 +14,9 @@
 #include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/utils/threading.h>
 
+#include <algorithm>
 #include <random>
+#include <vector>
 
 #include "cuda_leaf_splits.hpp"
 #include "../gradient_discretizer.hpp"

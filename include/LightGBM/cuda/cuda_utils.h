@@ -7,10 +7,14 @@
 #define LIGHTGBM_CUDA_CUDA_UTILS_H_
 
 #ifdef USE_CUDA
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
+
 #include <LightGBM/utils/log.h>
+
+#include <algorithm>
 #include <vector>
 #include <cmath>
 

@@ -6,6 +6,8 @@
 
 #ifdef USE_CUDA
 
+#include <algorithm>
+
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 
 #include "cuda_gradient_discretizer.hpp"
