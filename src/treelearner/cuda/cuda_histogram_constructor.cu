@@ -451,7 +451,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
   dim3 grid_dim(grid_dim_x, grid_dim_y);
   dim3 block_dim(block_dim_x, block_dim_y);
   if (use_quantized_grad_) {
-    if (!USE_GLOBAL_MEM_BUFFER) {
+    if (USE_GLOBAL_MEM_BUFFER) {
       Log::Fatal("Discretized histogram construction with global memory buffer is not supported yet.");
     } else {
       if (cuda_row_data_->is_sparse()) {
