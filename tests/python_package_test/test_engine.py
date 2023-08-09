@@ -20,7 +20,7 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
@@ -749,7 +749,49 @@ def test_ranking_prediction_early_stopping():
 
 
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
-def test_ranking_with_position_information(tmp_path):
+def test_ranking_with_position_information_with_file(tmp_path):
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    params = {
+        'objective': 'lambdarank',
+        'verbose': -1,
+        'eval_at': [3],
+        'metric': 'ndcg'
+    }
+    copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    with open(str(tmp_path / 'rank.train.position'), "w") as out_file:
+        np.random.seed(0)
+        for _ in range(lgb_train.num_data()):
+            position = np.random.randint(28)
+            out_file.write(f"pos_{position}\n")
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    assert gbm_unbiased_with_file.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
+
+    # the performance of the baseline LambdaMART should not differ much from the case when positions are randomly assigned
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased_with_file.best_score['valid_0']['ndcg@3'], 0.02)
+
+    # add extra row to position file
+    with open(str(tmp_path / 'rank.train.position'), 'a') as file:
+        file.write('pos_1000\n')
+        file.close()
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    with pytest.raises(lgb.basic.LightGBMError, match="Positions size \(3006\) doesn't match data size"):
+        lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
+def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     params = {
         'objective': 'lambdarank',
@@ -767,15 +809,13 @@ def test_ranking_with_position_information(tmp_path):
     gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
     positions = []
-    with open(str(tmp_path / '_rank.train.position'), "w") as out_file:
-        np.random.seed(0)
-        for _ in range(lgb_train.num_data()):
-            position = np.random.randint(28)
-            positions.append(position)
-            out_file.write(f"pos_{position}\n")
+    np.random.seed(0)
+    for _ in range(lgb_train.num_data()):
+        position = np.random.randint(28)
+        positions.append(position)
     positions = np.array(positions)
 
-    # test setting positions through Dataset constructor
+    # test setting positions through Dataset constructor with numpy array
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=positions)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
@@ -783,12 +823,12 @@ def test_ranking_with_position_information(tmp_path):
     # the performance of the baseline LambdaMART should not differ much from the case when positions are randomly assigned
     assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.best_score['valid_0']['ndcg@3'], 0.02)
 
-    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
-    move(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
-    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
-    gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
-    assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
-    move(str(tmp_path / 'rank.train.position'), str(tmp_path / '_rank.train.position'))
+    if PANDAS_INSTALLED:
+        # test setting positions through Dataset constructor with pandas Series
+        lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=pd_Series(positions))
+        lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+        gbm_unbiased_pandas_series = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+        assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_pandas_series.best_score['valid_0']['ndcg@3']
 
     # test setting positions through set_position
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
@@ -800,16 +840,6 @@ def test_ranking_with_position_information(tmp_path):
     # test get_position works
     positions_from_get = lgb_train.get_position()
     np.testing.assert_array_equal(positions_from_get, positions)
-
-    # add extra row to position file
-    move(str(tmp_path / '_rank.train.position'), str(tmp_path / 'rank.train.position'))
-    with open(str(tmp_path / 'rank.train.position'), 'a') as file:
-        file.write('pos_1000\n')
-        file.close()
-    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
-    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
-    with pytest.raises(lgb.basic.LightGBMError, match="Positions size \(3006\) doesn't match data size"):
-        lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
 
 def test_early_stopping():
