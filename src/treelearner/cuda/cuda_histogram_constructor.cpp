@@ -106,7 +106,7 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
 
 void CUDAHistogramConstructor::ConstructHistogramForLeaf(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-  const CUDALeafSplitsStruct* cuda_larger_leaf_splits,
+  const CUDALeafSplitsStruct* /*cuda_larger_leaf_splits*/,
   const data_size_t num_data_in_smaller_leaf,
   const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf,

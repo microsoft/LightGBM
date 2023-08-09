@@ -168,6 +168,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
     const data_size_t num_data_in_larger_leaf = larger_leaf_index_ < 0 ? 0 : leaf_num_data_[larger_leaf_index_];
     const double sum_hessians_in_smaller_leaf = leaf_sum_hessians_[smaller_leaf_index_];
     const double sum_hessians_in_larger_leaf = larger_leaf_index_ < 0 ? 0 : leaf_sum_hessians_[larger_leaf_index_];
+    const uint8_t num_bits_in_histogram_bins = config_->use_quantized_grad ? cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_index_) : 0;
     cuda_histogram_constructor_->ConstructHistogramForLeaf(
       cuda_smaller_leaf_splits_->GetCUDAStruct(),
       cuda_larger_leaf_splits_->GetCUDAStruct(),
@@ -175,7 +176,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
       num_data_in_larger_leaf,
       sum_hessians_in_smaller_leaf,
       sum_hessians_in_larger_leaf,
-      cuda_gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_index_));
+      num_bits_in_histogram_bins);
     global_timer.Stop("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     global_timer.Start("CUDASingleGPUTreeLearner::FindBestSplitsForLeaf");
 

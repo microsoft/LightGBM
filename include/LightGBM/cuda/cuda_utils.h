@@ -123,7 +123,8 @@ class CUDAVector {
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
     if (size_ > 0 && data_ != nullptr) {
-      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size, __FILE__, __LINE__);
+      const size_t size_for_old_content = std::min<size_t>(size_, size);
+      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size_for_old_content, __FILE__, __LINE__);
     }
     DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
     data_ = new_data;
