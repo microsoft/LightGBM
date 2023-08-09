@@ -9,7 +9,7 @@ import random
 import re
 from os import getenv
 from pathlib import Path
-from shutil import copyfile, move
+from shutil import copyfile
 
 import numpy as np
 import psutil
