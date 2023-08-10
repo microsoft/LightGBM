@@ -12,11 +12,8 @@ namespace LightGBM {
 CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = num_data;
-  if (gpu_device_id >= 0) {
-    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
-  } else {
-    SetCUDADevice(0, __FILE__, __LINE__);
-  }
+  gpu_device_id_ = gpu_device_id >= 0 ? gpu_device_id : 0;
+  SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
   cuda_used_indices_ = nullptr;
   cuda_data_by_column_ = nullptr;
   cuda_column_bit_type_ = nullptr;
@@ -120,6 +117,7 @@ void CUDAColumnData::Init(const int num_columns,
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int column_index = 0; column_index < num_columns_; ++column_index) {
     OMP_LOOP_EX_BEGIN();
+    SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
     const int8_t bit_type = column_bit_type[column_index];
     if (column_data[column_index] != nullptr) {
       // is dense column
@@ -185,6 +183,7 @@ void CUDAColumnData::CopySubrow(
     #pragma omp parallel for schedule(static) num_threads(num_threads_)
     for (int column_index = 0; column_index < num_columns_; ++column_index) {
       OMP_LOOP_EX_BEGIN();
+      SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
       const uint8_t bit_type = column_bit_type_[column_index];
       if (bit_type == 8) {
         uint8_t* column_data = nullptr;
@@ -224,6 +223,7 @@ void CUDAColumnData::ResizeWhenCopySubrow(const data_size_t num_used_indices) {
   #pragma omp parallel for schedule(static) num_threads(num_threads_)
   for (int column_index = 0; column_index < num_columns_; ++column_index) {
     OMP_LOOP_EX_BEGIN();
+    SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
     const uint8_t bit_type = column_bit_type_[column_index];
     if (bit_type == 8) {
       uint8_t* column_data = reinterpret_cast<uint8_t*>(data_by_column_[column_index]);

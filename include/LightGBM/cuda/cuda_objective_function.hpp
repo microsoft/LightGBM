@@ -21,7 +21,10 @@ namespace LightGBM {
 template <typename HOST_OBJECTIVE>
 class CUDAObjectiveInterface: public HOST_OBJECTIVE {
  public:
-  explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {}
+  explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {
+    const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;
+    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
+  }
 
   explicit CUDAObjectiveInterface(const std::vector<std::string>& strs): HOST_OBJECTIVE(strs) {}
 
