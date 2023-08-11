@@ -122,8 +122,8 @@ fi
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda create -q -y -n $CONDA_ENV \
     cloudpickle \
-    dask-core \
-    distributed \
+    'dask-core>=2023.5.0' \
+    'distributed>=2023.5.0' \
     joblib \
     matplotlib \
     numpy \
