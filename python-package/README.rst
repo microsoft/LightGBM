@@ -20,8 +20,6 @@ Install from `PyPI <https://pypi.org/project/lightgbm>`_
 
     pip install lightgbm
 
-You may need to install `wheel <https://pythonwheels.com>`_ via ``pip install wheel`` first.
-
 Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** and **Linux** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <http://portablecl.org>`_ on **Linux**. Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
@@ -36,12 +34,43 @@ For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
 - For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
 
+Use LightGBM with Dask
+**********************
+
+.. warning::
+
+    Dask-package is only tested on Linux.
+
+To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[dask]'
+
+Use LightGBM with pandas
+************************
+
+To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pandas]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[pandas]'
+
+Use LightGBM with scikit-learn
+******************************
+
+To install all dependencies needed to use ``scikit-learn`` in LightGBM, append ``[scikit-learn]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[scikit-learn]'
+
 Build from Sources
 ******************
 
 .. code:: sh
 
-    pip install --no-binary :all: lightgbm
+    pip install --no-binary lightgbm lightgbm
 
 For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
 
@@ -60,7 +89,7 @@ Build Threadless Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--nomp
+    pip install lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
 
 All requirements, except the **OpenMP** requirement, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -71,7 +100,7 @@ Build MPI Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--mpi
+    pip install lightgbm --config-settings=cmake.define.USE_MPI=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -84,7 +113,7 @@ Build GPU Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--gpu
+    pip install lightgbm --config-settings=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -94,21 +123,24 @@ For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--gpu --install-option="--opencl-include-dir=/usr/local/cuda/include/" --install-option="--opencl-library=/usr/local/cuda/lib64/libOpenCL.so"
+    pip install lightgbm \
+      --config-settings=cmake.define.USE_GPU=ON \
+      --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
+      --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
 
-All available options:
+All available options that can be passed via ``cmake.define.{option}``.
 
-- boost-root
+- Boost_ROOT
 
-- boost-dir
+- Boost_DIR
 
-- boost-include-dir
+- Boost_INCLUDE_DIR
 
-- boost-librarydir
+- BOOST_LIBRARYDIR
 
-- opencl-include-dir
+- OpenCL_INCLUDE_DIR
 
-- opencl-library
+- OpenCL_LIBRARY
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
@@ -117,7 +149,7 @@ Build CUDA Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--cuda
+    pip install lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
 
@@ -130,7 +162,7 @@ Build HDFS Version
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--hdfs
+    pip install lightgbm --config-settings=cmake.define.USE_HDFS=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -143,7 +175,9 @@ Build with MinGW-w64 on Windows
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--mingw
+    # in sh.exe, git bash, or other Unix-like shell
+    export CMAKE_GENERATOR='MinGW Makefiles'
+    pip install lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
 `CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
@@ -155,7 +189,10 @@ Build 32-bit Version with 32-bit Python
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--bit32
+    # in sh.exe, git bash, or other Unix-like shell
+    export CMAKE_GENERATOR='Visual Studio 17 2022'
+    export CMAKE_GENERATOR_PLATFORM='Win32'
+    pip install --no-binary lightgbm lightgbm
 
 By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
 
@@ -166,7 +203,7 @@ Build with Time Costs Output
 
 .. code:: sh
 
-    pip install lightgbm --install-option=--time-costs
+    pip install lightgbm --config-settings=cmake.define.USE_TIMETAG=ON
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
 
@@ -193,49 +230,48 @@ For **Windows** users, if you get any errors during installation and there is th
 .. code:: sh
 
     git clone --recursive https://github.com/microsoft/LightGBM.git
-    cd LightGBM/python-package
     # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
-    python setup.py install
+    sh ./build-python.sh install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
 
-Run ``python setup.py install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
 
-Run ``python setup.py install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``python setup.py install --gpu --opencl-include-dir=/usr/local/cuda/include/``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
+Run ``sh ./build-python.sh install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
-Run ``python setup.py install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 
-Run ``python setup.py install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
-Run ``python setup.py install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
-If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``python setup.py install --precompile``.
+If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
 ****************
 
-You can use ``python setup.py bdist_wheel`` instead of ``python setup.py install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+You can use ``sh ./build-python.sh install bdist_wheel`` instead of ``sh ./build-python.sh install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
 
-Install Dask-package
-''''''''''''''''''''
+Build With MSBuild
+******************
 
-.. warning::
-
-    Dask-package is only tested on Linux.
-
-To install all additional dependencies required for Dask-package, you can append ``[dask]`` to LightGBM package name:
+To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running the following from the root of the repo.
 
 .. code:: sh
 
-    pip install lightgbm[dask]
+  MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
-Or replace ``python setup.py install`` with ``pip install -e .[dask]`` if you are installing the package from source files.
+Then install the Python package using that library.
+
+.. code:: sh
+
+  sh ./build-python.sh install --precompile
 
 Troubleshooting
 ---------------
@@ -260,7 +296,7 @@ To check that a contribution to the package matches its style expectations, run 
 
 .. code:: sh
 
-    sh .ci/lint-python.sh .
+    sh .ci/lint-python.sh
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE

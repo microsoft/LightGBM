@@ -991,7 +991,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
     nullptr, nullptr,
     nullptr, nullptr);
   // then construct sparse features on CPU
-  train_data_->ConstructHistograms(is_sparse_feature_used,
+  train_data_->ConstructHistograms<false, 0>(is_sparse_feature_used,
     smaller_leaf_splits_->data_indices(), smaller_leaf_splits_->num_data_in_leaf(),
     gradients_, hessians_,
     ordered_gradients_.data(), ordered_hessians_.data(),
@@ -1056,7 +1056,7 @@ void GPUTreeLearner::ConstructHistograms(const std::vector<int8_t>& is_feature_u
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data());
     // then construct sparse features on CPU
-    train_data_->ConstructHistograms(is_sparse_feature_used,
+    train_data_->ConstructHistograms<false, 0>(is_sparse_feature_used,
       larger_leaf_splits_->data_indices(), larger_leaf_splits_->num_data_in_leaf(),
       gradients_, hessians_,
       ordered_gradients_.data(), ordered_hessians_.data(),

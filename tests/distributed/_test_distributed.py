@@ -106,7 +106,7 @@ class DistributedMockup:
         for i, partition in enumerate(partitions):
             np.savetxt(str(TESTS_DIR / f'train{i}.txt'), partition, delimiter=',')
 
-    def fit(self, partitions: List[np.ndarray], train_config: Dict = {}) -> None:
+    def fit(self, partitions: List[np.ndarray], train_config: Dict) -> None:
         """Run the distributed training process on a single machine.
 
         For each worker i:
@@ -134,7 +134,7 @@ class DistributedMockup:
             if result.returncode != 0:
                 raise RuntimeError('Error in training')
 
-    def predict(self, predict_config: Dict[str, Any] = {}) -> np.ndarray:
+    def predict(self, predict_config: Dict[str, Any]) -> np.ndarray:
         """Compute the predictions using the model created in the fit step.
 
         predict_config is used to predict the training set train.txt
@@ -178,7 +178,7 @@ def test_classifier(executable):
     }
     clf = DistributedMockup(executable)
     clf.fit(partitions, train_params)
-    y_probas = clf.predict()
+    y_probas = clf.predict(predict_config={})
     y_pred = y_probas > 0.5
     assert accuracy_score(clf.label_, y_pred) == 1.
 
@@ -194,5 +194,5 @@ def test_regressor(executable):
     }
     reg = DistributedMockup(executable)
     reg.fit(partitions, train_params)
-    y_pred = reg.predict()
+    y_pred = reg.predict(predict_config={})
     np.testing.assert_allclose(y_pred, reg.label_, rtol=0.2, atol=50.)

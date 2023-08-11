@@ -2,6 +2,7 @@
 import filecmp
 import numbers
 import re
+from copy import deepcopy
 from os import getenv
 from pathlib import Path
 
@@ -324,7 +325,7 @@ def test_add_features_same_booster_behaviour(tmp_path):
         d.set_label(y)
         b1 = lgb.Booster(train_set=d1)
         b = lgb.Booster(train_set=d)
-        for k in range(10):
+        for _ in range(10):
             b.update()
             b1.update()
         dname = tmp_path / "d.txt"
@@ -365,7 +366,7 @@ def test_add_features_from_different_sources():
 
         # test that method works for different data types
         d1 = lgb.Dataset(x_1, feature_name=names, free_raw_data=False).construct()
-        res_feature_names = [name for name in names]
+        res_feature_names = deepcopy(names)
         for idx, x_2 in enumerate(xxs, 2):
             original_type = type(d1.get_data())
             d2 = lgb.Dataset(x_2, feature_name=names, free_raw_data=False).construct()
@@ -392,11 +393,11 @@ def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_feat
 
     dataset_b = lgb.Dataset(arr_b).construct()
 
-    original_handle = dataset_a.handle.value
+    original_handle = dataset_a._handle.value
     dataset_a.add_features_from(dataset_b)
     assert dataset_a.num_feature() == 6
     assert dataset_a.num_data() == 100
-    assert dataset_a.handle.value == original_handle
+    assert dataset_a._handle.value == original_handle
 
 
 def test_cegb_affects_behavior(tmp_path):
@@ -407,7 +408,7 @@ def test_cegb_affects_behavior(tmp_path):
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
     base = lgb.Booster(train_set=ds)
-    for k in range(10):
+    for _ in range(10):
         base.update()
     basename = tmp_path / "basename.txt"
     base.save_model(basename)
@@ -419,7 +420,7 @@ def test_cegb_affects_behavior(tmp_path):
              {'cegb_penalty_split': 1}]
     for case in cases:
         booster = lgb.Booster(train_set=ds, params=case)
-        for k in range(10):
+        for _ in range(10):
             booster.update()
         casename = tmp_path / "casename.txt"
         booster.save_model(casename)
@@ -445,7 +446,7 @@ def test_cegb_scaling_equalities(tmp_path):
     for (p1, p2) in pairs:
         booster1 = lgb.Booster(train_set=ds, params=p1)
         booster2 = lgb.Booster(train_set=ds, params=p2)
-        for k in range(10):
+        for _ in range(10):
             booster1.update()
             booster2.update()
         p1name = tmp_path / "p1.txt"
@@ -752,10 +753,10 @@ def test_feature_num_bin(min_data_in_bin):
     ]).T
     n_continuous = X.shape[1] - 1
     feature_name = [f'x{i}' for i in range(n_continuous)] + ['cat1']
-    ds_kwargs = dict(
-        params={'min_data_in_bin': min_data_in_bin},
-        categorical_feature=[n_continuous],  # last feature
-    )
+    ds_kwargs = {
+        "params": {'min_data_in_bin': min_data_in_bin},
+        "categorical_feature": [n_continuous],  # last feature
+    }
     ds = lgb.Dataset(X, feature_name=feature_name, **ds_kwargs).construct()
     expected_num_bins = [
         100 // min_data_in_bin + 1,  # extra bin for zero

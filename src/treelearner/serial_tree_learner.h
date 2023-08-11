@@ -24,6 +24,7 @@
 #include "col_sampler.hpp"
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
+#include "gradient_discretizer.hpp"
 #include "leaf_splits.hpp"
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
@@ -36,7 +37,7 @@
 
 namespace LightGBM {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
@@ -170,6 +171,8 @@ class SerialTreeLearner: public TreeLearner {
 
   std::set<int> FindAllForceFeatures(Json force_split_leaf_setting);
 
+  void CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index);
+
   /*!
   * \brief Get the number of data in a leaf
   * \param leaf_idx The index of leaf
@@ -230,6 +233,7 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

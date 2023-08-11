@@ -6,6 +6,7 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
+import operator
 import socket
 from collections import defaultdict
 from copy import deepcopy
@@ -18,7 +19,7 @@ import numpy as np
 import scipy.sparse as ss
 
 from .basic import LightGBMError, _choose_param_value, _ConfigAliases, _log_info, _log_warning
-from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, LGBMNotFittedError, concat,
+from .compat import (DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED, Client, Future, LGBMNotFittedError, concat,
                      dask_Array, dask_array_from_delayed, dask_bag_from_delayed, dask_DataFrame, dask_Series,
                      default_client, delayed, pd_DataFrame, pd_Series, wait)
 from .sklearn import (LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor, _LGBM_ScikitCustomObjectiveFunction,
@@ -38,18 +39,21 @@ _DaskPart = Union[np.ndarray, pd_DataFrame, pd_Series, ss.spmatrix]
 _PredictionDtype = Union[Type[np.float32], Type[np.float64], Type[np.int32], Type[np.int64]]
 
 
-class _HostWorkers:
+class _RemoteSocket:
+    def acquire(self) -> int:
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(('', 0))
+        return self.socket.getsockname()[1]
 
-    def __init__(self, default: str, all_workers: List[str]):
-        self.default = default
-        self.all_workers = all_workers
+    def release(self) -> None:
+        self.socket.close()
 
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, type(self))
-            and self.default == other.default
-            and self.all_workers == other.all_workers
-        )
+
+def _acquire_port() -> Tuple[_RemoteSocket, int]:
+    s = _RemoteSocket()
+    port = s.acquire()
+    return s, port
 
 
 class _DatasetNames(Enum):
@@ -83,73 +87,40 @@ def _get_dask_client(client: Optional[Client]) -> Client:
         return client
 
 
-def _find_n_open_ports(n: int) -> List[int]:
-    """Find n random open ports on localhost.
-
-    Returns
-    -------
-    ports : list of int
-        n random open ports on localhost.
-    """
-    sockets = []
-    for _ in range(n):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(('', 0))
-        sockets.append(s)
-    ports = []
-    for s in sockets:
-        ports.append(s.getsockname()[1])
-        s.close()
-    return ports
-
-
-def _group_workers_by_host(worker_addresses: Iterable[str]) -> Dict[str, _HostWorkers]:
-    """Group all worker addresses by hostname.
-
-    Returns
-    -------
-    host_to_workers : dict
-        mapping from hostname to all its workers.
-    """
-    host_to_workers: Dict[str, _HostWorkers] = {}
-    for address in worker_addresses:
-        hostname = urlparse(address).hostname
-        if not hostname:
-            raise ValueError(f"Could not parse host name from worker address '{address}'")
-        if hostname not in host_to_workers:
-            host_to_workers[hostname] = _HostWorkers(default=address, all_workers=[address])
-        else:
-            host_to_workers[hostname].all_workers.append(address)
-    return host_to_workers
-
-
 def _assign_open_ports_to_workers(
     client: Client,
-    host_to_workers: Dict[str, _HostWorkers]
-) -> Dict[str, int]:
+    workers: List[str],
+) -> Tuple[Dict[str, Future], Dict[str, int]]:
     """Assign an open port to each worker.
 
     Returns
     -------
+    worker_to_socket_future: dict
+        mapping from worker address to a future pointing to the remote socket.
     worker_to_port: dict
-        mapping from worker address to an open port.
+        mapping from worker address to an open port in the worker's host.
     """
-    host_ports_futures = {}
-    for hostname, workers in host_to_workers.items():
-        n_workers_in_host = len(workers.all_workers)
-        host_ports_futures[hostname] = client.submit(
-            _find_n_open_ports,
-            n=n_workers_in_host,
-            workers=[workers.default],
-            pure=False,
+    # Acquire port in worker
+    worker_to_future = {}
+    for worker in workers:
+        worker_to_future[worker] = client.submit(
+            _acquire_port,
+            workers=[worker],
             allow_other_workers=False,
+            pure=False,
         )
-    found_ports = client.gather(host_ports_futures)
-    worker_to_port = {}
-    for hostname, workers in host_to_workers.items():
-        for worker, port in zip(workers.all_workers, found_ports[hostname]):
-            worker_to_port[worker] = port
-    return worker_to_port
+
+    # schedule futures to retrieve each element of the tuple
+    worker_to_socket_future = {}
+    worker_to_port_future = {}
+    for worker, socket_future in worker_to_future.items():
+        worker_to_socket_future[worker] = client.submit(operator.itemgetter(0), socket_future)
+        worker_to_port_future[worker] = client.submit(operator.itemgetter(1), socket_future)
+
+    # retrieve ports
+    worker_to_port = client.gather(worker_to_port_future)
+
+    return worker_to_socket_future, worker_to_port
 
 
 def _concat(seq: List[_DaskPart]) -> _DaskPart:
@@ -190,6 +161,7 @@ def _train_part(
     num_machines: int,
     return_model: bool,
     time_out: int,
+    remote_socket: _RemoteSocket,
     **kwargs: Any
 ) -> Optional[LGBMModel]:
     network_params = {
@@ -320,6 +292,8 @@ def _train_part(
             kwargs['eval_class_weight'] = [eval_class_weight[i] for i in eval_component_idx]
 
     model = model_factory(**params)
+    if remote_socket is not None:
+        remote_socket.release()
     try:
         if is_ranker:
             model.fit(
@@ -576,13 +550,48 @@ def _train(
         # pad eval sets when they come in different sizes.
         n_largest_eval_parts = max(x[0].npartitions for x in eval_set)
 
-        eval_sets = defaultdict(list)
+        eval_sets: Dict[
+            int,
+            List[
+                Union[
+                    _DatasetNames,
+                    Tuple[
+                        List[Optional[_DaskMatrixLike]],
+                        List[Optional[_DaskVectorLike]]
+                    ]
+                ]
+            ]
+        ] = defaultdict(list)
         if eval_sample_weight:
-            eval_sample_weights = defaultdict(list)
+            eval_sample_weights: Dict[
+                int,
+                List[
+                    Union[
+                        _DatasetNames,
+                        List[Optional[_DaskVectorLike]]
+                    ]
+                ]
+            ] = defaultdict(list)
         if eval_group:
-            eval_groups = defaultdict(list)
+            eval_groups: Dict[
+                int,
+                List[
+                    Union[
+                        _DatasetNames,
+                        List[Optional[_DaskVectorLike]]
+                    ]
+                ]
+            ] = defaultdict(list)
         if eval_init_score:
-            eval_init_scores = defaultdict(list)
+            eval_init_scores: Dict[
+                int,
+                List[
+                    Union[
+                        _DatasetNames,
+                        List[Optional[_DaskMatrixLike]]
+                    ]
+                ]
+            ] = defaultdict(list)
 
         for i, (X_eval, y_eval) in enumerate(eval_set):
             n_this_eval_parts = X_eval.npartitions
@@ -610,8 +619,8 @@ def _train(
                         eval_sets[parts_idx].append(([x_e], [y_e]))
                     else:
                         # append additional chunks of this eval set to this part.
-                        eval_sets[parts_idx][-1][0].append(x_e)
-                        eval_sets[parts_idx][-1][1].append(y_e)
+                        eval_sets[parts_idx][-1][0].append(x_e)  # type: ignore[index, union-attr]
+                        eval_sets[parts_idx][-1][1].append(y_e)  # type: ignore[index, union-attr]
 
             if eval_sample_weight:
                 if eval_sample_weight[i] is sample_weight:
@@ -631,7 +640,7 @@ def _train(
                         if j < n_parts:
                             eval_sample_weights[parts_idx].append([w_e])
                         else:
-                            eval_sample_weights[parts_idx][-1].append(w_e)
+                            eval_sample_weights[parts_idx][-1].append(w_e)  # type: ignore[union-attr]
 
             if eval_init_score:
                 if eval_init_score[i] is init_score:
@@ -649,7 +658,7 @@ def _train(
                         if j < n_parts:
                             eval_init_scores[parts_idx].append([init_score_e])
                         else:
-                            eval_init_scores[parts_idx][-1].append(init_score_e)
+                            eval_init_scores[parts_idx][-1].append(init_score_e)  # type: ignore[union-attr]
 
             if eval_group:
                 if eval_group[i] is group:
@@ -667,7 +676,7 @@ def _train(
                         if j < n_parts:
                             eval_groups[parts_idx].append([g_e])
                         else:
-                            eval_groups[parts_idx][-1].append(g_e)
+                            eval_groups[parts_idx][-1].append(g_e)  # type: ignore[union-attr]
 
         # assign sub-eval_set components to worker parts.
         for parts_idx, e_set in eval_sets.items():
@@ -686,7 +695,8 @@ def _train(
 
     for part in parts:
         if part.status == 'error':  # type: ignore
-            return part  # trigger error locally
+            # trigger error locally
+            return part  # type: ignore[return-value]
 
     # Find locations of all parts and map them to particular Dask workers
     key_to_part_dict = {part.key: part for part in parts}  # type: ignore
@@ -701,7 +711,7 @@ def _train(
         for worker in worker_map:
             has_eval_set = False
             for part in worker_map[worker]:
-                if 'eval_set' in part.result():
+                if 'eval_set' in part.result():  # type: ignore[attr-defined]
                     has_eval_set = True
                     break
 
@@ -741,6 +751,7 @@ def _train(
     machines = params.pop("machines")
 
     # figure out network params
+    worker_to_socket_future: Dict[str, Future] = {}
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
@@ -751,7 +762,7 @@ def _train(
     else:
         if listen_port_in_params:
             _log_info("Using passed-in 'local_listen_port' for all workers")
-            unique_hosts = set(urlparse(a).hostname for a in worker_addresses)
+            unique_hosts = {urlparse(a).hostname for a in worker_addresses}
             if len(unique_hosts) < len(worker_addresses):
                 msg = (
                     "'local_listen_port' was provided in Dask training parameters, but at least one "
@@ -766,8 +777,7 @@ def _train(
             }
         else:
             _log_info("Finding random open ports for workers")
-            host_to_workers = _group_workers_by_host(worker_map.keys())
-            worker_address_to_port = _assign_open_ports_to_workers(client, host_to_workers)
+            worker_to_socket_future, worker_address_to_port = _assign_open_ports_to_workers(client, list(worker_map.keys()))
 
         machines = ','.join([
             f'{urlparse(worker_address).hostname}:{port}'
@@ -795,6 +805,7 @@ def _train(
             local_listen_port=worker_address_to_port[worker],
             num_machines=num_machines,
             time_out=params.get('time_out', 120),
+            remote_socket=worker_to_socket_future.get(worker, None),
             return_model=(worker == master_worker),
             workers=[worker],
             allow_other_workers=False,
@@ -836,6 +847,7 @@ def _predict_part(
     **kwargs: Any
 ) -> _DaskPart:
 
+    result: _DaskPart
     if part.shape[0] == 0:
         result = np.array([])
     elif pred_proba:
@@ -1001,7 +1013,7 @@ def _predict(
             **kwargs,
         )
         pred_row = predict_fn(data_row)
-        chunks = (data.chunks[0],)
+        chunks: Tuple[int, ...] = (data.chunks[0],)
         map_blocks_kwargs = {}
         if len(pred_row.shape) > 1:
             chunks += (pred_row.shape[1],)

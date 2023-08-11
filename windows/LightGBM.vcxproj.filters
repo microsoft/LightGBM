@@ -51,6 +51,9 @@
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\gradient_discretizer.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\application\predictor.hpp">
       <Filter>src\application</Filter>
     </ClInclude>
@@ -336,6 +339,9 @@
       <Filter>src\io</Filter>
     </ClCompile>
     <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\treelearner\gradient_discretizer.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
   </ItemGroup>

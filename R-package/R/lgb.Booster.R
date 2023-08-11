@@ -843,6 +843,9 @@ Booster <- R6::R6Class(
 #'             passing the prediction type through \code{params} instead of through this argument might
 #'             result in factor levels for classification objectives not being applied correctly to the
 #'             resulting output.
+#'
+#'             \emph{New in version 4.0.0}
+#'
 #' @param start_iteration int or None, optional (default=None)
 #'                        Start index of the iteration to predict.
 #'                        If None or <= 0, starts from the first iteration.
@@ -861,6 +864,9 @@ NULL
 #' @name predict.lgb.Booster
 #' @title Predict method for LightGBM model
 #' @description Predicted values based on class \code{lgb.Booster}
+#'
+#'              \emph{New in version 4.0.0}
+#'
 #' @details If the model object has been configured for fast single-row predictions through
 #'          \link{lgb.configure_fast_predict}, this function will use the prediction parameters
 #'          that were configured for it - as such, extra prediction parameters should not be passed
@@ -878,6 +884,9 @@ NULL
 #'                If single-row predictions are going to be performed frequently, it is recommended to
 #'                pre-configure the model object for fast single-row sparse predictions through function
 #'                \link{lgb.configure_fast_predict}.
+#'
+#'                \emph{Changed from 'data', in version 4.0.0}
+#'
 #' @param header only used for prediction for text file. True if text file has header
 #' @param ... ignored
 #' @return For prediction types that are meant to always return one output per observation (e.g. when predicting
@@ -919,6 +928,7 @@ NULL
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1077,7 +1087,10 @@ predict.lgb.Booster <- function(object,
 #' X <- as.matrix(mtcars[, -1L])
 #' y <- mtcars[, 1L]
 #' dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-#' params <- list(min_data_in_leaf = 2L)
+#' params <- list(
+#'   min_data_in_leaf = 2L
+#'   , num_threads = 2L
+#' )
 #' model <- lgb.train(
 #'   params = params
 #'  , data = dtrain
@@ -1137,6 +1150,9 @@ lgb.configure_fast_predict <- function(model,
 #' @name print.lgb.Booster
 #' @title Print method for LightGBM model
 #' @description Show summary information about a LightGBM model object (same as \code{summary}).
+#'
+#'              \emph{New in version 4.0.0}
+#'
 #' @param x Object of class \code{lgb.Booster}
 #' @param ... Not used
 #' @return The same input \code{x}, returned as invisible.
@@ -1186,6 +1202,9 @@ print.lgb.Booster <- function(x, ...) {
 #' @name summary.lgb.Booster
 #' @title Summary method for LightGBM model
 #' @description Show summary information about a LightGBM model object (same as \code{print}).
+#'
+#'              \emph{New in version 4.0.0}
+#'
 #' @param object Object of class \code{lgb.Booster}
 #' @param ... Not used
 #' @return The same input \code{object}, returned as invisible.
@@ -1216,6 +1235,7 @@ summary.lgb.Booster <- function(object, ...) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1281,6 +1301,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1336,6 +1357,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1386,6 +1408,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(

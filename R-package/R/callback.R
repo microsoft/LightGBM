@@ -24,7 +24,7 @@ CB_ENV <- R6::R6Class(
 )
 
 # Format the evaluation metric string
-format.eval.string <- function(eval_res, eval_err) {
+.format_eval_string <- function(eval_res, eval_err) {
 
   # Check for empty evaluation string
   if (is.null(eval_res) || length(eval_res) == 0L) {
@@ -40,7 +40,7 @@ format.eval.string <- function(eval_res, eval_err) {
 
 }
 
-merge.eval.string <- function(env) {
+.merge_eval_string <- function(env) {
 
   # Check length of evaluation list
   if (length(env$eval_list) <= 0L) {
@@ -63,7 +63,7 @@ merge.eval.string <- function(env) {
     }
 
     # Set error message
-    msg <- c(msg, format.eval.string(eval_res = env$eval_list[[j]], eval_err = eval_err))
+    msg <- c(msg, .format_eval_string(eval_res = env$eval_list[[j]], eval_err = eval_err))
 
   }
 
@@ -86,11 +86,11 @@ cb_print_evaluation <- function(period) {
       if ((i - 1L) %% period == 0L || is.element(i, c(env$begin_iteration, env$end_iteration))) {
 
         # Merge evaluation string
-        msg <- merge.eval.string(env = env)
+        msg <- .merge_eval_string(env = env)
 
         # Check if message is existing
         if (nchar(msg) > 0L) {
-          print(merge.eval.string(env = env))
+          print(.merge_eval_string(env = env))
         }
 
       }
@@ -270,7 +270,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
 
           # Prepare to print if verbose
           if (verbose) {
-            best_msg[[i]] <<- as.character(merge.eval.string(env = env))
+            best_msg[[i]] <<- as.character(.merge_eval_string(env = env))
           }
 
         } else {

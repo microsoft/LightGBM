@@ -301,7 +301,7 @@ class _EarlyStoppingCallback:
 
         self._reset_storages()
 
-        n_metrics = len(set(m[1] for m in env.evaluation_result_list))
+        n_metrics = len({m[1] for m in env.evaluation_result_list})
         n_datasets = len(env.evaluation_result_list) // n_metrics
         if isinstance(self.min_delta, list):
             if not all(t >= 0 for t in self.min_delta):
@@ -406,6 +406,8 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
         Minimum improvement in score to keep training.
         If float, this single value is used for all metrics.
         If list, its length should match the total number of metrics.
+
+        .. versionadded:: 4.0.0
 
     Returns
     -------

@@ -886,13 +886,13 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         min_delta = metric2min_delta[metric[0]]
     else:
         min_delta = [metric2min_delta[m] for m in metric]
-    train_kwargs = dict(
-        params=params,
-        train_set=train_ds,
-        num_boost_round=50,
-        valid_sets=[train_ds, valid_ds],
-        valid_names=['training', 'valid'],
-    )
+    train_kwargs = {
+        "params": params,
+        "train_set": train_ds,
+        "num_boost_round": 50,
+        "valid_sets": [train_ds, valid_ds],
+        "valid_names": ['training', 'valid'],
+    }
 
     # regular early stopping
     evals_result = {}
@@ -1073,6 +1073,67 @@ def test_cv():
     cv_res_lambda_obj = lgb.cv(params_lambdarank, lgb_train, num_boost_round=10,
                                folds=GroupKFold(n_splits=3))
     np.testing.assert_allclose(cv_res_lambda['valid ndcg@3-mean'], cv_res_lambda_obj['valid ndcg@3-mean'])
+
+
+def test_cv_works_with_init_model(tmp_path):
+    X, y = make_synthetic_regression()
+    params = {'objective': 'regression', 'verbose': -1}
+    num_train_rounds = 2
+    lgb_train = lgb.Dataset(X, y, free_raw_data=False)
+    bst = lgb.train(
+        params=params,
+        train_set=lgb_train,
+        num_boost_round=num_train_rounds
+    )
+    preds_raw = bst.predict(X, raw_score=True)
+    model_path_txt = str(tmp_path / 'lgb.model')
+    bst.save_model(model_path_txt)
+
+    num_cv_rounds = 5
+    cv_kwargs = {
+        "num_boost_round": num_cv_rounds,
+        "nfold": 3,
+        "stratified": False,
+        "shuffle": False,
+        "seed": 708,
+        "return_cvbooster": True,
+        "params": params
+    }
+
+    # init_model from an in-memory Booster
+    cv_res = lgb.cv(
+        train_set=lgb_train,
+        init_model=bst,
+        **cv_kwargs
+    )
+    cv_bst_w_in_mem_init_model = cv_res["cvbooster"]
+    assert cv_bst_w_in_mem_init_model.current_iteration() == [num_train_rounds + num_cv_rounds] * 3
+    for booster in cv_bst_w_in_mem_init_model.boosters:
+        np.testing.assert_allclose(
+            preds_raw,
+            booster.predict(X, raw_score=True, num_iteration=num_train_rounds)
+        )
+
+    # init_model from a text file
+    cv_res = lgb.cv(
+        train_set=lgb_train,
+        init_model=model_path_txt,
+        **cv_kwargs
+    )
+    cv_bst_w_file_init_model = cv_res["cvbooster"]
+    assert cv_bst_w_file_init_model.current_iteration() == [num_train_rounds + num_cv_rounds] * 3
+    for booster in cv_bst_w_file_init_model.boosters:
+        np.testing.assert_allclose(
+            preds_raw,
+            booster.predict(X, raw_score=True, num_iteration=num_train_rounds)
+        )
+
+    # predictions should be identical
+    for i in range(3):
+        np.testing.assert_allclose(
+            cv_bst_w_in_mem_init_model.boosters[i].predict(X),
+            cv_bst_w_file_init_model.boosters[i].predict(X)
+        )
 
 
 def test_cvbooster():
@@ -1710,7 +1771,7 @@ def test_monotone_constraints(test_with_categorical_variable):
             for tree in tree_str:
                 # split_features are in 4th line.
                 features = tree.splitlines()[3].split("=")[1].split(" ")
-                features = set(f"Column_{f}" for f in features)
+                features = {f"Column_{f}" for f in features}
                 feature_sets.append(features)
             return np.array(feature_sets)
 
@@ -2799,14 +2860,14 @@ def test_early_stopping_for_only_first_metric():
     iter_valid1_l2 = 3
     iter_valid2_l1 = 3
     iter_valid2_l2 = 15
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 2
+    assert len({iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2}) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
 
     iter_cv_l1 = 15
     iter_cv_l2 = 13
-    assert len(set([iter_cv_l1, iter_cv_l2])) == 2
+    assert len({iter_cv_l1, iter_cv_l2}) == 2
     iter_cv_min = min([iter_cv_l1, iter_cv_l2])
 
     # test for lgb.train
@@ -4055,3 +4116,19 @@ def test_train_raises_informative_error_for_params_of_wrong_type():
     dtrain = lgb.Dataset(X, label=y)
     with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
+
+
+def test_quantized_training():
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, label=y)
+    bst_params = {'num_leaves': 15, 'verbose': -1, 'seed': 0}
+    bst = lgb.train(bst_params, ds, num_boost_round=10)
+    rmse = np.sqrt(np.mean((bst.predict(X) - y) ** 2))
+    bst_params.update({
+        'use_quantized_grad': True,
+        'num_grad_quant_bins': 30,
+        'quant_train_renew_leaf': True,
+    })
+    quant_bst = lgb.train(bst_params, ds, num_boost_round=10)
+    quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
+    assert quant_rmse < rmse + 6.0

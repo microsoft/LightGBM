@@ -30,7 +30,9 @@ may allow you to pass other types of data like \code{matrix} and then separately
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
 \item{weights}{Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
-observations / rows have the same importance / weight.}
+               observations / rows have the same importance / weight.
+
+               \emph{Changed from 'weight', in version 4.0.0}}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
@@ -67,9 +69,13 @@ set to the iteration number of the best iteration.}
                  (note that parameter \code{num_class} in this case will also be determined automatically from
                  \code{label}).
                  \item Otherwise, will use objective \code{"regression"}.
-                 }}
+                 }
 
-\item{init_score}{initial score is the base prediction lightgbm will boost from}
+                 \emph{New in version 4.0.0}}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from
+
+                  \emph{New in version 4.0.0}}
 
 \item{num_threads}{Number of parallel threads to use. For best speed, this should be set to the number of
                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
@@ -86,7 +92,9 @@ set to the iteration number of the best iteration.}
                    \code{RhpcBLASctl} to be installed.
 
                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
-                   if passed there.}
+                   if passed there.
+
+                   \emph{New in version 4.0.0}}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{

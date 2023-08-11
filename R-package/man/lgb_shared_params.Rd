@@ -105,6 +105,8 @@ Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
+
+         \emph{New in version 4.0.0}
 }
 
 \keyword{internal}

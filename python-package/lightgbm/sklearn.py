@@ -484,6 +484,9 @@ class LGBMModel(_LGBMModelBase):
             threads configured for OpenMP in the system. A value of ``None`` (the default) corresponds
             to using the number of physical cores in the system (its correct detection requires
             either the ``joblib`` or the ``psutil`` util libraries to be installed).
+
+            .. versionchanged:: 4.0.0
+
         importance_type : str, optional (default='split')
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
@@ -746,9 +749,13 @@ class LGBMModel(_LGBMModelBase):
 
         # Do not modify original args in fit function
         # Refer to https://github.com/microsoft/LightGBM/pull/2619
-        eval_metric_list = copy.deepcopy(eval_metric)
-        if not isinstance(eval_metric_list, list):
-            eval_metric_list = [eval_metric_list]
+        eval_metric_list: List[Union[str, _LGBM_ScikitCustomEvalFunction]]
+        if eval_metric is None:
+            eval_metric_list = []
+        elif isinstance(eval_metric, list):
+            eval_metric_list = copy.deepcopy(eval_metric)
+        else:
+            eval_metric_list = [copy.deepcopy(eval_metric)]
 
         # Separate built-in from callable evaluation metrics
         eval_metrics_callable = [_EvalFunctionWrapper(f) for f in eval_metric_list if callable(f)]
@@ -956,7 +963,7 @@ class LGBMModel(_LGBMModelBase):
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
-        return self._objective
+        return self._objective  # type: ignore[return-value]
 
     @property
     def n_estimators_(self) -> int:
@@ -964,6 +971,8 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        
+        .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
@@ -975,6 +984,8 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
+        
+        .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')

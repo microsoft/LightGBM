@@ -494,11 +494,10 @@ Dataset <- R6::R6Class(
         if (info_len > 0L) {
 
           # Get back fields
-          ret <- NULL
-          ret <- if (field_name == "group") {
-            integer(info_len)
+          if (field_name == "group") {
+            ret <- integer(info_len)
           } else {
-            numeric(info_len)
+            ret <- numeric(info_len)
           }
 
           .Call(

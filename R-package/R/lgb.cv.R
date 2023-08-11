@@ -59,6 +59,7 @@ CVBooster <- R6::R6Class(
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' model <- lgb.cv(
 #'   params = params
@@ -223,8 +224,6 @@ lgb.cv <- function(params = list()
     if (!identical(class(folds), "list") || length(folds) < 2L) {
       stop(sQuote("folds"), " must be a list with 2 or more elements that are vectors of indices for each CV-fold")
     }
-
-    nfold <- length(folds)
 
   } else {
 

@@ -56,7 +56,9 @@ If <= 0, all iterations from start_iteration are used (no limits).}
             If the model was fit through function \link{lightgbm} and it was passed a factor as labels,
             passing the prediction type through \code{params} instead of through this argument might
             result in factor levels for classification objectives not being applied correctly to the
-            resulting output.}
+            resulting output.
+
+            \emph{New in version 4.0.0}}
 
 \item{params}{a list of additional named parameters. See
 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#predict-parameters}{
@@ -117,7 +119,10 @@ data(mtcars)
 X <- as.matrix(mtcars[, -1L])
 y <- mtcars[, 1L]
 dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-params <- list(min_data_in_leaf = 2L)
+params <- list(
+  min_data_in_leaf = 2L
+  , num_threads = 2L
+)
 model <- lgb.train(
   params = params
  , data = dtrain
