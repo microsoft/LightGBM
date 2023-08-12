@@ -18,15 +18,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional,
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series, pa_Table
+from .compat import PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_is_floating, arrow_is_integer, concat, dt_DataTable, export_arrow_to_c, pd_CategoricalDtype, pd_DataFrame, pd_Series, pa_Table
 from .libpath import find_lib_path
-
-try:
-    import pyarrow as pa
-
-    from .arrow import _export_arrow_to_c
-except ImportError:
-    pass
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -2182,12 +2175,15 @@ class Dataset:
         ref_dataset: Optional[_DatasetHandle]
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+
         # Check that the input is valid: we only handle numbers (for now)
-        if not all(pa.types.is_integer(t) or pa.types.is_floating(t) for t in table.schema.types):
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Export Arrow table to C
-        with _export_arrow_to_c(table) as c_array:
+        with export_arrow_to_c(table) as c_array:
             self._handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
                 ctypes.c_int64(c_array.n_chunks),
@@ -2688,8 +2684,6 @@ class Dataset:
                     # data has nullable dtypes, but we can specify na_value argument and copy will be made
                     label = label.to_numpy(dtype=np.float32, na_value=np.nan)
                 label_array = np.ravel(label)
-            elif _is_pyarrow_type(label):
-                label_array = label
             else:
                 label_array = _list_to_1d_numpy(label, dtype=np.float32, name='label')
             self.set_field('label', label_array)

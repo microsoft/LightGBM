@@ -1,8 +1,7 @@
 # coding: utf-8
 """Utilities for handling Arrow in LightGBM."""
 from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Iterator, List, Union
+from typing import Iterator, List
 
 import pyarrow as pa
 from pyarrow.cffi import ffi
