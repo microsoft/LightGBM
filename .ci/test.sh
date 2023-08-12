@@ -119,16 +119,22 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
+# older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
+#
+# ref: https://github.com/microsoft/LightGBM/issues/6030
+CONSTRAINED_DEPENDENCIES="'dask-core>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    CONSTRAINED_DEPENDENCIES="'dask-core' 'distributed 'pandas<2.0'"
+fi
+
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 conda create -q -y -n $CONDA_ENV \
+    ${CONSTRAINED_DEPENDENCIES} \
     cffi \
     cloudpickle \
-    dask-core \
-    distributed \
     joblib \
     matplotlib \
     numpy \
-    pandas \
     psutil \
     pyarrow \
     pytest \
