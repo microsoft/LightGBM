@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional,
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_is_floating, arrow_is_integer, concat, dt_DataTable, export_arrow_to_c, pd_CategoricalDtype, pd_DataFrame, pd_Series, pa_Table
+from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_is_floating, arrow_is_integer, concat, dt_DataTable,
+                     export_arrow_to_c, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:

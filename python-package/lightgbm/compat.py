@@ -77,17 +77,9 @@ try:
     from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
     try:
         from sklearn.exceptions import NotFittedError
-        from sklearn.model_selection import (
-            BaseCrossValidator,
-            GroupKFold,
-            StratifiedKFold,
-        )
+        from sklearn.model_selection import BaseCrossValidator, GroupKFold, StratifiedKFold
     except ImportError:
-        from sklearn.cross_validation import (
-            BaseCrossValidator,
-            GroupKFold,
-            StratifiedKFold,
-        )
+        from sklearn.cross_validation import BaseCrossValidator, GroupKFold, StratifiedKFold
         from sklearn.utils.validation import NotFittedError
     try:
         from sklearn.utils.validation import _check_sample_weight
@@ -196,8 +188,9 @@ except ImportError:
 """pyarrow"""
 try:
     from pyarrow import Table as pa_Table
-    from pyarrow.types import is_integer as arrow_is_integer
     from pyarrow.types import is_floating as arrow_is_floating
+    from pyarrow.types import is_integer as arrow_is_integer
+
     from .arrow import _export_arrow_to_c as export_arrow_to_c
     PYARROW_INSTALLED = True
 except ImportError:
