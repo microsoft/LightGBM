@@ -75,16 +75,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ------------------------------------------- DATASET ------------------------------------------- #
 
 
-def test_dataset_construct_smoke():
-    data = generate_random_arrow_table(10, 10000, 42)
-    label = generate_random_arrow_array(10000, 43)
-    weight = generate_random_arrow_array(10000, 44)
-    init_scores = generate_random_arrow_array(10000, 45)
-
-    dataset = lgb.Dataset(data, label=label, weight=weight, init_score=init_scores)
-    dataset.construct()
-
-
 @pytest.mark.parametrize(
     ("arrow_table", "dataset_params"),
     [
