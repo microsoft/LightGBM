@@ -10,7 +10,7 @@ pip install \
   'cffi==1.15.1' \
   'numpy==1.12.0' \
   'pandas==0.24.0' \
-  'pyarrow==12.0.0' \
+  'pyarrow==6.0.1' \
   'scikit-learn==0.18.2' \
   'scipy==0.19.0' \
 || exit -1
