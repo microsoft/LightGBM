@@ -200,18 +200,6 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
-    class pa_Array:  # type: ignore
-        """Dummy class for pa.Array."""
-
-        def __init__(self, *args, **kwargs):
-            pass
-
-    class pa_ChunkedArray:  # type: ignore
-        """Dummy class for pa.ChunkedArray."""
-
-        def __init__(self, *args, **kwargs):
-            pass
-
 """cpu_count()"""
 try:
     from joblib import cpu_count

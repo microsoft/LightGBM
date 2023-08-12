@@ -2,19 +2,25 @@
 """Utilities for handling Arrow in LightGBM."""
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Iterator, Union
+from typing import Iterator, List, Union
 
 import pyarrow as pa
 from pyarrow.cffi import ffi
 
+__all__: List[str] = []
 
-@dataclass
-class ArrowCArray:
+
+class _ArrowCArray:
     """Simple wrapper around the C representation of an Arrow type."""
 
     n_chunks: int
     chunks: ffi.CData
     schema: ffi.CData
+
+    def __init__(self, n_chunks: int, chunks: ffi.CData, schema: ffi.CData):
+        self.n_chunks = n_chunks
+        self.chunks = chunks
+        self.schema = schema
 
     @property
     def chunks_ptr(self) -> int:
@@ -28,15 +34,13 @@ class ArrowCArray:
 
 
 @contextmanager
-def export_arrow_to_c(data: Union[pa.Table, pa.Array, pa.ChunkedArray]) -> Iterator[ArrowCArray]:
+def _export_arrow_to_c(data: pa.Table) -> Iterator[_ArrowCArray]:
     """Export an Arrow type to its C representation."""
     # Obtain objects to export
     if isinstance(data, pa.Table):
         export_objects = data.to_batches()
-    elif isinstance(data, pa.Array):
-        export_objects = [data]
-    elif isinstance(data, pa.ChunkedArray):
-        export_objects = data.chunks
+    else:
+        raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
 
     # Prepare export
     chunks = ffi.new(f"struct ArrowArray[{len(export_objects)}]")
@@ -51,4 +55,4 @@ def export_arrow_to_c(data: Union[pa.Table, pa.Array, pa.ChunkedArray]) -> Itera
         else:
             obj._export_to_c(chunk_ptr)
 
-    yield ArrowCArray(len(chunks), chunks, schema)
+    yield _ArrowCArray(len(chunks), chunks, schema)
