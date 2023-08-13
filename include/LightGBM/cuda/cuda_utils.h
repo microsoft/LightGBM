@@ -28,6 +28,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 void SetCUDADevice(int gpu_device_id, const char* file, int line);
 
+int GetCUDADevice(const char* file, int line);
+
 template <typename T>
 void AllocateCUDAMemory(T** out_ptr, size_t size, const char* file, const int line) {
   void* tmp_ptr = nullptr;
