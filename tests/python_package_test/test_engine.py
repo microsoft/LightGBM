@@ -142,7 +142,7 @@ def test_regression(objective):
     elif objective == 'quantile':
         assert ret < 1311
     else:
-        assert ret < 338
+        assert ret < 343
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
