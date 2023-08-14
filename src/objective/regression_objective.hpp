@@ -25,13 +25,13 @@ namespace LightGBM {
       ref_data[i] = data_reader(i);                                       \
     }                                                                     \
     const double float_pos = static_cast<double>(cnt_data - 1) * (1.0 - alpha);   \
-    const data_size_t pos = static_cast<data_size_t>(float_pos);          \
+    const data_size_t pos = static_cast<data_size_t>(float_pos) + 1;      \
     if (pos < 1) {                                                        \
       return ref_data[ArrayArgs<T>::ArgMax(ref_data)];                    \
     } else if (pos >= cnt_data) {                                         \
       return ref_data[ArrayArgs<T>::ArgMin(ref_data)];                    \
     } else {                                                              \
-      const double bias = float_pos - pos;                                \
+      const double bias = float_pos - (pos - 1);                          \
       if (pos > cnt_data / 2) {                                           \
         ArrayArgs<T>::ArgMaxAtK(&ref_data, 0, cnt_data, pos - 1);         \
         T v1 = ref_data[pos - 1];                                         \
