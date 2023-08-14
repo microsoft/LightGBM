@@ -39,6 +39,7 @@ if [[ $OS_NAME == "linux" ]]; then
     mkdir -p ~/.gnupg
     echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
     sudo apt-key adv \
+        --homedir ~/.gnupg \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
     sudo add-apt-repository \
