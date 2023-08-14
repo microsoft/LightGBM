@@ -9,6 +9,7 @@
 
 #ifdef USE_CUDA
 
+#include <LightGBM/cuda/cuda_utils.h>
 #include <LightGBM/metric.h>
 
 namespace LightGBM {
@@ -19,6 +20,8 @@ class CUDAMetricInterface: public HOST_METRIC {
   explicit CUDAMetricInterface(const Config& config): HOST_METRIC(config) {
     cuda_labels_ = nullptr;
     cuda_weights_ = nullptr;
+    const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;
+    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
