@@ -154,6 +154,9 @@ lgb.train <- function(params = list(),
 
   # Construct datasets, if needed
   data$update_params(params = params)
+  if (!is.null(categorical_feature)) {
+    data$set_categorical_feature(categorical_feature)
+  }
   data$construct()
 
   # Check interaction constraints
@@ -177,11 +180,6 @@ lgb.train <- function(params = list(),
   # Write column names
   if (!is.null(colnames)) {
     data$set_colnames(colnames)
-  }
-
-  # Write categorical features
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
   }
 
   valid_contain_train <- FALSE

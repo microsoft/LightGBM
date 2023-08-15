@@ -3773,3 +3773,18 @@ test_that("lightgbm() model predictions retain factor levels for binary classifi
   expect_true(is.numeric(pred))
   expect_false(any(pred %in% y))
 })
+
+test_that("lightgbm() accepts named categorical_features", {
+  data(mtcars)
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  model <- lightgbm(
+    x
+    , y
+    , categorical_feature = "cyl"
+    , verbose = .LGB_VERBOSITY
+    , nrounds = 5L
+    , num_threads = .LGB_MAX_THREADS
+  )
+  expect_true(length(model$params$categorical_feature) > 0L)
+})
