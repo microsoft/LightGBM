@@ -20,6 +20,7 @@ test_that("Feature penalties work properly", {
         , objective = "binary"
         , feature_penalty = paste0(feature_penalties, collapse = ",")
         , metric = "binary_error"
+        , num_threads = .LGB_MAX_THREADS
       )
       , nrounds = 5L
       , verbose = -1L
@@ -97,6 +98,7 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
         , learning_rate = 0.05
         , objective = "binary"
         , metric = "binary_error"
+        , num_threads = .LGB_MAX_THREADS
     )
     params[[boosting_param]] <- "dart"
     expect_warning({

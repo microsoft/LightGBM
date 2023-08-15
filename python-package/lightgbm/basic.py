@@ -699,7 +699,7 @@ def _data_from_pandas(
         _check_for_bad_pandas_dtypes(data.dtypes)
         df_dtypes = [dtype.type for dtype in data.dtypes]
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
-        target_dtype = np.find_common_type(df_dtypes, [])
+        target_dtype = np.result_type(*df_dtypes)
         try:
             # most common case (no nullable dtypes)
             data = data.to_numpy(dtype=target_dtype, copy=False)

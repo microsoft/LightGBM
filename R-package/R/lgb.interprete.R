@@ -35,6 +35,7 @@
 #'     , max_depth = -1L
 #'     , min_data_in_leaf = 1L
 #'     , min_sum_hessian_in_leaf = 1.0
+#'     , num_threads = 2L
 #' )
 #' model <- lgb.train(
 #'     params = params
@@ -71,7 +72,9 @@ lgb.interprete <- function(model,
   leaf_index_dt <- data.table::as.data.table(x = pred_mat)
   leaf_index_mat_list <- lapply(
     X = leaf_index_dt
-    , FUN = function(x) matrix(x, ncol = num_class, byrow = TRUE)
+    , FUN = matrix
+    , ncol = num_class
+    , byrow = TRUE
   )
 
   # Get list of trees

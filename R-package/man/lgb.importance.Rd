@@ -35,6 +35,7 @@ params <- list(
   , max_depth = -1L
   , min_data_in_leaf = 1L
   , min_sum_hessian_in_leaf = 1.0
+  , num_threads = 2L
 )
 model <- lgb.train(
     params = params
