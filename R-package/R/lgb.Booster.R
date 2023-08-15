@@ -928,6 +928,7 @@ NULL
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1086,7 +1087,10 @@ predict.lgb.Booster <- function(object,
 #' X <- as.matrix(mtcars[, -1L])
 #' y <- mtcars[, 1L]
 #' dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-#' params <- list(min_data_in_leaf = 2L)
+#' params <- list(
+#'   min_data_in_leaf = 2L
+#'   , num_threads = 2L
+#' )
 #' model <- lgb.train(
 #'   params = params
 #'  , data = dtrain
@@ -1231,6 +1235,7 @@ summary.lgb.Booster <- function(object, ...) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1296,6 +1301,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1351,6 +1357,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -1401,6 +1408,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
