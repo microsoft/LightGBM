@@ -256,7 +256,14 @@ If you get any errors during installation or due to any other reasons, you may w
 Build Wheel File
 ****************
 
-You can use ``sh ./build-python.sh install bdist_wheel`` instead of ``sh ./build-python.sh install`` to build wheel file and use it for installation later. This might be useful for systems with restricted or completely without network access.
+You can use ``sh ./build-python.sh install bdist_wheel`` to build a wheel file but not install it.
+
+That script requires some dependencies like ``build``, ``scikit-build-core``, and ``wheel``.
+In environments with restricted or no internt access, install those tools and then pass ``--no-isolation``.
+
+.. code:: sh
+
+  sh ./build-pythoon.sh bdist_wheel --no-isolation
 
 Build With MSBuild
 ******************

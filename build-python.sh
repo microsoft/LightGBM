@@ -164,9 +164,10 @@ while [ $# -gt 0 ]; do
         ;;
     --no-isolation)
         BUILD_ARGS="${BUILD_ARGS} --no-isolation"
+        PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
         ;;
     --nomp)
-        PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
         ;;
     --precompile)
         PRECOMPILE="true"
