@@ -26,16 +26,16 @@ jobs:
           pr-inactive-days: '90'
           # do not close feature request issues...
           # we close those but track them in https://github.com/microsoft/LightGBM/issues/2302
-          exclude-any-issue-labels: 'feature request'
+          exclude-any-issue-labels: '"feature request"'
           # what labels should be removed prior to locking?
           remove-issue-labels: 'awaiting response,awaiting review,blocking,in progress'
           remove-pr-labels: 'awaiting response,awaiting review,blocking,in progress'
           # what message should be posted prior to locking?
-          issue-comment: |
+          issue-comment: >
             This issue has been automatically locked since there has not been any recent activity since it was closed.
             To start a new related discussion, open a new issue at https://github.com/microsoft/LightGBM/issues
             including a reference to this.
-          pr-comment: |
+          pr-comment: >
             This pull request has been automatically locked since there has not been any recent activity since it was closed.
             To start a new related discussion, open a new issue at https://github.com/microsoft/LightGBM/issues
             including a reference to this.
