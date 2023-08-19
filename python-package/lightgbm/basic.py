@@ -126,7 +126,7 @@ class _MissingType(Enum):
 
 class _DummyLogger:
     def info(self, msg: str) -> None:
-        print(msg)
+        print(msg)  # noqa: T201
 
     def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
@@ -467,11 +467,10 @@ class _ConfigAliases:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        aliases = json.loads(
+        return json.loads(
             string_buffer.value.decode('utf-8'),
             object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
-        return aliases
 
     @classmethod
     def get(cls, *args) -> Set[str]:
@@ -3209,8 +3208,7 @@ class Booster:
 
     def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
-        booster = Booster(model_str=model_str)
-        return booster
+        return Booster(model_str=model_str)
 
     def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
