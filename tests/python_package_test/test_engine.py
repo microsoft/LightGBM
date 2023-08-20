@@ -1720,8 +1720,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     categorical_features = []
     if x3_to_category:
         categorical_features = [2]
-    trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
-    return trainset
+    return lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
 
 
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Monotone constraints are not yet supported by CUDA version')
