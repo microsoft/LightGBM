@@ -48,6 +48,9 @@
 #                                   Compile with MinGW.
 #     --mpi
 #                                   Compile MPI version.
+#     --no-isolation
+#                                   Assume all build and install dependencies are already installed,
+#                                   don't go to the internet to get them.
 #     --nomp
 #                                   Compile version without OpenMP support.
 #     --precompile
@@ -158,6 +161,10 @@ while [ $# -gt 0 ]; do
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
+        ;;
+    --no-isolation)
+        BUILD_ARGS="${BUILD_ARGS} --no-isolation"
+        PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
         ;;
     --nomp)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
@@ -337,6 +344,7 @@ if test "${BUILD_SDIST}" = true; then
     python -m build \
         --sdist \
         --outdir ../dist \
+        ${BUILD_ARGS} \
         .
 fi
 
