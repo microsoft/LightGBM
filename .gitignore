@@ -270,7 +270,6 @@ _Pvt_Extensions
 /windows/LightGBM.VC.db
 lightgbm
 /testlightgbm
-!include/LightGBM
 
 # Created by https://www.gitignore.io/api/python
 
