@@ -339,16 +339,12 @@ class CVBooster:
             with open(model_file, "r") as file:
                 self._from_dict(json.load(file))
 
-    def _append(self, booster: Booster) -> None:
-        """Add a booster to CVBooster."""
-        self.boosters.append(booster)
-
     def _from_dict(self, models: Dict[str, Any]) -> None:
         """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
-            self._append(Booster(model_str=model_str))
+            self.boosters.append(Booster(model_str=model_str))
 
     def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
@@ -514,11 +510,11 @@ def _make_n_folds(
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
             tparam = params
-        cvbooster = Booster(tparam, train_set)
+        booster_for_fold = Booster(tparam, train_set)
         if eval_train_metric:
-            cvbooster.add_valid(train_set, 'train')
-        cvbooster.add_valid(valid_set, 'valid')
-        ret._append(cvbooster)
+            booster_for_fold.add_valid(train_set, 'train')
+        booster_for_fold.add_valid(valid_set, 'valid')
+        ret.boosters.append(booster_for_fold)
     return ret
 
 
