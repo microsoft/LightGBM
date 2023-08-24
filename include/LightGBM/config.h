@@ -160,6 +160,7 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // [doc-only]
   // type = enum
   // options = bagging, goss
   // desc = ``bagging``, Randomly Bagging Sampling
