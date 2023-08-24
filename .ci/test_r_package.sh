@@ -22,7 +22,7 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-x86_64/R-${R_MAC_VERSION}-x86_64.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
     export R_APT_REPO="jammy-cran40/"
 else
@@ -56,6 +56,7 @@ if [[ $OS_NAME == "linux" ]]; then
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
+            tidy \
             qpdf \
             || exit -1
 
