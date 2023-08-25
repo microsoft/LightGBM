@@ -747,7 +747,68 @@ def test_ranking_prediction_early_stopping():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
-
+# Simulates position bias for a given ranking dataset.
+# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The new labels are generated according to an instance of a cascade user model:
+# for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
+# (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
+# and clicks on that document (new_label=1) with some probability 'pclick' depending on its true relevance;
+# at each position the user may stop the traversal with some probability pstop. For the non-clicked documents,
+# new_label=0. Thus the generated new labels are biased towards the baseline ranker. 
+# The positions of the documents in the ranked lists produced by the baseline, are returned.
+def simulate_position_bias(file_dataset_in, file_query_in, file_dataset_out, baseline_feature):
+    # a mapping of a document's true relevance (defined on a 5-grade scale) into the probability of clicking it
+    def get_pclick(label):
+        if label == 0:
+            return 0.4
+        elif label == 1:
+            return 0.6
+        elif label == 2:
+            return 0.7
+        elif label == 3:
+            return 0.8
+        else:
+            return 0.9
+    # an instantiation of a cascade model where the user stops with probability 0.2 after observing each document
+    pstop = 0.2
+ 
+    f_dataset_in = open(file_dataset_in, 'r')
+    f_dataset_out = open(file_dataset_out, 'w')
+    random.seed(10)
+    positions_all = []
+    for line in open(file_query_in):
+        docs_num = int (line)
+        lines = []
+        index_values = []    
+        positions = [0] * docs_num
+        for index in range(docs_num):
+            features = f_dataset_in.readline().split()
+            lines.append(features)
+            val = 0.0
+            for feature_val in features:
+                feature_val_split = feature_val.split(":")           
+                if int(feature_val_split[0]) == baseline_feature:
+                    val = float(feature_val_split[1])
+            index_values.append([index, val])
+        index_values.sort(key=lambda x: -x[1])
+        stop = False 
+        for pos in range(docs_num):
+            index = index_values[pos][0]
+            new_label = 0
+            if not stop:
+                label = int(lines[index][0])
+                pclick = get_pclick(label)
+                if random.random() < pclick:
+                    new_label = 1       
+                stop = random.random() < pstop
+            lines[index][0] = str(new_label)
+            positions[index] = pos
+        for features in lines:
+            f_dataset_out.write(' '.join(features) + '\n')
+        positions_all.extend(positions)
+    f_dataset_out.close()
+    return positions_all
+    
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
 def test_ranking_with_position_information_with_file(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
@@ -757,7 +818,8 @@ def test_ranking_with_position_information_with_file(tmp_path):
         'eval_at': [3],
         'metric': 'ndcg'
     }
-    copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
     copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
     copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
@@ -766,19 +828,17 @@ def test_ranking_with_position_information_with_file(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    with open(str(tmp_path / 'rank.train.position'), "w") as out_file:
-        np.random.seed(0)
-        for _ in range(lgb_train.num_data()):
-            position = np.random.randint(28)
-            out_file.write(f"pos_{position}\n")
+    f_positions_out = open(str(tmp_path / 'rank.train.position'), 'w')
+    for pos in positions:
+        f_positions_out.write(str(pos) + '\n')
+    f_positions_out.close()
 
     lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
-    assert gbm_unbiased_with_file.best_score['valid_0']['ndcg@3'] == gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
-
-    # the performance of the baseline LambdaMART should not differ much from the case when positions are randomly assigned
-    assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased_with_file.best_score['valid_0']['ndcg@3'], 0.02)
+    
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
 
     # add extra row to position file
     with open(str(tmp_path / 'rank.train.position'), 'a') as file:
