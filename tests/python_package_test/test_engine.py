@@ -817,6 +817,7 @@ def test_ranking_with_position_information_with_file(tmp_path):
         'verbose': -1,
         'eval_at': [3],
         'metric': 'ndcg',
+        'bagging_freq': 1,
         'bagging_fraction': 0.9,
         'min_data_in_leaf': 50,
         'min_sum_hessian_in_leaf': 5.0
@@ -862,6 +863,7 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
         'verbose': -1,
         'eval_at': [3],
         'metric': 'ndcg',
+        'bagging_freq': 1,
         'bagging_fraction': 0.9,
         'min_data_in_leaf': 50,
         'min_sum_hessian_in_leaf': 5.0
