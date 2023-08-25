@@ -816,8 +816,12 @@ def test_ranking_with_position_information_with_file(tmp_path):
         'objective': 'lambdarank',
         'verbose': -1,
         'eval_at': [3],
-        'metric': 'ndcg'
+        'metric': 'ndcg',
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0
     }
+    
     # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
     positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
@@ -857,9 +861,14 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
         'objective': 'lambdarank',
         'verbose': -1,
         'eval_at': [3],
-        'metric': 'ndcg'
+        'metric': 'ndcg',
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0
     }
-    copyfile(str(rank_example_dir / 'rank.train'), str(tmp_path / 'rank.train'))
+    
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
     copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
     copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
@@ -868,11 +877,6 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    positions = []
-    np.random.seed(0)
-    for _ in range(lgb_train.num_data()):
-        position = np.random.randint(28)
-        positions.append(position)
     positions = np.array(positions)
 
     # test setting positions through Dataset constructor with numpy array
@@ -880,8 +884,8 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
     lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
     gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
 
-    # the performance of the baseline LambdaMART should not differ much from the case when positions are randomly assigned
-    assert gbm_baseline.best_score['valid_0']['ndcg@3'] == pytest.approx(gbm_unbiased.best_score['valid_0']['ndcg@3'], 0.02)
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased.best_score['valid_0']['ndcg@3']
 
     if PANDAS_INSTALLED:
         # test setting positions through Dataset constructor with pandas Series
