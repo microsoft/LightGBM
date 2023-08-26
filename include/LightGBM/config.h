@@ -967,7 +967,7 @@ struct Config {
 
   // check = >=0.0
   // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
-  double lambdarank_position_bias_regularizer = 0.0;
+  double lambdarank_position_bias_regularization = 0.0;
 
   #ifndef __NVCC__
   #pragma endregion
