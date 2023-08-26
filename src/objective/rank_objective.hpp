@@ -27,7 +27,7 @@ class RankingObjective : public ObjectiveFunction {
   explicit RankingObjective(const Config& config)
       : seed_(config.objective_seed) {
     learning_rate_ = config.learning_rate;
-    position_bias_regularizer_ = config.lambdarank_position_bias_regularizer;
+    position_bias_regularization_ = config.lambdarank_position_bias_regularization;
   }
 
   explicit RankingObjective(const std::vector<std::string>&) : seed_(0) {}
@@ -122,8 +122,8 @@ class RankingObjective : public ObjectiveFunction {
   mutable std::vector<label_t> pos_biases_;
   /*! \brief Learning rate to update position bias factors */
   double learning_rate_;
-  /*! \brief Position bias regularizer */
-  double position_bias_regularizer_;
+  /*! \brief Position bias regularization */
+  double position_bias_regularization_;
 };
 
 /*!
@@ -323,8 +323,8 @@ class LambdarankNDCG : public RankingObjective {
         instance_count += instance_counts[offset];
       }
       // L2 regularization on position bias factors
-      bias_first_derivative -= pos_biases_[i] * position_bias_regularizer_ * instance_count;
-      bias_second_derivative -= position_bias_regularizer_ * instance_count;
+      bias_first_derivative -= pos_biases_[i] * position_bias_regularization_ * instance_count;
+      bias_second_derivative -= position_bias_regularization_ * instance_count;
       // do Newton-Raphson step to update position bias factors
       pos_biases_[i] += learning_rate_ * bias_first_derivative / (std::abs(bias_second_derivative) + 0.001);
     }
