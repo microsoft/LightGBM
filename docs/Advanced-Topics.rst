@@ -82,17 +82,33 @@ Support for Position Bias Treatment
 ------------------------------------
 
 Often the relevance labels provided in Learning-to-Rank tasks might be derived from implicit user feedback (e.g., clicks) and therefore might be biased due to their position/location on the screen when having been presented to a user.
-LightGBM can make use of positional data, for example provided in an additional file like the following:
+LightGBM can make use of positional data.
+
+For example, consider the case where you expect that the first 3 results from a search engine will be visible in users' browsers without scrolling, and all other results for a query would require scrolling.
+
+LightGBM could be told to account for the position bias from results being "above the fold" by providing a ``positions`` array encoded as follows:
 
 ::
 
-    3
-    4
+    0
+    0
+    0
+    1
+    1
+    0
+    0
+    0
     1
     ...
 
-It means the position of the document from the first data row, when presented to a user, was encoded as ``3``, second was encoded as ``4``, and so on. 
-A position could be any arbitrary integer number (not necessarily from a contiguous range) and could encode the presentation of an item even in complex layouts like 2D or consisting of several verticals (it is up to the LightGBM user to perform such encoding/mapping into integers).
+Where ``0 = "above the fold"`` and ``1 = "requires scrolling"``.
+The specific value are not important, as long as they are consistent across all observations in the training data.
+An encoding like ``100 = "above the fold"`` and ``17 = "requires scrolling"`` would result in exactly the same trained model.
+
+In that way, ``positions`` in LightGBM's API are similar to a categorical feature.
+Just as with non-ordinal categorical features, an integer representation is just used for memory and computational efficiency... LightGBM does not care about the absolute or relative magnitude of the values.
+
+Unlike a categorical feature, however, ``positions`` are used to adjust the target to reduce the bias in predictions made by the trained model.
 
 The position file corresponds with training data file line by line, and has one position per line. And if the name of training data file is ``train.txt``, the position file should be named as ``train.txt.position`` and placed in the same folder as the data file.
 In this case, LightGBM will load the position file automatically if it exists. The positions can also be specified through the ``Dataset`` constructor when using Python API. If the positions are specified in both approaches, the ``.position`` file will be ignored.
