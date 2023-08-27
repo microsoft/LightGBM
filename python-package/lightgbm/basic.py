@@ -667,11 +667,15 @@ def _data_from_pandas(
     feature_name: Optional[_LGBM_FeatureNameConfiguration],
     categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
     pandas_categorical: Optional[List[List]]
-) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
+) -> Tuple[np.ndarray, List[str], Any, Any]:
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
+
+    # determine feature names
     if feature_name == 'auto' or feature_name is None:
-        data = data.rename(columns=str, copy=False)
+        feature_name = [str(col) for col in data.columns]
+
+    # determine categorical features
     cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
     cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
     if pandas_categorical is None:  # train dataset
@@ -686,14 +690,12 @@ def _data_from_pandas(
         data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
     if categorical_feature is not None:
-        if feature_name is None:
-            feature_name = list(data.columns)
         if categorical_feature == 'auto':  # use cat cols from DataFrame
             categorical_feature = cat_cols_not_ordered
         else:  # use cat cols specified by user
             categorical_feature = list(categorical_feature)  # type: ignore[assignment]
-    if feature_name == 'auto':
-        feature_name = list(data.columns)
+
+    # get numpy representation of the data
     _check_for_bad_pandas_dtypes(data.dtypes)
     df_dtypes = [dtype.type for dtype in data.dtypes]
     df_dtypes.append(np.float32)  # so that the target dtype considers floats
