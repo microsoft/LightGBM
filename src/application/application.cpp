@@ -15,6 +15,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+#include <LightGBM/prediction_control_parameter.h>
 
 #include <string>
 #include <chrono>
@@ -92,7 +93,8 @@ void Application::LoadData() {
   PredictFunction predict_fun = nullptr;
   // need to continue training
   if (boosting_->NumberOfTotalModel() > 0 && config_.task != TaskType::KRefitTree) {
-    predictor.reset(new Predictor(boosting_.get(), 0, -1, true, false, false, false, -1, -1));
+    PredictionControlParameter predict_params;
+    predictor.reset(new Predictor(boosting_.get(), 0, -1, true, false, false, false, -1, -1, predict_params));
     predict_fun = predictor->GetPredictFunction();
   }
 
@@ -221,7 +223,8 @@ void Application::Train() {
 void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
-    Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
+    PredictionControlParameter predict_params;
+    Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1, predict_params);
     predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
                       config_.precise_float_parser);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
@@ -248,10 +251,11 @@ void Application::Predict() {
     Log::Info("Finished RefitTree");
   } else {
     // create predictor
+    PredictionControlParameter predict_params;
     Predictor predictor(boosting_.get(), config_.start_iteration_predict, config_.num_iteration_predict, config_.predict_raw_score,
                         config_.predict_leaf_index, config_.predict_contrib,
                         config_.pred_early_stop, config_.pred_early_stop_freq,
-                        config_.pred_early_stop_margin);
+                        config_.pred_early_stop_margin, predict_params);
     predictor.Predict(config_.data.c_str(),
                       config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
                       config_.precise_float_parser);

@@ -7,6 +7,7 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/prediction_control_parameter.h>
 
 #include <string>
 #include <map>
@@ -131,11 +132,11 @@ class LIGHTGBM_EXPORT Boosting {
   * \param output Prediction result for this record
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void PredictRaw(const double* features, double* output,
-                          const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop,
+                          const PredictionControlParameter* predict_params) const = 0;
 
   virtual void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
-                               const PredictionEarlyStopInstance* early_stop) const = 0;
+                               const PredictionEarlyStopInstance* early_stop, const PredictionControlParameter* predict_params) const = 0;
 
 
   /*!
@@ -144,11 +145,11 @@ class LIGHTGBM_EXPORT Boosting {
   * \param output Prediction result for this record
   * \param early_stop Early stopping instance. If nullptr, no early stopping is applied and all models are evaluated.
   */
-  virtual void Predict(const double* features, double* output,
-                       const PredictionEarlyStopInstance* early_stop) const = 0;
+  virtual void Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop,
+                       const PredictionControlParameter* predict_params) const = 0;
 
   virtual void PredictByMap(const std::unordered_map<int, double>& features, double* output,
-                            const PredictionEarlyStopInstance* early_stop) const = 0;
+                            const PredictionEarlyStopInstance* early_stop, const PredictionControlParameter* predict_params) const = 0;
 
 
   /*!

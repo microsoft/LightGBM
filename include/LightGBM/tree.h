@@ -7,12 +7,14 @@
 
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
+#include <LightGBM/prediction_control_parameter.h>
 
 #include <string>
 #include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <random>
 
 namespace LightGBM {
 
@@ -128,10 +130,12 @@ class Tree {
   /*!
   * \brief Prediction on one record
   * \param feature_values Feature value of this record
+  * \param predict_params Control parameters for prediction
   * \return Prediction result
   */
-  inline double Predict(const double* feature_values) const;
-  inline double PredictByMap(const std::unordered_map<int, double>& feature_values) const;
+  inline double Predict(const double* feature_values, const PredictionControlParameter* predict_params) const;
+  inline double PredictByMap(const std::unordered_map<int, double>& feature_values, 
+                             const PredictionControlParameter* predict_params) const;
 
   inline int PredictLeafIndex(const double* feature_values) const;
   inline int PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const;
@@ -422,6 +426,16 @@ class Tree {
   inline int GetLeaf(const double* feature_values) const;
   inline int GetLeafByMap(const std::unordered_map<int, double>& feature_values) const;
 
+  /*!
+  * \brief Find leaf index of which record belongs by features under the random assignment mechanism
+  * \param feature_values Feature value of this record
+  * \param predict_params Control parameters for prediction
+  * \return Leaf index
+  */
+  inline int GetLeafWithRandomAssign(const double* feature_values, const PredictionControlParameter* predict_params) const;
+  inline int GetLeafByMapWithRandomAssign(const std::unordered_map<int, double>& feature_values,
+                                          const PredictionControlParameter* predict_params) const;
+
   /*! \brief Serialize one node to json*/
   std::string NodeToJSON(int index) const;
 
@@ -582,9 +596,14 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   }
 }
 
-inline double Tree::Predict(const double* feature_values) const {
+inline double Tree::Predict(const double* feature_values, const PredictionControlParameter* predict_params) const {
+  int leaf = 0;
+  if (num_leaves_ > 1) {
+    leaf = (predict_params->random_assign_features.empty()) 
+         ? GetLeaf(feature_values) 
+         : GetLeafWithRandomAssign(feature_values, predict_params);  
+  }
   if (is_linear_) {
-      int leaf = (num_leaves_ > 1) ? GetLeaf(feature_values) : 0;
       double output = leaf_const_[leaf];
       bool nan_found = false;
       for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
@@ -604,7 +623,6 @@ inline double Tree::Predict(const double* feature_values) const {
       }
   } else {
     if (num_leaves_ > 1) {
-      int leaf = GetLeaf(feature_values);
       return LeafOutput(leaf);
     } else {
       return leaf_value_[0];
@@ -612,9 +630,15 @@ inline double Tree::Predict(const double* feature_values) const {
   }
 }
 
-inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_values) const {
+inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_values,
+                                 const PredictionControlParameter* predict_params) const {
+  int leaf = 0;
+  if (num_leaves_ > 1) {
+    leaf = (predict_params->random_assign_features.empty()) 
+         ? GetLeafByMap(feature_values) 
+         : GetLeafByMapWithRandomAssign(feature_values, predict_params);  
+  }
   if (is_linear_) {
-    int leaf = (num_leaves_ > 1) ? GetLeafByMap(feature_values) : 0;
     double output = leaf_const_[leaf];
     bool nan_found = false;
     for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
@@ -637,7 +661,6 @@ inline double Tree::PredictByMap(const std::unordered_map<int, double>& feature_
     }
   } else {
     if (num_leaves_ > 1) {
-      int leaf = GetLeafByMap(feature_values);
       return LeafOutput(leaf);
     } else {
       return leaf_value_[0];
@@ -719,6 +742,88 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
   } else {
     while (node >= 0) {
       node = NumericalDecision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+    }
+  }
+  return ~node;
+}
+
+inline int Tree::GetLeafWithRandomAssign(const double* feature_values,
+                                         const PredictionControlParameter* predict_params) const {
+  if (predict_params == nullptr) {
+    return GetLeaf(feature_values);
+  }
+  bool random_assign_enabled = false;
+  int node = 0;
+  if (num_cat_ > 0) {
+    while (node >= 0) {
+      if (predict_params->EnableRandomAssign(split_feature_[node])) {
+          random_assign_enabled = true;
+          break;
+      }
+      node = Decision(feature_values[split_feature_[node]], node);
+    }
+  } else {
+    while (node >= 0) {
+      if (predict_params->EnableRandomAssign(split_feature_[node])) {
+          random_assign_enabled = true;
+          break;
+      }
+      node = NumericalDecision(feature_values[split_feature_[node]], node);
+    }
+  }
+  if (random_assign_enabled) {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::bernoulli_distribution random_assign_distribution(0.5);
+
+    while (node >= 0) {
+      if (random_assign_distribution(generator)) {
+        node = left_child_[node];  
+      }
+      else {
+        node = right_child_[node];  
+      }
+    }
+  }
+  return ~node;
+}
+
+inline int Tree::GetLeafByMapWithRandomAssign(const std::unordered_map<int, double>& feature_values,
+                                              const PredictionControlParameter* predict_params) const {
+  if (predict_params == nullptr) {
+    return GetLeafByMap(feature_values);
+  }
+  bool random_assign_enabled = false;
+  int node = 0;
+  if (num_cat_ > 0) {
+    while (node >= 0) {
+      if (predict_params->EnableRandomAssign(split_feature_[node])) {
+          random_assign_enabled = true;
+          break;
+      }
+      node = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+    }
+  } else {
+    while (node >= 0) {
+      if (predict_params->EnableRandomAssign(split_feature_[node])) {
+          random_assign_enabled = true;
+          break;
+      }
+      node = NumericalDecision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+    }
+  }
+  if (random_assign_enabled) {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::bernoulli_distribution random_assign_distribution(0.5);
+
+    while (node >= 0) {
+      if (random_assign_distribution(generator)) {
+        node = left_child_[node];  
+      }
+      else {
+        node = right_child_[node];  
+      }
     }
   }
   return ~node;

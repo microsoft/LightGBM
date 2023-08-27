@@ -290,17 +290,19 @@ class GBDT : public GBDTBase {
     return num_pred_in_one_row;
   }
 
-  void PredictRaw(const double* features, double* output,
-                  const PredictionEarlyStopInstance* earlyStop) const override;
+  void PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop, 
+                  const PredictionControlParameter* predict_params) const override;
 
   void PredictRawByMap(const std::unordered_map<int, double>& features, double* output,
-                       const PredictionEarlyStopInstance* early_stop) const override;
+                       const PredictionEarlyStopInstance* early_stop,
+                       const PredictionControlParameter* predict_params) const override;
 
-  void Predict(const double* features, double* output,
-               const PredictionEarlyStopInstance* earlyStop) const override;
+  void Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop,
+               const PredictionControlParameter* predict_params) const override;
 
-  void PredictByMap(const std::unordered_map<int, double>& features, double* output,
-                    const PredictionEarlyStopInstance* early_stop) const override;
+  void PredictByMap(const std::unordered_map<int, double>& features, double* output, 
+                    const PredictionEarlyStopInstance* early_stop,
+                    const PredictionControlParameter* predict_params) const override;
 
   void PredictLeafIndex(const double* features, double* output) const override;
 

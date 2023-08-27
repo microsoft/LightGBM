@@ -859,6 +859,12 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   std::string output_result = "LightGBM_predict_result.txt";
 
+  // [no-save]
+  // desc = used only in ``prediction`` task
+  // desc = Split features of internal nodes that enable left-right random assignment mechnisim.
+  // desc = See section "A surrogate VIMP" of the paper https://doi.org/10.1214/07-EJS039 for more details.
+  std::vector<int> random_assign_features;
+
   #ifndef __NVCC__
   #pragma endregion
 

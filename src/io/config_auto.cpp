@@ -576,6 +576,10 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "output_result", &output_result);
 
+  if (GetString(params, "random_assign_features", &tmp_str)) {
+    random_assign_features = Common::StringToArray<int>(tmp_str, ',');
+  }
+
   GetString(params, "convert_model_language", &convert_model_language);
 
   GetString(params, "convert_model", &convert_model);

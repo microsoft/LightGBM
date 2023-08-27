@@ -30,6 +30,7 @@
 #include "application/predictor.hpp"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
 #include <LightGBM/utils/yamc/yamc_shared_lock.hpp>
+#include <LightGBM/prediction_control_parameter.h>
 
 namespace LightGBM {
 
@@ -78,8 +79,9 @@ class SingleRowPredictor {
     early_stop_freq_ = config.pred_early_stop_freq;
     early_stop_margin_ = config.pred_early_stop_margin;
     iter_ = num_iter;
+    PredictionControlParameter predict_params;
     predictor_.reset(new Predictor(boosting, start_iter, iter_, is_raw_score, is_predict_leaf, predict_contrib,
-                                   early_stop_, early_stop_freq_, early_stop_margin_));
+                                   early_stop_, early_stop_freq_, early_stop_margin_, predict_params));
     num_pred_in_one_row = boosting->NumPredictOneRow(start_iter, iter_, is_predict_leaf, predict_contrib);
     predict_function = predictor_->GetPredictFunction();
     num_total_model_ = boosting->NumberOfTotalModel();
@@ -417,8 +419,9 @@ class Booster {
       is_raw_score = false;
     }
 
+    PredictionControlParameter predict_params(config.random_assign_features);
     return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
+                     config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin, predict_params);
   }
 
   void Predict(int start_iteration, int num_iteration, int predict_type, int nrow, int ncol,
@@ -707,8 +710,10 @@ class Booster {
     } else {
       is_raw_score = false;
     }
+    PredictionControlParameter predict_params(config.random_assign_features);
     Predictor predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
-                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
+                        config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin,
+                        predict_params);
     bool bool_data_has_header = data_has_header > 0 ? true : false;
     predictor.Predict(data_filename, result_filename, bool_data_has_header, config.predict_disable_shape_check,
                       config.precise_float_parser);

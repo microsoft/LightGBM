@@ -11,6 +11,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 #include <LightGBM/utils/text_reader.h>
+#include <LightGBM/prediction_control_parameter.h>
 
 #include <string>
 #include <cstdio>
@@ -40,7 +41,7 @@ class Predictor {
   */
   Predictor(Boosting* boosting, int start_iteration, int num_iteration, bool is_raw_score,
             bool predict_leaf_index, bool predict_contrib, bool early_stop,
-            int early_stop_freq, double early_stop_margin) {
+            int early_stop_freq, double early_stop_margin, PredictionControlParameter& predict_params) {
     early_stop_ = CreatePredictionEarlyStopInstance(
         "none", LightGBM::PredictionEarlyStopConfig());
     if (early_stop && !boosting->NeedAccuratePrediction()) {
@@ -58,6 +59,7 @@ class Predictor {
       }
     }
 
+    predict_params_ = std::move(predict_params);
     boosting->InitPredict(start_iteration, num_iteration, predict_contrib);
     boosting_ = boosting;
     num_pred_one_row_ = boosting_->NumPredictOneRow(start_iteration,
@@ -113,11 +115,11 @@ class Predictor {
           if (num_feature_ > kFeatureThreshold &&
               features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
-            boosting_->PredictRawByMap(buf, output, &early_stop_);
+            boosting_->PredictRawByMap(buf, output, &early_stop_, &predict_params_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
             boosting_->PredictRaw(predict_buf_[tid].data(), output,
-                                  &early_stop_);
+                                  &early_stop_, &predict_params_);
             ClearPredictBuffer(predict_buf_[tid].data(),
                                predict_buf_[tid].size(), features);
           }
@@ -129,10 +131,10 @@ class Predictor {
           if (num_feature_ > kFeatureThreshold &&
               features.size() < KSparseThreshold) {
             auto buf = CopyToPredictMap(features);
-            boosting_->PredictByMap(buf, output, &early_stop_);
+            boosting_->PredictByMap(buf, output, &early_stop_, &predict_params_);
           } else {
             CopyToPredictBuffer(predict_buf_[tid].data(), features);
-            boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_);
+            boosting_->Predict(predict_buf_[tid].data(), output, &early_stop_, &predict_params_);
             ClearPredictBuffer(predict_buf_[tid].data(),
                                predict_buf_[tid].size(), features);
           }
@@ -292,6 +294,7 @@ class Predictor {
   PredictFunction predict_fun_;
   PredictSparseFunction predict_sparse_fun_;
   PredictionEarlyStopInstance early_stop_;
+  PredictionControlParameter predict_params_;
   int num_feature_;
   int num_pred_one_row_;
   std::vector<std::vector<double, Common::AlignmentAllocator<double, kAlignedSize>>> predict_buf_;

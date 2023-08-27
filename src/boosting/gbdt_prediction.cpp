@@ -10,7 +10,9 @@
 
 namespace LightGBM {
 
-void GBDT::PredictRaw(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictRaw(const double* features, double* output,
+                      const PredictionEarlyStopInstance* early_stop,
+                      const PredictionControlParameter* predict_params) const {
   int early_stop_round_counter = 0;
   // set zero
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
@@ -18,7 +20,7 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
   for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features);
+      output[k] += models_[i * num_tree_per_iteration_ + k]->Predict(features, predict_params);
     }
     // check early stopping
     ++early_stop_round_counter;
@@ -31,7 +33,10 @@ void GBDT::PredictRaw(const double* features, double* output, const PredictionEa
   }
 }
 
-void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
+void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features,
+                           double* output,
+                           const PredictionEarlyStopInstance* early_stop,
+                           const PredictionControlParameter* predict_params) const {
   int early_stop_round_counter = 0;
   // set zero
   std::memset(output, 0, sizeof(double) * num_tree_per_iteration_);
@@ -39,7 +44,7 @@ void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, doub
   for (int i = start_iteration_for_pred_; i < end_iteration_for_pred; ++i) {
     // predict all the trees for one iteration
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
-      output[k] += models_[i * num_tree_per_iteration_ + k]->PredictByMap(features);
+      output[k] += models_[i * num_tree_per_iteration_ + k]->PredictByMap(features, predict_params);
     }
     // check early stopping
     ++early_stop_round_counter;
@@ -52,8 +57,10 @@ void GBDT::PredictRawByMap(const std::unordered_map<int, double>& features, doub
   }
 }
 
-void GBDT::Predict(const double* features, double* output, const PredictionEarlyStopInstance* early_stop) const {
-  PredictRaw(features, output, early_stop);
+void GBDT::Predict(const double* features, double* output,
+                   const PredictionEarlyStopInstance* early_stop,
+                   const PredictionControlParameter* predict_params) const {
+  PredictRaw(features, output, early_stop, predict_params);
   if (average_output_) {
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
@@ -64,8 +71,11 @@ void GBDT::Predict(const double* features, double* output, const PredictionEarly
   }
 }
 
-void GBDT::PredictByMap(const std::unordered_map<int, double>& features, double* output, const PredictionEarlyStopInstance* early_stop) const {
-  PredictRawByMap(features, output, early_stop);
+void GBDT::PredictByMap(const std::unordered_map<int, double>& features,
+                        double* output,
+                        const PredictionEarlyStopInstance* early_stop,
+                        const PredictionControlParameter* predict_params) const {
+  PredictRawByMap(features, output, early_stop, predict_params);
   if (average_output_) {
     for (int k = 0; k < num_tree_per_iteration_; ++k) {
       output[k] /= num_iteration_for_pred_;
