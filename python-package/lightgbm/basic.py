@@ -664,16 +664,16 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 def _data_from_pandas(
     data: pd_DataFrame,
-    feature_name: Optional[_LGBM_FeatureNameConfiguration],
-    categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
+    feature_name: _LGBM_FeatureNameConfiguration,
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]]
-) -> Tuple[np.ndarray, List[str], Any, Any]:
+) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
 
     # determine feature names
-    if feature_name == 'auto' or feature_name is None:
-        feature_name = [str(col) for col in data.columns]
+    if feature_name == 'auto':
+        feature_name_list = [str(col) for col in data.columns]
 
     # determine categorical features
     cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
@@ -689,11 +689,10 @@ def _data_from_pandas(
     if len(cat_cols):  # cat_cols is list
         data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
-    if categorical_feature is not None:
-        if categorical_feature == 'auto':  # use cat cols from DataFrame
-            categorical_feature = cat_cols_not_ordered
-        else:  # use cat cols specified by user
-            categorical_feature = list(categorical_feature)  # type: ignore[assignment]
+    if categorical_feature == 'auto':  # use cat cols from DataFrame
+        categorical_feature = cat_cols_not_ordered
+    else:  # use cat cols specified by user
+        categorical_feature = list(categorical_feature)  # type: ignore[assignment]
 
     # get numpy representation of the data
     _check_for_bad_pandas_dtypes(data.dtypes)
@@ -999,8 +998,8 @@ class _InnerPredictor:
         if isinstance(data, pd_DataFrame):
             data = _data_from_pandas(
                 data=data,
-                feature_name=None,
-                categorical_feature=None,
+                feature_name="auto",
+                categorical_feature="auto",
                 pandas_categorical=self.pandas_categorical
             )[0]
 
@@ -1848,12 +1847,7 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        if not isinstance(data, pd_DataFrame):
-            if feature_name == 'auto':
-                feature_name = None
-            if categorical_feature == 'auto':
-                categorical_feature = None
-        else:
+        if isinstance(data, pd_DataFrame):
             data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(
                 data=data,
                 feature_name=feature_name,
@@ -1869,10 +1863,10 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # get categorical features
-        if categorical_feature is not None:
+        if isinstance(categorical_feature, list):
             categorical_indices = set()
             feature_dict = {}
-            if feature_name is not None:
+            if isinstance(feature_name, list):
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
                 if isinstance(name, str) and name in feature_dict:
