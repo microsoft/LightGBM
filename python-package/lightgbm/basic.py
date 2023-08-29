@@ -673,7 +673,7 @@ def _data_from_pandas(
 
     # determine feature names
     if feature_name == 'auto':
-        feature_name_list = [str(col) for col in data.columns]
+        feature_name = [str(col) for col in data.columns]
 
     # determine categorical features
     cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
