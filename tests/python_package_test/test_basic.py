@@ -806,3 +806,10 @@ def test_set_leaf_output():
         leaf_output = bst.get_leaf_output(tree_id=0, leaf_id=leaf_id)
         bst.set_leaf_output(tree_id=0, leaf_id=leaf_id, value=leaf_output + 1)
     np.testing.assert_allclose(bst.predict(X), y_pred + 1)
+
+
+def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Dataset():
+    ds = lgb.Dataset(
+        data=np.random.randn(100, 3),
+    )
+    assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
