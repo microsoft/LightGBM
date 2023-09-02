@@ -263,7 +263,7 @@ In environments with restricted or no internt access, install those tools and th
 
 .. code:: sh
 
-  sh ./build-pythoon.sh bdist_wheel --no-isolation
+  sh ./build-python.sh bdist_wheel --no-isolation
 
 Build With MSBuild
 ******************
