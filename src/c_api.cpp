@@ -204,7 +204,7 @@ class Booster {
     objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                     config_));
     if (objective_fun_ == nullptr) {
-      Log::Warning("Using self-defined objective function");
+      Log::Info("Using self-defined objective function");
     }
     // initialize the objective function
     if (objective_fun_ != nullptr) {
@@ -374,7 +374,7 @@ class Booster {
       objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
                                                                       config_));
       if (objective_fun_ == nullptr) {
-        Log::Warning("Using self-defined objective function");
+        Log::Info("Using self-defined objective function");
       }
       // initialize the objective function
       if (objective_fun_ != nullptr) {

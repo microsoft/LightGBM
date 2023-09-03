@@ -1,8 +1,8 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-import collections
 import copy
 import json
+from collections import OrderedDict, defaultdict
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -293,7 +293,7 @@ def train(
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(collections.OrderedDict)
+    booster.best_score = defaultdict(OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -339,16 +339,12 @@ class CVBooster:
             with open(model_file, "r") as file:
                 self._from_dict(json.load(file))
 
-    def _append(self, booster: Booster) -> None:
-        """Add a booster to CVBooster."""
-        self.boosters.append(booster)
-
     def _from_dict(self, models: Dict[str, Any]) -> None:
         """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
-            self._append(Booster(model_str=model_str))
+            self.boosters.append(Booster(model_str=model_str))
 
     def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
@@ -514,11 +510,11 @@ def _make_n_folds(
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
             tparam = params
-        cvbooster = Booster(tparam, train_set)
+        booster_for_fold = Booster(tparam, train_set)
         if eval_train_metric:
-            cvbooster.add_valid(train_set, 'train')
-        cvbooster.add_valid(valid_set, 'valid')
-        ret._append(cvbooster)
+            booster_for_fold.add_valid(train_set, 'train')
+        booster_for_fold.add_valid(valid_set, 'valid')
+        ret.boosters.append(booster_for_fold)
     return ret
 
 
@@ -526,7 +522,7 @@ def _agg_cv_result(
     raw_results: List[List[Tuple[str, str, float, bool]]]
 ) -> List[Tuple[str, str, float, bool, float]]:
     """Aggregate cross-validation results."""
-    cvmap: Dict[str, List[float]] = collections.OrderedDict()
+    cvmap: Dict[str, List[float]] = OrderedDict()
     metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
@@ -717,7 +713,7 @@ def cv(
              .set_feature_name(feature_name) \
              .set_categorical_feature(categorical_feature)
 
-    results = collections.defaultdict(list)
+    results = defaultdict(list)
     cvfolds = _make_n_folds(full_data=train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
                             stratified=stratified, shuffle=shuffle,
