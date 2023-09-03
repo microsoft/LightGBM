@@ -699,7 +699,7 @@ TrainingShareStates* Dataset::GetShareStates(
 
     if (col_wise_time < row_wise_time) {
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_col_wise=true` to remove the overhead.",
@@ -707,7 +707,7 @@ TrainingShareStates* Dataset::GetShareStates(
       return col_wise_state.release();
     } else {
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_row_wise=true` to remove the overhead.\n"
