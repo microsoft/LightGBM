@@ -23,7 +23,9 @@
 #'   , agaricus.train$label
 #'   , params = list(objective = "binary")
 #'   , nrounds = 5L
-#'   , verbose = 0)
+#'   , verbose = 0
+#'   , num_threads = 2L
+#' )
 #' fname <- tempfile(fileext="rds")
 #' saveRDS(model, fname)
 #'
