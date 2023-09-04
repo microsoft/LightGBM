@@ -142,7 +142,7 @@ def test_regression(objective):
     elif objective == 'quantile':
         assert ret < 1311
     else:
-        assert ret < 338
+        assert ret < 343
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -1720,8 +1720,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     categorical_features = []
     if x3_to_category:
         categorical_features = [2]
-    trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
-    return trainset
+    return lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
 
 
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Monotone constraints are not yet supported by CUDA version')

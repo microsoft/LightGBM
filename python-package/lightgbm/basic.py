@@ -126,7 +126,7 @@ class _MissingType(Enum):
 
 class _DummyLogger:
     def info(self, msg: str) -> None:
-        print(msg)
+        print(msg)  # noqa: T201
 
     def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
@@ -467,11 +467,10 @@ class _ConfigAliases:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        aliases = json.loads(
+        return json.loads(
             string_buffer.value.decode('utf-8'),
             object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
-        return aliases
 
     @classmethod
     def get(cls, *args) -> Set[str]:
@@ -699,7 +698,7 @@ def _data_from_pandas(
         _check_for_bad_pandas_dtypes(data.dtypes)
         df_dtypes = [dtype.type for dtype in data.dtypes]
         df_dtypes.append(np.float32)  # so that the target dtype considers floats
-        target_dtype = np.find_common_type(df_dtypes, [])
+        target_dtype = np.result_type(*df_dtypes)
         try:
             # most common case (no nullable dtypes)
             data = data.to_numpy(dtype=target_dtype, copy=False)
@@ -3209,8 +3208,7 @@ class Booster:
 
     def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
-        booster = Booster(model_str=model_str)
-        return booster
+        return Booster(model_str=model_str)
 
     def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()

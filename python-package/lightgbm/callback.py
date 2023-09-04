@@ -1,10 +1,14 @@
 # coding: utf-8
 """Callbacks library."""
-import collections
+from collections import OrderedDict
+from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
-from .basic import _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+from .basic import Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+
+if TYPE_CHECKING:
+    from .engine import CVBooster
 
 __all__ = [
     'early_stopping',
@@ -43,14 +47,14 @@ class EarlyStopException(Exception):
 
 
 # Callback environment used by callbacks
-CallbackEnv = collections.namedtuple(
-    "CallbackEnv",
-    ["model",
-     "params",
-     "iteration",
-     "begin_iteration",
-     "end_iteration",
-     "evaluation_result_list"])
+@dataclass
+class CallbackEnv:
+    model: Union[Booster, "CVBooster"]
+    params: Dict[str, Any]
+    iteration: int
+    begin_iteration: int
+    end_iteration: int
+    evaluation_result_list: Optional[List[_LGBM_BoosterEvalMethodResultType]]
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
@@ -126,7 +130,7 @@ class _RecordEvaluationCallback:
                 data_name, eval_name = item[:2]
             else:  # cv
                 data_name, eval_name = item[1].split()
-            self.eval_result.setdefault(data_name, collections.OrderedDict())
+            self.eval_result.setdefault(data_name, OrderedDict())
             if len(item) == 4:
                 self.eval_result[data_name].setdefault(eval_name, [])
             else:
