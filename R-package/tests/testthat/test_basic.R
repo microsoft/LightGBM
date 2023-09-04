@@ -3265,6 +3265,8 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , metric =  "auc"
     , early_stopping_round = nrounds
     , num_threads = .LGB_MAX_THREADS
+    # include a nonsense parameter just to trigger a WARN-level log
+    , nonsense_param = 1.0
   )
   if (!is.null(verbose_param)) {
     params[["verbose"]] <- verbose_param
