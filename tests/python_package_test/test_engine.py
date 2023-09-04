@@ -747,6 +747,7 @@ def test_ranking_prediction_early_stopping():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
+
 # Simulates position bias for a given ranking dataset.
 # The ouput dataset is identical to the input one with the exception for the relevance labels.
 # The new labels are generated according to an instance of a cascade user model:
@@ -808,7 +809,8 @@ def simulate_position_bias(file_dataset_in, file_query_in, file_dataset_out, bas
         positions_all.extend(positions)
     f_dataset_out.close()
     return positions_all
-    
+
+
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
 def test_ranking_with_position_information_with_file(tmp_path):
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
@@ -822,7 +824,7 @@ def test_ranking_with_position_information_with_file(tmp_path):
         'min_data_in_leaf': 50,
         'min_sum_hessian_in_leaf': 5.0
     }
-    
+
     # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
     positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
@@ -866,9 +868,12 @@ def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
         'bagging_freq': 1,
         'bagging_fraction': 0.9,
         'min_data_in_leaf': 50,
-        'min_sum_hessian_in_leaf': 5.0
+        'min_sum_hessian_in_leaf': 5.0,
+        'num_threads': 1,
+        'deterministic': True,
+        'seed': 0
     }
-    
+
     # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
     positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
     copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
