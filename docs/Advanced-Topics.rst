@@ -102,7 +102,7 @@ LightGBM could be told to account for the position bias from results being "abov
     ...
 
 Where ``0 = "above the fold"`` and ``1 = "requires scrolling"``.
-The specific value are not important, as long as they are consistent across all observations in the training data.
+The specific values are not important, as long as they are consistent across all observations in the training data.
 An encoding like ``100 = "above the fold"`` and ``17 = "requires scrolling"`` would result in exactly the same trained model.
 
 In that way, ``positions`` in LightGBM's API are similar to a categorical feature.
