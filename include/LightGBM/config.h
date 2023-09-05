@@ -5,8 +5,13 @@
  * \note
  * - desc and descl2 fields must be written in reStructuredText format;
  * - nested sections can be placed only at the bottom of parent's section;
- * - [doc-only] tag indicates that only documentation for this param should be generated and all other actions are performed manually;
- * - [no-save] tag indicates that this param should not be saved into a model text representation.
+ * - [no-generate-code]
+ *       - documentation should be generated, but the parameter shouldn't be included in automatically-generated
+ *         Config::SaveMembersToString() code
+ * - [no-save]
+ *       - this param should not be saved into a model text representation. Add this for params which...
+ *           - ... are only used by the CLI (especially the "predict" and "convert_model" tasks)
+ *           - ... lead LightGBM to related to LightGBM writing files files (e.g. "output_model", "save_binary")
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -98,14 +103,12 @@ struct Config {
   #endif  // __NVCC__
 
   // [no-save]
-  // [doc-only]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
   // [no-save]
-  // [doc-only]
   // type = enum
   // default = train
   // options = train, predict, convert_model, refit
@@ -118,7 +121,7 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 
-  // [doc-only]
+  // [no-generate-code]
   // type = enum
   // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank, rank_xendcg
   // alias = objective_type, app, application, loss
@@ -150,7 +153,7 @@ struct Config {
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
-  // [doc-only]
+  // [no-generate-code]
   // type = enum
   // alias = boosting_type, boost
   // options = gbdt, rf, dart
@@ -160,7 +163,6 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
-  // [doc-only]
   // type = enum
   // options = bagging, goss
   // desc = ``bagging``, Randomly Bagging Sampling
@@ -200,7 +202,7 @@ struct Config {
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
-  // [doc-only]
+  // [no-generate-code]
   // type = enum
   // options = serial, feature, data, voting
   // alias = tree, tree_type, tree_learner_type
@@ -222,7 +224,7 @@ struct Config {
   // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
-  // [doc-only]
+  // [no-generate-code]
   // type = enum
   // options = cpu, gpu, cuda
   // alias = device
@@ -235,7 +237,6 @@ struct Config {
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
   std::string device_type = "cpu";
 
-  // [doc-only]
   // alias = random_seed, random_state
   // default = None
   // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
@@ -593,7 +594,6 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
-  // [no-save]
   // desc = whether to use gradient quantization when training
   // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
   // desc = with quantized training, most arithmetics in the training process will be integer operations
@@ -602,21 +602,18 @@ struct Config {
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
-  // [no-save]
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
   // desc = **Note**: can be used only with ``device_type = cpu``
   // desc = *New in 4.0.0*
   int num_grad_quant_bins = 4;
 
-  // [no-save]
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
   // desc = **Note**: can be used only with ``device_type = cpu``
   // desc = *New in 4.0.0*
   bool quant_train_renew_leaf = false;
 
-  // [no-save]
   // desc = whether to use stochastic rounding in gradient quantization
   // desc = *New in 4.0.0*
   bool stochastic_rounding = true;
@@ -975,7 +972,7 @@ struct Config {
   #pragma region Metric Parameters
   #endif  // __NVCC__
 
-  // [doc-only]
+  // [no-generate-code]
   // alias = metrics, metric_types
   // default = ""
   // type = multi-enum
