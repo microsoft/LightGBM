@@ -19,7 +19,7 @@ class ArrowChunkedArrayTest : public testing::Test {
   ArrowArray created_nested_array(const std::vector<ArrowArray*>& arrays) {
     ArrowArray arr;
     arr.buffers = nullptr;
-    arr.children = (ArrowArray**)arrays.data();
+    arr.children = (ArrowArray**)arrays.data();  // NOLINT
     arr.dictionary = nullptr;
     arr.length = arrays[0]->length;
     arr.n_buffers = 0;
@@ -63,8 +63,8 @@ class ArrowChunkedArrayTest : public testing::Test {
     arr.private_data = nullptr;
     arr.release = [](ArrowArray* arr) {
       if (arr->buffers[0] != nullptr)
-        free((void*)arr->buffers[0]);
-      free((void*)arr->buffers);
+        free(reinterpret_cast<void*>(arr->buffers[0]));
+      free(reinterpret_cast<void*>(arr->buffers));
     };
     return arr;
   }
@@ -76,7 +76,7 @@ class ArrowChunkedArrayTest : public testing::Test {
     schema.metadata = nullptr;
     schema.flags = 0;
     schema.n_children = arrays.size();
-    schema.children = (ArrowSchema**)arrays.data();
+    schema.children = (ArrowSchema**)arrays.data();  // NOLINT
     schema.dictionary = nullptr;
     schema.private_data = nullptr;
     schema.release = nullptr;
