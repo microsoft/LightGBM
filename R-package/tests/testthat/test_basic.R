@@ -3265,6 +3265,8 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , metric =  "auc"
     , early_stopping_round = nrounds
     , num_threads = .LGB_MAX_THREADS
+    # include a nonsense parameter just to trigger a WARN-level log
+    , nonsense_param = 1.0
   )
   if (!is.null(verbose_param)) {
     params[["verbose"]] <- verbose_param
@@ -3787,4 +3789,19 @@ test_that("lightgbm() accepts named categorical_features", {
     , num_threads = .LGB_MAX_THREADS
   )
   expect_true(length(model$params$categorical_feature) > 0L)
+})
+
+test_that("lightgbm() correctly sets objective when passing lgb.Dataset as input", {
+  data(mtcars)
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  ds <- lgb.Dataset(x, label = y)
+  model <- lightgbm(
+    ds
+    , objective = "auto"
+    , verbose = .LGB_VERBOSITY
+    , nrounds = 5L
+    , num_threads = .LGB_MAX_THREADS
+  )
+  expect_equal(model$params$objective, "regression")
 })

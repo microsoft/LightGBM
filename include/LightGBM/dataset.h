@@ -115,6 +115,8 @@ class Metadata {
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
+  void SetPosition(const data_size_t* position, data_size_t len);
+
   /*!
   * \brief Set initial scores
   * \param init_score Initial scores, this class will manage memory for init_score.
@@ -215,6 +217,38 @@ class Metadata {
   }
 
   /*!
+  * \brief Get positions, if does not exist then return nullptr
+  * \return Pointer of positions
+  */
+  inline const data_size_t* positions() const {
+    if (!positions_.empty()) {
+      return positions_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
+  * \brief Get position IDs, if does not exist then return nullptr
+  * \return Pointer of position IDs
+  */
+  inline const std::string* position_ids() const {
+    if (!position_ids_.empty()) {
+      return position_ids_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
+  * \brief Get Number of different position IDs
+  * \return number of different position IDs
+  */
+  inline size_t num_position_ids() const {
+      return position_ids_.size();
+  }
+
+  /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
   *        we assume data will order by query,
   *        the interval of [query_boundaris[i], query_boundaris[i+1])
@@ -290,6 +324,8 @@ class Metadata {
  private:
   /*! \brief Load wights from file */
   void LoadWeights();
+  /*! \brief Load positions from file */
+  void LoadPositions();
   /*! \brief Load query boundaries from file */
   void LoadQueryBoundaries();
   /*! \brief Calculate query weights from queries */
@@ -310,10 +346,16 @@ class Metadata {
   data_size_t num_data_;
   /*! \brief Number of weights, used to check correct weight file */
   data_size_t num_weights_;
+  /*! \brief Number of positions, used to check correct position file */
+  data_size_t num_positions_;
   /*! \brief Label data */
   std::vector<label_t> label_;
   /*! \brief Weights data */
   std::vector<label_t> weights_;
+  /*! \brief Positions data */
+  std::vector<data_size_t> positions_;
+  /*! \brief Position identifiers */
+  std::vector<std::string> position_ids_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
@@ -329,6 +371,7 @@ class Metadata {
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;
+  bool position_load_from_file_;
   bool query_load_from_file_;
   bool init_score_load_from_file_;
   #ifdef USE_CUDA

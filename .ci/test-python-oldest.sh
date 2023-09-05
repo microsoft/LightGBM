@@ -8,6 +8,7 @@
 echo "installing lightgbm's dependencies"
 pip install \
   'cffi==1.15.1' \
+  'dataclasses' \
   'numpy==1.16.6' \
   'pandas==0.24.0' \
   'pyarrow==6.0.1' \

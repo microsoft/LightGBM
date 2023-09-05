@@ -192,4 +192,4 @@ def pickle_and_unpickle_object(obj, serializer):
             filepath=tmp_file.name,
             serializer=serializer
         )
-    return obj_from_disk
+    return obj_from_disk  # noqa: RET504
