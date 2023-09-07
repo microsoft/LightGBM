@@ -7,6 +7,7 @@
 #ifdef USE_CUDA
 
 #include <algorithm>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 #include "cuda_binary_objective.hpp"
 
@@ -15,7 +16,7 @@ namespace LightGBM {
 template <bool USE_WEIGHT>
 __global__ void BoostFromScoreKernel_1_BinaryLogloss(const label_t* cuda_labels, const data_size_t num_data, double* out_cuda_sum_labels,
                                                      double* out_cuda_sum_weights, const label_t* cuda_weights) {
-  __shared__ double shared_buffer[32];
+  __shared__ double shared_buffer[WARPSIZE];
   const uint32_t mask = 0xffffffff;
   const uint32_t warpLane = threadIdx.x % warpSize;
   const uint32_t warpID = threadIdx.x / warpSize;

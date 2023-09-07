@@ -573,8 +573,48 @@ __device__ VAL_T PercentileDevice(const VAL_T* values,
                                   INDEX_T* indices,
                                   REDUCE_WEIGHT_T* weights_prefix_sum,
                                   const double alpha,
-                                  const INDEX_T len);
-
+                                  const INDEX_T len) {
+  if (len <= 1) {
+    return values[0];
+  }
+  if (!USE_WEIGHT) {
+    BitonicArgSortDevice<VAL_T, INDEX_T, ASCENDING, BITONIC_SORT_NUM_ELEMENTS / 2, 10>(values, indices, len);
+    const double float_pos = (1.0f - alpha) * len;
+    const INDEX_T pos = static_cast<INDEX_T>(float_pos);
+    if (pos < 1) {
+      return values[indices[0]];
+    } else if (pos >= len) {
+      return values[indices[len - 1]];
+    } else {
+      const double bias = float_pos - pos;
+      const VAL_T v1 = values[indices[pos - 1]];
+      const VAL_T v2 = values[indices[pos]];
+      return static_cast<VAL_T>(v1 - (v1 - v2) * bias);
+    }
+  } else {
+    BitonicArgSortDevice<VAL_T, INDEX_T, ASCENDING, BITONIC_SORT_NUM_ELEMENTS / 4, 9>(values, indices, len);
+    ShuffleSortedPrefixSumDevice<WEIGHT_T, REDUCE_WEIGHT_T, INDEX_T>(weights, indices, weights_prefix_sum, len);
+    const REDUCE_WEIGHT_T threshold = weights_prefix_sum[len - 1] * (1.0f - alpha);
+    __shared__ INDEX_T pos;
+    if (threadIdx.x == 0) {
+      pos = len;
+    }
+    __syncthreads();
+    for (INDEX_T index = static_cast<INDEX_T>(threadIdx.x); index < len; index += static_cast<INDEX_T>(blockDim.x)) {
+      if (weights_prefix_sum[index] > threshold && (index == 0 || weights_prefix_sum[index - 1] <= threshold)) {
+        pos = index;
+      }
+    }
+    __syncthreads();
+    pos = min(pos, len - 1);
+    if (pos == 0 || pos == len - 1) {
+      return values[pos];
+    }
+    const VAL_T v1 = values[indices[pos - 1]];
+    const VAL_T v2 = values[indices[pos]];
+    return static_cast<VAL_T>(v1 - (v1 - v2) * (threshold - weights_prefix_sum[pos - 1]) / (weights_prefix_sum[pos] - weights_prefix_sum[pos - 1]));
+  }
+}
 
 }  // namespace LightGBM
 

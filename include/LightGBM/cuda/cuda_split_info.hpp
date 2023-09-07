@@ -38,13 +38,13 @@ class CUDASplitInfo {
   uint32_t* cat_threshold = nullptr;
   int* cat_threshold_real = nullptr;
 
-  __device__ CUDASplitInfo() {
+  __host__ __device__ CUDASplitInfo() {
     num_cat_threshold = 0;
     cat_threshold = nullptr;
     cat_threshold_real = nullptr;
   }
 
-  __device__ ~CUDASplitInfo() {
+  __host__ __device__ ~CUDASplitInfo() {
     if (num_cat_threshold > 0) {
       if (cat_threshold != nullptr) {
         cudaFree(cat_threshold);
@@ -55,7 +55,7 @@ class CUDASplitInfo {
     }
   }
 
-  __device__ CUDASplitInfo& operator=(const CUDASplitInfo& other) {
+  __host__ __device__ CUDASplitInfo& operator=(const CUDASplitInfo& other) {
     is_valid = other.is_valid;
     leaf_index = other.leaf_index;
     gain = other.gain;

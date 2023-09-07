@@ -293,8 +293,18 @@ endif()
 if(USE_ROCM)
     find_package(HIP)
     include_directories(${HIP_INCLUDE_DIRS})
-    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
+
+    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
+    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
+    # avoid many warnings about missing overrides
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
 
     if(USE_DEBUG)
       set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
@@ -304,11 +314,6 @@ if(USE_ROCM)
     message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
 
     add_definitions(-DUSE_CUDA)
-
-    if(NOT DEFINED CMAKE_HIP_STANDARD)
-      set(CMAKE_HIP_STANDARD 14)
-      set(CMAKE_HIP_STANDARD_REQUIRED ON)
-    endif()
 
     set(
       BASE_DEFINES
