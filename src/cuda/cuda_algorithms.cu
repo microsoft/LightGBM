@@ -6,12 +6,13 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 namespace LightGBM {
 
 template <typename T>
 __global__ void ShufflePrefixSumGlobalKernel(T* values, size_t len, T* block_prefix_sum_buffer) {
-  __shared__ T shared_mem_buffer[32];
+  __shared__ T shared_mem_buffer[WARPSIZE];
   const size_t index = static_cast<size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   T value = 0;
   if (index < len) {
@@ -26,7 +27,7 @@ __global__ void ShufflePrefixSumGlobalKernel(T* values, size_t len, T* block_pre
 
 template <typename T>
 __global__ void ShufflePrefixSumGlobalReduceBlockKernel(T* block_prefix_sum_buffer, int num_blocks) {
-  __shared__ T shared_mem_buffer[32];
+  __shared__ T shared_mem_buffer[WARPSIZE];
   const int num_blocks_per_thread = (num_blocks + GLOBAL_PREFIX_SUM_BLOCK_SIZE - 2) / (GLOBAL_PREFIX_SUM_BLOCK_SIZE - 1);
   int thread_block_start = threadIdx.x == 0 ? 0 : (threadIdx.x - 1) * num_blocks_per_thread;
   int thread_block_end = threadIdx.x == 0 ? 0 : min(thread_block_start + num_blocks_per_thread, num_blocks);
@@ -96,7 +97,7 @@ void BitonicArgSortItemsGlobal(
 
 template <typename T>
 __global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks) {
-  __shared__ T shared_buffer[32];
+  __shared__ T shared_buffer[WARPSIZE];
   T thread_sum = 0;
   for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
     thread_sum += block_buffer[block_index];
@@ -109,7 +110,7 @@ __global__ void BlockReduceSum(T* block_buffer, const data_size_t num_blocks) {
 
 template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceSumGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
-  __shared__ REDUCE_T shared_buffer[32];
+  __shared__ REDUCE_T shared_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
   const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
   const REDUCE_T reduce_value = ShuffleReduceSum<REDUCE_T>(value, shared_buffer, blockDim.x);
@@ -131,7 +132,7 @@ template void ShuffleReduceSumGlobal<double, double>(const double* values, size_
 
 template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceMinGlobalKernel(const VAL_T* values, const data_size_t num_value, REDUCE_T* block_buffer) {
-  __shared__ REDUCE_T shared_buffer[32];
+  __shared__ REDUCE_T shared_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
   const REDUCE_T value = (data_index < num_value ? static_cast<REDUCE_T>(values[data_index]) : 0.0f);
   const REDUCE_T reduce_value = ShuffleReduceMin<REDUCE_T>(value, shared_buffer, blockDim.x);
@@ -142,7 +143,7 @@ __global__ void ShuffleReduceMinGlobalKernel(const VAL_T* values, const data_siz
 
 template <typename T>
 __global__ void ShuffleBlockReduceMin(T* block_buffer, const data_size_t num_blocks) {
-  __shared__ T shared_buffer[32];
+  __shared__ T shared_buffer[WARPSIZE];
   T thread_min = 0;
   for (data_size_t block_index = static_cast<data_size_t>(threadIdx.x); block_index < num_blocks; block_index += static_cast<data_size_t>(blockDim.x)) {
     const T value = block_buffer[block_index];
@@ -168,7 +169,7 @@ template void ShuffleReduceMinGlobal<label_t, double>(const label_t* values, siz
 
 template <typename VAL_T, typename REDUCE_T>
 __global__ void ShuffleReduceDotProdGlobalKernel(const VAL_T* values1, const VAL_T* values2, const data_size_t num_value, REDUCE_T* block_buffer) {
-  __shared__ REDUCE_T shared_buffer[32];
+  __shared__ REDUCE_T shared_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(blockIdx.x * blockDim.x + threadIdx.x);
   const REDUCE_T value1 = (data_index < num_value ? static_cast<REDUCE_T>(values1[data_index]) : 0.0f);
   const REDUCE_T value2 = (data_index < num_value ? static_cast<REDUCE_T>(values2[data_index]) : 0.0f);
@@ -191,7 +192,7 @@ template void ShuffleReduceDotProdGlobal<label_t, double>(const label_t* values1
 template <typename INDEX_T, typename VAL_T, typename REDUCE_T>
 __global__ void GlobalInclusiveArgPrefixSumKernel(
   const INDEX_T* sorted_indices, const VAL_T* in_values, REDUCE_T* out_values, REDUCE_T* block_buffer, data_size_t num_data) {
-  __shared__ REDUCE_T shared_buffer[32];
+  __shared__ REDUCE_T shared_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   REDUCE_T value = static_cast<REDUCE_T>(data_index < num_data ? in_values[sorted_indices[data_index]] : 0);
   __syncthreads();
@@ -206,7 +207,7 @@ __global__ void GlobalInclusiveArgPrefixSumKernel(
 
 template <typename T>
 __global__ void GlobalInclusivePrefixSumReduceBlockKernel(T* block_buffer, data_size_t num_blocks) {
-  __shared__ T shared_buffer[32];
+  __shared__ T shared_buffer[WARPSIZE];
   T thread_sum = 0;
   const data_size_t num_blocks_per_thread = (num_blocks + static_cast<data_size_t>(blockDim.x)) / static_cast<data_size_t>(blockDim.x);
   const data_size_t thread_start_block_index = static_cast<data_size_t>(threadIdx.x) * num_blocks_per_thread;

@@ -167,7 +167,7 @@ void CUDASingleGPUTreeLearner::LaunchReduceLeafStatKernel(
 
 template <typename T, bool IS_INNER>
 __global__ void CalcBitsetLenKernel(const CUDASplitInfo* best_split_info, size_t* out_len_buffer) {
-  __shared__ size_t shared_mem_buffer[32];
+  __shared__ size_t shared_mem_buffer[WARPSIZE];
   const T* vals = nullptr;
   if (IS_INNER) {
     vals = reinterpret_cast<const T*>(best_split_info->cat_threshold);
@@ -187,7 +187,7 @@ __global__ void CalcBitsetLenKernel(const CUDASplitInfo* best_split_info, size_t
 }
 
 __global__ void ReduceBlockMaxLen(size_t* out_len_buffer, const int num_blocks) {
-  __shared__ size_t shared_mem_buffer[32];
+  __shared__ size_t shared_mem_buffer[WARPSIZE];
   size_t max_len = 0;
   for (int i = static_cast<int>(threadIdx.x); i < num_blocks; i += static_cast<int>(blockDim.x)) {
     max_len = max(out_len_buffer[i], max_len);

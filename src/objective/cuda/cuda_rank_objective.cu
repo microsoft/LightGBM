@@ -321,9 +321,12 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
     gradients, hessians
 
   if (max_items_in_query_aligned_ <= 1024) {
+#ifndef __HIP__
     if (num_rank_label <= 32) {
       GetGradientsKernel_LambdarankNDCG<false, 32><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
-    } else if (num_rank_label <= 64) {
+    } else
+#endif
+    if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG<false, 64><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG<false, 128><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
@@ -337,9 +340,12 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
       GetGradientsKernel_LambdarankNDCG<false, 2048><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     }
   } else if (max_items_in_query_aligned_ <= 2048) {
+#ifndef __HIP__
     if (num_rank_label <= 32) {
       GetGradientsKernel_LambdarankNDCG<true, 32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
-    } else if (num_rank_label <= 64) {
+    } else
+#endif
+    if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG<true, 64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG<true, 128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
@@ -354,9 +360,12 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
     }
   } else {
     BitonicArgSortItemsGlobal(score, num_queries_, cuda_query_boundaries_, cuda_item_indices_buffer_.RawData());
+#ifndef __HIP__
     if (num_rank_label <= 32) {
       GetGradientsKernel_LambdarankNDCG_Sorted<32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
-    } else if (num_rank_label <= 64) {
+    } else
+#endif
+    if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG_Sorted<64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG_Sorted<128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
