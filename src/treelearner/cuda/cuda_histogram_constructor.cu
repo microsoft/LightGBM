@@ -9,6 +9,7 @@
 #include "cuda_histogram_constructor.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 #include <algorithm>
 

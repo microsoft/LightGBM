@@ -302,6 +302,8 @@ if(USE_ROCM)
     set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
     # avoid many warnings about missing overrides
     set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+    # avoid warning: shift count >= width of type in feature_histogram.hpp
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
     set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
