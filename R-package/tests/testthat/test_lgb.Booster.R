@@ -799,33 +799,156 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         data = matrix(rnorm(500L), nrow = 100L)
         , label = rnorm(100L)
     )
-    nrounds <- 4L
+    nrounds <- 3L
     bst <- lgb.train(
         params = list(
-            objective = "regression"
-            , metric = "l2"
+            objective = "mape"
+            , metric = c("l2", "mae")
             , num_threads = .LGB_MAX_THREADS
+            , seed = 708L
+            , data_sample_strategy = "bagging"
+            , sub_row = 0.8234
         )
         , data = dtrain
         , nrounds = nrounds
         , verbose = .LGB_VERBOSITY
     )
 
-    model_str <- bst$save_model_to_string()
-    params_in_file <- .params_from_model_string(model_str = model_str)
+    # entries whose values should reflect params passed to lgb.train()
+    non_default_param_entries <- c(
+        "[objective: mape]"
+        # NOTE: 'l1' was passed in with alias 'mae'
+        , "[metric: l2,l1]"
+        , "[data_sample_strategy: bagging]"
+        , "[seed: 708]"
+        # NOTE: this was passed in with alias 'sub_row'
+        , "[bagging_fraction: 0.8234]"
+        , "[num_iterations: 3]"
+    )
+
+    # entries with default values of params
+    default_param_entries <- c(
+        "[boosting: gbdt]"
+        , "[tree_learner: serial]"
+        , "[device_type: cpu]"
+        , "[data: ]"
+        , "[valid: ]"
+        , "[learning_rate: 0.1]"
+        , "[num_leaves: 31]"
+        , sprintf("[num_threads: %i]", .LGB_MAX_THREADS)
+        , "[deterministic: 0]"
+        , "[force_col_wise: 0]"
+        , "[force_row_wise: 0]"
+        , "[histogram_pool_size: -1]"
+        , "[max_depth: -1]"
+        , "[min_data_in_leaf: 20]"
+        , "[min_sum_hessian_in_leaf: 0.001]"
+        , "[pos_bagging_fraction: 1]"
+        , "[neg_bagging_fraction: 1]"
+        , "[bagging_freq: 0]"
+        , "[bagging_seed: 15415]"
+        , "[feature_fraction: 1]"
+        , "[feature_fraction_bynode: 1]"
+        , "[feature_fraction_seed: 32671]"
+        , "[extra_trees: 0]"
+        , "[extra_seed: 6642]"
+        , "[early_stopping_round: 0]"
+        , "[first_metric_only: 0]"
+        , "[max_delta_step: 0]"
+        , "[lambda_l1: 0]"
+        , "[lambda_l2: 0]"
+        , "[linear_lambda: 0]"
+        , "[min_gain_to_split: 0]"
+        , "[drop_rate: 0.1]"
+        , "[max_drop: 50]"
+        , "[skip_drop: 0.5]"
+        , "[xgboost_dart_mode: 0]"
+        , "[uniform_drop: 0]"
+        , "[drop_seed: 20623]"
+        , "[top_rate: 0.2]"
+        , "[other_rate: 0.1]"
+        , "[min_data_per_group: 100]"
+        , "[max_cat_threshold: 32]"
+        , "[cat_l2: 10]"
+        , "[cat_smooth: 10]"
+        , "[max_cat_to_onehot: 4]"
+        , "[top_k: 20]"
+        , "[monotone_constraints: ]"
+        , "[monotone_constraints_method: basic]"
+        , "[monotone_penalty: 0]"
+        , "[feature_contri: ]"
+        , "[forcedsplits_filename: ]"
+        , "[refit_decay_rate: 0.9]"
+        , "[cegb_tradeoff: 1]"
+        , "[cegb_penalty_split: 0]"
+        , "[cegb_penalty_feature_lazy: ]"
+        , "[cegb_penalty_feature_coupled: ]"
+        , "[path_smooth: 0]"
+        , "[interaction_constraints: ]"
+        , sprintf("[verbosity: %i]", .LGB_VERBOSITY)
+        , "[saved_feature_importance_type: 0]"
+        , "[use_quantized_grad: 0]"
+        , "[num_grad_quant_bins: 4]"
+        , "[quant_train_renew_leaf: 0]"
+        , "[stochastic_rounding: 1]"
+        , "[linear_tree: 0]"
+        , "[max_bin: 255]"
+        , "[max_bin_by_feature: ]"
+        , "[min_data_in_bin: 3]"
+        , "[bin_construct_sample_cnt: 200000]"
+        , "[data_random_seed: 2350]"
+        , "[is_enable_sparse: 1]"
+        , "[enable_bundle: 1]"
+        , "[use_missing: 1]"
+        , "[zero_as_missing: 0]"
+        , "[feature_pre_filter: 1]"
+        , "[pre_partition: 0]"
+        , "[two_round: 0]"
+        , "[header: 0]"
+        , "[label_column: ]"
+        , "[weight_column: ]"
+        , "[group_column: ]"
+        , "[ignore_column: ]"
+        , "[categorical_feature: ]"
+        , "[forcedbins_filename: ]"
+        , "[precise_float_parser: 0]"
+        , "[parser_config_file: ]"
+        , "[objective_seed: 4309]"
+        , "[num_class: 1]"
+        , "[is_unbalance: 0]"
+        , "[scale_pos_weight: 1]"
+        , "[sigmoid: 1]"
+        , "[boost_from_average: 1]"
+        , "[reg_sqrt: 0]"
+        , "[alpha: 0.9]"
+        , "[fair_c: 1]"
+        , "[poisson_max_delta_step: 0.7]"
+        , "[tweedie_variance_power: 1.5]"
+        , "[lambdarank_truncation_level: 30]"
+        , "[lambdarank_norm: 1]"
+        , "[label_gain: ]"
+        , "[lambdarank_position_bias_regularization: 0]"
+        , "[eval_at: ]"
+        , "[multi_error_top_k: 1]"
+        , "[auc_mu_weights: ]"
+        , "[num_machines: 1]"
+        , "[local_listen_port: 12400]"
+        , "[time_out: 120]"
+        , "[machine_list_filename: ]"
+        , "[machines: ]"
+        , "[gpu_platform_id: -1]"
+        , "[gpu_device_id: -1]"
+        , "[gpu_use_dp: 0]"
+        , "[num_gpu: 1]"
+    )
+    all_param_entries <- c(non_default_param_entries, default_param_entries)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
-    expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
-    expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
-    expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
-    expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", .LGB_VERBOSITY)), 1L)
+    model_str <- bst$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    for (param_str in all_param_entries) {
+        expect_equal(sum(params_in_file == param_str), 1L, info = param_str)
+    }
 
     # early stopping should be off by default
     expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)

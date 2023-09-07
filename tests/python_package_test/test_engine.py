@@ -1548,7 +1548,6 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
     default_param_entries = [
         "[boosting: gbdt]",
         "[tree_learner: serial]",
-        "[device_type: cpu]",
         "[data: ]",
         "[valid: ]",
         "[learning_rate: 0.1]",
@@ -1656,15 +1655,36 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[machines: ]",
         "[gpu_platform_id: -1]",
         "[gpu_device_id: -1]",
-        "[gpu_use_dp: 0]",
         "[num_gpu: 1]",
     ]
     all_param_entries = non_default_param_entries + default_param_entries
 
+    # add device-specific entries
+    if getenv('TASK', '') == 'cuda':
+        device_entries = [
+            "[device_type: cuda]",
+            "[gpu_use_dp: 1]"
+        ]
+    elif getenv('TASK', '') == 'gpu':
+        device_entries = [
+            "[device_type: gpu]",
+            "[gpu_use_dp: 0]"
+        ]
+    else:
+        device_entries = [
+            "[device_type: cpu]",
+            "[gpu_use_dp: 0]"
+        ]
+
+    all_param_entries.append(device_entries)
+
+    # check that model text has all expected param entries
     for param_str in all_param_entries:
         assert param_str in model_txt_from_file
         assert param_str in model_txt_from_memory
 
+    # since Booster.model_to_string() is used when pickling, check that parameters all
+    # roundtrip pickling successfully too
     gbm_pkl = pickle_and_unpickle_object(gbm, serializer="joblib")
     model_txt_from_memory = gbm_pkl.model_to_string()
     model_file = tmp_path / "out-pkl.model"
