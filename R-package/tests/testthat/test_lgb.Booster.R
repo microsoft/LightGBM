@@ -806,6 +806,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
             , num_threads = .LGB_MAX_THREADS
             , seed = 708L
             , data_sample_strategy = "bagging"
+            , force_row_wise = TRUE
             , sub_row = 0.8234
         )
         , data = dtrain
@@ -816,11 +817,15 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     # entries whose values should reflect params passed to lgb.train()
     non_default_param_entries <- c(
         "[objective: mape]"
-        # NOTE: 'l1' was passed in with alias 'mae'
+        # 'l1' was passed in with alias 'mae'
         , "[metric: l2,l1]"
         , "[data_sample_strategy: bagging]"
         , "[seed: 708]"
-        # NOTE: this was passed in with alias 'sub_row'
+        # if force_col_wise / force_row_wise aren't explicitly set, they'll be chosen based on timing tests
+        # at Dataset construction time... setting them explicitly makes this test always pass
+        , "[force_col_wise: 0]"
+        , "[force_row_wise: 1]"
+        # this was passed in with alias 'sub_row'
         , "[bagging_fraction: 0.8234]"
         , "[num_iterations: 3]"
     )
@@ -836,8 +841,6 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         , "[num_leaves: 31]"
         , sprintf("[num_threads: %i]", .LGB_MAX_THREADS)
         , "[deterministic: 0]"
-        , "[force_col_wise: 0]"
-        , "[force_row_wise: 0]"
         , "[histogram_pool_size: -1]"
         , "[max_depth: -1]"
         , "[min_data_in_leaf: 20]"
