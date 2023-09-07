@@ -712,8 +712,8 @@ def create_tree_digraph(
         if isinstance(example_case, pd_DataFrame):
             example_case = _data_from_pandas(
                 data=example_case,
-                feature_name=None,
-                categorical_feature=None,
+                feature_name="auto",
+                categorical_feature="auto",
                 pandas_categorical=booster.pandas_categorical
             )[0]
         example_case = example_case[0]
