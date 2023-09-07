@@ -1514,7 +1514,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         'metric': ['l2', 'mae'],
         'seed': 708,
         'data_sample_strategy': 'bagging',
-        'force_row_wise': True,
+        'force_col_wise': True,
         'sub_row': 0.8234,
         'verbose': -1
     }
@@ -1542,8 +1542,12 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[seed: 708]",
         # if force_col_wise / force_row_wise aren't explicitly set, they'll be chosen based on timing tests
         # at Dataset construction time... setting them explicitly makes this test always pass
-        "[force_col_wise: 0]",
-        "[force_row_wise: 1]",
+        #
+        # force_col_wise is used here to avoid another if-else branch in the test... LightGBM
+        # sets force_col_wise=True and force_row_wise=False automatically for the GPU and CUDA builds
+        # https://github.com/microsoft/LightGBM/blob/1d7ee63686272bceffd522284127573b511df6be/src/io/config.cpp#L375-L377
+        "[force_col_wise: 1]",
+        "[force_row_wise: 0]",
         # NOTE: this was passed in with alias 'sub_row'
         "[bagging_fraction: 0.8234]",
         "[num_iterations: 3]",
