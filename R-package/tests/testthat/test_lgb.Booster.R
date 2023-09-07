@@ -799,7 +799,6 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         data = matrix(rnorm(500L), nrow = 100L)
         , label = rnorm(100L)
     )
-    nrounds <- 3L
     bst <- lgb.train(
         params = list(
             objective = "mape"
@@ -810,7 +809,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
             , sub_row = 0.8234
         )
         , data = dtrain
-        , nrounds = nrounds
+        , nrounds = 3L
         , verbose = .LGB_VERBOSITY
     )
 
@@ -953,6 +952,17 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     # early stopping should be off by default
     expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
+
+    # since save_model_to_string() is used when serializing with saveRDS(), check that parameters all
+    # roundtrip saveRDS()/loadRDS() successfully
+    rds_file <- tempfile()
+    saveRDS(bst, rds_file)
+    bst_rds <- readRDS(rds_file)
+    model_str <- bst_rds$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    for (param_str in all_param_entries) {
+        expect_equal(sum(params_in_file == param_str), 1L, info = param_str)
+    }
 })
 
 test_that("early_stopping, num_iterations are stored correctly in model string even with aliases", {

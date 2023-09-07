@@ -1676,7 +1676,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
             "[gpu_use_dp: 0]"
         ]
 
-    all_param_entries.append(device_entries)
+    all_param_entries += device_entries
 
     # check that model text has all expected param entries
     for param_str in all_param_entries:
