@@ -330,7 +330,7 @@ def gen_parameter_code(
     str_to_write += '  std::string tmp_str = "";\n'
     for x in infos:
         for y in x:
-            if "[no-generate-code]" in y:
+            if "[no-automatically-extract]" in y:
                 continue
             param_type = y["inner_type"][0]
             name = y["name"][0]
@@ -345,7 +345,7 @@ def gen_parameter_code(
     str_to_write += "  std::stringstream str_buf;\n"
     for x in infos:
         for y in x:
-            if "[no-generate-code]" in y or "[no-save]" in y:
+            if "[no-save]" in y:
                 continue
             param_type = y["inner_type"][0]
             name = y["name"][0]

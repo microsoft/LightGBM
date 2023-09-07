@@ -5,13 +5,13 @@
  * \note
  * - desc and descl2 fields must be written in reStructuredText format;
  * - nested sections can be placed only at the bottom of parent's section;
- * - [no-generate-code]
- *       - documentation should be generated, but the parameter shouldn't be included in automatically-generated
- *         Config::SaveMembersToString() code
+ * - [no-automatically-extract]
+ *       - do not automatically extract this parameter into a Config property with the same name in Config::GetMembersFromString(). Use if:
+ *           - specialized extraction logic for this param exists in Config::GetMembersFromString()
  * - [no-save]
- *       - this param should not be saved into a model text representation. Add this for params which...
- *           - ... are only used by the CLI (especially the "predict" and "convert_model" tasks)
- *           - ... lead LightGBM to related to LightGBM writing files files (e.g. "output_model", "save_binary")
+ *       - this param should not be saved into a model text representation via Config::SaveMembersToString(). Use if:
+ *           - param is only used by the CLI (especially the "predict" and "convert_model" tasks)
+ *           - param is related to LightGBM writing files (e.g. "output_model", "save_binary")
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -102,12 +102,14 @@ struct Config {
   #pragma region Core Parameters
   #endif  // __NVCC__
 
+  // [no-automatically-extract]
   // [no-save]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
+  // [no-automatically-extract]
   // [no-save]
   // type = enum
   // default = train
@@ -121,7 +123,8 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 
-  // [no-generate-code]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank, rank_xendcg
   // alias = objective_type, app, application, loss
@@ -153,7 +156,8 @@ struct Config {
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   std::string objective = "regression";
 
-  // [no-generate-code]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // alias = boosting_type, boost
   // options = gbdt, rf, dart
@@ -163,6 +167,7 @@ struct Config {
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
 
+  // [no-automatically-extract]
   // type = enum
   // options = bagging, goss
   // desc = ``bagging``, Randomly Bagging Sampling
@@ -202,7 +207,8 @@ struct Config {
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
-  // [no-generate-code]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // options = serial, feature, data, voting
   // alias = tree, tree_type, tree_learner_type
@@ -224,7 +230,8 @@ struct Config {
   // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
-  // [no-generate-code]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // options = cpu, gpu, cuda
   // alias = device
@@ -237,6 +244,7 @@ struct Config {
   // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
   std::string device_type = "cpu";
 
+  // [no-automatically-extract]
   // alias = random_seed, random_state
   // default = None
   // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
@@ -972,7 +980,8 @@ struct Config {
   #pragma region Metric Parameters
   #endif  // __NVCC__
 
-  // [no-generate-code]
+  // [no-automatically-extract]
+  // [no-save]
   // alias = metrics, metric_types
   // default = ""
   // type = multi-enum
