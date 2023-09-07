@@ -14,6 +14,7 @@
 
 #include <LightGBM/bin.h>
 #include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/utils/log.h>
 
 #include <algorithm>
@@ -174,7 +175,7 @@ __device__ __forceinline__ void GlobalMemoryPrefixSum(T* array, const size_t len
   for (size_t index = start; index < end; ++index) {
     thread_sum += array[index];
   }
-  __shared__ T shared_mem[32];
+  __shared__ T shared_mem[WARPSIZE];
   const T thread_base = ShufflePrefixSumExclusive<T>(thread_sum, shared_mem);
   if (start < end) {
     array[start] += thread_base;
@@ -483,7 +484,7 @@ __device__ void ShuffleSortedPrefixSumDevice(const VAL_T* in_values,
                                 const INDEX_T* sorted_indices,
                                 REDUCE_VAL_T* out_values,
                                 const INDEX_T num_data) {
-  __shared__ REDUCE_VAL_T shared_buffer[32];
+  __shared__ REDUCE_VAL_T shared_buffer[WARPSIZE];
   const INDEX_T num_data_per_thread = (num_data + static_cast<INDEX_T>(blockDim.x) - 1) / static_cast<INDEX_T>(blockDim.x);
   const INDEX_T start = num_data_per_thread * static_cast<INDEX_T>(threadIdx.x);
   const INDEX_T end = min(start + num_data_per_thread, num_data);

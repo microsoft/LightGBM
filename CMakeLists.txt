@@ -5,6 +5,7 @@ option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_ROCM "Enable ROCM-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 set(
@@ -35,6 +36,8 @@ elseif(USE_GPU OR APPLE)
   cmake_minimum_required(VERSION 3.2)
 elseif(USE_CUDA)
   cmake_minimum_required(VERSION 3.16)
+elseif(USE_ROCM)
+    cmake_minimum_required(VERSION 3.21)
 else()
   cmake_minimum_required(VERSION 3.0)
 endif()
@@ -153,6 +156,11 @@ if(USE_CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
 
+if(USE_ROCM)
+    enable_language(HIP)
+    set(USE_OPENMP ON CACHE BOOL "ROCM requires OpenMP" FORCE)
+endif()
+
 if(USE_OPENMP)
     if(APPLE)
         find_package(OpenMP)
@@ -260,6 +268,69 @@ if(USE_CUDA)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
+      if(hadd)
+        list(APPEND histograms histo${hsize}${hname})
+        set(histograms ${histograms} PARENT_SCOPE)
+      endif()
+      target_compile_definitions(
+        histo${hsize}${hname}
+        PRIVATE
+        -DCONST_HESSIAN=${hconst}
+        ${hdir}
+      )
+    endfunction()
+
+    foreach(hsize _16_64_256)
+      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
+    endforeach()
+endif()
+
+if(USE_ROCM)
+    find_package(HIP)
+    include_directories(${HIP_INCLUDE_DIRS})
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+
+    if(USE_DEBUG)
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
+    else()
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    endif()
+    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
+
+    add_definitions(-DUSE_CUDA)
+
+    if(NOT DEFINED CMAKE_HIP_STANDARD)
+      set(CMAKE_HIP_STANDARD 14)
+      set(CMAKE_HIP_STANDARD_REQUIRED ON)
+    endif()
+
+    set(
+      BASE_DEFINES
+      -DPOWER_FEATURE_WORKGROUPS=12
+      -DUSE_CONSTANT_BUF=0
+    )
+    set(
+      ALLFEATS_DEFINES
+      ${BASE_DEFINES}
+      -DENABLE_ALL_FEATURES
+    )
+    set(
+      FULLDATA_DEFINES
+      ${ALLFEATS_DEFINES}
+      -DIGNORE_INDICES
+    )
+
+    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
+    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
+
+    function(add_histogram hsize hname hadd hconst hdir)
+      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -404,31 +475,93 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
 
-file(
-    GLOB
+list(
+    APPEND
     SOURCES
-      src/boosting/*.cpp
-      src/io/*.cpp
-      src/metric/*.cpp
-      src/objective/*.cpp
-      src/network/*.cpp
-      src/treelearner/*.cpp
-if(USE_CUDA)
-      src/treelearner/*.cu
-      src/boosting/cuda/*.cpp
-      src/boosting/cuda/*.cu
-      src/metric/cuda/*.cpp
-      src/metric/cuda/*.cu
-      src/objective/cuda/*.cpp
-      src/objective/cuda/*.cu
-      src/treelearner/cuda/*.cpp
-      src/treelearner/cuda/*.cu
-      src/io/cuda/*.cu
-      src/io/cuda/*.cpp
-      src/cuda/*.cpp
-      src/cuda/*.cu
-endif()
+      src/boosting/boosting.cpp
+      src/boosting/gbdt.cpp
+      src/boosting/gbdt_model_text.cpp
+      src/boosting/gbdt_prediction.cpp
+      src/boosting/prediction_early_stop.cpp
+      src/boosting/sample_strategy.cpp
+      src/io/bin.cpp
+      src/io/config.cpp
+      src/io/config_auto.cpp
+      src/io/dataset.cpp
+      src/io/dataset_loader.cpp
+      src/io/file_io.cpp
+      src/io/json11.cpp
+      src/io/metadata.cpp
+      src/io/parser.cpp
+      src/io/train_share_states.cpp
+      src/io/tree.cpp
+      src/metric/dcg_calculator.cpp
+      src/metric/metric.cpp
+      src/network/linker_topo.cpp
+      src/network/linkers_mpi.cpp
+      src/network/linkers_socket.cpp
+      src/network/network.cpp
+      src/objective/objective_function.cpp
+      src/treelearner/data_parallel_tree_learner.cpp
+      src/treelearner/feature_parallel_tree_learner.cpp
+      src/treelearner/gpu_tree_learner.cpp
+      src/treelearner/gradient_discretizer.cpp
+      src/treelearner/linear_tree_learner.cpp
+      src/treelearner/serial_tree_learner.cpp
+      src/treelearner/tree_learner.cpp
+      src/treelearner/voting_parallel_tree_learner.cpp
 )
+
+list(
+    APPEND
+    CUDA_SOURCES
+      src/boosting/cuda/cuda_score_updater.cpp
+      src/boosting/cuda/cuda_score_updater.cu
+      src/cuda/cuda_algorithms.cu
+      src/cuda/cuda_utils.cpp
+      src/io/cuda/cuda_column_data.cpp
+      src/io/cuda/cuda_column_data.cu
+      src/io/cuda/cuda_metadata.cpp
+      src/io/cuda/cuda_row_data.cpp
+      src/io/cuda/cuda_tree.cpp
+      src/io/cuda/cuda_tree.cu
+      src/metric/cuda/cuda_binary_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cu
+      src/metric/cuda/cuda_regression_metric.cpp
+      src/objective/cuda/cuda_binary_objective.cpp
+      src/objective/cuda/cuda_binary_objective.cu
+      src/objective/cuda/cuda_multiclass_objective.cpp
+      src/objective/cuda/cuda_multiclass_objective.cu
+      src/objective/cuda/cuda_rank_objective.cpp
+      src/objective/cuda/cuda_rank_objective.cu
+      src/objective/cuda/cuda_regression_objective.cpp
+      src/objective/cuda/cuda_regression_objective.cu
+      src/treelearner/cuda/cuda_best_split_finder.cpp
+      src/treelearner/cuda/cuda_best_split_finder.cu
+      src/treelearner/cuda/cuda_data_partition.cpp
+      src/treelearner/cuda/cuda_data_partition.cu
+      src/treelearner/cuda/cuda_histogram_constructor.cpp
+      src/treelearner/cuda/cuda_histogram_constructor.cu
+      src/treelearner/cuda/cuda_leaf_splits.cpp
+      src/treelearner/cuda/cuda_leaf_splits.cu
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cpp
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cu
+)
+
+if(USE_CUDA)
+    list(APPEND SOURCES ${CUDA_SOURCES})
+endif()
+
+set(ROCM_SOURCES ${CUDA_SOURCES})
+if(USE_ROCM)
+    foreach(f ${CUDA_SOURCES})
+        if(f MATCHES ".*\\.cu$")
+            set_source_files_properties(${f} PROPERTIES LANGUAGE HIP)
+        endif()
+    endforeach()
+    list(APPEND SOURCES ${ROCM_SOURCES})
+endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
@@ -570,6 +703,16 @@ if(USE_CUDA)
   endif()
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
+  # histograms are list of object libraries. Linking object library to other
+  # object libraries only gets usage requirements, the linked objects won't be
+  # used. Thus we have to call target_link_libraries on final targets here.
+  if(BUILD_CLI)
+    target_link_libraries(lightgbm PRIVATE ${histograms})
+  endif()
+  target_link_libraries(_lightgbm PRIVATE ${histograms})
+endif()
+
+if(USE_ROCM)
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
