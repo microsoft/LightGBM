@@ -308,7 +308,7 @@ __global__ void GetGradientsKernel_LambdarankNDCG_Sorted(
 void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const {
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
   const data_size_t num_rank_label = static_cast<int>(label_gain_.size());
-
+  const int device_index = GetCUDADevice(__FILE__, __LINE__);
   cudaDeviceProp device_prop;
   CUDASUCCESS_OR_FATAL(cudaGetDeviceProperties(&device_prop, device_index));
 
