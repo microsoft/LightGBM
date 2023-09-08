@@ -62,6 +62,10 @@ _LGBM_GroupType = Union[
     np.ndarray,
     pd_Series
 ]
+_LGBM_PositionType = Union[
+    np.ndarray,
+    pd_Series
+]
 _LGBM_InitScoreType = Union[
     List[float],
     List[List[float]],
@@ -126,7 +130,7 @@ class _MissingType(Enum):
 
 class _DummyLogger:
     def info(self, msg: str) -> None:
-        print(msg)
+        print(msg)  # noqa: T201
 
     def warning(self, msg: str) -> None:
         warnings.warn(msg, stacklevel=3)
@@ -467,11 +471,10 @@ class _ConfigAliases:
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
                 ptr_string_buffer))
-        aliases = json.loads(
+        return json.loads(
             string_buffer.value.decode('utf-8'),
             object_hook=lambda obj: {k: [k] + v for k, v in obj.items()}
         )
-        return aliases
 
     @classmethod
     def get(cls, *args) -> Set[str]:
@@ -578,7 +581,8 @@ _FIELD_TYPE_MAPPER = {
     "label": _C_API_DTYPE_FLOAT32,
     "weight": _C_API_DTYPE_FLOAT32,
     "init_score": _C_API_DTYPE_FLOAT64,
-    "group": _C_API_DTYPE_INT32
+    "group": _C_API_DTYPE_INT32,
+    "position": _C_API_DTYPE_INT32
 }
 
 """String name to int feature importance type mapper"""
@@ -664,57 +668,52 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 
 def _data_from_pandas(
-    data,
-    feature_name: Optional[_LGBM_FeatureNameConfiguration],
-    categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
+    data: pd_DataFrame,
+    feature_name: _LGBM_FeatureNameConfiguration,
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]]
-):
-    if isinstance(data, pd_DataFrame):
-        if len(data.shape) != 2 or data.shape[0] < 1:
-            raise ValueError('Input data must be 2 dimensional and non empty.')
-        if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str, copy=False)
-        cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
-        cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
-        if pandas_categorical is None:  # train dataset
-            pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
-        else:
-            if len(cat_cols) != len(pandas_categorical):
-                raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip(cat_cols, pandas_categorical):
-                if list(data[col].cat.categories) != list(category):
-                    data[col] = data[col].cat.set_categories(category)
-        if len(cat_cols):  # cat_cols is list
-            data = data.copy(deep=False)  # not alter origin DataFrame
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
-        if categorical_feature is not None:
-            if feature_name is None:
-                feature_name = list(data.columns)
-            if categorical_feature == 'auto':  # use cat cols from DataFrame
-                categorical_feature = cat_cols_not_ordered
-            else:  # use cat cols specified by user
-                categorical_feature = list(categorical_feature)  # type: ignore[assignment]
-        if feature_name == 'auto':
-            feature_name = list(data.columns)
-        _check_for_bad_pandas_dtypes(data.dtypes)
-        df_dtypes = [dtype.type for dtype in data.dtypes]
-        df_dtypes.append(np.float32)  # so that the target dtype considers floats
-        target_dtype = np.find_common_type(df_dtypes, [])
-        try:
-            # most common case (no nullable dtypes)
-            data = data.to_numpy(dtype=target_dtype, copy=False)
-        except TypeError:
-            # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
-            # raises error because array is casted to type(pd.NA) and there's no na_value argument
-            data = data.astype(target_dtype, copy=False).values
-        except ValueError:
-            # data has nullable dtypes, but we can specify na_value argument and copy will be made
-            data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
+) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
+    if len(data.shape) != 2 or data.shape[0] < 1:
+        raise ValueError('Input data must be 2 dimensional and non empty.')
+
+    # determine feature names
+    if feature_name == 'auto':
+        feature_name = [str(col) for col in data.columns]
+
+    # determine categorical features
+    cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
+    cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
+    if pandas_categorical is None:  # train dataset
+        pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
     else:
-        if feature_name == 'auto':
-            feature_name = None
-        if categorical_feature == 'auto':
-            categorical_feature = None
+        if len(cat_cols) != len(pandas_categorical):
+            raise ValueError('train and valid dataset categorical_feature do not match.')
+        for col, category in zip(cat_cols, pandas_categorical):
+            if list(data[col].cat.categories) != list(category):
+                data[col] = data[col].cat.set_categories(category)
+    if len(cat_cols):  # cat_cols is list
+        data = data.copy(deep=False)  # not alter origin DataFrame
+        data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
+    if categorical_feature == 'auto':  # use cat cols from DataFrame
+        categorical_feature = cat_cols_not_ordered
+    else:  # use cat cols specified by user
+        categorical_feature = list(categorical_feature)  # type: ignore[assignment]
+
+    # get numpy representation of the data
+    _check_for_bad_pandas_dtypes(data.dtypes)
+    df_dtypes = [dtype.type for dtype in data.dtypes]
+    df_dtypes.append(np.float32)  # so that the target dtype considers floats
+    target_dtype = np.result_type(*df_dtypes)
+    try:
+        # most common case (no nullable dtypes)
+        data = data.to_numpy(dtype=target_dtype, copy=False)
+    except TypeError:
+        # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
+        # raises error because array is casted to type(pd.NA) and there's no na_value argument
+        data = data.astype(target_dtype, copy=False).values
+    except ValueError:
+        # data has nullable dtypes, but we can specify na_value argument and copy will be made
+        data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
     return data, feature_name, categorical_feature, pandas_categorical
 
 
@@ -1000,7 +999,15 @@ class _InnerPredictor:
                     ctypes.c_int(len(data_names)),
                 )
             )
-        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
+
+        if isinstance(data, pd_DataFrame):
+            data = _data_from_pandas(
+                data=data,
+                feature_name="auto",
+                categorical_feature="auto",
+                pandas_categorical=self.pandas_categorical
+            )[0]
+
         predict_type = _C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = _C_API_PREDICT_RAW_SCORE
@@ -1526,7 +1533,8 @@ class Dataset:
         feature_name: _LGBM_FeatureNameConfiguration = 'auto',
         categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
         params: Optional[Dict[str, Any]] = None,
-        free_raw_data: bool = True
+        free_raw_data: bool = True,
+        position: Optional[_LGBM_PositionType] = None,
     ):
         """Initialize Dataset.
 
@@ -1566,6 +1574,8 @@ class Dataset:
             Other parameters for Dataset.
         free_raw_data : bool, optional (default=True)
             If True, raw data is freed after constructing inner Dataset.
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
+            Position of items used in unbiased learning-to-rank task.
         """
         self._handle: Optional[_DatasetHandle] = None
         self.data = data
@@ -1573,6 +1583,7 @@ class Dataset:
         self.reference = reference
         self.weight = weight
         self.group = group
+        self.position = position
         self.init_score = init_score
         self.feature_name: _LGBM_FeatureNameConfiguration = feature_name
         self.categorical_feature: _LGBM_CategoricalFeatureConfiguration = categorical_feature
@@ -1837,7 +1848,8 @@ class Dataset:
         predictor: Optional[_InnerPredictor],
         feature_name: _LGBM_FeatureNameConfiguration,
         categorical_feature: _LGBM_CategoricalFeatureConfiguration,
-        params: Optional[Dict[str, Any]]
+        params: Optional[Dict[str, Any]],
+        position: Optional[_LGBM_PositionType]
     ) -> "Dataset":
         if data is None:
             self._handle = None
@@ -1845,10 +1857,13 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data=data,
-                                                                                             feature_name=feature_name,
-                                                                                             categorical_feature=categorical_feature,
-                                                                                             pandas_categorical=self.pandas_categorical)
+        if isinstance(data, pd_DataFrame):
+            data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(
+                data=data,
+                feature_name=feature_name,
+                categorical_feature=categorical_feature,
+                pandas_categorical=self.pandas_categorical
+            )
 
         # process for args
         params = {} if params is None else params
@@ -1858,10 +1873,10 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # get categorical features
-        if categorical_feature is not None:
+        if isinstance(categorical_feature, list):
             categorical_indices = set()
             feature_dict = {}
-            if feature_name is not None:
+            if isinstance(feature_name, list):
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
                 if isinstance(name, str) and name in feature_dict:
@@ -1926,6 +1941,8 @@ class Dataset:
             self.set_weight(weight)
         if group is not None:
             self.set_group(group)
+        if position is not None:
+            self.set_position(position)
         if isinstance(predictor, _InnerPredictor):
             if self._predictor is None and init_score is not None:
                 _log_warning("The init_score will be overridden by the prediction of init_model.")
@@ -2220,7 +2237,7 @@ class Dataset:
                 if self.used_indices is None:
                     # create valid
                     self._lazy_init(data=self.data, label=self.label, reference=self.reference,
-                                    weight=self.weight, group=self.group,
+                                    weight=self.weight, group=self.group, position=self.position,
                                     init_score=self.init_score, predictor=self._predictor,
                                     feature_name=self.feature_name, categorical_feature='auto', params=self.params)
                 else:
@@ -2243,6 +2260,8 @@ class Dataset:
                         self.get_data()
                     if self.group is not None:
                         self.set_group(self.group)
+                    if self.position is not None:
+                        self.set_position(self.position)
                     if self.get_label() is None:
                         raise ValueError("Label should not be None.")
                     if isinstance(self._predictor, _InnerPredictor) and self._predictor is not self.reference._predictor:
@@ -2257,7 +2276,8 @@ class Dataset:
                 self._lazy_init(data=self.data, label=self.label, reference=None,
                                 weight=self.weight, group=self.group,
                                 init_score=self.init_score, predictor=self._predictor,
-                                feature_name=self.feature_name, categorical_feature=self.categorical_feature, params=self.params)
+                                feature_name=self.feature_name, categorical_feature=self.categorical_feature,
+                                params=self.params, position=self.position)
             if self.free_raw_data:
                 self.data = None
             self.feature_name = self.get_feature_name()
@@ -2270,7 +2290,8 @@ class Dataset:
         weight: Optional[_LGBM_WeightType] = None,
         group: Optional[_LGBM_GroupType] = None,
         init_score: Optional[_LGBM_InitScoreType] = None,
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
+        position: Optional[_LGBM_PositionType] = None
     ) -> "Dataset":
         """Create validation data align with current Dataset.
 
@@ -2293,6 +2314,8 @@ class Dataset:
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
+            Position of items used in unbiased learning-to-rank task.
 
         Returns
         -------
@@ -2300,7 +2323,7 @@ class Dataset:
             Validation Dataset with reference to self.
         """
         ret = Dataset(data, label=label, reference=self,
-                      weight=weight, group=group, init_score=init_score,
+                      weight=weight, group=group, position=position, init_score=init_score,
                       params=params, free_raw_data=self.free_raw_data)
         ret._predictor = self._predictor
         ret.pandas_categorical = self.pandas_categorical
@@ -2435,7 +2458,7 @@ class Dataset:
                     'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
         else:
-            dtype = np.int32 if field_name == 'group' else np.float32
+            dtype = np.int32 if (field_name == 'group' or field_name == 'position') else np.float32
             data = _list_to_1d_numpy(data, dtype=dtype, name=field_name)
 
         ptr_data: Union[_ctypes_float_ptr, _ctypes_int_ptr]
@@ -2728,6 +2751,28 @@ class Dataset:
             self.set_field('group', group)
         return self
 
+    def set_position(
+        self,
+        position: Optional[_LGBM_PositionType]
+    ) -> "Dataset":
+        """Set position of Dataset (used for ranking).
+
+        Parameters
+        ----------
+        position : numpy 1-D array, pandas Series or None, optional (default=None)
+            Position of items used in unbiased learning-to-rank task.
+
+        Returns
+        -------
+        self : Dataset
+            Dataset with set position.
+        """
+        self.position = position
+        if self._handle is not None and position is not None:
+            position = _list_to_1d_numpy(position, dtype=np.int32, name='position')
+            self.set_field('position', position)
+        return self
+
     def get_feature_name(self) -> List[str]:
         """Get the names of columns (features) in the Dataset.
 
@@ -2853,6 +2898,18 @@ class Dataset:
                 # group data from LightGBM is boundaries data, need to convert to group size
                 self.group = np.diff(self.group)
         return self.group
+
+    def get_position(self) -> Optional[np.ndarray]:
+        """Get the position of the Dataset.
+
+        Returns
+        -------
+        position : numpy 1-D array or None
+            Position of items used in unbiased learning-to-rank task.
+        """
+        if self.position is None:
+            self.position = self.get_field('position')
+        return self.position
 
     def num_data(self) -> int:
         """Get the number of rows in the Dataset.
@@ -3209,8 +3266,7 @@ class Booster:
 
     def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
-        booster = Booster(model_str=model_str)
-        return booster
+        return Booster(model_str=model_str)
 
     def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
