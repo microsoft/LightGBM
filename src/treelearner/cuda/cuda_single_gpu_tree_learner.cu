@@ -6,10 +6,10 @@
 
 #ifdef USE_CUDA
 
+#include "cuda_single_gpu_tree_learner.hpp"
+
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_rocm_interop.h>
-
-#include "cuda_single_gpu_tree_learner.hpp"
 
 #include <algorithm>
 

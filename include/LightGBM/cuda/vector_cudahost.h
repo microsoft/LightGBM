@@ -45,7 +45,7 @@ struct CHAllocator {
     n = SIZE_ALIGNED(n);
     #ifdef USE_CUDA
       if (LGBM_config_::current_device == lgbm_device_cuda) {
-        cudaError_t ret = cudaHostAlloc((void**)&ptr, n*sizeof(T), cudaHostAllocPortable);
+        cudaError_t ret = cudaHostAlloc(reinterpret_cast<void**>(&ptr), n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
           Log::Warning("Defaulting to malloc in CHAllocator!!!");
           ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));

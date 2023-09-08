@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 /*!
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
@@ -308,6 +309,9 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
   const int num_blocks = (num_queries_ + NUM_QUERY_PER_BLOCK - 1) / NUM_QUERY_PER_BLOCK;
   const data_size_t num_rank_label = static_cast<int>(label_gain_.size());
 
+  cudaDeviceProp device_prop;
+  CUDASUCCESS_OR_FATAL(cudaGetDeviceProperties(&device_prop, device_index));
+
   #define GetGradientsKernel_LambdarankNDCG_ARGS \
     score, cuda_labels_, num_data_, \
     num_queries_, cuda_query_boundaries_, cuda_inverse_max_dcgs_.RawData(), \
@@ -321,12 +325,9 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
     gradients, hessians
 
   if (max_items_in_query_aligned_ <= 1024) {
-#ifndef __HIP__
-    if (num_rank_label <= 32) {
+    if (num_rank_label <= 32 && device_prop.warpSize == 32) {
       GetGradientsKernel_LambdarankNDCG<false, 32><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
-    } else
-#endif
-    if (num_rank_label <= 64) {
+    } else if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG<false, 64><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG<false, 128><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
@@ -340,12 +341,9 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
       GetGradientsKernel_LambdarankNDCG<false, 2048><<<num_blocks, max_items_in_query_aligned_>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     }
   } else if (max_items_in_query_aligned_ <= 2048) {
-#ifndef __HIP__
-    if (num_rank_label <= 32) {
+    if (num_rank_label <= 32 && device_prop.warpSize == 32) {
       GetGradientsKernel_LambdarankNDCG<true, 32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
-    } else
-#endif
-    if (num_rank_label <= 64) {
+    } else if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG<true, 64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG<true, 128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_ARGS);
@@ -360,12 +358,9 @@ void CUDALambdarankNDCG::LaunchGetGradientsKernel(const double* score, score_t* 
     }
   } else {
     BitonicArgSortItemsGlobal(score, num_queries_, cuda_query_boundaries_, cuda_item_indices_buffer_.RawData());
-#ifndef __HIP__
-    if (num_rank_label <= 32) {
+    if (num_rank_label <= 32 && device_prop.warpSize == 32) {
       GetGradientsKernel_LambdarankNDCG_Sorted<32><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
-    } else
-#endif
-    if (num_rank_label <= 64) {
+    } else if (num_rank_label <= 64) {
       GetGradientsKernel_LambdarankNDCG_Sorted<64><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);
     } else if (num_rank_label <= 128) {
       GetGradientsKernel_LambdarankNDCG_Sorted<128><<<num_blocks, 1024>>>(GetGradientsKernel_LambdarankNDCG_Sorted_ARGS);

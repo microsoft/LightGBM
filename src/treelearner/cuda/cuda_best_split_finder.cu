@@ -6,11 +6,12 @@
 
 #ifdef USE_CUDA
 
-#include <algorithm>
+#include "cuda_best_split_finder.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
 #include <LightGBM/cuda/cuda_rocm_interop.h>
-#include "cuda_best_split_finder.hpp"
+
+#include <algorithm>
 
 namespace LightGBM {
 

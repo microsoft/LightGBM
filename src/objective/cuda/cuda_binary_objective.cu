@@ -6,10 +6,11 @@
 
 #ifdef USE_CUDA
 
-#include <algorithm>
+#include "cuda_binary_objective.hpp"
+
 #include <LightGBM/cuda/cuda_rocm_interop.h>
 
-#include "cuda_binary_objective.hpp"
+#include <algorithm>
 
 namespace LightGBM {
 

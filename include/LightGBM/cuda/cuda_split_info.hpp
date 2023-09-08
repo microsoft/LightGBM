@@ -47,10 +47,10 @@ class CUDASplitInfo {
   __host__ __device__ ~CUDASplitInfo() {
     if (num_cat_threshold > 0) {
       if (cat_threshold != nullptr) {
-        cudaFree(cat_threshold);
+        CUDASUCCESS_OR_FATAL(cudaFree(cat_threshold));
       }
       if (cat_threshold_real != nullptr) {
-        cudaFree(cat_threshold_real);
+        CUDASUCCESS_OR_FATAL(cudaFree(cat_threshold_real));
       }
     }
   }
