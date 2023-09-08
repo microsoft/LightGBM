@@ -115,6 +115,12 @@ class RF : public GBDT {
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
     const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
 
+    // GOSSStrategy->Bagging may modify value of bag_data_cnt_
+    if (is_use_subset && bag_data_cnt < num_data_) {
+      tmp_grad_.resize(num_data_);
+      tmp_hess_.resize(num_data_);
+    }
+
     CHECK_EQ(gradients, nullptr);
     CHECK_EQ(hessians, nullptr);
 
