@@ -22,7 +22,7 @@ jobs:
   test:
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
