@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2020 IBM Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #include "histogram_16_64_256.hu"
