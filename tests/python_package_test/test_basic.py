@@ -723,7 +723,12 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.rand(10, 2).astype(dtype)
     df = pd.DataFrame(X)
-    built_data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    built_data = lgb.basic._data_from_pandas(
+        data=df,
+        feature_name=feature_name,
+        categorical_feature="auto",
+        pandas_categorical=None
+    )[0]
     assert built_data.dtype == dtype
     assert np.shares_memory(X, built_data)
 
@@ -734,7 +739,12 @@ def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
     X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
     column_name = 'a' if feature_name == 'auto' else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
-    data = lgb.basic._data_from_pandas(df, feature_name, None, None)[0]
+    data = lgb.basic._data_from_pandas(
+        data=df,
+        feature_name=feature_name,
+        categorical_feature="auto",
+        pandas_categorical=None
+    )[0]
     # check that the original data wasn't modified
     np.testing.assert_equal(df[column_name], X[:, 0])
     # check that the built data has the codes
@@ -806,3 +816,10 @@ def test_set_leaf_output():
         leaf_output = bst.get_leaf_output(tree_id=0, leaf_id=leaf_id)
         bst.set_leaf_output(tree_id=0, leaf_id=leaf_id, value=leaf_output + 1)
     np.testing.assert_allclose(bst.predict(X), y_pred + 1)
+
+
+def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Dataset():
+    ds = lgb.Dataset(
+        data=np.random.randn(100, 3),
+    )
+    assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]

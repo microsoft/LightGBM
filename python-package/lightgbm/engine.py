@@ -651,13 +651,18 @@ def cv(
 
     Returns
     -------
-    eval_hist : dict
-        Evaluation history.
+    eval_results : dict
+        History of evaluation results of each metric.
         The dictionary has the following format:
-        {'metric1-mean': [values], 'metric1-stdv': [values],
-        'metric2-mean': [values], 'metric2-stdv': [values],
+        {'valid metric1-mean': [values], 'valid metric1-stdv': [values],
+        'valid metric2-mean': [values], 'valid metric2-stdv': [values],
         ...}.
         If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
+        If ``eval_train_metric=True``, also returns the train metric history.
+        In this case, the dictionary has the following format:
+        {'train metric1-mean': [values], 'valid metric1-mean': [values],
+        'train metric2-mean': [values], 'valid metric2-mean': [values],
+        ...}.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
