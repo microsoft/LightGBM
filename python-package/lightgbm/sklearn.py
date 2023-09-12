@@ -1103,6 +1103,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)  # type: ignore[arg-type]
+        if self.objective is None:
+            self._objective = None
 
         # adjust eval metrics to match whether binary or multiclass
         # classification is being performed

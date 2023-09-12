@@ -1141,6 +1141,8 @@ Objective Parameters
 
    -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
 
+   -  *New in version 4.1.0*
+
 Metric Parameters
 -----------------
 
