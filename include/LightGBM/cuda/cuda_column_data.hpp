@@ -98,6 +98,7 @@ class CUDAColumnData {
 
   void ResizeWhenCopySubrow(const data_size_t num_used_indices);
 
+  int gpu_device_id_;
   int num_threads_;
   data_size_t num_data_;
   int num_columns_;

@@ -18,6 +18,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
+    "dataclasses ; python_version < '3.7'",
     "numpy",
     "scipy"
 ]
@@ -29,7 +30,7 @@ maintainers = [
 name = "lightgbm"
 readme = "README.rst"
 requires-python = ">=3.6"
-version = "4.0.0.99"
+version = "4.1.0"
 
 [project.optional-dependencies]
 dask = [
@@ -111,7 +112,13 @@ select = [
     # pycodestyle
     "E",
     # pyflakes
-    "F"
+    "F",
+    # flake8-return: unnecessary assignment before return
+    "RET504",
+    # flake8-simplify: use dict.get() instead of an if-else block
+    "SIM401",
+    # flake8-print
+    "T",
 ]
 
 # this should be set to the oldest version of python LightGBM supports
@@ -120,13 +127,17 @@ target-version = "py37"
 [tool.ruff.per-file-ignores]
 "examples/*" = [
     # pydocstyle
-    "D"
+    "D",
+    # flake8-print
+    "T"
 ]
 "tests/*" = [
     # (flake8-bugbear) Found useless expression
     "B018",
     # pydocstyle
-    "D"
+    "D",
+    # flake8-print
+    "T"
 ]
 
 [tool.ruff.pydocstyle]

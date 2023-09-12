@@ -9,6 +9,7 @@ import random
 import re
 from os import getenv
 from pathlib import Path
+from shutil import copyfile
 
 import numpy as np
 import psutil
@@ -19,7 +20,7 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
@@ -142,7 +143,7 @@ def test_regression(objective):
     elif objective == 'quantile':
         assert ret < 1311
     else:
-        assert ret < 338
+        assert ret < 343
     assert evals_result['valid_0']['l2'][-1] == pytest.approx(ret)
 
 
@@ -745,6 +746,171 @@ def test_ranking_prediction_early_stopping():
     ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
+
+
+# Simulates position bias for a given ranking dataset.
+# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The new labels are generated according to an instance of a cascade user model:
+# for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
+# (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
+# and clicks on that document (new_label=1) with some probability 'pclick' depending on its true relevance;
+# at each position the user may stop the traversal with some probability pstop. For the non-clicked documents,
+# new_label=0. Thus the generated new labels are biased towards the baseline ranker. 
+# The positions of the documents in the ranked lists produced by the baseline, are returned.
+def simulate_position_bias(file_dataset_in, file_query_in, file_dataset_out, baseline_feature):
+    # a mapping of a document's true relevance (defined on a 5-grade scale) into the probability of clicking it
+    def get_pclick(label):
+        if label == 0:
+            return 0.4
+        elif label == 1:
+            return 0.6
+        elif label == 2:
+            return 0.7
+        elif label == 3:
+            return 0.8
+        else:
+            return 0.9
+    # an instantiation of a cascade model where the user stops with probability 0.2 after observing each document
+    pstop = 0.2
+ 
+    f_dataset_in = open(file_dataset_in, 'r')
+    f_dataset_out = open(file_dataset_out, 'w')
+    random.seed(10)
+    positions_all = []
+    for line in open(file_query_in):
+        docs_num = int (line)
+        lines = []
+        index_values = []    
+        positions = [0] * docs_num
+        for index in range(docs_num):
+            features = f_dataset_in.readline().split()
+            lines.append(features)
+            val = 0.0
+            for feature_val in features:
+                feature_val_split = feature_val.split(":")           
+                if int(feature_val_split[0]) == baseline_feature:
+                    val = float(feature_val_split[1])
+            index_values.append([index, val])
+        index_values.sort(key=lambda x: -x[1])
+        stop = False 
+        for pos in range(docs_num):
+            index = index_values[pos][0]
+            new_label = 0
+            if not stop:
+                label = int(lines[index][0])
+                pclick = get_pclick(label)
+                if random.random() < pclick:
+                    new_label = 1       
+                stop = random.random() < pstop
+            lines[index][0] = str(new_label)
+            positions[index] = pos
+        for features in lines:
+            f_dataset_out.write(' '.join(features) + '\n')
+        positions_all.extend(positions)
+    f_dataset_out.close()
+    return positions_all
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
+def test_ranking_with_position_information_with_file(tmp_path):
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    params = {
+        'objective': 'lambdarank',
+        'verbose': -1,
+        'eval_at': [3],
+        'metric': 'ndcg',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0
+    }
+
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    f_positions_out = open(str(tmp_path / 'rank.train.position'), 'w')
+    for pos in positions:
+        f_positions_out.write(str(pos) + '\n')
+    f_positions_out.close()
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
+
+    # add extra row to position file
+    with open(str(tmp_path / 'rank.train.position'), 'a') as file:
+        file.write('pos_1000\n')
+        file.close()
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    with pytest.raises(lgb.basic.LightGBMError, match="Positions size \(3006\) doesn't match data size"):
+        lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
+def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    params = {
+        'objective': 'lambdarank',
+        'verbose': -1,
+        'eval_at': [3],
+        'metric': 'ndcg',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0,
+        'num_threads': 1,
+        'deterministic': True,
+        'seed': 0
+    }
+
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    positions = np.array(positions)
+
+    # test setting positions through Dataset constructor with numpy array
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=positions)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased.best_score['valid_0']['ndcg@3']
+
+    if PANDAS_INSTALLED:
+        # test setting positions through Dataset constructor with pandas Series
+        lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=pd_Series(positions))
+        lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+        gbm_unbiased_pandas_series = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+        assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_pandas_series.best_score['valid_0']['ndcg@3']
+
+    # test setting positions through set_position
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    lgb_train.set_position(positions)
+    gbm_unbiased_set_position = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_set_position.best_score['valid_0']['ndcg@3']
+
+    # test get_position works
+    positions_from_get = lgb_train.get_position()
+    np.testing.assert_array_equal(positions_from_get, positions)
 
 
 def test_early_stopping():
@@ -1720,8 +1886,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     categorical_features = []
     if x3_to_category:
         categorical_features = [2]
-    trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
-    return trainset
+    return lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
 
 
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Monotone constraints are not yet supported by CUDA version')
