@@ -699,7 +699,7 @@ TrainingShareStates* Dataset::GetShareStates(
 
     if (col_wise_time < row_wise_time) {
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_col_wise=true` to remove the overhead.",
@@ -707,7 +707,7 @@ TrainingShareStates* Dataset::GetShareStates(
       return col_wise_state.release();
     } else {
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_row_wise=true` to remove the overhead.\n"
@@ -937,6 +937,8 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data,
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     metadata_.SetQuery(field_data, num_element);
+  } else if (name == std::string("position")) {
+    metadata_.SetPosition(field_data, num_element);
   } else {
     return false;
   }
@@ -987,6 +989,9 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = metadata_.num_queries() + 1;
+  } else if (name == std::string("position")) {
+    *out_ptr = metadata_.positions();
+    *out_len = num_data_;
   } else {
     return false;
   }

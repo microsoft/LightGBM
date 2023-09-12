@@ -7,6 +7,7 @@
 #
 echo "installing lightgbm's dependencies"
 pip install \
+  'dataclasses' \
   'numpy==1.12.0' \
   'pandas==0.24.0' \
   'scikit-learn==0.18.2' \
