@@ -60,6 +60,7 @@ class LeafSplits {
   * \param sum_gradients
   * \param sum_hessians
   * \param sum_gradients_and_hessians
+  * \param weight
   */
   void Init(int leaf, const DataPartition* data_partition, double sum_gradients,
             double sum_hessians, int64_t sum_gradients_and_hessians, double weight) {
