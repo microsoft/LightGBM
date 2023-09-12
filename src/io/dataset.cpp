@@ -1278,21 +1278,34 @@ void Dataset::ConstructHistogramsInner(
   auto ptr_ordered_grad = gradients;
   auto ptr_ordered_hess = hessians;
   if (num_used_dense_group > 0) {
-    if (USE_INDICES) {
-      if (USE_HESSIAN) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+    if (USE_QUANT_GRAD) {
+      int16_t* ordered_gradients_and_hessians = reinterpret_cast<int16_t*>(ordered_gradients);
+      const int16_t* gradients_and_hessians = reinterpret_cast<const int16_t*>(gradients);
+      if (USE_INDICES) {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
-          ordered_hessians[i] = hessians[data_indices[i]];
+          ordered_gradients_and_hessians[i] = gradients_and_hessians[data_indices[i]];
         }
-        ptr_ordered_grad = ordered_gradients;
-        ptr_ordered_hess = ordered_hessians;
-      } else {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
-        for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
+        ptr_ordered_grad = reinterpret_cast<const score_t*>(ordered_gradients);
+        ptr_ordered_hess = nullptr;
+      }
+    } else {
+      if (USE_INDICES) {
+        if (USE_HESSIAN) {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+            ordered_hessians[i] = hessians[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
+          ptr_ordered_hess = ordered_hessians;
+        } else {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
         }
-        ptr_ordered_grad = ordered_gradients;
       }
     }
     OMP_INIT_EX();
