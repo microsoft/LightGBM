@@ -1,5 +1,66 @@
 # CRAN Submission History
 
+## v4.1.0 - not submitted
+
+v4.1.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.
+
+## v4.0.0 - Submission 2 - (July 19, 2023)
+
+### CRAN response
+
+> Dear maintainer,
+> package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
+
+The logs linked from those messagges showed one issue remaining on Debian (0 on Windows).
+
+```text
+* checking examples ... [7s/4s] NOTE
+Examples with CPU time > 2.5 times elapsed time
+                    user system elapsed  ratio
+lgb.restore_handle 1.206  0.085   0.128 10.08
+```
+
+### Maintainer Notes
+
+Chose to document the issue and need for a fix in https://github.com/microsoft/LightGBM/issues/5987, but not resubmit,
+to avoid annoying CRAN maintainers.
+
+## v4.0.0 - Submission 1 - (July 16, 2023)
+
+### CRAN response
+
+> Dear maintainer,
+> package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
+
+The logs linked from those messages showed the following issues from `R CMD check`.
+
+```text
+* checking S3 generic/method consistency ... NOTE
+Mismatches for apparent methods not registered:
+merge:
+  function(x, y, ...)
+merge.eval.string:
+  function(env)
+
+format:
+  function(x, ...)
+format.eval.string:
+  function(eval_res, eval_err)
+See section 'Registering S3 methods' in the 'Writing R Extensions'
+manual.
+```
+
+```text
+* checking examples ... [8s/4s] NOTE
+Examples with CPU time > 2.5 times elapsed time
+                    user system elapsed ratio
+lgb.restore_handle 1.819  0.128   0.165  11.8
+```
+
+### Maintainer Notes
+
+Attempted to fix these with https://github.com/microsoft/LightGBM/pull/5988 and resubmitted.
+
 ## v3.3.5 - Submission 2 - (January 16, 2023)
 
 ### CRAN response
