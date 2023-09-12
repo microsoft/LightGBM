@@ -965,6 +965,11 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  // check = >=0.0
+  // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
+  // desc = *New in version 4.1.0*
+  double lambdarank_position_bias_regularization = 0.0;
+
   #ifndef __NVCC__
   #pragma endregion
 

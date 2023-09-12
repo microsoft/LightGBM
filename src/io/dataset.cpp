@@ -937,6 +937,8 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data,
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     metadata_.SetQuery(field_data, num_element);
+  } else if (name == std::string("position")) {
+    metadata_.SetPosition(field_data, num_element);
   } else {
     return false;
   }
@@ -987,6 +989,9 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = metadata_.num_queries() + 1;
+  } else if (name == std::string("position")) {
+    *out_ptr = metadata_.positions();
+    *out_len = num_data_;
   } else {
     return false;
   }
@@ -1273,21 +1278,34 @@ void Dataset::ConstructHistogramsInner(
   auto ptr_ordered_grad = gradients;
   auto ptr_ordered_hess = hessians;
   if (num_used_dense_group > 0) {
-    if (USE_INDICES) {
-      if (USE_HESSIAN) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+    if (USE_QUANT_GRAD) {
+      int16_t* ordered_gradients_and_hessians = reinterpret_cast<int16_t*>(ordered_gradients);
+      const int16_t* gradients_and_hessians = reinterpret_cast<const int16_t*>(gradients);
+      if (USE_INDICES) {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
-          ordered_hessians[i] = hessians[data_indices[i]];
+          ordered_gradients_and_hessians[i] = gradients_and_hessians[data_indices[i]];
         }
-        ptr_ordered_grad = ordered_gradients;
-        ptr_ordered_hess = ordered_hessians;
-      } else {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
-        for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
+        ptr_ordered_grad = reinterpret_cast<const score_t*>(ordered_gradients);
+        ptr_ordered_hess = nullptr;
+      }
+    } else {
+      if (USE_INDICES) {
+        if (USE_HESSIAN) {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+            ordered_hessians[i] = hessians[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
+          ptr_ordered_hess = ordered_hessians;
+        } else {
+  #pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
         }
-        ptr_ordered_grad = ordered_gradients;
       }
     }
     OMP_INIT_EX();
