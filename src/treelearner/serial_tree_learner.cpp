@@ -845,9 +845,9 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     if (best_split_info.left_count < best_split_info.right_count) {
       CHECK_GT(best_split_info.left_count, 0);
       smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
-                                best_split_info.left_sum_gradient,
-                                best_split_info.left_sum_hessian,
-                                best_split_info.left_output);
+                                 best_split_info.left_sum_gradient,
+                                 best_split_info.left_sum_hessian,
+                                 best_split_info.left_output);
       larger_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                 best_split_info.right_sum_gradient,
                                 best_split_info.right_sum_hessian,
@@ -855,9 +855,9 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     } else {
       CHECK_GT(best_split_info.right_count, 0);
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
-                                best_split_info.right_sum_gradient,
-                                best_split_info.right_sum_hessian,
-                                best_split_info.right_output);
+                                 best_split_info.right_sum_gradient,
+                                 best_split_info.right_sum_hessian,
+                                 best_split_info.right_output);
       larger_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                 best_split_info.left_sum_gradient,
                                 best_split_info.left_sum_hessian,
@@ -1081,6 +1081,7 @@ void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int l
     }
     Log::Warning("============================ start leaf split info ============================");
     Log::Warning("left_leaf_index = %d, right_leaf_index = %d", left_leaf_index, right_leaf_index);
+    Log::Warning("num_data_in_left = %d, num_data_in_right = %d", num_data_in_left, num_data_in_right);
     Log::Warning("sum_left_gradient = %d, best_split_info->left_sum_gradient_and_hessian.gradient = %d", sum_left_gradient,
       static_cast<int32_t>(best_split_info.left_sum_gradient_and_hessian >> 32));
     Log::Warning("sum_left_hessian = %d, best_split_info->left_sum_gradient_and_hessian.hessian = %d", sum_left_hessian,
@@ -1089,6 +1090,12 @@ void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int l
       static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian >> 32));
     Log::Warning("sum_right_hessian = %d, best_split_info->right_sum_gradient_and_hessian.hessian = %d", sum_right_hessian,
       static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian & 0x00000000ffffffff));
+    CHECK_EQ(num_data_in_left, best_split_info.left_count);
+    CHECK_EQ(num_data_in_right, best_split_info.right_count);
+    CHECK_EQ(sum_left_gradient, static_cast<int32_t>(best_split_info.left_sum_gradient_and_hessian >> 32))
+    CHECK_EQ(sum_left_hessian, static_cast<int32_t>(best_split_info.left_sum_gradient_and_hessian & 0x00000000ffffffff));
+    CHECK_EQ(sum_right_gradient, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian >> 32));
+    CHECK_EQ(sum_right_hessian, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian & 0x00000000ffffffff));
     Log::Warning("============================ end leaf split info ============================");
   }
 }
