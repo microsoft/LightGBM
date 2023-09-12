@@ -456,26 +456,6 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
     } else {
       if (cuda_row_data_->is_sparse()) {
         if (num_bits_in_histogram_bins <= 16) {
-          CUDAConstructDiscretizedHistogramDenseKernel<BIN_TYPE, SHARED_HIST_SIZE, true><<<grid_dim, block_dim, 0, cuda_stream_>>>(
-            cuda_smaller_leaf_splits,
-            reinterpret_cast<const int32_t*>(cuda_gradients_),
-            cuda_row_data_->GetBin<BIN_TYPE>(),
-            cuda_row_data_->cuda_column_hist_offsets(),
-            cuda_row_data_->cuda_partition_hist_offsets(),
-            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
-            num_data_);
-        } else {
-          CUDAConstructDiscretizedHistogramDenseKernel<BIN_TYPE, SHARED_HIST_SIZE, false><<<grid_dim, block_dim, 0, cuda_stream_>>>(
-            cuda_smaller_leaf_splits,
-            reinterpret_cast<const int32_t*>(cuda_gradients_),
-            cuda_row_data_->GetBin<BIN_TYPE>(),
-            cuda_row_data_->cuda_column_hist_offsets(),
-            cuda_row_data_->cuda_partition_hist_offsets(),
-            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
-            num_data_);
-        }
-      } else {
-        if (num_bits_in_histogram_bins <= 16) {
           CUDAConstructDiscretizedHistogramSparseKernel<BIN_TYPE, PTR_TYPE, SHARED_HIST_SIZE, true><<<grid_dim, block_dim, 0, cuda_stream_>>>(
             cuda_smaller_leaf_splits,
             reinterpret_cast<const int32_t*>(cuda_gradients_),
@@ -492,6 +472,26 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
             cuda_row_data_->GetRowPtr<PTR_TYPE>(),
             cuda_row_data_->GetPartitionPtr<PTR_TYPE>(),
             cuda_row_data_->cuda_partition_hist_offsets(),
+            num_data_);
+        }
+      } else {
+        if (num_bits_in_histogram_bins <= 16) {
+          CUDAConstructDiscretizedHistogramDenseKernel<BIN_TYPE, SHARED_HIST_SIZE, true><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->cuda_column_hist_offsets(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
+            num_data_);
+        } else {
+          CUDAConstructDiscretizedHistogramDenseKernel<BIN_TYPE, SHARED_HIST_SIZE, false><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->cuda_column_hist_offsets(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
             num_data_);
         }
       }
