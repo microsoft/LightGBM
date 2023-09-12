@@ -125,7 +125,7 @@ __global__ void CUDAConstructHistogramSparseKernel(
   }
 }
 
-template <typename BIN_TYPE>
+template <typename BIN_TYPE, typename HIST_TYPE>
 __global__ void CUDAConstructHistogramDenseKernel_GlobalMemory(
   const CUDALeafSplitsStruct* smaller_leaf_splits,
   const score_t* cuda_gradients,
@@ -135,7 +135,7 @@ __global__ void CUDAConstructHistogramDenseKernel_GlobalMemory(
   const uint32_t* column_hist_offsets_full,
   const int* feature_partition_column_index_offsets,
   const data_size_t num_data,
-  float* global_hist_buffer) {
+  HIST_TYPE* global_hist_buffer) {
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
@@ -150,7 +150,7 @@ __global__ void CUDAConstructHistogramDenseKernel_GlobalMemory(
   const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start) << 1;
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
   const int num_total_bin = column_hist_offsets_full[gridDim.x];
-  float* shared_hist = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start) * 2;
+  HIST_TYPE* shared_hist = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start) * 2;
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     shared_hist[i] = 0.0f;
   }
@@ -166,14 +166,14 @@ __global__ void CUDAConstructHistogramDenseKernel_GlobalMemory(
   data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
   const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
   if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
-    float* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
+    HIST_TYPE* shared_hist_ptr = shared_hist + (column_hist_offsets[column_index] << 1);
     for (data_size_t i = 0; i < num_iteration_this; ++i) {
       const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
       const score_t grad = cuda_gradients[data_index];
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[static_cast<size_t>(data_index) * num_columns_in_partition + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      float* pos_ptr = shared_hist_ptr + pos;
+      HIST_TYPE* pos_ptr = shared_hist_ptr + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
       inner_data_index += blockDim.y;
@@ -186,7 +186,7 @@ __global__ void CUDAConstructHistogramDenseKernel_GlobalMemory(
   }
 }
 
-template <typename BIN_TYPE, typename DATA_PTR_TYPE>
+template <typename BIN_TYPE, typename HIST_TYPE, typename DATA_PTR_TYPE>
 __global__ void CUDAConstructHistogramSparseKernel_GlobalMemory(
   const CUDALeafSplitsStruct* smaller_leaf_splits,
   const score_t* cuda_gradients,
@@ -196,7 +196,7 @@ __global__ void CUDAConstructHistogramSparseKernel_GlobalMemory(
   const DATA_PTR_TYPE* partition_ptr,
   const uint32_t* column_hist_offsets_full,
   const data_size_t num_data,
-  float* global_hist_buffer) {
+  HIST_TYPE* global_hist_buffer) {
   const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
   const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
   const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
@@ -209,7 +209,7 @@ __global__ void CUDAConstructHistogramSparseKernel_GlobalMemory(
   const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start) << 1;
   const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
   const int num_total_bin = column_hist_offsets_full[gridDim.x];
-  float* shared_hist = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start) * 2;
+  HIST_TYPE* shared_hist = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start) * 2;
   for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
     shared_hist[i] = 0.0f;
   }
@@ -233,7 +233,7 @@ __global__ void CUDAConstructHistogramSparseKernel_GlobalMemory(
       const score_t hess = cuda_hessians[data_index];
       const uint32_t bin = static_cast<uint32_t>(data_ptr[row_start + threadIdx.x]);
       const uint32_t pos = bin << 1;
-      float* pos_ptr = shared_hist + pos;
+      HIST_TYPE* pos_ptr = shared_hist + pos;
       atomicAdd_block(pos_ptr, grad);
       atomicAdd_block(pos_ptr + 1, hess);
     }
@@ -377,6 +377,139 @@ __global__ void CUDAConstructDiscretizedHistogramSparseKernel(
   }
 }
 
+template <typename BIN_TYPE, int SHARED_HIST_SIZE, bool USE_16BIT_HIST>
+__global__ void CUDAConstructDiscretizedHistogramDenseKernel_GlobalMemory(
+  const CUDALeafSplitsStruct* smaller_leaf_splits,
+  const int32_t* cuda_gradients_and_hessians,
+  const BIN_TYPE* data,
+  const uint32_t* column_hist_offsets,
+  const uint32_t* column_hist_offsets_full,
+  const int* feature_partition_column_index_offsets,
+  const data_size_t num_data,
+  int32_t* global_hist_buffer) {
+  const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
+  const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
+  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
+  const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
+  const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
+  const int partition_column_start = feature_partition_column_index_offsets[blockIdx.x];
+  const int partition_column_end = feature_partition_column_index_offsets[blockIdx.x + 1];
+  const BIN_TYPE* data_ptr = data + partition_column_start * num_data;
+  const int num_columns_in_partition = partition_column_end - partition_column_start;
+  const uint32_t partition_hist_start = column_hist_offsets_full[blockIdx.x];
+  const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
+  const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start);
+  const int num_total_bin = column_hist_offsets_full[gridDim.x];
+  int32_t* shared_hist_packed = global_hist_buffer + (blockIdx.y * num_total_bin + partition_column_start);
+  const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
+  for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+    shared_hist_packed[i] = 0;
+  }
+  __syncthreads();
+  const unsigned int threadIdx_y = threadIdx.y;
+  const unsigned int blockIdx_y = blockIdx.y;
+  const data_size_t block_start = (blockIdx_y * blockDim.y) * num_data_per_thread;
+  const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
+  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
+  const data_size_t num_iteration_total = (block_num_data + blockDim.y - 1) / blockDim.y;
+  const data_size_t remainder = block_num_data % blockDim.y;
+  const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
+  data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
+  const int column_index = static_cast<int>(threadIdx.x) + partition_column_start;
+  if (threadIdx.x < static_cast<unsigned int>(num_columns_in_partition)) {
+    int32_t* shared_hist_ptr = shared_hist_packed + (column_hist_offsets[column_index]);
+    for (data_size_t i = 0; i < num_iteration_this; ++i) {
+      const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
+      const int32_t grad_and_hess = cuda_gradients_and_hessians[data_index];
+      const uint32_t bin = static_cast<uint32_t>(data_ptr[data_index * num_columns_in_partition + threadIdx.x]);
+      int32_t* pos_ptr = shared_hist_ptr + bin;
+      atomicAdd_block(pos_ptr, grad_and_hess);
+      inner_data_index += blockDim.y;
+    }
+  }
+  __syncthreads();
+  if (USE_16BIT_HIST) {
+    int32_t* feature_histogram_ptr = reinterpret_cast<int32_t*>(smaller_leaf_splits->hist_in_leaf) + partition_hist_start;
+    for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+      const int32_t packed_grad_hess = shared_hist_packed[i];
+      atomicAdd_system(feature_histogram_ptr + i, packed_grad_hess);
+    }
+  } else {
+    atomic_add_long_t* feature_histogram_ptr = reinterpret_cast<atomic_add_long_t*>(smaller_leaf_splits->hist_in_leaf) + partition_hist_start;
+    for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+      const int32_t packed_grad_hess = shared_hist_packed[i];
+      const int64_t packed_grad_hess_int64 = (static_cast<int64_t>(static_cast<int16_t>(packed_grad_hess >> 16)) << 32) | (static_cast<int64_t>(packed_grad_hess & 0x0000ffff));
+      atomicAdd_system(feature_histogram_ptr + i, (atomic_add_long_t)(packed_grad_hess_int64));
+    }
+  }
+}
+
+template <typename BIN_TYPE, typename DATA_PTR_TYPE, int SHARED_HIST_SIZE, bool USE_16BIT_HIST>
+__global__ void CUDAConstructDiscretizedHistogramSparseKernel_GlobalMemory(
+  const CUDALeafSplitsStruct* smaller_leaf_splits,
+  const int32_t* cuda_gradients_and_hessians,
+  const BIN_TYPE* data,
+  const DATA_PTR_TYPE* row_ptr,
+  const DATA_PTR_TYPE* partition_ptr,
+  const uint32_t* column_hist_offsets_full,
+  const data_size_t num_data,
+  int32_t* global_hist_buffer) {
+  const int dim_y = static_cast<int>(gridDim.y * blockDim.y);
+  const data_size_t num_data_in_smaller_leaf = smaller_leaf_splits->num_data_in_leaf;
+  const data_size_t num_data_per_thread = (num_data_in_smaller_leaf + dim_y - 1) / dim_y;
+  const data_size_t* data_indices_ref = smaller_leaf_splits->data_indices_in_leaf;
+  const int num_total_bin = column_hist_offsets_full[gridDim.x];
+  const unsigned int num_threads_per_block = blockDim.x * blockDim.y;
+  const DATA_PTR_TYPE* block_row_ptr = row_ptr + blockIdx.x * (num_data + 1);
+  const BIN_TYPE* data_ptr = data + partition_ptr[blockIdx.x];
+  const uint32_t partition_hist_start = column_hist_offsets_full[blockIdx.x];
+  const uint32_t partition_hist_end = column_hist_offsets_full[blockIdx.x + 1];
+  const uint32_t num_items_in_partition = (partition_hist_end - partition_hist_start);
+  const unsigned int thread_idx = threadIdx.x + threadIdx.y * blockDim.x;
+  int32_t* shared_hist_packed = global_hist_buffer + (blockIdx.y * num_total_bin + partition_hist_start);
+  for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+    shared_hist_packed[i] = 0.0f;
+  }
+  __syncthreads();
+  const unsigned int threadIdx_y = threadIdx.y;
+  const unsigned int blockIdx_y = blockIdx.y;
+  const data_size_t block_start = (blockIdx_y * blockDim.y) * num_data_per_thread;
+  const data_size_t* data_indices_ref_this_block = data_indices_ref + block_start;
+  data_size_t block_num_data = max(0, min(num_data_in_smaller_leaf - block_start, num_data_per_thread * static_cast<data_size_t>(blockDim.y)));
+  const data_size_t num_iteration_total = (block_num_data + blockDim.y - 1) / blockDim.y;
+  const data_size_t remainder = block_num_data % blockDim.y;
+  const data_size_t num_iteration_this = remainder == 0 ? num_iteration_total : num_iteration_total - static_cast<data_size_t>(threadIdx_y >= remainder);
+  data_size_t inner_data_index = static_cast<data_size_t>(threadIdx_y);
+  for (data_size_t i = 0; i < num_iteration_this; ++i) {
+    const data_size_t data_index = data_indices_ref_this_block[inner_data_index];
+    const DATA_PTR_TYPE row_start = block_row_ptr[data_index];
+    const DATA_PTR_TYPE row_end = block_row_ptr[data_index + 1];
+    const DATA_PTR_TYPE row_size = row_end - row_start;
+    if (threadIdx.x < row_size) {
+      const int32_t grad_and_hess = cuda_gradients_and_hessians[data_index];
+      const uint32_t bin = static_cast<uint32_t>(data_ptr[row_start + threadIdx.x]);
+      int32_t* pos_ptr = shared_hist_packed + bin;
+      atomicAdd_block(pos_ptr, grad_and_hess);
+    }
+    inner_data_index += blockDim.y;
+  }
+  __syncthreads();
+  if (USE_16BIT_HIST) {
+    int32_t* feature_histogram_ptr = reinterpret_cast<int32_t*>(smaller_leaf_splits->hist_in_leaf) + partition_hist_start;
+    for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+      const int32_t packed_grad_hess = shared_hist_packed[i];
+      atomicAdd_system(feature_histogram_ptr + i, packed_grad_hess);
+    }
+  } else {
+    atomic_add_long_t* feature_histogram_ptr = reinterpret_cast<atomic_add_long_t*>(smaller_leaf_splits->hist_in_leaf) + partition_hist_start;
+    for (unsigned int i = thread_idx; i < num_items_in_partition; i += num_threads_per_block) {
+      const int32_t packed_grad_hess = shared_hist_packed[i];
+      const int64_t packed_grad_hess_int64 = (static_cast<int64_t>(static_cast<int16_t>(packed_grad_hess >> 16)) << 32) | (static_cast<int64_t>(packed_grad_hess & 0x0000ffff));
+      atomicAdd_system(feature_histogram_ptr + i, (atomic_add_long_t)(packed_grad_hess_int64));
+    }
+  }
+}
+
 void CUDAHistogramConstructor::LaunchConstructHistogramKernel(
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
   const data_size_t num_data_in_smaller_leaf,
@@ -452,7 +585,51 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
   dim3 block_dim(block_dim_x, block_dim_y);
   if (use_quantized_grad_) {
     if (USE_GLOBAL_MEM_BUFFER) {
-      Log::Fatal("Discretized histogram construction with global memory buffer is not supported yet.");
+      if (cuda_row_data_->is_sparse()) {
+        if (num_bits_in_histogram_bins <= 16) {
+          CUDAConstructDiscretizedHistogramSparseKernel_GlobalMemory<BIN_TYPE, PTR_TYPE, SHARED_HIST_SIZE, true><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->GetRowPtr<PTR_TYPE>(),
+            cuda_row_data_->GetPartitionPtr<PTR_TYPE>(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            num_data_,
+            reinterpret_cast<int32_t*>(cuda_hist_buffer_.RawData()));
+        } else {
+          CUDAConstructDiscretizedHistogramSparseKernel_GlobalMemory<BIN_TYPE, PTR_TYPE, SHARED_HIST_SIZE, false><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->GetRowPtr<PTR_TYPE>(),
+            cuda_row_data_->GetPartitionPtr<PTR_TYPE>(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            num_data_,
+            reinterpret_cast<int32_t*>(cuda_hist_buffer_.RawData()));
+        }
+      } else {
+        if (num_bits_in_histogram_bins <= 16) {
+          CUDAConstructDiscretizedHistogramDenseKernel_GlobalMemory<BIN_TYPE, SHARED_HIST_SIZE, true><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->cuda_column_hist_offsets(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
+            num_data_,
+            reinterpret_cast<int32_t*>(cuda_hist_buffer_.RawData()));
+        } else {
+          CUDAConstructDiscretizedHistogramDenseKernel_GlobalMemory<BIN_TYPE, SHARED_HIST_SIZE, false><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+            cuda_smaller_leaf_splits,
+            reinterpret_cast<const int32_t*>(cuda_gradients_),
+            cuda_row_data_->GetBin<BIN_TYPE>(),
+            cuda_row_data_->cuda_column_hist_offsets(),
+            cuda_row_data_->cuda_partition_hist_offsets(),
+            cuda_row_data_->cuda_feature_partition_column_index_offsets(),
+            num_data_,
+            reinterpret_cast<int32_t*>(cuda_hist_buffer_.RawData()));
+        }
+      }
     } else {
       if (cuda_row_data_->is_sparse()) {
         if (num_bits_in_histogram_bins <= 16) {
@@ -519,7 +696,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
       }
     } else {
       if (cuda_row_data_->is_sparse()) {
-        CUDAConstructHistogramSparseKernel_GlobalMemory<BIN_TYPE, PTR_TYPE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+        CUDAConstructHistogramSparseKernel_GlobalMemory<BIN_TYPE, HIST_TYPE, PTR_TYPE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
           cuda_row_data_->GetBin<BIN_TYPE>(),
@@ -527,9 +704,9 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
           cuda_row_data_->GetPartitionPtr<PTR_TYPE>(),
           cuda_row_data_->cuda_partition_hist_offsets(),
           num_data_,
-          cuda_hist_buffer_.RawData());
+          reinterpret_cast<HIST_TYPE*>(cuda_hist_buffer_.RawData()));
       } else {
-        CUDAConstructHistogramDenseKernel_GlobalMemory<BIN_TYPE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
+        CUDAConstructHistogramDenseKernel_GlobalMemory<BIN_TYPE, HIST_TYPE><<<grid_dim, block_dim, 0, cuda_stream_>>>(
           cuda_smaller_leaf_splits,
           cuda_gradients_, cuda_hessians_,
           cuda_row_data_->GetBin<BIN_TYPE>(),
@@ -537,7 +714,7 @@ void CUDAHistogramConstructor::LaunchConstructHistogramKernelInner2(
           cuda_row_data_->cuda_partition_hist_offsets(),
           cuda_row_data_->cuda_feature_partition_column_index_offsets(),
           num_data_,
-          cuda_hist_buffer_.RawData());
+          reinterpret_cast<HIST_TYPE*>(cuda_hist_buffer_.RawData()));
       }
     }
   }

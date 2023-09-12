@@ -98,8 +98,18 @@ void CUDAHistogramConstructor::Init(const Dataset* train_data, TrainingShareStat
   if (cuda_row_data_->NumLargeBinPartition() > 0) {
     int grid_dim_x = 0, grid_dim_y = 0, block_dim_x = 0, block_dim_y = 0;
     CalcConstructHistogramKernelDim(&grid_dim_x, &grid_dim_y, &block_dim_x, &block_dim_y, num_data_);
-    const size_t buffer_size = static_cast<size_t>(grid_dim_y) * static_cast<size_t>(num_total_bin_) * 2;
-    cuda_hist_buffer_.Resize(buffer_size);
+    const size_t buffer_size = static_cast<size_t>(grid_dim_y) * static_cast<size_t>(num_total_bin_);
+    if (!use_quantized_grad_) {
+      if (gpu_use_dp_) {
+        // need to double the size of histogram buffer in global memory when using double precision in histogram construction
+        cuda_hist_buffer_.Resize(buffer_size * 4);
+      } else {
+        cuda_hist_buffer_.Resize(buffer_size * 2);
+      }
+    } else {
+      // use only half the size of histogram buffer in global memory when quantized training since each gradient and hessian takes only 2 bytes
+      cuda_hist_buffer_.Resize(buffer_size);
+    }
   }
   hist_buffer_for_num_bit_change_.Resize(num_total_bin_ * 2);
 }
