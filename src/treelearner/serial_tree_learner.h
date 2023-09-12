@@ -171,7 +171,9 @@ class SerialTreeLearner: public TreeLearner {
 
   std::set<int> FindAllForceFeatures(Json force_split_leaf_setting);
 
+  #ifdef DEBUG
   void CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index);
+  #endif
 
   /*!
   * \brief Get the number of data in a leaf
