@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .engine import CVBooster
 
 __all__ = [
+    'EarlyStopException',
     'early_stopping',
     'log_evaluation',
     'record_evaluation',

@@ -32,5 +32,5 @@ __all__ = ['Dataset', 'Booster', 'CVBooster', 'Sequence',
            'train', 'cv',
            'LGBMModel', 'LGBMRegressor', 'LGBMClassifier', 'LGBMRanker',
            'DaskLGBMRegressor', 'DaskLGBMClassifier', 'DaskLGBMRanker',
-           'log_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping',
+           'log_evaluation', 'record_evaluation', 'reset_parameter', 'early_stopping', 'EarlyStopException',
            'plot_importance', 'plot_split_value_histogram', 'plot_metric', 'plot_tree', 'create_tree_digraph']
