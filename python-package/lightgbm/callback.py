@@ -3,14 +3,16 @@
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
-from .basic import Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+from .basic import (Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType,
+                    _LGBM_BoosterEvalMethodResultWithStandardDeviationType, _log_info, _log_warning)
 
 if TYPE_CHECKING:
     from .engine import CVBooster
 
 __all__ = [
+    'EarlyStopException',
     'early_stopping',
     'log_evaluation',
     'record_evaluation',
@@ -20,16 +22,20 @@ __all__ = [
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
     _LGBM_BoosterEvalMethodResultType,
-    Tuple[str, str, float, bool, float]
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType
 ]
 _ListOfEvalResultTuples = Union[
     List[_LGBM_BoosterEvalMethodResultType],
-    List[Tuple[str, str, float, bool, float]]
+    List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]
 ]
 
 
 class EarlyStopException(Exception):
-    """Exception of early stopping."""
+    """Exception of early stopping.
+
+    Raise this from a callback passed in via keyword argument ``callbacks``
+    in ``cv()`` or ``train()`` to trigger early stopping.
+    """
 
     def __init__(self, best_iteration: int, best_score: _ListOfEvalResultTuples) -> None:
         """Create early stopping exception.
@@ -38,6 +44,7 @@ class EarlyStopException(Exception):
         ----------
         best_iteration : int
             The best iteration stopped.
+            0-based... pass ``best_iteration=2`` to indicate that the third iteration was the best one.
         best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuple or (eval_name, metric_name, eval_result, is_higher_better, stdv) tuple
             Scores for each metric, on each validation set, as of the best iteration.
         """
@@ -54,7 +61,7 @@ class CallbackEnv:
     iteration: int
     begin_iteration: int
     end_iteration: int
-    evaluation_result_list: Optional[List[_LGBM_BoosterEvalMethodResultType]]
+    evaluation_result_list: Optional[_ListOfEvalResultTuples]
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
