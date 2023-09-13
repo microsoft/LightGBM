@@ -3,9 +3,10 @@
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
-from .basic import Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType, _log_info, _log_warning
+from .basic import (Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType,
+                    _LGBM_BoosterEvalMethodResultWithStandardDeviationType, _log_info, _log_warning)
 
 if TYPE_CHECKING:
     from .engine import CVBooster
@@ -20,11 +21,11 @@ __all__ = [
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
     _LGBM_BoosterEvalMethodResultType,
-    Tuple[str, str, float, bool, float]
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType
 ]
 _ListOfEvalResultTuples = Union[
     List[_LGBM_BoosterEvalMethodResultType],
-    List[Tuple[str, str, float, bool, float]]
+    List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]
 ]
 
 
@@ -54,7 +55,7 @@ class CallbackEnv:
     iteration: int
     begin_iteration: int
     end_iteration: int
-    evaluation_result_list: Optional[List[_LGBM_BoosterEvalMethodResultType]]
+    evaluation_result_list: Optional[_ListOfEvalResultTuples]
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:

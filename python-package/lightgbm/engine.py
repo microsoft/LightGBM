@@ -11,9 +11,9 @@ import numpy as np
 
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_BoosterEvalMethodResultType, _LGBM_CategoricalFeatureConfiguration,
-                    _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _log_warning)
+                    _LGBM_BoosterEvalMethodResultType, _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType,
+                    _LGBM_FeatureNameConfiguration, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 __all__ = [
@@ -519,8 +519,8 @@ def _make_n_folds(
 
 
 def _agg_cv_result(
-    raw_results: List[List[Tuple[str, str, float, bool]]]
-) -> List[Tuple[str, str, float, bool, float]]:
+    raw_results: List[List[_LGBM_BoosterEvalMethodResultType]]
+) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
     cvmap: Dict[str, List[float]] = OrderedDict()
     metric_type: Dict[str, bool] = {}
@@ -530,7 +530,7 @@ def _agg_cv_result(
             metric_type[key] = one_line[3]
             cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
-    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+    return [('cv_agg', k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
 
 
 def cv(
