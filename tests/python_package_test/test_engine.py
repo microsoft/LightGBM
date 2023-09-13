@@ -1092,6 +1092,33 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
+def test_early_stopping_can_be_triggered_via_custom_callback():
+    X, y = make_synthetic_regression()
+
+    def _early_stop_after_seventh_iteration(env):
+        if env.iteration == 6:
+            exc = lgb.EarlyStopException(
+                best_iteration=6,
+                best_score=[("some_validation_set", "some_metric", 0.708, True)]
+            )
+            raise exc
+
+    bst = lgb.train(
+        params={
+            "objective": "regression",
+            "verbose": -1,
+            "num_leaves": 2
+        },
+        train_set=lgb.Dataset(X, label=y),
+        num_boost_round=23,
+        callbacks=[_early_stop_after_seventh_iteration]
+    )
+    assert bst.num_trees() == 7
+    assert bst.best_score["some_validation_set"]["some_metric"] == 0.708
+    assert bst.best_iteration == 7
+    assert bst.current_iteration() == 7
+
+
 def test_continue_train():
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
