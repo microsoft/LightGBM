@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from .engine import CVBooster
 
 __all__ = [
+    'EarlyStopException',
     'early_stopping',
     'log_evaluation',
     'record_evaluation',
@@ -30,7 +31,11 @@ _ListOfEvalResultTuples = Union[
 
 
 class EarlyStopException(Exception):
-    """Exception of early stopping."""
+    """Exception of early stopping.
+
+    Raise this from a callback passed in via keyword argument ``callbacks``
+    in ``cv()`` or ``train()`` to trigger early stopping.
+    """
 
     def __init__(self, best_iteration: int, best_score: _ListOfEvalResultTuples) -> None:
         """Create early stopping exception.
@@ -39,6 +44,7 @@ class EarlyStopException(Exception):
         ----------
         best_iteration : int
             The best iteration stopped.
+            0-based... pass ``best_iteration=2`` to indicate that the third iteration was the best one.
         best_score : list of (eval_name, metric_name, eval_result, is_higher_better) tuple or (eval_name, metric_name, eval_result, is_higher_better, stdv) tuple
             Scores for each metric, on each validation set, as of the best iteration.
         """
@@ -125,6 +131,11 @@ class _RecordEvaluationCallback:
         self.eval_result = eval_result
 
     def _init(self, env: CallbackEnv) -> None:
+        if env.evaluation_result_list is None:
+            raise RuntimeError(
+                "record_evaluation() callback enabled but no evaluation results found. This is a probably bug in LightGBM. "
+                "Please report it at https://github.com/microsoft/LightGBM/issues"
+            )
         self.eval_result.clear()
         for item in env.evaluation_result_list:
             if len(item) == 4:  # regular train
@@ -141,6 +152,11 @@ class _RecordEvaluationCallback:
     def __call__(self, env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
             self._init(env)
+        if env.evaluation_result_list is None:
+            raise RuntimeError(
+                "record_evaluation() callback enabled but no evaluation results found. This is a probably bug in LightGBM. "
+                "Please report it at https://github.com/microsoft/LightGBM/issues"
+            )
         for item in env.evaluation_result_list:
             if len(item) == 4:
                 data_name, eval_name, result = item[:3]
@@ -279,6 +295,10 @@ class _EarlyStoppingCallback:
         return (ds_name == "cv_agg" and eval_name == "train") or ds_name == train_name
 
     def _init(self, env: CallbackEnv) -> None:
+        if env.evaluation_result_list is None or env.evaluation_result_list == []:
+            raise ValueError(
+                "For early stopping, at least one dataset and eval metric is required for evaluation"
+            )
         is_dart = any(env.params.get(alias, "") == 'dart' for alias in _ConfigAliases.get("boosting"))
         only_train_set = (
             len(env.evaluation_result_list) == 1
@@ -294,9 +314,6 @@ class _EarlyStoppingCallback:
             elif only_train_set:
                 _log_warning('Only training set found, disabling early stopping.')
             return
-        if not env.evaluation_result_list:
-            raise ValueError('For early stopping, '
-                             'at least one dataset and eval metric is required for evaluation')
 
         if self.stopping_rounds <= 0:
             raise ValueError("stopping_rounds should be greater than zero.")
@@ -358,6 +375,11 @@ class _EarlyStoppingCallback:
             self._init(env)
         if not self.enabled:
             return
+        if env.evaluation_result_list is None:
+            raise RuntimeError(
+                "early_stopping() callback enabled but no evaluation results found. This is a probably bug in LightGBM. "
+                "Please report it at https://github.com/microsoft/LightGBM/issues"
+            )
         # self.best_score_list is initialized to an empty list
         first_time_updating_best_score_list = (self.best_score_list == [])
         for i in range(len(env.evaluation_result_list)):
