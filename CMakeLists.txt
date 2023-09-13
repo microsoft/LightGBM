@@ -331,6 +331,13 @@ if(UNIX OR MINGW OR CYGWIN)
     CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
+  if(MINGW)
+    # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
+    set(
+      CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow"
+    )
+  endif()
   if(USE_DEBUG)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
   else()
