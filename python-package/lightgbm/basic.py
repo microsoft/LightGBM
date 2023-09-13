@@ -3858,7 +3858,6 @@ class Booster:
 
         return self.__inner_eval(name, data_idx, feval)
 
-
     def eval_train(
         self,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
