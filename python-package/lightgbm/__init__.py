@@ -6,7 +6,7 @@ Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 from pathlib import Path
 
 from .basic import Booster, Dataset, Sequence, register_logger
-from .callback import early_stopping, EarlyStopException, log_evaluation, record_evaluation, reset_parameter
+from .callback import EarlyStopException, early_stopping, log_evaluation, record_evaluation, reset_parameter
 from .engine import CVBooster, cv, train
 
 try:
