@@ -3856,7 +3856,8 @@ class Booster:
             self.add_valid(data, name)
             data_idx = self.__num_dataset - 1
 
-        return self.__inner_eval(data_name=name, data_idx=data_idx, feval=feval)
+        return self.__inner_eval(name, data_idx, feval)
+
 
     def eval_train(
         self,
@@ -3890,7 +3891,7 @@ class Booster:
         result : list
             List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
-        return self.__inner_eval(data_name=self._train_data_name, data_idx=0, feval=feval)
+        return self.__inner_eval(self._train_data_name, 0, feval)
 
     def eval_valid(
         self,
@@ -3924,10 +3925,8 @@ class Booster:
         result : list
             List with (validation_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
-        return [
-            item for i in range(1, self.__num_dataset)
-            for item in self.__inner_eval(data_name=self.name_valid_sets[i - 1], data_idx=i, feval=feval)
-        ]
+        return [item for i in range(1, self.__num_dataset)
+                for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)]
 
     def save_model(
         self,
@@ -4603,7 +4602,6 @@ class Booster:
 
     def __inner_eval(
         self,
-        *,
         data_name: str,
         data_idx: int,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]]
