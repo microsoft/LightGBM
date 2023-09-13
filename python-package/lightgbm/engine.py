@@ -531,7 +531,7 @@ def _agg_cv_result(
             metric_type[key] = one_line[3]
             cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
-    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+    return [('cv_agg', k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
 
 
 def cv(
@@ -753,12 +753,13 @@ def cv(
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
+            empty_eval_result_list: callback._ListOfEvalResultTuples = []
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,
                                     iteration=i,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
-                                    evaluation_result_list=None))
+                                    evaluation_result_list=empty_eval_result_list))
         cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
         res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
