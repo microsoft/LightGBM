@@ -1534,6 +1534,203 @@ def test_save_load_copy_pickle():
         assert ret_origin == pytest.approx(ret)
 
 
+def test_all_expected_params_are_written_out_to_model_text(tmp_path):
+    X, y = make_synthetic_regression()
+    params = {
+        'objective': 'mape',
+        'metric': ['l2', 'mae'],
+        'seed': 708,
+        'data_sample_strategy': 'bagging',
+        'sub_row': 0.8234,
+        'verbose': -1
+    }
+    dtrain = lgb.Dataset(data=X, label=y)
+    gbm = lgb.train(
+        params=params,
+        train_set=dtrain,
+        num_boost_round=3
+    )
+
+    model_txt_from_memory = gbm.model_to_string()
+    model_file = tmp_path / "out.model"
+    gbm.save_model(filename=model_file)
+    with open(model_file, "r") as f:
+        model_txt_from_file = f.read()
+
+    assert model_txt_from_memory == model_txt_from_file
+
+    # entries whose values should reflect params passed to lgb.train()
+    non_default_param_entries = [
+        "[objective: mape]",
+        # 'l1' was passed in with alias 'mae'
+        "[metric: l2,l1]",
+        "[data_sample_strategy: bagging]",
+        "[seed: 708]",
+        # NOTE: this was passed in with alias 'sub_row'
+        "[bagging_fraction: 0.8234]",
+        "[num_iterations: 3]",
+    ]
+
+    # entries with default values of params
+    default_param_entries = [
+        "[boosting: gbdt]",
+        "[tree_learner: serial]",
+        "[data: ]",
+        "[valid: ]",
+        "[learning_rate: 0.1]",
+        "[num_leaves: 31]",
+        "[num_threads: 0]",
+        "[deterministic: 0]",
+        "[histogram_pool_size: -1]",
+        "[max_depth: -1]",
+        "[min_data_in_leaf: 20]",
+        "[min_sum_hessian_in_leaf: 0.001]",
+        "[pos_bagging_fraction: 1]",
+        "[neg_bagging_fraction: 1]",
+        "[bagging_freq: 0]",
+        "[bagging_seed: 15415]",
+        "[feature_fraction: 1]",
+        "[feature_fraction_bynode: 1]",
+        "[feature_fraction_seed: 32671]",
+        "[extra_trees: 0]",
+        "[extra_seed: 6642]",
+        "[early_stopping_round: 0]",
+        "[first_metric_only: 0]",
+        "[max_delta_step: 0]",
+        "[lambda_l1: 0]",
+        "[lambda_l2: 0]",
+        "[linear_lambda: 0]",
+        "[min_gain_to_split: 0]",
+        "[drop_rate: 0.1]",
+        "[max_drop: 50]",
+        "[skip_drop: 0.5]",
+        "[xgboost_dart_mode: 0]",
+        "[uniform_drop: 0]",
+        "[drop_seed: 20623]",
+        "[top_rate: 0.2]",
+        "[other_rate: 0.1]",
+        "[min_data_per_group: 100]",
+        "[max_cat_threshold: 32]",
+        "[cat_l2: 10]",
+        "[cat_smooth: 10]",
+        "[max_cat_to_onehot: 4]",
+        "[top_k: 20]",
+        "[monotone_constraints: ]",
+        "[monotone_constraints_method: basic]",
+        "[monotone_penalty: 0]",
+        "[feature_contri: ]",
+        "[forcedsplits_filename: ]",
+        "[refit_decay_rate: 0.9]",
+        "[cegb_tradeoff: 1]",
+        "[cegb_penalty_split: 0]",
+        "[cegb_penalty_feature_lazy: ]",
+        "[cegb_penalty_feature_coupled: ]",
+        "[path_smooth: 0]",
+        "[interaction_constraints: ]",
+        "[verbosity: -1]",
+        "[saved_feature_importance_type: 0]",
+        "[use_quantized_grad: 0]",
+        "[num_grad_quant_bins: 4]",
+        "[quant_train_renew_leaf: 0]",
+        "[stochastic_rounding: 1]",
+        "[linear_tree: 0]",
+        "[max_bin: 255]",
+        "[max_bin_by_feature: ]",
+        "[min_data_in_bin: 3]",
+        "[bin_construct_sample_cnt: 200000]",
+        "[data_random_seed: 2350]",
+        "[is_enable_sparse: 1]",
+        "[enable_bundle: 1]",
+        "[use_missing: 1]",
+        "[zero_as_missing: 0]",
+        "[feature_pre_filter: 1]",
+        "[pre_partition: 0]",
+        "[two_round: 0]",
+        "[header: 0]",
+        "[label_column: ]",
+        "[weight_column: ]",
+        "[group_column: ]",
+        "[ignore_column: ]",
+        "[categorical_feature: ]",
+        "[forcedbins_filename: ]",
+        "[precise_float_parser: 0]",
+        "[parser_config_file: ]",
+        "[objective_seed: 4309]",
+        "[num_class: 1]",
+        "[is_unbalance: 0]",
+        "[scale_pos_weight: 1]",
+        "[sigmoid: 1]",
+        "[boost_from_average: 1]",
+        "[reg_sqrt: 0]",
+        "[alpha: 0.9]",
+        "[fair_c: 1]",
+        "[poisson_max_delta_step: 0.7]",
+        "[tweedie_variance_power: 1.5]",
+        "[lambdarank_truncation_level: 30]",
+        "[lambdarank_norm: 1]",
+        "[label_gain: ]",
+        "[lambdarank_position_bias_regularization: 0]",
+        "[eval_at: ]",
+        "[multi_error_top_k: 1]",
+        "[auc_mu_weights: ]",
+        "[num_machines: 1]",
+        "[local_listen_port: 12400]",
+        "[time_out: 120]",
+        "[machine_list_filename: ]",
+        "[machines: ]",
+        "[gpu_platform_id: -1]",
+        "[gpu_device_id: -1]",
+        "[num_gpu: 1]",
+    ]
+    all_param_entries = non_default_param_entries + default_param_entries
+
+    # add device-specific entries
+    #
+    # passed-in force_col_wise / force_row_wise parameters are ignored on CUDA and GPU builds...
+    # https://github.com/microsoft/LightGBM/blob/1d7ee63686272bceffd522284127573b511df6be/src/io/config.cpp#L375-L377
+    if getenv('TASK', '') == 'cuda':
+        device_entries = [
+            "[force_col_wise: 0]",
+            "[force_row_wise: 1]",
+            "[device_type: cuda]",
+            "[gpu_use_dp: 1]"
+        ]
+    elif getenv('TASK', '') == 'gpu':
+        device_entries = [
+            "[force_col_wise: 1]",
+            "[force_row_wise: 0]",
+            "[device_type: gpu]",
+            "[gpu_use_dp: 0]"
+        ]
+    else:
+        device_entries = [
+            "[force_col_wise: 0]",
+            "[force_row_wise: 0]",
+            "[device_type: cpu]",
+            "[gpu_use_dp: 0]"
+        ]
+
+    all_param_entries += device_entries
+
+    # check that model text has all expected param entries
+    for param_str in all_param_entries:
+        assert param_str in model_txt_from_file
+        assert param_str in model_txt_from_memory
+
+    # since Booster.model_to_string() is used when pickling, check that parameters all
+    # roundtrip pickling successfully too
+    gbm_pkl = pickle_and_unpickle_object(gbm, serializer="joblib")
+    model_txt_from_memory = gbm_pkl.model_to_string()
+    model_file = tmp_path / "out-pkl.model"
+    gbm_pkl.save_model(filename=model_file)
+    with open(model_file, "r") as f:
+        model_txt_from_file = f.read()
+
+    for param_str in all_param_entries:
+        assert param_str in model_txt_from_file
+        assert param_str in model_txt_from_memory
+
+
 def test_pandas_categorical():
     pd = pytest.importorskip("pandas")
     np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
