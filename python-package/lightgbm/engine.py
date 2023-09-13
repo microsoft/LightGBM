@@ -753,13 +753,12 @@ def cv(
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
-            empty_eval_result_list: callback._ListOfEvalResultTuples = []
             cb(callback.CallbackEnv(model=cvfolds,
                                     params=params,
                                     iteration=i,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
-                                    evaluation_result_list=empty_eval_result_list))
+                                    evaluation_result_list=None))
         cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
         res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
