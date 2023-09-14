@@ -207,7 +207,7 @@ if(USE_CUDA)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
-    # reference for mapping of CUDA toolkit component versions to support architectures ("compute capabilities"):
+    # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
