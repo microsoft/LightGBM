@@ -98,10 +98,9 @@ jobs:
             cuda_version="${{ matrix.cuda_version }}"
             cuda_major=${cuda_version%%.*}
             docker_img="nvcr.io/nvidia/cuda:${cuda_version}-devel"
-            if [[ ${cuda_major} -ge 11 ]]; then
+            if [[ ${cuda_major} -eq 11 ]]; then
                 docker_img="${docker_img}-ubuntu18.04"
-            fi
-            if [[ ${cuda_major} -ge 12 ]]; then
+            elif [[ ${cuda_major} -ge 12 ]]; then
                 docker_img="${docker_img}-ubuntu20.04"
             fi
             docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "$docker_img" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
