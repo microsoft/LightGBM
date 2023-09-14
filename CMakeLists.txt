@@ -209,7 +209,7 @@ if(USE_CUDA)
 
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "8.0")
     endif()
