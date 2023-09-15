@@ -3245,13 +3245,13 @@ class Booster:
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
+            # ensure params are updated on the C++ side
+            self.params = params
+            self.reset_parameter(params)
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
         self.params = params
-
-        # ensure params are updated on the C++ side
-        self.reset_parameter(params)
 
     def __del__(self) -> None:
         try:

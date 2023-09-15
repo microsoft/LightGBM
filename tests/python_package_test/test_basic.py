@@ -826,20 +826,31 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
 
 
 def test_booster_deepcopy_preserves_parameters():
+    orig_params = {
+        'num_leaves': 5,
+        'verbosity': -1
+    }
     bst = lgb.train(
-        params={'num_leaves': 5, 'verbosity': -1},
+        params=orig_params,
         num_boost_round=2,
         train_set=lgb.Dataset(np.random.rand(100, 2))
     )
-    bst2 = copy.deepcopy(bst)
+    bst2 = deepcopy(bst)
     assert bst2.params == bst.params
     assert bst.params["num_leaves"] == 5
     assert bst.params["verbosity"] == -1
 
+    # passed-in params shouldn't have been modified outside of lightgbm
+    assert orig_params == {'num_leaves': 5, 'verbosity': -1}
+
 
 def test_booster_params_kwarg_overrides_params_from_model_string():
+    orig_params = {
+        'num_leaves': 5,
+        'verbosity': -1
+    }
     bst = lgb.train(
-        params={'num_leaves': 5, 'learning_rate': 0.708, 'verbosity': -1},
+        params=orig_params,
         num_boost_round=2,
         train_set=lgb.Dataset(np.random.rand(100, 2))
     )
@@ -847,5 +858,10 @@ def test_booster_params_kwarg_overrides_params_from_model_string():
         params={'num_leaves': 7},
         model_str=bst.model_to_string()
     )
+
+    # params should have been updated on the Python object and the C++ side
     assert bst2.params["num_leaves"] == 7
-    assert bst2.params["learning_rate"] == 0.708
+    assert "[num_leaves: 7]" in bst2.model_to_string()
+
+    # passed-in params shouldn't have been modified outside of lightgbm
+    assert orig_params == {'num_leaves': 5, 'verbosity': -1}
