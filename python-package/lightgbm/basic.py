@@ -6,6 +6,7 @@ import inspect
 import json
 import warnings
 from collections import OrderedDict
+from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
@@ -13,13 +14,14 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_is_floating, arrow_is_integer, concat, dt_DataTable,
-                     export_arrow_to_c, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
+from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_ffi_addressof, arrow_ffi_cast, arrow_ffi_CData,
+                     arrow_ffi_new, arrow_is_floating, arrow_is_integer, concat, dt_DataTable, pa_Table,
+                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -335,6 +337,55 @@ def _is_2d_collection(data: Any) -> bool:
 def _is_pyarrow_table(data: Any) -> bool:
     """Check whether data is a PyArrow table."""
     return isinstance(data, pa_Table)
+
+
+class _ArrowCArray:
+    """Simple wrapper around the C representation of an Arrow type."""
+
+    n_chunks: int
+    chunks: arrow_ffi_CData
+    schema: arrow_ffi_CData
+
+    def __init__(self, n_chunks: int, chunks: arrow_ffi_CData, schema: arrow_ffi_CData):
+        self.n_chunks = n_chunks
+        self.chunks = chunks
+        self.schema = schema
+
+    @property
+    def chunks_ptr(self) -> int:
+        """Returns the address of the pointer to the list of chunks making up the array."""
+        return int(arrow_ffi_cast("uintptr_t", arrow_ffi_addressof(self.chunks[0])))
+
+    @property
+    def schema_ptr(self) -> int:
+        """Returns the address of the pointer to the schema of the array."""
+        return int(arrow_ffi_cast("uintptr_t", self.schema))
+
+
+@contextmanager
+def _export_arrow_to_c(data: pa_Table) -> Iterator[_ArrowCArray]:
+    """Export an Arrow type to its C representation."""
+    # Obtain objects to export
+    if isinstance(data, pa_Table):
+        export_objects = data.to_batches()
+    else:
+        raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
+
+    # Prepare export
+    chunks = arrow_ffi_new(f"struct ArrowArray[{len(export_objects)}]")
+    schema = arrow_ffi_new("struct ArrowSchema*")
+
+    # Export all objects
+    for i, obj in enumerate(export_objects):
+        chunk_ptr = int(arrow_ffi_cast("uintptr_t", arrow_ffi_addressof(chunks[i])))
+        if i == 0:
+            schema_ptr = int(arrow_ffi_cast("uintptr_t", schema))
+            obj._export_to_c(chunk_ptr, schema_ptr)
+        else:
+            obj._export_to_c(chunk_ptr)
+
+    yield _ArrowCArray(len(chunks), chunks, schema)
+
 
 
 def _data_to_2d_numpy(
@@ -2202,7 +2253,7 @@ class Dataset:
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Export Arrow table to C
-        with export_arrow_to_c(table) as c_array:
+        with _export_arrow_to_c(table) as c_array:
             self._handle = ctypes.c_void_p()
             _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
                 ctypes.c_int64(c_array.n_chunks),

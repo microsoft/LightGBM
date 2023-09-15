@@ -188,10 +188,12 @@ except ImportError:
 """pyarrow"""
 try:
     from pyarrow import Table as pa_Table
+    from pyarrow.cffi import CData as arrow_ffi_CData
+    from pyarrow.cffi import addressof as arrow_ffi_addressof
+    from pyarrow.cffi import cast as arrow_ffi_cast
+    from pyarrow.cffi import new as arrow_ffi_new
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
-
-    from .arrow import _export_arrow_to_c as export_arrow_to_c
     PYARROW_INSTALLED = True
 except ImportError:
     PYARROW_INSTALLED = False
@@ -202,9 +204,17 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+    class arrow_ffi_CData:  # type: ignore
+        """Dummy class for pa.cffi.Table."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
     arrow_is_integer = None
     arrow_is_floating = None
-    export_arrow_to_c = None
+    arrow_ffi_addressof = None
+    arrow_ffi_cast = None
+    arrow_ffi_new = None
 
 """cpu_count()"""
 try:
