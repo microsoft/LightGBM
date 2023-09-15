@@ -823,3 +823,29 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
         data=np.random.randn(100, 3),
     )
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
+
+
+def test_booster_deepcopy_preserves_parameters():
+    bst = lgb.train(
+        params={'num_leaves': 5, 'verbosity': -1},
+        num_boost_round=2,
+        train_set=lgb.Dataset(np.random.rand(100, 2))
+    )
+    bst2 = copy.deepcopy(bst)
+    assert bst2.params == bst.params
+    assert bst.params["num_leaves"] == 5
+    assert bst.params["verbosity"] == -1
+
+
+def test_booster_params_kwarg_overrides_params_from_model_string():
+    bst = lgb.train(
+        params={'num_leaves': 5, 'learning_rate': 0.708, 'verbosity': -1},
+        num_boost_round=2,
+        train_set=lgb.Dataset(np.random.rand(100, 2))
+    )
+    bst2 = lgb.Booster(
+        params={'num_leaves': 7},
+        model_str=bst.model_to_string()
+    )
+    assert bst2.params["num_leaves"] == 7
+    assert bst2.params["learning_rate"] == 0.708

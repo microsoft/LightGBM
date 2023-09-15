@@ -3250,6 +3250,9 @@ class Booster:
                             'to create Booster instance')
         self.params = params
 
+        # ensure params are updated on the C++ side
+        self.reset_parameter(params)
+
     def __del__(self) -> None:
         try:
             if self._network:
@@ -3267,7 +3270,7 @@ class Booster:
 
     def __deepcopy__(self, _) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
-        return Booster(model_str=model_str)
+        return Booster(model_str=model_str, params=self.params)
 
     def __getstate__(self) -> Dict[str, Any]:
         this = self.__dict__.copy()
