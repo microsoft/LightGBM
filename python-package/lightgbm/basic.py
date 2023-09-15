@@ -2539,14 +2539,12 @@ class Dataset:
         self : Dataset
             Dataset with set categorical features.
         """
-        if self.categorical_feature == categorical_feature:
+        if self.categorical_feature == categorical_feature or categorical_feature == 'auto':
             return self
         if self.data is not None:
             if self.categorical_feature is None:
                 self.categorical_feature = categorical_feature
                 return self._free_handle()
-            elif categorical_feature == 'auto':
-                return self
             else:
                 if self.categorical_feature != 'auto':
                     _log_warning('categorical_feature in Dataset is overridden.\n'

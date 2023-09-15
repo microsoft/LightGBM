@@ -1145,6 +1145,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
+        validation_fraction: Optional[float] = 0.1,
         client: Optional[Client] = None,
         **kwargs: Any
     ):
@@ -1350,6 +1351,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
+        validation_fraction: Optional[float] = 0.1,
         client: Optional[Client] = None,
         **kwargs: Any
     ):
@@ -1520,6 +1522,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
+        validation_fraction: Optional[float] = 0.1,
         client: Optional[Client] = None,
         **kwargs: Any
     ):

@@ -16,7 +16,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
                      dt_DataTable, pd_DataFrame)
-from .engine import train
+from .engine import _make_n_folds, train
 
 __all__ = [
     'LGBMClassifier',
@@ -412,6 +412,7 @@ class LGBMModel(_LGBMModelBase):
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
+        validation_fraction: Optional[float] = 0.1,
         **kwargs
     ):
         r"""Construct a gradient boosting model.
@@ -491,6 +492,10 @@ class LGBMModel(_LGBMModelBase):
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
             If 'gain', result contains total gains of splits which use the feature.
+        validation_fraction : float or None, optional (default=0.1)
+            Proportion of training data to set aside as
+            validation data for early stopping. If None, early stopping is done on
+            the training data. Only used if early stopping is performed.
         **kwargs
             Other parameters for the model.
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
@@ -553,6 +558,7 @@ class LGBMModel(_LGBMModelBase):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.importance_type = importance_type
+        self.validation_fraction = validation_fraction
         self._Booster: Optional[Booster] = None
         self._evals_result: _EvalResultDict = {}
         self._best_score: _LGBM_BoosterBestScoreType = {}
@@ -668,9 +674,27 @@ class LGBMModel(_LGBMModelBase):
         params.pop('importance_type', None)
         params.pop('n_estimators', None)
         params.pop('class_weight', None)
+        params.pop("validation_fraction", None)
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
+
+        params = _choose_param_value(
+            main_param_name="early_stopping_round",
+            params=params,
+            default_value="auto",
+        )
+        if params["early_stopping_round"] == "auto":
+            if hasattr(self, "_n_rows_train") and self._n_rows_train > 10_000:
+                params["early_stopping_round"] = 10
+            else:
+                params["early_stopping_round"] = None
+
+        if params["early_stopping_round"] is True:
+            params["early_stopping_round"] = 10
+        elif params["early_stopping_round"] is False:
+            params["early_stopping_round"] = None
+
         if self._n_classes > 2:
             for alias in _ConfigAliases.get('num_class'):
                 params.pop(alias, None)
@@ -745,6 +769,19 @@ class LGBMModel(_LGBMModelBase):
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
     ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
+            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            if sample_weight is not None:
+                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
+        else:
+            _X, _y = X, y
+
+        self._n_features = _X.shape[1]
+        # copy for consistency
+        self._n_features_in = self._n_features
+
+        self._n_rows_train = _X.shape[0]
+
         params = self._process_params(stage="fit")
 
         # Do not modify original args in fit function
@@ -766,13 +803,6 @@ class LGBMModel(_LGBMModelBase):
         params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
         params['metric'] = [metric for metric in params['metric'] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
-            if sample_weight is not None:
-                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
-        else:
-            _X, _y = X, y
-
         if self._class_weight is None:
             self._class_weight = self.class_weight
         if self._class_weight is not None:
@@ -782,51 +812,61 @@ class LGBMModel(_LGBMModelBase):
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
-        self._n_features = _X.shape[1]
-        # copy for consistency
-        self._n_features_in = self._n_features
-
         train_set = Dataset(data=_X, label=_y, weight=sample_weight, group=group,
                             init_score=init_score, categorical_feature=categorical_feature,
                             params=params)
+        if params["early_stopping_round"] is not None and eval_set is None:
+            if self.validation_fraction is not None:
+                n_splits = max(int(np.ceil(1 / self.validation_fraction)), 2)
+                stratified = isinstance(self, LGBMClassifier)
+                cvfolds = _make_n_folds(full_data=train_set, folds=None, nfold=n_splits,
+                    params=params, seed=self.random_state,
+                    stratified=stratified, shuffle=True)
+                train_idx, val_idx = next(cvfolds)
+                valid_set = train_set.subset(sorted(val_idx))
+                train_set = train_set.subset(sorted(train_idx))
+            else:
+                valid_set = train_set
+            valid_set = valid_set.construct()
+            valid_sets = [valid_set]
 
-        valid_sets: List[Dataset] = []
-        if eval_set is not None:
+        else:
+            valid_sets: List[Dataset] = []
+            if eval_set is not None:
+                def _get_meta_data(collection, name, i):
+                    if collection is None:
+                        return None
+                    elif isinstance(collection, list):
+                        return collection[i] if len(collection) > i else None
+                    elif isinstance(collection, dict):
+                        return collection.get(i, None)
+                    else:
+                        raise TypeError(f"{name} should be dict or list")
 
-            def _get_meta_data(collection, name, i):
-                if collection is None:
-                    return None
-                elif isinstance(collection, list):
-                    return collection[i] if len(collection) > i else None
-                elif isinstance(collection, dict):
-                    return collection.get(i, None)
-                else:
-                    raise TypeError(f"{name} should be dict or list")
+                if isinstance(eval_set, tuple):
+                    eval_set = [eval_set]
+                for i, valid_data in enumerate(eval_set):
+                    # reduce cost for prediction training data
+                    if valid_data[0] is X and valid_data[1] is y:
+                        valid_set = train_set
+                    else:
+                        valid_weight = _get_meta_data(eval_sample_weight, 'eval_sample_weight', i)
+                        valid_class_weight = _get_meta_data(eval_class_weight, 'eval_class_weight', i)
+                        if valid_class_weight is not None:
+                            if isinstance(valid_class_weight, dict) and self._class_map is not None:
+                                valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
+                            valid_class_sample_weight = _LGBMComputeSampleWeight(valid_class_weight, valid_data[1])
+                            if valid_weight is None or len(valid_weight) == 0:
+                                valid_weight = valid_class_sample_weight
+                            else:
+                                valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
+                        valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
+                        valid_group = _get_meta_data(eval_group, 'eval_group', i)
+                        valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
+                                            group=valid_group, init_score=valid_init_score,
+                                            categorical_feature='auto', params=params)
 
-            if isinstance(eval_set, tuple):
-                eval_set = [eval_set]
-            for i, valid_data in enumerate(eval_set):
-                # reduce cost for prediction training data
-                if valid_data[0] is X and valid_data[1] is y:
-                    valid_set = train_set
-                else:
-                    valid_weight = _get_meta_data(eval_sample_weight, 'eval_sample_weight', i)
-                    valid_class_weight = _get_meta_data(eval_class_weight, 'eval_class_weight', i)
-                    if valid_class_weight is not None:
-                        if isinstance(valid_class_weight, dict) and self._class_map is not None:
-                            valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
-                        valid_class_sample_weight = _LGBMComputeSampleWeight(valid_class_weight, valid_data[1])
-                        if valid_weight is None or len(valid_weight) == 0:
-                            valid_weight = valid_class_sample_weight
-                        else:
-                            valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
-                    valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
-                                        group=valid_group, init_score=valid_init_score,
-                                        categorical_feature='auto', params=params)
-
-                valid_sets.append(valid_set)
+                    valid_sets.append(valid_set)
 
         if isinstance(init_model, LGBMModel):
             init_model = init_model.booster_

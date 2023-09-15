@@ -257,6 +257,111 @@ def test_binary_classification_with_custom_objective():
     assert ret < 0.05
 
 
+def test_auto_early_stopping_binary_classification():
+
+    X, y = load_breast_cancer(return_X_y=True)
+    n_estimators = 200
+    gbm = lgb.LGBMClassifier(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5
+    )
+    gbm.fit(X, y)
+    assert gbm._Booster.params['early_stopping_round'] == 10
+    assert gbm._Booster.num_trees() == 143
+    assert gbm.best_iteration_ == 143
+
+
+def test_auto_early_stopping_setting_early_stopping_round():
+    early_stopping_round = 15
+    X, y = make_synthetic_regression(n_samples=100)
+    n_estimators = 50
+    gbm = lgb.LGBMRegressor(
+        n_estimators=n_estimators,
+        random_state=42,
+        early_stopping=early_stopping_round,
+        verbose=-1,
+    )
+    gbm.fit(X, y)
+    assert gbm._Booster.params['early_stopping_round'] == early_stopping_round
+    assert gbm._Booster.num_trees() == 25
+    assert gbm.best_iteration_ == 25
+
+
+def test_auto_early_stopping_categorical_features_set_during_fit():
+    pd = pytest.importorskip("pandas")
+    np.random.seed(42)
+    X = pd.DataFrame({"A": pd.Categorical(np.random.permutation(['z', 'y', 'x', 'w', 'v'] * 60),
+                                          ordered=True),  # str and ordered categorical
+                      "B": np.random.permutation([1, 2, 3] * 100),  # int
+                      "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+                      "D": np.random.permutation([True, False] * 150),  # bool
+                    })
+    # np.random.seed()
+    cat_cols_actual = ["A", "B", "C", "D"]
+    y = np.random.permutation([0, 1] * 150)
+    n_estimators = 5
+    gbm = lgb.LGBMClassifier(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5
+    )
+    gbm.fit(X, y, categorical_feature=cat_cols_actual)
+    assert gbm._Booster.params['early_stopping_round'] == 10
+    assert gbm._Booster.num_trees() == 1
+    assert gbm.best_iteration_ == 1
+
+
+@pytest.mark.parametrize('n_samples, expected_n_trees', [(100, 25), (10_001, 92)])
+@pytest.mark.parametrize('early_stopping', [True, False, 'auto', 10])
+def test_auto_early_stopping_is_triggered_correctly(n_samples, expected_n_trees, early_stopping):
+
+    X, y = make_synthetic_regression(n_samples=n_samples)
+    n_estimators = 100
+    gbm = lgb.LGBMRegressor(
+        n_estimators=n_estimators,
+        random_state=42,
+        early_stopping=early_stopping,
+        verbose=-1,
+    )
+    gbm.fit(X, y)
+    if early_stopping == 'auto' and n_samples > 10_000 or early_stopping in (True, 10):
+        # Check that early stopping actually kicked in
+        assert gbm._Booster.params['early_stopping_round'] == 10
+        assert gbm._Booster.num_trees() == expected_n_trees
+        assert gbm.best_iteration_ == expected_n_trees
+    else:
+        # Check that early stopping did not kick in
+        assert gbm.best_iteration_ == 0
+        assert gbm._Booster.num_trees() == n_estimators
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
+def test_auto_early_stopping_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
+    q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    gbm = lgb.LGBMRanker(
+        n_estimators=5, random_state=42, early_stopping=True, num_leaves=5
+    )
+    gbm.fit(
+        X_train,
+        y_train,
+        group=q_train,
+        eval_at=[1, 3],
+        callbacks=[
+            lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))
+        ]
+    )
+    assert gbm._Booster.params['early_stopping_round'] == 10
+    assert gbm._Booster.num_trees() == 3
+    assert gbm.best_iteration_ == 3
+
+
 def test_dart():
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
