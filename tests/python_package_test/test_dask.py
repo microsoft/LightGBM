@@ -1838,7 +1838,6 @@ def test_distributed_quantized_training(cluster):
             'num_grad_quant_bins': 30,
             'quant_train_renew_leaf': True,
             'verbose': -1,
-            'force_row_wise': True,
         }
 
         quant_dask_classifier = lgb.DaskLGBMRegressor(

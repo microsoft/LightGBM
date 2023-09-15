@@ -55,6 +55,7 @@ _ctypes_float_array = Union[
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_BoosterEvalMethodResultWithStandardDeviationType = Tuple[str, str, float, bool, float]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
 _LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
