@@ -3246,8 +3246,13 @@ class Booster:
         elif model_str is not None:
             self.model_from_string(model_str)
             # ensure params are updated on the C++ side
+            # NOTE: models loaded from file are initially set to "boosting: GBDT", so "boosting"
+            #       shouldn't be passed through here
             self.params = params
+            boosting_type = params.pop("boosting", None)
             self.reset_parameter(params)
+            if boosting_type is not None:
+                params["boosting"] = boosting_type
         else:
             raise TypeError('Need at least one training dataset or model file or model string '
                             'to create Booster instance')
