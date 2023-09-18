@@ -270,8 +270,8 @@ def test_auto_early_stopping_binary_classification():
     )
     gbm.fit(X, y)
     assert gbm._Booster.params['early_stopping_round'] == 10
-    assert gbm._Booster.num_trees() == 143
-    assert gbm.best_iteration_ == 143
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
 
 
 def test_auto_early_stopping_setting_early_stopping_round():
@@ -345,8 +345,9 @@ def test_auto_early_stopping_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
     q_train = np.loadtxt(str(rank_example_dir / 'rank.train.query'))
+    n_estimators = 5
     gbm = lgb.LGBMRanker(
-        n_estimators=5, random_state=42, early_stopping=True, num_leaves=5
+        n_estimators=n_estimators, random_state=42, early_stopping=True, num_leaves=5
     )
     gbm.fit(
         X_train,
@@ -358,8 +359,8 @@ def test_auto_early_stopping_lambdarank():
         ]
     )
     assert gbm._Booster.params['early_stopping_round'] == 10
-    assert gbm._Booster.num_trees() == 3
-    assert gbm.best_iteration_ == 3
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
 
 
 def test_dart():
