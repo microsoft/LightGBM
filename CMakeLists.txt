@@ -381,7 +381,7 @@ if(MSVC)
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
-        # 
+        #
         # and raises "error C3646: 'private_data_c': unknown override specifier"
         add_definitions(-DR_LEGACY_RCOMPLEX)
     endif()
