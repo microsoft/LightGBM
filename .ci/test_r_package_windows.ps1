@@ -205,14 +205,14 @@ if ($env:COMPILER -ne "MSVC") {
 
 # Checking that the correct R version was used
 if ($env:TOOLCHAIN -ne "MSVC") {
-  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "using R version 9.$R_WINDOWS_VERSION"
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "using R version 9.$env:R_WINDOWS_VERSION"
   $checks_cnt = $checks.Matches.length
 } else {
-  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "R version passed into FindLibR.* 9.$R_WINDOWS_VERSION"
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "R version passed into FindLibR.* 9.$env:R_WINDOWS_VERSION"
   $checks_cnt = $checks.Matches.length
 }
 if ($checks_cnt -eq 0) {
-  Write-Output "Wrong R version was found (expected '$R_WINDOWS_VERSION'). Check the build logs."
+  Write-Output "Wrong R version was found (expected '$env:R_WINDOWS_VERSION'). Check the build logs."
   Check-Output $False
 }
 
