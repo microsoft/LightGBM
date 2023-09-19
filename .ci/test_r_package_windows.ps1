@@ -212,7 +212,7 @@ if ($env:TOOLCHAIN -ne "MSVC") {
   $checks_cnt = $checks.Matches.length
 }
 if ($checks_cnt -eq 0) {
-  Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
+  Write-Output "Wrong R version was found (expected '$R_WINDOWS_VERSION'). Check the build logs."
   Check-Output $False
 }
 
