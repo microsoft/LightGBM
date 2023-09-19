@@ -23,6 +23,7 @@ from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
+
     # typing.TypeGuard was only introduced in Python 3.10
     try:
         from typing import TypeGuard
