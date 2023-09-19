@@ -23,6 +23,12 @@ from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
+    # typing.TypeGuard was only introduced in Python 3.10
+    try:
+        from typing import TypeGuard
+    except ImportError:
+        from typing_extensions import TypeGuard
+
 
 __all__ = [
     'Booster',
@@ -277,6 +283,20 @@ def _cast_numpy_array_to_dtype(array: np.ndarray, dtype: "np.typing.DTypeLike") 
 def _is_1d_list(data: Any) -> bool:
     """Check whether data is a 1-D list."""
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
+
+
+def _is_list_of_numpy_arrays(data: Any) -> "TypeGuard[List[np.ndarray]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, np.ndarray) for x in data)
+    )
+
+
+def _is_list_of_sequences(data: Any) -> "TypeGuard[List[Sequence]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, Sequence) for x in data)
+    )
 
 
 def _is_1d_collection(data: Any) -> bool:
@@ -1918,9 +1938,9 @@ class Dataset:
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
-            if all(isinstance(x, np.ndarray) for x in data):
+            if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(isinstance(x, Sequence) for x in data):
+            elif _is_list_of_sequences(data):
                 self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
@@ -2870,7 +2890,7 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
-                elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
+                elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
