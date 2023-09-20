@@ -205,6 +205,19 @@ if ($env:COMPILER -ne "MSVC") {
   }
 }
 
+# Checking that the correct R version was used
+if ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${LOG_FILE_NAME}" -Pattern "using R version $env:R_WINDOWS_VERSION"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "R version passed into FindLibR.* $env:R_WINDOWS_VERSION"
+  $checks_cnt = $checks.Matches.length
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "Wrong R version was found (expected '$env:R_WINDOWS_VERSION'). Check the build logs."
+  Check-Output $False
+}
+
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
