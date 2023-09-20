@@ -1593,7 +1593,7 @@ class Dataset:
         self.used_indices: Optional[List[int]] = None
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
-        self.pandas_categorical = None
+        self.pandas_categorical: Optional[List[List]] = None
         self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
