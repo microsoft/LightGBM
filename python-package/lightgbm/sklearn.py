@@ -151,17 +151,52 @@ class _ObjectiveFunctionWrapper:
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
-        labels = dataset.get_label()
+        labels = dataset.get_field("label")
         argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
+            grad, hess = self.func(labels, preds, dataset.get_field("weight"))  # type: ignore[call-arg]
         elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore [call-arg]
+            group = dataset.get_field("group")
+            if group is not None:
+                return self.func(labels, preds, dataset.get_field("weight"), np.diff(group))  # type: ignore[call-arg]
+            else:
+                return self.func(labels, preds, dataset.get_field("weight"), group)  # type: ignore[call-arg]
         else:
             raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
         return grad, hess
+
+
+Fixed these:
+
+```text
+python-package/lightgbm/basic.py:2826: error: Incompatible return value type (got "Union[List[float], List[int], ndarray[Any, Any], Any, Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
+python-package/lightgbm/basic.py:2838: error: Incompatible return value type (got "Union[List[float], List[int], ndarray[Any, Any], Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
+python-package/lightgbm/basic.py:2850: error: Incompatible return value type (got "Union[List[float], List[List[float]], ndarray[Any, Any], Any, Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
+python-package/lightgbm/basic.py:2901: error: Incompatible return value type (got "Union[List[float], Any, List[int], ndarray[Any, dtype[Any]], ndarray[Any, Any], None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
+```
+
+And then all of these that came as a result:
+
+```text
+python-package/lightgbm/sklearn.py:157: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:157: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:159: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:159: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:159: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:161: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:161: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:161: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:235: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:235: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:237: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:237: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:237: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:239: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+python-package/lightgbm/sklearn.py:239: note: Error code "arg-type" not covered by "type: ignore" comment
+python-package/lightgbm/sklearn.py:239: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
+```
 
 
 class _EvalFunctionWrapper:
@@ -229,14 +264,18 @@ class _EvalFunctionWrapper:
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
-        labels = dataset.get_label()
+        labels = dataset.get_field("label")
         argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)  # type: ignore[call-arg]
         elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
+            return self.func(labels, preds, dataset.get_field("weight"))  # type: ignore[call-arg]
         elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[call-arg]
+            group = dataset.get_field("group")
+            if group is not None:
+                return self.func(labels, preds, dataset.get_field("weight"), np.diff(group))  # type: ignore[call-arg]
+            else:
+                return self.func(labels, preds, dataset.get_field("weight"), group)  # type: ignore[call-arg]
         else:
             raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 

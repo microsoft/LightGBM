@@ -368,7 +368,7 @@ def _data_to_2d_numpy(
                     "It should be list of lists, numpy 2-D array or pandas DataFrame")
 
 
-def _cfloat32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
+def _cfloat32_array_to_numpy(*, cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes float pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_float)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -376,7 +376,7 @@ def _cfloat32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray
         raise RuntimeError('Expected float pointer')
 
 
-def _cfloat64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
+def _cfloat64_array_to_numpy(*, cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes double pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_double)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -384,7 +384,7 @@ def _cfloat64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray
         raise RuntimeError('Expected double pointer')
 
 
-def _cint32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
+def _cint32_array_to_numpy(*, cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int32)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -392,7 +392,7 @@ def _cint32_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
         raise RuntimeError('Expected int32 pointer')
 
 
-def _cint64_array_to_numpy(cptr: "ctypes._Pointer", length: int) -> np.ndarray:
+def _cint64_array_to_numpy(*, cptr: "ctypes._Pointer", length: int) -> np.ndarray:
     """Convert a ctypes int pointer array to a numpy array."""
     if isinstance(cptr, ctypes.POINTER(ctypes.c_int64)):
         return np.ctypeslib.as_array(cptr, shape=(length,)).copy()
@@ -1229,18 +1229,18 @@ class _InnerPredictor:
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
         if indptr_type == _C_API_DTYPE_INT32:
-            out_indptr = _cint32_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint32_array_to_numpy(cptr=out_ptr_indptr, length=indptr_len)
         elif indptr_type == _C_API_DTYPE_INT64:
-            out_indptr = _cint64_array_to_numpy(out_ptr_indptr, indptr_len)
+            out_indptr = _cint64_array_to_numpy(cptr=out_ptr_indptr, length=indptr_len)
         else:
             raise TypeError("Expected int32 or int64 type for indptr")
         if data_type == _C_API_DTYPE_FLOAT32:
-            out_data = _cfloat32_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat32_array_to_numpy(cptr=out_ptr_data, length=data_indices_len)
         elif data_type == _C_API_DTYPE_FLOAT64:
-            out_data = _cfloat64_array_to_numpy(out_ptr_data, data_indices_len)
+            out_data = _cfloat64_array_to_numpy(cptr=out_ptr_data, length=data_indices_len)
         else:
             raise TypeError("Expected float32 or float64 type for data")
-        out_indices = _cint32_array_to_numpy(out_ptr_indices, data_indices_len)
+        out_indices = _cint32_array_to_numpy(cptr=out_ptr_indices, length=data_indices_len)
         # break up indptr based on number of rows (note more than one matrix in multiclass case)
         per_class_indptr_shape = cs.indptr.shape[0]
         # for CSC there is extra column added
@@ -2504,6 +2504,12 @@ class Dataset:
     def get_field(self, field_name: str) -> Optional[np.ndarray]:
         """Get property from the Dataset.
 
+        Can only be run on a constructed Dataset.
+
+        Unlike ``get_group()``, ``get_init_score()``, ``get_label()``, ``get_position()``, and ``get_weight()``,
+        this method ignores any raw data passed into ``lgb.Dataset()`` on the Python side, and will only read
+        data from the constructed C++ ``Dataset`` object.
+
         Parameters
         ----------
         field_name : str
@@ -2530,11 +2536,20 @@ class Dataset:
         if tmp_out_len.value == 0:
             return None
         if out_type.value == _C_API_DTYPE_INT32:
-            arr = _cint32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)), tmp_out_len.value)
+            arr = _cint32_array_to_numpy(
+                cptr=ctypes.cast(ret, ctypes.POINTER(ctypes.c_int32)),
+                length=tmp_out_len.value
+            )
         elif out_type.value == _C_API_DTYPE_FLOAT32:
-            arr = _cfloat32_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)), tmp_out_len.value)
+            arr = _cfloat32_array_to_numpy(
+                cptr=ctypes.cast(ret, ctypes.POINTER(ctypes.c_float)),
+                length=tmp_out_len.value
+            )
         elif out_type.value == _C_API_DTYPE_FLOAT64:
-            arr = _cfloat64_array_to_numpy(ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)), tmp_out_len.value)
+            arr = _cfloat64_array_to_numpy(
+                cptr=ctypes.cast(ret, ctypes.POINTER(ctypes.c_double)),
+                length=tmp_out_len.value
+            )
         else:
             raise TypeError("Unknown type")
         if field_name == 'init_score':
@@ -2834,7 +2849,7 @@ class Dataset:
                 ptr_string_buffers))
         return [string_buffers[i].value.decode('utf-8') for i in range(num_feature)]
 
-    def get_label(self) -> Optional[np.ndarray]:
+    def get_label(self) -> Optional[_LGBM_LabelType]:
         """Get the label of the Dataset.
 
         Returns
@@ -2846,7 +2861,7 @@ class Dataset:
             self.label = self.get_field('label')
         return self.label
 
-    def get_weight(self) -> Optional[np.ndarray]:
+    def get_weight(self) -> Optional[_LGBM_WeightType]:
         """Get the weight of the Dataset.
 
         Returns
@@ -2858,7 +2873,7 @@ class Dataset:
             self.weight = self.get_field('weight')
         return self.weight
 
-    def get_init_score(self) -> Optional[np.ndarray]:
+    def get_init_score(self) -> Optional[_LGBM_InitScoreType]:
         """Get the initial score of the Dataset.
 
         Returns
@@ -2921,7 +2936,7 @@ class Dataset:
                 self.group = np.diff(self.group)
         return self.group
 
-    def get_position(self) -> Optional[np.ndarray]:
+    def get_position(self) -> Optional[_LGBM_PositionType]:
         """Get the position of the Dataset.
 
         Returns
