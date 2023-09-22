@@ -211,5 +211,5 @@ def np_assert_array_equal(*args, **kwargs):
     This function is here for testing on older Python (and therefore ``numpy``)
     """
     if not _numpy_testing_supports_strict_kwarg:
-        kawrgs.pop("strict")
+        kwargs.pop("strict")
     np.testing.assert_array_equal(*args, **kwargs)
