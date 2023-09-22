@@ -2917,7 +2917,7 @@ class Dataset:
                                 "set free_raw_data=False when construct Dataset to avoid this.")
         return self.data
 
-    def get_group(self) -> Optional[np.ndarray]:
+    def get_group(self) -> Optional[_LGBM_GroupType]:
         """Get the group of the Dataset.
 
         Returns

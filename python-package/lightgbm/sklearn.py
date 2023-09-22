@@ -168,37 +168,6 @@ class _ObjectiveFunctionWrapper:
         return grad, hess
 
 
-Fixed these:
-
-```text
-python-package/lightgbm/basic.py:2826: error: Incompatible return value type (got "Union[List[float], List[int], ndarray[Any, Any], Any, Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
-python-package/lightgbm/basic.py:2838: error: Incompatible return value type (got "Union[List[float], List[int], ndarray[Any, Any], Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
-python-package/lightgbm/basic.py:2850: error: Incompatible return value type (got "Union[List[float], List[List[float]], ndarray[Any, Any], Any, Any, None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
-python-package/lightgbm/basic.py:2901: error: Incompatible return value type (got "Union[List[float], Any, List[int], ndarray[Any, dtype[Any]], ndarray[Any, Any], None]", expected "Optional[ndarray[Any, Any]]")  [return-value]
-```
-
-And then all of these that came as a result:
-
-```text
-python-package/lightgbm/sklearn.py:157: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:157: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:159: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:159: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:159: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:161: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:161: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:161: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:235: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:235: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:237: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:237: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:237: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:239: error: Argument 1 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-python-package/lightgbm/sklearn.py:239: note: Error code "arg-type" not covered by "type: ignore" comment
-python-package/lightgbm/sklearn.py:239: error: Argument 3 has incompatible type "Union[List[float], List[int], ndarray[Any, Any], Any, None]"; expected "Optional[ndarray[Any, Any]]"  [arg-type]
-```
-
-
 class _EvalFunctionWrapper:
     """Proxy class for evaluation function."""
 
