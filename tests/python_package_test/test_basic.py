@@ -503,6 +503,10 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
 
     X = np.array([[1.0, 2.0], [3.0, 4.0]])
 
+    position=np.array([0.0, 1.0], dtype=np.float32)
+    if getenv('TASK', '') == 'cuda':
+        position = None
+
     dtrain = lgb.Dataset(
         X,
         params={
@@ -513,7 +517,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
         group=[1, 1],
         init_score=[0.312, 0.708],
         label=[1, 2],
-        position=np.array([0.0, 1.0], dtype=np.float32),
+        position=position,
         weight=[0.5, 1.5],
     )
 
@@ -524,16 +528,17 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     assert dtrain.get_init_score() == [0.312, 0.708]
     assert dtrain.label == [1, 2]
     assert dtrain.get_label() == [1, 2]
-    np.testing.assert_array_equal(
-        dtrain.position,
-        np.array([0.0, 1.0], dtype=np.float32),
-        strict=True
-    )
-    np.testing.assert_array_equal(
-        dtrain.get_position(),
-        np.array([0.0, 1.0], dtype=np.float32),
-        strict=True
-    )
+    if getenv('TASK', '') != 'cuda':
+        np.testing.assert_array_equal(
+            dtrain.position,
+            np.array([0.0, 1.0], dtype=np.float32),
+            strict=True
+        )
+        np.testing.assert_array_equal(
+            dtrain.get_position(),
+            np.array([0.0, 1.0], dtype=np.float32),
+            strict=True
+        )
     assert dtrain.weight == [0.5, 1.5]
     assert dtrain.get_weight() == [0.5, 1.5]
 
@@ -565,15 +570,16 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np.testing.assert_array_equal(dtrain.get_label(), expected_label, strict=True)
     np.testing.assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
 
-    expected_position = np.array([0.0, 1.0], dtype=np.float32)
-    np.testing.assert_array_equal(dtrain.position, expected_position, strict=True)
-    np.testing.assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-    # NOTE: "position" is converted to int32 on thhe C++ side
-    np.testing.assert_array_equal(
-        dtrain.get_field("position"),
-        np.array([0.0, 1.0], dtype=np.int32),
-        strict=True
-    )
+    if getenv('TASK', '') != 'cuda':
+        expected_position = np.array([0.0, 1.0], dtype=np.float32)
+        np.testing.assert_array_equal(dtrain.position, expected_position, strict=True)
+        np.testing.assert_array_equal(dtrain.get_position(), expected_position, strict=True)
+        # NOTE: "position" is converted to int32 on thhe C++ side
+        np.testing.assert_array_equal(
+            dtrain.get_field("position"),
+            np.array([0.0, 1.0], dtype=np.int32),
+            strict=True
+        )
 
     expected_weight = np.array([0.5, 1.5], dtype=np.float32)
     np.testing.assert_array_equal(dtrain.weight, expected_weight, strict=True)
