@@ -574,7 +574,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
         expected_position = np.array([0.0, 1.0], dtype=np.float32)
         np.testing.assert_array_equal(dtrain.position, expected_position, strict=True)
         np.testing.assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-        # NOTE: "position" is converted to int32 on thhe C++ side
+        # NOTE: "position" is converted to int32 on the C++ side
         np.testing.assert_array_equal(
             dtrain.get_field("position"),
             np.array([0.0, 1.0], dtype=np.int32),
