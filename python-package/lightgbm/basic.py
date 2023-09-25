@@ -24,6 +24,13 @@ from .libpath import find_lib_path
 if TYPE_CHECKING:
     from typing import Literal
 
+    # typing.TypeGuard was only introduced in Python 3.10
+    try:
+        from typing import TypeGuard
+    except ImportError:
+        from typing_extensions import TypeGuard
+
+
 __all__ = [
     'Booster',
     'Dataset',
@@ -279,6 +286,20 @@ def _is_1d_list(data: Any) -> bool:
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
 
+def _is_list_of_numpy_arrays(data: Any) -> "TypeGuard[List[np.ndarray]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, np.ndarray) for x in data)
+    )
+
+
+def _is_list_of_sequences(data: Any) -> "TypeGuard[List[Sequence]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, Sequence) for x in data)
+    )
+
+
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
@@ -458,7 +479,7 @@ class _ConfigAliases:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_DumpParamAliases(
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -467,7 +488,7 @@ class _ConfigAliases:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_DumpParamAliases(
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
@@ -1593,7 +1614,7 @@ class Dataset:
         self.used_indices: Optional[List[int]] = None
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
-        self.pandas_categorical = None
+        self.pandas_categorical: Optional[List[List]] = None
         self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
@@ -1918,9 +1939,9 @@ class Dataset:
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
-            if all(isinstance(x, np.ndarray) for x in data):
+            if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(isinstance(x, Sequence) for x in data):
+            elif _is_list_of_sequences(data):
                 self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
@@ -2870,7 +2891,7 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
-                elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
+                elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
@@ -3294,7 +3315,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
             self._handle,
             ctypes.c_int64(buffer_len),
@@ -3304,7 +3325,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
                 self._handle,
                 ctypes.c_int64(actual_len),
@@ -4057,7 +4078,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4070,7 +4091,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self._handle,
                 ctypes.c_int(start_iteration),
@@ -4125,7 +4146,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4138,7 +4159,7 @@ class Booster:
         # if buffer length is not long enough, reallocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self._handle,
                 ctypes.c_int(start_iteration),
