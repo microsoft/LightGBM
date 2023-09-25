@@ -479,7 +479,7 @@ class _ConfigAliases:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_DumpParamAliases(
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -488,7 +488,7 @@ class _ConfigAliases:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_DumpParamAliases(
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
@@ -3315,7 +3315,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
             self._handle,
             ctypes.c_int64(buffer_len),
@@ -3325,7 +3325,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
                 self._handle,
                 ctypes.c_int64(actual_len),
@@ -4078,7 +4078,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4091,7 +4091,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self._handle,
                 ctypes.c_int(start_iteration),
@@ -4146,7 +4146,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4159,7 +4159,7 @@ class Booster:
         # if buffer length is not long enough, reallocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self._handle,
                 ctypes.c_int(start_iteration),
