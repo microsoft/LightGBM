@@ -164,7 +164,7 @@ class _RecordEvaluationCallback:
             else:
                 data_name, eval_name = item[1].split()
                 res_mean = item[2]
-                res_stdv = item[4]
+                res_stdv = item[4]  # type: ignore[misc]
                 self.eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
                 self.eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
 
