@@ -1,10 +1,3 @@
-VERBOSITY <- as.integer(
-  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
-)
-
-ON_WINDOWS <- .Platform$OS.type == "windows"
-TOLERANCE <- 1e-6
-
 test_that("Booster$finalize() should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
@@ -13,8 +6,9 @@ test_that("Booster$finalize() should not fail", {
         data = dtrain
         , params = list(
             objective = "regression"
+            , num_threads = .LGB_MAX_THREADS
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 3L
     )
     expect_true(lgb.is.Booster(bst))
@@ -65,7 +59,8 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
             , metric = "l2"
             , min_data = 1L
             , learning_rate = 1.0
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , data = dtrain
         , nrounds = 5L
@@ -99,7 +94,7 @@ test_that("lgb.get.eval.result() should throw an informative error for incorrect
             , metric = "l2"
             , min_data = 1L
             , learning_rate = 1.0
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
         )
         , data = dtrain
         , nrounds = 5L
@@ -133,7 +128,7 @@ test_that("lgb.load() gives the expected error messages given different incorrec
             objective = "binary"
             , num_leaves = 4L
             , learning_rate = 1.0
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
         )
         , nrounds = 2L
     )
@@ -184,7 +179,8 @@ test_that("Loading a Booster from a text file works", {
         , metric = c("mape", "average_precision")
         , learning_rate = 1.0
         , objective = "binary"
-        , verbosity = VERBOSITY
+        , verbosity = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- lightgbm(
         data = as.matrix(train$data)
@@ -227,13 +223,14 @@ test_that("boosters with linear models at leaves can be written to text file and
         , metric = "mse"
         , seed = 0L
         , num_leaves = 2L
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
         data = dtrain
         , nrounds = 10L
         , params = params
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
     )
     expect_true(lgb.is.Booster(bst))
 
@@ -267,7 +264,8 @@ test_that("Loading a Booster from a string works", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 2L
     )
@@ -299,9 +297,10 @@ test_that("Saving a large model to string should work", {
             num_leaves = 100L
             , learning_rate = 0.01
             , objective = "binary"
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 500L
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
     )
 
     pred <- predict(bst, train$data)
@@ -342,9 +341,10 @@ test_that("Saving a large model to JSON should work", {
             num_leaves = 100L
             , learning_rate = 0.01
             , objective = "binary"
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 200L
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
     )
 
     model_json <- bst$dump_model()
@@ -371,7 +371,8 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 2L
     )
@@ -405,7 +406,8 @@ test_that("Creating a Booster from a Dataset should work", {
     bst <- Booster$new(
         params = list(
             objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         ),
         train_set = dtrain
     )
@@ -426,7 +428,8 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = nrounds
     )
@@ -439,7 +442,8 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
     bst_from_ds <- Booster$new(
         train_set = dtest
         , params = list(
-            verbose = VERBOSITY
+            verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
     )
     expect_true(lgb.is.Booster(bst))
@@ -462,7 +466,8 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
             objective = "regression"
             , metric = "l2"
             , num_leaves = 4L
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , data = dtrain
         , nrounds = 2L
@@ -492,14 +497,14 @@ test_that("Booster$eval() should work on a Dataset stored in a binary file", {
     eval_from_file <- bst$eval(
         data = lgb.Dataset(
             data = test_file
-            , params = list(verbose = VERBOSITY)
+            , params = list(verbose = .LGB_VERBOSITY, num_threads = .LGB_MAX_THREADS)
         )$construct()
         , name = "test"
     )
 
-    expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < TOLERANCE)
+    expect_true(abs(eval_in_mem[[1L]][["value"]] - 0.1744423) < .LGB_NUMERIC_TOLERANCE)
     # refer to https://github.com/microsoft/LightGBM/issues/4680
-    if (isTRUE(ON_WINDOWS)) {
+    if (isTRUE(.LGB_ON_WINDOWS)) {
       expect_equal(eval_in_mem, eval_from_file)
     } else {
       expect_identical(eval_in_mem, eval_from_file)
@@ -520,7 +525,8 @@ test_that("Booster$rollback_one_iter() should work as expected", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = nrounds
     )
@@ -554,7 +560,8 @@ test_that("Booster$update() passing a train_set works as expected", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = nrounds
     )
@@ -564,7 +571,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         train_set = Dataset$new(
             data = agaricus.train$data
             , label = agaricus.train$label
-            , params = list(verbose = VERBOSITY)
+            , params = list(verbose = .LGB_VERBOSITY)
         )
     )
     expect_true(lgb.is.Booster(bst))
@@ -578,7 +585,8 @@ test_that("Booster$update() passing a train_set works as expected", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = nrounds +  1L
     )
@@ -603,7 +611,8 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = nrounds
     )
@@ -630,7 +639,8 @@ test_that("Booster should store parameters and Booster$reset_parameter() should 
         , metric = c("multi_logloss", "multi_error")
         , boosting = "gbdt"
         , num_class = 5L
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- Booster$new(
         params = params
@@ -657,7 +667,8 @@ test_that("Booster$params should include dataset params, before and after Booste
         objective = "binary"
         , max_depth = 4L
         , bagging_fraction = 0.8
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- Booster$new(
         params = params
@@ -669,7 +680,8 @@ test_that("Booster$params should include dataset params, before and after Booste
             objective = "binary"
             , max_depth = 4L
             , bagging_fraction = 0.8
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
             , max_bin = 17L
         )
     )
@@ -680,7 +692,8 @@ test_that("Booster$params should include dataset params, before and after Booste
         objective = "binary"
         , max_depth = 4L
         , bagging_fraction = 0.9
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
         , max_bin = 17L
     )
     expect_identical(ret_bst$params, expected_params)
@@ -698,7 +711,8 @@ test_that("Saving a model with different feature importance types works", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 2L
     )
@@ -753,7 +767,8 @@ test_that("Saving a model with unknown importance type fails", {
             num_leaves = 4L
             , learning_rate = 1.0
             , objective = "binary"
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 2L
     )
@@ -784,36 +799,166 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         data = matrix(rnorm(500L), nrow = 100L)
         , label = rnorm(100L)
     )
-    nrounds <- 4L
     bst <- lgb.train(
         params = list(
-            objective = "regression"
-            , metric = "l2"
+            objective = "mape"
+            , metric = c("l2", "mae")
+            , num_threads = .LGB_MAX_THREADS
+            , seed = 708L
+            , data_sample_strategy = "bagging"
+            , sub_row = 0.8234
         )
         , data = dtrain
-        , nrounds = nrounds
-        , verbose = VERBOSITY
+        , nrounds = 3L
+        , verbose = .LGB_VERBOSITY
     )
 
-    model_str <- bst$save_model_to_string()
-    params_in_file <- .params_from_model_string(model_str = model_str)
+    # entries whose values should reflect params passed to lgb.train()
+    non_default_param_entries <- c(
+        "[objective: mape]"
+        # 'l1' was passed in with alias 'mae'
+        , "[metric: l2,l1]"
+        , "[data_sample_strategy: bagging]"
+        , "[seed: 708]"
+        # this was passed in with alias 'sub_row'
+        , "[bagging_fraction: 0.8234]"
+        , "[num_iterations: 3]"
+    )
+
+    # entries with default values of params
+    default_param_entries <- c(
+        "[boosting: gbdt]"
+        , "[tree_learner: serial]"
+        , "[device_type: cpu]"
+        , "[data: ]"
+        , "[valid: ]"
+        , "[learning_rate: 0.1]"
+        , "[num_leaves: 31]"
+        , sprintf("[num_threads: %i]", .LGB_MAX_THREADS)
+        , "[deterministic: 0]"
+        , "[histogram_pool_size: -1]"
+        , "[max_depth: -1]"
+        , "[min_data_in_leaf: 20]"
+        , "[min_sum_hessian_in_leaf: 0.001]"
+        , "[pos_bagging_fraction: 1]"
+        , "[neg_bagging_fraction: 1]"
+        , "[bagging_freq: 0]"
+        , "[bagging_seed: 15415]"
+        , "[feature_fraction: 1]"
+        , "[feature_fraction_bynode: 1]"
+        , "[feature_fraction_seed: 32671]"
+        , "[extra_trees: 0]"
+        , "[extra_seed: 6642]"
+        , "[early_stopping_round: 0]"
+        , "[first_metric_only: 0]"
+        , "[max_delta_step: 0]"
+        , "[lambda_l1: 0]"
+        , "[lambda_l2: 0]"
+        , "[linear_lambda: 0]"
+        , "[min_gain_to_split: 0]"
+        , "[drop_rate: 0.1]"
+        , "[max_drop: 50]"
+        , "[skip_drop: 0.5]"
+        , "[xgboost_dart_mode: 0]"
+        , "[uniform_drop: 0]"
+        , "[drop_seed: 20623]"
+        , "[top_rate: 0.2]"
+        , "[other_rate: 0.1]"
+        , "[min_data_per_group: 100]"
+        , "[max_cat_threshold: 32]"
+        , "[cat_l2: 10]"
+        , "[cat_smooth: 10]"
+        , "[max_cat_to_onehot: 4]"
+        , "[top_k: 20]"
+        , "[monotone_constraints: ]"
+        , "[monotone_constraints_method: basic]"
+        , "[monotone_penalty: 0]"
+        , "[feature_contri: ]"
+        , "[forcedsplits_filename: ]"
+        , "[force_col_wise: 0]"
+        , "[force_row_wise: 0]"
+        , "[refit_decay_rate: 0.9]"
+        , "[cegb_tradeoff: 1]"
+        , "[cegb_penalty_split: 0]"
+        , "[cegb_penalty_feature_lazy: ]"
+        , "[cegb_penalty_feature_coupled: ]"
+        , "[path_smooth: 0]"
+        , "[interaction_constraints: ]"
+        , sprintf("[verbosity: %i]", .LGB_VERBOSITY)
+        , "[saved_feature_importance_type: 0]"
+        , "[use_quantized_grad: 0]"
+        , "[num_grad_quant_bins: 4]"
+        , "[quant_train_renew_leaf: 0]"
+        , "[stochastic_rounding: 1]"
+        , "[linear_tree: 0]"
+        , "[max_bin: 255]"
+        , "[max_bin_by_feature: ]"
+        , "[min_data_in_bin: 3]"
+        , "[bin_construct_sample_cnt: 200000]"
+        , "[data_random_seed: 2350]"
+        , "[is_enable_sparse: 1]"
+        , "[enable_bundle: 1]"
+        , "[use_missing: 1]"
+        , "[zero_as_missing: 0]"
+        , "[feature_pre_filter: 1]"
+        , "[pre_partition: 0]"
+        , "[two_round: 0]"
+        , "[header: 0]"
+        , "[label_column: ]"
+        , "[weight_column: ]"
+        , "[group_column: ]"
+        , "[ignore_column: ]"
+        , "[categorical_feature: ]"
+        , "[forcedbins_filename: ]"
+        , "[precise_float_parser: 0]"
+        , "[parser_config_file: ]"
+        , "[objective_seed: 4309]"
+        , "[num_class: 1]"
+        , "[is_unbalance: 0]"
+        , "[scale_pos_weight: 1]"
+        , "[sigmoid: 1]"
+        , "[boost_from_average: 1]"
+        , "[reg_sqrt: 0]"
+        , "[alpha: 0.9]"
+        , "[fair_c: 1]"
+        , "[poisson_max_delta_step: 0.7]"
+        , "[tweedie_variance_power: 1.5]"
+        , "[lambdarank_truncation_level: 30]"
+        , "[lambdarank_norm: 1]"
+        , "[label_gain: ]"
+        , "[lambdarank_position_bias_regularization: 0]"
+        , "[eval_at: ]"
+        , "[multi_error_top_k: 1]"
+        , "[auc_mu_weights: ]"
+        , "[num_machines: 1]"
+        , "[local_listen_port: 12400]"
+        , "[time_out: 120]"
+        , "[machine_list_filename: ]"
+        , "[machines: ]"
+        , "[gpu_platform_id: -1]"
+        , "[gpu_device_id: -1]"
+        , "[gpu_use_dp: 0]"
+        , "[num_gpu: 1]"
+    )
+    all_param_entries <- c(non_default_param_entries, default_param_entries)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
-    expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
-    expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
-    expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
-    expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", VERBOSITY)), 1L)
+    model_str <- bst$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    .expect_in(all_param_entries, params_in_file)
 
     # early stopping should be off by default
     expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
+
+    # since save_model_to_string() is used when serializing with saveRDS(), check that parameters all
+    # roundtrip saveRDS()/loadRDS() successfully
+    rds_file <- tempfile()
+    saveRDS(bst, rds_file)
+    bst_rds <- readRDS(rds_file)
+    model_str <- bst_rds$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    .expect_in(all_param_entries, params_in_file)
 })
 
 test_that("early_stopping, num_iterations are stored correctly in model string even with aliases", {
@@ -845,6 +990,7 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
         , n_iter = n_iter
         , early_stopping_round = early_stopping_round
         , n_iter_no_change = n_iter_no_change
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
@@ -855,7 +1001,7 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
         , valids = list(
             "random_valid" = dvalid
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
     )
 
     model_str <- bst$save_model_to_string()
@@ -884,9 +1030,10 @@ test_that("Booster: method calls Booster with a null handle should raise an info
             objective = "regression"
             , metric = "l2"
             , num_leaves = 8L
+            , num_threads = .LGB_MAX_THREADS
         )
         , data = dtrain
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
         , valids = list(
             train = dtrain
@@ -962,7 +1109,7 @@ test_that("Booster$new() using a Dataset with a null handle should raise an info
         bst <- Booster$new(
             train_set = dtrain
             , params = list(
-                verbose = VERBOSITY
+                verbose = .LGB_VERBOSITY
             )
         )
     }, regexp = "Attempting to create a Dataset without any raw data")
@@ -1073,7 +1220,8 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         , n_iter = n_iter
         , early_stopping_round = early_stopping_round
         , n_iter_no_change = n_iter_no_change
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
 
     cv_bst <- lgb.cv(
@@ -1082,7 +1230,7 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         , nrounds = nrounds_kwarg
         , early_stopping_rounds = early_stopping_round_kwarg
         , nfold = 3L
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
     )
 
     for (bst in cv_bst$boosters) {
@@ -1117,7 +1265,8 @@ test_that("params (including dataset params) should be stored in .rds file for B
         objective = "binary"
         , max_depth = 4L
         , bagging_fraction = 0.8
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- Booster$new(
         params = params
@@ -1133,7 +1282,8 @@ test_that("params (including dataset params) should be stored in .rds file for B
             objective = "binary"
             , max_depth = 4L
             , bagging_fraction = 0.8
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
             , max_bin = 17L
         )
     )
@@ -1152,7 +1302,8 @@ test_that("params (including dataset params) should be stored in .rds file for B
         objective = "binary"
         , max_depth = 4L
         , bagging_fraction = 0.8
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
+        , num_threads = .LGB_MAX_THREADS
     )
     bst <- Booster$new(
         params = params
@@ -1168,7 +1319,8 @@ test_that("params (including dataset params) should be stored in .rds file for B
             objective = "binary"
             , max_depth = 4L
             , bagging_fraction = 0.8
-            , verbose = VERBOSITY
+            , verbose = .LGB_VERBOSITY
+            , num_threads = .LGB_MAX_THREADS
             , max_bin = 17L
         )
     )
@@ -1182,8 +1334,9 @@ test_that("Handle is automatically restored when calling predict", {
         , nrounds = 5L
         , obj = "binary"
         , params = list(
-            verbose = VERBOSITY
+            verbose = .LGB_VERBOSITY
         )
+        , num_threads = .LGB_MAX_THREADS
     )
     bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
@@ -1205,10 +1358,11 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
 
     params <- list(
         objective = "regression"
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , metric = "mse"
         , seed = 0L
         , num_leaves = 2L
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
@@ -1244,10 +1398,11 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
 
     params <- list(
         objective = "regression"
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , metric = "mse"
         , seed = 0L
         , num_leaves = 2L
+        , num_threads = .LGB_MAX_THREADS
     )
 
     bst <- lgb.train(
@@ -1308,7 +1463,7 @@ test_that("Booster's print, show, and summary work correctly", {
         .has_expected_content_for_fitted_model(log_txt)
 
         # summary()
-        log_text <- capture.output({
+        log_txt <- capture.output({
           ret <- summary(model)
         })
         .have_same_handle(ret, model)
@@ -1344,6 +1499,7 @@ test_that("Booster's print, show, and summary work correctly", {
         params = list(
           objective = "regression"
           , min_data_in_leaf = 1L
+          , num_threads = .LGB_MAX_THREADS
         )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
@@ -1352,19 +1508,19 @@ test_that("Booster's print, show, and summary work correctly", {
               min_data_in_bin = 1L
             )
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
     )
     .check_methods_work(model)
 
     data("iris")
     model <- lgb.train(
-        params = list(objective = "multiclass", num_class = 3L)
+        params = list(objective = "multiclass", num_class = 3L, num_threads = .LGB_MAX_THREADS)
         , data = lgb.Dataset(
             as.matrix(iris[, -5L])
             , label = as.numeric(factor(iris$Species)) - 1.0
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
     )
     .check_methods_work(model)
@@ -1397,8 +1553,9 @@ test_that("Booster's print, show, and summary work correctly", {
         )
         , obj = .logregobj
         , eval = .evalerror
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
+        , params = list(num_threads = .LGB_MAX_THREADS)
     )
 
     .check_methods_work(model)
@@ -1410,6 +1567,7 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
         params = list(
           objective = "regression"
           , min_data_in_leaf = 1L
+          , num_threads = .LGB_MAX_THREADS
         )
         , data = lgb.Dataset(
             as.matrix(mtcars[, -1L])
@@ -1418,7 +1576,7 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
               min_data_in_bin = 1L
             )
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
     )
     ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
@@ -1431,7 +1589,7 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
             as.matrix(iris[, -5L])
             , label = as.numeric(factor(iris$Species)) - 1.0
         )
-        , verbose = VERBOSITY
+        , verbose = .LGB_VERBOSITY
         , nrounds = 5L
     )
     ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)

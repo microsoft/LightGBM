@@ -21,9 +21,9 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.2.2
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/base/R-${R_MAC_VERSION}.pkg
-    export R_LINUX_VERSION="4.2.2-1.2204.0"
+    export R_MAC_VERSION=4.3.1
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-x86_64/base/R-${R_MAC_VERSION}-x86_64.pkg
+    export R_LINUX_VERSION="4.3.1-1.2204.0"
     export R_APT_REPO="jammy-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
@@ -36,7 +36,10 @@ fi
 #
 # `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
+    mkdir -p ~/.gnupg
+    echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
     sudo apt-key adv \
+        --homedir ~/.gnupg \
         --keyserver keyserver.ubuntu.com \
         --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
     sudo add-apt-repository \
@@ -53,6 +56,7 @@ if [[ $OS_NAME == "linux" ]]; then
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
+            tidy \
             qpdf \
             || exit -1
 

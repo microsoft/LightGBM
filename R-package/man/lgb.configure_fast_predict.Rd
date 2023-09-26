@@ -119,7 +119,10 @@ data(mtcars)
 X <- as.matrix(mtcars[, -1L])
 y <- mtcars[, 1L]
 dtrain <- lgb.Dataset(X, label = y, params = list(max_bin = 5L))
-params <- list(min_data_in_leaf = 2L)
+params <- list(
+  min_data_in_leaf = 2L
+  , num_threads = 2L
+)
 model <- lgb.train(
   params = params
  , data = dtrain

@@ -693,11 +693,7 @@ def create_tree_digraph(
 
     model = booster.dump_model()
     tree_infos = model['tree_info']
-    if 'feature_names' in model:
-        feature_names = model['feature_names']
-    else:
-        feature_names = None
-
+    feature_names = model.get('feature_names', None)
     monotone_constraints = model.get('monotone_constraints', None)
 
     if tree_index < len(tree_infos):
@@ -716,13 +712,13 @@ def create_tree_digraph(
         if isinstance(example_case, pd_DataFrame):
             example_case = _data_from_pandas(
                 data=example_case,
-                feature_name=None,
-                categorical_feature=None,
+                feature_name="auto",
+                categorical_feature="auto",
                 pandas_categorical=booster.pandas_categorical
             )[0]
         example_case = example_case[0]
 
-    graph = _to_graphviz(
+    return _to_graphviz(
         tree_info=tree_info,
         show_info=show_info,
         feature_names=feature_names,
@@ -733,8 +729,6 @@ def create_tree_digraph(
         max_category_values=max_category_values,
         **kwargs
     )
-
-    return graph
 
 
 def plot_tree(
