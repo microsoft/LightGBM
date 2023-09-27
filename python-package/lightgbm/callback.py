@@ -297,7 +297,7 @@ class _EarlyStoppingCallback:
         return curr_score < best_score - delta
 
     def _is_train_set(self, ds_name: str, eval_name: str, env: CallbackEnv) -> bool:
-        """Check, by name, if a given Dataset is the training data"""
+        """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
         if ds_name == "cv_agg" and eval_name == "train":
