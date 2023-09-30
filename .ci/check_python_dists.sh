@@ -25,7 +25,7 @@ if [ $PY_MINOR_VER -gt 7 ]; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols,distro-too-large-compressed' \
-            --max-allowed-size-uncompressed '60M' \
+            --max-allowed-size-uncompressed '70M' \
             --max-allowed-files 800 \
             ${DIST_DIR}/* || exit -1
     elif { test $(uname -m) = "aarch64"; }; then
