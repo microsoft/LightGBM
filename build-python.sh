@@ -367,7 +367,7 @@ if test "${INSTALL}" = true; then
         --force-reinstall \
         --no-cache-dir \
         --find-links=. \
-        lightgbm-*.tar.gz
+        lightgbm
     cd ../
 fi
 
