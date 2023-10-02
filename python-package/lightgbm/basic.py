@@ -2210,9 +2210,9 @@ class Dataset:
 
         Parameters
         ----------
-        params : dict or None
+        params : dict
             One dictionary with parameters to compare.
-        other_params : dict or None
+        other_params : dict
             Another dictionary with parameters to compare.
         ignore_keys : set
             Keys that should be ignored during comparing two dictionaries.
