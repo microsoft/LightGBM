@@ -272,6 +272,10 @@ class _EarlyStoppingCallback:
         verbose: bool = True,
         min_delta: Union[float, List[float]] = 0.0
     ) -> None:
+
+        if stopping_rounds <= 0:
+            raise ValueError(f"stopping_rounds should be greater than zero. got: {stopping_rounds}")
+
         self.order = 30
         self.before_iteration = False
 
@@ -314,9 +318,6 @@ class _EarlyStoppingCallback:
             raise ValueError(
                 "For early stopping, at least one dataset and eval metric is required for evaluation"
             )
-
-        if self.stopping_rounds <= 0:
-            raise ValueError(f"stopping_rounds should be greater than zero. got: {self.stopping_rounds}")
 
         is_dart = any(env.params.get(alias, "") == 'dart' for alias in _ConfigAliases.get("boosting"))
         if is_dart:
