@@ -233,8 +233,8 @@ class _ResetParameterCallback:
                 env.model.reset_parameter(new_parameters)
             else:
                 # CVBooster holds a list of Booster objects, each needs to be updated
-                for i in range(len(env.model.boosters)):
-                    env.model.boosters[i].reset_parameter(new_parameters)
+                for booster in env.model.boosters:
+                    booster.reset_parameter(new_parameters)
             env.params.update(new_parameters)
 
 
@@ -304,9 +304,8 @@ class _EarlyStoppingCallback:
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
-        if isinstance(env.model, Booster):
-            if ds_name == env.model._train_data_name:
-                return True
+        if isinstance(env.model, Booster) and ds_name == env.model._train_data_name:
+            return True
 
         return False
 
