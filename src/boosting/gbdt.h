@@ -183,7 +183,7 @@ class GBDT : public GBDTBase {
       const auto value_str = pair[1].substr(1, pair[1].size() - 2);
       auto iter = param_types.find(param);
       if (iter == param_types.end()) {
-        Log::Warning("Type for param: '%s' not found. This doesn't affect inference.", param.c_str());
+        Log::Warning("Ignoring unrecognized parameter '%s' found in model string.", param.c_str());
         continue;
       }
       std::string param_type = iter->second;
