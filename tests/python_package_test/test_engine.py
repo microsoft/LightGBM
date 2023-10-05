@@ -1496,7 +1496,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
     with model_file.open('wt') as f:
         f.writelines(model_contents)
     bst = lgb.Booster(model_file=model_file)
-    expected_msg = "[LightGBM] [Warning] Type for param: 'max_conflict_rate' not found. This doesn't affect inference."
+    expected_msg = "[LightGBM] [Warning] Ignoring unrecognized parameter 'max_conflict_rate' found in model string."
     stdout = capsys.readouterr().out
     assert expected_msg in stdout
     set_params = {k: bst.params[k] for k in params.keys()}
