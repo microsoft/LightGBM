@@ -4501,9 +4501,9 @@ def test_train_raises_informative_error_if_any_valid_sets_are_not_dataset_object
 
 def test_train_raises_informative_error_for_params_of_wrong_type():
     X, y = make_synthetic_regression()
-    params = {"early_stopping_round": "too-many"}
+    params = {"num_leaves": "too-many"}
     dtrain = lgb.Dataset(X, label=y)
-    with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
+    with pytest.raises(lgb.basic.LightGBMError, match="Parameter num_leaves should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
 
 
