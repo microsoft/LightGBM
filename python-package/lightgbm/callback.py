@@ -273,8 +273,8 @@ class _EarlyStoppingCallback:
         min_delta: Union[float, List[float]] = 0.0
     ) -> None:
 
-        if stopping_rounds <= 0:
-            raise ValueError(f"stopping_rounds should be greater than zero. got: {stopping_rounds}")
+        if not isinstance(stopping_rounds, int) or stopping_rounds <= 0:
+            raise ValueError(f"stopping_rounds should be an integer and greater than 0. got: {stopping_rounds}")
 
         self.order = 30
         self.before_iteration = False
