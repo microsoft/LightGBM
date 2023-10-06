@@ -2850,8 +2850,9 @@ class Dataset:
 
         Returns
         -------
-        label : numpy array or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
             The label information from the Dataset.
+            For a constructed ``Dataset``, this will only return a numpy array.
         """
         if self.label is None:
             self.label = self.get_field('label')
@@ -2862,8 +2863,9 @@ class Dataset:
 
         Returns
         -------
-        weight : numpy array or None
+        weight : list, numpy 1-D array, pandas Series or None
             Weight for each data point from the Dataset. Weights should be non-negative.
+            For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
         if self.weight is None:
             self.weight = self.get_field('weight')
@@ -2874,8 +2876,9 @@ class Dataset:
 
         Returns
         -------
-        init_score : numpy array or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
             Init score of Booster.
+            For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
         if self.init_score is None:
             self.init_score = self.get_field('init_score')
@@ -2918,12 +2921,13 @@ class Dataset:
 
         Returns
         -------
-        group : numpy array or None
+        group : list, numpy 1-D array, pandas Series or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
+            For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
         if self.group is None:
             self.group = self.get_field('group')
@@ -2937,8 +2941,9 @@ class Dataset:
 
         Returns
         -------
-        position : numpy 1-D array or None
+        position : numpy 1-D array, pandas Series or None
             Position of items used in unbiased learning-to-rank task.
+            For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
         if self.position is None:
             self.position = self.get_field('position')
