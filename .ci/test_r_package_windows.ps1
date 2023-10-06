@@ -55,12 +55,14 @@ Remove-From-Path ".*\\R\\.*"
 Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
 Remove-From-Path ".*rtools42.*"
+Remove-From-Path ".*rtools43.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools43 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
@@ -76,11 +78,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
-  $RTOOLS_INSTALL_PATH = "C:\rtools42"
+  $RTOOLS_INSTALL_PATH = "C:\rtools43"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
   $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
-  $env:RTOOLS_EXE_FILE = "rtools42-5253-5107.exe"
-  $env:R_WINDOWS_VERSION = "4.2.2"
+  $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
+  $env:R_WINDOWS_VERSION = "4.3.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
