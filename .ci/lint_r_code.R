@@ -113,7 +113,6 @@ LINTERS_TO_USE <- list(
     , "unnecessary_concatenation" = lintr::unnecessary_concatenation_linter()
     , "unnecessary_lambda"        = lintr::unnecessary_lambda_linter()
     , "unreachable_code"          = lintr::unreachable_code_linter()
-    , "unused_import"             = lintr::unused_import_linter()
     , "vector_logic"              = lintr::vector_logic_linter()
     , "whitespace"                = lintr::whitespace_linter()
 )
