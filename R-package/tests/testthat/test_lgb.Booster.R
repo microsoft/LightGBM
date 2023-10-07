@@ -1275,7 +1275,9 @@ test_that("params (including dataset params) should be stored in .rds file for B
     bst_file <- tempfile(fileext = ".rds")
     expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
 
-    expect_warning(bst_from_file <- readRDS.lgb.Booster(file = bst_file))
+    expect_warning({
+        bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    })
     expect_identical(
         bst_from_file$params
         , list(
