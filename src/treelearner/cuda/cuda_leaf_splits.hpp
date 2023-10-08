@@ -8,7 +8,7 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
@@ -23,6 +23,7 @@ struct CUDALeafSplitsStruct {
   int leaf_index;
   double sum_of_gradients;
   double sum_of_hessians;
+  int64_t sum_of_gradients_hessians;
   data_size_t num_data_in_leaf;
   double gain;
   double leaf_value;
@@ -36,7 +37,7 @@ class CUDALeafSplits {
 
   ~CUDALeafSplits();
 
-  void Init();
+  void Init(const bool use_quantized_grad);
 
   void InitValues(
     const double lambda_l1, const double lambda_l2,
@@ -45,11 +46,19 @@ class CUDALeafSplits {
     const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
     hist_t* cuda_hist_in_leaf, double* root_sum_hessians);
 
+  void InitValues(
+    const double lambda_l1, const double lambda_l2,
+    const int16_t* cuda_gradients_and_hessians,
+    const data_size_t* cuda_bagging_data_indices,
+    const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
+    hist_t* cuda_hist_in_leaf, double* root_sum_hessians,
+    const score_t* grad_scale, const score_t* hess_scale);
+
   void InitValues();
 
-  const CUDALeafSplitsStruct* GetCUDAStruct() const { return cuda_struct_; }
+  const CUDALeafSplitsStruct* GetCUDAStruct() const { return cuda_struct_.RawDataReadOnly(); }
 
-  CUDALeafSplitsStruct* GetCUDAStructRef() { return cuda_struct_; }
+  CUDALeafSplitsStruct* GetCUDAStructRef() { return cuda_struct_.RawData(); }
 
   void Resize(const data_size_t num_data);
 
@@ -140,14 +149,24 @@ class CUDALeafSplits {
     const data_size_t num_used_indices,
     hist_t* cuda_hist_in_leaf);
 
+  void LaunchInitValuesKernal(
+    const double lambda_l1, const double lambda_l2,
+    const data_size_t* cuda_bagging_data_indices,
+    const data_size_t* cuda_data_indices_in_leaf,
+    const data_size_t num_used_indices,
+    hist_t* cuda_hist_in_leaf,
+    const score_t* grad_scale,
+    const score_t* hess_scale);
+
   // Host memory
   data_size_t num_data_;
   int num_blocks_init_from_gradients_;
 
   // CUDA memory, held by this object
-  CUDALeafSplitsStruct* cuda_struct_;
-  double* cuda_sum_of_gradients_buffer_;
-  double* cuda_sum_of_hessians_buffer_;
+  CUDAVector<CUDALeafSplitsStruct> cuda_struct_;
+  CUDAVector<double> cuda_sum_of_gradients_buffer_;
+  CUDAVector<double> cuda_sum_of_hessians_buffer_;
+  CUDAVector<int64_t> cuda_sum_of_gradients_hessians_buffer_;
 
   // CUDA memory, held by other object
   const score_t* cuda_gradients_;

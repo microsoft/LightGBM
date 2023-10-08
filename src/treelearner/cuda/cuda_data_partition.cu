@@ -1069,6 +1069,53 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_valu
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }
 
+__global__ void RenewDiscretizedTreeLeavesKernel(
+  const score_t* gradients,
+  const score_t* hessians,
+  const data_size_t* data_indices,
+  const data_size_t* leaf_data_start,
+  const data_size_t* leaf_num_data,
+  double* leaf_grad_stat_buffer,
+  double* leaf_hess_stat_buffer,
+  double* leaf_values) {
+  __shared__ double shared_mem_buffer[32];
+  const int leaf_index = static_cast<int>(blockIdx.x);
+  const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
+  const data_size_t num_data_in_leaf = leaf_num_data[leaf_index];
+  double sum_gradients = 0.0f;
+  double sum_hessians = 0.0f;
+  for (data_size_t inner_data_index = static_cast<int>(threadIdx.x);
+    inner_data_index < num_data_in_leaf; inner_data_index += static_cast<int>(blockDim.x)) {
+    const data_size_t data_index = data_indices_in_leaf[inner_data_index];
+    const score_t gradient = gradients[data_index];
+    const score_t hessian = hessians[data_index];
+    sum_gradients += static_cast<double>(gradient);
+    sum_hessians += static_cast<double>(hessian);
+  }
+  sum_gradients = ShuffleReduceSum<double>(sum_gradients, shared_mem_buffer, blockDim.x);
+  __syncthreads();
+  sum_hessians = ShuffleReduceSum<double>(sum_hessians, shared_mem_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    leaf_grad_stat_buffer[leaf_index] = sum_gradients;
+    leaf_hess_stat_buffer[leaf_index] = sum_hessians;
+  }
+}
+
+void CUDADataPartition::LaunchReduceLeafGradStat(
+  const score_t* gradients, const score_t* hessians,
+  CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const {
+  const int num_blocks = tree->num_leaves();
+  RenewDiscretizedTreeLeavesKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+    gradients,
+    hessians,
+    cuda_data_indices_,
+    cuda_leaf_data_start_,
+    cuda_leaf_num_data_,
+    leaf_grad_stat_buffer,
+    leaf_hess_state_buffer,
+    tree->cuda_leaf_value_ref());
+}
+
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

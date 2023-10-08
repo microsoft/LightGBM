@@ -67,7 +67,11 @@ class CUDABestSplitFinder {
     const data_size_t num_data_in_smaller_leaf,
     const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf,
-    const double sum_hessians_in_larger_leaf);
+    const double sum_hessians_in_larger_leaf,
+    const score_t* grad_scale,
+    const score_t* hess_scale,
+    const uint8_t smaller_num_bits_in_histogram_bins,
+    const uint8_t larger_num_bits_in_histogram_bins);
 
   const CUDASplitInfo* FindBestFromAllSplits(
     const int cur_num_leaves,
@@ -113,6 +117,31 @@ class CUDABestSplitFinder {
   void LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBestSplitsForLeafKernel_PARAMS);
 
   #undef LaunchFindBestSplitsForLeafKernel_PARAMS
+
+  #define LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS \
+  const CUDALeafSplitsStruct* smaller_leaf_splits, \
+  const CUDALeafSplitsStruct* larger_leaf_splits, \
+  const int smaller_leaf_index, \
+  const int larger_leaf_index, \
+  const bool is_smaller_leaf_valid, \
+  const bool is_larger_leaf_valid, \
+  const score_t* grad_scale, \
+  const score_t* hess_scale, \
+  const uint8_t smaller_num_bits_in_histogram_bins, \
+  const uint8_t larger_num_bits_in_histogram_bins
+
+  void LaunchFindBestSplitsDiscretizedForLeafKernel(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner0(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner1(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1, bool USE_SMOOTHING>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner2(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  #undef LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS
 
   void LaunchSyncBestSplitForLeafKernel(
     const int host_smaller_leaf_index,
