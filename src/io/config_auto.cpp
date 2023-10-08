@@ -664,12 +664,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
+  str_buf << "[data_sample_strategy: " << data_sample_strategy << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[seed: " << seed << "]\n";
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
@@ -722,6 +724,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
+  str_buf << "[use_quantized_grad: " << use_quantized_grad << "]\n";
+  str_buf << "[num_grad_quant_bins: " << num_grad_quant_bins << "]\n";
+  str_buf << "[quant_train_renew_leaf: " << quant_train_renew_leaf << "]\n";
+  str_buf << "[stochastic_rounding: " << stochastic_rounding << "]\n";
   str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";

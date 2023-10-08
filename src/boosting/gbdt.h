@@ -179,15 +179,20 @@ class GBDT : public GBDTBase {
       const auto pair = Common::Split(line.c_str(), ":");
       if (pair[1] == " ]")
         continue;
+      const auto param = pair[0].substr(1);
+      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
+      auto iter = param_types.find(param);
+      if (iter == param_types.end()) {
+        Log::Warning("Ignoring unrecognized parameter '%s' found in model string.", param.c_str());
+        continue;
+      }
+      std::string param_type = iter->second;
       if (first) {
         first = false;
         str_buf << "\"";
       } else {
         str_buf << ",\"";
       }
-      const auto param = pair[0].substr(1);
-      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
-      const auto param_type = param_types.at(param);
       str_buf << param << "\": ";
       if (param_type == "string") {
         str_buf << "\"" << value_str << "\"";

@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #include <LightGBM/bin.h>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/utils/log.h>
 
