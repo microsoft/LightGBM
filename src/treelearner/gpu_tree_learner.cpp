@@ -344,7 +344,7 @@ void GPUTreeLearner::AllocateGPUMemory() {
   // for data transfer time
   auto start_time = std::chrono::steady_clock::now();
   // Now generate new data structure feature4, and copy data to the device
-  int nthreads = std::min(omp_get_max_threads(), static_cast<int>(dense_feature_group_map_.size()) / dword_features_);
+  int nthreads = std::min(OMP_NUM_THREADS(), static_cast<int>(dense_feature_group_map_.size()) / dword_features_);
   nthreads = std::max(nthreads, 1);
   std::vector<Feature4*> host4_vecs(nthreads);
   std::vector<boost::compute::buffer> host4_bufs(nthreads);
