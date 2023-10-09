@@ -1309,7 +1309,7 @@ void Dataset::ConstructHistogramsInner(
       }
     }
     OMP_INIT_EX();
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) num_threads(share_state->num_threads)
+#pragma omp parallel for schedule(static) num_threads(share_state->num_threads)
     for (int gi = 0; gi < num_used_dense_group; ++gi) {
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
