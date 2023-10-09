@@ -691,7 +691,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(num_threads) schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
     size_t right = left + inner_size;
@@ -707,7 +707,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));
-    #pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for num_threads(num_threads) schedule(static, 1)
     for (int i = 0; i < loop_size; ++i) {
       size_t left = i * 2 * s;
       size_t mid = left + s;

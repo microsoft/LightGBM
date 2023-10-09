@@ -434,7 +434,7 @@ class GBDT : public GBDTBase {
     }
     start_iteration_for_pred_ = start_iteration;
     if (is_pred_contrib) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
         models_[i]->RecomputeMaxDepth();
       }
