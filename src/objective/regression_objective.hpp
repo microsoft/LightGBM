@@ -115,7 +115,7 @@ class RegressionL2loss: public ObjectiveFunction {
     label_ = metadata.label();
     if (sqrt_) {
       trans_label_.resize(num_data_);
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data; ++i) {
         trans_label_[i] = Common::Sign(label_[i]) * std::sqrt(std::fabs(label_[i]));
       }
@@ -127,13 +127,13 @@ class RegressionL2loss: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(score[i] - label_[i]);
         hessians[i] = 1.0f;
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         gradients[i] = static_cast<score_t>(static_cast<score_t>((score[i] - label_[i])) * weights_[i]);
         hessians[i] = static_cast<score_t>(weights_[i]);
@@ -174,14 +174,14 @@ class RegressionL2loss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += static_cast<double>(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += label_[i];
       }
@@ -217,14 +217,14 @@ class RegressionL1loss: public RegressionL2loss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(Common::Sign(diff));
         hessians[i] = 1.0f;
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(Common::Sign(diff) * weights_[i]);
@@ -313,7 +313,7 @@ class RegressionHuberLoss: public RegressionL2loss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (std::abs(diff) <= alpha_) {
@@ -324,7 +324,7 @@ class RegressionHuberLoss: public RegressionL2loss {
         hessians[i] = 1.0f;
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         if (std::abs(diff) <= alpha_) {
@@ -362,14 +362,14 @@ class RegressionFairLoss: public RegressionL2loss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_));
         hessians[i] = static_cast<score_t>(c_ * c_ / ((std::fabs(x) + c_) * (std::fabs(x) + c_)));
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double x = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(c_ * x / (std::fabs(x) + c_) * weights_[i]);
@@ -441,14 +441,14 @@ class RegressionPoissonLoss: public RegressionL2loss {
                     score_t* hessians) const override {
     double exp_max_delta_step_ = std::exp(max_delta_step_);
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_score = std::exp(score[i]);
         gradients[i] = static_cast<score_t>(exp_score - label_[i]);
         hessians[i] = static_cast<score_t>(exp_score * exp_max_delta_step_);
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_score = std::exp(score[i]);
         gradients[i] = static_cast<score_t>((exp_score - label_[i]) * weights_[i]);
@@ -493,7 +493,7 @@ class RegressionQuantileloss : public RegressionL2loss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
         if (delta >= 0) {
@@ -504,7 +504,7 @@ class RegressionQuantileloss : public RegressionL2loss {
         hessians[i] = 1.0f;
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         score_t delta = static_cast<score_t>(score[i] - label_[i]);
         if (delta >= 0) {
@@ -598,12 +598,12 @@ class RegressionMAPELOSS : public RegressionL1loss {
     }
     label_weight_.resize(num_data);
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i]));
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         label_weight_[i] = 1.0f / std::max(1.0f, std::fabs(label_[i])) * weights_[i];
       }
@@ -613,14 +613,14 @@ class RegressionMAPELOSS : public RegressionL1loss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
         hessians[i] = 1.0f;
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         const double diff = score[i] - label_[i];
         gradients[i] = static_cast<score_t>(Common::Sign(diff) * label_weight_[i]);
@@ -690,14 +690,14 @@ class RegressionGammaLoss : public RegressionPoissonLoss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_score = std::exp(-score[i]);
         gradients[i] = static_cast<score_t>(1.0 - label_[i] * exp_score);
         hessians[i] = static_cast<score_t>(label_[i] * exp_score);
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_score = std::exp(-score[i]);
         gradients[i] = static_cast<score_t>((1.0 - label_[i] * exp_score) * weights_[i]);
@@ -728,7 +728,7 @@ class RegressionTweedieLoss: public RegressionPoissonLoss {
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_1_score = std::exp((1 - rho_) * score[i]);
         double exp_2_score = std::exp((2 - rho_) * score[i]);
@@ -737,7 +737,7 @@ class RegressionTweedieLoss: public RegressionPoissonLoss {
           (2 - rho_) * exp_2_score);
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         double exp_1_score = std::exp((1 - rho_) * score[i]);
         double exp_2_score = std::exp((2 - rho_) * score[i]);

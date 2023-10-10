@@ -58,7 +58,7 @@ class RankingObjective : public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       const data_size_t start = query_boundaries_[i];
       const data_size_t cnt = query_boundaries_[i + 1] - query_boundaries_[i];
@@ -157,7 +157,7 @@ class LambdarankNDCG : public RankingObjective {
     DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(
           truncation_level_, label_ + query_boundaries_[i],
