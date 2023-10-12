@@ -28,7 +28,7 @@ def generate_simple_arrow_table() -> pa.Table:
         pa.chunked_array([[1, 2, 3, 4, 5]], type=pa.float32()),
         pa.chunked_array([[1, 2, 3, 4, 5]], type=pa.float64()),
     ]
-    return pa.Table.from_arrays(columns, names=[str(i) for i in range(len(columns))])
+    return pa.Table.from_arrays(columns, names=[f"col_{i}" for i in range(len(columns))])
 
 
 def generate_dummy_arrow_table() -> pa.Table:
@@ -39,7 +39,7 @@ def generate_dummy_arrow_table() -> pa.Table:
 
 def generate_random_arrow_table(num_columns: int, num_datapoints: int, seed: int) -> pa.Table:
     columns = [generate_random_arrow_array(num_datapoints, seed + i) for i in range(num_columns)]
-    names = [str(i) for i in range(num_columns)]
+    names = [f"col_{i}" for i in range(num_columns)]
     return pa.Table.from_arrays(columns, names=names)
 
 

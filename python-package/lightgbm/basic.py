@@ -19,9 +19,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List,
 import numpy as np
 import scipy.sparse
 
-from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_ffi_addressof, arrow_ffi_cast, arrow_ffi_CData,
-                     arrow_ffi_new, arrow_is_floating, arrow_is_integer, concat, dt_DataTable, pa_Table,
-                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
+from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
+                     dt_DataTable, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -364,10 +363,10 @@ class _ArrowCArray:
     """Simple wrapper around the C representation of an Arrow type."""
 
     n_chunks: int
-    chunks: arrow_ffi_CData
-    schema: arrow_ffi_CData
+    chunks: arrow_cffi.CData
+    schema: arrow_cffi.CData
 
-    def __init__(self, n_chunks: int, chunks: arrow_ffi_CData, schema: arrow_ffi_CData):
+    def __init__(self, n_chunks: int, chunks: arrow_cffi.CData, schema: arrow_cffi.CData):
         self.n_chunks = n_chunks
         self.chunks = chunks
         self.schema = schema
@@ -375,12 +374,12 @@ class _ArrowCArray:
     @property
     def chunks_ptr(self) -> int:
         """Returns the address of the pointer to the list of chunks making up the array."""
-        return int(arrow_ffi_cast("uintptr_t", arrow_ffi_addressof(self.chunks[0])))
+        return int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(self.chunks[0])))
 
     @property
     def schema_ptr(self) -> int:
         """Returns the address of the pointer to the schema of the array."""
-        return int(arrow_ffi_cast("uintptr_t", self.schema))
+        return int(arrow_cffi.cast("uintptr_t", self.schema))
 
 
 @contextmanager
@@ -393,14 +392,14 @@ def _export_arrow_to_c(data: pa_Table) -> Iterator[_ArrowCArray]:
         raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
 
     # Prepare export
-    chunks = arrow_ffi_new(f"struct ArrowArray[{len(export_objects)}]")
-    schema = arrow_ffi_new("struct ArrowSchema*")
+    chunks = arrow_cffi.new(f"struct ArrowArray[{len(export_objects)}]")
+    schema = arrow_cffi.new("struct ArrowSchema*")
 
     # Export all objects
     for i, obj in enumerate(export_objects):
-        chunk_ptr = int(arrow_ffi_cast("uintptr_t", arrow_ffi_addressof(chunks[i])))
+        chunk_ptr = int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(chunks[i])))
         if i == 0:
-            schema_ptr = int(arrow_ffi_cast("uintptr_t", schema))
+            schema_ptr = int(arrow_cffi.cast("uintptr_t", schema))
             obj._export_to_c(chunk_ptr, schema_ptr)
         else:
             obj._export_to_c(chunk_ptr)
