@@ -1597,7 +1597,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
 
     // Then, we obtain sample values by parallelizing across columns
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int64_t j = 0; j < table.get_num_columns(); ++j) {
       OMP_LOOP_EX_BEGIN();
 
@@ -1643,7 +1643,7 @@ int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
   // After sampling and properly initializing all bins, we can add our data to the dataset. Here,
   // we parallelize across rows.
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int64_t j = 0; j < table.get_num_columns(); ++j) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
