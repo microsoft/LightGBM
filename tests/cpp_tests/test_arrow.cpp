@@ -7,7 +7,8 @@
 
 #include <gtest/gtest.h>
 #include <cstdlib>
-#include "../include/LightGBM/arrow.h"
+#include <cmath>
+#include <LightGBM/arrow.h>
 
 using LightGBM::ArrowChunkedArray;
 using LightGBM::ArrowTable;
