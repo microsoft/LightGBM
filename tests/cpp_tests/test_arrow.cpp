@@ -63,8 +63,8 @@ class ArrowChunkedArrayTest : public testing::Test {
     arr.private_data = nullptr;
     arr.release = [](ArrowArray* arr) {
       if (arr->buffers[0] != nullptr)
-        free(reinterpret_cast<void*>(arr->buffers[0]));
-      free(reinterpret_cast<void*>(arr->buffers));
+        free((void*)(arr->buffers[0]));  // NOLINT
+      free((void*)(arr->buffers));  // NOLINT
     };
     return arr;
   }
