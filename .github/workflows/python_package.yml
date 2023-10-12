@@ -74,6 +74,7 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
+          export CONDA_EXE=mamba
           $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
           $GITHUB_WORKSPACE/.ci/test.sh || exit -1
   test-oldest-versions:
