@@ -86,7 +86,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -107,7 +107,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
       }
     } else {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {

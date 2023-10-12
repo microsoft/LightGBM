@@ -1470,7 +1470,7 @@ def test_feature_name_with_non_ascii():
     assert feature_names == gbm2.feature_name()
 
 
-def test_parameters_are_loaded_from_model_file(tmp_path):
+def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
     X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
     y = np.random.rand(100)
     ds = lgb.Dataset(X, y)
@@ -1487,8 +1487,18 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
         'num_threads': 1,
     }
     model_file = tmp_path / 'model.txt'
-    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
+    orig_bst.save_model(model_file)
+    with model_file.open('rt') as f:
+        model_contents = f.readlines()
+    params_start = model_contents.index('parameters:\n')
+    model_contents.insert(params_start + 1, '[max_conflict_rate: 0]\n')
+    with model_file.open('wt') as f:
+        f.writelines(model_contents)
     bst = lgb.Booster(model_file=model_file)
+    expected_msg = "[LightGBM] [Warning] Ignoring unrecognized parameter 'max_conflict_rate' found in model string."
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
     set_params = {k: bst.params[k] for k in params.keys()}
     assert set_params == params
     assert bst.params['categorical_feature'] == [1, 2]
@@ -1497,6 +1507,11 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
     with pytest.warns(UserWarning, match='Ignoring params argument'):
         bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
     assert bst.params == bst2.params
+
+    # check inference isn't affected by unknown parameter
+    orig_preds = orig_bst.predict(X)
+    preds = bst.predict(X)
+    np.testing.assert_allclose(preds, orig_preds)
 
 
 def test_save_load_copy_pickle():
@@ -4501,9 +4516,9 @@ def test_train_raises_informative_error_if_any_valid_sets_are_not_dataset_object
 
 def test_train_raises_informative_error_for_params_of_wrong_type():
     X, y = make_synthetic_regression()
-    params = {"early_stopping_round": "too-many"}
+    params = {"num_leaves": "too-many"}
     dtrain = lgb.Dataset(X, label=y)
-    with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
+    with pytest.raises(lgb.basic.LightGBMError, match="Parameter num_leaves should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
 
 
