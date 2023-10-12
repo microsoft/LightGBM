@@ -227,7 +227,7 @@ void Application::Predict() {
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
     std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
       pred_leaf[i] = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
       // Free memory

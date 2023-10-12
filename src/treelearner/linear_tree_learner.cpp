@@ -19,7 +19,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   leaf_map_ = std::vector<int>(train_data->num_data(), -1);
   contains_nan_ = std::vector<int8_t>(train_data->num_features(), 0);
   // identify features containing nans
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int feat = 0; feat < train_data->num_features(); ++feat) {
     auto bin_mapper = train_data_->FeatureBinMapper(feat);
     if (bin_mapper->bin_type() == BinType::NumericalBin) {
@@ -52,7 +52,7 @@ void LinearTreeLearner::InitLinear(const Dataset* train_data, const int max_leav
   }
   XTHX_by_thread_.clear();
   XTg_by_thread_.clear();
-  int max_threads = omp_get_max_threads();
+  int max_threads = OMP_NUM_THREADS();
   for (int i = 0; i < max_threads; ++i) {
     XTHX_by_thread_.push_back(XTHX_);
     XTg_by_thread_.push_back(XTg_);
@@ -159,7 +159,7 @@ void LinearTreeLearner::GetLeafMap(Tree* tree) const {
   std::fill(leaf_map_.begin(), leaf_map_.end(), -1);
   // map data to leaf number
   const data_size_t* ind = data_partition_->indices();
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
   for (int i = 0; i < tree->num_leaves(); ++i) {
     data_size_t idx = data_partition_->leaf_begin(i);
     for (int j = 0; j < data_partition_->leaf_count(i); ++j) {
@@ -224,7 +224,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   // clear the coefficient matrices
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = 0; i < num_threads; ++i) {
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       size_t num_feat = leaf_features[leaf_num].size();
@@ -232,7 +232,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
       std::fill(XTg_by_thread_[i][leaf_num].begin(), XTg_by_thread_[i][leaf_num].begin() + num_feat + 1, 0.0f);
     }
   }
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
     size_t num_feat = leaf_features[leaf_num].size();
     std::fill(XTHX_[leaf_num].begin(), XTHX_[leaf_num].begin() + (num_feat + 1) * (num_feat + 2) / 2, 0.0f);
@@ -245,7 +245,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
     }
   }
   OMP_INIT_EX();
-#pragma omp parallel if (num_data_ > 1024)
+#pragma omp parallel num_threads(OMP_NUM_THREADS()) if (num_data_ > 1024)
   {
     std::vector<float> curr_row(max_num_features + 1);
     int tid = omp_get_thread_num();
@@ -296,7 +296,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   auto total_nonzero = std::vector<int>(tree->num_leaves());
   // aggregate results from different threads
   for (int tid = 0; tid < num_threads; ++tid) {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
       size_t num_feat = leaf_features[leaf_num].size();
       for (size_t j = 0; j < (num_feat + 1) * (num_feat + 2) / 2; ++j) {
@@ -318,7 +318,7 @@ void LinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const score_t
   double shrinkage = tree->shrinkage();
   double decay_rate = config_->refit_decay_rate;
   // copy into eigen matrices and solve
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int leaf_num = 0; leaf_num < num_leaves; ++leaf_num) {
     if (total_nonzero[leaf_num] < static_cast<int>(leaf_features[leaf_num].size()) + 1) {
       if (is_refit) {
