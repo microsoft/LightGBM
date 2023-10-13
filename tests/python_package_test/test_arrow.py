@@ -50,12 +50,11 @@ def generate_random_arrow_array(num_datapoints: int, seed: int) -> pa.ChunkedArr
     indices = generator.choice(len(data), size=num_datapoints // 10)
     data[indices] = None
 
-    # Split data into random chunks
-    # n_chunks = generator.integers(1, num_datapoints // 3)
-    # split_points = np.sort(generator.choice(np.arange(1, num_datapoints), n_chunks, replace=False))
-    # split_points = np.concatenate([[0], split_points, [num_datapoints]])
-    # chunks = [data[split_points[i] : split_points[i + 1]] for i in range(len(split_points) - 1)]
-    # chunks = [chunk for chunk in chunks if len(chunk) > 0]
+    # Split data into <=2 random chunks
+    split_points = np.sort(generator.choice(np.arange(1, num_datapoints), 2, replace=False))
+    split_points = np.concatenate([[0], split_points, [num_datapoints]])
+    chunks = [data[split_points[i] : split_points[i + 1]] for i in range(len(split_points) - 1)]
+    chunks = [chunk for chunk in chunks if len(chunk) > 0]
 
     # Turn chunks into array
     return pa.chunked_array([data], type=pa.float32())
