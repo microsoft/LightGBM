@@ -392,7 +392,7 @@ def _export_arrow_to_c(data: pa_Table) -> Iterator[_ArrowCArray]:
         raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
 
     # Prepare export
-    chunks = arrow_cffi.new(f"struct ArrowArray[{len(export_objects)}]")
+    chunks = arrow_cffi.new("struct ArrowArray[]", len(export_objects))
     schema = arrow_cffi.new("struct ArrowSchema*")
 
     # Export all objects
