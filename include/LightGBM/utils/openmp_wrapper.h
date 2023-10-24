@@ -17,20 +17,17 @@
 #include <stdexcept>
 #include <vector>
 
+static int lgb_global_omp_threads = omp_get_max_threads();
+
 inline int OMP_NUM_THREADS() {
-  int ret = 1;
-#pragma omp parallel
-#pragma omp master
-  { ret = omp_get_num_threads(); }
-  return ret;
+  return lgb_global_omp_threads;
 }
 
 inline void OMP_SET_NUM_THREADS(int num_threads) {
-  static const int default_omp_num_threads = OMP_NUM_THREADS();
   if (num_threads > 0) {
-    omp_set_num_threads(num_threads);
+    lgb_global_omp_threads = num_threads;
   } else {
-    omp_set_num_threads(default_omp_num_threads);
+    lgb_global_omp_threads = omp_get_max_threads();
   }
 }
 
