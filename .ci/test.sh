@@ -314,7 +314,7 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    mamba uninstall --force --yes \
+    conda uninstall --force --yes \
         dask \
         distributed \
         joblib \
