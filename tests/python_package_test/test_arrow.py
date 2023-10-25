@@ -1,6 +1,5 @@
 # coding: utf-8
 import filecmp
-import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -85,7 +84,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
     ],
 )
 def test_dataset_construct_fuzzy(
-    arrow_table_fn: Callable[[], pa.Table], dataset_params: Dict[str, Any]
+    tmp_path: Path, arrow_table_fn: Callable[[], pa.Table], dataset_params: Dict[str, Any]
 ):
     arrow_table = arrow_table_fn()
 
@@ -95,8 +94,6 @@ def test_dataset_construct_fuzzy(
     pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), params=dataset_params)
     pandas_dataset.construct()
 
-    with tempfile.TemporaryDirectory() as t:
-        tmpdir = Path(t)
-        arrow_dataset._dump_text(tmpdir / "arrow.txt")
-        pandas_dataset._dump_text(tmpdir / "pandas.txt")
-        assert filecmp.cmp(tmpdir / "arrow.txt", tmpdir / "pandas.txt")
+    arrow_dataset._dump_text(tmp_path / "arrow.txt")
+    pandas_dataset._dump_text(tmp_path / "pandas.txt")
+    assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")

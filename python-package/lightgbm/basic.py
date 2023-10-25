@@ -6,7 +6,6 @@ import inspect
 import json
 import warnings
 from collections import OrderedDict
-from contextlib import contextmanager
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
@@ -14,7 +13,7 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -382,8 +381,7 @@ class _ArrowCArray:
         return int(arrow_cffi.cast("uintptr_t", self.schema))
 
 
-@contextmanager
-def _export_arrow_to_c(data: pa_Table) -> Iterator[_ArrowCArray]:
+def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
     """Export an Arrow type to its C representation."""
     # Obtain objects to export
     if isinstance(data, pa_Table):
@@ -404,7 +402,7 @@ def _export_arrow_to_c(data: pa_Table) -> Iterator[_ArrowCArray]:
         else:
             obj._export_to_c(chunk_ptr)
 
-    yield _ArrowCArray(len(chunks), chunks, schema)
+    return _ArrowCArray(len(chunks), chunks, schema)
 
 
 
@@ -2273,15 +2271,15 @@ class Dataset:
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Export Arrow table to C
-        with _export_arrow_to_c(table) as c_array:
-            self._handle = ctypes.c_void_p()
-            _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
-                ctypes.c_int64(c_array.n_chunks),
-                ctypes.c_void_p(c_array.chunks_ptr),
-                ctypes.c_void_p(c_array.schema_ptr),
-                _c_str(params_str),
-                ref_dataset,
-                ctypes.byref(self._handle)))
+        c_array = _export_arrow_to_c(table)
+        self._handle = ctypes.c_void_p()
+        _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            _c_str(params_str),
+            ref_dataset,
+            ctypes.byref(self._handle)))
         return self
 
     @staticmethod
