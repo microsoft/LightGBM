@@ -9,7 +9,7 @@
 #define LIGHTGBM_CUDA_CUDA_COLUMN_DATA_HPP_
 
 #include <LightGBM/config.h>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
@@ -98,6 +98,7 @@ class CUDAColumnData {
 
   void ResizeWhenCopySubrow(const data_size_t num_used_indices);
 
+  int gpu_device_id_;
   int num_threads_;
   data_size_t num_data_;
   int num_columns_;

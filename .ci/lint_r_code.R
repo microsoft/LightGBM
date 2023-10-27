@@ -1,5 +1,5 @@
 
-library(lintr)
+loadNamespace("lintr")
 
 args <- commandArgs(
     trailingOnly = TRUE
@@ -33,29 +33,41 @@ LINTERS_TO_USE <- list(
     , "any_duplicated"       = lintr::any_duplicated_linter()
     , "any_is_na"            = lintr::any_is_na_linter()
     , "assignment"           = lintr::assignment_linter()
+    , "backport"             = lintr::backport_linter()
+    , "boolean_arithmetic"   = lintr::boolean_arithmetic_linter()
     , "braces"               = lintr::brace_linter()
     , "class_equals"         = lintr::class_equals_linter()
     , "commas"               = lintr::commas_linter()
+    , "conjunct_test"        = lintr::conjunct_test_linter()
     , "duplicate_argument"   = lintr::duplicate_argument_linter()
+    , "empty_assignment"     = lintr::empty_assignment_linter()
     , "equals_na"            = lintr::equals_na_linter()
+    , "fixed_regex"          = lintr::fixed_regex_linter()
+    , "for_loop_index"       = lintr::for_loop_index_linter()
     , "function_left"        = lintr::function_left_parentheses_linter()
+    , "function_return"      = lintr::function_return_linter()
+    , "implicit_assignment"  = lintr::implicit_assignment_linter()
     , "implicit_integers"    = lintr::implicit_integer_linter()
     , "infix_spaces"         = lintr::infix_spaces_linter()
     , "inner_combine"        = lintr::inner_combine_linter()
-    , "fixed_regex"          = lintr::fixed_regex_linter()
+    , "is_numeric"           = lintr::is_numeric_linter()
+    , "lengths"              = lintr::lengths_linter()
+    , "line_length"          = lintr::line_length_linter(length = 120L)
     , "literal_coercion"     = lintr::literal_coercion_linter()
-    , "long_lines"           = lintr::line_length_linter(length = 120L)
+    , "matrix"               = lintr::matrix_apply_linter()
     , "missing_argument"     = lintr::missing_argument_linter()
-    , "no_tabs"              = lintr::no_tab_linter()
     , "non_portable_path"    = lintr::nonportable_path_linter()
     , "numeric_leading_zero" = lintr::numeric_leading_zero_linter()
     , "outer_negation"       = lintr::outer_negation_linter()
     , "package_hooks"        = lintr::package_hooks_linter()
+    , "paren_body"           = lintr::paren_body_linter()
     , "paste"                = lintr::paste_linter()
+    , "quotes"               = lintr::quotes_linter()
+    , "redundant_equals"     = lintr::redundant_equals_linter()
     , "regex_subset"         = lintr::regex_subset_linter()
+    , "routine_registration" = lintr::routine_registration_linter()
     , "semicolon"            = lintr::semicolon_linter()
     , "seq"                  = lintr::seq_linter()
-    , "single_quotes"        = lintr::single_quotes_linter()
     , "spaces_inside"        = lintr::spaces_inside_linter()
     , "spaces_left_parens"   = lintr::spaces_left_parentheses_linter()
     , "sprintf"              = lintr::sprintf_linter()
@@ -92,13 +104,17 @@ LINTERS_TO_USE <- list(
             "%>%" = pipe_text
             , "%.%" = pipe_text
             , "%..%" = pipe_text
+            , "|>" = pipe_text
             , "?" = interactive_text
             , "??" = interactive_text
         )
     )
-    , "unneeded_concatenation" = lintr::unneeded_concatenation_linter()
-    , "unreachable_code"       = lintr::unreachable_code_linter()
-    , "vector_logic"           = lintr::vector_logic_linter()
+    , "unnecessary_concatenation" = lintr::unnecessary_concatenation_linter()
+    , "unnecessary_lambda"        = lintr::unnecessary_lambda_linter()
+    , "unreachable_code"          = lintr::unreachable_code_linter()
+    , "unused_import"             = lintr::unused_import_linter()
+    , "vector_logic"              = lintr::vector_logic_linter()
+    , "whitespace"                = lintr::whitespace_linter()
 )
 
 noquote(paste0(length(FILES_TO_LINT), " R files need linting"))

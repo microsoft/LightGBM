@@ -30,6 +30,7 @@
 #'   , metric = "l2"
 #'   , min_data = 1L
 #'   , learning_rate = 1.0
+#'   , num_threads = 2L
 #' )
 #' valids <- list(test = dtest)
 #' model <- lgb.train(
@@ -153,6 +154,9 @@ lgb.train <- function(params = list(),
 
   # Construct datasets, if needed
   data$update_params(params = params)
+  if (!is.null(categorical_feature)) {
+    data$set_categorical_feature(categorical_feature)
+  }
   data$construct()
 
   # Check interaction constraints
@@ -176,11 +180,6 @@ lgb.train <- function(params = list(),
   # Write column names
   if (!is.null(colnames)) {
     data$set_colnames(colnames)
-  }
-
-  # Write categorical features
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
   }
 
   valid_contain_train <- FALSE

@@ -54,6 +54,25 @@ class LeafSplits {
   }
 
   /*!
+  * \brief Init split on current leaf on partial data. 
+  * \param leaf Index of current leaf
+  * \param data_partition current data partition
+  * \param sum_gradients
+  * \param sum_hessians
+  * \param sum_gradients_and_hessians
+  * \param weight
+  */
+  void Init(int leaf, const DataPartition* data_partition, double sum_gradients,
+            double sum_hessians, int64_t sum_gradients_and_hessians, double weight) {
+    leaf_index_ = leaf;
+    data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
+    sum_gradients_ = sum_gradients;
+    sum_hessians_ = sum_hessians;
+    int_sum_gradients_and_hessians_ = sum_gradients_and_hessians;
+    weight_ = weight;
+  }
+
+  /*!
   * \brief Init split on current leaf on partial data.
   * \param leaf Index of current leaf
   * \param sum_gradients
@@ -76,7 +95,7 @@ class LeafSplits {
     data_indices_ = nullptr;
     double tmp_sum_gradients = 0.0f;
     double tmp_sum_hessians = 0.0f;
-#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
     for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
       tmp_sum_gradients += gradients[i];
       tmp_sum_hessians += hessians[i];
@@ -101,7 +120,7 @@ class LeafSplits {
     double tmp_sum_hessians = 0.0f;
     const int16_t* packed_int_gradients_and_hessians = reinterpret_cast<const int16_t*>(int_gradients_and_hessians);
     int64_t tmp_sum_gradients_and_hessians = 0;
-#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
     for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
       tmp_sum_gradients += int_gradients_and_hessians[2 * i + 1] * grad_scale;
       tmp_sum_hessians += int_gradients_and_hessians[2 * i] * hess_scale;
@@ -130,7 +149,7 @@ class LeafSplits {
     data_indices_ = data_partition->GetIndexOnLeaf(leaf, &num_data_in_leaf_);
     double tmp_sum_gradients = 0.0f;
     double tmp_sum_hessians = 0.0f;
-#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians) if (num_data_in_leaf_ >= 1024 && !deterministic_)
     for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
       const data_size_t idx = data_indices_[i];
       tmp_sum_gradients += gradients[idx];
@@ -158,7 +177,7 @@ class LeafSplits {
     double tmp_sum_hessians = 0.0f;
     const int16_t* packed_int_gradients_and_hessians = reinterpret_cast<const int16_t*>(int_gradients_and_hessians);
     int64_t tmp_sum_gradients_and_hessians = 0;
-#pragma omp parallel for schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) reduction(+:tmp_sum_gradients, tmp_sum_hessians, tmp_sum_gradients_and_hessians) if (num_data_in_leaf_ >= 1024 && deterministic_)
     for (data_size_t i = 0; i < num_data_in_leaf_; ++i) {
       const data_size_t idx = data_indices_[i];
       tmp_sum_gradients += int_gradients_and_hessians[2 * idx + 1] * grad_scale;

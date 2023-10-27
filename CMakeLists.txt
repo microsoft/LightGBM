@@ -203,19 +203,24 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-    find_package(CUDA 10.0 REQUIRED)
+    find_package(CUDA 11.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
-        list(APPEND CUDA_ARCHS "7.5")
-    endif()
+    # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
+    # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "8.0")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "8.6")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.5")
+        list(APPEND CUDA_ARCHS "8.7")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
+        list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
@@ -326,6 +331,13 @@ if(UNIX OR MINGW OR CYGWIN)
     CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
+  if(MINGW)
+    # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
+    set(
+      CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow"
+    )
+  endif()
   if(USE_DEBUG)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
   else()
@@ -371,6 +383,13 @@ if(MSVC)
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    if(__BUILD_FOR_R)
+        # MSVC does not like this commit:
+        # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
+        #
+        # and raises "error C3646: 'private_data_c': unknown override specifier"
+        add_definitions(-DR_LEGACY_RCOMPLEX)
+    endif()
     if(USE_DEBUG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
     else()

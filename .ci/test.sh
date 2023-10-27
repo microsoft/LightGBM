@@ -37,7 +37,7 @@ fi
 CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
-    conda create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
+    mamba create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
     source activate $CONDA_ENV
     mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit -1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit -1
@@ -67,13 +67,13 @@ fi
 
 if [[ $TASK == "lint" ]]; then
     cd ${BUILD_DIRECTORY}
-    conda create -q -y -n $CONDA_ENV \
+    mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
         cmakelint \
         cpplint \
         isort \
         mypy \
-        'r-lintr>=3.0' \
+        'r-lintr>=3.1' \
         ruff
     source activate $CONDA_ENV
     echo "Linting Python code"
@@ -87,10 +87,10 @@ fi
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd $BUILD_DIRECTORY/docs
-    conda env create \
+    mamba env create \
         -n $CONDA_ENV \
         --file ./env.yml || exit -1
-    conda install \
+    mamba install \
         -q \
         -y \
         -n $CONDA_ENV \
@@ -119,15 +119,21 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
+# older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
+#
+# ref: https://github.com/microsoft/LightGBM/issues/6030
+CONSTRAINED_DEPENDENCIES="'dask-core>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
+if [[ $PYTHON_VERSION == "3.7" ]]; then
+    CONSTRAINED_DEPENDENCIES="'dask-core' 'distributed' 'pandas<2.0'"
+fi
+
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-conda create -q -y -n $CONDA_ENV \
+mamba create -q -y -n $CONDA_ENV \
+    ${CONSTRAINED_DEPENDENCIES} \
     cloudpickle \
-    dask-core \
-    distributed \
     joblib \
     matplotlib \
     numpy \
-    pandas \
     psutil \
     pytest \
     ${CONDA_PYTHON_REQUIREMENT} \
@@ -298,7 +304,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    conda install -q -y -n $CONDA_ENV \
+    mamba install -q -y -n $CONDA_ENV \
         h5py \
         ipywidgets \
         notebook

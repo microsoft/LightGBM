@@ -255,7 +255,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
   std::vector<int> leaf_pred(num_data_);
   if (linear_tree_) {
     std::vector<int> max_leaves_by_thread = std::vector<int>(OMP_NUM_THREADS(), 0);
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < static_cast<int>(tree_leaf_prediction.size()); ++i) {
       int tid = omp_get_thread_num();
       for (size_t j = 0; j < tree_leaf_prediction[i].size(); ++j) {
@@ -270,7 +270,7 @@ void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) 
     Boosting();
     for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
       int model_index = iter * num_tree_per_iteration_ + tree_id;
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < num_data_; ++i) {
         leaf_pred[i] = tree_leaf_prediction[i][model_index];
         CHECK_LT(leaf_pred[i], models_[model_index]->num_leaves());
@@ -348,7 +348,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     if (data_sample_strategy_->IsHessianChange()) {
       // need to copy customized gradients when using GOSS
       int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int64_t i = 0; i < total_size; ++i) {
         gradients_[i] = gradients[i];
         hessians_[i] = hessians[i];
@@ -669,7 +669,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
   }
   #endif  // USE_CUDA
   if (objective_function_ != nullptr) {
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       std::vector<double> tree_pred(num_tree_per_iteration_);
       for (int j = 0; j < num_tree_per_iteration_; ++j) {
@@ -682,7 +682,7 @@ void GBDT::GetPredictAt(int data_idx, double* out_result, int64_t* out_len) {
       }
     }
   } else {
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_data; ++i) {
       for (int j = 0; j < num_tree_per_iteration_; ++j) {
         out_result[j * num_data + i] = static_cast<double>(raw_scores[j * num_data + i]);

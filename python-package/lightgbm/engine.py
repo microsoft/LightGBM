@@ -1,8 +1,8 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-import collections
 import copy
 import json
+from collections import OrderedDict, defaultdict
 from operator import attrgetter
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -11,9 +11,9 @@ import numpy as np
 
 from . import callback
 from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_BoosterEvalMethodResultType, _LGBM_CategoricalFeatureConfiguration,
-                    _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _log_warning)
+                    _LGBM_BoosterEvalMethodResultType, _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType,
+                    _LGBM_FeatureNameConfiguration, _log_warning)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 __all__ = [
@@ -183,10 +183,20 @@ def train(
 
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
-    init_iteration = predictor.num_total_iteration if predictor is not None else 0
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
+
+    if predictor is not None:
+        init_iteration = predictor.current_iteration()
+    else:
+        init_iteration = 0
 
     train_set._update_params(params) \
              ._set_predictor(predictor) \
@@ -283,7 +293,7 @@ def train(
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(collections.OrderedDict)
+    booster.best_score = defaultdict(OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -329,16 +339,12 @@ class CVBooster:
             with open(model_file, "r") as file:
                 self._from_dict(json.load(file))
 
-    def _append(self, booster: Booster) -> None:
-        """Add a booster to CVBooster."""
-        self.boosters.append(booster)
-
     def _from_dict(self, models: Dict[str, Any]) -> None:
         """Load CVBooster from dict."""
         self.best_iteration = models["best_iteration"]
         self.boosters = []
         for model_str in models["boosters"]:
-            self._append(Booster(model_str=model_str))
+            self.boosters.append(Booster(model_str=model_str))
 
     def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
@@ -504,19 +510,19 @@ def _make_n_folds(
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
             tparam = params
-        cvbooster = Booster(tparam, train_set)
+        booster_for_fold = Booster(tparam, train_set)
         if eval_train_metric:
-            cvbooster.add_valid(train_set, 'train')
-        cvbooster.add_valid(valid_set, 'valid')
-        ret._append(cvbooster)
+            booster_for_fold.add_valid(train_set, 'train')
+        booster_for_fold.add_valid(valid_set, 'valid')
+        ret.boosters.append(booster_for_fold)
     return ret
 
 
 def _agg_cv_result(
-    raw_results: List[List[Tuple[str, str, float, bool]]]
-) -> List[Tuple[str, str, float, bool, float]]:
+    raw_results: List[List[_LGBM_BoosterEvalMethodResultType]]
+) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    cvmap: Dict[str, List[float]] = collections.OrderedDict()
+    cvmap: Dict[str, List[float]] = OrderedDict()
     metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
@@ -524,7 +530,7 @@ def _agg_cv_result(
             metric_type[key] = one_line[3]
             cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
-    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+    return [('cv_agg', k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
 
 
 def cv(
@@ -645,13 +651,18 @@ def cv(
 
     Returns
     -------
-    eval_hist : dict
-        Evaluation history.
+    eval_results : dict
+        History of evaluation results of each metric.
         The dictionary has the following format:
-        {'metric1-mean': [values], 'metric1-stdv': [values],
-        'metric2-mean': [values], 'metric2-stdv': [values],
+        {'valid metric1-mean': [values], 'valid metric1-stdv': [values],
+        'valid metric2-mean': [values], 'valid metric2-stdv': [values],
         ...}.
         If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
+        If ``eval_train_metric=True``, also returns the train metric history.
+        In this case, the dictionary has the following format:
+        {'train metric1-mean': [values], 'valid metric1-mean': [values],
+        'train metric2-mean': [values], 'valid metric2-mean': [values],
+        ...}.
     """
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
@@ -685,9 +696,15 @@ def cv(
     first_metric_only = params.get('first_metric_only', False)
 
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(pred_parameter=dict(init_model.params, **params))
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
     else:
         predictor = None
 
@@ -701,7 +718,7 @@ def cv(
              .set_feature_name(feature_name) \
              .set_categorical_feature(categorical_feature)
 
-    results = collections.defaultdict(list)
+    results = defaultdict(list)
     cvfolds = _make_n_folds(full_data=train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
                             stratified=stratified, shuffle=shuffle,
