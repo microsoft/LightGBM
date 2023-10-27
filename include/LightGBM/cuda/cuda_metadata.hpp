@@ -8,7 +8,7 @@
 #ifndef LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 #define LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/meta.h>
 
 #include <vector>
