@@ -2782,6 +2782,10 @@ class Dataset:
         if self._handle is not None and group is not None:
             group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
             self.set_field('group', group)
+            # original values can be modified at cpp side
+            constructed_group = self.get_field('group')
+            if constructed_group is not None:
+                self.group = np.diff(constructed_group)
         return self
 
     def set_position(

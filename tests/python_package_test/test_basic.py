@@ -550,9 +550,9 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     # constructed, get_* methods should return numpy arrays, even when the provided
     # input was a list of floats or ints
     dtrain.construct()
-    expected_group = [1, 1]
-    assert dtrain.group == expected_group
-    assert dtrain.get_group() == expected_group
+    expected_group = np.array([1, 1], dtype=np.int32)
+    np_assert_array_equal(dtrain.group, expected_group, strict=True)
+    np_assert_array_equal(dtrain.get_group(), expected_group, strict=True)
     # get_field("group") returns a numpy array with boundaries, instead of size
     np_assert_array_equal(
         dtrain.get_field("group"),
@@ -560,7 +560,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
         strict=True
     )
 
-    expected_init_score = np.array([0.312, 0.708])
+    expected_init_score = np.array([0.312, 0.708],)
     np_assert_array_equal(dtrain.init_score, expected_init_score, strict=True)
     np_assert_array_equal(dtrain.get_init_score(), expected_init_score, strict=True)
     np_assert_array_equal(dtrain.get_field("init_score"), expected_init_score, strict=True)

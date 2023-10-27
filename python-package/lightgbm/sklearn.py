@@ -86,6 +86,16 @@ _LGBM_ScikitEvalMetricType = Union[
 _LGBM_ScikitValidSet = Tuple[_LGBM_ScikitMatrixLike, _LGBM_LabelType]
 
 
+def _get_group_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray]:
+    group = dataset.get_group()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve query groups from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert (group is None or isinstance(group, np.ndarray)), error_msg
+    return group
+
+
 def _get_label_from_constructed_dataset(dataset: Dataset) -> np.ndarray:
     label = dataset.get_label()
     error_msg = (
@@ -183,9 +193,9 @@ class _ObjectiveFunctionWrapper:
             return grad, hess
 
         if argc == 4:
-            group = dataset.get_field("group")
+            group = _get_group_from_constructed_dataset(dataset)
             if group is not None:
-                return self.func(labels, preds, weight, np.diff(group))  # type: ignore[call-arg]
+                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
             else:
                 return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
 
@@ -267,9 +277,9 @@ class _EvalFunctionWrapper:
             return self.func(labels, preds, weight)  # type: ignore[call-arg]
 
         if argc == 4:
-            group = dataset.get_field("group")
+            group = _get_group_from_constructed_dataset(dataset)
             if group is not None:
-                return self.func(labels, preds, weight, np.diff(group))  # type: ignore[call-arg]
+                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
             else:
                 return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
 
