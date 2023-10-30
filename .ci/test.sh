@@ -317,11 +317,13 @@ matplotlib.use\(\"Agg\"\)\
 
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall --force --yes \
+        cffi \
         dask \
         distributed \
         joblib \
         matplotlib \
         psutil \
+        pyarrow \
         python-graphviz \
         scikit-learn || exit -1
     python -c "import lightgbm" || exit -1
