@@ -1,13 +1,12 @@
 # coding: utf-8
 import filecmp
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Union
 
+import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
-
-import lightgbm as lgb
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -67,6 +66,10 @@ def dummy_dataset_params() -> Dict[str, Any]:
     }
 
 
+def assert_arrays_equal(lhs: np.ndarray, rhs: np.ndarray):
+    assert lhs.dtype == rhs.dtype and np.array_equal(lhs, rhs)
+
+
 # ----------------------------------------------------------------------------------------------- #
 #                                            UNIT TESTS                                           #
 # ----------------------------------------------------------------------------------------------- #
@@ -97,3 +100,45 @@ def test_dataset_construct_fuzzy(
     arrow_dataset._dump_text(tmp_path / "arrow.txt")
     pandas_dataset._dump_text(tmp_path / "pandas.txt")
     assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
+
+
+@pytest.mark.parametrize(
+    ["array_type", "label_data"],
+    [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
+)
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pa.int8(),
+        pa.int16(),
+        pa.int32(),
+        pa.int64(),
+        pa.uint8(),
+        pa.uint16(),
+        pa.uint32(),
+        pa.uint64(),
+        pa.float32(),
+        pa.float64(),
+    ],
+)
+def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: Any):
+    data = generate_dummy_arrow_table()
+    labels = array_type(label_data, type=arrow_type)
+    dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
+    assert_arrays_equal(expected, dataset.get_label())
+
+
+def test_dataset_construct_labels_fuzzy():
+    arrow_table = generate_random_arrow_table(3, 1000, 42)
+    arrow_array = generate_random_arrow_array(1000, 42)
+
+    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_array)
+    arrow_dataset.construct()
+
+    pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), label=arrow_array.to_numpy())
+    pandas_dataset.construct()
+
+    assert_arrays_equal(arrow_dataset.get_label(), pandas_dataset.get_label())

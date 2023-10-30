@@ -833,6 +833,7 @@ class Booster {
 
 // explicitly declare symbols from LightGBM namespace
 using LightGBM::AllgatherFunction;
+using LightGBM::ArrowChunkedArray;
 using LightGBM::ArrowTable;
 using LightGBM::Booster;
 using LightGBM::Common::CheckElementsIntervalClosed;
@@ -1777,6 +1778,21 @@ int LGBM_DatasetSetField(DatasetHandle handle,
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
   if (!is_success) { Log::Fatal("Input data type error or field not found"); }
+  API_END();
+}
+
+int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
+                                  const char* field_name,
+                                  int64_t n_chunks,
+                                  const ArrowArray* chunks,
+                                  const ArrowSchema* schema) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  ArrowChunkedArray ca(n_chunks, chunks, schema);
+  auto is_success = dataset->SetFieldFromArrow(field_name, ca);
+  if (!is_success) {
+    Log::Fatal("Input field not found");
+  }
   API_END();
 }
 

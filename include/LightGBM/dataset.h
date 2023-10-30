@@ -110,6 +110,7 @@ class Metadata {
                         const std::vector<data_size_t>& used_data_indices);
 
   void SetLabel(const label_t* label, data_size_t len);
+  void SetLabel(const ArrowChunkedArray& array);
 
   void SetWeights(const label_t* weights, data_size_t len);
 
@@ -334,6 +335,9 @@ class Metadata {
   void CalculateQueryBoundaries();
   /*! \brief Insert labels at the given index */
   void InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len);
+  /*! \brief Set labels from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetLabelsFromIterator(It first, It last);
   /*! \brief Insert weights at the given index */
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
   /*! \brief Insert initial scores at the given index */
@@ -654,6 +658,8 @@ class Dataset {
       bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
+
+  bool SetFieldFromArrow(const char* field_name, const ArrowChunkedArray& ca);
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 

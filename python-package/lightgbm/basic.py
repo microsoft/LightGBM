@@ -19,7 +19,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
+                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -99,7 +99,9 @@ _LGBM_LabelType = Union[
     List[int],
     np.ndarray,
     pd_Series,
-    pd_DataFrame
+    pd_DataFrame,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_PredictDataType = Union[
     str,
@@ -353,6 +355,11 @@ def _is_2d_collection(data: Any) -> bool:
     )
 
 
+def _is_pyarrow_array(data: Any) -> bool:
+    """Check whether data is a PyArrow array."""
+    return isinstance(data, (pa_Array, pa_ChunkedArray))
+
+
 def _is_pyarrow_table(data: Any) -> bool:
     """Check whether data is a PyArrow table."""
     return isinstance(data, pa_Table)
@@ -384,7 +391,11 @@ class _ArrowCArray:
 def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
     """Export an Arrow type to its C representation."""
     # Obtain objects to export
-    if isinstance(data, pa_Table):
+    if isinstance(data, pa_Array):
+        export_objects = [data]
+    elif isinstance(data, pa_ChunkedArray):
+        export_objects = data.chunks
+    elif isinstance(data, pa_Table):
         export_objects = data.to_batches()
     else:
         raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
@@ -1620,7 +1631,7 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
@@ -2402,7 +2413,7 @@ class Dataset:
         data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Label of the data.
         weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
@@ -2519,7 +2530,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Array, pa_ChunkedArray]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2527,7 +2538,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray or None
             The data to be set.
 
         Returns
@@ -2546,6 +2557,20 @@ class Dataset:
                 ctypes.c_int(0),
                 ctypes.c_int(_FIELD_TYPE_MAPPER[field_name])))
             return self
+
+        # If the data is a arrow data, we can just pass it to C
+        if _is_pyarrow_array(data):
+            c_array = _export_arrow_to_c(data)
+            _safe_call(_LIB.LGBM_DatasetSetFieldFromArrow(
+                self._handle,
+                _c_str(field_name),
+                ctypes.c_int64(c_array.n_chunks),
+                ctypes.c_void_p(c_array.chunks_ptr),
+                ctypes.c_void_p(c_array.schema_ptr),
+            ))
+            self.version += 1
+            return self
+
         dtype: "np.typing.DTypeLike"
         if field_name == 'init_score':
             dtype = np.float64
@@ -2749,7 +2774,7 @@ class Dataset:
 
         Parameters
         ----------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information to be set into Dataset.
 
         Returns
@@ -2774,6 +2799,8 @@ class Dataset:
                     # data has nullable dtypes, but we can specify na_value argument and copy will be made
                     label = label.to_numpy(dtype=np.float32, na_value=np.nan)
                 label_array = np.ravel(label)
+            elif _is_pyarrow_array(label):
+                label_array = label
             else:
                 label_array = _list_to_1d_numpy(label, dtype=np.float32, name='label')
             self.set_field('label', label_array)
@@ -4353,7 +4380,7 @@ class Booster:
         data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
-        label : list, numpy 1-D array or pandas Series / one-column DataFrame
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
             Label for refit.
         decay_rate : float, optional (default=0.9)
             Decay rate of refit,
