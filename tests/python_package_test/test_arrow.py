@@ -3,11 +3,10 @@ import filecmp
 from pathlib import Path
 from typing import Any, Callable, Dict
 
+import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
-
-import lightgbm as lgb
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -103,6 +102,23 @@ def test_dataset_construct_fuzzy(
     assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
 
 
+@pytest.mark.parametrize("field", ["label", "weight"])
+def test_dataset_construct_fields_fuzzy(field: str):
+    arrow_table = generate_random_arrow_table(3, 1000, 42)
+    arrow_array = generate_random_arrow_array(1000, 42)
+
+    arrow_dataset = lgb.Dataset(arrow_table, **{field: arrow_array})
+    arrow_dataset.construct()
+
+    pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), **{field: arrow_array.to_numpy()})
+    pandas_dataset.construct()
+
+    assert_arrays_equal(arrow_dataset.get_field(field), pandas_dataset.get_field(field))
+    assert_arrays_equal(
+        getattr(arrow_dataset, f"get_{field}")(), getattr(pandas_dataset, f"get_{field}")()
+    )
+
+
 @pytest.mark.parametrize(
     ["array_type", "label_data"],
     [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
@@ -132,23 +148,6 @@ def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: 
     assert_arrays_equal(expected, dataset.get_label())
 
 
-@pytest.mark.parametrize("field", ["label", "weight", "group"])
-def test_dataset_construct_fields_fuzzy(field: str):
-    arrow_table = generate_random_arrow_table(3, 1000, 42)
-    arrow_array = generate_random_arrow_array(1000, 42)
-
-    arrow_dataset = lgb.Dataset(arrow_table, **{field: arrow_array})
-    arrow_dataset.construct()
-
-    pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), **{field: arrow_array.to_numpy()})
-    pandas_dataset.construct()
-
-    assert_arrays_equal(arrow_dataset.get_field(field), pandas_dataset.get_field(field))
-    assert_arrays_equal(
-        getattr(arrow_dataset, f"get_{field}")(), getattr(pandas_dataset, f"get_{field}")()
-    )
-
-
 def test_dataset_construct_weights_none():
     data = generate_dummy_arrow_table()
     weight = pa.array([1, 1, 1, 1, 1])
@@ -170,3 +169,29 @@ def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type
 
     expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
     assert_arrays_equal(expected, dataset.get_weight())
+
+
+@pytest.mark.parametrize(
+    ["array_type", "group_data"], [(pa.array, [2, 3]), (pa.chunked_array, [[2], [3]])]
+)
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pa.int8(),
+        pa.int16(),
+        pa.int32(),
+        pa.int64(),
+        pa.uint8(),
+        pa.uint16(),
+        pa.uint32(),
+        pa.uint64(),
+    ],
+)
+def test_dataset_construct_groups(array_type: Any, group_data: Any, arrow_type: Any):
+    data = generate_dummy_arrow_table()
+    groups = array_type(group_data, type=arrow_type)
+    dataset = lgb.Dataset(data, group=groups, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 2, 5], dtype=np.int32)
+    assert_arrays_equal(expected, dataset.get_field("group"))
