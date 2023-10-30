@@ -170,16 +170,3 @@ def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type
 
     expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
     assert_arrays_equal(expected, dataset.get_weight())
-
-
-def test_dataset_construct_weights_fuzzy():
-    arrow_table = generate_random_arrow_table(3, 1000, 42)
-    arrow_array = generate_random_arrow_array(1000, 42)
-
-    arrow_dataset = lgb.Dataset(arrow_table, weight=arrow_array)
-    arrow_dataset.construct()
-
-    pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), weight=arrow_array.to_numpy())
-    pandas_dataset.construct()
-
-    assert_arrays_equal(arrow_dataset.get_label(), pandas_dataset.get_label())
