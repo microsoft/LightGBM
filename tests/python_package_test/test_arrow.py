@@ -3,10 +3,11 @@ import filecmp
 from pathlib import Path
 from typing import Any, Callable, Dict
 
-import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
+
+import lightgbm as lgb
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #

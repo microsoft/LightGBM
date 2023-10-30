@@ -19,7 +19,8 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series, pa_compute)
+                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_compute, pa_Table, pd_CategoricalDtype, pd_DataFrame,
+                     pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:

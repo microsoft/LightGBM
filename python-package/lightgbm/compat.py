@@ -187,10 +187,10 @@ except ImportError:
 
 """pyarrow"""
 try:
+    import pyarrow.compute as pa_compute
     from pyarrow import Array as pa_Array
     from pyarrow import ChunkedArray as pa_ChunkedArray
     from pyarrow import Table as pa_Table
-    import pyarrow.compute as pa_compute
     from pyarrow.cffi import ffi as arrow_cffi
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
