@@ -19,8 +19,8 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_compute, pa_Table, pd_CategoricalDtype, pd_DataFrame,
-                     pd_Series)
+                     dt_DataTable, pa_Array, pa_chunked_array, pa_ChunkedArray, pa_compute, pa_Table,
+                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -84,6 +84,9 @@ _LGBM_InitScoreType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
+    pa_Table,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_TrainDataType = Union[
     str,
@@ -1648,7 +1651,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
@@ -2428,7 +2431,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
@@ -2535,7 +2538,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Array, pa_ChunkedArray]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Table, pa_Array, pa_ChunkedArray]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2564,7 +2567,16 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if _is_pyarrow_array(data):
+        if _is_pyarrow_array(data) or _is_pyarrow_table(data):
+            # If a table is being passed, we concatenate the columns. This is only valid for
+            # 'init_score'.
+            if _is_pyarrow_table(data):
+                if field_name != "init_score":
+                    raise ValueError("pyarrow table provided for field other than init_score")
+                data = pa_chunked_array([
+                    chunk for array in data.columns for chunk in array.chunks  # type: ignore
+                ])
+
             c_array = _export_arrow_to_c(data)
             _safe_call(_LIB.LGBM_DatasetSetFieldFromArrow(
                 self._handle,
@@ -2853,7 +2865,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -4418,7 +4430,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0

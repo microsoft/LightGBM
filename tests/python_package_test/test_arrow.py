@@ -14,6 +14,19 @@ import lightgbm as lgb
 # ----------------------------------------------------------------------------------------------- #
 
 
+_INTEGER_TYPES = [
+    pa.int8(),
+    pa.int16(),
+    pa.int32(),
+    pa.int64(),
+    pa.uint8(),
+    pa.uint16(),
+    pa.uint32(),
+    pa.uint64(),
+]
+_FLOATING_POINT_TYPES = [pa.float32(), pa.float64()]
+
+
 def generate_simple_arrow_table() -> pa.Table:
     columns = [
         pa.chunked_array([[1, 2, 3, 4, 5]], type=pa.uint8()),
@@ -103,7 +116,7 @@ def test_dataset_construct_fuzzy(
     assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
 
 
-@pytest.mark.parametrize("field", ["label", "weight"])
+@pytest.mark.parametrize("field", ["label", "weight", "init_score"])
 def test_dataset_construct_fields_fuzzy(field: str):
     arrow_table = generate_random_arrow_table(3, 1000, 42)
     arrow_array = generate_random_arrow_array(1000, 42)
@@ -124,21 +137,7 @@ def test_dataset_construct_fields_fuzzy(field: str):
     ["array_type", "label_data"],
     [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
 )
-@pytest.mark.parametrize(
-    "arrow_type",
-    [
-        pa.int8(),
-        pa.int16(),
-        pa.int32(),
-        pa.int64(),
-        pa.uint8(),
-        pa.uint16(),
-        pa.uint32(),
-        pa.uint64(),
-        pa.float32(),
-        pa.float64(),
-    ],
-)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOATING_POINT_TYPES)
 def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: Any):
     data = generate_dummy_arrow_table()
     labels = array_type(label_data, type=arrow_type)
@@ -161,7 +160,7 @@ def test_dataset_construct_weights_none():
     ["array_type", "weight_data"],
     [(pa.array, [3, 0.7, 1.5, 0.5, 0.1]), (pa.chunked_array, [[3], [0.7, 1.5, 0.5, 0.1]])],
 )
-@pytest.mark.parametrize("arrow_type", [pa.float32(), pa.float64()])
+@pytest.mark.parametrize("arrow_type", _FLOATING_POINT_TYPES)
 def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type: Any):
     data = generate_dummy_arrow_table()
     weights = array_type(weight_data, type=arrow_type)
@@ -175,19 +174,7 @@ def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type
 @pytest.mark.parametrize(
     ["array_type", "group_data"], [(pa.array, [2, 3]), (pa.chunked_array, [[2], [3]])]
 )
-@pytest.mark.parametrize(
-    "arrow_type",
-    [
-        pa.int8(),
-        pa.int16(),
-        pa.int32(),
-        pa.int64(),
-        pa.uint8(),
-        pa.uint16(),
-        pa.uint32(),
-        pa.uint64(),
-    ],
-)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
 def test_dataset_construct_groups(array_type: Any, group_data: Any, arrow_type: Any):
     data = generate_dummy_arrow_table()
     groups = array_type(group_data, type=arrow_type)
@@ -196,3 +183,38 @@ def test_dataset_construct_groups(array_type: Any, group_data: Any, arrow_type: 
 
     expected = np.array([0, 2, 5], dtype=np.int32)
     assert_arrays_equal(expected, dataset.get_field("group"))
+
+
+@pytest.mark.parametrize(
+    ["array_type", "init_score_data"],
+    [(pa.array, [0, 1, 2, 3, 3]), (pa.chunked_array, [[0, 1, 2], [3, 3]])],
+)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOATING_POINT_TYPES)
+def test_dataset_construct_init_scores_array(
+    array_type: Any, init_score_data: Any, arrow_type: Any
+):
+    data = generate_dummy_arrow_table()
+    init_scores = array_type(init_score_data, type=arrow_type)
+    dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 2, 3, 3], dtype=np.float64)
+    assert_arrays_equal(expected, dataset.get_init_score())
+
+
+def test_dataset_construct_init_scores_table():
+    data = generate_dummy_arrow_table()
+    init_scores = pa.Table.from_arrays(
+        [
+            generate_random_arrow_array(5, seed=1),
+            generate_random_arrow_array(5, seed=2),
+            generate_random_arrow_array(5, seed=3),
+        ],
+        names=["a", "b", "c"],
+    )
+    dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
+    dataset.construct()
+
+    actual = dataset.get_init_score()
+    assert actual.dtype == np.float64
+    assert actual.shape == (5, 3)
