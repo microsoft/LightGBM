@@ -132,7 +132,7 @@ def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: 
     assert_arrays_equal(expected, dataset.get_label())
 
 
-@pytest.mark.parametrize("field", ["label", "weight"])
+@pytest.mark.parametrize("field", ["label", "weight", "group"])
 def test_dataset_construct_fields_fuzzy(field: str):
     arrow_table = generate_random_arrow_table(3, 1000, 42)
     arrow_array = generate_random_arrow_array(1000, 42)

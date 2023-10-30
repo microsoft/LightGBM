@@ -507,30 +507,34 @@ void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, da
   // CUDA is handled after all insertions are complete
 }
 
-void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
+template <typename It>
+void Metadata::SetQueriesFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // save to nullptr
-  if (query == nullptr || len == 0) {
+  // Clear weights on empty input
+  if (last - first == 0) {
     query_boundaries_.clear();
     num_queries_ = 0;
     return;
   }
+
   data_size_t sum = 0;
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum)
-  for (data_size_t i = 0; i < len; ++i) {
-    sum += query[i];
+  #pragma omp parallel for schedule(static) reduction(+:sum)
+  for (data_size_t i = 0; i < last - first; ++i) {
+    sum += first[i];
   }
   if (num_data_ != sum) {
-    Log::Fatal("Sum of query counts is not same with #data");
+    Log::Fatal("Sum of query counts differs from the length of #data");
   }
-  num_queries_ = len;
+  num_queries_ = last - first;
+
   query_boundaries_.resize(num_queries_ + 1);
   query_boundaries_[0] = 0;
   for (data_size_t i = 0; i < num_queries_; ++i) {
-    query_boundaries_[i + 1] = query_boundaries_[i] + query[i];
+    query_boundaries_[i + 1] = query_boundaries_[i] + first[i];
   }
   CalculateQueryWeights();
   query_load_from_file_ = false;
+
   #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     if (query_weights_.size() > 0) {
@@ -541,6 +545,14 @@ void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
     }
   }
   #endif  // USE_CUDA
+}
+
+void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
+  SetQueriesFromIterator(query, query + len);
+}
+
+void Metadata::SetQuery(const ArrowChunkedArray& array) {
+  SetQueriesFromIterator(array.begin<data_size_t>(), array.end<data_size_t>());
 }
 
 void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
