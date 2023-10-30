@@ -450,31 +450,43 @@ void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data
   // CUDA is handled after all insertions are complete
 }
 
-void Metadata::SetWeights(const label_t* weights, data_size_t len) {
+template <typename It>
+void Metadata::SetWeightsFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // save to nullptr
-  if (weights == nullptr || len == 0) {
+  // Clear weights on empty input
+  if (last - first == 0) {
     weights_.clear();
     num_weights_ = 0;
     return;
   }
-  if (num_data_ != len) {
-    Log::Fatal("Length of weights is not same with #data");
+  if (num_data_ != last - first) {
+    Log::Fatal("Length of weights differs from the length of #data");
   }
-  if (weights_.empty()) { weights_.resize(num_data_); }
+  if (weights_.empty()) {
+    weights_.resize(num_data_);
+  }
   num_weights_ = num_data_;
 
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_weights_ >= 1024)
   for (data_size_t i = 0; i < num_weights_; ++i) {
-    weights_[i] = Common::AvoidInf(weights[i]);
+    weights_[i] = Common::AvoidInf(first[i]);
   }
   CalculateQueryWeights();
   weight_load_from_file_ = false;
+
   #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetWeights(weights_.data(), len);
+    cuda_metadata_->SetWeights(weights_.data(), weights_.size());
   }
   #endif  // USE_CUDA
+}
+
+void Metadata::SetWeights(const label_t* weights, data_size_t len) {
+  SetWeightsFromIterator(weights, weights + len);
+}
+
+void Metadata::SetWeights(const ArrowChunkedArray& array) {
+  SetWeightsFromIterator(array.begin<label_t>(), array.end<label_t>());
 }
 
 void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len) {

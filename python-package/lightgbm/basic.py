@@ -19,7 +19,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
+                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series, pa_compute)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -115,7 +115,9 @@ _LGBM_WeightType = Union[
     List[float],
     List[int],
     np.ndarray,
-    pd_Series
+    pd_Series,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 ZERO_THRESHOLD = 1e-35
 
@@ -1635,7 +1637,7 @@ class Dataset:
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
@@ -2415,7 +2417,7 @@ class Dataset:
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Label of the data.
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
         group : list, numpy 1-D array, pandas Series or None, optional (default=None)
             Group/query data.
@@ -2815,7 +2817,7 @@ class Dataset:
 
         Parameters
         ----------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight to be set for each data point. Weights should be non-negative.
 
         Returns
@@ -2823,11 +2825,19 @@ class Dataset:
         self : Dataset
             Dataset with set weight.
         """
-        if weight is not None and np.all(weight == 1):
-            weight = None
+        # Check if the weight contains values other than one
+        if weight is not None:
+            if _is_pyarrow_array(weight):
+                if pa_compute.all(pa_compute.equal(weight, 1)).as_py():
+                    weight = None
+            elif np.all(weight == 1):
+                weight = None
         self.weight = weight
+
+        # Set field
         if self._handle is not None and weight is not None:
-            weight = _list_to_1d_numpy(weight, dtype=np.float32, name='weight')
+            if not _is_pyarrow_array(weight):
+                weight = _list_to_1d_numpy(weight, dtype=np.float32, name='weight')
             self.set_field('weight', weight)
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
@@ -4390,7 +4400,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
 
             .. versionadded:: 4.0.0
