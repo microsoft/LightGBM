@@ -1,7 +1,7 @@
 # coding: utf-8
 import filecmp
 from pathlib import Path
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict
 
 import lightgbm as lgb
 import numpy as np
