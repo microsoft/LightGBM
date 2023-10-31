@@ -218,3 +218,17 @@ def test_dataset_construct_init_scores_table():
     actual = dataset.get_init_score()
     assert actual.dtype == np.float64
     assert actual.shape == (5, 3)
+
+
+# ------------------------------------------ PREDICTION ----------------------------------------- #
+
+
+def test_predict():
+    data = generate_random_arrow_table(10, 10000, 42)
+    labels = generate_random_arrow_array(10000, 43)
+    dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
+    booster = lgb.train({}, dataset, num_boost_round=1)
+
+    out_arrow = booster.predict(data)
+    out_pandas = booster.predict(data.to_pandas())
+    assert_arrays_equal(out_arrow, out_pandas)
