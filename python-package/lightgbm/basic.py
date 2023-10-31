@@ -1148,7 +1148,7 @@ class _InnerPredictor:
                 predict_type=predict_type
             )
         elif _is_pyarrow_table(data):
-            preds, nrow = self.__pred_for_arrow_table(
+            preds, nrow = self.__pred_for_pyarrow_table(
                 table=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
@@ -1608,7 +1608,7 @@ class _InnerPredictor:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
     
-    def __pred_for_arrow_table(
+    def __pred_for_pyarrow_table(
         self,
         table: pa_Table,
         start_iteration: int,
