@@ -3828,3 +3828,29 @@ test_that("Evaluation metrics aren't printed as a single-element vector", {
   })
   expect_false(grepl("[1] \"[1]", log_txt, fixed = TRUE))
 })
+
+test_that("lgb.cv() doesn't mix booster messages with evaluation metrics messages", {
+  log_txt <- capture_output({
+    data(mtcars)
+    y <- mtcars$mpg
+    x <- as.matrix(mtcars[, -1L])
+    cv_result <- lgb.cv(
+        data = lgb.Dataset(x, label = y)
+        , params = list(
+            objective = "regression"
+            , metric = "l2"
+            , min_data_in_leaf = 5L
+            , max_depth = 3L
+            , num_threads = .LGB_MAX_THREADS
+        )
+        , nrounds = 2L
+        , nfold = 3L
+        , verbose = -1L
+        , eval_train_metric = TRUE
+        , print_metrics = TRUE
+    )
+  })
+  expect_false(grepl("Warning", log_txt, fixed = TRUE))
+  expect_false(grepl("gain", log_txt, fixed = TRUE))
+  expect_false(grepl("inf", log_txt, fixed = TRUE))
+})

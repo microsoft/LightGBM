@@ -46,6 +46,9 @@ CVBooster <- R6::R6Class(
 #' @param eval_train_metric \code{boolean}, whether to add the cross validation results on the
 #'               training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
 #'               will increase run time.
+#' @param print_metrics \code{boolean} when calculating evaluation metrics after boosting rounds, whether
+#'                      to print informational messages with these metrics (see parameters \code{eval_freq},
+#'                      \code{eval_train_metric}, and \code{eval}).
 #' @inheritSection lgb_shared_params Early Stopping
 #' @return a trained model \code{lgb.CVBooster}.
 #'
@@ -92,6 +95,7 @@ lgb.cv <- function(params = list()
                    , reset_data = FALSE
                    , serializable = TRUE
                    , eval_train_metric = FALSE
+                   , print_metrics = TRUE
                    ) {
 
   if (nrounds <= 0L) {
@@ -244,7 +248,8 @@ lgb.cv <- function(params = list()
   }
 
   # Add printing log callback
-  if (params[["verbosity"]] > 0L && eval_freq > 0L) {
+  print_metrics <- as.logical(print_metrics)
+  if (print_metrics && eval_freq > 0L) {
     callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
@@ -287,7 +292,7 @@ lgb.cv <- function(params = list()
       , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
         , first_metric_only = isTRUE(params[["first_metric_only"]])
-        , verbose = params[["verbosity"]] > 0L
+        , verbose = print_metrics
       )
     )
   }
