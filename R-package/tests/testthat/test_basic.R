@@ -3805,3 +3805,25 @@ test_that("lightgbm() correctly sets objective when passing lgb.Dataset as input
   )
   expect_equal(model$params$objective, "regression")
 })
+
+test_that("Evaluation metrics aren't printed as a single-element vector", {
+  log_txt <- capture_output({
+    data(mtcars)
+    y <- mtcars$mpg
+    x <- as.matrix(mtcars[, -1L])
+    cv_result <- lgb.cv(
+        data = lgb.Dataset(x, label = y)
+        , params = list(
+            objective = "regression"
+            , metric = "l2"
+            , min_data_in_leaf = 5L
+            , max_depth = 3L
+        )
+        , nrounds = 2L
+        , nfold = 3L
+        , verbose = 1L
+        , eval_train_metric = TRUE
+    )
+  })
+  expect_false(grepl("[1] \"[1]", log_txt, fixed = TRUE))
+})
