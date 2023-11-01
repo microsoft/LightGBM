@@ -3818,6 +3818,7 @@ test_that("Evaluation metrics aren't printed as a single-element vector", {
             , metric = "l2"
             , min_data_in_leaf = 5L
             , max_depth = 3L
+            , num_threads = .LGB_MAX_THREADS
         )
         , nrounds = 2L
         , nfold = 3L
