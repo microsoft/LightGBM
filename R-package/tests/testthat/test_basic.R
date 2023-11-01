@@ -3256,7 +3256,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
   expect_equal(record_evals[["valid"]][["auc"]][["eval_err"]], list())
 }
 
-.train_for_verbosity_test <- function(train_function, verbose_kwarg, verbose_param) {
+.train_for_verbosity_test <- function(train_function, verbose_kwarg, verbose_param, print_metrics = FALSE) {
   set.seed(708L)
   nrounds <- 5L
   params <- list(
@@ -3301,6 +3301,7 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     )
     train_kwargs[["nfold"]] <- 3L
     train_kwargs[["showsd"]] <- FALSE
+    train_kwargs[["print_metrics"]] <- print_metrics
   }
   log_txt <- capture.output({
     bst <- do.call(
@@ -3549,6 +3550,7 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     out <- .train_for_verbosity_test(
       verbose_kwarg = verbose_keyword_arg
       , verbose_param = -1L
+      , print_metrics = FALSE
       , train_function = lgb.cv
     )
     .assert_has_expected_logs(
@@ -3583,6 +3585,7 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
     out <- .train_for_verbosity_test(
       verbose_kwarg = verbose_keyword_arg
       , verbose_param = 1L
+      , print_metrics = TRUE
       , train_function = lgb.cv
     )
     .assert_has_expected_logs(
@@ -3638,6 +3641,7 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
   out <- .train_for_verbosity_test(
     verbose_kwarg = verbose_keyword_arg
     , verbose_param = 1L
+    , print_metrics = TRUE
     , train_function = lgb.cv
   )
   .assert_has_expected_logs(
