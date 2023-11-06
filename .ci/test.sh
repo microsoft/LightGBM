@@ -130,11 +130,13 @@ fi
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 mamba create -q -y -n $CONDA_ENV \
     ${CONSTRAINED_DEPENDENCIES} \
+    cffi \
     cloudpickle \
     joblib \
     matplotlib \
     numpy \
     psutil \
+    pyarrow \
     pytest \
     ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \
@@ -315,11 +317,13 @@ matplotlib.use\(\"Agg\"\)\
 
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall --force --yes \
+        cffi \
         dask \
         distributed \
         joblib \
         matplotlib \
         psutil \
+        pyarrow \
         python-graphviz \
         scikit-learn || exit -1
     python -c "import lightgbm" || exit -1

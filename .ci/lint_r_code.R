@@ -78,8 +78,7 @@ LINTERS_TO_USE <- list(
     , "true_false"           = lintr::T_and_F_symbol_linter()
     , "undesirable_function" = lintr::undesirable_function_linter(
         fun = c(
-            "cat" = "CRAN forbids the use of cat() in packages except in special cases. Use message() or warning()."
-            , "cbind" = paste0(
+            "cbind" = paste0(
                 "cbind is an unsafe way to build up a data frame. merge() or direct "
                 , "column assignment is preferred."
             )
