@@ -210,6 +210,9 @@ def test_booster():
         c_str('model.txt'),
         ctypes.byref(num_total_model),
         ctypes.byref(booster2))
+    LIB.LGBM_BoosterResetParameter(
+        booster2,
+        c_str("app=binary metric=auc num_leaves=29 verbose=0"))
     data = np.loadtxt(str(binary_example_dir / 'binary.test'), dtype=np.float64)
     mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
