@@ -103,7 +103,7 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) {
       return;
     }
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -171,7 +171,9 @@ class SerialTreeLearner: public TreeLearner {
 
   std::set<int> FindAllForceFeatures(Json force_split_leaf_setting);
 
+  #ifdef DEBUG
   void CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index);
+  #endif
 
   /*!
   * \brief Get the number of data in a leaf

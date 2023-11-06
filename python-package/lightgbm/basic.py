@@ -18,11 +18,19 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional,
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
+from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
+                     dt_DataTable, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
+
+    # typing.TypeGuard was only introduced in Python 3.10
+    try:
+        from typing import TypeGuard
+    except ImportError:
+        from typing_extensions import TypeGuard
+
 
 __all__ = [
     'Booster',
@@ -54,6 +62,7 @@ _ctypes_float_array = Union[
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_BoosterEvalMethodResultWithStandardDeviationType = Tuple[str, str, float, bool, float]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
 _LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
@@ -82,7 +91,8 @@ _LGBM_TrainDataType = Union[
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
-    List[np.ndarray]
+    List[np.ndarray],
+    pa_Table
 ]
 _LGBM_LabelType = Union[
     List[float],
@@ -278,6 +288,20 @@ def _is_1d_list(data: Any) -> bool:
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
 
+def _is_list_of_numpy_arrays(data: Any) -> "TypeGuard[List[np.ndarray]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, np.ndarray) for x in data)
+    )
+
+
+def _is_list_of_sequences(data: Any) -> "TypeGuard[List[Sequence]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, Sequence) for x in data)
+    )
+
+
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
@@ -327,6 +351,59 @@ def _is_2d_collection(data: Any) -> bool:
         or _is_2d_list(data)
         or isinstance(data, pd_DataFrame)
     )
+
+
+def _is_pyarrow_table(data: Any) -> bool:
+    """Check whether data is a PyArrow table."""
+    return isinstance(data, pa_Table)
+
+
+class _ArrowCArray:
+    """Simple wrapper around the C representation of an Arrow type."""
+
+    n_chunks: int
+    chunks: arrow_cffi.CData
+    schema: arrow_cffi.CData
+
+    def __init__(self, n_chunks: int, chunks: arrow_cffi.CData, schema: arrow_cffi.CData):
+        self.n_chunks = n_chunks
+        self.chunks = chunks
+        self.schema = schema
+
+    @property
+    def chunks_ptr(self) -> int:
+        """Returns the address of the pointer to the list of chunks making up the array."""
+        return int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(self.chunks[0])))
+
+    @property
+    def schema_ptr(self) -> int:
+        """Returns the address of the pointer to the schema of the array."""
+        return int(arrow_cffi.cast("uintptr_t", self.schema))
+
+
+def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
+    """Export an Arrow type to its C representation."""
+    # Obtain objects to export
+    if isinstance(data, pa_Table):
+        export_objects = data.to_batches()
+    else:
+        raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
+
+    # Prepare export
+    chunks = arrow_cffi.new("struct ArrowArray[]", len(export_objects))
+    schema = arrow_cffi.new("struct ArrowSchema*")
+
+    # Export all objects
+    for i, obj in enumerate(export_objects):
+        chunk_ptr = int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(chunks[i])))
+        if i == 0:
+            schema_ptr = int(arrow_cffi.cast("uintptr_t", schema))
+            obj._export_to_c(chunk_ptr, schema_ptr)
+        else:
+            obj._export_to_c(chunk_ptr)
+
+    return _ArrowCArray(len(chunks), chunks, schema)
+
 
 
 def _data_to_2d_numpy(
@@ -457,7 +534,7 @@ class _ConfigAliases:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_DumpParamAliases(
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -466,7 +543,7 @@ class _ConfigAliases:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_DumpParamAliases(
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
@@ -1540,7 +1617,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1559,7 +1636,7 @@ class Dataset:
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
-            If 'auto' and data is pandas DataFrame, data columns names are used.
+            If 'auto' and data is pandas DataFrame or pyarrow Table, data columns names are used.
         categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
@@ -1592,7 +1669,7 @@ class Dataset:
         self.used_indices: Optional[List[int]] = None
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
-        self.pandas_categorical = None
+        self.pandas_categorical: Optional[List[List]] = None
         self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
@@ -1916,10 +1993,13 @@ class Dataset:
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
+        elif _is_pyarrow_table(data):
+            self.__init_from_pyarrow_table(data, params_str, ref_dataset)
+            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
-            if all(isinstance(x, np.ndarray) for x in data):
+            if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(isinstance(x, Sequence) for x in data):
+            elif _is_list_of_sequences(data):
                 self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
@@ -2176,10 +2256,36 @@ class Dataset:
             ctypes.byref(self._handle)))
         return self
 
+    def __init_from_pyarrow_table(
+        self,
+        table: pa_Table,
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
+        """Initialize data from a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Export Arrow table to C
+        c_array = _export_arrow_to_c(table)
+        self._handle = ctypes.c_void_p()
+        _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            _c_str(params_str),
+            ref_dataset,
+            ctypes.byref(self._handle)))
+        return self
+
     @staticmethod
     def _compare_params_for_warning(
-        params: Optional[Dict[str, Any]],
-        other_params: Optional[Dict[str, Any]],
+        params: Dict[str, Any],
+        other_params: Dict[str, Any],
         ignore_keys: Set[str]
     ) -> bool:
         """Compare two dictionaries with params ignoring some keys.
@@ -2188,9 +2294,9 @@ class Dataset:
 
         Parameters
         ----------
-        params : dict or None
+        params : dict
             One dictionary with parameters to compare.
-        other_params : dict or None
+        other_params : dict
             Another dictionary with parameters to compare.
         ignore_keys : set
             Keys that should be ignored during comparing two dictionaries.
@@ -2200,10 +2306,6 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        if params is None:
-            params = {}
-        if other_params is None:
-            other_params = {}
         for k in other_params:
             if k not in ignore_keys:
                 if k not in params or params[k] != other_params[k]:
@@ -2869,7 +2971,7 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
-                elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
+                elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
@@ -3293,7 +3395,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
             self._handle,
             ctypes.c_int64(buffer_len),
@@ -3303,7 +3405,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
                 self._handle,
                 ctypes.c_int64(actual_len),
@@ -4056,7 +4158,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4069,7 +4171,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self._handle,
                 ctypes.c_int(start_iteration),
@@ -4124,7 +4226,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4137,7 +4239,7 @@ class Booster:
         # if buffer length is not long enough, reallocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self._handle,
                 ctypes.c_int(start_iteration),
