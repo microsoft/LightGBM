@@ -503,7 +503,7 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
 
     X = np.array([[1.0, 2.0], [3.0, 4.0]])
 
-    position=np.array([0.0, 1.0], dtype=np.float32)
+    position = np.array([0.0, 1.0], dtype=np.float32)
     if getenv('TASK', '') == 'cuda':
         position = None
 

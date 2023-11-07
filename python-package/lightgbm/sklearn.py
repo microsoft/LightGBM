@@ -194,10 +194,7 @@ class _ObjectiveFunctionWrapper:
 
         if argc == 4:
             group = _get_group_from_constructed_dataset(dataset)
-            if group is not None:
-                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
-            else:
-                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
 
         raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
 
@@ -278,10 +275,7 @@ class _EvalFunctionWrapper:
 
         if argc == 4:
             group = _get_group_from_constructed_dataset(dataset)
-            if group is not None:
-                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
-            else:
-                return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
 
         raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
