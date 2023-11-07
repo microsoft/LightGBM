@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import dummy_obj, load_breast_cancer, mse_obj
+from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
 
 
 def test_basic(tmp_path):
@@ -497,6 +497,94 @@ def test_consistent_state_for_dataset_fields():
     lgb_data.set_init_score(sequence)
     lgb_data.set_feature_name(feature_names)
     check_asserts(lgb_data)
+
+
+def test_dataset_construction_overwrites_user_provided_metadata_fields():
+
+    X = np.array([[1.0, 2.0], [3.0, 4.0]])
+
+    position = np.array([0.0, 1.0], dtype=np.float32)
+    if getenv('TASK', '') == 'cuda':
+        position = None
+
+    dtrain = lgb.Dataset(
+        X,
+        params={
+            "min_data_in_bin": 1,
+            "min_data_in_leaf": 1,
+            "verbosity": -1
+        },
+        group=[1, 1],
+        init_score=[0.312, 0.708],
+        label=[1, 2],
+        position=position,
+        weight=[0.5, 1.5],
+    )
+
+    # unconstructed, get_* methods should return whatever was provided
+    assert dtrain.group == [1, 1]
+    assert dtrain.get_group() == [1, 1]
+    assert dtrain.init_score == [0.312, 0.708]
+    assert dtrain.get_init_score() == [0.312, 0.708]
+    assert dtrain.label == [1, 2]
+    assert dtrain.get_label() == [1, 2]
+    if getenv('TASK', '') != 'cuda':
+        np_assert_array_equal(
+            dtrain.position,
+            np.array([0.0, 1.0], dtype=np.float32),
+            strict=True
+        )
+        np_assert_array_equal(
+            dtrain.get_position(),
+            np.array([0.0, 1.0], dtype=np.float32),
+            strict=True
+        )
+    assert dtrain.weight == [0.5, 1.5]
+    assert dtrain.get_weight() == [0.5, 1.5]
+
+    # before construction, get_field() should raise an exception
+    for field_name in ["group", "init_score", "label", "position", "weight"]:
+        with pytest.raises(Exception, match=f"Cannot get {field_name} before construct Dataset"):
+            dtrain.get_field(field_name)
+
+    # constructed, get_* methods should return numpy arrays, even when the provided
+    # input was a list of floats or ints
+    dtrain.construct()
+    expected_group = np.array([1, 1], dtype=np.int32)
+    np_assert_array_equal(dtrain.group, expected_group, strict=True)
+    np_assert_array_equal(dtrain.get_group(), expected_group, strict=True)
+    # get_field("group") returns a numpy array with boundaries, instead of size
+    np_assert_array_equal(
+        dtrain.get_field("group"),
+        np.array([0, 1, 2], dtype=np.int32),
+        strict=True
+    )
+
+    expected_init_score = np.array([0.312, 0.708],)
+    np_assert_array_equal(dtrain.init_score, expected_init_score, strict=True)
+    np_assert_array_equal(dtrain.get_init_score(), expected_init_score, strict=True)
+    np_assert_array_equal(dtrain.get_field("init_score"), expected_init_score, strict=True)
+
+    expected_label = np.array([1, 2], dtype=np.float32)
+    np_assert_array_equal(dtrain.label, expected_label, strict=True)
+    np_assert_array_equal(dtrain.get_label(), expected_label, strict=True)
+    np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
+
+    if getenv('TASK', '') != 'cuda':
+        expected_position = np.array([0.0, 1.0], dtype=np.float32)
+        np_assert_array_equal(dtrain.position, expected_position, strict=True)
+        np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
+        # NOTE: "position" is converted to int32 on the C++ side
+        np_assert_array_equal(
+            dtrain.get_field("position"),
+            np.array([0.0, 1.0], dtype=np.int32),
+            strict=True
+        )
+
+    expected_weight = np.array([0.5, 1.5], dtype=np.float32)
+    np_assert_array_equal(dtrain.weight, expected_weight, strict=True)
+    np_assert_array_equal(dtrain.get_weight(), expected_weight, strict=True)
+    np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
 
 
 def test_choose_param_value():
