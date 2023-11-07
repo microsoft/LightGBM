@@ -744,12 +744,11 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
                          f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
-def _pandas_to_numpy(data: pd_DataFrame) -> np.ndarray:
+def _pandas_to_numpy(
+    data: pd_DataFrame,
+    target_dtype: "np.typing.DTypeLike"
+) -> np.ndarray:
     _check_for_bad_pandas_dtypes(data.dtypes)
-    df_dtypes = [dtype.type for dtype in data.dtypes]
-    # so that the target dtype considers floats
-    df_dtypes.append(np.float32)
-    target_dtype = np.result_type(*df_dtypes)
     try:
         # most common case (no nullable dtypes)
         return data.to_numpy(dtype=target_dtype, copy=False)
@@ -794,7 +793,17 @@ def _data_from_pandas(
     else:  # use cat cols specified by user
         categorical_feature = list(categorical_feature)  # type: ignore[assignment]
 
-    return _pandas_to_numpy(data), feature_name, categorical_feature, pandas_categorical
+    df_dtypes = [dtype.type for dtype in data.dtypes]
+    # so that the target dtype considers floats
+    df_dtypes.append(np.float32)
+    target_dtype = np.result_type(*df_dtypes)
+
+    return (
+        _pandas_to_numpy(data, target_dtype=target_dtype),
+        feature_name,
+        categorical_feature,
+        pandas_categorical
+    )
 
 
 def _dump_pandas_categorical(
@@ -2765,7 +2774,7 @@ class Dataset:
             if isinstance(label, pd_DataFrame):
                 if len(label.columns) > 1:
                     raise ValueError('DataFrame for label cannot have multiple columns')
-                label_array = np.ravel(_pandas_to_numpy(label))
+                label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
             else:
                 label_array = _list_to_1d_numpy(label, dtype=np.float32, name='label')
             self.set_field('label', label_array)
