@@ -1791,7 +1791,7 @@ int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
   ArrowChunkedArray ca(n_chunks, chunks, schema);
   auto is_success = dataset->SetFieldFromArrow(field_name, ca);
   if (!is_success) {
-    Log::Fatal("Input field not found");
+    Log::Fatal("Input field is not supported");
   }
   API_END();
 }
