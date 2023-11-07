@@ -960,7 +960,7 @@ gcc
 
 .. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
-.. _SWIG: http://www.swig.org/download.html
+.. _SWIG: https://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
 

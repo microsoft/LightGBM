@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
+#include <LightGBM/arrow.h>
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
@@ -545,21 +546,26 @@ class Dataset {
     }
   }
 
-  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
-    if (is_finish_load_) { return; }
-    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
-      int feature_idx = used_feature_map_[i];
-      if (feature_idx >= 0) {
-        const int group = feature2group_[feature_idx];
-        const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
-        if (has_raw_) {
-          int feat_ind = numeric_feature_map_[feature_idx];
-          if (feat_ind >= 0) {
-            raw_data_[feat_ind][row_idx] = static_cast<float>(feature_values[i]);
-          }
+  inline void PushOneValue(int tid, data_size_t row_idx, size_t col_idx, double value) {
+    if (this->is_finish_load_)
+      return;
+    auto feature_idx = this->used_feature_map_[col_idx];
+    if (feature_idx >= 0) {
+      auto group = this->feature2group_[feature_idx];
+      auto sub_feature = this->feature2subfeature_[feature_idx];
+      this->feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+      if (this->has_raw_) {
+        auto feat_ind = numeric_feature_map_[feature_idx];
+        if (feat_ind >= 0) {
+          raw_data_[feat_ind][row_idx] = static_cast<float>(value);
         }
       }
+    }
+  }
+
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
+      this->PushOneValue(tid, row_idx, i, feature_values[i]);
     }
   }
 

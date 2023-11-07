@@ -18,7 +18,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional,
 import numpy as np
 import scipy.sparse
 
-from .compat import PANDAS_INSTALLED, concat, dt_DataTable, pd_CategoricalDtype, pd_DataFrame, pd_Series
+from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
+                     dt_DataTable, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -90,7 +91,8 @@ _LGBM_TrainDataType = Union[
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
-    List[np.ndarray]
+    List[np.ndarray],
+    pa_Table
 ]
 _LGBM_LabelType = Union[
     List[float],
@@ -349,6 +351,59 @@ def _is_2d_collection(data: Any) -> bool:
         or _is_2d_list(data)
         or isinstance(data, pd_DataFrame)
     )
+
+
+def _is_pyarrow_table(data: Any) -> bool:
+    """Check whether data is a PyArrow table."""
+    return isinstance(data, pa_Table)
+
+
+class _ArrowCArray:
+    """Simple wrapper around the C representation of an Arrow type."""
+
+    n_chunks: int
+    chunks: arrow_cffi.CData
+    schema: arrow_cffi.CData
+
+    def __init__(self, n_chunks: int, chunks: arrow_cffi.CData, schema: arrow_cffi.CData):
+        self.n_chunks = n_chunks
+        self.chunks = chunks
+        self.schema = schema
+
+    @property
+    def chunks_ptr(self) -> int:
+        """Returns the address of the pointer to the list of chunks making up the array."""
+        return int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(self.chunks[0])))
+
+    @property
+    def schema_ptr(self) -> int:
+        """Returns the address of the pointer to the schema of the array."""
+        return int(arrow_cffi.cast("uintptr_t", self.schema))
+
+
+def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
+    """Export an Arrow type to its C representation."""
+    # Obtain objects to export
+    if isinstance(data, pa_Table):
+        export_objects = data.to_batches()
+    else:
+        raise ValueError(f"data of type '{type(data)}' cannot be exported to Arrow")
+
+    # Prepare export
+    chunks = arrow_cffi.new("struct ArrowArray[]", len(export_objects))
+    schema = arrow_cffi.new("struct ArrowSchema*")
+
+    # Export all objects
+    for i, obj in enumerate(export_objects):
+        chunk_ptr = int(arrow_cffi.cast("uintptr_t", arrow_cffi.addressof(chunks[i])))
+        if i == 0:
+            schema_ptr = int(arrow_cffi.cast("uintptr_t", schema))
+            obj._export_to_c(chunk_ptr, schema_ptr)
+        else:
+            obj._export_to_c(chunk_ptr)
+
+    return _ArrowCArray(len(chunks), chunks, schema)
+
 
 
 def _data_to_2d_numpy(
@@ -1562,7 +1617,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame or None, optional (default=None)
@@ -1581,7 +1636,7 @@ class Dataset:
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
-            If 'auto' and data is pandas DataFrame, data columns names are used.
+            If 'auto' and data is pandas DataFrame or pyarrow Table, data columns names are used.
         categorical_feature : list of str or int, or 'auto', optional (default="auto")
             Categorical features.
             If list of int, interpreted as indices.
@@ -1938,6 +1993,9 @@ class Dataset:
             self.__init_from_csc(data, params_str, ref_dataset)
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
+        elif _is_pyarrow_table(data):
+            self.__init_from_pyarrow_table(data, params_str, ref_dataset)
+            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
@@ -2193,6 +2251,32 @@ class Dataset:
             ctypes.c_int64(len(csc.indptr)),
             ctypes.c_int64(len(csc.data)),
             ctypes.c_int64(csc.shape[0]),
+            _c_str(params_str),
+            ref_dataset,
+            ctypes.byref(self._handle)))
+        return self
+
+    def __init_from_pyarrow_table(
+        self,
+        table: pa_Table,
+        params_str: str,
+        ref_dataset: Optional[_DatasetHandle]
+    ) -> "Dataset":
+        """Initialize data from a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Export Arrow table to C
+        c_array = _export_arrow_to_c(table)
+        self._handle = ctypes.c_void_p()
+        _safe_call(_LIB.LGBM_DatasetCreateFromArrow(
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
             _c_str(params_str),
             ref_dataset,
             ctypes.byref(self._handle)))
