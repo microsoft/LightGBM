@@ -196,7 +196,7 @@ Huan Zhang, Si Si and Cho-Jui Hsieh. `GPU Acceleration for Large-scale Tree Boos
 
 .. _link1: https://archive.ics.uci.edu/ml/datasets/HIGGS
 
-.. _link2: http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html
+.. _link2: https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary.html
 
 .. _link3: https://www.kaggle.com/c/bosch-production-line-performance/data
 

@@ -86,6 +86,36 @@ _LGBM_ScikitEvalMetricType = Union[
 _LGBM_ScikitValidSet = Tuple[_LGBM_ScikitMatrixLike, _LGBM_LabelType]
 
 
+def _get_group_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray]:
+    group = dataset.get_group()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve query groups from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert (group is None or isinstance(group, np.ndarray)), error_msg
+    return group
+
+
+def _get_label_from_constructed_dataset(dataset: Dataset) -> np.ndarray:
+    label = dataset.get_label()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve labels from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert isinstance(label, np.ndarray), error_msg
+    return label
+
+
+def _get_weight_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray]:
+    weight = dataset.get_weight()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve weights from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert (weight is None or isinstance(weight, np.ndarray)), error_msg
+    return weight
+
+
 class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
@@ -151,17 +181,22 @@ class _ObjectiveFunctionWrapper:
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
-        labels = dataset.get_label()
+        labels = _get_label_from_constructed_dataset(dataset)
         argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)  # type: ignore[call-arg]
-        elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
-        elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore [call-arg]
-        else:
-            raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
-        return grad, hess
+            return grad, hess
+
+        weight = _get_weight_from_constructed_dataset(dataset)
+        if argc == 3:
+            grad, hess = self.func(labels, preds, weight)  # type: ignore[call-arg]
+            return grad, hess
+
+        if argc == 4:
+            group = _get_group_from_constructed_dataset(dataset)
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+
+        raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
 
 
 class _EvalFunctionWrapper:
@@ -229,16 +264,20 @@ class _EvalFunctionWrapper:
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
-        labels = dataset.get_label()
+        labels = _get_label_from_constructed_dataset(dataset)
         argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)  # type: ignore[call-arg]
-        elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
-        elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[call-arg]
-        else:
-            raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
+
+        weight = _get_weight_from_constructed_dataset(dataset)
+        if argc == 3:
+            return self.func(labels, preds, weight)  # type: ignore[call-arg]
+
+        if argc == 4:
+            group = _get_group_from_constructed_dataset(dataset)
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+
+        raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
 
 # documentation templates for LGBMModel methods are shared between the classes in

@@ -289,7 +289,7 @@ Python-package
 
 This error should be solved in latest version.
 If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
-or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+or check `this thread on stackoverflow <https://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
 
 2. Error messages: ``Cannot ... before construct dataset``.
 -----------------------------------------------------------
