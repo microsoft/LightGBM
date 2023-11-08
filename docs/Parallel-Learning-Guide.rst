@@ -384,8 +384,6 @@ From the point forward, you can use any of the following methods to save the Boo
 Kubeflow
 ^^^^^^^^
 
-`Kubeflow Fairing`_ supports LightGBM distributed training. `These examples`_ show how to get started with LightGBM and Kubeflow Fairing in a hybrid cloud environment.
-
 Kubeflow users can also use the `Kubeflow XGBoost Operator`_ for machine learning workflows with LightGBM. You can see `this example`_ for more details.
 
 Kubeflow integrations for LightGBM are not maintained by LightGBM's maintainers.
@@ -527,10 +525,6 @@ See `the mars documentation`_ for usage examples.
 .. _the metrics functions from dask-ml: https://ml.dask.org/modules/api.html#dask-ml-metrics-metrics
 
 .. _these Dask examples: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask
-
-.. _Kubeflow Fairing: https://www.kubeflow.org/docs/components/fairing/fairing-overview
-
-.. _These examples: https://github.com/kubeflow/fairing/tree/master/examples/lightgbm
 
 .. _Kubeflow XGBoost Operator: https://github.com/kubeflow/xgboost-operator
 
