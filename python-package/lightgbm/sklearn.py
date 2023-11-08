@@ -15,7 +15,7 @@ from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
-                     dt_DataTable, pd_DataFrame)
+                     dt_DataTable, np_random_Generator, pd_DataFrame)
 from .engine import train
 
 __all__ = [
@@ -409,7 +409,7 @@ class LGBMModel(_LGBMModelBase):
         colsample_bytree: float = 1.,
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
-        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        random_state: Optional[Union[int, np.random.RandomState, 'np.random.Generator']] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
         **kwargs
@@ -671,7 +671,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
-        elif isinstance(params['random_state'], np.random.Generator):
+        elif isinstance(params['random_state'], np_random_Generator):
             params['random_state'] = int(
                 params['random_state'].integers(np.iinfo(np.int32).max)
             )
