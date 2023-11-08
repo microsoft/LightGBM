@@ -25,8 +25,6 @@ You can find more details on the experimentation below:
 
 -  `Laurae's Benchmark Master Data (Interactive) <https://public.tableau.com/views/gbt_benchmarks/Master-Data?:showVizHome=no>`__
 
--  `Kaggle Paris Meetup #12 Slides <https://drive.google.com/file/d/0B6qJBmoIxFe0ZHNCOXdoRWMxUm8/view>`__
-
 The image below compares the runtime for training with different compiler options to a baseline using LightGBM compiled with ``-O2 --mtune=core2``. All three options are faster than that baseline. The best performance was achieved with ``-O3 --mtune=native``.
 
 .. image:: ./_static/images/gcc-comparison-2.png
