@@ -200,6 +200,12 @@ class Metadata {
     const int32_t* queries);
 
   /*!
+  * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
+  * \param metadata Pointer to metadata of the existing ranking dataset
+  */
+  void BuildPairwiseFeatureRanking(const Metadata& metadata);
+
+  /*!
   * \brief Perform any extra operations after all data has been loaded
   */
   void FinishLoad();
@@ -245,6 +251,18 @@ class Metadata {
   */
   inline size_t num_position_ids() const {
       return position_ids_.size();
+  }
+
+  /*!
+  * \brief Get the pairwise item index map in ranking with pairwise features
+  * \return Pointer to the pairwise item index map
+  */
+  inline const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map() const {
+    if (!paired_ranking_item_index_map_.empty()) {
+      return paired_ranking_item_index_map_.data();
+    } else {
+      return nullptr;
+    }
   }
 
   /*!
@@ -367,6 +385,10 @@ class Metadata {
   std::vector<double> init_score_;
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
+  /*! \brief Mode for pairwise ranking */
+  PairwiseRankingMode pairwise_ranking_mode_;
+  /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
+  std::vector<std::pair<data_size_t, data_size_t>> paired_ranking_item_index_map_;
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;
@@ -676,6 +698,8 @@ class Dataset {
   LIGHTGBM_EXPORT void CopyFeatureMapperFrom(const Dataset* dataset);
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
+
+  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> pair_index_map);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;

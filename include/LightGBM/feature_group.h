@@ -581,7 +581,7 @@ class FeatureGroup {
     }
   }
 
- private:
+ protected:
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {
       multi_bin_data_.clear();

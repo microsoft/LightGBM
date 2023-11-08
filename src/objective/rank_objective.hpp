@@ -449,5 +449,25 @@ class RankXENDCG : public RankingObjective {
   mutable std::vector<Random> rands_;
 };
 
+
+class PairwiseLambdarankNDCG: public LambdarankNDCG {
+ public:
+  explicit PairwiseLambdarankNDCG(const Config& config): LambdarankNDCG(config) {}
+
+  explicit PairwiseLambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
+
+  ~PairwiseLambdarankNDCG() {}
+
+  void Init(const Metadata& metadata, data_size_t num_data) override {
+    LambdarankNDCG::Init(metadata, num_data);
+
+    paired_index_map_ = metadata.paired_ranking_item_index_map();
+  }
+
+ private:
+  const std::pair<data_size_t, data_size_t>* paired_index_map_;
+};
+
+
 }  // namespace LightGBM
 #endif  // LightGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_

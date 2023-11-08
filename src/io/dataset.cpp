@@ -819,6 +819,84 @@ void Dataset::CreateValid(const Dataset* dataset) {
   gpu_device_id_ = dataset->gpu_device_id_;
 }
 
+void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> pair_index_map) {
+  metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
+
+  feature_groups_.clear();
+  num_features_ = dataset->num_features_ * 2;
+  num_groups_ = dataset->num_groups_ * 2;
+  max_bin_ = dataset->max_bin_;
+  min_data_in_bin_ = dataset->min_data_in_bin_;
+  bin_construct_sample_cnt_ = dataset->bin_construct_sample_cnt_;
+  use_missing_ = dataset->use_missing_;
+  zero_as_missing_ = dataset->zero_as_missing_;
+  feature2group_.clear();
+  feature2subfeature_.clear();
+  has_raw_ = dataset->has_raw();
+  numeric_feature_map_ = dataset->numeric_feature_map_;
+  num_numeric_features_ = dataset->num_numeric_features_;
+  // copy feature bin mapper data
+  feature_need_push_zeros_.clear();
+  group_bin_boundaries_.clear();
+  uint64_t num_total_bin = 0;
+  group_bin_boundaries_.push_back(num_total_bin);
+  group_feature_start_.resize(num_groups_);
+  group_feature_cnt_.resize(num_groups_);
+
+  int cur_feature_index = 0;
+  for (int i = 0; i < num_groups_; ++i) {
+    int original_group_index = i % dataset->num_groups_;
+    int original_group_feature_start = dataset->group_feature_start_[original_group_index];
+    group_feature_start_[i] = cur_feature_index;
+    for (int feature_index_in_group = 0; feature_index_in_group < dataset->group_feature_cnt_[original_group_index]; ++feature_index_in_group) {
+      const BinMapper* feature_bin_mapper = dataset->FeatureBinMapper(original_group_feature_start + feature_index_in_group);
+      if (feature_bin_mapper->GetDefaultBin() != feature_bin_mapper->GetMostFreqBin()) {
+        feature_need_push_zeros_.push_back(cur_feature_index);
+      }
+      feature2group_.push_back(i);
+      feature2subfeature_.push_back(dataset->feature2subfeature_[original_group_feature_start + feature_index_in_group]);
+      cur_feature_index += 1;
+    }
+    feature_groups_.emplace_back(new FeatureGroup(*dataset->feature_groups_[original_group_index].get(), num_data_));
+    num_total_bin += dataset->FeatureGroupNumBin(original_group_index);
+    group_bin_boundaries_.push_back(num_total_bin);
+    group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];
+  }
+
+  feature_groups_.shrink_to_fit();
+
+  used_feature_map_.clear();
+  used_feature_map_.reserve(2 * dataset->used_feature_map_.size());
+  used_feature_map_.insert(used_feature_map_.begin(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
+  used_feature_map_.insert(used_feature_map_.begin() + dataset->used_feature_map_.size(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
+
+  feature_names_.clear();
+  for (const std::string& feature_name : dataset->feature_names_) {
+    feature_names_.push_back(feature_name + std::string("_i"));
+  }
+  for (const std::string& feature_name : dataset->feature_names_) {
+    feature_names_.push_back(feature_name + std::string("_j"));
+  }
+
+  real_feature_idx_.clear();
+  for (const int idx : dataset->real_feature_idx_) {
+    real_feature_idx_.push_back(idx);
+  }
+  for (const int idx : dataset->real_feature_idx_) {
+    real_feature_idx_.push_back(idx + dataset->num_total_features_);
+  }
+
+  forced_bin_bounds_.clear();
+  forced_bin_bounds_.reserve(dataset->forced_bin_bounds_.size() * 2);
+  forced_bin_bounds_.insert(forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
+  forced_bin_bounds_.insert(forced_bin_bounds_.begin() + dataset->forced_bin_bounds_.size(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
+
+  num_total_features_ = dataset->num_total_features_ * 2;
+  label_idx_ = dataset->label_idx_;
+  device_type_ = dataset->device_type_;
+  gpu_device_id_ = dataset->gpu_device_id_;
+}
+
 void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;

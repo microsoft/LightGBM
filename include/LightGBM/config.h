@@ -36,6 +36,11 @@ enum TaskType {
 };
 const int kDefaultNumLeaves = 31;
 
+/*! \brief Types of pairwise ranking mode */
+enum PairwiseRankingMode {
+  kNone, kFull, kRelevance, kManual
+};
+
 struct Config {
  public:
   std::string ToString() const;
