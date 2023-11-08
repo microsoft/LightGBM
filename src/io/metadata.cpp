@@ -403,25 +403,37 @@ void Metadata::InsertInitScores(const double* init_scores, data_size_t start_ind
   // CUDA is handled after all insertions are complete
 }
 
-void Metadata::SetLabel(const label_t* label, data_size_t len) {
+template <typename It>
+void Metadata::SetLabelsFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (label == nullptr) {
-    Log::Fatal("label cannot be nullptr");
+  if (num_data_ != last - first) {
+    Log::Fatal("Length of labels differs from the length of #data");
   }
-  if (num_data_ != len) {
-    Log::Fatal("Length of label is not same with #data");
+  if (label_.empty()) {
+    label_.resize(num_data_);
   }
-  if (label_.empty()) { label_.resize(num_data_); }
 
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
-    label_[i] = Common::AvoidInf(label[i]);
+    label_[i] = Common::AvoidInf(first[i]);
   }
+
   #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetLabel(label_.data(), len);
+    cuda_metadata_->SetLabel(label_.data(), label_.size());
   }
   #endif  // USE_CUDA
+}
+
+void Metadata::SetLabel(const label_t* label, data_size_t len) {
+  if (label == nullptr) {
+    Log::Fatal("label cannot be nullptr");
+  }
+  SetLabelsFromIterator(label, label + len);
+}
+
+void Metadata::SetLabel(const ArrowChunkedArray& array) {
+  SetLabelsFromIterator(array.begin<label_t>(), array.end<label_t>());
 }
 
 void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len) {

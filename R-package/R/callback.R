@@ -90,7 +90,7 @@ cb_print_evaluation <- function(period) {
 
         # Check if message is existing
         if (nchar(msg) > 0L) {
-          print(.merge_eval_string(env = env))
+          cat(.merge_eval_string(env = env), "\n")
         }
 
       }
@@ -208,9 +208,9 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
       msg <- paste0(
         "Will train until there is no improvement in "
         , stopping_rounds
-        , " rounds."
+        , " rounds.\n"
       )
-      print(msg)
+      cat(msg)
     }
 
     # Internally treat everything as a maximization task
@@ -284,7 +284,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
             }
 
             if (isTRUE(verbose)) {
-              print(paste0("Early stopping, best iteration is: ", best_msg[[i]]))
+              cat(paste0("Early stopping, best iteration is: ", best_msg[[i]], "\n"))
             }
 
             # Store best iteration and stop
@@ -302,7 +302,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
         }
 
         if (isTRUE(verbose)) {
-          print(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]]))
+          cat(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]], "\n"))
         }
 
         # Store best iteration and stop

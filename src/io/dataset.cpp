@@ -975,6 +975,17 @@ void Dataset::CopySubrow(const Dataset* fullset,
   #endif  // USE_CUDA
 }
 
+bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray &ca) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("label") || name == std::string("target")) {
+    metadata_.SetLabel(ca);
+  } else {
+    return false;
+  }
+  return true;
+}
+
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
                             data_size_t num_element) {
   std::string name(field_name);
