@@ -518,7 +518,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _the Dask DataFrame documentation: https://docs.dask.org/en/latest/dataframe.html
 
-.. _the Dask prediction example: https://github.com/microsoft/lightgbm/tree/master/examples/python-guide/dask/prediction.py
+.. _the Dask prediction example: https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/dask/prediction.py
 
 .. _the Dask worker documentation: https://distributed.dask.org/en/stable/worker-memory.html
 
@@ -536,7 +536,7 @@ See `the mars documentation`_ for usage examples.
 
 .. _lightgbm_ray: https://github.com/ray-project/lightgbm_ray
 
-.. _Ray: https://ray.io/
+.. _Ray: https://www.ray.io/
 
 .. _the lightgbm_ray documentation: https://docs.ray.io/en/latest/tune/api_docs/integration.html#lightgbm-tune-integration-lightgbm
 

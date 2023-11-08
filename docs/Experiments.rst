@@ -27,7 +27,7 @@ We used 5 datasets to conduct our comparison experiments. Details of data are li
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
 | MS LTR    | Learning to rank      | `link <https://www.microsoft.com/en-us/research/project/mslr/>`__      | 2,270,296   | 137      | {S1,S2,S3} as train set, {S5} as test set    |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Expo      | Binary classification | `link <http://stat-computing.org/dataexpo/2009/>`__                    | 11,000,000  | 700      | last 1,000,000 samples were used as test set |
+| Expo      | Binary classification | `link <https://community.amstat.org/jointscsg-section/dataexpo/dataexpo2009>`__ | 11,000,000  | 700      | last 1,000,000 samples were used as test set |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
 | Allstate  | Binary classification | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__           | 13,184,290  | 4228     | last 1,000,000 samples were used as test set |
 +-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
