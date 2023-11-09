@@ -165,19 +165,8 @@ class NCCLTopology {
         CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[i]))
         func(objs[i].get());
       });
-      // if (pthread_create(&host_threads_[i], nullptr, [this, i, &func] (void* ptr) {
-      //     CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[i]))
-      //     func(reinterpret_cast<ARG_T*>(ptr));
-      //     return reinterpret_cast<void*>(nullptr);
-      //   },
-      //   reinterpret_cast<void*>(objs[i].get()))) {
-      //   Log::Fatal("Error in creating boosting threads.");
-      // }
     }
     for (int i = 0; i < num_gpus_; ++i) {
-      // if (pthread_join(host_threads_[i], nullptr)) {
-      //   Log::Fatal("Error in joining boosting threads.");
-      // }
       host_threads_[i].join();
     }
     CUDASUCCESS_OR_FATAL(cudaSetDevice(master_gpu_device_id_));
