@@ -191,7 +191,7 @@ Dataset <- R6::R6Class(
       }
 
       # Generate parameter str
-      params_str <- .lgb_params2str(params = private$params)
+      params_str <- .params2str(params = private$params)
 
       # Get handle of reference dataset
       ref_handle <- NULL
@@ -589,8 +589,8 @@ Dataset <- R6::R6Class(
         tryCatch({
           .Call(
             LGBM_DatasetUpdateParamChecking_R
-            , .lgb_params2str(params = private$params)
-            , .lgb_params2str(params = new_params)
+            , .params2str(params = private$params)
+            , .params2str(params = new_params)
           )
           private$params <- new_params
         }, error = function(e) {

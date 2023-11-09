@@ -19,7 +19,7 @@
   )
 }
 
-.lgb_params2str <- function(params) {
+.params2str <- function(params) {
 
   if (!identical(class(params), "list")) {
     stop("params must be a list")

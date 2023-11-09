@@ -36,7 +36,7 @@ Booster <- R6::R6Class(
         }
         train_set_handle <- train_set$.__enclos_env__$private$get_handle()
         params <- utils::modifyList(params, train_set$get_params())
-        params_str <- .lgb_params2str(params = params)
+        params_str <- .params2str(params = params)
         # Store booster handle
         handle <- .Call(
           LGBM_BoosterCreate_R
@@ -167,7 +167,7 @@ Booster <- R6::R6Class(
         params <- utils::modifyList(self$params, params)
       }
 
-      params_str <- .lgb_params2str(params = params)
+      params_str <- .params2str(params = params)
 
       self$restore_handle()
 
@@ -586,7 +586,7 @@ Booster <- R6::R6Class(
         , predcontrib
         , start_iteration
         , num_iteration
-        , .lgb_params2str(params = params)
+        , .params2str(params = params)
       )
 
       private$fast_predict_config <- list(

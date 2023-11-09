@@ -206,7 +206,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , rawData
     , nrow(rawData)
     , ncol(rawData)
-    , lightgbm:::.lgb_params2str(params = list())
+    , lightgbm:::.params2str(params = list())
     , ref_handle
   )
   expect_true(methods::is(handle, "externalptr"))

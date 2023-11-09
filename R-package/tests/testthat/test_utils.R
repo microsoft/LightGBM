@@ -1,12 +1,12 @@
-test_that(".lgb_params2str() works as expected for empty lists", {
-    out_str <- .lgb_params2str(
+test_that(".params2str() works as expected for empty lists", {
+    out_str <- .params2str(
         params = list()
     )
     expect_identical(class(out_str), "character")
     expect_equal(out_str, "")
 })
 
-test_that(".lgb_params2str() works as expected for a key in params with multiple different-length elements", {
+test_that(".params2str() works as expected for a key in params with multiple different-length elements", {
     metrics <- c("a", "ab", "abc", "abcdefg")
     params <- list(
         objective = "magic"
@@ -14,7 +14,7 @@ test_that(".lgb_params2str() works as expected for a key in params with multiple
         , nrounds = 10L
         , learning_rate = 0.0000001
     )
-    out_str <- .lgb_params2str(
+    out_str <- .params2str(
         params = params
     )
     expect_identical(class(out_str), "character")
@@ -24,8 +24,8 @@ test_that(".lgb_params2str() works as expected for a key in params with multiple
     )
 })
 
-test_that(".lgb_params2str() passes through duplicated params", {
-    out_str <- .lgb_params2str(
+test_that(".params2str() passes through duplicated params", {
+    out_str <- .params2str(
         params = list(
             objective = "regression"
             , bagging_fraction = 0.8

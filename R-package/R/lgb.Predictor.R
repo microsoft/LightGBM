@@ -28,7 +28,7 @@ Predictor <- R6::R6Class(
 
     # Initialize will create a starter model
     initialize = function(modelfile, params = list(), fast_predict_config = list()) {
-      private$params <- .lgb_params2str(params = params)
+      private$params <- .params2str(params = params)
       handle <- NULL
 
       if (is.character(modelfile)) {
