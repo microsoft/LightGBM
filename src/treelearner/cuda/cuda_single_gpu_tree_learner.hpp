@@ -23,7 +23,7 @@ namespace LightGBM {
 
 #define CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE (1024)
 
-class CUDASingleGPUTreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
  public:
   explicit CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda);
 

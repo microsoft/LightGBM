@@ -19,7 +19,7 @@
 namespace LightGBM {
 
 template <typename HOST_OBJECTIVE>
-class CUDAObjectiveInterface: public HOST_OBJECTIVE {
+class CUDAObjectiveInterface: public HOST_OBJECTIVE, NCCLInfo {
  public:
   explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {
     const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;

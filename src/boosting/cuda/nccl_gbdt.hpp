@@ -9,10 +9,13 @@
 #ifdef USE_CUDA
 
 #include "../gbdt.h"
+#include <LightGBM/cuda/cuda_nccl_topology.hpp>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/network.h>
 #include "cuda_score_updater.hpp"
 #include <pthread.h>
+#include <memory>
+#include "nccl_gbdt_component.hpp"
 
 namespace LightGBM {
 
@@ -100,17 +103,11 @@ class NCCLGBDT: public GBDT_T {
     }
   };
 
-  static void* BoostingThread(void* thread_data);
+  static void BoostingThread(NCCLGBDTComponent* thread_data);
 
-  static void* TrainTreeLearnerThread(void* thread_data);
+  static void TrainTreeLearnerThread(NCCLGBDTComponent* thread_data, const int class_id, const bool is_first_tree);
 
-  static void* UpdateScoreThread(void* thread_data);
-
-  void Bagging(int /*iter*/) override {
-    Log::Fatal("Bagging is not supported for NCCLGBDT.");
-  }
-
-  void InitNCCL();
+  static void UpdateScoreThread(NCCLGBDTComponent* thread_data, const int cur_tree_id, const double shrinkage_rate, const double init_score);
 
   double BoostFromAverage(int class_id, bool update_scorer) override;
 
@@ -126,27 +123,8 @@ class NCCLGBDT: public GBDT_T {
 
   std::vector<double> EvalOneMetric(const Metric* metric, const double* score, const data_size_t num_data) const override;
 
-  void SetCUDADevice(int gpu_id) const {
-    if (gpu_list_.empty()) {
-      CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_id));
-    } else {
-      CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[gpu_id]));
-    }
-  }
 
-  int GetCUDADevice(int gpu_id) const {
-    if (gpu_list_.empty()) {
-      return gpu_id;
-    } else {
-      return gpu_list_[gpu_id];
-    }
-  }
-
-  int num_gpu_;
   int num_threads_;
-  int master_gpu_device_id_;
-  int master_gpu_index_;
-  std::vector<int> gpu_list_;
   std::vector<std::unique_ptr<ObjectiveFunction>> per_gpu_objective_functions_;
   std::vector<std::unique_ptr<ScoreUpdater>> per_gpu_train_score_updater_;
   std::vector<std::unique_ptr<CUDAVector<score_t>>> per_gpu_gradients_;
@@ -158,9 +136,14 @@ class NCCLGBDT: public GBDT_T {
   std::vector<BoostingThreadData> boosting_thread_data_;
   std::vector<TrainTreeLearnerThreadData> train_tree_learner_thread_data_;
   std::vector<UpdateScoreThreadData> update_score_thread_data_;
+
+  std::unique_ptr<NCCLTopology> nccl_topology_;
+
   std::vector<int> nccl_gpu_rank_;
   std::vector<ncclComm_t> nccl_communicators_;
   std::vector<std::unique_ptr<TreeLearner>> per_gpu_tree_learners_;
+
+  std::vector<std::unique_ptr<NCCLGBDTComponent>> nccl_gbdt_components_;
 };
 
 }  // namespace LightGBM

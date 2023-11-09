@@ -309,9 +309,11 @@ class LIGHTGBM_EXPORT Boosting {
   * \param format Format of model
   * \param config config for boosting
   * \param filename name of model file, if existing will continue to train from this model
+  * \param device_type type of device, can be cpu, gpu or cuda
+  * \param num_gpu number of GPUs to use
   * \return The boosting object
   */
-  static Boosting* CreateBoosting(const std::string& type, const char* filename);
+  static Boosting* CreateBoosting(const std::string& type, const char* filename, const std::string& device_type, const int num_gpu);
 
   virtual std::string GetLoadedParam() const = 0;
 
