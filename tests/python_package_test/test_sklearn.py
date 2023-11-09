@@ -534,11 +534,12 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     assert gbm.booster_.attr_set_inside_callback == 40
 
 
-def test_random_state_object():
+@pytest.mark.parametrize("rng_constructor", [np.random.RandomState, np.random.default_rng])
+def test_random_state_object(rng_constructor):
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    state1 = np.random.RandomState(123)
-    state2 = np.random.RandomState(123)
+    state1 = rng_constructor(123)
+    state2 = rng_constructor(123)
     clf1 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state1)
     clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
     # Test if random_state is properly stored
