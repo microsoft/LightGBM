@@ -50,7 +50,7 @@ class NCCLGBDTComponent: public NCCLInfo {
 
   ObjectiveFunction* objective_function() { return objective_function_.get(); }
 
-  CUDAScoreUpdater* train_score_updater() { return train_score_updater_.get(); }
+  ScoreUpdater* train_score_updater() { return train_score_updater_.get(); }
 
   score_t* gradients() { return gradients_->RawData(); }
 
@@ -76,7 +76,7 @@ class NCCLGBDTComponent: public NCCLInfo {
 
  private:
   std::unique_ptr<ObjectiveFunction> objective_function_;
-  std::unique_ptr<CUDAScoreUpdater> train_score_updater_;
+  std::unique_ptr<ScoreUpdater> train_score_updater_;
   std::unique_ptr<CUDAVector<score_t>> gradients_;
   std::unique_ptr<CUDAVector<score_t>> hessians_;
   std::unique_ptr<Dataset> dataset_;

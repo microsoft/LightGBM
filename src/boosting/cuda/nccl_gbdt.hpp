@@ -125,18 +125,6 @@ class NCCLGBDT: public GBDT_T {
 
 
   int num_threads_;
-  std::vector<std::unique_ptr<ObjectiveFunction>> per_gpu_objective_functions_;
-  std::vector<std::unique_ptr<ScoreUpdater>> per_gpu_train_score_updater_;
-  std::vector<std::unique_ptr<CUDAVector<score_t>>> per_gpu_gradients_;
-  std::vector<std::unique_ptr<CUDAVector<score_t>>> per_gpu_hessians_;
-  std::vector<std::unique_ptr<Dataset>> per_gpu_datasets_;
-  std::vector<data_size_t> per_gpu_data_start_;
-  std::vector<data_size_t> per_gpu_data_end_;
-  std::vector<pthread_t> host_threads_;
-  std::vector<BoostingThreadData> boosting_thread_data_;
-  std::vector<TrainTreeLearnerThreadData> train_tree_learner_thread_data_;
-  std::vector<UpdateScoreThreadData> update_score_thread_data_;
-
   std::unique_ptr<NCCLTopology> nccl_topology_;
 
   std::vector<int> nccl_gpu_rank_;
