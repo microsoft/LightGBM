@@ -1462,7 +1462,6 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       , toString(eval_names)
       , "]"
     ))
-    stop("lgb.get.eval.result: wrong eval name")
   }
 
   result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]
