@@ -387,7 +387,7 @@ lgb.cv <- function(params = list()
     })
 
     # Prepare collection of evaluation results
-    merged_msg <- .lgb_merge_cv_result(
+    merged_msg <- .merge_cv_result(
       msg = msg
       , showsd = showsd
     )
@@ -476,7 +476,7 @@ lgb.cv <- function(params = list()
 
       y <- label[rnd_idx]
       y <- as.factor(y)
-      folds <- .lgb_stratified_folds(y = y, k = nfold)
+      folds <- .stratified_folds(y = y, k = nfold)
 
     } else {
 
@@ -528,7 +528,7 @@ lgb.cv <- function(params = list()
 # It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-.lgb_stratified_folds <- function(y, k) {
+.stratified_folds <- function(y, k) {
 
   # Group the numeric data based on their magnitudes
   # and sample within those groups.
@@ -594,7 +594,7 @@ lgb.cv <- function(params = list()
   return(out)
 }
 
-.lgb_merge_cv_result <- function(msg, showsd) {
+.merge_cv_result <- function(msg, showsd) {
 
   if (length(msg) == 0L) {
     stop("lgb.cv: size of cv result error")
