@@ -26,7 +26,8 @@ lgb.cv(
   callbacks = list(),
   reset_data = FALSE,
   serializable = TRUE,
-  eval_train_metric = FALSE
+  eval_train_metric = FALSE,
+  print_metrics = TRUE
 )
 }
 \arguments{
@@ -126,6 +127,10 @@ into a predictor model which frees up memory and the original datasets}
 \item{eval_train_metric}{\code{boolean}, whether to add the cross validation results on the
 training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
 will increase run time.}
+
+\item{print_metrics}{\code{boolean} when calculating evaluation metrics after boosting rounds, whether
+to print informational messages with these metrics (see parameters \code{eval_freq},
+\code{eval_train_metric}, and \code{eval}).}
 }
 \value{
 a trained model \code{lgb.CVBooster}.
