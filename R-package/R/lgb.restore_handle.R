@@ -35,7 +35,7 @@
 #' model_new$check_null_handle()
 #' @export
 lgb.restore_handle <- function(model) {
-  if (!lgb.is.Booster(x = model)) {
+  if (!.is_Booster(x = model)) {
     stop("lgb.restore_handle: model should be an ", sQuote("lgb.Booster"))
   }
   model$restore_handle()
