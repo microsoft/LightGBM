@@ -1,6 +1,7 @@
 # coding: utf-8
 import pickle
 from functools import lru_cache
+from inspect import getfullargspec
 
 import cloudpickle
 import joblib
@@ -193,3 +194,22 @@ def pickle_and_unpickle_object(obj, serializer):
             serializer=serializer
         )
     return obj_from_disk  # noqa: RET504
+
+
+# doing this here, at import time, to ensure it only runs once_per import
+# instead of once per assertion
+_numpy_testing_supports_strict_kwarg = (
+    "strict" in getfullargspec(np.testing.assert_array_equal).kwonlyargs
+)
+
+
+def np_assert_array_equal(*args, **kwargs):
+    """
+    np.testing.assert_array_equal() only got the kwarg ``strict`` in June 2022:
+    https://github.com/numpy/numpy/pull/21595
+
+    This function is here for testing on older Python (and therefore ``numpy``)
+    """
+    if not _numpy_testing_supports_strict_kwarg:
+        kwargs.pop("strict")
+    np.testing.assert_array_equal(*args, **kwargs)
