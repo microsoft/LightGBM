@@ -961,7 +961,7 @@ Predict Parameters
 
    -  produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
 
-   -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/shap/shap>`__
+   -  **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/shap>`__
 
    -  **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
 
