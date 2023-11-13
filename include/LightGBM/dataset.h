@@ -113,6 +113,7 @@ class Metadata {
   void SetLabel(const ArrowChunkedArray& array);
 
   void SetWeights(const label_t* weights, data_size_t len);
+  void SetWeights(const ArrowChunkedArray& array);
 
   void SetQuery(const data_size_t* query, data_size_t len);
 
@@ -340,6 +341,9 @@ class Metadata {
   void SetLabelsFromIterator(It first, It last);
   /*! \brief Insert weights at the given index */
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
+  /*! \brief Set weights from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetWeightsFromIterator(It first, It last);
   /*! \brief Insert initial scores at the given index */
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
   /*! \brief Insert queries at the given index */

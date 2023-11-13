@@ -9,6 +9,8 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import np_assert_array_equal
+
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
 # ----------------------------------------------------------------------------------------------- #
@@ -67,10 +69,6 @@ def dummy_dataset_params() -> Dict[str, Any]:
     }
 
 
-def assert_arrays_equal(lhs: np.ndarray, rhs: np.ndarray):
-    assert lhs.dtype == rhs.dtype and np.array_equal(lhs, rhs)
-
-
 # ----------------------------------------------------------------------------------------------- #
 #                                            UNIT TESTS                                           #
 # ----------------------------------------------------------------------------------------------- #
@@ -103,6 +101,34 @@ def test_dataset_construct_fuzzy(
     assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
 
 
+# -------------------------------------------- FIELDS ------------------------------------------- #
+
+
+def test_dataset_construct_fields_fuzzy():
+    arrow_table = generate_random_arrow_table(3, 1000, 42)
+    arrow_labels = generate_random_arrow_array(1000, 42)
+    arrow_weights = generate_random_arrow_array(1000, 42)
+
+    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights)
+    arrow_dataset.construct()
+
+    pandas_dataset = lgb.Dataset(
+        arrow_table.to_pandas(), label=arrow_labels.to_numpy(), weight=arrow_weights.to_numpy()
+    )
+    pandas_dataset.construct()
+
+    # Check for equality
+    for field in ("label", "weight"):
+        np_assert_array_equal(
+            arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
+        )
+    np_assert_array_equal(arrow_dataset.get_label(), pandas_dataset.get_label(), strict=True)
+    np_assert_array_equal(arrow_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
+
+
+# -------------------------------------------- LABELS ------------------------------------------- #
+
+
 @pytest.mark.parametrize(
     ["array_type", "label_data"],
     [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
@@ -129,17 +155,31 @@ def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: 
     dataset.construct()
 
     expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
-    assert_arrays_equal(expected, dataset.get_label())
+    np_assert_array_equal(expected, dataset.get_label(), strict=True)
 
 
-def test_dataset_construct_labels_fuzzy():
-    arrow_table = generate_random_arrow_table(3, 1000, 42)
-    arrow_array = generate_random_arrow_array(1000, 42)
+# ------------------------------------------- WEIGHTS ------------------------------------------- #
 
-    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_array)
-    arrow_dataset.construct()
 
-    pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), label=arrow_array.to_numpy())
-    pandas_dataset.construct()
+def test_dataset_construct_weights_none():
+    data = generate_dummy_arrow_table()
+    weight = pa.array([1, 1, 1, 1, 1])
+    dataset = lgb.Dataset(data, weight=weight, params=dummy_dataset_params())
+    dataset.construct()
+    assert dataset.get_weight() is None
+    assert dataset.get_field("weight") is None
 
-    assert_arrays_equal(arrow_dataset.get_label(), pandas_dataset.get_label())
+
+@pytest.mark.parametrize(
+    ["array_type", "weight_data"],
+    [(pa.array, [3, 0.7, 1.5, 0.5, 0.1]), (pa.chunked_array, [[3], [0.7, 1.5, 0.5, 0.1]])],
+)
+@pytest.mark.parametrize("arrow_type", [pa.float32(), pa.float64()])
+def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type: Any):
+    data = generate_dummy_arrow_table()
+    weights = array_type(weight_data, type=arrow_type)
+    dataset = lgb.Dataset(data, weight=weights, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
+    np_assert_array_equal(expected, dataset.get_weight(), strict=True)
