@@ -902,6 +902,8 @@ bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray 
   name = Common::Trim(name);
   if (name == std::string("label") || name == std::string("target")) {
     metadata_.SetLabel(ca);
+  } else if (name == std::string("weight") || name == std::string("weights")) {
+    metadata_.SetWeights(ca);
   } else {
     return false;
   }
