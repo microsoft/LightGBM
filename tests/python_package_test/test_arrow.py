@@ -108,8 +108,11 @@ def test_dataset_construct_fields_fuzzy():
     arrow_table = generate_random_arrow_table(3, 1000, 42)
     arrow_labels = generate_random_arrow_array(1000, 42)
     arrow_weights = generate_random_arrow_array(1000, 42)
+    arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.uint8())
 
-    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights)
+    arrow_dataset = lgb.Dataset(
+        arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups
+    )
     arrow_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -118,7 +121,7 @@ def test_dataset_construct_fields_fuzzy():
     pandas_dataset.construct()
 
     # Check for equality
-    for field in ("label", "weight"):
+    for field in ("label", "weight", "groups"):
         np_assert_array_equal(
             arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
         )
