@@ -14,10 +14,6 @@ This page contains descriptions of all parameters in LightGBM.
 
 - `Parameters Tuning <./Parameters-Tuning.rst>`__
 
-**External Links**
-
-- `Laurae++ Interactive Documentation`_
-
 Parameters Format
 -----------------
 
@@ -1380,5 +1376,3 @@ If the name of data file is ``train.txt``, the query file should be named as ``t
 In this case, LightGBM will load the query file automatically if it exists.
 
 Also, you can include query/group id column in your data file. Please refer to the ``group_column`` `parameter <#group_column>`__ in above.
-
-.. _Laurae++ Interactive Documentation: https://sites.google.com/view/lauraepp/parameters
