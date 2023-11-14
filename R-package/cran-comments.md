@@ -1,5 +1,9 @@
 # CRAN Submission History
 
+## v4.2.0 - not submitted
+
+v4.2.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.
+
 ## v4.1.0 - not submitted
 
 v4.1.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.
