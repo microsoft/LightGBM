@@ -55,10 +55,10 @@ Dataset <- R6::R6Class(
                           init_score = NULL) {
 
       # validate inputs early to avoid unnecessary computation
-      if (!(is.null(reference) || lgb.is.Dataset(reference))) {
+      if (!(is.null(reference) || .is_Dataset(reference))) {
           stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
       }
-      if (!(is.null(predictor) || lgb.is.Predictor(predictor))) {
+      if (!(is.null(predictor) || .is_Predictor(predictor))) {
           stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
       }
 
@@ -135,7 +135,7 @@ Dataset <- R6::R6Class(
     construct = function() {
 
       # Check for handle null
-      if (!lgb.is.null.handle(x = private$handle)) {
+      if (!.is_null_handle(x = private$handle)) {
         return(invisible(self))
       }
 
@@ -191,7 +191,7 @@ Dataset <- R6::R6Class(
       }
 
       # Generate parameter str
-      params_str <- lgb.params2str(params = private$params)
+      params_str <- .params2str(params = private$params)
 
       # Get handle of reference dataset
       ref_handle <- NULL
@@ -277,7 +277,7 @@ Dataset <- R6::R6Class(
         )
 
       }
-      if (lgb.is.null.handle(x = handle)) {
+      if (.is_null_handle(x = handle)) {
         stop("lgb.Dataset.construct: cannot create Dataset handle")
       }
       # Setup class and private type
@@ -345,7 +345,7 @@ Dataset <- R6::R6Class(
     dim = function() {
 
       # Check for handle
-      if (!lgb.is.null.handle(x = private$handle)) {
+      if (!.is_null_handle(x = private$handle)) {
 
         num_row <- 0L
         num_col <- 0L
@@ -385,7 +385,7 @@ Dataset <- R6::R6Class(
 
     # Get number of bins for feature
     get_feature_num_bin = function(feature) {
-      if (lgb.is.null.handle(x = private$handle)) {
+      if (.is_null_handle(x = private$handle)) {
         stop("Cannot get number of bins in feature before constructing Dataset.")
       }
       if (is.character(feature)) {
@@ -409,7 +409,7 @@ Dataset <- R6::R6Class(
     get_colnames = function() {
 
       # Check for handle
-      if (!lgb.is.null.handle(x = private$handle)) {
+      if (!.is_null_handle(x = private$handle)) {
         private$colnames <- .Call(
           LGBM_DatasetGetFeatureNames_R
           , private$handle
@@ -449,7 +449,7 @@ Dataset <- R6::R6Class(
 
       # Write column names
       private$colnames <- colnames
-      if (!lgb.is.null.handle(x = private$handle)) {
+      if (!.is_null_handle(x = private$handle)) {
 
         # Merge names with tab separation
         merged_name <- paste0(as.list(private$colnames), collapse = "\t")
@@ -478,7 +478,7 @@ Dataset <- R6::R6Class(
       # Check for info name and handle
       if (is.null(private$info[[field_name]])) {
 
-        if (lgb.is.null.handle(x = private$handle)) {
+        if (.is_null_handle(x = private$handle)) {
           stop("Cannot perform Dataset$get_field() before constructing Dataset.")
         }
 
@@ -536,7 +536,7 @@ Dataset <- R6::R6Class(
       # Store information privately
       private$info[[field_name]] <- data
 
-      if (!lgb.is.null.handle(x = private$handle) && !is.null(data)) {
+      if (!.is_null_handle(x = private$handle) && !is.null(data)) {
 
         if (length(data) > 0L) {
 
@@ -583,14 +583,14 @@ Dataset <- R6::R6Class(
         return(invisible(self))
       }
       new_params <- utils::modifyList(private$params, params)
-      if (lgb.is.null.handle(x = private$handle)) {
+      if (.is_null_handle(x = private$handle)) {
         private$params <- new_params
       } else {
         tryCatch({
           .Call(
             LGBM_DatasetUpdateParamChecking_R
-            , lgb.params2str(params = private$params)
-            , lgb.params2str(params = new_params)
+            , .params2str(params = private$params)
+            , .params2str(params = new_params)
           )
           private$params <- new_params
         }, error = function(e) {
@@ -663,7 +663,7 @@ Dataset <- R6::R6Class(
           please set ", sQuote("free_raw_data = FALSE"), " when you construct lgb.Dataset")
       }
 
-      if (!lgb.is.Dataset(reference)) {
+      if (!.is_Dataset(reference)) {
         stop("set_reference: Can only use lgb.Dataset as a reference")
       }
 
@@ -711,7 +711,7 @@ Dataset <- R6::R6Class(
     get_handle = function() {
 
       # Get handle and construct if needed
-      if (lgb.is.null.handle(x = private$handle)) {
+      if (.is_null_handle(x = private$handle)) {
         self$construct()
       }
       return(private$handle)
@@ -734,7 +734,7 @@ Dataset <- R6::R6Class(
       if (!is.null(predictor)) {
 
         # Predictor is unknown
-        if (!lgb.is.Predictor(predictor)) {
+        if (!.is_Predictor(predictor)) {
           stop("set_predictor: Can only use lgb.Predictor as predictor")
         }
 
@@ -888,7 +888,7 @@ lgb.Dataset.create.valid <- function(dataset,
                                      init_score = NULL,
                                      params = list()) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("lgb.Dataset.create.valid: input data should be an lgb.Dataset object")
   }
 
@@ -922,7 +922,7 @@ lgb.Dataset.create.valid <- function(dataset,
 #' @export
 lgb.Dataset.construct <- function(dataset) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("lgb.Dataset.construct: input data should be an lgb.Dataset object")
   }
 
@@ -954,7 +954,7 @@ lgb.Dataset.construct <- function(dataset) {
 #' @export
 dim.lgb.Dataset <- function(x) {
 
-  if (!lgb.is.Dataset(x = x)) {
+  if (!.is_Dataset(x = x)) {
     stop("dim.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
@@ -989,7 +989,7 @@ dim.lgb.Dataset <- function(x) {
 #' @export
 dimnames.lgb.Dataset <- function(x) {
 
-  if (!lgb.is.Dataset(x = x)) {
+  if (!.is_Dataset(x = x)) {
     stop("dimnames.lgb.Dataset: input data should be an lgb.Dataset object")
   }
 
@@ -1062,7 +1062,7 @@ slice <- function(dataset, idxset) {
 #' @export
 slice.lgb.Dataset <- function(dataset, idxset) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
@@ -1110,7 +1110,7 @@ get_field <- function(dataset, field_name) {
 get_field.lgb.Dataset <- function(dataset, field_name) {
 
   # Check if dataset is not a dataset
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("get_field.lgb.Dataset(): input dataset should be an lgb.Dataset object")
   }
 
@@ -1158,7 +1158,7 @@ set_field <- function(dataset, field_name, data) {
 #' @export
 set_field.lgb.Dataset <- function(dataset, field_name, data) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("set_field.lgb.Dataset: input dataset should be an lgb.Dataset object")
   }
 
@@ -1189,7 +1189,7 @@ set_field.lgb.Dataset <- function(dataset, field_name, data) {
 #' @export
 lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("lgb.Dataset.set.categorical: input dataset should be an lgb.Dataset object")
   }
 
@@ -1222,7 +1222,7 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #' @export
 lgb.Dataset.set.reference <- function(dataset, reference) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("lgb.Dataset.set.reference: input dataset should be an lgb.Dataset object")
   }
 
@@ -1248,7 +1248,7 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #' @export
 lgb.Dataset.save <- function(dataset, fname) {
 
-  if (!lgb.is.Dataset(x = dataset)) {
+  if (!.is_Dataset(x = dataset)) {
     stop("lgb.Dataset.save: input dataset should be an lgb.Dataset object")
   }
 
