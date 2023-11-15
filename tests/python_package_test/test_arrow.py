@@ -118,7 +118,7 @@ def test_dataset_construct_fields_fuzzy():
     pandas_dataset.construct()
 
     # Check for equality
-    for field in ("label", "weight", "groups"):
+    for field in ("label", "weight", "group"):
         np_assert_array_equal(
             arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
         )
