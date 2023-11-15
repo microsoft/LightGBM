@@ -9,6 +9,8 @@ import pytest
 
 import lightgbm as lgb
 
+from .utils import np_assert_array_equal
+
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
 # ----------------------------------------------------------------------------------------------- #
@@ -97,3 +99,87 @@ def test_dataset_construct_fuzzy(
     arrow_dataset._dump_text(tmp_path / "arrow.txt")
     pandas_dataset._dump_text(tmp_path / "pandas.txt")
     assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
+
+
+# -------------------------------------------- FIELDS ------------------------------------------- #
+
+
+def test_dataset_construct_fields_fuzzy():
+    arrow_table = generate_random_arrow_table(3, 1000, 42)
+    arrow_labels = generate_random_arrow_array(1000, 42)
+    arrow_weights = generate_random_arrow_array(1000, 42)
+
+    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights)
+    arrow_dataset.construct()
+
+    pandas_dataset = lgb.Dataset(
+        arrow_table.to_pandas(), label=arrow_labels.to_numpy(), weight=arrow_weights.to_numpy()
+    )
+    pandas_dataset.construct()
+
+    # Check for equality
+    for field in ("label", "weight"):
+        np_assert_array_equal(
+            arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
+        )
+    np_assert_array_equal(arrow_dataset.get_label(), pandas_dataset.get_label(), strict=True)
+    np_assert_array_equal(arrow_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
+
+
+# -------------------------------------------- LABELS ------------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ["array_type", "label_data"],
+    [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
+)
+@pytest.mark.parametrize(
+    "arrow_type",
+    [
+        pa.int8(),
+        pa.int16(),
+        pa.int32(),
+        pa.int64(),
+        pa.uint8(),
+        pa.uint16(),
+        pa.uint32(),
+        pa.uint64(),
+        pa.float32(),
+        pa.float64(),
+    ],
+)
+def test_dataset_construct_labels(array_type: Any, label_data: Any, arrow_type: Any):
+    data = generate_dummy_arrow_table()
+    labels = array_type(label_data, type=arrow_type)
+    dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
+    np_assert_array_equal(expected, dataset.get_label(), strict=True)
+
+
+# ------------------------------------------- WEIGHTS ------------------------------------------- #
+
+
+def test_dataset_construct_weights_none():
+    data = generate_dummy_arrow_table()
+    weight = pa.array([1, 1, 1, 1, 1])
+    dataset = lgb.Dataset(data, weight=weight, params=dummy_dataset_params())
+    dataset.construct()
+    assert dataset.get_weight() is None
+    assert dataset.get_field("weight") is None
+
+
+@pytest.mark.parametrize(
+    ["array_type", "weight_data"],
+    [(pa.array, [3, 0.7, 1.5, 0.5, 0.1]), (pa.chunked_array, [[3], [0.7, 1.5, 0.5, 0.1]])],
+)
+@pytest.mark.parametrize("arrow_type", [pa.float32(), pa.float64()])
+def test_dataset_construct_weights(array_type: Any, weight_data: Any, arrow_type: Any):
+    data = generate_dummy_arrow_table()
+    weights = array_type(weight_data, type=arrow_type)
+    dataset = lgb.Dataset(data, weight=weights, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([3, 0.7, 1.5, 0.5, 0.1], dtype=np.float32)
+    np_assert_array_equal(expected, dataset.get_weight(), strict=True)

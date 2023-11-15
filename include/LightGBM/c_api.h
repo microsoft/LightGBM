@@ -556,6 +556,23 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
                                            int type);
 
 /*!
+ * \brief Set vector to a content in info.
+ * \note
+ * - \a label and \a weight convert input datatype into ``float32``.
+ * \param handle Handle of dataset
+ * \param field_name Field name, can be \a label, \a weight
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
+                                                    const char* field_name,
+                                                    int64_t n_chunks,
+                                                    const ArrowArray* chunks,
+                                                    const ArrowSchema* schema);
+
+/*!
  * \brief Get info vector from dataset.
  * \param handle Handle of dataset
  * \param field_name Field name
