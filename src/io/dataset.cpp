@@ -536,7 +536,7 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
   std::vector<uint32_t> most_freq_bins;
   double sum_sparse_rate = 0;
   for (int i = 0; i < num_feature; ++i) {
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int tid = 0; tid < num_threads; ++tid) {
       iters[tid].emplace_back(
           feature_groups_[multi_group_id]->SubFeatureIterator(i));
@@ -584,7 +584,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       for (int fid = 0; fid < feature_groups_[gid]->num_feature_; ++fid) {
         const auto& bin_mapper = feature_groups_[gid]->bin_mappers_[fid];
         most_freq_bins.push_back(bin_mapper->GetMostFreqBin());
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
         for (int tid = 0; tid < num_threads; ++tid) {
           iters[tid].emplace_back(
               feature_groups_[gid]->SubFeatureIterator(fid));
@@ -699,7 +699,7 @@ TrainingShareStates* Dataset::GetShareStates(
 
     if (col_wise_time < row_wise_time) {
       auto overhead_cost = row_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing col-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_col_wise=true` to remove the overhead.",
@@ -707,7 +707,7 @@ TrainingShareStates* Dataset::GetShareStates(
       return col_wise_state.release();
     } else {
       auto overhead_cost = col_wise_init_time + row_wise_time + col_wise_time;
-      Log::Warning(
+      Log::Info(
           "Auto-choosing row-wise multi-threading, the overhead of testing was "
           "%f seconds.\n"
           "You can set `force_row_wise=true` to remove the overhead.\n"
@@ -823,7 +823,7 @@ void Dataset::ReSize(data_size_t num_data) {
   if (num_data_ != num_data) {
     num_data_ = num_data;
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int group = 0; group < num_groups_; ++group) {
       OMP_LOOP_EX_BEGIN();
       feature_groups_[group]->ReSize(num_data_);
@@ -856,7 +856,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   int num_copy_tasks = static_cast<int>(group_ids.size());
 
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(dynamic)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
   for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
     OMP_LOOP_EX_BEGIN();
     int group = group_ids[task_id];
@@ -875,7 +875,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
   num_numeric_features_ = fullset->num_numeric_features_;
   if (has_raw_) {
     ResizeRaw(num_used_indices);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_used_indices; ++i) {
       for (int j = 0; j < num_numeric_features_; ++j) {
         raw_data_[j][i] = fullset->raw_data_[j][used_indices[i]];
@@ -895,6 +895,19 @@ void Dataset::CopySubrow(const Dataset* fullset,
     cuda_column_data_->CopySubrow(fullset->cuda_column_data(), used_indices, num_used_indices);
   }
   #endif  // USE_CUDA
+}
+
+bool Dataset::SetFieldFromArrow(const char* field_name, const ArrowChunkedArray &ca) {
+  std::string name(field_name);
+  name = Common::Trim(name);
+  if (name == std::string("label") || name == std::string("target")) {
+    metadata_.SetLabel(ca);
+  } else if (name == std::string("weight") || name == std::string("weights")) {
+    metadata_.SetWeights(ca);
+  } else {
+    return false;
+  }
+  return true;
 }
 
 bool Dataset::SetFloatField(const char* field_name, const float* field_data,
@@ -937,6 +950,8 @@ bool Dataset::SetIntField(const char* field_name, const int* field_data,
   name = Common::Trim(name);
   if (name == std::string("query") || name == std::string("group")) {
     metadata_.SetQuery(field_data, num_element);
+  } else if (name == std::string("position")) {
+    metadata_.SetPosition(field_data, num_element);
   } else {
     return false;
   }
@@ -987,6 +1002,9 @@ bool Dataset::GetIntField(const char* field_name, data_size_t* out_len,
   if (name == std::string("query") || name == std::string("group")) {
     *out_ptr = metadata_.query_boundaries();
     *out_len = metadata_.num_queries() + 1;
+  } else if (name == std::string("position")) {
+    *out_ptr = metadata_.positions();
+    *out_len = num_data_;
   } else {
     return false;
   }
@@ -1273,21 +1291,34 @@ void Dataset::ConstructHistogramsInner(
   auto ptr_ordered_grad = gradients;
   auto ptr_ordered_hess = hessians;
   if (num_used_dense_group > 0) {
-    if (USE_INDICES) {
-      if (USE_HESSIAN) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+    if (USE_QUANT_GRAD) {
+      int16_t* ordered_gradients_and_hessians = reinterpret_cast<int16_t*>(ordered_gradients);
+      const int16_t* gradients_and_hessians = reinterpret_cast<const int16_t*>(gradients);
+      if (USE_INDICES) {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
         for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
-          ordered_hessians[i] = hessians[data_indices[i]];
+          ordered_gradients_and_hessians[i] = gradients_and_hessians[data_indices[i]];
         }
-        ptr_ordered_grad = ordered_gradients;
-        ptr_ordered_hess = ordered_hessians;
-      } else {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
-        for (data_size_t i = 0; i < num_data; ++i) {
-          ordered_gradients[i] = gradients[data_indices[i]];
+        ptr_ordered_grad = reinterpret_cast<const score_t*>(ordered_gradients);
+        ptr_ordered_hess = nullptr;
+      }
+    } else {
+      if (USE_INDICES) {
+        if (USE_HESSIAN) {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+            ordered_hessians[i] = hessians[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
+          ptr_ordered_hess = ordered_hessians;
+        } else {
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
+          for (data_size_t i = 0; i < num_data; ++i) {
+            ordered_gradients[i] = gradients[data_indices[i]];
+          }
+          ptr_ordered_grad = ordered_gradients;
         }
-        ptr_ordered_grad = ordered_gradients;
       }
     }
     OMP_INIT_EX();

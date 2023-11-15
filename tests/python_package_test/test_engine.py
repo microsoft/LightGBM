@@ -9,6 +9,7 @@ import random
 import re
 from os import getenv
 from pathlib import Path
+from shutil import copyfile
 
 import numpy as np
 import psutil
@@ -19,7 +20,7 @@ from sklearn.metrics import average_precision_score, log_loss, mean_absolute_err
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
 import lightgbm as lgb
-from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame
+from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
                     make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
@@ -747,6 +748,171 @@ def test_ranking_prediction_early_stopping():
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
+# Simulates position bias for a given ranking dataset.
+# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The new labels are generated according to an instance of a cascade user model:
+# for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
+# (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
+# and clicks on that document (new_label=1) with some probability 'pclick' depending on its true relevance;
+# at each position the user may stop the traversal with some probability pstop. For the non-clicked documents,
+# new_label=0. Thus the generated new labels are biased towards the baseline ranker.
+# The positions of the documents in the ranked lists produced by the baseline, are returned.
+def simulate_position_bias(file_dataset_in, file_query_in, file_dataset_out, baseline_feature):
+    # a mapping of a document's true relevance (defined on a 5-grade scale) into the probability of clicking it
+    def get_pclick(label):
+        if label == 0:
+            return 0.4
+        elif label == 1:
+            return 0.6
+        elif label == 2:
+            return 0.7
+        elif label == 3:
+            return 0.8
+        else:
+            return 0.9
+    # an instantiation of a cascade model where the user stops with probability 0.2 after observing each document
+    pstop = 0.2
+
+    f_dataset_in = open(file_dataset_in, 'r')
+    f_dataset_out = open(file_dataset_out, 'w')
+    random.seed(10)
+    positions_all = []
+    for line in open(file_query_in):
+        docs_num = int (line)
+        lines = []
+        index_values = []
+        positions = [0] * docs_num
+        for index in range(docs_num):
+            features = f_dataset_in.readline().split()
+            lines.append(features)
+            val = 0.0
+            for feature_val in features:
+                feature_val_split = feature_val.split(":")
+                if int(feature_val_split[0]) == baseline_feature:
+                    val = float(feature_val_split[1])
+            index_values.append([index, val])
+        index_values.sort(key=lambda x: -x[1])
+        stop = False
+        for pos in range(docs_num):
+            index = index_values[pos][0]
+            new_label = 0
+            if not stop:
+                label = int(lines[index][0])
+                pclick = get_pclick(label)
+                if random.random() < pclick:
+                    new_label = 1
+                stop = random.random() < pstop
+            lines[index][0] = str(new_label)
+            positions[index] = pos
+        for features in lines:
+            f_dataset_out.write(' '.join(features) + '\n')
+        positions_all.extend(positions)
+    f_dataset_out.close()
+    return positions_all
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
+def test_ranking_with_position_information_with_file(tmp_path):
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    params = {
+        'objective': 'lambdarank',
+        'verbose': -1,
+        'eval_at': [3],
+        'metric': 'ndcg',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0
+    }
+
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    f_positions_out = open(str(tmp_path / 'rank.train.position'), 'w')
+    for pos in positions:
+        f_positions_out.write(str(pos) + '\n')
+    f_positions_out.close()
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased_with_file = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased_with_file.best_score['valid_0']['ndcg@3']
+
+    # add extra row to position file
+    with open(str(tmp_path / 'rank.train.position'), 'a') as file:
+        file.write('pos_1000\n')
+        file.close()
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    with pytest.raises(lgb.basic.LightGBMError, match=r"Positions size \(3006\) doesn't match data size"):
+        lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Positions in learning to rank is not supported in CUDA version yet')
+def test_ranking_with_position_information_with_dataset_constructor(tmp_path):
+    rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
+    params = {
+        'objective': 'lambdarank',
+        'verbose': -1,
+        'eval_at': [3],
+        'metric': 'ndcg',
+        'bagging_freq': 1,
+        'bagging_fraction': 0.9,
+        'min_data_in_leaf': 50,
+        'min_sum_hessian_in_leaf': 5.0,
+        'num_threads': 1,
+        'deterministic': True,
+        'seed': 0
+    }
+
+    # simulate position bias for the train dataset and put the train dataset with biased labels to temp directory
+    positions = simulate_position_bias(str(rank_example_dir / 'rank.train'), str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train'), baseline_feature=34)
+    copyfile(str(rank_example_dir / 'rank.train.query'), str(tmp_path / 'rank.train.query'))
+    copyfile(str(rank_example_dir / 'rank.test'), str(tmp_path / 'rank.test'))
+    copyfile(str(rank_example_dir / 'rank.test.query'), str(tmp_path / 'rank.test.query'))
+
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_baseline = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    positions = np.array(positions)
+
+    # test setting positions through Dataset constructor with numpy array
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=positions)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    gbm_unbiased = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+
+    # the performance of the unbiased LambdaMART should outperform the plain LambdaMART on the dataset with position bias
+    assert gbm_baseline.best_score['valid_0']['ndcg@3'] + 0.03 <= gbm_unbiased.best_score['valid_0']['ndcg@3']
+
+    if PANDAS_INSTALLED:
+        # test setting positions through Dataset constructor with pandas Series
+        lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params, position=pd_Series(positions))
+        lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+        gbm_unbiased_pandas_series = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+        assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_pandas_series.best_score['valid_0']['ndcg@3']
+
+    # test setting positions through set_position
+    lgb_train = lgb.Dataset(str(tmp_path / 'rank.train'), params=params)
+    lgb_valid = [lgb_train.create_valid(str(tmp_path / 'rank.test'))]
+    lgb_train.set_position(positions)
+    gbm_unbiased_set_position = lgb.train(params, lgb_train, valid_sets = lgb_valid, num_boost_round=50)
+    assert gbm_unbiased.best_score['valid_0']['ndcg@3'] == gbm_unbiased_set_position.best_score['valid_0']['ndcg@3']
+
+    # test get_position works
+    positions_from_get = lgb_train.get_position()
+    np.testing.assert_array_equal(positions_from_get, positions)
+
+
 def test_early_stopping():
     X, y = load_breast_cancer(return_X_y=True)
     params = {
@@ -924,6 +1090,33 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.less_equal(last_score, best_score + min_delta).any()
     else:
         assert np.greater_equal(last_score, best_score - min_delta).any()
+
+
+def test_early_stopping_can_be_triggered_via_custom_callback():
+    X, y = make_synthetic_regression()
+
+    def _early_stop_after_seventh_iteration(env):
+        if env.iteration == 6:
+            exc = lgb.EarlyStopException(
+                best_iteration=6,
+                best_score=[("some_validation_set", "some_metric", 0.708, True)]
+            )
+            raise exc
+
+    bst = lgb.train(
+        params={
+            "objective": "regression",
+            "verbose": -1,
+            "num_leaves": 2
+        },
+        train_set=lgb.Dataset(X, label=y),
+        num_boost_round=23,
+        callbacks=[_early_stop_after_seventh_iteration]
+    )
+    assert bst.num_trees() == 7
+    assert bst.best_score["some_validation_set"]["some_metric"] == 0.708
+    assert bst.best_iteration == 7
+    assert bst.current_iteration() == 7
 
 
 def test_continue_train():
@@ -1277,7 +1470,7 @@ def test_feature_name_with_non_ascii():
     assert feature_names == gbm2.feature_name()
 
 
-def test_parameters_are_loaded_from_model_file(tmp_path):
+def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
     X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
     y = np.random.rand(100)
     ds = lgb.Dataset(X, y)
@@ -1294,8 +1487,18 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
         'num_threads': 1,
     }
     model_file = tmp_path / 'model.txt'
-    lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2]).save_model(model_file)
+    orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
+    orig_bst.save_model(model_file)
+    with model_file.open('rt') as f:
+        model_contents = f.readlines()
+    params_start = model_contents.index('parameters:\n')
+    model_contents.insert(params_start + 1, '[max_conflict_rate: 0]\n')
+    with model_file.open('wt') as f:
+        f.writelines(model_contents)
     bst = lgb.Booster(model_file=model_file)
+    expected_msg = "[LightGBM] [Warning] Ignoring unrecognized parameter 'max_conflict_rate' found in model string."
+    stdout = capsys.readouterr().out
+    assert expected_msg in stdout
     set_params = {k: bst.params[k] for k in params.keys()}
     assert set_params == params
     assert bst.params['categorical_feature'] == [1, 2]
@@ -1304,6 +1507,11 @@ def test_parameters_are_loaded_from_model_file(tmp_path):
     with pytest.warns(UserWarning, match='Ignoring params argument'):
         bst2 = lgb.Booster(params={'num_leaves': 7}, model_file=model_file)
     assert bst.params == bst2.params
+
+    # check inference isn't affected by unknown parameter
+    orig_preds = orig_bst.predict(X)
+    preds = bst.predict(X)
+    np.testing.assert_allclose(preds, orig_preds)
 
 
 def test_save_load_copy_pickle():
@@ -1339,6 +1547,203 @@ def test_save_load_copy_pickle():
     other_ret.append(train_and_predict(init_model=gbm_pickles))
     for ret in other_ret:
         assert ret_origin == pytest.approx(ret)
+
+
+def test_all_expected_params_are_written_out_to_model_text(tmp_path):
+    X, y = make_synthetic_regression()
+    params = {
+        'objective': 'mape',
+        'metric': ['l2', 'mae'],
+        'seed': 708,
+        'data_sample_strategy': 'bagging',
+        'sub_row': 0.8234,
+        'verbose': -1
+    }
+    dtrain = lgb.Dataset(data=X, label=y)
+    gbm = lgb.train(
+        params=params,
+        train_set=dtrain,
+        num_boost_round=3
+    )
+
+    model_txt_from_memory = gbm.model_to_string()
+    model_file = tmp_path / "out.model"
+    gbm.save_model(filename=model_file)
+    with open(model_file, "r") as f:
+        model_txt_from_file = f.read()
+
+    assert model_txt_from_memory == model_txt_from_file
+
+    # entries whose values should reflect params passed to lgb.train()
+    non_default_param_entries = [
+        "[objective: mape]",
+        # 'l1' was passed in with alias 'mae'
+        "[metric: l2,l1]",
+        "[data_sample_strategy: bagging]",
+        "[seed: 708]",
+        # NOTE: this was passed in with alias 'sub_row'
+        "[bagging_fraction: 0.8234]",
+        "[num_iterations: 3]",
+    ]
+
+    # entries with default values of params
+    default_param_entries = [
+        "[boosting: gbdt]",
+        "[tree_learner: serial]",
+        "[data: ]",
+        "[valid: ]",
+        "[learning_rate: 0.1]",
+        "[num_leaves: 31]",
+        "[num_threads: 0]",
+        "[deterministic: 0]",
+        "[histogram_pool_size: -1]",
+        "[max_depth: -1]",
+        "[min_data_in_leaf: 20]",
+        "[min_sum_hessian_in_leaf: 0.001]",
+        "[pos_bagging_fraction: 1]",
+        "[neg_bagging_fraction: 1]",
+        "[bagging_freq: 0]",
+        "[bagging_seed: 15415]",
+        "[feature_fraction: 1]",
+        "[feature_fraction_bynode: 1]",
+        "[feature_fraction_seed: 32671]",
+        "[extra_trees: 0]",
+        "[extra_seed: 6642]",
+        "[early_stopping_round: 0]",
+        "[first_metric_only: 0]",
+        "[max_delta_step: 0]",
+        "[lambda_l1: 0]",
+        "[lambda_l2: 0]",
+        "[linear_lambda: 0]",
+        "[min_gain_to_split: 0]",
+        "[drop_rate: 0.1]",
+        "[max_drop: 50]",
+        "[skip_drop: 0.5]",
+        "[xgboost_dart_mode: 0]",
+        "[uniform_drop: 0]",
+        "[drop_seed: 20623]",
+        "[top_rate: 0.2]",
+        "[other_rate: 0.1]",
+        "[min_data_per_group: 100]",
+        "[max_cat_threshold: 32]",
+        "[cat_l2: 10]",
+        "[cat_smooth: 10]",
+        "[max_cat_to_onehot: 4]",
+        "[top_k: 20]",
+        "[monotone_constraints: ]",
+        "[monotone_constraints_method: basic]",
+        "[monotone_penalty: 0]",
+        "[feature_contri: ]",
+        "[forcedsplits_filename: ]",
+        "[refit_decay_rate: 0.9]",
+        "[cegb_tradeoff: 1]",
+        "[cegb_penalty_split: 0]",
+        "[cegb_penalty_feature_lazy: ]",
+        "[cegb_penalty_feature_coupled: ]",
+        "[path_smooth: 0]",
+        "[interaction_constraints: ]",
+        "[verbosity: -1]",
+        "[saved_feature_importance_type: 0]",
+        "[use_quantized_grad: 0]",
+        "[num_grad_quant_bins: 4]",
+        "[quant_train_renew_leaf: 0]",
+        "[stochastic_rounding: 1]",
+        "[linear_tree: 0]",
+        "[max_bin: 255]",
+        "[max_bin_by_feature: ]",
+        "[min_data_in_bin: 3]",
+        "[bin_construct_sample_cnt: 200000]",
+        "[data_random_seed: 2350]",
+        "[is_enable_sparse: 1]",
+        "[enable_bundle: 1]",
+        "[use_missing: 1]",
+        "[zero_as_missing: 0]",
+        "[feature_pre_filter: 1]",
+        "[pre_partition: 0]",
+        "[two_round: 0]",
+        "[header: 0]",
+        "[label_column: ]",
+        "[weight_column: ]",
+        "[group_column: ]",
+        "[ignore_column: ]",
+        "[categorical_feature: ]",
+        "[forcedbins_filename: ]",
+        "[precise_float_parser: 0]",
+        "[parser_config_file: ]",
+        "[objective_seed: 4309]",
+        "[num_class: 1]",
+        "[is_unbalance: 0]",
+        "[scale_pos_weight: 1]",
+        "[sigmoid: 1]",
+        "[boost_from_average: 1]",
+        "[reg_sqrt: 0]",
+        "[alpha: 0.9]",
+        "[fair_c: 1]",
+        "[poisson_max_delta_step: 0.7]",
+        "[tweedie_variance_power: 1.5]",
+        "[lambdarank_truncation_level: 30]",
+        "[lambdarank_norm: 1]",
+        "[label_gain: ]",
+        "[lambdarank_position_bias_regularization: 0]",
+        "[eval_at: ]",
+        "[multi_error_top_k: 1]",
+        "[auc_mu_weights: ]",
+        "[num_machines: 1]",
+        "[local_listen_port: 12400]",
+        "[time_out: 120]",
+        "[machine_list_filename: ]",
+        "[machines: ]",
+        "[gpu_platform_id: -1]",
+        "[gpu_device_id: -1]",
+        "[num_gpu: 1]",
+    ]
+    all_param_entries = non_default_param_entries + default_param_entries
+
+    # add device-specific entries
+    #
+    # passed-in force_col_wise / force_row_wise parameters are ignored on CUDA and GPU builds...
+    # https://github.com/microsoft/LightGBM/blob/1d7ee63686272bceffd522284127573b511df6be/src/io/config.cpp#L375-L377
+    if getenv('TASK', '') == 'cuda':
+        device_entries = [
+            "[force_col_wise: 0]",
+            "[force_row_wise: 1]",
+            "[device_type: cuda]",
+            "[gpu_use_dp: 1]"
+        ]
+    elif getenv('TASK', '') == 'gpu':
+        device_entries = [
+            "[force_col_wise: 1]",
+            "[force_row_wise: 0]",
+            "[device_type: gpu]",
+            "[gpu_use_dp: 0]"
+        ]
+    else:
+        device_entries = [
+            "[force_col_wise: 0]",
+            "[force_row_wise: 0]",
+            "[device_type: cpu]",
+            "[gpu_use_dp: 0]"
+        ]
+
+    all_param_entries += device_entries
+
+    # check that model text has all expected param entries
+    for param_str in all_param_entries:
+        assert param_str in model_txt_from_file
+        assert param_str in model_txt_from_memory
+
+    # since Booster.model_to_string() is used when pickling, check that parameters all
+    # roundtrip pickling successfully too
+    gbm_pkl = pickle_and_unpickle_object(gbm, serializer="joblib")
+    model_txt_from_memory = gbm_pkl.model_to_string()
+    model_file = tmp_path / "out-pkl.model"
+    gbm_pkl.save_model(filename=model_file)
+    with open(model_file, "r") as f:
+        model_txt_from_file = f.read()
+
+    for param_str in all_param_entries:
+        assert param_str in model_txt_from_file
+        assert param_str in model_txt_from_memory
 
 
 def test_pandas_categorical():
@@ -1720,8 +2125,7 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     categorical_features = []
     if x3_to_category:
         categorical_features = [2]
-    trainset = lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
-    return trainset
+    return lgb.Dataset(x, label=y, categorical_feature=categorical_features, free_raw_data=False)
 
 
 @pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Monotone constraints are not yet supported by CUDA version')
@@ -4112,9 +4516,9 @@ def test_train_raises_informative_error_if_any_valid_sets_are_not_dataset_object
 
 def test_train_raises_informative_error_for_params_of_wrong_type():
     X, y = make_synthetic_regression()
-    params = {"early_stopping_round": "too-many"}
+    params = {"num_leaves": "too-many"}
     dtrain = lgb.Dataset(X, label=y)
-    with pytest.raises(lgb.basic.LightGBMError, match="Parameter early_stopping_round should be of type int, got \"too-many\""):
+    with pytest.raises(lgb.basic.LightGBMError, match="Parameter num_leaves should be of type int, got \"too-many\""):
         lgb.train(params, dtrain)
 
 

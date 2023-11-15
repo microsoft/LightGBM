@@ -15,7 +15,7 @@ from .callback import _EvalResultDict, record_evaluation
 from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
-                     dt_DataTable, pd_DataFrame)
+                     dt_DataTable, np_random_Generator, pd_DataFrame)
 from .engine import train
 
 __all__ = [
@@ -86,6 +86,36 @@ _LGBM_ScikitEvalMetricType = Union[
 _LGBM_ScikitValidSet = Tuple[_LGBM_ScikitMatrixLike, _LGBM_LabelType]
 
 
+def _get_group_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray]:
+    group = dataset.get_group()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve query groups from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert (group is None or isinstance(group, np.ndarray)), error_msg
+    return group
+
+
+def _get_label_from_constructed_dataset(dataset: Dataset) -> np.ndarray:
+    label = dataset.get_label()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve labels from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert isinstance(label, np.ndarray), error_msg
+    return label
+
+
+def _get_weight_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray]:
+    weight = dataset.get_weight()
+    error_msg = (
+        "Estimators in lightgbm.sklearn should only retrieve weights from a constructed Dataset. "
+        "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
+    )
+    assert (weight is None or isinstance(weight, np.ndarray)), error_msg
+    return weight
+
+
 class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
@@ -151,17 +181,22 @@ class _ObjectiveFunctionWrapper:
             The value of the second order derivative (Hessian) of the loss
             with respect to the elements of preds for each sample point.
         """
-        labels = dataset.get_label()
+        labels = _get_label_from_constructed_dataset(dataset)
         argc = len(signature(self.func).parameters)
         if argc == 2:
             grad, hess = self.func(labels, preds)  # type: ignore[call-arg]
-        elif argc == 3:
-            grad, hess = self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
-        elif argc == 4:
-            grad, hess = self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore [call-arg]
-        else:
-            raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
-        return grad, hess
+            return grad, hess
+
+        weight = _get_weight_from_constructed_dataset(dataset)
+        if argc == 3:
+            grad, hess = self.func(labels, preds, weight)  # type: ignore[call-arg]
+            return grad, hess
+
+        if argc == 4:
+            group = _get_group_from_constructed_dataset(dataset)
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+
+        raise TypeError(f"Self-defined objective function should have 2, 3 or 4 arguments, got {argc}")
 
 
 class _EvalFunctionWrapper:
@@ -229,16 +264,20 @@ class _EvalFunctionWrapper:
         is_higher_better : bool
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
         """
-        labels = dataset.get_label()
+        labels = _get_label_from_constructed_dataset(dataset)
         argc = len(signature(self.func).parameters)
         if argc == 2:
             return self.func(labels, preds)  # type: ignore[call-arg]
-        elif argc == 3:
-            return self.func(labels, preds, dataset.get_weight())  # type: ignore[call-arg]
-        elif argc == 4:
-            return self.func(labels, preds, dataset.get_weight(), dataset.get_group())  # type: ignore[call-arg]
-        else:
-            raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
+
+        weight = _get_weight_from_constructed_dataset(dataset)
+        if argc == 3:
+            return self.func(labels, preds, weight)  # type: ignore[call-arg]
+
+        if argc == 4:
+            group = _get_group_from_constructed_dataset(dataset)
+            return self.func(labels, preds, weight, group)  # type: ignore[call-arg]
+
+        raise TypeError(f"Self-defined eval function should have 2, 3 or 4 arguments, got {argc}")
 
 
 # documentation templates for LGBMModel methods are shared between the classes in
@@ -409,7 +448,7 @@ class LGBMModel(_LGBMModelBase):
         colsample_bytree: float = 1.,
         reg_alpha: float = 0.,
         reg_lambda: float = 0.,
-        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        random_state: Optional[Union[int, np.random.RandomState, 'np.random.Generator']] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = 'split',
         **kwargs
@@ -470,7 +509,7 @@ class LGBMModel(_LGBMModelBase):
         random_state : int, RandomState object or None, optional (default=None)
             Random number seed.
             If int, this number is used to seed the C++ code.
-            If RandomState object (numpy), a random integer is picked based on its state to seed the C++ code.
+            If RandomState or Generator object (numpy), a random integer is picked based on its state to seed the C++ code.
             If None, default seeds in C++ code are used.
         n_jobs : int or None, optional (default=None)
             Number of parallel threads to use for training (can be changed at prediction time by
@@ -671,6 +710,10 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params['random_state'], np.random.RandomState):
             params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
+        elif isinstance(params['random_state'], np_random_Generator):
+            params['random_state'] = int(
+                params['random_state'].integers(np.iinfo(np.int32).max)
+            )
         if self._n_classes > 2:
             for alias in _ConfigAliases.get('num_class'):
                 params.pop(alias, None)
@@ -1103,6 +1146,8 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
         self._classes = self._le.classes_
         self._n_classes = len(self._classes)  # type: ignore[arg-type]
+        if self.objective is None:
+            self._objective = None
 
         # adjust eval metrics to match whether binary or multiclass
         # classification is being performed

@@ -39,7 +39,7 @@ class ScoreUpdater {
         Log::Fatal("Number of class for initial score error");
       }
       has_init_score_ = true;
-#pragma omp parallel for schedule(static, 512) if (total_size >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (total_size >= 1024)
       for (int64_t i = 0; i < total_size; ++i) {
         score_[i] = init_score[i];
       }
@@ -54,7 +54,7 @@ class ScoreUpdater {
   virtual inline void AddScore(double val, int cur_tree_id) {
     Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
     const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
-#pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
     for (int i = 0; i < num_data_; ++i) {
       score_[offset + i] += val;
     }
@@ -62,7 +62,7 @@ class ScoreUpdater {
 
   virtual inline void MultiplyScore(double val, int cur_tree_id) {
     const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
-#pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
     for (int i = 0; i < num_data_; ++i) {
       score_[offset + i] *= val;
     }

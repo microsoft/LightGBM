@@ -534,11 +534,12 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     assert gbm.booster_.attr_set_inside_callback == 40
 
 
-def test_random_state_object():
+@pytest.mark.parametrize("rng_constructor", [np.random.RandomState, np.random.default_rng])
+def test_random_state_object(rng_constructor):
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    state1 = np.random.RandomState(123)
-    state2 = np.random.RandomState(123)
+    state1 = rng_constructor(123)
+    state2 = rng_constructor(123)
     clf1 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state1)
     clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
     # Test if random_state is properly stored
@@ -1561,3 +1562,20 @@ def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type
     )
     preds = model.predict(X)
     assert spearmanr(preds, y).correlation >= 0.99
+
+
+def test_classifier_fit_detects_classes_every_time():
+    rng = np.random.default_rng(seed=123)
+    nrows = 1000
+    ncols = 20
+
+    X = rng.standard_normal(size=(nrows, ncols))
+    y_bin = (rng.random(size=nrows) <= .3).astype(np.float64)
+    y_multi = rng.integers(4, size=nrows)
+
+    model = lgb.LGBMClassifier(verbose=-1)
+    for _ in range(2):
+        model.fit(X, y_multi)
+        assert model.objective_ == "multiclass"
+        model.fit(X, y_bin)
+        assert model.objective_ == "binary"

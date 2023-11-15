@@ -39,7 +39,7 @@
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {
 
-  if (!lgb.is.Booster(x = model)) {
+  if (!.is_Booster(x = model)) {
     stop("'model' has to be an object of class lgb.Booster")
   }
 

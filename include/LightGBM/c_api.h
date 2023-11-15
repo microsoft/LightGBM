@@ -13,6 +13,7 @@
 #ifndef LIGHTGBM_C_API_H_
 #define LIGHTGBM_C_API_H_
 
+#include <LightGBM/arrow.h>
 #include <LightGBM/export.h>
 
 #ifdef __cplusplus
@@ -438,6 +439,23 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  DatasetHandle* out);
 
 /*!
+ * \brief Create dataset from Arrow.
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \param parameters Additional parameters
+ * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
+ * \param[out] out Created dataset
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+                                                  const ArrowArray* chunks,
+                                                  const ArrowSchema* schema,
+                                                  const char* parameters,
+                                                  const DatasetHandle reference,
+                                                  DatasetHandle *out);
+
+/*!
  * \brief Create subset of a data.
  * \param handle Handle of full dataset
  * \param used_row_indices Indices used in subset
@@ -536,6 +554,23 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
                                            const void* field_data,
                                            int num_element,
                                            int type);
+
+/*!
+ * \brief Set vector to a content in info.
+ * \note
+ * - \a label and \a weight convert input datatype into ``float32``.
+ * \param handle Handle of dataset
+ * \param field_name Field name, can be \a label, \a weight
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
+                                                    const char* field_name,
+                                                    int64_t n_chunks,
+                                                    const ArrowArray* chunks,
+                                                    const ArrowSchema* schema);
 
 /*!
  * \brief Get info vector from dataset.

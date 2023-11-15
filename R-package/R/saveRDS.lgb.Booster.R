@@ -57,7 +57,7 @@ saveRDS.lgb.Booster <- function(object,
 
   warning("'saveRDS.lgb.Booster' is deprecated and will be removed in a future release. Use saveRDS() instead.")
 
-  if (!lgb.is.Booster(x = object)) {
+  if (!.is_Booster(x = object)) {
     stop("saveRDS.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
 

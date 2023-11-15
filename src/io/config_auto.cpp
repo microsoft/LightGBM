@@ -304,6 +304,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_truncation_level",
   "lambdarank_norm",
   "label_gain",
+  "lambdarank_position_bias_regularization",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -619,6 +620,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetDouble(params, "lambdarank_position_bias_regularization", &lambdarank_position_bias_regularization);
+  CHECK_GE(lambdarank_position_bias_regularization, 0.0);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -660,12 +664,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
+  str_buf << "[data_sample_strategy: " << data_sample_strategy << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[seed: " << seed << "]\n";
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
@@ -718,6 +724,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[interaction_constraints: " << interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
+  str_buf << "[use_quantized_grad: " << use_quantized_grad << "]\n";
+  str_buf << "[num_grad_quant_bins: " << num_grad_quant_bins << "]\n";
+  str_buf << "[quant_train_renew_leaf: " << quant_train_renew_leaf << "]\n";
+  str_buf << "[stochastic_rounding: " << stochastic_rounding << "]\n";
   str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
@@ -754,6 +764,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[lambdarank_position_bias_regularization: " << lambdarank_position_bias_regularization << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -893,6 +904,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"lambdarank_truncation_level", {}},
     {"lambdarank_norm", {}},
     {"label_gain", {}},
+    {"lambdarank_position_bias_regularization", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -1035,6 +1047,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"lambdarank_truncation_level", "int"},
     {"lambdarank_norm", "bool"},
     {"label_gain", "vector<double>"},
+    {"lambdarank_position_bias_regularization", "double"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},

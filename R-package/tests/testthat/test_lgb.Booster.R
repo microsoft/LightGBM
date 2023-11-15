@@ -11,16 +11,16 @@ test_that("Booster$finalize() should not fail", {
         , verbose = .LGB_VERBOSITY
         , nrounds = 3L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
-    expect_false(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_false(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
@@ -188,7 +188,7 @@ test_that("Loading a Booster from a text file works", {
         , params = params
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -232,7 +232,7 @@ test_that("boosters with linear models at leaves can be written to text file and
         , params = params
         , verbose = .LGB_VERBOSITY
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -269,7 +269,7 @@ test_that("Loading a Booster from a string works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_string <- bst$save_model_to_string()
@@ -376,7 +376,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -411,7 +411,7 @@ test_that("Creating a Booster from a Dataset should work", {
         ),
         train_set = dtrain
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), 0L)
     expect_true(is.na(bst$best_score))
     expect_true(all(bst$predict(agaricus.train$data) == 0.5))
@@ -446,10 +446,10 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             , num_threads = .LGB_MAX_THREADS
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     expect_equal(bst$eval_train()[[1L]][["value"]], 0.1115352)
-    expect_true(lgb.is.Booster(bst_from_ds))
+    expect_true(.is_Booster(bst_from_ds))
     expect_equal(bst_from_ds$current_iter(), nrounds)
     expect_equal(bst_from_ds$eval_train()[[1L]][["value"]], 5.65704892)
     dumped_model <- jsonlite::fromJSON(bst$dump_model())
@@ -531,7 +531,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
         , nrounds = nrounds
     )
     expect_equal(bst$current_iter(), nrounds)
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     logloss <- bst$eval_train()[[1L]][["value"]]
     expect_equal(logloss, 0.01904786)
 
@@ -539,7 +539,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
 
     # rollback_one_iter() should return a booster and modify the original
     # booster in place
-    expect_true(lgb.is.Booster(x))
+    expect_true(.is_Booster(x))
     expect_equal(bst$current_iter(), nrounds - 1L)
 
     # score should now come from the model as of 4 iterations
@@ -565,7 +565,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     bst$update(
         train_set = Dataset$new(
@@ -574,7 +574,7 @@ test_that("Booster$update() passing a train_set works as expected", {
             , params = list(verbose = .LGB_VERBOSITY)
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds + 1L)
 
     # train with 3 rounds directly
@@ -590,7 +590,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds +  1L
     )
-    expect_true(lgb.is.Booster(bst2))
+    expect_true(.is_Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
 
     # model with 2 rounds + 1 update should be identical to 3 rounds
@@ -716,7 +716,7 @@ test_that("Saving a model with different feature importance types works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
@@ -772,7 +772,7 @@ test_that("Saving a model with unknown importance type fails", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
@@ -799,37 +799,166 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         data = matrix(rnorm(500L), nrow = 100L)
         , label = rnorm(100L)
     )
-    nrounds <- 4L
     bst <- lgb.train(
         params = list(
-            objective = "regression"
-            , metric = "l2"
+            objective = "mape"
+            , metric = c("l2", "mae")
             , num_threads = .LGB_MAX_THREADS
+            , seed = 708L
+            , data_sample_strategy = "bagging"
+            , sub_row = 0.8234
         )
         , data = dtrain
-        , nrounds = nrounds
+        , nrounds = 3L
         , verbose = .LGB_VERBOSITY
     )
 
-    model_str <- bst$save_model_to_string()
-    params_in_file <- .params_from_model_string(model_str = model_str)
+    # entries whose values should reflect params passed to lgb.train()
+    non_default_param_entries <- c(
+        "[objective: mape]"
+        # 'l1' was passed in with alias 'mae'
+        , "[metric: l2,l1]"
+        , "[data_sample_strategy: bagging]"
+        , "[seed: 708]"
+        # this was passed in with alias 'sub_row'
+        , "[bagging_fraction: 0.8234]"
+        , "[num_iterations: 3]"
+    )
+
+    # entries with default values of params
+    default_param_entries <- c(
+        "[boosting: gbdt]"
+        , "[tree_learner: serial]"
+        , "[device_type: cpu]"
+        , "[data: ]"
+        , "[valid: ]"
+        , "[learning_rate: 0.1]"
+        , "[num_leaves: 31]"
+        , sprintf("[num_threads: %i]", .LGB_MAX_THREADS)
+        , "[deterministic: 0]"
+        , "[histogram_pool_size: -1]"
+        , "[max_depth: -1]"
+        , "[min_data_in_leaf: 20]"
+        , "[min_sum_hessian_in_leaf: 0.001]"
+        , "[pos_bagging_fraction: 1]"
+        , "[neg_bagging_fraction: 1]"
+        , "[bagging_freq: 0]"
+        , "[bagging_seed: 15415]"
+        , "[feature_fraction: 1]"
+        , "[feature_fraction_bynode: 1]"
+        , "[feature_fraction_seed: 32671]"
+        , "[extra_trees: 0]"
+        , "[extra_seed: 6642]"
+        , "[early_stopping_round: 0]"
+        , "[first_metric_only: 0]"
+        , "[max_delta_step: 0]"
+        , "[lambda_l1: 0]"
+        , "[lambda_l2: 0]"
+        , "[linear_lambda: 0]"
+        , "[min_gain_to_split: 0]"
+        , "[drop_rate: 0.1]"
+        , "[max_drop: 50]"
+        , "[skip_drop: 0.5]"
+        , "[xgboost_dart_mode: 0]"
+        , "[uniform_drop: 0]"
+        , "[drop_seed: 20623]"
+        , "[top_rate: 0.2]"
+        , "[other_rate: 0.1]"
+        , "[min_data_per_group: 100]"
+        , "[max_cat_threshold: 32]"
+        , "[cat_l2: 10]"
+        , "[cat_smooth: 10]"
+        , "[max_cat_to_onehot: 4]"
+        , "[top_k: 20]"
+        , "[monotone_constraints: ]"
+        , "[monotone_constraints_method: basic]"
+        , "[monotone_penalty: 0]"
+        , "[feature_contri: ]"
+        , "[forcedsplits_filename: ]"
+        , "[force_col_wise: 0]"
+        , "[force_row_wise: 0]"
+        , "[refit_decay_rate: 0.9]"
+        , "[cegb_tradeoff: 1]"
+        , "[cegb_penalty_split: 0]"
+        , "[cegb_penalty_feature_lazy: ]"
+        , "[cegb_penalty_feature_coupled: ]"
+        , "[path_smooth: 0]"
+        , "[interaction_constraints: ]"
+        , sprintf("[verbosity: %i]", .LGB_VERBOSITY)
+        , "[saved_feature_importance_type: 0]"
+        , "[use_quantized_grad: 0]"
+        , "[num_grad_quant_bins: 4]"
+        , "[quant_train_renew_leaf: 0]"
+        , "[stochastic_rounding: 1]"
+        , "[linear_tree: 0]"
+        , "[max_bin: 255]"
+        , "[max_bin_by_feature: ]"
+        , "[min_data_in_bin: 3]"
+        , "[bin_construct_sample_cnt: 200000]"
+        , "[data_random_seed: 2350]"
+        , "[is_enable_sparse: 1]"
+        , "[enable_bundle: 1]"
+        , "[use_missing: 1]"
+        , "[zero_as_missing: 0]"
+        , "[feature_pre_filter: 1]"
+        , "[pre_partition: 0]"
+        , "[two_round: 0]"
+        , "[header: 0]"
+        , "[label_column: ]"
+        , "[weight_column: ]"
+        , "[group_column: ]"
+        , "[ignore_column: ]"
+        , "[categorical_feature: ]"
+        , "[forcedbins_filename: ]"
+        , "[precise_float_parser: 0]"
+        , "[parser_config_file: ]"
+        , "[objective_seed: 4309]"
+        , "[num_class: 1]"
+        , "[is_unbalance: 0]"
+        , "[scale_pos_weight: 1]"
+        , "[sigmoid: 1]"
+        , "[boost_from_average: 1]"
+        , "[reg_sqrt: 0]"
+        , "[alpha: 0.9]"
+        , "[fair_c: 1]"
+        , "[poisson_max_delta_step: 0.7]"
+        , "[tweedie_variance_power: 1.5]"
+        , "[lambdarank_truncation_level: 30]"
+        , "[lambdarank_norm: 1]"
+        , "[label_gain: ]"
+        , "[lambdarank_position_bias_regularization: 0]"
+        , "[eval_at: ]"
+        , "[multi_error_top_k: 1]"
+        , "[auc_mu_weights: ]"
+        , "[num_machines: 1]"
+        , "[local_listen_port: 12400]"
+        , "[time_out: 120]"
+        , "[machine_list_filename: ]"
+        , "[machines: ]"
+        , "[gpu_platform_id: -1]"
+        , "[gpu_device_id: -1]"
+        , "[gpu_use_dp: 0]"
+        , "[num_gpu: 1]"
+    )
+    all_param_entries <- c(non_default_param_entries, default_param_entries)
 
     # parameters should match what was passed from the R package
-    expect_equal(sum(startsWith(params_in_file, "[metric:")), 1L)
-    expect_equal(sum(params_in_file == "[metric: l2]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
-    expect_equal(sum(params_in_file == "[num_iterations: 4]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[objective:")), 1L)
-    expect_equal(sum(params_in_file == "[objective: regression]"), 1L)
-
-    expect_equal(sum(startsWith(params_in_file, "[verbosity:")), 1L)
-    expect_equal(sum(params_in_file == sprintf("[verbosity: %i]", .LGB_VERBOSITY)), 1L)
+    model_str <- bst$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    .expect_in(all_param_entries, params_in_file)
 
     # early stopping should be off by default
     expect_equal(sum(startsWith(params_in_file, "[early_stopping_round:")), 1L)
     expect_equal(sum(params_in_file == "[early_stopping_round: 0]"), 1L)
+
+    # since save_model_to_string() is used when serializing with saveRDS(), check that parameters all
+    # roundtrip saveRDS()/loadRDS() successfully
+    rds_file <- tempfile()
+    saveRDS(bst, rds_file)
+    bst_rds <- readRDS(rds_file)
+    model_str <- bst_rds$save_model_to_string()
+    params_in_file <- .params_from_model_string(model_str = model_str)
+    .expect_in(all_param_entries, params_in_file)
 })
 
 test_that("early_stopping, num_iterations are stored correctly in model string even with aliases", {
@@ -1146,7 +1275,9 @@ test_that("params (including dataset params) should be stored in .rds file for B
     bst_file <- tempfile(fileext = ".rds")
     expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
 
-    expect_warning(bst_from_file <- readRDS.lgb.Booster(file = bst_file))
+    expect_warning({
+        bst_from_file <- readRDS.lgb.Booster(file = bst_file)
+    })
     expect_identical(
         bst_from_file$params
         , list(
@@ -1241,7 +1372,7 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
         , nrounds = 10L
         , params = params
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -1281,7 +1412,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
         , nrounds = 10L
         , params = params
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)

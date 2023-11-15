@@ -635,7 +635,7 @@ On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and *
 
 The following dependencies should be installed before compilation:
 
--  **CUDA** 10.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
+-  **CUDA** 11.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
 
 -  **CMake** 3.16 or later.
 
@@ -950,7 +950,7 @@ gcc
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://docs.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
+.. _MS MPI: https://learn.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
 
 .. _Open MPI: https://www.open-mpi.org/
 
@@ -960,7 +960,7 @@ gcc
 
 .. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
-.. _SWIG: http://www.swig.org/download.html
+.. _SWIG: https://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
 

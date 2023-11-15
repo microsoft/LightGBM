@@ -1094,7 +1094,7 @@ test_that("lgb.train() works as expected with sparse features", {
     , nrounds = nrounds
   )
 
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
   expect_equal(bst$current_iter(), nrounds)
   parsed_model <- jsonlite::fromJSON(bst$dump_model())
   expect_equal(parsed_model$objective, "binary sigmoid:1")
@@ -1816,7 +1816,7 @@ test_that("lgb.train() supports non-ASCII feature names", {
     )
     , colnames = feature_names
   )
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
   dumped_model <- jsonlite::fromJSON(bst$dump_model())
 
   # UTF-8 strings are not well-supported on Windows
@@ -2522,7 +2522,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
     , params = params
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
 
   dtrain <- .new_dataset()
   bst_linear <- lgb.train(
@@ -2531,7 +2531,7 @@ test_that("lgb.train() fit on linearly-relatead data improves when using linear 
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_true(.is_Booster(bst_linear))
 
   bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
   bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
@@ -2599,7 +2599,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
     , params = params
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
 
   dtrain <- .new_dataset()
   bst_linear <- lgb.train(
@@ -2608,7 +2608,7 @@ test_that("lgb.train() works with linear learners even if Dataset has missing va
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_true(.is_Booster(bst_linear))
 
   bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
   bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
@@ -2649,7 +2649,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     , params = params
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
 
   dtrain <- .new_dataset()
   bst_linear <- lgb.train(
@@ -2658,7 +2658,7 @@ test_that("lgb.train() works with linear learners, bagging, and a Dataset that h
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_true(.is_Booster(bst_linear))
 
   bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
   bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
@@ -2699,7 +2699,7 @@ test_that("lgb.train() works with linear learners and data where a feature has o
     , nrounds = 10L
     , params = utils::modifyList(params, list(linear_tree = TRUE))
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_true(.is_Booster(bst_linear))
 })
 
 test_that("lgb.train() works with linear learners when Dataset has categorical features", {
@@ -2732,7 +2732,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , params = params
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst))
+  expect_true(.is_Booster(bst))
 
   dtrain <- .new_dataset()
   bst_linear <- lgb.train(
@@ -2741,7 +2741,7 @@ test_that("lgb.train() works with linear learners when Dataset has categorical f
     , params = utils::modifyList(params, list(linear_tree = TRUE))
     , valids = list("train" = dtrain)
   )
-  expect_true(lgb.is.Booster(bst_linear))
+  expect_true(.is_Booster(bst_linear))
 
   bst_last_mse <- bst$record_evals[["train"]][["l2"]][["eval"]][[10L]]
   bst_lin_last_mse <- bst_linear$record_evals[["train"]][["l2"]][["eval"]][[10L]]
@@ -3265,6 +3265,8 @@ test_that("lightgbm() accepts 'weight' and 'weights'", {
     , metric =  "auc"
     , early_stopping_round = nrounds
     , num_threads = .LGB_MAX_THREADS
+    # include a nonsense parameter just to trigger a WARN-level log
+    , nonsense_param = 1.0
   )
   if (!is.null(verbose_param)) {
     params[["verbose"]] <- verbose_param
@@ -3787,4 +3789,42 @@ test_that("lightgbm() accepts named categorical_features", {
     , num_threads = .LGB_MAX_THREADS
   )
   expect_true(length(model$params$categorical_feature) > 0L)
+})
+
+test_that("lightgbm() correctly sets objective when passing lgb.Dataset as input", {
+  data(mtcars)
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  ds <- lgb.Dataset(x, label = y)
+  model <- lightgbm(
+    ds
+    , objective = "auto"
+    , verbose = .LGB_VERBOSITY
+    , nrounds = 5L
+    , num_threads = .LGB_MAX_THREADS
+  )
+  expect_equal(model$params$objective, "regression")
+})
+
+test_that("Evaluation metrics aren't printed as a single-element vector", {
+  log_txt <- capture_output({
+    data(mtcars)
+    y <- mtcars$mpg
+    x <- as.matrix(mtcars[, -1L])
+    cv_result <- lgb.cv(
+        data = lgb.Dataset(x, label = y)
+        , params = list(
+            objective = "regression"
+            , metric = "l2"
+            , min_data_in_leaf = 5L
+            , max_depth = 3L
+            , num_threads = .LGB_MAX_THREADS
+        )
+        , nrounds = 2L
+        , nfold = 3L
+        , verbose = 1L
+        , eval_train_metric = TRUE
+    )
+  })
+  expect_false(grepl("[1] \"[1]", log_txt, fixed = TRUE))
 })

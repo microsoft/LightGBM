@@ -97,7 +97,7 @@ class RF : public GBDT {
     }
     size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
     std::vector<double> tmp_scores(total_size, 0.0f);
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int j = 0; j < num_tree_per_iteration_; ++j) {
       size_t offset = static_cast<size_t>(j)* num_data_;
       for (data_size_t i = 0; i < num_data_; ++i) {
@@ -114,6 +114,12 @@ class RF : public GBDT {
     const bool is_use_subset = data_sample_strategy_->is_use_subset();
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
     const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
+
+    // GOSSStrategy->Bagging may modify value of bag_data_cnt_
+    if (is_use_subset && bag_data_cnt < num_data_) {
+      tmp_grad_.resize(num_data_);
+      tmp_hess_.resize(num_data_);
+    }
 
     CHECK_EQ(gradients, nullptr);
     CHECK_EQ(hessians, nullptr);
