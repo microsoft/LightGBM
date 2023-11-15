@@ -1197,11 +1197,9 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 *       This safety check serves to prevent incorrect internal API usage.
 *       Correct usage will never incur in this problem:
 *         - The received buffer size shall be sufficient at all times for the input format string and value.
-* /Users/jlamb/repos/LightGBM/include/LightGBM/utils/common.h:1203:35:   in 'constexpr' expansion of 'fmt::v8::basic_format_string<char, const unsigned int&>(format)'
-* /Users/jlamb/repos/LightGBM/include/LightGBM/utils/common.h:1203:35: error: 'format' is not a constant expression
 */
 template <typename T>
-inline static void format_to_buf(char* buffer, const size_t buf_len, fmt::format_string<T> format, const T value) {
+inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
     auto result = fmt::format_to_n(buffer, buf_len, format, value);
     if (result.size >= buf_len) {
       Log::Fatal("Numerical conversion failed. Buffer is too small.");
@@ -1212,21 +1210,21 @@ inline static void format_to_buf(char* buffer, const size_t buf_len, fmt::format
 template<typename T, bool is_float, bool high_precision>
 struct __TToStringHelper {
   void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, fmt::format_string<T>("{}"), value);
+    format_to_buf(buffer, buf_len, "{}", value);
   }
 };
 
 template<typename T>
 struct __TToStringHelper<T, true, false> {
   void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, fmt::format_string<T>("{:g}"), value);
+    format_to_buf(buffer, buf_len, "{:g}", value);
   }
 };
 
 template<typename T>
 struct __TToStringHelper<T, true, true> {
   void operator()(T value, char* buffer, size_t buf_len) const {
-    format_to_buf(buffer, buf_len, fmt::format_string<T>("{:.17g}"), value);
+    format_to_buf(buffer, buf_len, "{:.17g}", value);
   }
 };
 
@@ -1234,7 +1232,7 @@ struct __TToStringHelper<T, true, true> {
 * Converts an array to a string with with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
 * and is locale-independent.
-*
+* 
 * \note If ``high_precision_output`` is set to true,
 *       floating point values are output with more digits of precision.
 */
