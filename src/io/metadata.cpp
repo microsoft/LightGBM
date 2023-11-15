@@ -510,7 +510,7 @@ void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, da
 template <typename It>
 void Metadata::SetQueriesFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // Clear weights on empty input
+  // Clear query boundaries on empty input
   if (last - first == 0) {
     query_boundaries_.clear();
     num_queries_ = 0;
@@ -518,12 +518,12 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
   }
 
   data_size_t sum = 0;
-  #pragma omp parallel for schedule(static) reduction(+:sum)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum)
   for (data_size_t i = 0; i < last - first; ++i) {
     sum += first[i];
   }
   if (num_data_ != sum) {
-    Log::Fatal("Sum of query counts differs from the length of #data");
+    Log::Fatal("Sum of query counts (%i) differs from the length of #data (%i)", num_data_, sum);
   }
   num_queries_ = last - first;
 
