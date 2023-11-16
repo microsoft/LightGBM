@@ -37,13 +37,13 @@ def generate_dummy_arrow_table() -> pa.Table:
     return pa.Table.from_arrays([col1, col2], names=["a", "b"])
 
 
-def generate_random_arrow_table(num_columns, num_datapoints, seed) -> pa.Table:
+def generate_random_arrow_table(num_columns: int, num_datapoints: int, seed: int) -> pa.Table:
     columns = [generate_random_arrow_array(num_datapoints, seed + i) for i in range(num_columns)]
     names = [f"col_{i}" for i in range(num_columns)]
     return pa.Table.from_arrays(columns, names=names)
 
 
-def generate_random_arrow_array(num_datapoints, seed) -> pa.ChunkedArray:
+def generate_random_arrow_array(num_datapoints: int, seed: int) -> pa.ChunkedArray:
     generator = np.random.default_rng(seed)
     data = generator.standard_normal(num_datapoints)
 
