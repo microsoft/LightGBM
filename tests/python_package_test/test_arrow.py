@@ -113,7 +113,10 @@ def test_dataset_construct_fields_fuzzy():
     arrow_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
-        arrow_table.to_pandas(), label=arrow_labels.to_numpy(), weight=arrow_weights.to_numpy()
+        arrow_table.to_pandas(),
+        label=arrow_labels.to_numpy(),
+        weight=arrow_weights.to_numpy(),
+        group=arrow_groups.to_numpy(),
     )
     pandas_dataset.construct()
 
