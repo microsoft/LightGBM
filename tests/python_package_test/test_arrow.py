@@ -2,17 +2,31 @@
 import filecmp
 from typing import Any, Dict
 
+import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
-
-import lightgbm as lgb
 
 from .utils import np_assert_array_equal
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
 # ----------------------------------------------------------------------------------------------- #
+
+_INTEGER_TYPES = [
+    pa.int8(),
+    pa.int16(),
+    pa.int32(),
+    pa.int64(),
+    pa.uint8(),
+    pa.uint16(),
+    pa.uint32(),
+    pa.uint64(),
+]
+_FLOAT_TYPES = [
+    pa.float32(),
+    pa.float64(),
+]
 
 
 def generate_simple_arrow_table() -> pa.Table:
@@ -136,21 +150,7 @@ def test_dataset_construct_fields_fuzzy():
     ["array_type", "label_data"],
     [(pa.array, [0, 1, 0, 0, 1]), (pa.chunked_array, [[0], [1, 0, 0, 1]])],
 )
-@pytest.mark.parametrize(
-    "arrow_type",
-    [
-        pa.int8(),
-        pa.int16(),
-        pa.int32(),
-        pa.int64(),
-        pa.uint8(),
-        pa.uint16(),
-        pa.uint32(),
-        pa.uint64(),
-        pa.float32(),
-        pa.float64(),
-    ],
-)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
 def test_dataset_construct_labels(array_type, label_data, arrow_type):
     data = generate_dummy_arrow_table()
     labels = array_type(label_data, type=arrow_type)
@@ -192,21 +192,15 @@ def test_dataset_construct_weights(array_type, weight_data, arrow_type):
 
 
 @pytest.mark.parametrize(
-    ["array_type", "group_data"], [(pa.array, [2, 3]), (pa.chunked_array, [[2], [3]])]
-)
-@pytest.mark.parametrize(
-    "arrow_type",
+    ["array_type", "group_data"],
     [
-        pa.int8(),
-        pa.int16(),
-        pa.int32(),
-        pa.int64(),
-        pa.uint8(),
-        pa.uint16(),
-        pa.uint32(),
-        pa.uint64(),
+        (pa.array, [2, 3]),
+        (pa.chunked_array, [[2], [3]]),
+        (pa.chunked_array, [[], [2, 3]]),
+        (pa.chunked_array, [[2], [], [3], []]),
     ],
 )
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES)
 def test_dataset_construct_groups(array_type, group_data, arrow_type):
     data = generate_dummy_arrow_table()
     groups = array_type(group_data, type=arrow_type)
