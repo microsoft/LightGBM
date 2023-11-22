@@ -116,6 +116,7 @@ class Metadata {
   void SetWeights(const ArrowChunkedArray& array);
 
   void SetQuery(const data_size_t* query, data_size_t len);
+  void SetQuery(const ArrowChunkedArray& array);
 
   void SetPosition(const data_size_t* position, data_size_t len);
 
@@ -348,6 +349,9 @@ class Metadata {
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
   /*! \brief Insert queries at the given index */
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
+  /*! \brief Set queries from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetQueriesFromIterator(It first, It last);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
