@@ -251,5 +251,5 @@ def test_dataset_construct_init_scores_table():
     dataset.construct()
 
     actual = dataset.get_init_score()
-    assert actual.dtype == np.float64
-    assert actual.shape == (5, 3)
+    expected = init_scores.to_pandas().to_numpy().astype(np.float64)
+    np_assert_array_equal(expected, actual, strict=True)

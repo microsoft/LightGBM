@@ -2584,7 +2584,7 @@ class Dataset:
             # 'init_score'.
             if _is_pyarrow_table(data):
                 if field_name != "init_score":
-                    raise ValueError("pyarrow table provided for field other than init_score")
+                    raise ValueError(f"pyarrow tables are not supported for field '{field_name}'")
                 data = pa_chunked_array([
                     chunk for array in data.columns for chunk in array.chunks  # type: ignore
                 ])
