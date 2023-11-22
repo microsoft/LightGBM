@@ -323,17 +323,17 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
 }
 
 # Extract callback names from the list of callbacks
-callback.names <- function(cb_list) {
+.callback_names <- function(cb_list) {
   return(unlist(lapply(cb_list, attr, "name")))
 }
 
-add.cb <- function(cb_list, cb) {
+.add_cb <- function(cb_list, cb) {
 
   # Combine two elements
   cb_list <- c(cb_list, cb)
 
   # Set names of elements
-  names(cb_list) <- callback.names(cb_list = cb_list)
+  names(cb_list) <- .callback_names(cb_list = cb_list)
 
   if ("cb_early_stop" %in% names(cb_list)) {
 
@@ -349,7 +349,7 @@ add.cb <- function(cb_list, cb) {
 
 }
 
-categorize.callbacks <- function(cb_list) {
+.categorize_callbacks <- function(cb_list) {
 
   # Check for pre-iteration or post-iteration
   return(
