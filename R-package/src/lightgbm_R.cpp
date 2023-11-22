@@ -226,7 +226,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   int32_t len = static_cast<int32_t>(Rf_asInteger(len_used_row_indices));
   std::vector<int32_t> idxvec(len);
   // convert from one-based to zero-based index
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (len >= 1024)
+#pragma omp simd
   for (int32_t i = 0; i < len; ++i) {
     idxvec[i] = static_cast<int32_t>(INTEGER(used_row_indices)[i] - 1);
   }
@@ -339,7 +339,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   const char* name = CHAR(PROTECT(Rf_asChar(field_name)));
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (len >= 1024)
+#pragma omp simd
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<int32_t>(INTEGER(field_data)[i]);
     }
@@ -348,7 +348,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (len >= 1024)
+#pragma omp simd
     for (int i = 0; i < len; ++i) {
       vec[i] = static_cast<float>(REAL(field_data)[i]);
     }
@@ -372,19 +372,19 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp simd
     for (int i = 0; i < out_len - 1; ++i) {
       INTEGER(field_data)[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp simd
     for (int i = 0; i < out_len; ++i) {
       REAL(field_data)[i] = p_data[i];
     }
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (out_len >= 1024)
+#pragma omp simd
     for (int i = 0; i < out_len; ++i) {
       REAL(field_data)[i] = p_data[i];
     }
@@ -611,7 +611,7 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   int is_finished = 0;
   int int_len = Rf_asInteger(len);
   std::vector<float> tgrad(int_len), thess(int_len);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (int_len >= 1024)
+#pragma omp simd
   for (int j = 0; j < int_len; ++j) {
     tgrad[j] = static_cast<float>(REAL(grad)[j]);
     thess[j] = static_cast<float>(REAL(hess)[j]);
