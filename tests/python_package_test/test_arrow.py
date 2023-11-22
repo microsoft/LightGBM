@@ -2,10 +2,11 @@
 import filecmp
 from typing import Any, Dict
 
-import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
+
+import lightgbm as lgb
 
 from .utils import np_assert_array_equal
 
