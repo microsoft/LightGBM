@@ -372,7 +372,7 @@ void Metadata::SetInitScoresFromIterator(It first, It last) {
   }
   num_init_score_ = last - first;
 
-  #pragma omp parallel for schedule(static, 512) if (num_init_score_ >= 1024)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_init_score_ >= 1024)
   for (int64_t i = 0; i < num_init_score_; ++i) {
     init_score_[i] = Common::AvoidInf(first[i]);
   }

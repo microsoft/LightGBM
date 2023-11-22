@@ -30,19 +30,6 @@ _FLOAT_TYPES = [
 ]
 
 
-_INTEGER_TYPES = [
-    pa.int8(),
-    pa.int16(),
-    pa.int32(),
-    pa.int64(),
-    pa.uint8(),
-    pa.uint16(),
-    pa.uint32(),
-    pa.uint64(),
-]
-_FLOATING_POINT_TYPES = [pa.float32(), pa.float64()]
-
-
 def generate_simple_arrow_table() -> pa.Table:
     columns = [
         pa.chunked_array([[1, 2, 3, 4, 5]], type=pa.uint8()),
