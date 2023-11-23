@@ -11,16 +11,16 @@ test_that("Booster$finalize() should not fail", {
         , verbose = .LGB_VERBOSITY
         , nrounds = 3L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
-    expect_false(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_false(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
@@ -188,7 +188,7 @@ test_that("Loading a Booster from a text file works", {
         , params = params
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -232,7 +232,7 @@ test_that("boosters with linear models at leaves can be written to text file and
         , params = params
         , verbose = .LGB_VERBOSITY
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -269,7 +269,7 @@ test_that("Loading a Booster from a string works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_string <- bst$save_model_to_string()
@@ -376,7 +376,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -411,7 +411,7 @@ test_that("Creating a Booster from a Dataset should work", {
         ),
         train_set = dtrain
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), 0L)
     expect_true(is.na(bst$best_score))
     expect_true(all(bst$predict(agaricus.train$data) == 0.5))
@@ -446,10 +446,10 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             , num_threads = .LGB_MAX_THREADS
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     expect_equal(bst$eval_train()[[1L]][["value"]], 0.1115352)
-    expect_true(lgb.is.Booster(bst_from_ds))
+    expect_true(.is_Booster(bst_from_ds))
     expect_equal(bst_from_ds$current_iter(), nrounds)
     expect_equal(bst_from_ds$eval_train()[[1L]][["value"]], 5.65704892)
     dumped_model <- jsonlite::fromJSON(bst$dump_model())
@@ -531,7 +531,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
         , nrounds = nrounds
     )
     expect_equal(bst$current_iter(), nrounds)
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     logloss <- bst$eval_train()[[1L]][["value"]]
     expect_equal(logloss, 0.01904786)
 
@@ -539,7 +539,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
 
     # rollback_one_iter() should return a booster and modify the original
     # booster in place
-    expect_true(lgb.is.Booster(x))
+    expect_true(.is_Booster(x))
     expect_equal(bst$current_iter(), nrounds - 1L)
 
     # score should now come from the model as of 4 iterations
@@ -565,7 +565,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     bst$update(
         train_set = Dataset$new(
@@ -574,7 +574,7 @@ test_that("Booster$update() passing a train_set works as expected", {
             , params = list(verbose = .LGB_VERBOSITY)
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds + 1L)
 
     # train with 3 rounds directly
@@ -590,7 +590,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds +  1L
     )
-    expect_true(lgb.is.Booster(bst2))
+    expect_true(.is_Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
 
     # model with 2 rounds + 1 update should be identical to 3 rounds
@@ -716,7 +716,7 @@ test_that("Saving a model with different feature importance types works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
@@ -772,7 +772,7 @@ test_that("Saving a model with unknown importance type fails", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
@@ -1372,7 +1372,7 @@ test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster a
         , nrounds = 10L
         , params = params
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -1412,7 +1412,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
         , nrounds = 10L
         , params = params
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)

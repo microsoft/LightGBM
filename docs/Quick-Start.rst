@@ -85,4 +85,4 @@ Examples
 
 .. _LibSVM: https://www.csie.ntu.edu.tw/~cjlin/libsvm/
 
-.. _Expo data: http://stat-computing.org/dataexpo/2009/
+.. _Expo data: https://community.amstat.org/jointscsg-section/dataexpo/dataexpo2009
