@@ -70,7 +70,9 @@ _LGBM_GroupType = Union[
     List[float],
     List[int],
     np.ndarray,
-    pd_Series
+    pd_Series,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_PositionType = Union[
     np.ndarray,
@@ -1652,7 +1654,7 @@ class Dataset:
             If this is Dataset for validation, training data should be used as reference.
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2432,7 +2434,7 @@ class Dataset:
             Label of the data.
         weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2889,7 +2891,7 @@ class Dataset:
 
         Parameters
         ----------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2903,7 +2905,8 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
+            if not _is_pyarrow_array(group):
+                group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
             self.set_field('group', group)
             # original values can be modified at cpp side
             constructed_group = self.get_field('group')
@@ -4431,7 +4434,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.

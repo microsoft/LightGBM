@@ -558,9 +558,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
 /*!
  * \brief Set vector to a content in info.
  * \note
+ * - \a group converts input datatype into ``int32``;
  * - \a label and \a weight convert input datatype into ``float32``.
  * \param handle Handle of dataset
- * \param field_name Field name, can be \a label, \a weight
+ * \param field_name Field name, can be \a label, \a weight, \a group
  * \param n_chunks The number of Arrow arrays passed to this function
  * \param chunks Pointer to the list of Arrow arrays
  * \param schema Pointer to the schema of all Arrow arrays
