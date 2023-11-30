@@ -40,7 +40,7 @@ void LGBM_R_save_exception_msg(const std::string &err);
   catch(std::exception& ex) { LGBM_R_save_exception_msg(ex); } \
   catch(std::string& ex) { LGBM_R_save_exception_msg(ex); } \
   catch(...) { Rf_error("unknown exception"); } \
-  Rf_error(R_errmsg_buffer); \
+  Rf_error("%s", R_errmsg_buffer); \
   return R_NilValue; /* <- won't be reached */
 
 #define CHECK_CALL(x) \
