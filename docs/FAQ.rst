@@ -62,7 +62,7 @@ General LightGBM Questions
 1. Where do I find more details about LightGBM parameters?
 ----------------------------------------------------------
 
-Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+Take a look at `Parameters <./Parameters.rst>`__.
 
 2. On datasets with millions of features, training does not start (or starts after a very long time).
 -----------------------------------------------------------------------------------------------------
@@ -289,7 +289,7 @@ Python-package
 
 This error should be solved in latest version.
 If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
-or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+or check `this thread on stackoverflow <https://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
 
 2. Error messages: ``Cannot ... before construct dataset``.
 -----------------------------------------------------------

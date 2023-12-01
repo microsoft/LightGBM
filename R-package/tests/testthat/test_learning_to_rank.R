@@ -25,7 +25,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , data = dtrain
         , nrounds = 10L
     )
-    expect_true(lgb.is.Booster(model))
+    expect_true(.is_Booster(model))
 
     dumped_model <- jsonlite::fromJSON(
         model$dump_model()
