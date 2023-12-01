@@ -34,7 +34,7 @@ jobs:
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
-  pool: sh-ubuntu
+  pool: sh-ubuntu-mariner
   container: linux-artifact-builder
   strategy:
     matrix:
