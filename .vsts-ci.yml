@@ -87,7 +87,7 @@ jobs:
     IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
-  pool: sh-ubuntu
+  pool: sh-ubuntu-mariner
   container: ubuntu-latest
   strategy:
     matrix:
