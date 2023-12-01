@@ -16,8 +16,7 @@ def find_lib_path() -> List[str]:
        List of all found library paths to LightGBM.
     """
     curr_path = Path(__file__).absolute()
-    dll_path = [curr_path,
-                curr_path.parents[1],
+    dll_path = [curr_path.parents[1],
                 curr_path.parents[0] / 'bin',
                 curr_path.parents[0] / 'lib']
     if system() in ('Windows', 'Microsoft'):

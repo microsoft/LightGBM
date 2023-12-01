@@ -62,7 +62,7 @@ General LightGBM Questions
 1. Where do I find more details about LightGBM parameters?
 ----------------------------------------------------------
 
-Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+Take a look at `Parameters <./Parameters.rst>`__.
 
 2. On datasets with millions of features, training does not start (or starts after a very long time).
 -----------------------------------------------------------------------------------------------------
