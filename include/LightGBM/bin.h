@@ -474,7 +474,7 @@ class Bin {
   * \return The bin data object
   */
   template <template<typename> typename PAIRWISE_BIN_TYPE>
-  static Bin* CreateDensePairwiseRankingBin(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+  static Bin* CreateDensePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
   * \brief Create object for bin data of one feature, used for pairwise ranking, for an original sparse bin
@@ -484,7 +484,7 @@ class Bin {
   * \return The bin data object
   */
   template <template<typename> typename PAIRWISE_BIN_TYPE>
-  static Bin* CreateSparsePairwiseRankingBin(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+  static Bin* CreateSparsePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
   * \brief Deep copy the bin

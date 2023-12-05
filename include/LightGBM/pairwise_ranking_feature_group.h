@@ -28,8 +28,8 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   * \param is_first_or_second_in_pairing Mark whether features in this group belong to the first or second element in the pairing
   */
 
-  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_data, const int is_first_or_second_in_pairing):
-    FeatureGroup(other, num_data), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {}
+  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map):
+    FeatureGroup(other, num_original_data), paired_ranking_item_index_map_(paired_ranking_item_index_map), num_data_(num_pairs), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {}
 
   /*!
    * \brief Constructor from memory when data is present
@@ -62,11 +62,11 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
    * \param memory Pointer of memory
    * \param group_id Id of group
    */
-  const char* LoadDefinitionFromMemory(const void* memory, int group_id) {
+  const char* LoadDefinitionFromMemory(const void* /*memory*/, int /*group_id*/) {
     // TODO(shiyu1994)
   }
 
-  inline BinIterator* SubFeatureIterator(int sub_feature) {
+  inline BinIterator* SubFeatureIterator(int /*sub_feature*/) {
     // TODO(shiyu1994)
   }
 
@@ -79,11 +79,11 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   }
 
  private:
-  template <typename PAIRWISE_BIN_TYPE>
+  template <template<typename> typename PAIRWISE_BIN_TYPE>
   void CreateBinDataInner(int num_data, bool is_multi_val, bool force_dense, bool force_sparse);
 
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;
-  
+
   /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   /*! \brief Number of pairwise data */

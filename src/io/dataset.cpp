@@ -820,7 +820,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   gpu_device_id_ = dataset->gpu_device_id_;
 }
 
-void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> pair_index_map) {
+void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> /* TODO(shiyu1994) pair_index_map*/) {
   metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
 
   feature_groups_.clear();
@@ -859,7 +859,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std:
       feature2subfeature_.push_back(dataset->feature2subfeature_[original_group_feature_start + feature_index_in_group]);
       cur_feature_index += 1;
     }
-    feature_groups_.emplace_back(new PairwiseRankingFeatureGroup(*dataset->feature_groups_[original_group_index].get(), num_data_, is_first_or_second_in_pairing));
+    feature_groups_.emplace_back(new PairwiseRankingFeatureGroup(*dataset->feature_groups_[original_group_index].get(), num_data_, is_first_or_second_in_pairing, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_index_map()));
     num_total_bin += dataset->FeatureGroupNumBin(original_group_index);
     group_bin_boundaries_.push_back(num_total_bin);
     group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];

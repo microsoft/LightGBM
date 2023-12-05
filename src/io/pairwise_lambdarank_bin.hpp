@@ -109,44 +109,33 @@ class PairwiseRankingSecondIterator: public BinIterator {
   data_size_t prev_index_;
 };
 
-template <typename BIN_TYPE>
-class PairwiseRankingFirstBin: public BIN_TYPE {
+template <typename BIN_TYPE, template<typename> typename ITERATOR_TYPE>
+class PairwiseRankingBin: public BIN_TYPE {
  public:
-  PairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin): BIN_TYPE(0), unpaired_bin_(unpaired_bin), min_bin_(min_bin), max_bin_(max_bin), most_freq_bin_(most_freq_bin) {
-    paired_ranking_item_index_map_ = paired_ranking_item_index_map;
+  PairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): BIN_TYPE(0), paired_ranking_item_index_map_(paired_ranking_item_index_map), unpaired_bin_(unpaired_bin) {
     num_data_ = num_data;
   }
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
-    return new PairwiseRankingFirstIterator<BIN_TYPE>(unpaired_bin_.get(), paired_ranking_item_index_map_, min_bin_, max_bin_, most_freq_bin_);
+    return new ITERATOR_TYPE<BIN_TYPE>(unpaired_bin_.get(), paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
   }
 
- private:
+ protected:
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   const std::shared_ptr<const BIN_TYPE> unpaired_bin_;
-  const uint32_t min_bin_;
-  const uint32_t max_bin_;
-  const uint32_t most_freq_bin_;
+  data_size_t num_data_;
 };
 
 template <typename BIN_TYPE>
-class PairwiseRankingSecondBin: public BIN_TYPE {
+class PairwiseRankingFirstBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator> {
  public:
-  PairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin): BIN_TYPE(0), unpaired_bin_(unpaired_bin), min_bin_(min_bin), max_bin_(max_bin), most_freq_bin_(most_freq_bin) {
-    paired_ranking_item_index_map_ = paired_ranking_item_index_map;
-    num_data_ = num_data;
-  }
+  PairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+};
 
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
-    return new PairwiseRankingSecondIterator<BIN_TYPE>(unpaired_bin_.get(), paired_ranking_item_index_map_, min_bin_, max_bin_, most_freq_bin_);
-  }
-
- private:
-  const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
-  const std::shared_ptr<const BIN_TYPE> unpaired_bin_;
-  const uint32_t min_bin_;
-  const uint32_t max_bin_;
-  const uint32_t most_freq_bin_;
+template <typename BIN_TYPE>
+class PairwiseRankingSecondBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator> {
+ public:
+  PairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
 };
 
 }  // LightGBM

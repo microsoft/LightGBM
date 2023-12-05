@@ -269,6 +269,10 @@ class Metadata {
     }
   }
 
+  inline data_size_t paired_ranking_item_index_map_size() const {
+    return static_cast<data_size_t>(paired_ranking_item_index_map_.size());
+  }
+
   /*!
   * \brief Get data boundaries on queries, if not exists, will return nullptr
   *        we assume data will order by query,
