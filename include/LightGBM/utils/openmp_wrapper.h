@@ -36,9 +36,9 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
       - https://www.openmp.org/spec-html/5.0/openmpsu112.html
       - https://gcc.gnu.org/onlinedocs/libgomp/omp_005fget_005fmax_005fthreads.html
 */
-int OMP_NUM_THREADS();
+LIGHTGBM_EXTERN_C int OMP_NUM_THREADS();
 
-void OMP_SET_NUM_THREADS(int num_threads);
+LIGHTGBM_EXTERN_C void OMP_SET_NUM_THREADS(int num_threads);
 
 class ThreadExceptionHelper {
  public:
