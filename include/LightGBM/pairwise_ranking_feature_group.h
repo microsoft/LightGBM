@@ -3,8 +3,8 @@
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
  */
-#ifndef LIGHTGBM_PAIRWISE_FEATURE_GROUP_H_
-#define LIGHTGBM_PAIRWISE_FEATURE_GROUP_H_
+#ifndef LIGHTGBM_PAIRWISE_RANKING_FEATURE_GROUP_H_
+#define LIGHTGBM_PAIRWISE_RANKING_FEATURE_GROUP_H_
 
 #include "feature_group.h"
 
@@ -25,23 +25,11 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   * \param bin_mappers Bin mapper for features
   * \param num_data Total number of data
   * \param is_enable_sparse True if enable sparse feature
+  * \param is_first_or_second_in_pairing Mark whether features in this group belong to the first or second element in the pairing
   */
 
-  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_data) {
-    num_feature_ = other.num_feature_;
-    is_multi_val_ = false;
-    is_dense_multi_val_ = false;
-    is_sparse_ = false;
-    num_total_bin_ = other.num_total_bin_;
-    bin_offsets_ = other.bin_offsets_;
-    num_data_ = num_data;
-
-    bin_mappers_.reserve(other.bin_mappers_.size());
-    for (auto& bin_mapper : other.bin_mappers_) {
-      bin_mappers_.emplace_back(new BinMapper(*bin_mapper));
-    }
-    CreateBinData(num_data, is_multi_val_, !is_sparse_, is_sparse_);
-  }
+  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_data, const int is_first_or_second_in_pairing):
+    FeatureGroup(other, num_data), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {}
 
   /*!
    * \brief Constructor from memory when data is present
@@ -50,21 +38,21 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
    * \param local_used_indices Local used indices, empty means using all data
    * \param group_id Id of group
    */
-  PairwiseRankingFeatureGroup(const void* memory,
-                              data_size_t num_all_data,
-                              const std::vector<data_size_t>& local_used_indices,
-                              int group_id) {
-    // TODO(shiyu1994)
-  }
+  // PairwiseRankingFeatureGroup(const void* memory,
+  //                             data_size_t num_all_data,
+  //                             const std::vector<data_size_t>& local_used_indices,
+  //                             int group_id) {
+  //   // TODO(shiyu1994)
+  // }
 
-  /*!
-   * \brief Constructor from definition in memory (without data)
-   * \param memory Pointer of memory
-   * \param local_used_indices Local used indices, empty means using all data
-   */
-  FeatureGroup(const void* memory, data_size_t num_data, int group_id) {
-    // TODO(shiyu1994)
-  }
+  // /*!
+  //  * \brief Constructor from definition in memory (without data)
+  //  * \param memory Pointer of memory
+  //  * \param local_used_indices Local used indices, empty means using all data
+  //  */
+  // PairwiseRankingFeatureGroup(const void* memory, data_size_t num_data, int group_id): FeatureGroup(memory, num_data, group_id) {
+  //   // TODO(shiyu1994)
+  // }
 
   /*! \brief Destructor */
   ~PairwiseRankingFeatureGroup() {}
@@ -91,17 +79,19 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   }
 
  private:
-  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
-    // TODO(shiyu1994)
-  }
+  template <typename PAIRWISE_BIN_TYPE>
+  void CreateBinDataInner(int num_data, bool is_multi_val, bool force_dense, bool force_sparse);
 
+  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;
   
   /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   /*! \brief Number of pairwise data */
   data_size_t num_data_;
+  /*! \brief Mark whether features in this group belong to the first or second element in the pairing */
+  const int is_first_or_second_in_pairing_;
 };
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_PAIRWISE_FEATURE_GROUP_H_
+#endif  // LIGHTGBM_PAIRWISE_RANKING_FEATURE_GROUP_H_

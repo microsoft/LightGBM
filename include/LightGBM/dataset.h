@@ -201,7 +201,7 @@ class Metadata {
 
   /*!
   * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
-  * \param metadata Pointer to metadata of the existing ranking dataset
+  * \param metadata Reference to metadata of the existing ranking dataset
   */
   void BuildPairwiseFeatureRanking(const Metadata& metadata);
 

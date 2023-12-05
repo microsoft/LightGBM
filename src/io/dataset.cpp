@@ -6,6 +6,7 @@
 #include <LightGBM/dataset.h>
 
 #include <LightGBM/feature_group.h>
+#include <LightGBM/pairwise_ranking_feature_group.h>
 #include <LightGBM/cuda/vector_cudahost.h>
 #include <LightGBM/utils/array_args.h>
 #include <LightGBM/utils/openmp_wrapper.h>
@@ -847,6 +848,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std:
   for (int i = 0; i < num_groups_; ++i) {
     int original_group_index = i % dataset->num_groups_;
     int original_group_feature_start = dataset->group_feature_start_[original_group_index];
+    const int is_first_or_second_in_pairing = original_group_index / dataset->num_groups_; // 0 for first, 1 for second
     group_feature_start_[i] = cur_feature_index;
     for (int feature_index_in_group = 0; feature_index_in_group < dataset->group_feature_cnt_[original_group_index]; ++feature_index_in_group) {
       const BinMapper* feature_bin_mapper = dataset->FeatureBinMapper(original_group_feature_start + feature_index_in_group);
@@ -857,7 +859,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std:
       feature2subfeature_.push_back(dataset->feature2subfeature_[original_group_feature_start + feature_index_in_group]);
       cur_feature_index += 1;
     }
-    feature_groups_.emplace_back(new FeatureGroup(*dataset->feature_groups_[original_group_index].get(), num_data_));
+    feature_groups_.emplace_back(new PairwiseRankingFeatureGroup(*dataset->feature_groups_[original_group_index].get(), num_data_, is_first_or_second_in_pairing));
     num_total_bin += dataset->FeatureGroupNumBin(original_group_index);
     group_bin_boundaries_.push_back(num_total_bin);
     group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];

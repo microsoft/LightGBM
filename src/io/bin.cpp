@@ -17,6 +17,7 @@
 #include "multi_val_dense_bin.hpp"
 #include "multi_val_sparse_bin.hpp"
 #include "sparse_bin.hpp"
+#include "pairwise_lambdarank_bin.hpp"
 
 namespace LightGBM {
 
@@ -632,6 +633,38 @@ namespace LightGBM {
     }
   }
 
+  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  Bin* Bin::CreateDensePairwiseRankingBin(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
+    if (num_bin <= 16) {
+      return new PAIRWISE_BIN_TYPE<DenseBin<uint8_t, true>>(num_data, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_data), min_bin, max_bin, most_freq_bin);
+    } else if (num_bin <= 256) {
+      return new PAIRWISE_BIN_TYPE<DenseBin<uint8_t, false>>(num_data, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_data), min_bin, max_bin, most_freq_bin);
+    } else if (num_bin <= 65536) {
+      return new PAIRWISE_BIN_TYPE<DenseBin<uint16_t, false>>(num_data, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_data), min_bin, max_bin, most_freq_bin);
+    } else {
+      return new PAIRWISE_BIN_TYPE<DenseBin<uint32_t, false>>(num_data, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_data), min_bin, max_bin, most_freq_bin);
+    }
+  }
+
+  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  Bin* Bin::CreateSparsePairwiseRankingBin(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
+    if (num_bin <= 256) {
+      return new PAIRWISE_BIN_TYPE<SparseBin<uint8_t>>(num_data, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_data), min_bin, max_bin, most_freq_bin);
+    } else if (num_bin <= 65536) {
+      return new PAIRWISE_BIN_TYPE<SparseBin<uint16_t>>(num_data, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_data), min_bin, max_bin, most_freq_bin);
+    } else {
+      return new PAIRWISE_BIN_TYPE<SparseBin<uint32_t>>(num_data, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_data), min_bin, max_bin, most_freq_bin);
+    }
+  }
+
+  template Bin* Bin::CreateSparsePairwiseRankingBin<PairwiseRankingFirstBin>(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+
+  template Bin* Bin::CreateSparsePairwiseRankingBin<PairwiseRankingSecondBin>(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+
+  template Bin* Bin::CreateDensePairwiseRankingBin<PairwiseRankingFirstBin>(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+
+  template Bin* Bin::CreateDensePairwiseRankingBin<PairwiseRankingSecondBin>(data_size_t num_data, int num_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin);
+
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
     double sparse_rate, const std::vector<uint32_t>& offsets) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
@@ -704,6 +737,8 @@ namespace LightGBM {
       }
     }
   }
+
+  
 
   template <>
   const void* DenseBin<uint8_t, false>::GetColWiseData(

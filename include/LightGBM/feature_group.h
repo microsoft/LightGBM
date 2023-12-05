@@ -350,7 +350,7 @@ class FeatureGroup {
       uint32_t max_bin = bin_offsets_[sub_feature + 1] - 1;
       return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
     } else {
-      int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
+      int addi = most_freq_bin == 0 ? 0 : 1;
       uint32_t min_bin = 1;
       uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
       return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
@@ -582,7 +582,7 @@ class FeatureGroup {
   }
 
  protected:
-  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
+  virtual void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
     if (is_multi_val) {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
