@@ -10,6 +10,27 @@ int LGBM_MAX_NUM_THREADS = -1;
 
 int LGBM_DEFAULT_NUM_THREADS = -1;
 
+int OMP_NUM_THREADS() {
+  int default_num_threads = 1;
+
+  if (LGBM_DEFAULT_NUM_THREADS > 0) {
+    // if LightGBM-specific default has been set, ignore OpenMP-global config
+    default_num_threads = LGBM_DEFAULT_NUM_THREADS;
+  } else {
+    // otherwise, default to OpenMP-global config
+    #pragma omp single
+    { default_num_threads = omp_get_max_threads(); }
+  }
+
+  // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't
+  // use more than that many threads
+  if (LGBM_MAX_NUM_THREADS > 0 && default_num_threads > LGBM_MAX_NUM_THREADS) {
+    return LGBM_MAX_NUM_THREADS;
+  }
+
+  return default_num_threads;
+}
+
 void OMP_SET_NUM_THREADS(int num_threads) {
   if (num_threads <= 0) {
     LGBM_DEFAULT_NUM_THREADS = -1;
