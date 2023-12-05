@@ -12,5 +12,5 @@ test_that("getLGBMthreads() and setLGBMthreads() work as expected", {
     # setting to any negative number sets max threads to -1
     ret <- setLGBMthreads(-312L)
     expect_null(ret)
-    expect_equall(getLGBMthreads(), -1L)
+    expect_equal(getLGBMthreads(), -1L)
 })
