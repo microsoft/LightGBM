@@ -4,6 +4,7 @@
  */
 #include <LightGBM/c_api.h>
 
+#include <LightGBM/arrow.h>
 #include <LightGBM/boosting.h>
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
@@ -832,6 +833,8 @@ class Booster {
 
 // explicitly declare symbols from LightGBM namespace
 using LightGBM::AllgatherFunction;
+using LightGBM::ArrowChunkedArray;
+using LightGBM::ArrowTable;
 using LightGBM::Booster;
 using LightGBM::Common::CheckElementsIntervalClosed;
 using LightGBM::Common::RemoveQuotationSymbol;
@@ -1567,6 +1570,98 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   API_END();
 }
 
+int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
+                                const ArrowArray* chunks,
+                                const ArrowSchema* schema,
+                                const char* parameters,
+                                const DatasetHandle reference,
+                                DatasetHandle *out) {
+  API_BEGIN();
+
+  auto param = Config::Str2Map(parameters);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+
+  std::unique_ptr<Dataset> ret;
+
+  // Prepare the Arrow data
+  ArrowTable table(n_chunks, chunks, schema);
+
+  // Initialize the dataset
+  if (reference == nullptr) {
+    // If there is no reference dataset, we first sample indices
+    auto sample_indices = CreateSampleIndices(static_cast<int32_t>(table.get_num_rows()), config);
+    auto sample_count = static_cast<int>(sample_indices.size());
+    std::vector<std::vector<double>> sample_values(table.get_num_columns());
+    std::vector<std::vector<int>> sample_idx(table.get_num_columns());
+
+    // Then, we obtain sample values by parallelizing across columns
+    OMP_INIT_EX();
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+    for (int64_t j = 0; j < table.get_num_columns(); ++j) {
+      OMP_LOOP_EX_BEGIN();
+
+      // Values need to be copied from the record batches.
+      sample_values[j].reserve(sample_indices.size());
+      sample_idx[j].reserve(sample_indices.size());
+
+      // The chunks are iterated over in the inner loop as columns can be treated independently.
+      int last_idx = 0;
+      int i = 0;
+      auto it = table.get_column(j).begin<double>();
+      for (auto idx : sample_indices) {
+        std::advance(it, idx - last_idx);
+        auto v = *it;
+        if (std::fabs(v) > kZeroThreshold || std::isnan(v)) {
+          sample_values[j].emplace_back(v);
+          sample_idx[j].emplace_back(i);
+        }
+        last_idx = idx;
+        i++;
+      }
+      OMP_LOOP_EX_END();
+    }
+    OMP_THROW_EX();
+
+    // Finally, we initialize a loader from the sampled values
+    DatasetLoader loader(config, nullptr, 1, nullptr);
+    ret.reset(loader.ConstructFromSampleData(Vector2Ptr<double>(&sample_values).data(),
+                                             Vector2Ptr<int>(&sample_idx).data(),
+                                             table.get_num_columns(),
+                                             VectorSize<double>(sample_values).data(),
+                                             sample_count,
+                                             table.get_num_rows(),
+                                             table.get_num_rows()));
+  } else {
+    ret.reset(new Dataset(static_cast<data_size_t>(table.get_num_rows())));
+    ret->CreateValid(reinterpret_cast<const Dataset*>(reference));
+    if (ret->has_raw()) {
+      ret->ResizeRaw(static_cast<int>(table.get_num_rows()));
+    }
+  }
+
+  // After sampling and properly initializing all bins, we can add our data to the dataset. Here,
+  // we parallelize across rows.
+  OMP_INIT_EX();
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+  for (int64_t j = 0; j < table.get_num_columns(); ++j) {
+    OMP_LOOP_EX_BEGIN();
+    const int tid = omp_get_thread_num();
+    data_size_t idx = 0;
+    auto column = table.get_column(j);
+    for (auto it = column.begin<double>(), end = column.end<double>(); it != end; ++it) {
+      ret->PushOneValue(tid, idx++, j, *it);
+    }
+    OMP_LOOP_EX_END();
+  }
+  OMP_THROW_EX();
+
+  ret->FinishLoad();
+  *out = ret.release();
+  API_END();
+}
+
 int LGBM_DatasetGetSubset(
   const DatasetHandle handle,
   const int32_t* used_row_indices,
@@ -1683,6 +1778,21 @@ int LGBM_DatasetSetField(DatasetHandle handle,
     is_success = dataset->SetDoubleField(field_name, reinterpret_cast<const double*>(field_data), static_cast<int32_t>(num_element));
   }
   if (!is_success) { Log::Fatal("Input data type error or field not found"); }
+  API_END();
+}
+
+int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
+                                  const char* field_name,
+                                  int64_t n_chunks,
+                                  const ArrowArray* chunks,
+                                  const ArrowSchema* schema) {
+  API_BEGIN();
+  auto dataset = reinterpret_cast<Dataset*>(handle);
+  ArrowChunkedArray ca(n_chunks, chunks, schema);
+  auto is_success = dataset->SetFieldFromArrow(field_name, ca);
+  if (!is_success) {
+    Log::Fatal("Input field is not supported");
+  }
   API_END();
 }
 
