@@ -7,6 +7,7 @@
 
 #ifdef _OPENMP
 
+#include <LightGBM/export.h>
 #include <LightGBM/utils/log.h>
 
 #include <omp.h>
@@ -17,22 +18,46 @@
 #include <stdexcept>
 #include <vector>
 
+// this can only be changed by LGBM_SetMaxThreads()
+LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
+
+// this is modified by OMP_SET_NUM_THREADS(), for example
+// by passing num_thread through params
+LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
+
+/*
+    Get number of threads to use in OpenMP parallel regions.
+
+    By default, this will return the result of omp_get_max_threads(),
+    which is OpenMP-implementation dependent but generally can be controlled
+    by environment variable OMP_NUM_THREADS.
+
+    ref:
+      - https://www.openmp.org/spec-html/5.0/openmpsu112.html
+      - https://gcc.gnu.org/onlinedocs/libgomp/omp_005fget_005fmax_005fthreads.html
+*/
 inline int OMP_NUM_THREADS() {
-  int ret = 1;
-#pragma omp parallel
-#pragma omp master
-  { ret = omp_get_num_threads(); }
-  return ret;
+  int default_num_threads;
+
+  if (LGBM_DEFAULT_NUM_THREADS > 0) {
+    // if LightGBM-specific default has been set, ignore OpenMP-global config
+    default_num_threads = LGBM_DEFAULT_NUM_THREADS;
+  } else {
+    // otherwise, default to OpenMP-global config
+    #pragma omp single
+    { default_num_threads = omp_get_max_threads(); }
+  }
+
+  // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't
+  // use more than that many threads
+  if (LGBM_MAX_NUM_THREADS > 0 && default_num_threads > LGBM_MAX_NUM_THREADS) {
+    return LGBM_MAX_NUM_THREADS;
+  }
+
+  return default_num_threads;
 }
 
-inline void OMP_SET_NUM_THREADS(int num_threads) {
-  static const int default_omp_num_threads = OMP_NUM_THREADS();
-  if (num_threads > 0) {
-    omp_set_num_threads(num_threads);
-  } else {
-    omp_set_num_threads(default_omp_num_threads);
-  }
-}
+void OMP_SET_NUM_THREADS(int num_threads);
 
 class ThreadExceptionHelper {
  public:
@@ -102,12 +127,11 @@ class ThreadExceptionHelper {
   /** Fall here if no OPENMP support, so just
       simulate a single thread running.
       All #pragma omp should be ignored by the compiler **/
-  inline void omp_set_num_threads(int) __GOMP_NOTHROW {}  // NOLINT (no cast done here)
-  inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
-  inline int omp_get_num_threads() __GOMP_NOTHROW {return 1;}
-  inline int omp_get_max_threads() __GOMP_NOTHROW {return 1;}
+  void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
+  LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS = -1;
+  LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS = -1;
 #ifdef __cplusplus
 }  // extern "C"
 #endif

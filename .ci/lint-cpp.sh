@@ -31,7 +31,6 @@ get_omp_pragmas_without_num_threads() {
         --include='*.hpp' \
         'pragma omp parallel' \
     | grep -v ' num_threads' \
-    | grep -v 'openmp_wrapper.h'
 }
 PROBLEMATIC_LINES=$(
     get_omp_pragmas_without_num_threads
