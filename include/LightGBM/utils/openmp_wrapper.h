@@ -130,8 +130,8 @@ class ThreadExceptionHelper {
   void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
-  LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS = -1;
-  LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS = -1;
+  int LGBM_DEFAULT_NUM_THREADS = -1;
+  int LGBM_MAX_NUM_THREADS = -1;
 #ifdef __cplusplus
 }  // extern "C"
 #endif
