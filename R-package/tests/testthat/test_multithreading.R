@@ -1,6 +1,6 @@
 test_that("getLGBMthreads() and setLGBMthreads() work as expected", {
     # works with integer input
-    setLGBMthreads(2L)
+    ret <- setLGBMthreads(2L)
     expect_null(ret)
     expect_equal(getLGBMthreads(), 2L)
 
