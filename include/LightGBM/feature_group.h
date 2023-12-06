@@ -152,7 +152,7 @@ class FeatureGroup {
   }
 
   /*! \brief Destructor */
-  ~FeatureGroup() {}
+  virtual ~FeatureGroup() {}
 
   /*!
    * \brief Load the overall definition of the feature group from binary serialized data

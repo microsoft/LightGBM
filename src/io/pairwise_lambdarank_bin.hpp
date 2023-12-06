@@ -6,6 +6,9 @@
 #ifndef LIGHTGBM_IO_PAIRWISE_LAMBDARANK_BIN_HPP_
 #define LIGHTGBM_IO_PAIRWISE_LAMBDARANK_BIN_HPP_
 
+#include <memory>
+#include <utility>
+
 #include <LightGBM/bin.h>
 
 namespace LightGBM {
@@ -18,8 +21,9 @@ class PairwiseRankingSecondBin;
 
 template <typename BIN_TYPE>
 class PairwiseRankingFirstIterator: public BinIterator {
- friend PairwiseRankingFirstBin<BIN_TYPE>;
  public:
+  friend PairwiseRankingFirstBin<BIN_TYPE>;
+
   PairwiseRankingFirstIterator(const BIN_TYPE* unpaired_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
     unpaired_bin_ = unpaired_bin;
     unpaired_bin_iterator_ = unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin);
@@ -67,8 +71,9 @@ class PairwiseRankingFirstIterator: public BinIterator {
 
 template <typename BIN_TYPE>
 class PairwiseRankingSecondIterator: public BinIterator {
- friend PairwiseRankingSecondBin<BIN_TYPE>;
  public:
+  friend PairwiseRankingSecondBin<BIN_TYPE>;
+
   PairwiseRankingSecondIterator(const BIN_TYPE* unpaired_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
     unpaired_bin_ = unpaired_bin;
     unpaired_bin_iterator_ = unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin);
@@ -109,7 +114,7 @@ class PairwiseRankingSecondIterator: public BinIterator {
   data_size_t prev_index_;
 };
 
-template <typename BIN_TYPE, template<typename> typename ITERATOR_TYPE>
+template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 class PairwiseRankingBin: public BIN_TYPE {
  public:
   PairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): BIN_TYPE(0), paired_ranking_item_index_map_(paired_ranking_item_index_map), unpaired_bin_(unpaired_bin) {
@@ -122,7 +127,7 @@ class PairwiseRankingBin: public BIN_TYPE {
 
  protected:
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
-  const std::shared_ptr<const BIN_TYPE> unpaired_bin_;
+  const std::unique_ptr<const BIN_TYPE> unpaired_bin_;
   data_size_t num_data_;
 };
 
@@ -138,6 +143,6 @@ class PairwiseRankingSecondBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRank
   PairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
 };
 
-}  // LightGBM
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_IO_PAIRWISE_LAMBDARANK_BIN_HPP_

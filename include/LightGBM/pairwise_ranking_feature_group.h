@@ -6,12 +6,12 @@
 #ifndef LIGHTGBM_PAIRWISE_RANKING_FEATURE_GROUP_H_
 #define LIGHTGBM_PAIRWISE_RANKING_FEATURE_GROUP_H_
 
-#include "feature_group.h"
-
 #include <cstdio>
 #include <memory>
 #include <utility>
 #include <vector>
+
+#include "feature_group.h"
 
 namespace LightGBM {
 
@@ -64,10 +64,12 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
    */
   const char* LoadDefinitionFromMemory(const void* /*memory*/, int /*group_id*/) {
     // TODO(shiyu1994)
+    return nullptr;
   }
 
   inline BinIterator* SubFeatureIterator(int /*sub_feature*/) {
     // TODO(shiyu1994)
+    return nullptr;
   }
 
   inline void FinishLoad() {
@@ -76,10 +78,11 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
 
   inline BinIterator* FeatureGroupIterator() {
     // TODO(shiyu1994)
+    return nullptr;
   }
 
  private:
-  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  template <template<typename> class PAIRWISE_BIN_TYPE>
   void CreateBinDataInner(int num_data, bool is_multi_val, bool force_dense, bool force_sparse);
 
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;

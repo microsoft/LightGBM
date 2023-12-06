@@ -9,9 +9,9 @@
 
 namespace LightGBM {
 
-template <template<typename> typename PAIRWISE_BIN_TYPE>
+template <template<typename> class PAIRWISE_BIN_TYPE>
 void PairwiseRankingFeatureGroup::CreateBinDataInner(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
-  CHECK(!is_multi_val); // do not support multi-value bin for now
+  CHECK(!is_multi_val);  // do not support multi-value bin for now
   if (is_multi_val) {
     multi_bin_data_.clear();
     for (int i = 0; i < num_feature_; ++i) {
@@ -47,4 +47,4 @@ void PairwiseRankingFeatureGroup::CreateBinData(int num_data, bool is_multi_val,
   }
 }
 
-} // namespace LightGBM
+}  // namespace LightGBM

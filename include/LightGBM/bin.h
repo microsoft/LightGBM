@@ -14,6 +14,7 @@
 #include <functional>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace LightGBM {
@@ -473,7 +474,7 @@ class Bin {
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \return The bin data object
   */
-  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  template <template<typename> class PAIRWISE_BIN_TYPE>
   static Bin* CreateDensePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
@@ -483,7 +484,7 @@ class Bin {
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \return The bin data object
   */
-  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  template <template<typename> class PAIRWISE_BIN_TYPE>
   static Bin* CreateSparsePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!

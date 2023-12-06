@@ -633,7 +633,7 @@ namespace LightGBM {
     }
   }
 
-  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  template <template<typename> class PAIRWISE_BIN_TYPE>
   Bin* Bin::CreateDensePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
     if (num_bin <= 16) {
       return new PAIRWISE_BIN_TYPE<DenseBin<uint8_t, true>>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data));
@@ -646,7 +646,7 @@ namespace LightGBM {
     }
   }
 
-  template <template<typename> typename PAIRWISE_BIN_TYPE>
+  template <template<typename> class PAIRWISE_BIN_TYPE>
   Bin* Bin::CreateSparsePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map) {
     if (num_bin <= 256) {
       return new PAIRWISE_BIN_TYPE<SparseBin<uint8_t>>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data));
@@ -737,8 +737,6 @@ namespace LightGBM {
       }
     }
   }
-
-  
 
   template <>
   const void* DenseBin<uint8_t, false>::GetColWiseData(
