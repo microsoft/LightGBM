@@ -474,8 +474,7 @@ class Bin {
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \return The bin data object
   */
-  template <template<typename> class PAIRWISE_BIN_TYPE>
-  static Bin* CreateDensePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+  static Bin* CreateDensePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
   * \brief Create object for bin data of one feature, used for pairwise ranking, for an original sparse bin
@@ -484,8 +483,25 @@ class Bin {
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \return The bin data object
   */
-  template <template<typename> class PAIRWISE_BIN_TYPE>
-  static Bin* CreateSparsePairwiseRankingBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+  static Bin* CreateSparsePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original dense bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateDensePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original sparse bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \return The bin data object
+  */
+  static Bin* CreateSparsePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
   * \brief Deep copy the bin

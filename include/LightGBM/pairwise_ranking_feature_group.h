@@ -82,9 +82,6 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   }
 
  private:
-  template <template<typename> class PAIRWISE_BIN_TYPE>
-  void CreateBinDataInner(int num_data, bool is_multi_val, bool force_dense, bool force_sparse);
-
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;
 
   /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */

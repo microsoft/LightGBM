@@ -11,6 +11,9 @@
 
 #include <LightGBM/bin.h>
 
+#include "dense_bin.hpp"
+#include "sparse_bin.hpp"
+
 namespace LightGBM {
 
 template <typename BIN_TYPE>
@@ -117,7 +120,7 @@ class PairwiseRankingSecondIterator: public BinIterator {
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 class PairwiseRankingBin: public BIN_TYPE {
  public:
-  PairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): BIN_TYPE(0), paired_ranking_item_index_map_(paired_ranking_item_index_map), unpaired_bin_(unpaired_bin) {
+  PairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, BIN_TYPE* unpaired_bin): BIN_TYPE(0), paired_ranking_item_index_map_(paired_ranking_item_index_map), unpaired_bin_(unpaired_bin) {
     num_data_ = num_data;
   }
 
@@ -142,9 +145,67 @@ class PairwiseRankingBin: public BIN_TYPE {
 
   data_size_t num_data() const override;
 
-  void* get_data() override;
+  void* get_data() override {
+    return unpaired_bin_->get_data();
+  }
 
   void ReSize(data_size_t num_data) override;
+
+  data_size_t Split(uint32_t /*min_bin*/, uint32_t /*max_bin*/,
+                    uint32_t /*default_bin*/, uint32_t /*most_freq_bin*/,
+                    MissingType /*missing_type*/, bool /*default_left*/,
+                    uint32_t /*threshold*/, const data_size_t* /*data_indices*/,
+                    data_size_t /*cnt*/,
+                    data_size_t* /*lte_indices*/,
+                    data_size_t* /*gt_indices*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  data_size_t SplitCategorical(
+      uint32_t /*min_bin*/, uint32_t /*max_bin*/, uint32_t /*most_freq_bin*/,
+      const uint32_t* /*threshold*/, int /*num_threshold*/,
+      const data_size_t* /*data_indices*/, data_size_t /*cnt*/,
+      data_size_t* /*lte_indices*/, data_size_t* /*gt_indices*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  data_size_t Split(uint32_t /*max_bin*/, uint32_t /*default_bin*/,
+                            uint32_t /*most_freq_bin*/, MissingType /*missing_type*/,
+                            bool /*default_left*/, uint32_t /*threshold*/,
+                            const data_size_t* /*data_indices*/, data_size_t /*cnt*/,
+                            data_size_t* /*lte_indices*/,
+                            data_size_t* /*gt_indices*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  data_size_t SplitCategorical(
+      uint32_t /*max_bin*/, uint32_t /*most_freq_bin*/, const uint32_t* /*threshold*/,
+      int /*num_threshold*/, const data_size_t* /*data_indices*/, data_size_t /*cnt*/,
+      data_size_t* /*lte_indices*/, data_size_t* /*gt_indices*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  const void* GetColWiseData(uint8_t* /*bit_type*/, bool* /*is_sparse*/, std::vector<BinIterator*>* /*bin_iterator*/, const int /*num_threads*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  const void* GetColWiseData(uint8_t* /*bit_type*/, bool* /*is_sparse*/, BinIterator** /*bin_iterator*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+ protected:
+
+  virtual data_size_t get_unpaired_index(const data_size_t paired_index) const = 0;
+
+  const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
+  const std::unique_ptr<BIN_TYPE> unpaired_bin_;
+  data_size_t num_data_;
+};
+
+template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
+class DensePairwiseRankingBin: public PairwiseRankingBin<DenseBin<VAL_T, IS_4BIT>, ITERATOR_TYPE> {
+ public:
+  DensePairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin): PairwiseRankingBin<DenseBin<VAL_T, IS_4BIT>, ITERATOR_TYPE>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
 
   void ConstructHistogram(
     const data_size_t* data_indices, data_size_t start, data_size_t end,
@@ -214,29 +275,14 @@ class PairwiseRankingBin: public BIN_TYPE {
                     data_size_t* lte_indices,
                     data_size_t* gt_indices) const override;
 
-  data_size_t SplitCategorical(
-      uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
-      const uint32_t* threshold, int num_threshold,
-      const data_size_t* data_indices, data_size_t cnt,
-      data_size_t* lte_indices, data_size_t* gt_indices) const override;
-
-  virtual data_size_t Split(uint32_t max_bin, uint32_t default_bin,
+  data_size_t Split(uint32_t max_bin, uint32_t default_bin,
                             uint32_t most_freq_bin, MissingType missing_type,
                             bool default_left, uint32_t threshold,
                             const data_size_t* data_indices, data_size_t cnt,
                             data_size_t* lte_indices,
-                            data_size_t* gt_indices) const = 0;
+                            data_size_t* gt_indices) const override;
 
-  virtual data_size_t SplitCategorical(
-      uint32_t max_bin, uint32_t most_freq_bin, const uint32_t* threshold,
-      int num_threshold, const data_size_t* data_indices, data_size_t cnt,
-      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
-
-  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const override;
-
-  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
-
- protected:
+ private:
   template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
   void ConstructHistogramInner(const data_size_t* data_indices,
                                data_size_t start, data_size_t end,
@@ -258,32 +304,50 @@ class PairwiseRankingBin: public BIN_TYPE {
                          const data_size_t* data_indices, data_size_t cnt,
                          data_size_t* lte_indices,
                          data_size_t* gt_indices) const;
-
-  virtual inline data_size_t get_unpaired_index(const data_size_t paired_index) = 0;
-
-  const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
-  const std::unique_ptr<const BIN_TYPE> unpaired_bin_;
-  data_size_t num_data_;
 };
 
-template <typename BIN_TYPE>
-class PairwiseRankingFirstBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator> {
+template <typename VAL_T, template<typename> class ITERATOR_TYPE>
+class SparsePairwiseRankingBin: public PairwiseRankingBin<SparseBin<VAL_T>, ITERATOR_TYPE> {
  public:
-  PairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+  SparsePairwiseRankingBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin): PairwiseRankingBin<SparseBin<VAL_T>, ITERATOR_TYPE>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+};
 
+template <typename VAL_T, bool IS_4BIT>
+class DensePairwiseRankingFirstBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingFirstIterator> {
+ public:
+  DensePairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
  private:
-  inline data_size_t get_unpaired_index(const data_size_t paired_index) {
+  data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].first;
   }
 };
 
-template <typename BIN_TYPE>
-class PairwiseRankingSecondBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator> {
+template <typename VAL_T, bool IS_4BIT>
+class DensePairwiseRankingSecondBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingSecondIterator> {
  public:
-  PairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
-
+  DensePairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
  private:
-  inline data_size_t get_unpaired_index(const data_size_t paired_index) {
+  data_size_t get_unpaired_index(const data_size_t paired_index) const {
+    return this->paired_ranking_item_index_map_[paired_index].second;
+  }
+};
+
+template <typename VAL_T>
+class SparsePairwiseRankingFirstBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingFirstIterator> {
+ public:
+  SparsePairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin): SparsePairwiseRankingBin<VAL_T, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+ private:
+  data_size_t get_unpaired_index(const data_size_t paired_index) const {
+    return this->paired_ranking_item_index_map_[paired_index].first;
+  }
+};
+
+template <typename VAL_T>
+class SparsePairwiseRankingSecondBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingSecondIterator> {
+ public:
+  SparsePairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin): SparsePairwiseRankingBin<VAL_T, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+ private:
+  data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].second;
   }
 };
