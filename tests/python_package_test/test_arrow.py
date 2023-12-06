@@ -178,7 +178,7 @@ def test_dataset_construct_weights_none():
     ["array_type", "weight_data"],
     [(pa.array, [3, 0.7, 1.5, 0.5, 0.1]), (pa.chunked_array, [[3], [0.7, 1.5, 0.5, 0.1]])],
 )
-@pytest.mark.parametrize("arrow_type", [pa.float32(), pa.float64()])
+@pytest.mark.parametrize("arrow_type", _FLOAT_TYPES)
 def test_dataset_construct_weights(array_type, weight_data, arrow_type):
     data = generate_dummy_arrow_table()
     weights = array_type(weight_data, type=arrow_type)
@@ -210,3 +210,46 @@ def test_dataset_construct_groups(array_type, group_data, arrow_type):
 
     expected = np.array([0, 2, 5], dtype=np.int32)
     np_assert_array_equal(expected, dataset.get_field("group"), strict=True)
+
+
+# ----------------------------------------- INIT SCORES ----------------------------------------- #
+
+
+@pytest.mark.parametrize(
+    ["array_type", "init_score_data"],
+    [
+        (pa.array, [0, 1, 2, 3, 3]),
+        (pa.chunked_array, [[0, 1, 2], [3, 3]]),
+        (pa.chunked_array, [[], [0, 1, 2], [3, 3]]),
+        (pa.chunked_array, [[0, 1], [], [], [2], [3, 3], []]),
+    ],
+)
+@pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
+def test_dataset_construct_init_scores_array(
+    array_type: Any, init_score_data: Any, arrow_type: Any
+):
+    data = generate_dummy_arrow_table()
+    init_scores = array_type(init_score_data, type=arrow_type)
+    dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 2, 3, 3], dtype=np.float64)
+    np_assert_array_equal(expected, dataset.get_init_score(), strict=True)
+
+
+def test_dataset_construct_init_scores_table():
+    data = generate_dummy_arrow_table()
+    init_scores = pa.Table.from_arrays(
+        [
+            generate_random_arrow_array(5, seed=1),
+            generate_random_arrow_array(5, seed=2),
+            generate_random_arrow_array(5, seed=3),
+        ],
+        names=["a", "b", "c"],
+    )
+    dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
+    dataset.construct()
+
+    actual = dataset.get_init_score()
+    expected = init_scores.to_pandas().to_numpy().astype(np.float64)
+    np_assert_array_equal(expected, actual, strict=True)
