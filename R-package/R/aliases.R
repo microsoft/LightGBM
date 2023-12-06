@@ -24,7 +24,6 @@
         , "max_bin"
         , "max_bin_by_feature"
         , "min_data_in_bin"
-        , "num_threads"
         , "pre_partition"
         , "precise_float_parser"
         , "two_round"
