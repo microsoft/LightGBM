@@ -26,7 +26,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
 
   PairwiseRankingFirstIterator(const BIN_TYPE* unpaired_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
     unpaired_bin_ = unpaired_bin;
-    unpaired_bin_iterator_ = unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin);
+    unpaired_bin_iterator_.reset(unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin));
     unpaired_bin_iterator_->Reset(0);
     paired_ranking_item_index_map_ = paired_ranking_item_index_map;
     prev_index_ = 0;
@@ -63,7 +63,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
 
  private:
   const BIN_TYPE* unpaired_bin_;
-  BinIterator* unpaired_bin_iterator_;
+  std::unique_ptr<BinIterator> unpaired_bin_iterator_;
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   data_size_t prev_index_;
   uint32_t prev_val_;
@@ -76,7 +76,7 @@ class PairwiseRankingSecondIterator: public BinIterator {
 
   PairwiseRankingSecondIterator(const BIN_TYPE* unpaired_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin) {
     unpaired_bin_ = unpaired_bin;
-    unpaired_bin_iterator_ = unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin);
+    unpaired_bin_iterator_.reset(unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin));
     unpaired_bin_iterator_->Reset(0);
     paired_ranking_item_index_map_ = paired_ranking_item_index_map;
     prev_index_ = 0;
@@ -109,7 +109,7 @@ class PairwiseRankingSecondIterator: public BinIterator {
 
  private:
   const BIN_TYPE* unpaired_bin_;
-  BinIterator* unpaired_bin_iterator_;
+  std::unique_ptr<BinIterator> unpaired_bin_iterator_;
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   data_size_t prev_index_;
 };
@@ -121,11 +121,146 @@ class PairwiseRankingBin: public BIN_TYPE {
     num_data_ = num_data;
   }
 
+  virtual ~PairwiseRankingBin() {}
+
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
     return new ITERATOR_TYPE<BIN_TYPE>(unpaired_bin_.get(), paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
   }
 
+  void InitStreaming(uint32_t num_thread, int32_t omp_max_threads) override;
+
+  void Push(int tid, data_size_t idx, uint32_t value) override;
+
+  void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override;
+
+  void SaveBinaryToFile(BinaryWriter* writer) const override;
+
+  void LoadFromMemory(const void* memory,
+    const std::vector<data_size_t>& local_used_indices) override;
+
+  size_t SizesInByte() const override;
+
+  data_size_t num_data() const override;
+
+  void* get_data() override;
+
+  void ReSize(data_size_t num_data) override;
+
+  void ConstructHistogram(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogram(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt8(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt8(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt16(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt16(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt32(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogramInt32(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const override;
+
+  void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                  const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogram(data_size_t start, data_size_t end,
+                                  const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt8(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt16(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  void ConstructHistogramInt32(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const override;
+
+  data_size_t Split(uint32_t min_bin, uint32_t max_bin,
+                    uint32_t default_bin, uint32_t most_freq_bin,
+                    MissingType missing_type, bool default_left,
+                    uint32_t threshold, const data_size_t* data_indices,
+                    data_size_t cnt,
+                    data_size_t* lte_indices,
+                    data_size_t* gt_indices) const override;
+
+  data_size_t SplitCategorical(
+      uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
+      const uint32_t* threshold, int num_threshold,
+      const data_size_t* data_indices, data_size_t cnt,
+      data_size_t* lte_indices, data_size_t* gt_indices) const override;
+
+  virtual data_size_t Split(uint32_t max_bin, uint32_t default_bin,
+                            uint32_t most_freq_bin, MissingType missing_type,
+                            bool default_left, uint32_t threshold,
+                            const data_size_t* data_indices, data_size_t cnt,
+                            data_size_t* lte_indices,
+                            data_size_t* gt_indices) const = 0;
+
+  virtual data_size_t SplitCategorical(
+      uint32_t max_bin, uint32_t most_freq_bin, const uint32_t* threshold,
+      int num_threshold, const data_size_t* data_indices, data_size_t cnt,
+      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+
+  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const override;
+
+  const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
+
  protected:
+  template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
+  void ConstructHistogramInner(const data_size_t* data_indices,
+                               data_size_t start, data_size_t end,
+                               const score_t* ordered_gradients,
+                               const score_t* ordered_hessians,
+                               hist_t* out) const;
+
+  template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN, typename PACKED_HIST_T, int HIST_BITS>
+  void ConstructHistogramIntInner(const data_size_t* data_indices,
+                                  data_size_t start, data_size_t end,
+                                  const score_t* ordered_gradients,
+                                  hist_t* out) const;
+
+  template <bool MISS_IS_ZERO, bool MISS_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, bool USE_MIN_BIN>
+  data_size_t SplitInner(uint32_t min_bin, uint32_t max_bin,
+                         uint32_t default_bin, uint32_t most_freq_bin,
+                         bool default_left, uint32_t threshold,
+                         const data_size_t* data_indices, data_size_t cnt,
+                         data_size_t* lte_indices,
+                         data_size_t* gt_indices) const;
+
+  virtual inline data_size_t get_unpaired_index(const data_size_t paired_index) = 0;
+
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
   const std::unique_ptr<const BIN_TYPE> unpaired_bin_;
   data_size_t num_data_;
@@ -135,13 +270,24 @@ template <typename BIN_TYPE>
 class PairwiseRankingFirstBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator> {
  public:
   PairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+ private:
+  inline data_size_t get_unpaired_index(const data_size_t paired_index) {
+    return this->paired_ranking_item_index_map_[paired_index].first;
+  }
 };
 
 template <typename BIN_TYPE>
 class PairwiseRankingSecondBin: public PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator> {
  public:
   PairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const BIN_TYPE* unpaired_bin): PairwiseRankingBin<BIN_TYPE, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+ private:
+  inline data_size_t get_unpaired_index(const data_size_t paired_index) {
+    return this->paired_ranking_item_index_map_[paired_index].second;
+  }
 };
+
 
 }  // namespace LightGBM
 

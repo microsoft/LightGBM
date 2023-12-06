@@ -605,7 +605,7 @@ class DenseBin : public Bin {
 
   const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const override;
 
- private:
+ protected:
   data_size_t num_data_;
 #ifdef USE_CUDA
   std::vector<VAL_T, CHAllocator<VAL_T>> data_;
