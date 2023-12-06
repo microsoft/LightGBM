@@ -5,18 +5,7 @@
 #ifndef LIGHTGBM_OPENMP_WRAPPER_H_
 #define LIGHTGBM_OPENMP_WRAPPER_H_
 
-#ifdef _OPENMP
-
 #include <LightGBM/export.h>
-#include <LightGBM/utils/log.h>
-
-#include <omp.h>
-
-#include <exception>
-#include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <vector>
 
 // this can only be changed by LGBM_SetMaxThreads()
 LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
@@ -24,6 +13,16 @@ LIGHTGBM_EXTERN_C int LGBM_MAX_NUM_THREADS;
 // this is modified by OMP_SET_NUM_THREADS(), for example
 // by passing num_thread through params
 LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
+
+#ifdef _OPENMP
+
+#include <LightGBM/utils/log.h>
+
+#include <exception>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <vector>
 
 /*
     Get number of threads to use in OpenMP parallel regions.
@@ -38,6 +37,11 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 */
 LIGHTGBM_EXTERN_C int OMP_NUM_THREADS();
 
+/*
+    Update the default number of threads that'll be used in OpenMP parallel
+    regions for LightGBM routines where the number of threads aren't directly
+    supplied.
+*/
 LIGHTGBM_EXTERN_C void OMP_SET_NUM_THREADS(int num_threads);
 
 class ThreadExceptionHelper {
@@ -108,11 +112,9 @@ class ThreadExceptionHelper {
   /** Fall here if no OPENMP support, so just
       simulate a single thread running.
       All #pragma omp should be ignored by the compiler **/
-  void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
-  inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
   inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
-  int LGBM_DEFAULT_NUM_THREADS = -1;
-  int LGBM_MAX_NUM_THREADS = -1;
+  inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
+  inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
 #ifdef __cplusplus
 }  // extern "C"
 #endif

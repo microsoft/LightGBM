@@ -2,13 +2,15 @@
  * Copyright (c) 2023 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifdef _OPENMP
-
 #include <LightGBM/utils/openmp_wrapper.h>
 
 int LGBM_MAX_NUM_THREADS = -1;
 
 int LGBM_DEFAULT_NUM_THREADS = -1;
+
+#ifdef _OPENMP
+
+#include <omp.h>
 
 int OMP_NUM_THREADS() {
   int default_num_threads = 1;
