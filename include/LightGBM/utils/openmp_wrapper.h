@@ -18,6 +18,8 @@ LIGHTGBM_EXTERN_C int LGBM_DEFAULT_NUM_THREADS;
 
 #include <LightGBM/utils/log.h>
 
+#include <omp.h>
+
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -112,9 +114,9 @@ class ThreadExceptionHelper {
   /** Fall here if no OPENMP support, so just
       simulate a single thread running.
       All #pragma omp should be ignored by the compiler **/
-  inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
   inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
   inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
+  inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
 #ifdef __cplusplus
 }  // extern "C"
 #endif
