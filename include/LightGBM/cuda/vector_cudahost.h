@@ -1,6 +1,7 @@
 /*!
  * Copyright (c) 2020 IBM Corporation, Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 #ifndef LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
 #define LIGHTGBM_CUDA_VECTOR_CUDAHOST_H_
@@ -45,7 +46,7 @@ struct CHAllocator {
     n = SIZE_ALIGNED(n);
     #ifdef USE_CUDA
       if (LGBM_config_::current_device == lgbm_device_cuda) {
-        cudaError_t ret = cudaHostAlloc(&ptr, n*sizeof(T), cudaHostAllocPortable);
+        cudaError_t ret = cudaHostAlloc(reinterpret_cast<void**>(&ptr), n*sizeof(T), cudaHostAllocPortable);
         if (ret != cudaSuccess) {
           Log::Warning("Defaulting to malloc in CHAllocator!!!");
           ptr = reinterpret_cast<T*>(_mm_malloc(n*sizeof(T), 16));
