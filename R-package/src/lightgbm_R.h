@@ -850,4 +850,23 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_DumpParamAliases_R();
 
+/*!
+* \brief Get current maximum number of threads used by LightGBM routines in this process.
+* \param[out] out current maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_GetMaxThreads_R(
+  SEXP out
+);
+
+
+/*!
+* \brief Set maximum number of threads used by LightGBM routines in this process.
+* \param num_threads maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+* \return R NULL value
+*/
+LIGHTGBM_C_EXPORT SEXP LGBM_SetMaxThreads_R(
+  SEXP num_threads
+);
+
 #endif  // LIGHTGBM_R_H_

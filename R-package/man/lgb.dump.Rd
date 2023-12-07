@@ -20,6 +20,8 @@ Dump LightGBM model to json
 \examples{
 \donttest{
 library(lightgbm)
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
