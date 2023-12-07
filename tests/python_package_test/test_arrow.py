@@ -47,6 +47,16 @@ def generate_simple_arrow_table(empty_chunks: bool = False) -> pa.Table:
     return pa.Table.from_arrays(columns, names=[f"col_{i}" for i in range(len(columns))])
 
 
+def generate_nullable_arrow_table() -> pa.Table:
+    columns = [
+        pa.chunked_array([[1, None, 3, 4, 5]], type=pa.float32()),
+        pa.chunked_array([[None, 2, 3, 4, 5]], type=pa.float32()),
+        pa.chunked_array([[1, 2, 3, 4, None]], type=pa.float32()),
+        pa.chunked_array([[None, None, None, None, None]], type=pa.float32()),
+    ]
+    return pa.Table.from_arrays(columns, names=[f"col_{i}" for i in range(len(columns))])
+
+
 def generate_dummy_arrow_table() -> pa.Table:
     col1 = pa.chunked_array([[1, 2, 3], [4, 5]], type=pa.uint8())
     col2 = pa.chunked_array([[0.5, 0.6], [0.1, 0.8, 1.5]], type=pa.float32())
@@ -97,6 +107,7 @@ def dummy_dataset_params() -> Dict[str, Any]:
         (lambda: generate_simple_arrow_table(), dummy_dataset_params()),
         (lambda: generate_simple_arrow_table(empty_chunks=True), dummy_dataset_params()),
         (lambda: generate_dummy_arrow_table(), dummy_dataset_params()),
+        (lambda: generate_nullable_arrow_table(), dummy_dataset_params()),
         (lambda: generate_random_arrow_table(3, 1000, 42), {}),
         (lambda: generate_random_arrow_table(100, 10000, 43), {}),
     ],
