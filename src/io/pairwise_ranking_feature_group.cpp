@@ -14,6 +14,8 @@ namespace LightGBM {
 PairwiseRankingFeatureGroup::PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map):
   FeatureGroup(other, num_original_data), paired_ranking_item_index_map_(paired_ranking_item_index_map), num_data_(num_pairs), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {
 
+  CreateBinData(num_original_data, is_multi_val_, !is_sparse_, is_sparse_);
+
   // copy from original bin data
   const int num_threads = OMP_NUM_THREADS();
   std::vector<std::vector<std::unique_ptr<BinIterator>>> bin_iterators(num_threads);

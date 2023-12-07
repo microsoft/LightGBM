@@ -853,9 +853,11 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
-void Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
   num_data_ = 0;
   num_queries_ = metadata.num_queries();
+  label_.clear();
+  paired_label_.clear();
   if (pairwise_ranking_mode_ == PairwiseRankingMode::kRelevance) {
     const label_t* labels = metadata.label();
     paired_ranking_item_index_map_.clear();
@@ -873,6 +875,8 @@ void Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
             continue;
           }
           const label_t label_j = labels[item_index_j];
+          label_.push_back(label_i);
+          paired_label_.push_back(label_j);
           if (label_i != label_j) {
             paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
             ++num_pairs_in_query;
@@ -884,7 +888,10 @@ void Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     }
   } else {
     // TODO(shiyu1994)
+    Log::Fatal("Not implemented.");
   }
+  
+  return num_data_;
 }
 
 }  // namespace LightGBM

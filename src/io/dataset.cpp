@@ -353,10 +353,13 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   auto is_sparse = io_config.is_enable_sparse;
   if (io_config.device_type == std::string("cuda")) {
       LGBM_config_::current_device = lgbm_device_cuda;
-      if ((io_config.device_type == std::string("cuda")) && is_sparse) {
+      if (is_sparse) {
         Log::Warning("Using sparse features with CUDA is currently not supported.");
         is_sparse = false;
       }
+  } else if ((io_config.objective == std::string("pairwise_lambdarank")) && is_sparse) {
+    Log::Warning("Using sparse features with pairwise_lambdarank is currently not supported.");
+    is_sparse = false;
   }
 
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
@@ -821,7 +824,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
 }
 
 void Dataset::CreatePairWiseRankingData(const Dataset* dataset) {
-  metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
+  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
 
   feature_groups_.clear();
   num_features_ = dataset->num_features_ * 2;
@@ -880,7 +883,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset) {
 
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     if (dataset->used_feature_map_[i] != -1) {
-      used_feature_map_.push_back(i + dataset->num_features_);
+      used_feature_map_.push_back(dataset->used_feature_map_[i] + dataset->num_features_);
     } else {
       used_feature_map_.push_back(-1);
     }

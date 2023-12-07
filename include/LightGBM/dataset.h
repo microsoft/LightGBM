@@ -207,8 +207,9 @@ class Metadata {
   /*!
   * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
   * \param metadata Reference to metadata of the existing ranking dataset
+  * \return The number of paired data
   */
-  void BuildPairwiseFeatureRanking(const Metadata& metadata);
+  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
@@ -388,6 +389,8 @@ class Metadata {
   data_size_t num_positions_;
   /*! \brief Label data */
   std::vector<label_t> label_;
+  /*! \brief Paired label data for pairwise lambdarank */
+  std::vector<label_t> paired_label_;
   /*! \brief Weights data */
   std::vector<label_t> weights_;
   /*! \brief Positions data */
@@ -407,7 +410,7 @@ class Metadata {
   /*! \brief Queries data */
   std::vector<data_size_t> queries_;
   /*! \brief Mode for pairwise ranking */
-  PairwiseRankingMode pairwise_ranking_mode_;
+  PairwiseRankingMode pairwise_ranking_mode_ = PairwiseRankingMode::kRelevance;
   /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
   std::vector<std::pair<data_size_t, data_size_t>> paired_ranking_item_index_map_;
   /*! \brief mutex for threading safe call */
