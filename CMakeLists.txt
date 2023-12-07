@@ -432,6 +432,7 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
+      src/utils/gdb.cpp
 if(USE_CUDA)
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp

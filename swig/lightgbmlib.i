@@ -283,3 +283,4 @@
 %include "pointer_manipulation.i"
 %include "StringArray_API_extensions.i"
 %include "ChunkedArray_API_extensions.i"
+%include "gdb_extensions.i"
