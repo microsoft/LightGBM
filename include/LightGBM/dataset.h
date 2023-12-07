@@ -727,7 +727,7 @@ class Dataset {
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
-  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> pair_index_map);
+  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;

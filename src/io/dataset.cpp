@@ -820,7 +820,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   gpu_device_id_ = dataset->gpu_device_id_;
 }
 
-void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std::pair<data_size_t, data_size_t>> /* TODO(shiyu1994) pair_index_map*/) {
+void Dataset::CreatePairWiseRankingData(const Dataset* dataset) {
   metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
 
   feature_groups_.clear();
@@ -835,7 +835,14 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std:
   feature2subfeature_.clear();
   has_raw_ = dataset->has_raw();
   numeric_feature_map_ = dataset->numeric_feature_map_;
-  num_numeric_features_ = dataset->num_numeric_features_;
+  for (const int feature_index : dataset->numeric_feature_map_) {
+    if (feature_index != -1) {
+      numeric_feature_map_.push_back(feature_index + dataset->num_features_);
+    } else {
+      numeric_feature_map_.push_back(-1);
+    }
+  }
+  num_numeric_features_ = dataset->num_numeric_features_ * 2;
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
   group_bin_boundaries_.clear();
@@ -870,7 +877,14 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, std::vector<std:
   used_feature_map_.clear();
   used_feature_map_.reserve(2 * dataset->used_feature_map_.size());
   used_feature_map_.insert(used_feature_map_.begin(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
-  used_feature_map_.insert(used_feature_map_.begin() + dataset->used_feature_map_.size(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
+
+  for (int i = 0; i < dataset->num_total_features_; ++i) {
+    if (dataset->used_feature_map_[i] != -1) {
+      used_feature_map_.push_back(i + dataset->num_features_);
+    } else {
+      used_feature_map_.push_back(-1);
+    }
+  }
 
   feature_names_.clear();
   for (const std::string& feature_name : dataset->feature_names_) {

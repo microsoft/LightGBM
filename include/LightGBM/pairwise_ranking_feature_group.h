@@ -28,8 +28,7 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   * \param is_first_or_second_in_pairing Mark whether features in this group belong to the first or second element in the pairing
   */
 
-  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map):
-    FeatureGroup(other, num_original_data), paired_ranking_item_index_map_(paired_ranking_item_index_map), num_data_(num_pairs), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {}
+  PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
    * \brief Constructor from memory when data is present

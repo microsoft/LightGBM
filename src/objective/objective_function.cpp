@@ -44,6 +44,9 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new CUDAMulticlassSoftmax(config);
     } else if (type == std::string("multiclassova")) {
       return new CUDAMulticlassOVA(config);
+    } else if (type == std::string("pairwise_lambdarank")) {
+      Log::Warning("Objective pairwise_lambdarank is not implemented in cuda version. Fall back to boosting on CPU.");
+      return new PairwiseLambdarankNDCG(config);
     } else if (type == std::string("cross_entropy")) {
       Log::Warning("Objective cross_entropy is not implemented in cuda version. Fall back to boosting on CPU.");
       return new CrossEntropy(config);
@@ -81,6 +84,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new BinaryLogloss(config);
     } else if (type == std::string("lambdarank")) {
       return new LambdarankNDCG(config);
+    } else if (type == std::string("pairwise_lambdarank")) {
+      return new PairwiseLambdarankNDCG(config);
     } else if (type == std::string("rank_xendcg")) {
       return new RankXENDCG(config);
     } else if (type == std::string("multiclass")) {
@@ -126,6 +131,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new BinaryLogloss(strs);
   } else if (type == std::string("lambdarank")) {
     return new LambdarankNDCG(strs);
+  } else if (type == std::string("pairwise_lambdarank")) {
+    return new PairwiseLambdarankNDCG(strs);
   } else if (type == std::string("rank_xendcg")) {
     return new RankXENDCG(strs);
   } else if (type == std::string("multiclass")) {

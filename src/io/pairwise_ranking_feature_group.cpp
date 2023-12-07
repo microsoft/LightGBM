@@ -5,9 +5,37 @@
  */
 
 #include <LightGBM/pairwise_ranking_feature_group.h>
+#include <LightGBM/utils/threading.h>
+
 #include "pairwise_lambdarank_bin.hpp"
 
 namespace LightGBM {
+
+PairwiseRankingFeatureGroup::PairwiseRankingFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map):
+  FeatureGroup(other, num_original_data), paired_ranking_item_index_map_(paired_ranking_item_index_map), num_data_(num_pairs), is_first_or_second_in_pairing_(is_first_or_second_in_pairing) {
+
+  // copy from original bin data
+  const int num_threads = OMP_NUM_THREADS();
+  std::vector<std::vector<std::unique_ptr<BinIterator>>> bin_iterators(num_threads);
+  for (int i = 0; i < num_threads; ++i) {
+    for (int j = 0; j < num_feature_; ++j) {
+      bin_iterators[i].emplace_back(other.SubFeatureIterator(j));
+      bin_iterators[i].back()->Reset(0);
+    }
+  }
+
+  Threading::For<data_size_t>(0, num_original_data, 512, [this, &other] (int block_index, data_size_t block_start, data_size_t block_end) {
+    for (int feature_index = 0; feature_index < num_feature_; ++feature_index) {
+      std::unique_ptr<BinIterator> bin_iterator(other.SubFeatureIterator(feature_index));
+      bin_iterator->Reset(block_start);
+      for (data_size_t index = block_start; index < block_end; ++index) {
+        PushData(block_index, feature_index, index, bin_iterator->RawGet(index));
+      }
+    }
+  });
+
+  FinishLoad();
+}
 
 void PairwiseRankingFeatureGroup::CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
   CHECK(!is_multi_val);  // do not support multi-value bin for now
