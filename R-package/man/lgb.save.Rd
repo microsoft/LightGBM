@@ -21,6 +21,8 @@ Save LightGBM model
 }
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 library(lightgbm)
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train

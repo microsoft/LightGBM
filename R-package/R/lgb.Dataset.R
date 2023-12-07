@@ -780,6 +780,8 @@ Dataset <- R6::R6Class(
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -837,6 +839,8 @@ lgb.Dataset <- function(data,
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -913,6 +917,8 @@ lgb.Dataset.create.valid <- function(dataset,
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -942,6 +948,8 @@ lgb.Dataset.construct <- function(dataset) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -975,6 +983,8 @@ dim.lgb.Dataset <- function(x) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1045,6 +1055,8 @@ dimnames.lgb.Dataset <- function(x) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1089,6 +1101,8 @@ slice.lgb.Dataset <- function(dataset, idxset) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1138,6 +1152,8 @@ get_field.lgb.Dataset <- function(dataset, field_name) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1177,6 +1193,8 @@ set_field.lgb.Dataset <- function(dataset, field_name, data) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1207,6 +1225,8 @@ lgb.Dataset.set.categorical <- function(dataset, categorical_feature) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' # create training Dataset
 #' data(agaricus.train, package ="lightgbm")
 #' train <- agaricus.train
@@ -1240,6 +1260,8 @@ lgb.Dataset.set.reference <- function(dataset, reference) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)

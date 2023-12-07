@@ -822,21 +822,34 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
 
 
 @pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
+@pytest.mark.parametrize('categories', ['seen', 'unseen'])
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories):
     pd = pytest.importorskip('pandas')
     X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
     column_name = 'a' if feature_name == 'auto' else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
+    if categories == 'seen':
+        pandas_categorical = [['a', 'b']]
+    else:
+        pandas_categorical = [['a']]
     data = lgb.basic._data_from_pandas(
         data=df,
         feature_name=feature_name,
         categorical_feature="auto",
-        pandas_categorical=None
+        pandas_categorical=pandas_categorical,
     )[0]
     # check that the original data wasn't modified
     np.testing.assert_equal(df[column_name], X[:, 0])
     # check that the built data has the codes
-    np.testing.assert_equal(df[column_name].cat.codes, data[:, 0])
+    if categories == 'seen':
+        # if all categories were seen during training we just take the codes
+        codes = df[column_name].cat.codes
+    else:
+        # if we only saw 'a' during training we just replace its code
+        # and leave the rest as nan
+        a_code = df[column_name].cat.categories.get_loc('a')
+        codes = np.where(df[column_name] == 'a', a_code, np.nan)
+    np.testing.assert_equal(codes, data[:, 0])
 
 
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])

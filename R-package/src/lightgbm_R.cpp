@@ -1212,6 +1212,23 @@ SEXP LGBM_BoosterGetLoadedParam_R(SEXP handle) {
   R_API_END();
 }
 
+SEXP LGBM_GetMaxThreads_R(SEXP out) {
+  R_API_BEGIN();
+  int num_threads;
+  CHECK_CALL(LGBM_GetMaxThreads(&num_threads));
+  INTEGER(out)[0] = num_threads;
+  return R_NilValue;
+  R_API_END();
+}
+
+SEXP LGBM_SetMaxThreads_R(SEXP num_threads) {
+  R_API_BEGIN();
+  int new_num_threads = Rf_asInteger(num_threads);
+  CHECK_CALL(LGBM_SetMaxThreads(new_num_threads));
+  return R_NilValue;
+  R_API_END();
+}
+
 // .Call() calls
 static const R_CallMethodDef CallEntries[] = {
   {"LGBM_HandleIsNull_R"                         , (DL_FUNC) &LGBM_HandleIsNull_R                         , 1},
@@ -1268,6 +1285,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterDumpModel_R"                     , (DL_FUNC) &LGBM_BoosterDumpModel_R                     , 3},
   {"LGBM_NullBoosterHandleError_R"               , (DL_FUNC) &LGBM_NullBoosterHandleError_R               , 0},
   {"LGBM_DumpParamAliases_R"                     , (DL_FUNC) &LGBM_DumpParamAliases_R                     , 0},
+  {"LGBM_GetMaxThreads_R"                        , (DL_FUNC) &LGBM_GetMaxThreads_R                        , 1},
+  {"LGBM_SetMaxThreads_R"                        , (DL_FUNC) &LGBM_SetMaxThreads_R                        , 1},
   {NULL, NULL, 0}
 };
 
