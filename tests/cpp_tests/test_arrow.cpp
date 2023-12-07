@@ -41,10 +41,12 @@ class ArrowChunkedArrayTest : public testing::Test {
     // 1) Create validity bitmap
     char* validity = nullptr;
     if (!null_indices.empty()) {
-      validity = static_cast<char*>(calloc(values.size() + sizeof(char) - 1, sizeof(char)));
+      auto num_bytes = (values.size() + 7) / 8;
+      validity = static_cast<char*>(calloc(num_bytes, sizeof(char)));
+      memset(validity, 0xff, num_bytes * sizeof(char));
       for (size_t i = 0; i < values.size(); ++i) {
         if (std::find(null_indices.begin(), null_indices.end(), i) != null_indices.end()) {
-          validity[i / 8] |= (1 << (i % 8));
+          validity[i / 8] &= ~(1 << (i % 8));
         }
       }
     }
