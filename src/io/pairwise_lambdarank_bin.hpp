@@ -159,6 +159,7 @@ class PairwiseRankingBin: public BIN_TYPE {
                     data_size_t* /*lte_indices*/,
                     data_size_t* /*gt_indices*/) const override {
     Log::Fatal("Not implemented.");
+    return 0;
   }
 
   data_size_t SplitCategorical(
@@ -167,6 +168,7 @@ class PairwiseRankingBin: public BIN_TYPE {
       const data_size_t* /*data_indices*/, data_size_t /*cnt*/,
       data_size_t* /*lte_indices*/, data_size_t* /*gt_indices*/) const override {
     Log::Fatal("Not implemented.");
+    return 0;
   }
 
   data_size_t Split(uint32_t /*max_bin*/, uint32_t /*default_bin*/,
@@ -176,6 +178,7 @@ class PairwiseRankingBin: public BIN_TYPE {
                             data_size_t* /*lte_indices*/,
                             data_size_t* /*gt_indices*/) const override {
     Log::Fatal("Not implemented.");
+    return 0;
   }
 
   data_size_t SplitCategorical(
@@ -183,14 +186,17 @@ class PairwiseRankingBin: public BIN_TYPE {
       int /*num_threshold*/, const data_size_t* /*data_indices*/, data_size_t /*cnt*/,
       data_size_t* /*lte_indices*/, data_size_t* /*gt_indices*/) const override {
     Log::Fatal("Not implemented.");
+    return 0;
   }
 
   const void* GetColWiseData(uint8_t* /*bit_type*/, bool* /*is_sparse*/, std::vector<BinIterator*>* /*bin_iterator*/, const int /*num_threads*/) const override {
     Log::Fatal("Not implemented.");
+    return nullptr;
   }
 
   const void* GetColWiseData(uint8_t* /*bit_type*/, bool* /*is_sparse*/, BinIterator** /*bin_iterator*/) const override {
     Log::Fatal("Not implemented.");
+    return nullptr;
   }
 
  protected:
