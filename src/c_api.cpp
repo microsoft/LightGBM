@@ -2750,6 +2750,23 @@ int LGBM_NetworkInitWithFunctions(int num_machines, int rank,
   API_END();
 }
 
+int LGBM_SetMaxThreads(int num_threads) {
+  API_BEGIN();
+  if (num_threads <= 0) {
+    LGBM_MAX_NUM_THREADS = -1;
+  } else {
+    LGBM_MAX_NUM_THREADS = num_threads;
+  }
+  API_END();
+}
+
+int LGBM_GetMaxThreads(int* out) {
+  API_BEGIN();
+  *out = LGBM_MAX_NUM_THREADS;
+  API_END();
+}
+
+
 // ---- start of some help functions
 
 

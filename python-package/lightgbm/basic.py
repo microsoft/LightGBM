@@ -790,6 +790,10 @@ def _data_from_pandas(
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
 
+    # take shallow copy in case we modify categorical columns
+    # whole column modifications don't change the original df
+    data = data.copy(deep=False)
+
     # determine feature names
     if feature_name == 'auto':
         feature_name = [str(col) for col in data.columns]
@@ -806,7 +810,6 @@ def _data_from_pandas(
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if len(cat_cols):  # cat_cols is list
-        data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
     if categorical_feature == 'auto':  # use cat cols from DataFrame
         categorical_feature = cat_cols_not_ordered
