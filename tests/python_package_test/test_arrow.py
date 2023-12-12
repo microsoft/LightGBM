@@ -369,12 +369,12 @@ def test_predict(
         num_boost_round=10,
     )
 
-    pred_kwargs = dict(
-        num_iteration=num_iteration,
-        raw_score=raw_score,
-        pred_leaf=pred_leaf,
-        pred_contrib=pred_contrib,
-    )
+    pred_kwargs = {
+        "num_iteration": num_iteration,
+        "raw_score": raw_score,
+        "pred_leaf": pred_leaf,
+        "pred_contrib": pred_contrib,
+    }
     out_arrow = booster.predict(data, **pred_kwargs)
     out_pandas = booster.predict(data.to_pandas(), **pred_kwargs)
     np_assert_array_equal(out_arrow, out_pandas, strict=True)
