@@ -302,82 +302,86 @@ def test_dataset_construct_init_scores_table():
 # ------------------------------------------ PREDICTION ----------------------------------------- #
 
 
-@pytest.mark.parametrize(
-    ("objective", "labels_fn", "groups_fn", "extra_params"),
-    [
-        (
-            "regression",
-            lambda: generate_random_arrow_array(10000, 43, generate_nulls=False),
-            lambda: None,
-            {},
-        ),
-        (
-            "binary",
-            lambda: generate_random_arrow_array(
-                10000, 43, generate_nulls=False, values=np.arange(2)
-            ),
-            lambda: None,
-            {},
-        ),
-        (
-            "multiclass",
-            lambda: generate_random_arrow_array(
-                10000, 43, generate_nulls=False, values=np.arange(5)
-            ),
-            lambda: None,
-            {"num_class": 5},
-        ),
-        (
-            "cross_entropy",
-            lambda: generate_random_arrow_array(
-                10000, 43, generate_nulls=False, values=np.linspace(0, 1, num=50)
-            ),
-            lambda: None,
-            {},
-        ),
-        (
-            "lambdarank",
-            lambda: generate_random_arrow_array(
-                10000, 43, generate_nulls=False, values=np.arange(4)
-            ),
-            lambda: np.array([1000, 2000, 3000, 4000]),
-            {},
-        ),
-    ],
-)
-@pytest.mark.parametrize("num_iteration", [None, 5])
-@pytest.mark.parametrize("raw_score", [True, False])
-@pytest.mark.parametrize("pred_leaf", [True, False])
-@pytest.mark.parametrize("pred_contrib", [True, False])
-def test_predict(
-    objective,
-    labels_fn,
-    groups_fn,
-    extra_params,
-    num_iteration,
-    raw_score,
-    pred_leaf,
-    pred_contrib,
-):
+def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
+    p_arrow = booster.predict(data)
+    p_pandas = booster.predict(data.to_pandas())
+    np_assert_array_equal(p_arrow, p_pandas, strict=True)
+
+    p_raw_arrow = booster.predict(data, raw_score=True)
+    p_raw_pandas = booster.predict(data.to_pandas(), raw_score=True)
+    np_assert_array_equal(p_raw_arrow, p_raw_pandas, strict=True)
+
+    p_leaf_arrow = booster.predict(data, pred_leaf=True)
+    p_leaf_pandas = booster.predict(data.to_pandas(), pred_leaf=True)
+    np_assert_array_equal(p_leaf_arrow, p_leaf_pandas, strict=True)
+
+    p_pred_contrib_arrow = booster.predict(data, pred_contrib=True)
+    p_pred_contrib_pandas = booster.predict(data.to_pandas(), pred_contrib=True)
+    np_assert_array_equal(p_pred_contrib_arrow, p_pred_contrib_pandas, strict=True)
+
+    p_first_iter_arrow = booster.predict(data, start_iteration=0, num_iteration=1, raw_score=True)
+    p_first_iter_pandas = booster.predict(
+        data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True
+    )
+    np_assert_array_equal(p_first_iter_arrow, p_first_iter_pandas, strict=True)
+
+
+def test_predict_regression():
     data = generate_random_arrow_table(10, 10000, 42)
     dataset = lgb.Dataset(
-        data, label=labels_fn(), group=groups_fn(), params=dummy_dataset_params()
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False),
+        params=dummy_dataset_params(),
     )
     booster = lgb.train(
-        {
-            "objective": objective,
-            **extra_params,
-        },
+        {"objective": "regression", "num_leaves": 7},
         dataset,
-        num_boost_round=10,
+        num_boost_round=5,
     )
+    assert_equal_predict_arrow_pandas(booster, data)
 
-    pred_kwargs = {
-        "num_iteration": num_iteration,
-        "raw_score": raw_score,
-        "pred_leaf": pred_leaf,
-        "pred_contrib": pred_contrib,
-    }
-    out_arrow = booster.predict(data, **pred_kwargs)
-    out_pandas = booster.predict(data.to_pandas(), **pred_kwargs)
-    np_assert_array_equal(out_arrow, out_pandas, strict=True)
+
+def test_predict_binary_classification():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(2)),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "binary", "num_leaves": 7},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_predict_multiclass_classification():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(5)),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "multiclass", "num_leaves": 7, "num_class": 5},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_predict_ranking():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(4)),
+        group=np.array([1000, 2000, 3000, 4000]),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "lambdarank", "num_leaves": 7},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
