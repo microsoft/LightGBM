@@ -1,7 +1,6 @@
 # coding: utf-8
 import filecmp
-from typing import Any, Dict
-
+from typing import Any, Dict, Optional
 import numpy as np
 import pyarrow as pa
 import pytest
@@ -68,7 +67,7 @@ def generate_random_arrow_table(
     num_datapoints: int,
     seed: int,
     generate_nulls: bool = True,
-    values: np.ndarray | None = None,
+    values: Optional[np.ndarray] = None,
 ) -> pa.Table:
     columns = [
         generate_random_arrow_array(
@@ -81,7 +80,10 @@ def generate_random_arrow_table(
 
 
 def generate_random_arrow_array(
-    num_datapoints: int, seed: int, generate_nulls: bool = True, values: np.ndarray | None = None
+    num_datapoints: int,
+    seed: int,
+    generate_nulls: bool = True,
+    values: Optional[np.ndarray] = None,
 ) -> pa.ChunkedArray:
     generator = np.random.default_rng(seed)
     data = (
