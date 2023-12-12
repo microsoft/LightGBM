@@ -1,6 +1,7 @@
 # coding: utf-8
 import filecmp
 from typing import Any, Dict, Optional
+
 import numpy as np
 import pyarrow as pa
 import pytest
