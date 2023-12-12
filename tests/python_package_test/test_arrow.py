@@ -377,6 +377,4 @@ def test_predict(
     )
     out_arrow = booster.predict(data, **pred_kwargs)
     out_pandas = booster.predict(data.to_pandas(), **pred_kwargs)
-    print("ttt1", type(out_arrow))
-    print("ttt2", type(out_pandas))
     np_assert_array_equal(out_arrow, out_pandas, strict=True)
