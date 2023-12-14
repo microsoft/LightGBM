@@ -1,9 +1,14 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit -1
+MAKEFLAGS=-j2 \
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', testthat'), repos = 'https://cran.rstudio.com')" \
+|| exit -1
+
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
+  --no-build-vignettes \
   || exit -1
+
 RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
 
 cd R-package/tests
