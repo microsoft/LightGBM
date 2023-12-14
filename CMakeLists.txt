@@ -382,7 +382,7 @@ if(MSVC)
         CMAKE_CXX_FLAGS_RELEASE
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /permissive-")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
@@ -641,6 +641,7 @@ if(BUILD_CPP_TEST)
 
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
     set(
       CompilerFlags
         CMAKE_CXX_FLAGS
