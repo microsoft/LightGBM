@@ -1,6 +1,6 @@
 # coding: utf-8
 import filecmp
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pyarrow as pa
@@ -63,19 +63,40 @@ def generate_dummy_arrow_table() -> pa.Table:
     return pa.Table.from_arrays([col1, col2], names=["a", "b"])
 
 
-def generate_random_arrow_table(num_columns: int, num_datapoints: int, seed: int) -> pa.Table:
-    columns = [generate_random_arrow_array(num_datapoints, seed + i) for i in range(num_columns)]
+def generate_random_arrow_table(
+    num_columns: int,
+    num_datapoints: int,
+    seed: int,
+    generate_nulls: bool = True,
+    values: Optional[np.ndarray] = None,
+) -> pa.Table:
+    columns = [
+        generate_random_arrow_array(
+            num_datapoints, seed + i, generate_nulls=generate_nulls, values=values
+        )
+        for i in range(num_columns)
+    ]
     names = [f"col_{i}" for i in range(num_columns)]
     return pa.Table.from_arrays(columns, names=names)
 
 
-def generate_random_arrow_array(num_datapoints: int, seed: int) -> pa.ChunkedArray:
+def generate_random_arrow_array(
+    num_datapoints: int,
+    seed: int,
+    generate_nulls: bool = True,
+    values: Optional[np.ndarray] = None,
+) -> pa.ChunkedArray:
     generator = np.random.default_rng(seed)
-    data = generator.standard_normal(num_datapoints)
+    data = (
+        generator.standard_normal(num_datapoints)
+        if values is None
+        else generator.choice(values, size=num_datapoints, replace=True)
+    )
 
     # Set random nulls
-    indices = generator.choice(len(data), size=num_datapoints // 10)
-    data[indices] = None
+    if generate_nulls:
+        indices = generator.choice(len(data), size=num_datapoints // 10)
+        data[indices] = None
 
     # Split data into <=2 random chunks
     split_points = np.sort(generator.choice(np.arange(1, num_datapoints), 2, replace=False))
@@ -131,8 +152,8 @@ def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
 
 def test_dataset_construct_fields_fuzzy():
     arrow_table = generate_random_arrow_table(3, 1000, 42)
-    arrow_labels = generate_random_arrow_array(1000, 42)
-    arrow_weights = generate_random_arrow_array(1000, 42)
+    arrow_labels = generate_random_arrow_array(1000, 42, generate_nulls=False)
+    arrow_weights = generate_random_arrow_array(1000, 42, generate_nulls=False)
     arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.int32())
 
     arrow_dataset = lgb.Dataset(
@@ -264,9 +285,9 @@ def test_dataset_construct_init_scores_table():
     data = generate_dummy_arrow_table()
     init_scores = pa.Table.from_arrays(
         [
-            generate_random_arrow_array(5, seed=1),
-            generate_random_arrow_array(5, seed=2),
-            generate_random_arrow_array(5, seed=3),
+            generate_random_arrow_array(5, seed=1, generate_nulls=False),
+            generate_random_arrow_array(5, seed=2, generate_nulls=False),
+            generate_random_arrow_array(5, seed=3, generate_nulls=False),
         ],
         names=["a", "b", "c"],
     )
@@ -276,3 +297,91 @@ def test_dataset_construct_init_scores_table():
     actual = dataset.get_init_score()
     expected = init_scores.to_pandas().to_numpy().astype(np.float64)
     np_assert_array_equal(expected, actual, strict=True)
+
+
+# ------------------------------------------ PREDICTION ----------------------------------------- #
+
+
+def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
+    p_arrow = booster.predict(data)
+    p_pandas = booster.predict(data.to_pandas())
+    np_assert_array_equal(p_arrow, p_pandas, strict=True)
+
+    p_raw_arrow = booster.predict(data, raw_score=True)
+    p_raw_pandas = booster.predict(data.to_pandas(), raw_score=True)
+    np_assert_array_equal(p_raw_arrow, p_raw_pandas, strict=True)
+
+    p_leaf_arrow = booster.predict(data, pred_leaf=True)
+    p_leaf_pandas = booster.predict(data.to_pandas(), pred_leaf=True)
+    np_assert_array_equal(p_leaf_arrow, p_leaf_pandas, strict=True)
+
+    p_pred_contrib_arrow = booster.predict(data, pred_contrib=True)
+    p_pred_contrib_pandas = booster.predict(data.to_pandas(), pred_contrib=True)
+    np_assert_array_equal(p_pred_contrib_arrow, p_pred_contrib_pandas, strict=True)
+
+    p_first_iter_arrow = booster.predict(data, start_iteration=0, num_iteration=1, raw_score=True)
+    p_first_iter_pandas = booster.predict(
+        data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True
+    )
+    np_assert_array_equal(p_first_iter_arrow, p_first_iter_pandas, strict=True)
+
+
+def test_predict_regression():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "regression", "num_leaves": 7},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_predict_binary_classification():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(2)),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "binary", "num_leaves": 7},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_predict_multiclass_classification():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(5)),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "multiclass", "num_leaves": 7, "num_class": 5},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_predict_ranking():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(4)),
+        group=np.array([1000, 2000, 3000, 4000]),
+        params=dummy_dataset_params(),
+    )
+    booster = lgb.train(
+        {"objective": "lambdarank", "num_leaves": 7},
+        dataset,
+        num_boost_round=5,
+    )
+    assert_equal_predict_arrow_pandas(booster, data)
