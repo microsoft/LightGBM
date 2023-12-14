@@ -1418,6 +1418,40 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
                                                  double* out_result);
 
 /*!
+ * \brief Make prediction for a new dataset.
+ * \note
+ * You should pre-allocate memory for ``out_result``:
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
+ * \param handle Handle of booster
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
+ * \param num_iteration Number of iteration for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with predictions
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+                                                  int64_t n_chunks,
+                                                  const ArrowArray* chunks,
+                                                  const ArrowSchema* schema,
+                                                  int predict_type,
+                                                  int start_iteration,
+                                                  int num_iteration,
+                                                  const char* parameter,
+                                                  int64_t* out_len,
+                                                  double* out_result);
+
+/*!
  * \brief Save model into file.
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
