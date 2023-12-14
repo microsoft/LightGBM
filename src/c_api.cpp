@@ -2568,6 +2568,57 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
   API_END();
 }
 
+int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+                                int64_t n_chunks,
+                                const ArrowArray* chunks,
+                                const ArrowSchema* schema,
+                                int predict_type,
+                                int start_iteration,
+                                int num_iteration,
+                                const char* parameter,
+                                int64_t* out_len,
+                                double* out_result) {
+  API_BEGIN();
+
+  // Apply the configuration
+  auto param = Config::Str2Map(parameter);
+  Config config;
+  config.Set(param);
+  OMP_SET_NUM_THREADS(config.num_threads);
+
+  // Set up chunked array and iterators for all columns
+  ArrowTable table(n_chunks, chunks, schema);
+  std::vector<ArrowChunkedArray::Iterator<double>> its;
+  its.reserve(table.get_num_columns());
+  for (int64_t j = 0; j < table.get_num_columns(); ++j) {
+    its.emplace_back(table.get_column(j).begin<double>());
+  }
+
+  // Build row function
+  auto num_columns = table.get_num_columns();
+  auto row_fn = [num_columns, &its] (int row_idx) {
+    std::vector<std::pair<int, double>> result;
+    result.reserve(num_columns);
+    for (int64_t j = 0; j < num_columns; ++j) {
+      result.emplace_back(static_cast<int>(j), its[j][row_idx]);
+    }
+    return result;
+  };
+
+  // Run prediction
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->Predict(start_iteration,
+                       num_iteration,
+                       predict_type,
+                       static_cast<int>(table.get_num_rows()),
+                       static_cast<int>(table.get_num_columns()),
+                       row_fn,
+                       config,
+                       out_result,
+                       out_len);
+  API_END();
+}
+
 int LGBM_BoosterSaveModel(BoosterHandle handle,
                           int start_iteration,
                           int num_iteration,
