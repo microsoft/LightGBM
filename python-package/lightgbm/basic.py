@@ -19,7 +19,8 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_Table, pd_CategoricalDtype, pd_DataFrame, pd_Series)
+                     dt_DataTable, pa_Array, pa_chunked_array, pa_ChunkedArray, pa_compute, pa_Table,
+                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -69,7 +70,9 @@ _LGBM_GroupType = Union[
     List[float],
     List[int],
     np.ndarray,
-    pd_Series
+    pd_Series,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_PositionType = Union[
     np.ndarray,
@@ -81,6 +84,9 @@ _LGBM_InitScoreType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
+    pa_Table,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_TrainDataType = Union[
     str,
@@ -109,13 +115,16 @@ _LGBM_PredictDataType = Union[
     np.ndarray,
     pd_DataFrame,
     dt_DataTable,
-    scipy.sparse.spmatrix
+    scipy.sparse.spmatrix,
+    pa_Table,
 ]
 _LGBM_WeightType = Union[
     List[float],
     List[int],
     np.ndarray,
-    pd_Series
+    pd_Series,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 ZERO_THRESHOLD = 1e-35
 
@@ -755,6 +764,23 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
                          f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}')
 
 
+def _pandas_to_numpy(
+    data: pd_DataFrame,
+    target_dtype: "np.typing.DTypeLike"
+) -> np.ndarray:
+    _check_for_bad_pandas_dtypes(data.dtypes)
+    try:
+        # most common case (no nullable dtypes)
+        return data.to_numpy(dtype=target_dtype, copy=False)
+    except TypeError:
+        # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
+        # raises error because array is casted to type(pd.NA) and there's no na_value argument
+        return data.astype(target_dtype, copy=False).values
+    except ValueError:
+        # data has nullable dtypes, but we can specify na_value argument and copy will be made
+        return data.to_numpy(dtype=target_dtype, na_value=np.nan)
+
+
 def _data_from_pandas(
     data: pd_DataFrame,
     feature_name: _LGBM_FeatureNameConfiguration,
@@ -763,6 +789,10 @@ def _data_from_pandas(
 ) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
+
+    # take shallow copy in case we modify categorical columns
+    # whole column modifications don't change the original df
+    data = data.copy(deep=False)
 
     # determine feature names
     if feature_name == 'auto':
@@ -780,29 +810,23 @@ def _data_from_pandas(
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if len(cat_cols):  # cat_cols is list
-        data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
     if categorical_feature == 'auto':  # use cat cols from DataFrame
         categorical_feature = cat_cols_not_ordered
     else:  # use cat cols specified by user
         categorical_feature = list(categorical_feature)  # type: ignore[assignment]
 
-    # get numpy representation of the data
-    _check_for_bad_pandas_dtypes(data.dtypes)
     df_dtypes = [dtype.type for dtype in data.dtypes]
-    df_dtypes.append(np.float32)  # so that the target dtype considers floats
+    # so that the target dtype considers floats
+    df_dtypes.append(np.float32)
     target_dtype = np.result_type(*df_dtypes)
-    try:
-        # most common case (no nullable dtypes)
-        data = data.to_numpy(dtype=target_dtype, copy=False)
-    except TypeError:
-        # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
-        # raises error because array is casted to type(pd.NA) and there's no na_value argument
-        data = data.astype(target_dtype, copy=False).values
-    except ValueError:
-        # data has nullable dtypes, but we can specify na_value argument and copy will be made
-        data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
-    return data, feature_name, categorical_feature, pandas_categorical
+
+    return (
+        _pandas_to_numpy(data, target_dtype=target_dtype),
+        feature_name,
+        categorical_feature,
+        pandas_categorical
+    )
 
 
 def _dump_pandas_categorical(
@@ -1046,7 +1070,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1134,6 +1158,13 @@ class _InnerPredictor:
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
+        elif _is_pyarrow_table(data):
+            preds, nrow = self.__pred_for_pyarrow_table(
+                table=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type
@@ -1591,6 +1622,48 @@ class _InnerPredictor:
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+    
+    def __pred_for_pyarrow_table(
+        self,
+        table: pa_Table,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
+        """Predict for a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Prepare prediction output array
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=table.num_rows,
+            predict_type=predict_type
+        )
+        preds = np.empty(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        # Export Arrow table to C and run prediction
+        c_array = _export_arrow_to_c(table)
+        _safe_call(_LIB.LGBM_BoosterPredictForArrow(
+            self._handle,
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            _c_str(self.pred_parameter),
+            ctypes.byref(out_num_preds),
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if n_preds != out_num_preds.value:
+            raise ValueError("Wrong length for predict results")
+        return preds, table.num_rows
 
     def current_iteration(self) -> int:
         """Get the index of the current iteration.
@@ -1635,15 +1708,15 @@ class Dataset:
             Label of the data.
         reference : Dataset or None, optional (default=None)
             If this is Dataset for validation, training data should be used as reference.
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
@@ -2415,15 +2488,15 @@ class Dataset:
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Label of the data.
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each instance. Weights should be non-negative.
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
@@ -2530,7 +2603,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Array, pa_ChunkedArray]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Table, pa_Array, pa_ChunkedArray]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2559,7 +2632,16 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if _is_pyarrow_array(data):
+        if _is_pyarrow_array(data) or _is_pyarrow_table(data):
+            # If a table is being passed, we concatenate the columns. This is only valid for
+            # 'init_score'.
+            if _is_pyarrow_table(data):
+                if field_name != "init_score":
+                    raise ValueError(f"pyarrow tables are not supported for field '{field_name}'")
+                data = pa_chunked_array([
+                    chunk for array in data.columns for chunk in array.chunks  # type: ignore
+                ])
+
             c_array = _export_arrow_to_c(data)
             _safe_call(_LIB.LGBM_DatasetSetFieldFromArrow(
                 self._handle,
@@ -2802,18 +2884,7 @@ class Dataset:
             if isinstance(label, pd_DataFrame):
                 if len(label.columns) > 1:
                     raise ValueError('DataFrame for label cannot have multiple columns')
-                _check_for_bad_pandas_dtypes(label.dtypes)
-                try:
-                    # most common case (no nullable dtypes)
-                    label = label.to_numpy(dtype=np.float32, copy=False)
-                except TypeError:
-                    # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
-                    # raises error because array is casted to type(pd.NA) and there's no na_value argument
-                    label = label.astype(np.float32, copy=False).values
-                except ValueError:
-                    # data has nullable dtypes, but we can specify na_value argument and copy will be made
-                    label = label.to_numpy(dtype=np.float32, na_value=np.nan)
-                label_array = np.ravel(label)
+                label_array = np.ravel(_pandas_to_numpy(label, target_dtype=np.float32))
             elif _is_pyarrow_array(label):
                 label_array = label
             else:
@@ -2830,7 +2901,7 @@ class Dataset:
 
         Parameters
         ----------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight to be set for each data point. Weights should be non-negative.
 
         Returns
@@ -2838,11 +2909,19 @@ class Dataset:
         self : Dataset
             Dataset with set weight.
         """
-        if weight is not None and np.all(weight == 1):
-            weight = None
+        # Check if the weight contains values other than one
+        if weight is not None:
+            if _is_pyarrow_array(weight):
+                if pa_compute.all(pa_compute.equal(weight, 1)).as_py():
+                    weight = None
+            elif np.all(weight == 1):
+                weight = None
         self.weight = weight
+
+        # Set field
         if self._handle is not None and weight is not None:
-            weight = _list_to_1d_numpy(weight, dtype=np.float32, name='weight')
+            if not _is_pyarrow_array(weight):
+                weight = _list_to_1d_numpy(weight, dtype=np.float32, name='weight')
             self.set_field('weight', weight)
             self.weight = self.get_field('weight')  # original values can be modified at cpp side
         return self
@@ -2855,7 +2934,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -2877,7 +2956,7 @@ class Dataset:
 
         Parameters
         ----------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -2891,7 +2970,8 @@ class Dataset:
         """
         self.group = group
         if self._handle is not None and group is not None:
-            group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
+            if not _is_pyarrow_array(group):
+                group = _list_to_1d_numpy(group, dtype=np.int32, name='group')
             self.set_field('group', group)
             # original values can be modified at cpp side
             constructed_group = self.get_field('group')
@@ -2936,7 +3016,7 @@ class Dataset:
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
         string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
         _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
             self._handle,
             ctypes.c_int(num_feature),
@@ -2950,7 +3030,7 @@ class Dataset:
         # if buffer length is not long enough, reallocate buffers
         if reserved_string_buffer_size < actual_string_buffer_size:
             string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
-            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
             _safe_call(_LIB.LGBM_DatasetGetFeatureNames(
                 self._handle,
                 ctypes.c_int(num_feature),
@@ -4320,7 +4400,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4414,12 +4494,12 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        weight : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Weight for each ``data`` instance. Weights should be non-negative.
 
             .. versionadded:: 4.0.0
 
-        group : list, numpy 1-D array, pandas Series or None, optional (default=None)
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
             Group/query size for ``data``.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4428,7 +4508,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0
@@ -4616,7 +4696,7 @@ class Booster:
         reserved_string_buffer_size = 255
         required_string_buffer_size = ctypes.c_size_t(0)
         string_buffers = [ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(num_feature)]
-        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+        ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
         _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
             self._handle,
             ctypes.c_int(num_feature),
@@ -4630,7 +4710,7 @@ class Booster:
         # if buffer length is not long enough, reallocate buffers
         if reserved_string_buffer_size < actual_string_buffer_size:
             string_buffers = [ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(num_feature)]
-            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))
+            ptr_string_buffers = (ctypes.c_char_p * num_feature)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
             _safe_call(_LIB.LGBM_BoosterGetFeatureNames(
                 self._handle,
                 ctypes.c_int(num_feature),
@@ -4840,7 +4920,7 @@ class Booster:
                 string_buffers = [
                     ctypes.create_string_buffer(reserved_string_buffer_size) for _ in range(self.__num_inner_eval)
                 ]
-                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
                 _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                     self._handle,
                     ctypes.c_int(self.__num_inner_eval),
@@ -4856,7 +4936,7 @@ class Booster:
                     string_buffers = [
                         ctypes.create_string_buffer(actual_string_buffer_size) for _ in range(self.__num_inner_eval)
                     ]
-                    ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))
+                    ptr_string_buffers = (ctypes.c_char_p * self.__num_inner_eval)(*map(ctypes.addressof, string_buffers))  # type: ignore[misc]
                     _safe_call(_LIB.LGBM_BoosterGetEvalNames(
                         self._handle,
                         ctypes.c_int(self.__num_inner_eval),

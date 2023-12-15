@@ -197,9 +197,11 @@ except ImportError:
 
 """pyarrow"""
 try:
+    import pyarrow.compute as pa_compute
     from pyarrow import Array as pa_Array
     from pyarrow import ChunkedArray as pa_ChunkedArray
     from pyarrow import Table as pa_Table
+    from pyarrow import chunked_array as pa_chunked_array
     from pyarrow.cffi import ffi as arrow_cffi
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
@@ -236,6 +238,13 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             pass
 
+    class pa_compute:  # type: ignore
+        """Dummy class for pyarrow.compute."""
+
+        all = None
+        equal = None
+
+    pa_chunked_array = None
     arrow_is_integer = None
     arrow_is_floating = None
 

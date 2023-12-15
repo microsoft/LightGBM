@@ -16,6 +16,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 /* -------------------------------------- C DATA INTERFACE ------------------------------------- */
 // The C data interface is taken from
@@ -117,6 +118,7 @@ class ArrowChunkedArray {
                            const struct ArrowSchema* schema) {
     chunks_.reserve(n_chunks);
     for (auto k = 0; k < n_chunks; ++k) {
+      if (chunks[k].length == 0) continue;
       chunks_.push_back(&chunks[k]);
     }
     schema_ = schema;
@@ -220,6 +222,7 @@ class ArrowTable {
       std::vector<const ArrowArray*> children_chunks;
       children_chunks.reserve(n_chunks);
       for (int64_t k = 0; k < n_chunks; ++k) {
+        if (chunks[k].length == 0) continue;
         children_chunks.push_back(chunks[k].children[j]);
       }
       columns_.emplace_back(children_chunks, schema->children[j]);

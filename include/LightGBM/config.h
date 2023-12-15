@@ -150,7 +150,7 @@ struct Config {
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
-  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``lambdarank``, `lambdarank <https://proceedings.neurips.cc/paper_files/paper/2006/file/af44c4c56f385c43f2529f9b1b018f6a-Paper.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
@@ -501,14 +501,14 @@ struct Config {
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
-  // descl2 = ``intermediate``, a `more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
-  // descl2 = ``advanced``, an `even more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+  // descl2 = ``intermediate``, a `more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  // descl2 = ``advanced``, an `even more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
   std::string monotone_constraints_method = "basic";
 
   // alias = monotone_splits_penalty, ms_penalty, mc_penalty
   // check = >=0.0
   // desc = used only if ``monotone_constraints`` is set
-  // desc = `monotone penalty <https://hal.archives-ouvertes.fr/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = `monotone penalty <https://hal.science/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
   // desc = if ``0.0`` (the default), no penalization is applied
   double monotone_penalty = 0.0;
 
@@ -524,7 +524,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -683,7 +683,7 @@ struct Config {
   bool is_enable_sparse = true;
 
   // alias = is_enable_bundle, bundle
-  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
+  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html>`__
   // desc = **Note**: disabling this may cause the slow training speed for sparse datasets
   bool enable_bundle = true;
 
@@ -770,7 +770,7 @@ struct Config {
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
   // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
   // [no-save]
@@ -826,7 +826,7 @@ struct Config {
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
-  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/shap>`__
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   // desc = **Note**: this feature is not implemented for linear trees
   bool predict_contrib = false;

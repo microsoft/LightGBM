@@ -22,6 +22,8 @@
 #' @examples
 #' \donttest{
 #' library(lightgbm)
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -57,7 +59,7 @@ saveRDS.lgb.Booster <- function(object,
 
   warning("'saveRDS.lgb.Booster' is deprecated and will be removed in a future release. Use saveRDS() instead.")
 
-  if (!lgb.is.Booster(x = object)) {
+  if (!.is_Booster(x = object)) {
     stop("saveRDS.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
 

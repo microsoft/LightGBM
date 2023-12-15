@@ -144,7 +144,7 @@ struct ArrayIndexAccessor {
     //  - The structure of validity bitmasks is taken from here:
     //    https://arrow.apache.org/docs/format/Columnar.html#validity-bitmaps
     //  - If the bitmask is NULL, all indices are valid
-    if (validity == nullptr || !(validity[buffer_idx / 8] & (1 << (buffer_idx % 8)))) {
+    if (validity == nullptr || (validity[buffer_idx / 8] & (1 << (buffer_idx % 8)))) {
       // In case the index is valid, we take it from the data buffer
       auto data = static_cast<const T*>(array->buffers[1]);
       return static_cast<double>(data[buffer_idx]);
