@@ -865,6 +865,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     data_size_t num_pairs_in_query = 0;
     query_boundaries_.clear();
     query_boundaries_.push_back(0);
+    num_queries_ = 0;
     for (data_size_t query_index = 0; query_index < num_queries_; ++query_index) {
       const data_size_t query_start = query_boundaries[query_index];
       const data_size_t query_end = query_boundaries[query_index + 1];
@@ -884,7 +885,10 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
           }
         }
       }
-      query_boundaries_.push_back(num_pairs_in_query);
+      if (num_pairs_in_query > 0) {
+        query_boundaries_.push_back(num_pairs_in_query);
+        ++num_queries_;
+      }
     }
   } else {
     // TODO(shiyu1994)
