@@ -125,6 +125,7 @@ class Metadata {
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
   void SetInitScore(const double* init_score, data_size_t len);
+  void SetInitScore(const ArrowChunkedArray& array);
 
 
   /*!
@@ -347,6 +348,9 @@ class Metadata {
   void SetWeightsFromIterator(It first, It last);
   /*! \brief Insert initial scores at the given index */
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
+  /*! \brief Set init scores from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetInitScoresFromIterator(It first, It last);
   /*! \brief Insert queries at the given index */
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
   /*! \brief Set queries from pointers to the first element and the end of an iterator. */

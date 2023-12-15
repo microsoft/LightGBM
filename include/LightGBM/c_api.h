@@ -559,9 +559,10 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetSetField(DatasetHandle handle,
  * \brief Set vector to a content in info.
  * \note
  * - \a group converts input datatype into ``int32``;
- * - \a label and \a weight convert input datatype into ``float32``.
+ * - \a label and \a weight convert input datatype into ``float32``;
+ * - \a init_score converts input datatype into ``float64``.
  * \param handle Handle of dataset
- * \param field_name Field name, can be \a label, \a weight, \a group
+ * \param field_name Field name, can be \a label, \a weight, \a init_score, \a group
  * \param n_chunks The number of Arrow arrays passed to this function
  * \param chunks Pointer to the list of Arrow arrays
  * \param schema Pointer to the schema of all Arrow arrays
@@ -1417,6 +1418,40 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForMats(BoosterHandle handle,
                                                  double* out_result);
 
 /*!
+ * \brief Make prediction for a new dataset.
+ * \note
+ * You should pre-allocate memory for ``out_result``:
+ *   - for normal and raw score, its length is equal to ``num_class * num_data``;
+ *   - for leaf index, its length is equal to ``num_class * num_data * num_iteration``;
+ *   - for feature contributions, its length is equal to ``num_class * num_data * (num_feature + 1)``.
+ * \param handle Handle of booster
+ * \param n_chunks The number of Arrow arrays passed to this function
+ * \param chunks Pointer to the list of Arrow arrays
+ * \param schema Pointer to the schema of all Arrow arrays
+ * \param predict_type What should be predicted
+ *   - ``C_API_PREDICT_NORMAL``: normal prediction, with transform (if needed);
+ *   - ``C_API_PREDICT_RAW_SCORE``: raw score;
+ *   - ``C_API_PREDICT_LEAF_INDEX``: leaf index;
+ *   - ``C_API_PREDICT_CONTRIB``: feature contributions (SHAP values)
+ * \param start_iteration Start index of the iteration to predict
+ * \param num_iteration Number of iteration for prediction, <= 0 means no limit
+ * \param parameter Other parameters for prediction, e.g. early stopping for prediction
+ * \param[out] out_len Length of output result
+ * \param[out] out_result Pointer to array with predictions
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_BoosterPredictForArrow(BoosterHandle handle,
+                                                  int64_t n_chunks,
+                                                  const ArrowArray* chunks,
+                                                  const ArrowSchema* schema,
+                                                  int predict_type,
+                                                  int start_iteration,
+                                                  int num_iteration,
+                                                  const char* parameter,
+                                                  int64_t* out_len,
+                                                  double* out_result);
+
+/*!
  * \brief Save model into file.
  * \param handle Handle of booster
  * \param start_iteration Start index of the iteration that should be saved
@@ -1559,6 +1594,20 @@ LIGHTGBM_C_EXPORT int LGBM_NetworkInitWithFunctions(int num_machines,
                                                     int rank,
                                                     void* reduce_scatter_ext_fun,
                                                     void* allgather_ext_fun);
+
+/*!
+ * \brief Set maximum number of threads used by LightGBM routines in this process.
+ * \param num_threads maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_SetMaxThreads(int num_threads);
+
+/*!
+ * \brief Get current maximum number of threads used by LightGBM routines in this process.
+ * \param[out] out current maximum number of threads used by LightGBM. -1 means defaulting to omp_get_num_threads().
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_GetMaxThreads(int* out);
 
 #if !defined(__cplusplus) && (!defined(__STDC__) || (__STDC_VERSION__ < 199901L))
 /*! \brief Inline specifier no-op in C using standards before C99. */

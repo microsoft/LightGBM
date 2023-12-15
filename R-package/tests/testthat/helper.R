@@ -11,6 +11,11 @@
 #   the check farm is a shared resource and will typically be running many checks simultaneously.
 #
 .LGB_MAX_THREADS <- 2L
+setLGBMthreads(.LGB_MAX_THREADS)
+
+# control data.table parallelism
+# ref: https://github.com/Rdatatable/data.table/issues/5658
+data.table::setDTthreads(1L)
 
 # by default, how much should results in tests be allowed to differ from hard-coded expected numbers?
 .LGB_NUMERIC_TOLERANCE <- 1e-6

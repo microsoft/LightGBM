@@ -19,8 +19,8 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (PANDAS_INSTALLED, PYARROW_INSTALLED, arrow_cffi, arrow_is_floating, arrow_is_integer, concat,
-                     dt_DataTable, pa_Array, pa_ChunkedArray, pa_compute, pa_Table, pd_CategoricalDtype, pd_DataFrame,
-                     pd_Series)
+                     dt_DataTable, pa_Array, pa_chunked_array, pa_ChunkedArray, pa_compute, pa_Table,
+                     pd_CategoricalDtype, pd_DataFrame, pd_Series)
 from .libpath import find_lib_path
 
 if TYPE_CHECKING:
@@ -84,6 +84,9 @@ _LGBM_InitScoreType = Union[
     np.ndarray,
     pd_Series,
     pd_DataFrame,
+    pa_Table,
+    pa_Array,
+    pa_ChunkedArray,
 ]
 _LGBM_TrainDataType = Union[
     str,
@@ -112,7 +115,8 @@ _LGBM_PredictDataType = Union[
     np.ndarray,
     pd_DataFrame,
     dt_DataTable,
-    scipy.sparse.spmatrix
+    scipy.sparse.spmatrix,
+    pa_Table,
 ]
 _LGBM_WeightType = Union[
     List[float],
@@ -786,6 +790,10 @@ def _data_from_pandas(
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
 
+    # take shallow copy in case we modify categorical columns
+    # whole column modifications don't change the original df
+    data = data.copy(deep=False)
+
     # determine feature names
     if feature_name == 'auto':
         feature_name = [str(col) for col in data.columns]
@@ -802,7 +810,6 @@ def _data_from_pandas(
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if len(cat_cols):  # cat_cols is list
-        data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
     if categorical_feature == 'auto':  # use cat cols from DataFrame
         categorical_feature = cat_cols_not_ordered
@@ -1063,7 +1070,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1151,6 +1158,13 @@ class _InnerPredictor:
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
+        elif _is_pyarrow_table(data):
+            preds, nrow = self.__pred_for_pyarrow_table(
+                table=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type
@@ -1608,6 +1622,48 @@ class _InnerPredictor:
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+    
+    def __pred_for_pyarrow_table(
+        self,
+        table: pa_Table,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
+        """Predict for a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Prepare prediction output array
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=table.num_rows,
+            predict_type=predict_type
+        )
+        preds = np.empty(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        # Export Arrow table to C and run prediction
+        c_array = _export_arrow_to_c(table)
+        _safe_call(_LIB.LGBM_BoosterPredictForArrow(
+            self._handle,
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            _c_str(self.pred_parameter),
+            ctypes.byref(out_num_preds),
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if n_preds != out_num_preds.value:
+            raise ValueError("Wrong length for predict results")
+        return preds, table.num_rows
 
     def current_iteration(self) -> int:
         """Get the index of the current iteration.
@@ -1660,7 +1716,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         feature_name : list of str, or 'auto', optional (default="auto")
             Feature names.
@@ -2440,7 +2496,7 @@ class Dataset:
             sum(group) = n_samples.
             For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
             where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for Dataset.
         params : dict or None, optional (default=None)
             Other parameters for validation Dataset.
@@ -2547,7 +2603,7 @@ class Dataset:
     def set_field(
         self,
         field_name: str,
-        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Array, pa_ChunkedArray]]
+        data: Optional[Union[List[List[float]], List[List[int]], List[float], List[int], np.ndarray, pd_Series, pd_DataFrame, pa_Table, pa_Array, pa_ChunkedArray]]
     ) -> "Dataset":
         """Set property into the Dataset.
 
@@ -2576,7 +2632,16 @@ class Dataset:
             return self
 
         # If the data is a arrow data, we can just pass it to C
-        if _is_pyarrow_array(data):
+        if _is_pyarrow_array(data) or _is_pyarrow_table(data):
+            # If a table is being passed, we concatenate the columns. This is only valid for
+            # 'init_score'.
+            if _is_pyarrow_table(data):
+                if field_name != "init_score":
+                    raise ValueError(f"pyarrow tables are not supported for field '{field_name}'")
+                data = pa_chunked_array([
+                    chunk for array in data.columns for chunk in array.chunks  # type: ignore
+                ])
+
             c_array = _export_arrow_to_c(data)
             _safe_call(_LIB.LGBM_DatasetSetFieldFromArrow(
                 self._handle,
@@ -2869,7 +2934,7 @@ class Dataset:
 
         Parameters
         ----------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score for Booster.
 
         Returns
@@ -4335,7 +4400,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4443,7 +4508,7 @@ class Booster:
 
             .. versionadded:: 4.0.0
 
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None, optional (default=None)
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None, optional (default=None)
             Init score for ``data``.
 
             .. versionadded:: 4.0.0

@@ -917,6 +917,8 @@ NULL
 #'         the factor levels not being present in the output.
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1082,6 +1084,8 @@ predict.lgb.Booster <- function(object,
 #'         \link{predict.lgb.Booster}.
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' library(lightgbm)
 #' data(mtcars)
 #' X <- as.matrix(mtcars[, -1L])
@@ -1224,6 +1228,8 @@ summary.lgb.Booster <- function(object, ...) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1289,6 +1295,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -1346,6 +1354,8 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @examples
 #' \donttest{
 #' library(lightgbm)
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1396,6 +1406,8 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' # train a regression model
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train

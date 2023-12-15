@@ -23,6 +23,8 @@ Calls \code{readRDS} in what is expected to be a serialized \code{lgb.Booster} o
 \examples{
 \donttest{
 library(lightgbm)
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
