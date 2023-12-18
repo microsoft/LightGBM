@@ -115,7 +115,8 @@ _LGBM_PredictDataType = Union[
     np.ndarray,
     pd_DataFrame,
     dt_DataTable,
-    scipy.sparse.spmatrix
+    scipy.sparse.spmatrix,
+    pa_Table,
 ]
 _LGBM_WeightType = Union[
     List[float],
@@ -1069,7 +1070,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1157,6 +1158,13 @@ class _InnerPredictor:
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
+        elif _is_pyarrow_table(data):
+            preds, nrow = self.__pred_for_pyarrow_table(
+                table=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type
@@ -1614,6 +1622,48 @@ class _InnerPredictor:
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+    
+    def __pred_for_pyarrow_table(
+        self,
+        table: pa_Table,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
+        """Predict for a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Prepare prediction output array
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=table.num_rows,
+            predict_type=predict_type
+        )
+        preds = np.empty(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        # Export Arrow table to C and run prediction
+        c_array = _export_arrow_to_c(table)
+        _safe_call(_LIB.LGBM_BoosterPredictForArrow(
+            self._handle,
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            _c_str(self.pred_parameter),
+            ctypes.byref(out_num_preds),
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if n_preds != out_num_preds.value:
+            raise ValueError("Wrong length for predict results")
+        return preds, table.num_rows
 
     def current_iteration(self) -> int:
         """Get the index of the current iteration.
@@ -4350,7 +4400,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
