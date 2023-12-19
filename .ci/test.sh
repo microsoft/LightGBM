@@ -4,8 +4,8 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
-    export CXX=clang++
-    export CC=clang
+    export CXX=clang-17++
+    export CC=clang-17
 fi
 
 if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
