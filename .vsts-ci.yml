@@ -82,7 +82,7 @@ jobs:
 - job: Linux_latest
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: clang-17
     DEBIAN_FRONTEND: 'noninteractive'
     IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'

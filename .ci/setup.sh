@@ -49,10 +49,13 @@ else  # Linux
             locales-all \
             netcat \
             unzip \
-            zip \
-            wget \
-            software-properties-common || exit -1
+            zip || exit -1
         if [[ $COMPILER == "clang" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
+        elif [[ $COMPILER == "clang-17" ]]; then
+            sudo apt-get install wget
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
@@ -119,12 +122,9 @@ else  # Linux
             lsb-release \
             software-properties-common
         if [[ $COMPILER == "clang" ]]; then
-            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-            apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
-            apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
-            apt-get update
-            apt-get install -y clang-17
-            apt-get install --no-install-recommends -y libomp-17-dev
+            sudo apt-get install --no-install-recommends -y \
+                clang \
+                libomp-dev
         fi
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
