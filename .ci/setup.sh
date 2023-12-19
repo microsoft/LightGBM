@@ -122,7 +122,7 @@ else  # Linux
             lsb-release \
             software-properties-common
         if [[ $COMPILER == "clang" ]]; then
-            sudo apt-get install --no-install-recommends -y \
+            apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         fi
