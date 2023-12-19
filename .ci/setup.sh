@@ -58,7 +58,7 @@ else  # Linux
             sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-get update
             sudo apt-get install -y clang-17
-            sudo apt-get install --no-install-recommends -y libomp-dev
+            sudo apt-get install --no-install-recommends -y libomp-17-dev
         fi
 
         export LANG="en_US.UTF-8"
@@ -124,7 +124,7 @@ else  # Linux
             apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             apt-get update
             apt-get install -y clang-17
-            apt-get install --no-install-recommends -y libomp-dev
+            apt-get install --no-install-recommends -y libomp-17-dev
         fi
         curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
         apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
