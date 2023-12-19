@@ -641,6 +641,7 @@ if(BUILD_CPP_TEST)
 
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
     set(
       CompilerFlags
         CMAKE_CXX_FLAGS
