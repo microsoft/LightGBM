@@ -226,9 +226,12 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   int32_t len = static_cast<int32_t>(Rf_asInteger(len_used_row_indices));
   std::vector<int32_t> idxvec(len);
   // convert from one-based to zero-based index
+  int *used_row_indices_ = INTEGER(used_row_indices);
+#ifndef _MSC_VER
 #pragma omp simd
+#endif
   for (int32_t i = 0; i < len; ++i) {
-    idxvec[i] = static_cast<int32_t>(INTEGER(used_row_indices)[i] - 1);
+    idxvec[i] = static_cast<int32_t>(used_row_indices_[i] - 1);
   }
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
   DatasetHandle res = nullptr;
@@ -339,19 +342,13 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   const char* name = CHAR(PROTECT(Rf_asChar(field_name)));
   if (!strcmp("group", name) || !strcmp("query", name)) {
     std::vector<int32_t> vec(len);
-#pragma omp simd
-    for (int i = 0; i < len; ++i) {
-      vec[i] = static_cast<int32_t>(INTEGER(field_data)[i]);
-    }
+    std::copy(INTEGER(field_data), INTEGER(field_data) + len, vec.begin());
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
-#pragma omp simd
-    for (int i = 0; i < len; ++i) {
-      vec[i] = static_cast<float>(REAL(field_data)[i]);
-    }
+    std::copy(REAL(field_data), REAL(field_data) _ len, vec.begin());
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
   }
   UNPROTECT(1);
@@ -372,22 +369,19 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
   if (!strcmp("group", name) || !strcmp("query", name)) {
     auto p_data = reinterpret_cast<const int32_t*>(res);
     // convert from boundaries to size
+    int *field_data_ = INTEGER(field_data);
+#ifndef _MSC_VER
 #pragma omp simd
+#endif
     for (int i = 0; i < out_len - 1; ++i) {
-      INTEGER(field_data)[i] = p_data[i + 1] - p_data[i];
+      field_data_[i] = p_data[i + 1] - p_data[i];
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-#pragma omp simd
-    for (int i = 0; i < out_len; ++i) {
-      REAL(field_data)[i] = p_data[i];
-    }
+    std:::copy(p_data, p_data + out_len, REAL(field_data));
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
-#pragma omp simd
-    for (int i = 0; i < out_len; ++i) {
-      REAL(field_data)[i] = p_data[i];
-    }
+    std::copy(p_data, p_data + out_len, REAL(field_data));
   }
   UNPROTECT(1);
   return R_NilValue;
@@ -611,11 +605,8 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   int is_finished = 0;
   int int_len = Rf_asInteger(len);
   std::vector<float> tgrad(int_len), thess(int_len);
-#pragma omp simd
-  for (int j = 0; j < int_len; ++j) {
-    tgrad[j] = static_cast<float>(REAL(grad)[j]);
-    thess[j] = static_cast<float>(REAL(hess)[j]);
-  }
+  std::copy(REAL(grad), REAL(grad) + int_len, tgrad.begin());
+  std::copy(REAL(hess), REAL(hess) + int_len, thess.begin());
   CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.data(), thess.data(), &is_finished));
   return R_NilValue;
   R_API_END();
