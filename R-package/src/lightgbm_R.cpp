@@ -224,7 +224,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   _AssertDatasetHandleNotNull(handle);
   SEXP ret = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
   int32_t len = static_cast<int32_t>(Rf_asInteger(len_used_row_indices));
-  std::vector<int32_t> idxvec(len);
+  std::unique_ptr<int32_t[]> idxvec(new int32_t[len]);
   // convert from one-based to zero-based index
   const int *used_row_indices_ = INTEGER(used_row_indices);
 #ifndef _MSC_VER
@@ -236,7 +236,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
   const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
   DatasetHandle res = nullptr;
   CHECK_CALL(LGBM_DatasetGetSubset(R_ExternalPtrAddr(handle),
-    idxvec.data(), len, parameters_ptr,
+    idxvec.get(), len, parameters_ptr,
     &res));
   R_SetExternalPtrAddr(ret, res);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
@@ -250,13 +250,13 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   R_API_BEGIN();
   _AssertDatasetHandleNotNull(handle);
   auto vec_names = Split(CHAR(PROTECT(Rf_asChar(feature_names))), '\t');
-  std::vector<const char*> vec_sptr;
   int len = static_cast<int>(vec_names.size());
+  std::unique_ptr<const char*[]> vec_sptr(new const char*[len]);
   for (int i = 0; i < len; ++i) {
-    vec_sptr.push_back(vec_names[i].c_str());
+    vec_sptr[i] = vec_names[i].c_str();
   }
   CHECK_CALL(LGBM_DatasetSetFeatureNames(R_ExternalPtrAddr(handle),
-    vec_sptr.data(), len));
+    vec_sptr.get(), len));
   UNPROTECT(1);
   return R_NilValue;
   R_API_END();
@@ -341,15 +341,13 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
   int len = Rf_asInteger(num_element);
   const char* name = CHAR(PROTECT(Rf_asChar(field_name)));
   if (!strcmp("group", name) || !strcmp("query", name)) {
-    std::vector<int32_t> vec(len);
-    std::copy(INTEGER(field_data), INTEGER(field_data) + len, vec.begin());
-    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_INT32));
+    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, INTEGER(field_data), len, C_API_DTYPE_INT32));
   } else if (!strcmp("init_score", name)) {
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
-    std::vector<float> vec(len);
-    std::copy(REAL(field_data), REAL(field_data) + len, vec.begin());
-    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
+    std::unique_ptr<float[]> vec(new float[len]);
+    std::copy(REAL(field_data), REAL(field_data) + len, vec.get());
+    CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.get(), len, C_API_DTYPE_FLOAT32));
   }
   UNPROTECT(1);
   return R_NilValue;
@@ -604,10 +602,10 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   _AssertBoosterHandleNotNull(handle);
   int is_finished = 0;
   int int_len = Rf_asInteger(len);
-  std::vector<float> tgrad(int_len), thess(int_len);
-  std::copy(REAL(grad), REAL(grad) + int_len, tgrad.begin());
-  std::copy(REAL(hess), REAL(hess) + int_len, thess.begin());
-  CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.data(), thess.data(), &is_finished));
+  std::unique_ptr<float[]> tgrad(new float[int_len]), thess(new float[int_len]);
+  std::copy(REAL(grad), REAL(grad) + int_len, tgrad.get());
+  std::copy(REAL(hess), REAL(hess) + int_len, thess.get());
+  CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.get(), thess.get(), &is_finished));
   return R_NilValue;
   R_API_END();
 }
