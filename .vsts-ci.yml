@@ -34,7 +34,7 @@ jobs:
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
-  pool: sh-ubuntu
+  pool: sh-mariner
   container: linux-artifact-builder
   strategy:
     matrix:
@@ -82,12 +82,12 @@ jobs:
 - job: Linux_latest
 ###########################################
   variables:
-    COMPILER: clang
+    COMPILER: clang-17
     DEBIAN_FRONTEND: 'noninteractive'
     IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
-  pool: sh-ubuntu
+  pool: sh-mariner
   container: ubuntu-latest
   strategy:
     matrix:

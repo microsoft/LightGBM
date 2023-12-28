@@ -1,5 +1,16 @@
 # CRAN Submission History
 
+## v4.2.0 - Submission 1 - (December 7, 2023)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This submission included many changes from the last 2 years, as well as fixes for a warning
+CRAN said could cause the package to be archived: https://github.com/microsoft/LightGBM/issues/6221.
+
 ## v4.1.0 - not submitted
 
 v4.1.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.
