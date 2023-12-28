@@ -348,7 +348,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, REAL(field_data), len, C_API_DTYPE_FLOAT64));
   } else {
     std::vector<float> vec(len);
-    std::copy(REAL(field_data), REAL(field_data) _ len, vec.begin());
+    std::copy(REAL(field_data), REAL(field_data) + len, vec.begin());
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.data(), len, C_API_DTYPE_FLOAT32));
   }
   UNPROTECT(1);
@@ -378,7 +378,7 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
     }
   } else if (!strcmp("init_score", name)) {
     auto p_data = reinterpret_cast<const double*>(res);
-    std:::copy(p_data, p_data + out_len, REAL(field_data));
+    std::copy(p_data, p_data + out_len, REAL(field_data));
   } else {
     auto p_data = reinterpret_cast<const float*>(res);
     std::copy(p_data, p_data + out_len, REAL(field_data));
