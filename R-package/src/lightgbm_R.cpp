@@ -32,22 +32,19 @@ R_altrep_class_t lgb_altrepped_int_arr;
 R_altrep_class_t lgb_altrepped_dbl_arr;
 
 template <class T>
-void delete_cpp_array(SEXP R_ptr)
-{
+void delete_cpp_array(SEXP R_ptr) {
   T *ptr_to_cpp_obj = static_cast<T*>(R_ExternalPtrAddr(R_ptr));
   delete[] ptr_to_cpp_obj;
   R_ClearExternalPtr(R_ptr);
 }
 
-void delete_cpp_char_vec(SEXP R_ptr)
-{
+void delete_cpp_char_vec(SEXP R_ptr) {
   std::vector<char> *ptr_to_cpp_obj = static_cast<std::vector<char>*>(R_ExternalPtrAddr(R_ptr));
   delete ptr_to_cpp_obj;
   R_ClearExternalPtr(R_ptr);
 }
 
-SEXP make_altrepped_raw_vec(void *void_ptr)
-{
+SEXP make_altrepped_raw_vec(void *void_ptr) {
   std::unique_ptr<std::vector<char>> *ptr_to_cpp_vec = static_cast<std::unique_ptr<std::vector<char>>*>(void_ptr);
   SEXP R_ptr = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
   SEXP R_raw = PROTECT(R_new_altrep(lgb_altrepped_char_vec, R_NilValue, R_NilValue));
@@ -61,29 +58,24 @@ SEXP make_altrepped_raw_vec(void *void_ptr)
   return R_raw;
 }
 
-std::vector<char>* get_ptr_from_altrepped_raw(SEXP R_raw)
-{
+std::vector<char>* get_ptr_from_altrepped_raw(SEXP R_raw) {
   return static_cast<std::vector<char>*>(R_ExternalPtrAddr(R_altrep_data1(R_raw)));
 }
 
-R_xlen_t get_altrepped_raw_len(SEXP R_raw)
-{
+R_xlen_t get_altrepped_raw_len(SEXP R_raw) {
   return get_ptr_from_altrepped_raw(R_raw)->size();
 }
 
-const void* get_altrepped_raw_dataptr_or_null(SEXP R_raw)
-{
+const void* get_altrepped_raw_dataptr_or_null(SEXP R_raw) {
   return get_ptr_from_altrepped_raw(R_raw)->data();
 }
 
-void* get_altrepped_raw_dataptr(SEXP R_raw, Rboolean writeable)
-{
+void* get_altrepped_raw_dataptr(SEXP R_raw, Rboolean writeable) {
   return get_ptr_from_altrepped_raw(R_raw)->data();
 }
 
 template <class T>
-R_altrep_class_t get_altrep_class_for_type()
-{
+R_altrep_class_t get_altrep_class_for_type() {
   if (std::is_same<T, double>::value) {
     return lgb_altrepped_dbl_arr;
   } else {
@@ -98,8 +90,7 @@ struct arr_and_len {
 };
 
 template <class T>
-SEXP make_altrepped_vec_from_arr(void *void_ptr)
-{
+SEXP make_altrepped_vec_from_arr(void *void_ptr) {
   T *arr = static_cast<arr_and_len<T>*>(void_ptr)->arr;
   uint64_t len = static_cast<arr_and_len<T>*>(void_ptr)->len;
   SEXP R_ptr = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
@@ -116,18 +107,15 @@ SEXP make_altrepped_vec_from_arr(void *void_ptr)
   return R_vec;
 }
 
-R_xlen_t get_altrepped_vec_len(SEXP R_vec)
-{
+R_xlen_t get_altrepped_vec_len(SEXP R_vec) {
   return static_cast<R_xlen_t>(Rf_asReal(R_altrep_data2(R_vec)));
 }
 
-const void* get_altrepped_vec_dataptr_or_null(SEXP R_vec)
-{
+const void* get_altrepped_vec_dataptr_or_null(SEXP R_vec) {
   return R_ExternalPtrAddr(R_altrep_data1(R_vec));
 }
 
-void* get_altrepped_vec_dataptr(SEXP R_vec, Rboolean writeable)
-{
+void* get_altrepped_vec_dataptr(SEXP R_vec, Rboolean writeable) {
   return R_ExternalPtrAddr(R_altrep_data1(R_vec));
 }
 
@@ -1122,22 +1110,22 @@ SEXP LGBM_BoosterPredictSparseOutput_R(SEXP handle,
   arr_and_len<int> indptr_str{static_cast<int*>(out_indptr), out_len[1]};
   SET_VECTOR_ELT(
     out, 0,
-    R_UnwindProtect(make_altrepped_vec_from_arr<int>, static_cast<void*>(&indptr_str), throw_R_memerr, &cont_token, cont_token)
-  );
+    R_UnwindProtect(make_altrepped_vec_from_arr<int>,
+      static_cast<void*>(&indptr_str), throw_R_memerr, &cont_token, cont_token));
   pointers_struct->indptr = nullptr;
 
   arr_and_len<int> indices_str{static_cast<int*>(out_indices), out_len[0]};
   SET_VECTOR_ELT(
     out, 1,
-    R_UnwindProtect(make_altrepped_vec_from_arr<int>, static_cast<void*>(&indices_str), throw_R_memerr, &cont_token, cont_token)
-  );
+    R_UnwindProtect(make_altrepped_vec_from_arr<int>,
+      static_cast<void*>(&indices_str), throw_R_memerr, &cont_token, cont_token));
   pointers_struct->indices = nullptr;
 
   arr_and_len<double> data_str{static_cast<double*>(out_data), out_len[0]};
   SET_VECTOR_ELT(
     out, 2,
-    R_UnwindProtect(make_altrepped_vec_from_arr<double>, static_cast<void*>(&data_str), throw_R_memerr, &cont_token, cont_token)
-  );
+    R_UnwindProtect(make_altrepped_vec_from_arr<double>,
+      static_cast<void*>(&data_str), throw_R_memerr, &cont_token, cont_token));
   pointers_struct->data = nullptr;
 
   UNPROTECT(3);
