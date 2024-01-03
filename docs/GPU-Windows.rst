@@ -152,7 +152,7 @@ Download  `Prebuilt Boost x86_64`_ or `Prebuilt Boost i686`_ and unpack them wit
 Boost Compilation
 -----------------
 
-Installing Boost requires to download Boost and to install it.
+Installing Boost requires downloading Boost and installing it.
 It takes about 10 minutes to several hours depending on your CPU speed and network speed.
 
 We will assume an installation in ``C:\boost`` and a general installation (like in Unix variants: without versioning and without type tags).

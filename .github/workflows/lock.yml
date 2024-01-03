@@ -18,15 +18,15 @@ jobs:
   action:
     runs-on: ubuntu-latest
     steps:
-      - uses: dessant/lock-threads@v4
+      - uses: dessant/lock-threads@v5
         with:
           github-token: ${{ github.token }}
           # after how many days of inactivity should a closed issue/PR be locked?
-          issue-inactive-days: '90'
-          pr-inactive-days: '90'
+          issue-inactive-days: '365'
+          pr-inactive-days: '365'
           # do not close feature request issues...
           # we close those but track them in https://github.com/microsoft/LightGBM/issues/2302
-          exclude-any-issue-labels: '"feature request"'
+          exclude-any-issue-labels: 'feature request'
           # what labels should be removed prior to locking?
           remove-issue-labels: 'awaiting response,awaiting review,blocking,in progress'
           remove-pr-labels: 'awaiting response,awaiting review,blocking,in progress'
@@ -42,3 +42,4 @@ jobs:
           # what shoulld the locking status be?
           issue-lock-reason: 'resolved'
           pr-lock-reason: 'resolved'
+          process-only: 'issues, prs'

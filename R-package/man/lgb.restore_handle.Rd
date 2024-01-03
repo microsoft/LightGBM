@@ -27,7 +27,10 @@ function. If you wish to make fast single-row predictions using a \code{lgb.Boos
 call \link{lgb.configure_fast_predict} on the loaded \code{lgb.Booster} object.
 }
 \examples{
+\donttest{
 library(lightgbm)
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data("agaricus.train")
 model <- lightgbm(
   agaricus.train$data
@@ -44,6 +47,7 @@ model_new <- readRDS(fname)
 model_new$check_null_handle()
 lgb.restore_handle(model_new)
 model_new$check_null_handle()
+}
 }
 \seealso{
 \link{lgb.make_serializable}, \link{lgb.drop_serialized}.

@@ -41,6 +41,13 @@ endif()
 
 project(lightgbm LANGUAGES C CXX)
 
+if(BUILD_CPP_TEST)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 #-- Sanitizer
@@ -329,7 +336,7 @@ endif()
 if(UNIX OR MINGW OR CYGWIN)
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+    "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
   if(MINGW)
     # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
@@ -432,6 +439,7 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
+      src/utils/*.cpp
 if(USE_CUDA)
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
@@ -629,7 +637,7 @@ if(BUILD_CPP_TEST)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        release-1.11.0
+      GIT_TAG        v1.14.0
     )
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
@@ -640,6 +648,7 @@ if(BUILD_CPP_TEST)
 
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
     set(
       CompilerFlags
         CMAKE_CXX_FLAGS
