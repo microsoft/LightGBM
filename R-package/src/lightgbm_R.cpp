@@ -1378,17 +1378,17 @@ void R_init_lib_lightgbm(DllInfo *dll) {
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
 
-  lgb_altrepped_char_vec = R_make_altraw_class("lgb_altrepped_char_vec", "lib_lightgbm", dll);
+  lgb_altrepped_char_vec = R_make_altraw_class("lgb_altrepped_char_vec", "lightgbm", dll);
   R_set_altrep_Length_method(lgb_altrepped_char_vec, get_altrepped_raw_len);
   R_set_altvec_Dataptr_method(lgb_altrepped_char_vec, get_altrepped_raw_dataptr);
   R_set_altvec_Dataptr_or_null_method(lgb_altrepped_char_vec, get_altrepped_raw_dataptr_or_null);
 
-  lgb_altrepped_int_arr = R_make_altinteger_class("lgb_altrepped_int_arr", "lib_lightgbm", dll);
+  lgb_altrepped_int_arr = R_make_altinteger_class("lgb_altrepped_int_arr", "lightgbm", dll);
   R_set_altrep_Length_method(lgb_altrepped_int_arr, get_altrepped_vec_len);
   R_set_altvec_Dataptr_method(lgb_altrepped_int_arr, get_altrepped_vec_dataptr);
   R_set_altvec_Dataptr_or_null_method(lgb_altrepped_int_arr, get_altrepped_vec_dataptr_or_null);
 
-  lgb_altrepped_dbl_arr = R_make_altreal_class("lgb_altrepped_dbl_arr", "lib_lightgbm", dll);
+  lgb_altrepped_dbl_arr = R_make_altreal_class("lgb_altrepped_dbl_arr", "lightgbm", dll);
   R_set_altrep_Length_method(lgb_altrepped_dbl_arr, get_altrepped_vec_len);
   R_set_altvec_Dataptr_method(lgb_altrepped_dbl_arr, get_altrepped_vec_dataptr);
   R_set_altvec_Dataptr_or_null_method(lgb_altrepped_dbl_arr, get_altrepped_vec_dataptr_or_null);
