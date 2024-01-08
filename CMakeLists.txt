@@ -525,7 +525,13 @@ if(USE_SWIG)
               "${CMAKE_COMMAND}"
               -E
               copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/*.dll"
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
               com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
