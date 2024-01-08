@@ -27,17 +27,7 @@ if(APPLE)
   option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif()
 
-if(__INTEGRATE_OPENCL)
-  cmake_minimum_required(VERSION 3.11)
-elseif(USE_SWIG)
-  cmake_minimum_required(VERSION 3.8)
-elseif(USE_GPU OR APPLE)
-  cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA)
-  cmake_minimum_required(VERSION 3.16)
-else()
-  cmake_minimum_required(VERSION 3.0)
-endif()
+cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
 
