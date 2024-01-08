@@ -545,7 +545,7 @@ if(USE_SWIG)
           "${CMAKE_COMMAND}"
           -E
           copy_if_different
-          "${PROJECT_SOURCE_DIR}/*.dylib"
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
           com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
           "${CMAKE_COMMAND}"
@@ -564,7 +564,7 @@ if(USE_SWIG)
           "${CMAKE_COMMAND}"
           -E
           copy_if_different
-          "${PROJECT_SOURCE_DIR}/*.so"
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
           com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
