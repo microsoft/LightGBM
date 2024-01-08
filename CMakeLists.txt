@@ -521,7 +521,12 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/*.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     endif()
@@ -530,9 +535,16 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
-          cp
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/*.dylib"
+          com/microsoft/ml/lightgbm/osx/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
           "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
           com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
@@ -542,7 +554,12 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/*.so"
+          com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   endif()
