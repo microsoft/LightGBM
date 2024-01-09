@@ -3,10 +3,14 @@ title:
   "Basic Walkthrough"
 description: >
   This vignette describes how to train a LightGBM model for binary classification.
-output: rmarkdown::html_vignette
+output:
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
 vignette: >
   %\VignetteIndexEntry{Basic Walkthrough}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   %\VignetteEncoding{UTF-8}
 ---
 
@@ -23,7 +27,7 @@ knitr::opts_chunk$set(
 
 Welcome to the world of [LightGBM](https://lightgbm.readthedocs.io/en/latest/), a highly efficient gradient boosting implementation (Ke et al. 2017).
 
-```{r setup}
+```{r}
 library(lightgbm)
 ```
 
