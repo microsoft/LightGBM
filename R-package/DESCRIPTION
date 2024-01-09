@@ -46,9 +46,9 @@ Biarch: true
 VignetteBuilder: knitr
 Suggests:
     knitr,
+    markdown,
     processx,
     RhpcBLASctl,
-    rmarkdown,
     testthat
 Depends:
     R (>= 3.5)
