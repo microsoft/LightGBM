@@ -57,7 +57,7 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.4.4"]
+requires = ["scikit-build-core>=0.7.0"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
@@ -76,7 +76,7 @@ sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
 strict-config = true
-minimum-version = "0.4.4"
+minimum-version = "0.7.0"
 
 # end:build-system
 
