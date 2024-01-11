@@ -272,7 +272,7 @@ jobs:
     runs-on: ubuntu-latest
     container: rhub/debian-clang-devel
     env:
-      DEBIAN_FRONTEND=noninteractive
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install Git before checkout
         shell: bash
