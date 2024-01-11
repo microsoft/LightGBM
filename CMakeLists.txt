@@ -427,7 +427,8 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-      src/utils/*.cpp)
+      src/utils/*.cpp
+)
 file(
     GLOB
     LGBM_CUDA_SOURCES
@@ -443,7 +444,8 @@ file(
       src/io/cuda/*.cu
       src/io/cuda/*.cpp
       src/cuda/*.cpp
-      src/cuda/*.cu)
+      src/cuda/*.cu
+)
 
 if(USE_CUDA)
   list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
