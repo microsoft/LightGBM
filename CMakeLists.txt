@@ -427,8 +427,10 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-      src/utils/*.cpp
-if(USE_CUDA)
+      src/utils/*.cpp)
+file(
+    GLOB
+    LGBM_CUDA_SOURCES
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
@@ -441,9 +443,11 @@ if(USE_CUDA)
       src/io/cuda/*.cu
       src/io/cuda/*.cpp
       src/cuda/*.cpp
-      src/cuda/*.cu
+      src/cuda/*.cu)
+
+if(USE_CUDA)
+  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
 endif()
-)
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
