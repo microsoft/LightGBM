@@ -24,8 +24,9 @@ apt-get install --no-install-recommends -y \
 
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-add-apt-repository "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
-apt-get update -y
+# ref: https://apt.llvm.org/
+add-apt-repository -y "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
+add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain main"
 
 apt-get install -y --no-install-recommends \
     clang-${CLANG_VERSION} \
