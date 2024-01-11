@@ -287,7 +287,7 @@ jobs:
           submodules: true
       - name: install clang
         run: |
-          ./.ci/install-clang-devel ${{ matrix.clang-version }}
+          ./.ci/install-clang-devel.sh ${{ matrix.clang-version }}
       - name: Install packages and run tests
         shell: bash
         run: |
