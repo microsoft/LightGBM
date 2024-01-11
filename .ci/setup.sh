@@ -4,7 +4,7 @@ set -e -E -u -o pipefail
 
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
-SETUP_CONDA=${SETUP_CONDA:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
