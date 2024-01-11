@@ -2,6 +2,9 @@
 
 set -e -E -u -o pipefail
 
+# defaults
+SETUP_CONDA=${SETUP_CONDA:-"false"}
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp

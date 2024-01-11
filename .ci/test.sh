@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -e -E -o pipefail
+set -e -E -u -o pipefail
+
+# defaults
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
