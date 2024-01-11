@@ -2113,8 +2113,8 @@ int LGBM_BoosterCalcNumPredict(BoosterHandle handle,
   API_END();
 }
 
-
-
+// TODO in future versions of LightGBM, public API named around `FastConfig` should be made named around
+// `SingleRowPredictor`, because it is specific to single row prediction, and doesn't actually hold only config.
 int LGBM_FastConfigFree(FastConfigHandle fastConfig) {
   API_BEGIN();
   delete reinterpret_cast<SingleRowPredictor*>(fastConfig);
