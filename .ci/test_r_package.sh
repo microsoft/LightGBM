@@ -2,6 +2,9 @@
 
 set -e -E -u -o pipefail
 
+# defaults
+INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}
+
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
