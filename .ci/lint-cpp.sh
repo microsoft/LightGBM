@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -u -x pipefail
+set -e -E -u -o pipefail
 
 echo "running cpplint"
 cpplint \

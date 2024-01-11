@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e -u -x pipefail
+set -e -E -u -o pipefail
 
 DIST_DIR=${1}
 
