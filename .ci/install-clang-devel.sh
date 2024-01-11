@@ -5,7 +5,7 @@
 #   Installs a development version of clang and the other LLVM tools.
 #
 
-set -ux pipefail
+set -e -E -u -o pipefail
 
 CLANG_VERSION=${1}
 
