@@ -12,7 +12,7 @@
 #
 # DISPATCH_NAME: Name of a dispatch to be triggered.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

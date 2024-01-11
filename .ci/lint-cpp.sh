@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e -u -x pipefail
 
 echo "running cpplint"
 cpplint \

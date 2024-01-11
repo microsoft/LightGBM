@@ -27,7 +27,7 @@
 #     # skip vignette building
 #     sh build-cran-package.sh --no-build-vignettes
 
-set -e
+set -e -E -u -o pipefail
 
 # Default values of arguments
 BUILD_VIGNETTES=true

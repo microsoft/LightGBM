@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp

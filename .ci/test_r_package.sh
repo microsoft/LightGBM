@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib

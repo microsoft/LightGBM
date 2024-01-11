@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e -u -x pipefail
+
 DIST_DIR=${1}
 
 echo "checking Python package distributions in '${DIST_DIR}'"

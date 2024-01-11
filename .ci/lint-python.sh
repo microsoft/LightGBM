@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e -E -u -o pipefail
+
 echo "running ruff"
 ruff check \
     --config=./python-package/pyproject.toml \
