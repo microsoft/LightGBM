@@ -297,6 +297,11 @@ jobs:
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
+          echo ""
+          echo "install logs:"
+          echo ""
+          cat lightgbm.Rcheck/00install.out
+          echo ""
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
               echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
               exit -1
