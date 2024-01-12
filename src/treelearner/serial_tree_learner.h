@@ -13,6 +13,7 @@
 #include <LightGBM/utils/json11.h>
 #include <LightGBM/utils/random.h>
 
+#include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>
