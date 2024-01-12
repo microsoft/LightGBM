@@ -50,7 +50,22 @@ apt-get install -y --no-install-recommends \
 # updating PATH, LD_LIBRARY_PATH, etc.
 cp --remove-destination /usr/lib/llvm-${CLANG_VERSION}/bin/* /usr/bin/
 
+# per https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
+#
+# clang was built to use libc++: for a version built to default to libstdc++
+# (as shipped by Fedora/Debian/Ubuntu), add -stdlib=libc++ to CXX 
+# and install the libcxx-devel/libc++-dev package.
+mkdir -p "${HOME}/.R"
+
+cat << EOF > "${HOME}/.R/Makevars"
+CXX += -stdlib=libc++
+CXX11 += -stdlib=libc++
+CXX14 += -stdlib=libc++
+CXX17 += -stdlib=libc++
+CXX20 += -stdlib=libc++
+EOF
+
 echo ""
-echo "done install clang"
+echo "done installing clang"
 clang --version
 echo ""
