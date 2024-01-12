@@ -24,6 +24,13 @@ from .libpath import find_lib_path
 if TYPE_CHECKING:
     from typing import Literal
 
+    # typing.TypeGuard was only introduced in Python 3.10
+    try:
+        from typing import TypeGuard
+    except ImportError:
+        from typing_extensions import TypeGuard
+
+
 __all__ = [
     'Booster',
     'Dataset',
@@ -54,6 +61,7 @@ _ctypes_float_array = Union[
 _LGBM_EvalFunctionResultType = Tuple[str, float, bool]
 _LGBM_BoosterBestScoreType = Dict[str, Dict[str, float]]
 _LGBM_BoosterEvalMethodResultType = Tuple[str, str, float, bool]
+_LGBM_BoosterEvalMethodResultWithStandardDeviationType = Tuple[str, str, float, bool, float]
 _LGBM_CategoricalFeatureConfiguration = Union[List[str], List[int], "Literal['auto']"]
 _LGBM_FeatureNameConfiguration = Union[List[str], "Literal['auto']"]
 _LGBM_GroupType = Union[
@@ -278,6 +286,20 @@ def _is_1d_list(data: Any) -> bool:
     return isinstance(data, list) and (not data or _is_numeric(data[0]))
 
 
+def _is_list_of_numpy_arrays(data: Any) -> "TypeGuard[List[np.ndarray]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, np.ndarray) for x in data)
+    )
+
+
+def _is_list_of_sequences(data: Any) -> "TypeGuard[List[Sequence]]":
+    return (
+        isinstance(data, list)
+        and all(isinstance(x, Sequence) for x in data)
+    )
+
+
 def _is_1d_collection(data: Any) -> bool:
     """Check whether data is a 1-D collection."""
     return (
@@ -457,7 +479,7 @@ class _ConfigAliases:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_DumpParamAliases(
             ctypes.c_int64(buffer_len),
             ctypes.byref(tmp_out_len),
@@ -466,7 +488,7 @@ class _ConfigAliases:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_DumpParamAliases(
                 ctypes.c_int64(actual_len),
                 ctypes.byref(tmp_out_len),
@@ -668,57 +690,52 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
 
 
 def _data_from_pandas(
-    data,
-    feature_name: Optional[_LGBM_FeatureNameConfiguration],
-    categorical_feature: Optional[_LGBM_CategoricalFeatureConfiguration],
+    data: pd_DataFrame,
+    feature_name: _LGBM_FeatureNameConfiguration,
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]]
-):
-    if isinstance(data, pd_DataFrame):
-        if len(data.shape) != 2 or data.shape[0] < 1:
-            raise ValueError('Input data must be 2 dimensional and non empty.')
-        if feature_name == 'auto' or feature_name is None:
-            data = data.rename(columns=str, copy=False)
-        cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
-        cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
-        if pandas_categorical is None:  # train dataset
-            pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
-        else:
-            if len(cat_cols) != len(pandas_categorical):
-                raise ValueError('train and valid dataset categorical_feature do not match.')
-            for col, category in zip(cat_cols, pandas_categorical):
-                if list(data[col].cat.categories) != list(category):
-                    data[col] = data[col].cat.set_categories(category)
-        if len(cat_cols):  # cat_cols is list
-            data = data.copy(deep=False)  # not alter origin DataFrame
-            data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
-        if categorical_feature is not None:
-            if feature_name is None:
-                feature_name = list(data.columns)
-            if categorical_feature == 'auto':  # use cat cols from DataFrame
-                categorical_feature = cat_cols_not_ordered
-            else:  # use cat cols specified by user
-                categorical_feature = list(categorical_feature)  # type: ignore[assignment]
-        if feature_name == 'auto':
-            feature_name = list(data.columns)
-        _check_for_bad_pandas_dtypes(data.dtypes)
-        df_dtypes = [dtype.type for dtype in data.dtypes]
-        df_dtypes.append(np.float32)  # so that the target dtype considers floats
-        target_dtype = np.result_type(*df_dtypes)
-        try:
-            # most common case (no nullable dtypes)
-            data = data.to_numpy(dtype=target_dtype, copy=False)
-        except TypeError:
-            # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
-            # raises error because array is casted to type(pd.NA) and there's no na_value argument
-            data = data.astype(target_dtype, copy=False).values
-        except ValueError:
-            # data has nullable dtypes, but we can specify na_value argument and copy will be made
-            data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
+) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
+    if len(data.shape) != 2 or data.shape[0] < 1:
+        raise ValueError('Input data must be 2 dimensional and non empty.')
+
+    # determine feature names
+    if feature_name == 'auto':
+        feature_name = [str(col) for col in data.columns]
+
+    # determine categorical features
+    cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
+    cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
+    if pandas_categorical is None:  # train dataset
+        pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
     else:
-        if feature_name == 'auto':
-            feature_name = None
-        if categorical_feature == 'auto':
-            categorical_feature = None
+        if len(cat_cols) != len(pandas_categorical):
+            raise ValueError('train and valid dataset categorical_feature do not match.')
+        for col, category in zip(cat_cols, pandas_categorical):
+            if list(data[col].cat.categories) != list(category):
+                data[col] = data[col].cat.set_categories(category)
+    if len(cat_cols):  # cat_cols is list
+        data = data.copy(deep=False)  # not alter origin DataFrame
+        data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
+    if categorical_feature == 'auto':  # use cat cols from DataFrame
+        categorical_feature = cat_cols_not_ordered
+    else:  # use cat cols specified by user
+        categorical_feature = list(categorical_feature)  # type: ignore[assignment]
+
+    # get numpy representation of the data
+    _check_for_bad_pandas_dtypes(data.dtypes)
+    df_dtypes = [dtype.type for dtype in data.dtypes]
+    df_dtypes.append(np.float32)  # so that the target dtype considers floats
+    target_dtype = np.result_type(*df_dtypes)
+    try:
+        # most common case (no nullable dtypes)
+        data = data.to_numpy(dtype=target_dtype, copy=False)
+    except TypeError:
+        # 1.0 <= pd version < 1.1 and nullable dtypes, least common case
+        # raises error because array is casted to type(pd.NA) and there's no na_value argument
+        data = data.astype(target_dtype, copy=False).values
+    except ValueError:
+        # data has nullable dtypes, but we can specify na_value argument and copy will be made
+        data = data.to_numpy(dtype=target_dtype, na_value=np.nan)
     return data, feature_name, categorical_feature, pandas_categorical
 
 
@@ -1004,7 +1021,15 @@ class _InnerPredictor:
                     ctypes.c_int(len(data_names)),
                 )
             )
-        data = _data_from_pandas(data, None, None, self.pandas_categorical)[0]
+
+        if isinstance(data, pd_DataFrame):
+            data = _data_from_pandas(
+                data=data,
+                feature_name="auto",
+                categorical_feature="auto",
+                pandas_categorical=self.pandas_categorical
+            )[0]
+
         predict_type = _C_API_PREDICT_NORMAL
         if raw_score:
             predict_type = _C_API_PREDICT_RAW_SCORE
@@ -1589,7 +1614,7 @@ class Dataset:
         self.used_indices: Optional[List[int]] = None
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
-        self.pandas_categorical = None
+        self.pandas_categorical: Optional[List[List]] = None
         self._params_back_up = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
@@ -1854,10 +1879,13 @@ class Dataset:
         if reference is not None:
             self.pandas_categorical = reference.pandas_categorical
             categorical_feature = reference.categorical_feature
-        data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(data=data,
-                                                                                             feature_name=feature_name,
-                                                                                             categorical_feature=categorical_feature,
-                                                                                             pandas_categorical=self.pandas_categorical)
+        if isinstance(data, pd_DataFrame):
+            data, feature_name, categorical_feature, self.pandas_categorical = _data_from_pandas(
+                data=data,
+                feature_name=feature_name,
+                categorical_feature=categorical_feature,
+                pandas_categorical=self.pandas_categorical
+            )
 
         # process for args
         params = {} if params is None else params
@@ -1867,10 +1895,10 @@ class Dataset:
                 _log_warning(f'{key} keyword has been found in `params` and will be ignored.\n'
                              f'Please use {key} argument of the Dataset constructor to pass this parameter.')
         # get categorical features
-        if categorical_feature is not None:
+        if isinstance(categorical_feature, list):
             categorical_indices = set()
             feature_dict = {}
-            if feature_name is not None:
+            if isinstance(feature_name, list):
                 feature_dict = {name: i for i, name in enumerate(feature_name)}
             for name in categorical_feature:
                 if isinstance(name, str) and name in feature_dict:
@@ -1911,9 +1939,9 @@ class Dataset:
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
-            if all(isinstance(x, np.ndarray) for x in data):
+            if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
-            elif all(isinstance(x, Sequence) for x in data):
+            elif _is_list_of_sequences(data):
                 self.__init_from_seqs(data, ref_dataset)
             else:
                 raise TypeError('Data list can only be of ndarray or Sequence')
@@ -2172,8 +2200,8 @@ class Dataset:
 
     @staticmethod
     def _compare_params_for_warning(
-        params: Optional[Dict[str, Any]],
-        other_params: Optional[Dict[str, Any]],
+        params: Dict[str, Any],
+        other_params: Dict[str, Any],
         ignore_keys: Set[str]
     ) -> bool:
         """Compare two dictionaries with params ignoring some keys.
@@ -2182,9 +2210,9 @@ class Dataset:
 
         Parameters
         ----------
-        params : dict or None
+        params : dict
             One dictionary with parameters to compare.
-        other_params : dict or None
+        other_params : dict
             Another dictionary with parameters to compare.
         ignore_keys : set
             Keys that should be ignored during comparing two dictionaries.
@@ -2194,10 +2222,6 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        if params is None:
-            params = {}
-        if other_params is None:
-            other_params = {}
         for k in other_params:
             if k not in ignore_keys:
                 if k not in params or params[k] != other_params[k]:
@@ -2863,7 +2887,7 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
-                elif isinstance(self.data, list) and len(self.data) > 0 and all(isinstance(x, Sequence) for x in self.data):
+                elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(f"Cannot subset {type(self.data).__name__} type of raw data.\n"
@@ -3287,7 +3311,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
             self._handle,
             ctypes.c_int64(buffer_len),
@@ -3297,7 +3321,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterGetLoadedParam(
                 self._handle,
                 ctypes.c_int64(actual_len),
@@ -4050,7 +4074,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterSaveModelToString(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4063,7 +4087,7 @@ class Booster:
         # if buffer length is not long enough, re-allocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterSaveModelToString(
                 self._handle,
                 ctypes.c_int(start_iteration),
@@ -4118,7 +4142,7 @@ class Booster:
         buffer_len = 1 << 20
         tmp_out_len = ctypes.c_int64(0)
         string_buffer = ctypes.create_string_buffer(buffer_len)
-        ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+        ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
         _safe_call(_LIB.LGBM_BoosterDumpModel(
             self._handle,
             ctypes.c_int(start_iteration),
@@ -4131,7 +4155,7 @@ class Booster:
         # if buffer length is not long enough, reallocate a buffer
         if actual_len > buffer_len:
             string_buffer = ctypes.create_string_buffer(actual_len)
-            ptr_string_buffer = ctypes.c_char_p(*[ctypes.addressof(string_buffer)])
+            ptr_string_buffer = ctypes.c_char_p(ctypes.addressof(string_buffer))
             _safe_call(_LIB.LGBM_BoosterDumpModel(
                 self._handle,
                 ctypes.c_int(start_iteration),
