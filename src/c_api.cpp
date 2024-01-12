@@ -437,6 +437,12 @@ class Booster {
   }
 
   std::unique_ptr<SingleRowPredictor> InitSingleRowPredictor(int predict_type, int start_iteration, int num_iteration, int data_type, int32_t num_cols, const char *parameters) {
+    // Workaround https://github.com/microsoft/LightGBM/issues/6142 by locking here
+    // This is only a workaround because if predictors are initialized differently it may still behave incorrectly,
+    // and because multiple racing Predictor initializations through LGBM_BoosterPredictForMat suffers from that same issue of Predictor init writing things in the booster.
+    // Once #6142 is fixed (predictor doesn't write in the Booster as should have been the case since 1c35c3b9ede9adab8ccc5fd7b4b2b6af188a79f0), this line can be removed.
+    UNIQUE_LOCK(mutex_)
+
     return std::unique_ptr<SingleRowPredictor>(new SingleRowPredictor(
       &mutex_, parameters, data_type, num_cols, predict_type, boosting_.get(), start_iteration, num_iteration));
   }
