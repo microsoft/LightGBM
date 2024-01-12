@@ -86,7 +86,7 @@ TEST(SingleRow, JustWorks) {
     EXPECT_EQ(0, result) << "LGBM_BoosterPredictForMat result code: " << result;
 
     // Now let's run with the single row fast prediction API:
-    int n_threads = 10;
+    const int n_threads = 10;
     FastConfigHandle fast_configs[n_threads];
     for (int i = 0; i < n_threads; i++) {
         result = LGBM_BoosterPredictForMatSingleRowFastInit(
