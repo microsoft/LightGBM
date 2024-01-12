@@ -62,7 +62,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-set -e -E -u -o pipefail
+set -e -E -u
 
 echo "building lightgbm"
 
