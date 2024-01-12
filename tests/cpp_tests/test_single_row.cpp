@@ -5,17 +5,11 @@
 
 #include <gtest/gtest.h>
 #include <testutils.h>
-#include <LightGBM/utils/byte_buffer.h>
-#include <LightGBM/utils/log.h>
 #include <LightGBM/c_api.h>
-#include <LightGBM/dataset.h>
 
 #include <iostream>
 #include <fstream>
 
-using LightGBM::ByteBuffer;
-using LightGBM::Dataset;
-using LightGBM::Log;
 using LightGBM::TestUtils;
 
 TEST(SingleRow, JustWorks) {
@@ -25,10 +19,6 @@ TEST(SingleRow, JustWorks) {
     DatasetHandle train_dataset;
     result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.train", "max_bin=15", &train_dataset);
     EXPECT_EQ(0, result) << "LoadDatasetFromExamples train result code: " << result;
-
-    DatasetHandle test_dataset;
-    result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", "max_bin=15", &test_dataset);
-    EXPECT_EQ(0, result) << "LoadDatasetFromExamples test result code: " << result;
 
     BoosterHandle booster_handle;
     result = LGBM_BoosterCreate(train_dataset, "app=binary metric=auc num_leaves=31 verbose=0", &booster_handle);
@@ -149,8 +139,5 @@ TEST(SingleRow, JustWorks) {
     EXPECT_EQ(0, result) << "LGBM_BoosterFree result code: " << result;
 
     result = LGBM_DatasetFree(train_dataset);
-    EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
-
-    result = LGBM_DatasetFree(test_dataset);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
 }
