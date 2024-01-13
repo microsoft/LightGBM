@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e -E -u -o pipefail
+set -e -E -u
 
 echo "running ruff"
 ruff check \

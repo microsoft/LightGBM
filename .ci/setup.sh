@@ -3,6 +3,7 @@
 set -e -E -u -o pipefail
 
 # defaults
+AZURE=${AZURE:-"false"}
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 SETUP_CONDA=${SETUP_CONDA:-"true"}
 
