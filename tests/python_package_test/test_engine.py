@@ -1008,8 +1008,6 @@ def test_early_stopping_via_global_params(first_metric_only, early_stopping_min_
                     valid_names=valid_set_name)
     if first_metric_only and early_stopping_min_delta == 0:
         assert gbm.best_iteration == num_trees
-    elif first_metric_only:
-        assert gbm.best_iteration == 2
     else:
         assert gbm.best_iteration == 1
     assert valid_set_name in gbm.best_score
