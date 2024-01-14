@@ -981,8 +981,11 @@ def test_early_stopping_ignores_training_set(use_valid):
         assert bst.best_iteration == 0
 
 
-@pytest.mark.parametrize('first_metric_only', [True, False])
-def test_early_stopping_via_global_params(first_metric_only):
+@pytest.mark.parametrize(
+    ('first_metric_only', 'early_stopping_min_delta'),
+    [(True, 0.0), (True, 1e3), (False, 0.0)]
+)
+def test_early_stopping_via_global_params(first_metric_only, early_stopping_min_delta):
     X, y = load_breast_cancer(return_X_y=True)
     num_trees = 5
     params = {
@@ -991,7 +994,8 @@ def test_early_stopping_via_global_params(first_metric_only):
         'metric': 'None',
         'verbose': -1,
         'early_stopping_round': 2,
-        'first_metric_only': first_metric_only
+        'first_metric_only': first_metric_only,
+        'early_stopping_min_delta': early_stopping_min_delta,
     }
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
@@ -1002,8 +1006,10 @@ def test_early_stopping_via_global_params(first_metric_only):
                     feval=[decreasing_metric, constant_metric],
                     valid_sets=lgb_eval,
                     valid_names=valid_set_name)
-    if first_metric_only:
+    if first_metric_only and early_stopping_min_delta == 0:
         assert gbm.best_iteration == num_trees
+    elif first_metric_only:
+        assert gbm.best_iteration == 2
     else:
         assert gbm.best_iteration == 1
     assert valid_set_name in gbm.best_score
