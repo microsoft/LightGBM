@@ -4,7 +4,7 @@ GPU SDK Correspondence and Device Targeting Table
 GPU Targets Table
 =================
 
-OpenCL is a universal massively parallel programming framework that targets to multiple backends (GPU, CPU, FPGA, etc).
+OpenCL is a universal massively parallel programming framework that targets multiple backends (GPU, CPU, FPGA, etc).
 Basically, to use a device from a vendor, you have to install drivers from that specific vendor.
 Intel's and AMD's OpenCL runtime also include x86 CPU target support.
 NVIDIA's OpenCL runtime only supports NVIDIA GPU (no CPU support).

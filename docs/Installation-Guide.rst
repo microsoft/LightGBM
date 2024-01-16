@@ -69,7 +69,7 @@ The ``.exe`` file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 *****************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Run the following commands:
 
@@ -167,7 +167,7 @@ Install Using ``Homebrew``
 Build from GitHub
 *****************
 
-1. Install `CMake`_ (3.16 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -193,7 +193,7 @@ Build from GitHub
 gcc
 ^^^
 
-1. Install `CMake`_ (3.2 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -266,7 +266,7 @@ The ``.exe`` file will be in ``LightGBM-master/windows/x64/Release`` folder.
 From Command Line
 -----------------
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Run the following commands:
 
@@ -331,7 +331,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.16 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -351,7 +351,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 gcc
 ***
 
-1. Install `CMake`_ (3.2 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -414,7 +414,7 @@ From Command Line
 
 1. You need to install `MS MPI`_ first. Both ``msmpisdk.msi`` and ``msmpisetup.exe`` are needed.
 
-2. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+2. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 3. Run the following commands:
 
@@ -465,7 +465,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.16 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -497,7 +497,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 gcc
 ***
 
-1. Install `CMake`_ (3.2 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -547,7 +547,7 @@ The following dependencies should be installed before compilation:
 
    The following Debian packages should provide necessary Boost libraries: ``libboost-dev``, ``libboost-system-dev``, ``libboost-filesystem-dev``.
 
--  **CMake** 3.2 or later.
+-  **CMake**
 
 To build LightGBM GPU version, run the following commands:
 
@@ -575,7 +575,7 @@ If you use **MinGW**, the build procedure is similar to the build on Linux. Refe
 
 Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is installed).
+1. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is installed).
 
 2. Install **OpenCL** for Windows. The installation depends on the brand (NVIDIA, AMD, Intel) of your GPU card.
 
@@ -635,9 +635,9 @@ On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and *
 
 The following dependencies should be installed before compilation:
 
--  **CUDA** 10.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
+-  **CUDA** 11.0 or later libraries. Please refer to `this detailed guide`_. Pay great attention to the minimum required versions of host compilers listed in the table from that guide and use only recommended versions of compilers.
 
--  **CMake** 3.16 or later.
+-  **CMake**
 
 To build LightGBM CUDA version, run the following commands:
 
@@ -700,7 +700,7 @@ On Windows a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **C
 VS Build Tools
 **************
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` is set properly).
 
@@ -779,7 +779,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.16 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -805,7 +805,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 gcc
 ***
 
-1. Install `CMake`_ (3.2 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -839,7 +839,7 @@ Windows
 
 On Windows, C++ unit tests of LightGBM can be built using **CMake** and **VS Build Tools**.
 
-1. Install `Git for Windows`_, `CMake`_ (3.8 or higher) and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
+1. Install `Git for Windows`_, `CMake`_ and `VS Build Tools`_ (**VS Build Tools** is not needed if **Visual Studio** (2015 or newer) is already installed).
 
 2. Run the following commands:
 
@@ -884,7 +884,7 @@ Apple Clang
 
 Only **Apple Clang** version 8.1 or higher is supported.
 
-1. Install `CMake`_ (3.16 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -904,7 +904,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 gcc
 ***
 
-1. Install `CMake`_ (3.2 or higher):
+1. Install `CMake`_ :
 
    .. code:: sh
 
@@ -950,7 +950,7 @@ gcc
 
 .. _RDMA: https://en.wikipedia.org/wiki/Remote_direct_memory_access
 
-.. _MS MPI: https://docs.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
+.. _MS MPI: https://learn.microsoft.com/en-us/message-passing-interface/microsoft-mpi-release-notes
 
 .. _Open MPI: https://www.open-mpi.org/
 
@@ -960,7 +960,7 @@ gcc
 
 .. _Boost Binaries: https://sourceforge.net/projects/boost/files/boost-binaries/
 
-.. _SWIG: http://www.swig.org/download.html
+.. _SWIG: https://www.swig.org/download.html
 
 .. _this detailed guide: https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html
 

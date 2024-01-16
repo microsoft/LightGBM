@@ -184,21 +184,21 @@ lightgbm <- function(data,
   }
 
   if (is.null(num_threads)) {
-    num_threads <- lgb.get.default.num.threads()
+    num_threads <- .get_default_num_threads()
   }
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "num_threads"
     , params = params
     , alternative_kwarg_value = num_threads
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "verbosity"
     , params = params
     , alternative_kwarg_value = verbose
   )
 
   # Process factors as labels and auto-determine objective
-  if (!lgb.is.Dataset(data)) {
+  if (!.is_Dataset(data)) {
     data_processor <- DataProcessor$new()
     temp <- data_processor$process_label(
         label = label
@@ -220,7 +220,7 @@ lightgbm <- function(data,
   dtrain <- data
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
-  if (!lgb.is.Dataset(x = dtrain)) {
+  if (!.is_Dataset(x = dtrain)) {
     dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
   }
 

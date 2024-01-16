@@ -107,26 +107,26 @@ class CrossEntropyMetric : public Metric {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
           sum_loss += XentLoss(label_[i], p);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
@@ -192,13 +192,13 @@ class CrossEntropyLambdaMetric : public Metric {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log1p(std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log1p(std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
@@ -206,14 +206,14 @@ class CrossEntropyLambdaMetric : public Metric {
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
           objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
           objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
@@ -299,26 +299,26 @@ class KullbackLeiblerDivergence : public Metric {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
           sum_loss += XentLoss(label_[i], p);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
