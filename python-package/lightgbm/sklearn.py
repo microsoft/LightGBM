@@ -16,7 +16,7 @@ from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite
                      _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
                      _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
                      dt_DataTable, np_random_Generator, pd_DataFrame)
-from .engine import train
+from .engine import _make_n_folds, train
 
 __all__ = [
     'LGBMClassifier',
