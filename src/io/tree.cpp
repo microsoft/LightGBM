@@ -153,7 +153,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[i] += leaf_value_[0];
       }
@@ -234,7 +234,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
   data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[used_data_indices[i]] += leaf_value_[0];
       }

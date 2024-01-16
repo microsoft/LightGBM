@@ -127,13 +127,13 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 fi
 
-# Manually install Depends and Imports libraries + 'knitr', 'RhpcBLASctl', 'rmarkdown', 'testthat'
+# Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl')"
 else
-    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then

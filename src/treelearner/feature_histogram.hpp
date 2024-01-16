@@ -1692,7 +1692,7 @@ class HistogramPool {
     auto& ref_feature_meta = *feature_meta;
     const int num_feature = train_data->num_features();
     ref_feature_meta.resize(num_feature);
-#pragma omp parallel for schedule(static, 512) if (num_feature >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_feature >= 1024)
     for (int i = 0; i < num_feature; ++i) {
       if (USE_DATA) {
         ref_feature_meta[i].num_bin = train_data->FeatureNumBin(i);
@@ -1749,7 +1749,7 @@ class HistogramPool {
 
     if (config->use_quantized_grad) {
       OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = old_cache_size; i < cache_size; ++i) {
         OMP_LOOP_EX_BEGIN();
         pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
@@ -1763,7 +1763,7 @@ class HistogramPool {
       OMP_THROW_EX();
     } else {
       OMP_INIT_EX();
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = old_cache_size; i < cache_size; ++i) {
         OMP_LOOP_EX_BEGIN();
         pool_[i].reset(new FeatureHistogram[train_data->num_features()]);
@@ -1787,7 +1787,7 @@ class HistogramPool {
         old_config->extra_trees != config->extra_trees ||
         old_config->max_delta_step != config->max_delta_step ||
         old_config->path_smooth != config->path_smooth) {
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < cache_size_; ++i) {
         for (int j = 0; j < train_data->num_features(); ++j) {
           pool_[i][j].ResetFunc();

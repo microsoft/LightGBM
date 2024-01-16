@@ -63,7 +63,7 @@ class BinaryLogloss: public ObjectiveFunction {
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
-    #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (is_pos_(label_[i])) {
         ++cnt_positive;
@@ -107,7 +107,7 @@ class BinaryLogloss: public ObjectiveFunction {
       return;
     }
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -120,7 +120,7 @@ class BinaryLogloss: public ObjectiveFunction {
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -140,14 +140,14 @@ class BinaryLogloss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }

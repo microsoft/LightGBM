@@ -11,44 +11,15 @@ LightGBM FAQ
 
 ------
 
-Critical Issues
-===============
+Please post questions, feature requests, and bug reports at https://github.com/microsoft/LightGBM/issues.
 
-A **critical issue** could be a *crash*, *prediction error*, *nonsense output*, or something else requiring immediate attention.
+This project is mostly maintained by volunteers, so please be patient.
+If your request is time-sensitive or more than a month goes by without a response, please tag the maintainers below for help.
 
-Please post such an issue in the `Microsoft/LightGBM repository <https://github.com/microsoft/LightGBM/issues>`__.
-
-You may also ping a member of the core team according to the relevant area of expertise by mentioning them with the arabase (@) symbol:
-
--  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
--  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
--  `@shiyu1994 <https://github.com/shiyu1994>`__ **Yu Shi** (C++ code / Python-package)
--  `@tongwu-msft` **Tong Wu** (C++ code / Python-package)
--  `@hzy46 <https://github.com/hzy46>`__ **Zhiyuan He** (C++ code / Python-package)
--  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
--  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
--  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package / Dask-package)
--  `@jmoralez <https://github.com/jmoralez>`__ **José Morales** (Dask-package)
--  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
--  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
--  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
--  `@huanzhang12 <https://github.com/huanzhang12>`__ **Huan Zhang** (GPU support)
-
-Please include as much of the following information as possible when submitting a critical issue:
-
--  Is it reproducible on CLI (command line interface), R, and/or Python?
-
--  Is it specific to a wrapper? (R or Python?)
-
--  Is it specific to the compiler? (gcc or Clang version? MinGW or Visual Studio version?)
-
--  Is it specific to your Operating System? (Windows? Linux? macOS?)
-
--  Are you able to reproduce this issue with a simple case?
-
--  Does the issue persist after removing all optimization flags and compiling LightGBM in debug mode?
-
-When submitting issues, please keep in mind that this is largely a volunteer effort, and we may not be available 24/7 to provide support.
+-  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke**
+-  `@shiyu1994 <https://github.com/shiyu1994>`__ **Yu Shi**
+-  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb**
+-  `@jmoralez <https://github.com/jmoralez>`__ **José Morales**
 
 --------------
 
@@ -62,7 +33,7 @@ General LightGBM Questions
 1. Where do I find more details about LightGBM parameters?
 ----------------------------------------------------------
 
-Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+Take a look at `Parameters <./Parameters.rst>`__.
 
 2. On datasets with millions of features, training does not start (or starts after a very long time).
 -----------------------------------------------------------------------------------------------------
@@ -263,7 +234,7 @@ As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_fi
 3. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------
 
-If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
+If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
 ------
 
@@ -289,7 +260,7 @@ Python-package
 
 This error should be solved in latest version.
 If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
-or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+or check `this thread on stackoverflow <https://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
 
 2. Error messages: ``Cannot ... before construct dataset``.
 -----------------------------------------------------------

@@ -132,7 +132,7 @@ cd "${TEMP_R_DIR}"
     using_windows_and_r3=$(
         Rscript -e 'cat(.Platform$OS.type == "windows" && R.version[["major"]] < 4)'
     )
-    if [[ ${using_windows_and_r3} == "TRUE" ]]; then
+    if test "${using_windows_and_r3}" = "TRUE"; then
         LGB_CXX_STD="C++11"
     fi
     sed -i.bak -e "s/~~CXXSTD~~/${LGB_CXX_STD}/" DESCRIPTION
@@ -227,6 +227,7 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/network/*.o
         rm -f ./lightgbm/src/objective/*.o
         rm -f ./lightgbm/src/treelearner/*.o
+        rm -f ./lightgbm/src/utils/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
         tar \

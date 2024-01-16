@@ -1,16 +1,16 @@
-lgb.is.Booster <- function(x) {
+.is_Booster <- function(x) {
   return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals
 }
 
-lgb.is.Dataset <- function(x) {
+.is_Dataset <- function(x) {
   return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals
 }
 
-lgb.is.Predictor <- function(x) {
+.is_Predictor <- function(x) {
   return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals
 }
 
-lgb.is.null.handle <- function(x) {
+.is_null_handle <- function(x) {
   if (is.null(x)) {
     return(TRUE)
   }
@@ -19,7 +19,7 @@ lgb.is.null.handle <- function(x) {
   )
 }
 
-lgb.params2str <- function(params) {
+.params2str <- function(params) {
 
   if (!identical(class(params), "list")) {
     stop("params must be a list")
@@ -59,7 +59,7 @@ lgb.params2str <- function(params) {
 
 }
 
-lgb.check_interaction_constraints <- function(interaction_constraints, column_names) {
+.check_interaction_constraints <- function(interaction_constraints, column_names) {
 
   # Convert interaction constraints to feature numbers
   string_constraints <- list()
@@ -129,7 +129,7 @@ lgb.check_interaction_constraints <- function(interaction_constraints, column_na
 #     This has to account for the fact that `eval` could be a character vector,
 #     a function, a list of functions, or a list with a mix of strings and
 #     functions
-lgb.check.eval <- function(params, eval) {
+.check_eval <- function(params, eval) {
 
   if (is.null(params$metric)) {
     params$metric <- list()
@@ -194,7 +194,7 @@ lgb.check.eval <- function(params, eval) {
 # [return]
 #     params with num_iterations set to the chosen value, and other aliases
 #     of num_iterations removed
-lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_value) {
+.check_wrapper_param <- function(main_param_name, params, alternative_kwarg_value) {
 
   aliases <- .PARAMETER_ALIASES()[[main_param_name]]
   aliases_provided <- aliases[aliases %in% names(params)]
@@ -225,7 +225,7 @@ lgb.check.wrapper_param <- function(main_param_name, params, alternative_kwarg_v
 }
 
 #' @importFrom parallel detectCores
-lgb.get.default.num.threads <- function() {
+.get_default_num_threads <- function() {
   if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {  # nolint: undesirable_function
     return(RhpcBLASctl::get_num_cores())
   } else {
@@ -247,7 +247,7 @@ lgb.get.default.num.threads <- function() {
   }
 }
 
-lgb.equal.or.both.null <- function(a, b) {
+.equal_or_both_null <- function(a, b) {
   if (is.null(a)) {
     if (!is.null(b)) {
       return(FALSE)
