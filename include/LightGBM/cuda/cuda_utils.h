@@ -7,20 +7,14 @@
 #define LIGHTGBM_CUDA_CUDA_UTILS_H_
 
 #ifdef USE_CUDA
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <stdio.h>
-
 #include <LightGBM/utils/log.h>
-
-#include <algorithm>
 #include <vector>
 #include <cmath>
 
 namespace LightGBM {
-
-typedef unsigned long long atomic_add_long_t;
 
 #define CUDASUCCESS_OR_FATAL(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true) {
@@ -131,17 +125,11 @@ class CUDAVector {
     T* new_data = nullptr;
     AllocateCUDAMemory<T>(&new_data, size, __FILE__, __LINE__);
     if (size_ > 0 && data_ != nullptr) {
-      const size_t size_for_old_content = std::min<size_t>(size_, size);
-      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size_for_old_content, __FILE__, __LINE__);
+      CopyFromCUDADeviceToCUDADevice<T>(new_data, data_, size, __FILE__, __LINE__);
     }
     DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
     data_ = new_data;
     size_ = size;
-  }
-
-  void InitFromHostVector(const std::vector<T>& host_vector) {
-    Resize(host_vector.size());
-    CopyFromHostToCUDADevice(data_, host_vector.data(), host_vector.size(), __FILE__, __LINE__);
   }
 
   void Clear() {
@@ -181,10 +169,6 @@ class CUDAVector {
 
   T* RawData() const {
     return data_;
-  }
-
-  void SetValue(int value) {
-    SetCUDAMemory<T>(data_, value, size_, __FILE__, __LINE__);
   }
 
   const T* RawDataReadOnly() const {

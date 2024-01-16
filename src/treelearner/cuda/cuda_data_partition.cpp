@@ -368,12 +368,6 @@ void CUDADataPartition::ResetByLeafPred(const std::vector<int>& leaf_pred, int n
   cur_num_leaves_ = num_leaves;
 }
 
-void CUDADataPartition::ReduceLeafGradStat(
-  const score_t* gradients, const score_t* hessians,
-  CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const {
-  LaunchReduceLeafGradStat(gradients, hessians, tree, leaf_grad_stat_buffer, leaf_hess_state_buffer);
-}
-
 }  // namespace LightGBM
 
 #endif  // USE_CUDA

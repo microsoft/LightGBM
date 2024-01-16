@@ -27,16 +27,19 @@ if(APPLE)
   option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif()
 
-cmake_minimum_required(VERSION 3.18)
+if(__INTEGRATE_OPENCL)
+  cmake_minimum_required(VERSION 3.11)
+elseif(USE_SWIG)
+  cmake_minimum_required(VERSION 3.8)
+elseif(USE_GPU OR APPLE)
+  cmake_minimum_required(VERSION 3.2)
+elseif(USE_CUDA)
+  cmake_minimum_required(VERSION 3.16)
+else()
+  cmake_minimum_required(VERSION 3.0)
+endif()
 
 project(lightgbm LANGUAGES C CXX)
-
-if(BUILD_CPP_TEST)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 11)
-endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -75,6 +78,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
     message(FATAL_ERROR "Insufficient AppleClang version")
   endif()
+  cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
     message(
@@ -82,6 +86,7 @@ elseif(MSVC)
       "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
     )
   endif()
+  cmake_minimum_required(VERSION 3.8)
 endif()
 
 if(USE_SWIG)
@@ -198,25 +203,19 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-    find_package(CUDA 11.0 REQUIRED)
+    find_package(CUDA 10.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
-    # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
-    # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
+        list(APPEND CUDA_ARCHS "7.5")
+    endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "8.0")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "8.6")
-    endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.5")
-        list(APPEND CUDA_ARCHS "8.7")
-    endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
-        list(APPEND CUDA_ARCHS "8.9")
-        list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
@@ -325,7 +324,7 @@ endif()
 if(UNIX OR MINGW OR CYGWIN)
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
   if(MINGW)
     # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
@@ -379,13 +378,6 @@ if(MSVC)
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
-    if(__BUILD_FOR_R)
-        # MSVC does not like this commit:
-        # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
-        #
-        # and raises "error C3646: 'private_data_c': unknown override specifier"
-        add_definitions(-DR_LEGACY_RCOMPLEX)
-    endif()
     if(USE_DEBUG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
     else()
@@ -428,11 +420,7 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-      src/utils/*.cpp
-)
-file(
-    GLOB
-    LGBM_CUDA_SOURCES
+if(USE_CUDA)
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
@@ -446,11 +434,8 @@ file(
       src/io/cuda/*.cpp
       src/cuda/*.cpp
       src/cuda/*.cu
-)
-
-if(USE_CUDA)
-  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
 endif()
+)
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
@@ -516,18 +501,7 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     endif()
@@ -536,16 +510,9 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
-          com/microsoft/ml/lightgbm/osx/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
+          cp
           "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
           com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
@@ -555,12 +522,7 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   endif()
@@ -655,7 +617,7 @@ if(BUILD_CPP_TEST)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        v1.14.0
+      GIT_TAG        release-1.11.0
     )
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
@@ -666,7 +628,6 @@ if(BUILD_CPP_TEST)
 
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
     set(
       CompilerFlags
         CMAKE_CXX_FLAGS

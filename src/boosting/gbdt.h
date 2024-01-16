@@ -179,20 +179,15 @@ class GBDT : public GBDTBase {
       const auto pair = Common::Split(line.c_str(), ":");
       if (pair[1] == " ]")
         continue;
-      const auto param = pair[0].substr(1);
-      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
-      auto iter = param_types.find(param);
-      if (iter == param_types.end()) {
-        Log::Warning("Ignoring unrecognized parameter '%s' found in model string.", param.c_str());
-        continue;
-      }
-      std::string param_type = iter->second;
       if (first) {
         first = false;
         str_buf << "\"";
       } else {
         str_buf << ",\"";
       }
+      const auto param = pair[0].substr(1);
+      const auto value_str = pair[1].substr(1, pair[1].size() - 2);
+      const auto param_type = param_types.at(param);
       str_buf << param << "\": ";
       if (param_type == "string") {
         str_buf << "\"" << value_str << "\"";
@@ -434,7 +429,7 @@ class GBDT : public GBDTBase {
     }
     start_iteration_for_pred_ = start_iteration;
     if (is_pred_contrib) {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+      #pragma omp parallel for schedule(static)
       for (int i = 0; i < static_cast<int>(models_.size()); ++i) {
         models_[i]->RecomputeMaxDepth();
       }

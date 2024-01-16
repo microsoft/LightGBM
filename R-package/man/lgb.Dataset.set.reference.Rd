@@ -19,8 +19,6 @@ If you want to use validation data, you should set reference to training data
 }
 \examples{
 \donttest{
-\dontshow{setLGBMthreads(2L)}
-\dontshow{data.table::setDTthreads(1L)}
 # create training Dataset
 data(agaricus.train, package ="lightgbm")
 train <- agaricus.train

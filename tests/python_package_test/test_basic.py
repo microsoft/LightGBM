@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import dummy_obj, load_breast_cancer, mse_obj, np_assert_array_equal
+from .utils import dummy_obj, load_breast_cancer, mse_obj
 
 
 def test_basic(tmp_path):
@@ -499,94 +499,6 @@ def test_consistent_state_for_dataset_fields():
     check_asserts(lgb_data)
 
 
-def test_dataset_construction_overwrites_user_provided_metadata_fields():
-
-    X = np.array([[1.0, 2.0], [3.0, 4.0]])
-
-    position = np.array([0.0, 1.0], dtype=np.float32)
-    if getenv('TASK', '') == 'cuda':
-        position = None
-
-    dtrain = lgb.Dataset(
-        X,
-        params={
-            "min_data_in_bin": 1,
-            "min_data_in_leaf": 1,
-            "verbosity": -1
-        },
-        group=[1, 1],
-        init_score=[0.312, 0.708],
-        label=[1, 2],
-        position=position,
-        weight=[0.5, 1.5],
-    )
-
-    # unconstructed, get_* methods should return whatever was provided
-    assert dtrain.group == [1, 1]
-    assert dtrain.get_group() == [1, 1]
-    assert dtrain.init_score == [0.312, 0.708]
-    assert dtrain.get_init_score() == [0.312, 0.708]
-    assert dtrain.label == [1, 2]
-    assert dtrain.get_label() == [1, 2]
-    if getenv('TASK', '') != 'cuda':
-        np_assert_array_equal(
-            dtrain.position,
-            np.array([0.0, 1.0], dtype=np.float32),
-            strict=True
-        )
-        np_assert_array_equal(
-            dtrain.get_position(),
-            np.array([0.0, 1.0], dtype=np.float32),
-            strict=True
-        )
-    assert dtrain.weight == [0.5, 1.5]
-    assert dtrain.get_weight() == [0.5, 1.5]
-
-    # before construction, get_field() should raise an exception
-    for field_name in ["group", "init_score", "label", "position", "weight"]:
-        with pytest.raises(Exception, match=f"Cannot get {field_name} before construct Dataset"):
-            dtrain.get_field(field_name)
-
-    # constructed, get_* methods should return numpy arrays, even when the provided
-    # input was a list of floats or ints
-    dtrain.construct()
-    expected_group = np.array([1, 1], dtype=np.int32)
-    np_assert_array_equal(dtrain.group, expected_group, strict=True)
-    np_assert_array_equal(dtrain.get_group(), expected_group, strict=True)
-    # get_field("group") returns a numpy array with boundaries, instead of size
-    np_assert_array_equal(
-        dtrain.get_field("group"),
-        np.array([0, 1, 2], dtype=np.int32),
-        strict=True
-    )
-
-    expected_init_score = np.array([0.312, 0.708],)
-    np_assert_array_equal(dtrain.init_score, expected_init_score, strict=True)
-    np_assert_array_equal(dtrain.get_init_score(), expected_init_score, strict=True)
-    np_assert_array_equal(dtrain.get_field("init_score"), expected_init_score, strict=True)
-
-    expected_label = np.array([1, 2], dtype=np.float32)
-    np_assert_array_equal(dtrain.label, expected_label, strict=True)
-    np_assert_array_equal(dtrain.get_label(), expected_label, strict=True)
-    np_assert_array_equal(dtrain.get_field("label"), expected_label, strict=True)
-
-    if getenv('TASK', '') != 'cuda':
-        expected_position = np.array([0.0, 1.0], dtype=np.float32)
-        np_assert_array_equal(dtrain.position, expected_position, strict=True)
-        np_assert_array_equal(dtrain.get_position(), expected_position, strict=True)
-        # NOTE: "position" is converted to int32 on the C++ side
-        np_assert_array_equal(
-            dtrain.get_field("position"),
-            np.array([0.0, 1.0], dtype=np.int32),
-            strict=True
-        )
-
-    expected_weight = np.array([0.5, 1.5], dtype=np.float32)
-    np_assert_array_equal(dtrain.weight, expected_weight, strict=True)
-    np_assert_array_equal(dtrain.get_weight(), expected_weight, strict=True)
-    np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
-
-
 def test_choose_param_value():
 
     original_params = {
@@ -822,34 +734,21 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
 
 
 @pytest.mark.parametrize('feature_name', [['x1'], [42], 'auto'])
-@pytest.mark.parametrize('categories', ['seen', 'unseen'])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories):
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name):
     pd = pytest.importorskip('pandas')
     X = np.random.choice(['a', 'b'], 100).reshape(-1, 1)
     column_name = 'a' if feature_name == 'auto' else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype='category')
-    if categories == 'seen':
-        pandas_categorical = [['a', 'b']]
-    else:
-        pandas_categorical = [['a']]
     data = lgb.basic._data_from_pandas(
         data=df,
         feature_name=feature_name,
         categorical_feature="auto",
-        pandas_categorical=pandas_categorical,
+        pandas_categorical=None
     )[0]
     # check that the original data wasn't modified
     np.testing.assert_equal(df[column_name], X[:, 0])
     # check that the built data has the codes
-    if categories == 'seen':
-        # if all categories were seen during training we just take the codes
-        codes = df[column_name].cat.codes
-    else:
-        # if we only saw 'a' during training we just replace its code
-        # and leave the rest as nan
-        a_code = df[column_name].cat.categories.get_loc('a')
-        codes = np.where(df[column_name] == 'a', a_code, np.nan)
-    np.testing.assert_equal(codes, data[:, 0])
+    np.testing.assert_equal(df[column_name].cat.codes, data[:, 0])
 
 
 @pytest.mark.parametrize('min_data_in_bin', [2, 10])

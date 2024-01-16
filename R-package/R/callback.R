@@ -90,7 +90,7 @@ cb_print_evaluation <- function(period) {
 
         # Check if message is existing
         if (nchar(msg) > 0L) {
-          cat(.merge_eval_string(env = env), "\n")
+          print(.merge_eval_string(env = env))
         }
 
       }
@@ -208,9 +208,9 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
       msg <- paste0(
         "Will train until there is no improvement in "
         , stopping_rounds
-        , " rounds.\n"
+        , " rounds."
       )
-      cat(msg)
+      print(msg)
     }
 
     # Internally treat everything as a maximization task
@@ -284,7 +284,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
             }
 
             if (isTRUE(verbose)) {
-              cat(paste0("Early stopping, best iteration is: ", best_msg[[i]], "\n"))
+              print(paste0("Early stopping, best iteration is: ", best_msg[[i]]))
             }
 
             # Store best iteration and stop
@@ -302,7 +302,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
         }
 
         if (isTRUE(verbose)) {
-          cat(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]], "\n"))
+          print(paste0("Did not meet early stopping, best iteration is: ", best_msg[[i]]))
         }
 
         # Store best iteration and stop
@@ -323,17 +323,17 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
 }
 
 # Extract callback names from the list of callbacks
-.callback_names <- function(cb_list) {
+callback.names <- function(cb_list) {
   return(unlist(lapply(cb_list, attr, "name")))
 }
 
-.add_cb <- function(cb_list, cb) {
+add.cb <- function(cb_list, cb) {
 
   # Combine two elements
   cb_list <- c(cb_list, cb)
 
   # Set names of elements
-  names(cb_list) <- .callback_names(cb_list = cb_list)
+  names(cb_list) <- callback.names(cb_list = cb_list)
 
   if ("cb_early_stop" %in% names(cb_list)) {
 
@@ -349,7 +349,7 @@ cb_early_stop <- function(stopping_rounds, first_metric_only, verbose) {
 
 }
 
-.categorize_callbacks <- function(cb_list) {
+categorize.callbacks <- function(cb_list) {
 
   # Check for pre-iteration or post-iteration
   return(

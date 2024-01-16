@@ -30,13 +30,9 @@ maintainers = [
 name = "lightgbm"
 readme = "README.rst"
 requires-python = ">=3.6"
-version = "4.2.0.99"
+version = "4.1.0.99"
 
 [project.optional-dependencies]
-arrow = [
-    "cffi>=1.15.1",
-    "pyarrow>=6.0.1"
-]
 dask = [
     "dask[array,dataframe,distributed]>=2.0.0",
     "pandas>=0.24.0"
@@ -63,7 +59,7 @@ build-backend = "scikit_build_core.build"
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.minimum-version = "3.18"
+cmake.minimum-version = "3.15"
 ninja.minimum-version = "1.11"
 ninja.make-fallback = true
 cmake.args = [

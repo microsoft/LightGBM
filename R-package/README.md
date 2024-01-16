@@ -97,10 +97,9 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
     - If you have `Rtools` 4.0, example:
         - `C:\rtools40\mingw64\bin`
         - `C:\rtools40\usr\bin`
-    - If you have `Rtools` 4.2+, example:
+    - If you have `Rtools` 4.2, example:
         - `C:\rtools42\x86_64-w64-mingw32.static.posix\bin`
         - `C:\rtools42\usr\bin`
-        - **NOTE**: this is e.g. `rtools43\` for R 4.3
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
@@ -108,7 +107,7 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
 
 NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
 
-NOTE: `Rtools42` and later take a very different approach to the compiler toolchain than previous releases, and how you install it changes what is required to build packages. See ["Howto: Building R 4.2 and packages on Windows"](https://cran.r-project.org/bin/windows/base/howto-R-4.2.html).
+NOTE: `Rtools42` takes a very different approach to the compiler toolchain than previous releases, and how you install it changes what is required to build packages. See ["Howto: Building R 4.2 and packages on Windows"](https://cran.r-project.org/bin/windows/base/howto-R-4.2.html).
 
 #### Windows Toolchain Options
 
@@ -428,7 +427,7 @@ docker run \
 
 # install dependencies
 RDscript${R_CUSTOMIZATION} \
-  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
 # install lightgbm
 sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
@@ -459,7 +458,7 @@ docker run \
     -it \
         wch1/r-debug
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh \
     --r-executable=RDvalgrind

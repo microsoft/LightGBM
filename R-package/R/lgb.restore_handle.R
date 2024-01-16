@@ -16,10 +16,7 @@
 #' @return \code{lgb.Booster} (the same `model` object that was passed as input, invisibly).
 #' @seealso \link{lgb.make_serializable}, \link{lgb.drop_serialized}.
 #' @examples
-#' \donttest{
 #' library(lightgbm)
-#' \dontshow{setLGBMthreads(2L)}
-#' \dontshow{data.table::setDTthreads(1L)}
 #' data("agaricus.train")
 #' model <- lightgbm(
 #'   agaricus.train$data
@@ -36,10 +33,9 @@
 #' model_new$check_null_handle()
 #' lgb.restore_handle(model_new)
 #' model_new$check_null_handle()
-#' }
 #' @export
 lgb.restore_handle <- function(model) {
-  if (!.is_Booster(x = model)) {
+  if (!lgb.is.Booster(x = model)) {
     stop("lgb.restore_handle: model should be an ", sQuote("lgb.Booster"))
   }
   model$restore_handle()

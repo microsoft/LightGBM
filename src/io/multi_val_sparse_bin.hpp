@@ -85,7 +85,7 @@ class MultiValSparseBin : public MultiValBin {
         offsets[tid + 1] = offsets[tid] + sizes[tid + 1];
       }
       data_.resize(row_ptr_[num_data_]);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
       for (int tid = 0; tid < static_cast<int>(t_data_.size()); ++tid) {
         std::copy_n(t_data_[tid].data(), sizes[tid + 1],
                     data_.data() + offsets[tid]);
@@ -344,7 +344,7 @@ class MultiValSparseBin : public MultiValBin {
                                       num_data_, 1024, &n_block, &block_size);
     std::vector<INDEX_T> sizes(t_data_.size() + 1, 0);
     const int pre_alloc_size = 50;
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
+#pragma omp parallel for schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);

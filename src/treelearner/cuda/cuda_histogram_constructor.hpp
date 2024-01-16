@@ -9,7 +9,6 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_row_data.hpp>
-#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/tree.h>
 
@@ -38,9 +37,7 @@ class CUDAHistogramConstructor {
     const int min_data_in_leaf,
     const double min_sum_hessian_in_leaf,
     const int gpu_device_id,
-    const bool gpu_use_dp,
-    const bool use_discretized_grad,
-    const int grad_discretized_bins);
+    const bool gpu_use_dp);
 
   ~CUDAHistogramConstructor();
 
@@ -52,16 +49,7 @@ class CUDAHistogramConstructor {
     const data_size_t num_data_in_smaller_leaf,
     const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf,
-    const double sum_hessians_in_larger_leaf,
-    const uint8_t num_bits_in_histogram_bins);
-
-  void SubtractHistogramForLeaf(
-    const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const CUDALeafSplitsStruct* cuda_larger_leaf_splits,
-    const bool use_discretized_grad,
-    const uint8_t parent_num_bits_in_histogram_bins,
-    const uint8_t smaller_num_bits_in_histogram_bins,
-    const uint8_t larger_num_bits_in_histogram_bins);
+    const double sum_hessians_in_larger_leaf);
 
   void ResetTrainingData(const Dataset* train_data, TrainingShareStates* share_states);
 
@@ -69,9 +57,9 @@ class CUDAHistogramConstructor {
 
   void BeforeTrain(const score_t* gradients, const score_t* hessians);
 
-  const hist_t* cuda_hist() const { return cuda_hist_.RawData(); }
+  const hist_t* cuda_hist() const { return cuda_hist_; }
 
-  hist_t* cuda_hist_pointer() { return cuda_hist_.RawData(); }
+  hist_t* cuda_hist_pointer() { return cuda_hist_; }
 
  private:
   void InitFeatureMetaInfo(const Dataset* train_data, const std::vector<uint32_t>& feature_hist_offsets);
@@ -86,39 +74,30 @@ class CUDAHistogramConstructor {
   template <typename HIST_TYPE, size_t SHARED_HIST_SIZE>
   void LaunchConstructHistogramKernelInner(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t num_data_in_smaller_leaf,
-    const uint8_t num_bits_in_histogram_bins);
+    const data_size_t num_data_in_smaller_leaf);
 
   template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE>
   void LaunchConstructHistogramKernelInner0(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t num_data_in_smaller_leaf,
-    const uint8_t num_bits_in_histogram_bins);
+    const data_size_t num_data_in_smaller_leaf);
 
   template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE, typename PTR_TYPE>
   void LaunchConstructHistogramKernelInner1(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t num_data_in_smaller_leaf,
-    const uint8_t num_bits_in_histogram_bins);
+    const data_size_t num_data_in_smaller_leaf);
 
   template <typename HIST_TYPE, size_t SHARED_HIST_SIZE, typename BIN_TYPE, typename PTR_TYPE, bool USE_GLOBAL_MEM_BUFFER>
   void LaunchConstructHistogramKernelInner2(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t num_data_in_smaller_leaf,
-    const uint8_t num_bits_in_histogram_bins);
+    const data_size_t num_data_in_smaller_leaf);
 
   void LaunchConstructHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const data_size_t num_data_in_smaller_leaf,
-    const uint8_t num_bits_in_histogram_bins);
+    const data_size_t num_data_in_smaller_leaf);
 
   void LaunchSubtractHistogramKernel(
     const CUDALeafSplitsStruct* cuda_smaller_leaf_splits,
-    const CUDALeafSplitsStruct* cuda_larger_leaf_splits,
-    const bool use_discretized_grad,
-    const uint8_t parent_num_bits_in_histogram_bins,
-    const uint8_t smaller_num_bits_in_histogram_bins,
-    const uint8_t larger_num_bits_in_histogram_bins);
+    const CUDALeafSplitsStruct* cuda_larger_leaf_splits);
 
   // Host memory
 
@@ -157,21 +136,19 @@ class CUDAHistogramConstructor {
   /*! \brief CUDA row wise data */
   std::unique_ptr<CUDARowData> cuda_row_data_;
   /*! \brief number of bins per feature */
-  CUDAVector<uint32_t> cuda_feature_num_bins_;
+  uint32_t* cuda_feature_num_bins_;
   /*! \brief offsets in histogram of all features */
-  CUDAVector<uint32_t> cuda_feature_hist_offsets_;
+  uint32_t* cuda_feature_hist_offsets_;
   /*! \brief most frequent bins in each feature */
-  CUDAVector<uint32_t> cuda_feature_most_freq_bins_;
+  uint32_t* cuda_feature_most_freq_bins_;
   /*! \brief CUDA histograms */
-  CUDAVector<hist_t> cuda_hist_;
+  hist_t* cuda_hist_;
   /*! \brief CUDA histograms buffer for each block */
-  CUDAVector<float> cuda_hist_buffer_;
+  float* cuda_hist_buffer_;
   /*! \brief indices of feature whose histograms need to be fixed */
-  CUDAVector<int> cuda_need_fix_histogram_features_;
+  int* cuda_need_fix_histogram_features_;
   /*! \brief aligned number of bins of the features whose histograms need to be fixed */
-  CUDAVector<uint32_t> cuda_need_fix_histogram_features_num_bin_aligned_;
-  /*! \brief histogram buffer used in histogram subtraction with different number of bits for histogram bins */
-  CUDAVector<hist_t> hist_buffer_for_num_bit_change_;
+  uint32_t* cuda_need_fix_histogram_features_num_bin_aligned_;
 
   // CUDA memory, held by other object
 
@@ -184,10 +161,6 @@ class CUDAHistogramConstructor {
   const int gpu_device_id_;
   /*! \brief use double precision histogram per block */
   const bool gpu_use_dp_;
-  /*! \brief whether to use quantized gradients */
-  const bool use_quantized_grad_;
-  /*! \brief the number of bins to quantized gradients */
-  const int num_grad_quant_bins_;
 };
 
 }  // namespace LightGBM

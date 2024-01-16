@@ -56,7 +56,7 @@ void MultiValBinWrapper::HistMove(const std::vector<hist_t,
     if (HIST_BITS == 32) {
       const int64_t* src = reinterpret_cast<const int64_t*>(hist_buf.data()) + hist_buf.size() / 2 -
         static_cast<size_t>(num_bin_aligned_);
-      #pragma omp parallel for schedule(static) num_threads(num_threads_)
+      #pragma omp parallel for schedule(static)
       for (int i = 0; i < static_cast<int>(hist_move_src_.size()); ++i) {
         std::copy_n(src + hist_move_src_[i] / 2, hist_move_size_[i] / 2,
                     reinterpret_cast<int64_t*>(origin_hist_data_) + hist_move_dest_[i] / 2);
@@ -65,14 +65,14 @@ void MultiValBinWrapper::HistMove(const std::vector<hist_t,
       const int32_t* src = reinterpret_cast<const int32_t*>(hist_buf.data()) + hist_buf.size() / 2 -
         static_cast<size_t>(num_bin_aligned_);
       if (is_use_subcol_) {
-        #pragma omp parallel for schedule(static) num_threads(num_threads_)
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < static_cast<int>(hist_move_src_.size()); ++i) {
           std::copy_n(src + hist_move_src_[i] / 2, hist_move_size_[i] / 2,
                       reinterpret_cast<int32_t*>(origin_hist_data_) + hist_move_dest_[i] / 2);
         }
       } else {
         int32_t* orig_ptr = reinterpret_cast<int32_t*>(origin_hist_data_);
-        #pragma omp parallel for schedule(static) num_threads(num_threads_)
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < num_bin_; ++i) {
           orig_ptr[i] = src[i];
         }
@@ -81,7 +81,7 @@ void MultiValBinWrapper::HistMove(const std::vector<hist_t,
   } else {
     const hist_t* src = hist_buf.data() + hist_buf.size() -
       2 * static_cast<size_t>(num_bin_aligned_);
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < static_cast<int>(hist_move_src_.size()); ++i) {
       std::copy_n(src + hist_move_src_[i], hist_move_size_[i],
                   origin_hist_data_ + hist_move_dest_[i]);

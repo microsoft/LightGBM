@@ -29,8 +29,6 @@
 #'
 #' @examples
 #' \donttest{
-#' \dontshow{setLGBMthreads(2L)}
-#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -64,10 +62,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
   )
 
   # Parse tree model
-  tree_list <- lapply(
-    X = parsed_json_model$tree_info
-    , FUN = .single_tree_parse
-  )
+  tree_list <- lapply(parsed_json_model$tree_info, single.tree.parse)
 
   # Combine into single data.table
   tree_dt <- data.table::rbindlist(l = tree_list, use.names = TRUE)
@@ -89,7 +84,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
 
 #' @importFrom data.table := data.table rbindlist
-.single_tree_parse <- function(lgb_tree) {
+single.tree.parse <- function(lgb_tree) {
 
   # Traverse tree function
   pre_order_traversal <- function(env = NULL, tree_node_leaf, current_depth = 0L, parent_index = NA_integer_) {

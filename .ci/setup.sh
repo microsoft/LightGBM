@@ -54,14 +54,6 @@ else  # Linux
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
-        elif [[ $COMPILER == "clang-17" ]]; then
-            sudo apt-get install wget
-            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-            sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
-            sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
-            sudo apt-get update
-            sudo apt-get install -y clang-17
-            sudo apt-get install --no-install-recommends -y libomp-17-dev
         fi
 
         export LANG="en_US.UTF-8"

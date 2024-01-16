@@ -183,9 +183,7 @@ test_that("lgb.Dataset: colnames", {
     colnames(dtest) <- "asdf"
   })
   new_names <- make.names(seq_len(ncol(test_data)))
-  expect_silent({
-    colnames(dtest) <- new_names
-  })
+  expect_silent(colnames(dtest) <- new_names)
   expect_equal(colnames(dtest), new_names)
 })
 
@@ -206,7 +204,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , rawData
     , nrow(rawData)
     , ncol(rawData)
-    , lightgbm:::.params2str(params = list())
+    , lightgbm:::lgb.params2str(params = list())
     , ref_handle
   )
   expect_true(methods::is(handle, "externalptr"))
@@ -322,7 +320,7 @@ test_that("Dataset$update_parameters() does nothing for empty inputs", {
   res <- ds$update_params(
     params = list()
   )
-  expect_true(.is_Dataset(res))
+  expect_true(lgb.is.Dataset(res))
 
   new_params <- ds$get_params()
   expect_identical(new_params, initial_params)
@@ -343,7 +341,7 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   res <- ds$update_params(
     params = new_params
   )
-  expect_true(.is_Dataset(res))
+  expect_true(lgb.is.Dataset(res))
 
   updated_params <- ds$get_params()
   for (param_name in names(new_params)) {
@@ -356,17 +354,17 @@ test_that("Dataset$finalize() should not fail on an already-finalized Dataset", 
     data = test_data
     , label = test_label
   )
-  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 
   dtest$construct()
-  expect_false(.is_null_handle(dtest$.__enclos_env__$private$handle))
+  expect_false(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 
   dtest$finalize()
-  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 
   # calling finalize() a second time shouldn't cause any issues
   dtest$finalize()
-  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
+  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
@@ -401,7 +399,7 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , data = dtest_read_in
   )
 
-  expect_true(.is_Booster(x = bst))
+  expect_true(lgb.is.Booster(x = bst))
 })
 
 test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using lgb.Dataset() on a file", {

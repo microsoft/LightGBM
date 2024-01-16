@@ -1,4 +1,5 @@
 library(lightgbm)
+library(methods)
 
 # Load in the agaricus dataset
 data(agaricus.train, package = "lightgbm")

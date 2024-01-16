@@ -1,11 +1,9 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com')" || exit -1
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit -1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
-  --no-build-vignettes \
   || exit -1
-
 RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
 
 cd R-package/tests
@@ -70,7 +68,7 @@ bytes_possibly_lost=$(
     | tr -d ","
 )
 echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
-if [[ ${bytes_possibly_lost} -gt 1056 ]]; then
+if [[ ${bytes_possibly_lost} -gt 352 ]]; then
     exit -1
 fi
 

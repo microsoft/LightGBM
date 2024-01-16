@@ -265,7 +265,7 @@ namespace LightGBM {
                      groups_ptr,
                      thread_count,
                      t);
-      threads.push_back(std::move(th));
+      threads.push_back(move(th));
     }
 
     for (auto& t : threads) t.join();

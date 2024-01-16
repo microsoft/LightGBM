@@ -31,17 +31,17 @@ jobs:
           - method: wheel
             compiler: gcc
             python_version: "3.11"
-            cuda_version: "11.8.0"
+            cuda_version: "11.7.1"
             task: cuda
           - method: source
             compiler: gcc
             python_version: "3.9"
-            cuda_version: "12.2.0"
+            cuda_version: "10.0"
             task: cuda
           - method: pip
             compiler: clang
             python_version: "3.10"
-            cuda_version: "11.8.0"
+            cuda_version: "11.7.1"
             task: cuda
     steps:
       - name: Setup or update software on host machine
@@ -98,10 +98,8 @@ jobs:
             cuda_version="${{ matrix.cuda_version }}"
             cuda_major=${cuda_version%%.*}
             docker_img="nvcr.io/nvidia/cuda:${cuda_version}-devel"
-            if [[ ${cuda_major} -eq 11 ]]; then
-                docker_img="${docker_img}-ubuntu18.04"
-            elif [[ ${cuda_major} -ge 12 ]]; then
-                docker_img="${docker_img}-ubuntu20.04"
+            if [[ ${cuda_major} -gt 10 ]]; then
+                docker_img="${docker_img}-ubuntu$(lsb_release -rs)" 
             fi
             docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "$docker_img" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
   all-cuda-jobs-successful:

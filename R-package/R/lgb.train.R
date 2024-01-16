@@ -19,8 +19,6 @@
 #'
 #' @examples
 #' \donttest{
-#' \dontshow{setLGBMthreads(2L)}
-#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -65,11 +63,11 @@ lgb.train <- function(params = list(),
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
-  if (!.is_Dataset(x = data)) {
+  if (!lgb.is.Dataset(x = data)) {
     stop("lgb.train: data must be an lgb.Dataset instance")
   }
   if (length(valids) > 0L) {
-    if (!identical(class(valids), "list") || !all(vapply(valids, .is_Dataset, logical(1L)))) {
+    if (!identical(class(valids), "list") || !all(vapply(valids, lgb.is.Dataset, logical(1L)))) {
       stop("lgb.train: valids must be a list of lgb.Dataset elements")
     }
     evnames <- names(valids)
@@ -82,27 +80,27 @@ lgb.train <- function(params = list(),
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
-  params <- .check_wrapper_param(
+  params <- lgb.check.wrapper_param(
     main_param_name = "verbosity"
     , params = params
     , alternative_kwarg_value = verbose
   )
-  params <- .check_wrapper_param(
+  params <- lgb.check.wrapper_param(
     main_param_name = "num_iterations"
     , params = params
     , alternative_kwarg_value = nrounds
   )
-  params <- .check_wrapper_param(
+  params <- lgb.check.wrapper_param(
     main_param_name = "metric"
     , params = params
     , alternative_kwarg_value = NULL
   )
-  params <- .check_wrapper_param(
+  params <- lgb.check.wrapper_param(
     main_param_name = "objective"
     , params = params
     , alternative_kwarg_value = obj
   )
-  params <- .check_wrapper_param(
+  params <- lgb.check.wrapper_param(
     main_param_name = "early_stopping_round"
     , params = params
     , alternative_kwarg_value = early_stopping_rounds
@@ -120,7 +118,7 @@ lgb.train <- function(params = list(),
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
-  params <- .check_eval(params = params, eval = eval)
+  params <- lgb.check.eval(params = params, eval = eval)
   eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
@@ -138,7 +136,7 @@ lgb.train <- function(params = list(),
   # Check for boosting from a trained model
   if (is.character(init_model)) {
     predictor <- Predictor$new(modelfile = init_model)
-  } else if (.is_Booster(x = init_model)) {
+  } else if (lgb.is.Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
 
@@ -168,7 +166,7 @@ lgb.train <- function(params = list(),
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- .check_interaction_constraints(
+  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
     interaction_constraints = interaction_constraints
     , column_names = cnames
   )
@@ -214,18 +212,12 @@ lgb.train <- function(params = list(),
 
   # Add printing log callback
   if (params[["verbosity"]] > 0L && eval_freq > 0L) {
-    callbacks <- .add_cb(
-        cb_list = callbacks
-        , cb = cb_print_evaluation(period = eval_freq)
-    )
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record && length(valids) > 0L) {
-    callbacks <- .add_cb(
-        cb_list = callbacks
-        , cb = cb_record_evaluation()
-    )
+    callbacks <- add.cb(cb_list = callbacks, cb = cb_record_evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -257,7 +249,7 @@ lgb.train <- function(params = list(),
 
   # If user supplied early_stopping_rounds, add the early stopping callback
   if (using_early_stopping) {
-    callbacks <- .add_cb(
+    callbacks <- add.cb(
       cb_list = callbacks
       , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
@@ -267,7 +259,7 @@ lgb.train <- function(params = list(),
     )
   }
 
-  cb <- .categorize_callbacks(cb_list = callbacks)
+  cb <- categorize.callbacks(cb_list = callbacks)
 
   # Construct booster with datasets
   booster <- Booster$new(params = params, train_set = data)
