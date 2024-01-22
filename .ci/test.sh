@@ -319,9 +319,9 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall --force --yes \
+    conda uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask \
+        dask-core \
         distributed \
         joblib \
         matplotlib \
