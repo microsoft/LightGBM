@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +x
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -131,7 +133,7 @@ if [[ $PYTHON_VERSION == "3.7" ]]; then
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-mamba create -q -y -n $CONDA_ENV \
+mamba create -v -y -n $CONDA_ENV \
     ${CONSTRAINED_DEPENDENCIES} \
     cffi \
     cloudpickle \
