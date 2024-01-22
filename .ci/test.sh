@@ -321,7 +321,7 @@ matplotlib.use\(\"Agg\"\)\
     # importing the library should succeed even if all optional dependencies are not present
     mamba uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask \
+        dask-core \
         distributed \
         joblib \
         matplotlib \
