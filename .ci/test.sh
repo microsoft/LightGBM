@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set +x
-
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -133,7 +131,7 @@ if [[ $PYTHON_VERSION == "3.7" ]]; then
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-mamba create -v -y -n $CONDA_ENV \
+mamba create -q -y -n $CONDA_ENV \
     ${CONSTRAINED_DEPENDENCIES} \
     cffi \
     cloudpickle \
@@ -321,7 +319,7 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall --force --yes \
+    mamba uninstall -n $CONDA_ENV --force --yes \
         cffi \
         dask \
         distributed \
