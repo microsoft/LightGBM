@@ -63,6 +63,14 @@ CXX11 += -stdlib=libc++
 CXX14 += -stdlib=libc++
 CXX17 += -stdlib=libc++
 CXX20 += -stdlib=libc++
+
+CFLAGS = -O3 -Wall -pedantic -Wp,-D_FORTIFY_SOURCE=3
+CPPFLAGS = -isystem /usr/local/clang/include
+CXXFLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+CXX11FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+CXX14FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+CXX17FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
+CXX20FLAGS = -O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3
 EOF
 
 echo ""
