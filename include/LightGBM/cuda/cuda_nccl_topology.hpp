@@ -77,7 +77,7 @@ class NCCLTopology {
       }
     }
 
-    Log::Info("Using GPU devices %s, and local master GPU device %d.", Common::Join<int>(gpu_list_, ","), master_gpu_device_id_);
+    Log::Info("Using GPU devices %s, and local master GPU device %d.", Common::Join<int>(gpu_list_, ",").c_str(), master_gpu_device_id_);
 
     const int num_threads = OMP_NUM_THREADS();
     if (num_gpus_ > num_threads) {
@@ -154,6 +154,7 @@ class NCCLTopology {
       CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[i]));
       RET_T* nccl_info = new RET_T();
       nccl_info->SetNCCLInfo(nccl_communicators_[i], nccl_gpu_rank_[i], i, gpu_list_[i], global_num_data_);
+      vec[i].reset(nccl_info);
     }
     CUDASUCCESS_OR_FATAL(cudaSetDevice(master_gpu_device_id_));
   }

@@ -180,6 +180,7 @@ void CUDAColumnData::CopySubrow(
   if (cuda_used_indices_ == nullptr) {
     // initialize the subset cuda column data
     const size_t num_used_indices_size = static_cast<size_t>(num_used_indices);
+    Log::Warning("num_used_indices_size = %ld", num_used_indices_size);
     AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
     data_by_column_.resize(num_columns_, nullptr);
     OMP_INIT_EX();

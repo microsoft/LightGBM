@@ -22,6 +22,7 @@ class NCCLGBDTComponent: public NCCLInfo {
   NCCLGBDTComponent() {}
 
   void Init(const Config* config, const Dataset* train_data, const int num_tree_per_iteration, const bool boosting_on_gpu, const bool is_constant_hessian) {
+    cudaGetDeviceCount(&num_gpu_in_node_);
     const data_size_t num_data_per_gpu = (train_data->num_data() + num_gpu_in_node_ - 1) / num_gpu_in_node_;
     data_start_index_ = num_data_per_gpu * local_gpu_rank_;
     data_end_index_ = std::min<data_size_t>(data_start_index_ + num_data_per_gpu, train_data->num_data());
