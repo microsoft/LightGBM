@@ -247,3 +247,36 @@ def test_booster():
         c_str(''),
         c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
+
+
+def test_max_thread_control():
+    # at initialization, should be -1
+    num_threads = ctypes.c_int(0)
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == -1
+
+    # updating that value through the C API should work
+    ret = LIB.LGBM_SetMaxThreads(
+        ctypes.c_int(6)
+    )
+    assert ret == 0
+
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == 6
+
+    # resetting to any negative number should set it to -1
+    ret = LIB.LGBM_SetMaxThreads(
+        ctypes.c_int(-123)
+    )
+    assert ret == 0
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == -1

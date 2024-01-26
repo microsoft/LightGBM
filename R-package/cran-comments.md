@@ -1,5 +1,36 @@
 # CRAN Submission History
 
+## v4.3.0 - Submission 1 - (January 18, 2024)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This submission was put up in response to CRAN saying the package would be archived if the following
+warning was not fixed within 14 days.
+
+```text
+/usr/local/clang-trunk/bin/../include/c++/v1/__fwd/string_view.h:22:41:
+warning: 'char_traits<fmt::detail::char8_type>' is deprecated:
+char_traits<T> for T not equal to char, wchar_t, char8_t, char16_t or char32_t is non-standard and is provided for a temporary period. 
+It will be removed in LLVM 19, so please migrate off of it. [-Wdeprecated-declarations]
+```
+
+See https://github.com/microsoft/LightGBM/issues/6264.
+
+## v4.2.0 - Submission 1 - (December 7, 2023)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This submission included many changes from the last 2 years, as well as fixes for a warning
+CRAN said could cause the package to be archived: https://github.com/microsoft/LightGBM/issues/6221.
+
 ## v4.1.0 - not submitted
 
 v4.1.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.

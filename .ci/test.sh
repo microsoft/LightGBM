@@ -6,6 +6,9 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
+elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang-17" ]]; then
+    export CXX=clang++-17
+    export CC=clang-17
 fi
 
 if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
@@ -130,11 +133,13 @@ fi
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 mamba create -q -y -n $CONDA_ENV \
     ${CONSTRAINED_DEPENDENCIES} \
+    cffi \
     cloudpickle \
     joblib \
     matplotlib \
     numpy \
     psutil \
+    pyarrow \
     pytest \
     ${CONDA_PYTHON_REQUIREMENT} \
     python-graphviz \
@@ -314,12 +319,14 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall --force --yes \
-        dask \
+    conda uninstall -n $CONDA_ENV --force --yes \
+        cffi \
+        dask-core \
         distributed \
         joblib \
         matplotlib \
         psutil \
+        pyarrow \
         python-graphviz \
         scikit-learn || exit -1
     python -c "import lightgbm" || exit -1

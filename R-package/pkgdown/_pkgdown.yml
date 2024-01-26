@@ -14,7 +14,7 @@ repo:
     user: https://github.com/
 
 development:
-  mode: unreleased
+  mode: release
 
 authors:
   Yu Shi:
@@ -85,8 +85,6 @@ reference:
     - '`lgb.save`'
     - '`lgb.load`'
     - '`lgb.model.dt.tree`'
-    - '`saveRDS.lgb.Booster`'
-    - '`readRDS.lgb.Booster`'
   - title: Model Interpretation
     desc: Analyze your models
     contents:

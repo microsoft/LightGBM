@@ -36,6 +36,16 @@ except ImportError:
 
     concat = None
 
+"""numpy"""
+try:
+    from numpy.random import Generator as np_random_Generator
+except ImportError:
+    class np_random_Generator:  # type: ignore
+        """Dummy class for np.random.Generator."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
 """matplotlib"""
 try:
     import matplotlib  # noqa: F401
@@ -184,6 +194,59 @@ except ImportError:
 
         def __init__(self, *args, **kwargs):
             pass
+
+"""pyarrow"""
+try:
+    import pyarrow.compute as pa_compute
+    from pyarrow import Array as pa_Array
+    from pyarrow import ChunkedArray as pa_ChunkedArray
+    from pyarrow import Table as pa_Table
+    from pyarrow import chunked_array as pa_chunked_array
+    from pyarrow.cffi import ffi as arrow_cffi
+    from pyarrow.types import is_floating as arrow_is_floating
+    from pyarrow.types import is_integer as arrow_is_integer
+    PYARROW_INSTALLED = True
+except ImportError:
+    PYARROW_INSTALLED = False
+
+    class pa_Array:  # type: ignore
+        """Dummy class for pa.Array."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pa_ChunkedArray:  # type: ignore
+        """Dummy class for pa.ChunkedArray."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pa_Table:  # type: ignore
+        """Dummy class for pa.Table."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class arrow_cffi:  # type: ignore
+        """Dummy class for pyarrow.cffi.ffi."""
+
+        CData = None
+        addressof = None
+        cast = None
+        new = None
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class pa_compute:  # type: ignore
+        """Dummy class for pyarrow.compute."""
+
+        all = None
+        equal = None
+
+    pa_chunked_array = None
+    arrow_is_integer = None
+    arrow_is_floating = None
 
 """cpu_count()"""
 try:
