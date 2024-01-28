@@ -215,6 +215,7 @@ if(USE_CUDA)
         list(APPEND CUDA_ARCHS "8.7")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
+        list(APPEND CUDA_ARCHS "8.9")
         list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
@@ -428,7 +429,10 @@ file(
       src/network/*.cpp
       src/treelearner/*.cpp
       src/utils/*.cpp
-if(USE_CUDA)
+)
+file(
+    GLOB
+    LGBM_CUDA_SOURCES
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
@@ -442,8 +446,11 @@ if(USE_CUDA)
       src/io/cuda/*.cpp
       src/cuda/*.cpp
       src/cuda/*.cu
-endif()
 )
+
+if(USE_CUDA)
+  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
