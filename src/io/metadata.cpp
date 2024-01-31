@@ -857,6 +857,8 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
   num_data_ = 0;
   num_queries_ = metadata.num_queries();
   label_.clear();
+  positions_.clear();
+  position_ids_.clear();
   if (pairwise_ranking_mode_ == PairwiseRankingMode::kRelevance) {
     const label_t* original_label = metadata.label();
     paired_ranking_item_index_map_.clear();
@@ -877,6 +879,23 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (original_num_data >= 1024)
     for (data_size_t i = 0; i < original_num_data; ++i) {
       label_[i] = original_label[i];
+    }
+
+    if (metadata.num_position_ids() > 0) {
+      positions_.resize(original_num_data);
+      const data_size_t* original_positions = metadata.positions();
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (original_num_data >= 1024)
+      for (data_size_t i = 0; i < original_num_data; ++i) {
+        positions_[i] = original_positions[i];
+      }
+
+      const data_size_t num_position_ids = static_cast<data_size_t>(metadata.num_position_ids());
+      position_ids_.resize(num_position_ids);
+      const std::string* original_position_ids = metadata.position_ids();
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_position_ids >= 1024)
+      for (data_size_t i = 0; i < num_position_ids; ++i) {
+        position_ids_[i] = original_position_ids[i];
+      }
     }
 
     data_size_t num_pairs_in_query = 0;
