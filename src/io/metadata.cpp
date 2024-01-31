@@ -857,11 +857,28 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
   num_data_ = 0;
   num_queries_ = metadata.num_queries();
   label_.clear();
-  paired_label_.clear();
   if (pairwise_ranking_mode_ == PairwiseRankingMode::kRelevance) {
-    const label_t* labels = metadata.label();
+    const label_t* original_label = metadata.label();
     paired_ranking_item_index_map_.clear();
     const data_size_t* query_boundaries = metadata.query_boundaries();
+    
+    // backup original query boundaries
+    original_query_boundaries_.clear();
+    original_query_boundaries_.resize(num_queries_);
+    const int num_threads = OMP_NUM_THREADS();
+    #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_queries_ >= 1024)
+    for (data_size_t i = 0; i < num_queries_; ++i) {
+      original_query_boundaries_[i] = query_boundaries[i];
+    }
+
+    // copy labels
+    const data_size_t original_num_data = query_boundaries[num_queries_];
+    label_.resize(original_num_data);
+    #pragma omp parallel for schedule(static) num_threads(num_threads) if (original_num_data >= 1024)
+    for (data_size_t i = 0; i < original_num_data; ++i) {
+      label_[i] = original_label[i];
+    }
+
     data_size_t num_pairs_in_query = 0;
     query_boundaries_.clear();
     query_boundaries_.push_back(0);
@@ -870,16 +887,14 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
       const data_size_t query_start = query_boundaries[query_index];
       const data_size_t query_end = query_boundaries[query_index + 1];
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
-        const label_t label_i = labels[item_index_i];
+        const label_t label_i = label_[item_index_i];
         for (data_size_t item_index_j = query_start; item_index_j < query_end; ++item_index_j) {
           if (item_index_i == item_index_j) {
             continue;
           }
-          const label_t label_j = labels[item_index_j];
-          label_.push_back(label_i);
-          paired_label_.push_back(label_j);
+          const label_t label_j = label_[item_index_j];
           if (label_i != label_j) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
             ++num_pairs_in_query;
             ++num_data_;
           }
@@ -894,7 +909,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     // TODO(shiyu1994)
     Log::Fatal("Not implemented.");
   }
-  
+
   return num_data_;
 }
 

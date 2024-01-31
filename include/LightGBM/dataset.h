@@ -387,10 +387,8 @@ class Metadata {
   data_size_t num_weights_;
   /*! \brief Number of positions, used to check correct position file */
   data_size_t num_positions_;
-  /*! \brief Label data */
+  /*! \brief Label data. In pairwise ranking, the label_ refer to the labels of the original unpaired dataset. */
   std::vector<label_t> label_;
-  /*! \brief Paired label data for pairwise lambdarank */
-  std::vector<label_t> paired_label_;
   /*! \brief Weights data */
   std::vector<label_t> weights_;
   /*! \brief Positions data */
@@ -399,6 +397,8 @@ class Metadata {
   std::vector<std::string> position_ids_;
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
+  /*! \brief Original query boundaries, used in pairwise ranking */
+  std::vector<data_size_t> original_query_boundaries_;
   /*! \brief Query weights */
   std::vector<label_t> query_weights_;
   /*! \brief Number of querys */
