@@ -280,11 +280,24 @@ class Metadata {
   *        we assume data will order by query,
   *        the interval of [query_boundaris[i], query_boundaris[i+1])
   *        is the data indices for query i.
+  *        When pairwise ranking, this points to the paired query boundaries.
   * \return Pointer of data boundaries on queries
   */
   inline const data_size_t* query_boundaries() const {
     if (!query_boundaries_.empty()) {
       return query_boundaries_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
+  * \brief Used in pairwise ranking. Pointwise query boundaries.
+  * \return Pointer of data boundaries on queries
+  */
+  inline const data_size_t* pointwise_query_boundaries() const {
+    if (!pointwise_query_boundaries_.empty()) {
+      return pointwise_query_boundaries_.data();
     } else {
       return nullptr;
     }
@@ -398,7 +411,7 @@ class Metadata {
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Original query boundaries, used in pairwise ranking */
-  std::vector<data_size_t> original_query_boundaries_;
+  std::vector<data_size_t> pointwise_query_boundaries_;
   /*! \brief Query weights */
   std::vector<label_t> query_weights_;
   /*! \brief Number of querys */
