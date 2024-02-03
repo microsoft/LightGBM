@@ -68,6 +68,15 @@ if [[ $OS_NAME == "linux" ]]; then
                 automake \
                 || exit -1
     fi
+    if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
+        curl -O -L \
+            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
+        || exit -1
+
+        sudo mkdir /opt/cmake || exit -1
+        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit -1
+        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit -1
+    fi
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher

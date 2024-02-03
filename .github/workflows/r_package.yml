@@ -44,7 +44,7 @@ jobs:
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-            container: 'ubuntu:20.04'
+            container: 'ubuntu:18.04'
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
@@ -56,7 +56,7 @@ jobs:
             compiler: clang
             r_version: 3.6
             build_type: cmake
-            container: 'ubuntu:20.04'
+            container: 'ubuntu:18.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
@@ -180,6 +180,12 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
         if: matrix.r_version != '3.6'
+      # R 3.6 binary isn't easily available on buntu 18.04,
+      # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
+      # ref: https://github.com/microsoft/LightGBM/issues/6298
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v2.7.0
+        if: matrix.r_version == '3.6'
       - name: install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
@@ -198,6 +204,11 @@ jobs:
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
               export IN_UBUNTU_BASE_CONTAINER="true"
+              # the default version of cmake provided on Ubuntu 18.04 (v3.10.2), is not supported by LightGBM
+              # see https://github.com/microsoft/LightGBM/issues/5642
+              if [[ "${{ matrix.container }}" == "ubuntu:18.04" ]]; then
+                export INSTALL_CMAKE_FROM_RELEASES="true"
+              fi
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
