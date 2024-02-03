@@ -184,7 +184,7 @@ jobs:
       # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
       # ref: https://github.com/microsoft/LightGBM/issues/6298
       - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v2.7.0
+        uses: r-lib/actions/setup-pandoc@v2.6.0
         if: matrix.container == 'ubuntu:18.04'
       - name: install tinytex
         if: startsWith(matrix.os, 'windows')
