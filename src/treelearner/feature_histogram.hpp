@@ -876,7 +876,7 @@ class FeatureHistogram {
     } else {
       data_ptr = reinterpret_cast<const PACKED_HIST_BIN_T*>(data_);
     }
-  
+
     if (use_onehot) {
       if (USE_RAND) {
         if (bin_end - bin_start > 0) {
