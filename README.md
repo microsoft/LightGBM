@@ -63,6 +63,8 @@ External (Unofficial) Repositories
 Projects listed here offer alternative ways to use LightGBM.
 They are not maintained or officially endorsed by the `LightGBM` development team.
 
+LightGBMLSS (An extension of LightGBM to probabilistic modelling from which prediction intervals and quantiles can be derived): https://github.com/StatMixedML/LightGBMLSS
+
 FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
 
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna

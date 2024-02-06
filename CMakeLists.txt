@@ -27,19 +27,16 @@ if(APPLE)
   option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif()
 
-if(__INTEGRATE_OPENCL)
-  cmake_minimum_required(VERSION 3.11)
-elseif(USE_SWIG)
-  cmake_minimum_required(VERSION 3.8)
-elseif(USE_GPU OR APPLE)
-  cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA)
-  cmake_minimum_required(VERSION 3.16)
-else()
-  cmake_minimum_required(VERSION 3.0)
-endif()
+cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
+
+if(BUILD_CPP_TEST)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -78,7 +75,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
     message(FATAL_ERROR "Insufficient AppleClang version")
   endif()
-  cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
     message(
@@ -86,7 +82,6 @@ elseif(MSVC)
       "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
     )
   endif()
-  cmake_minimum_required(VERSION 3.8)
 endif()
 
 if(USE_SWIG)
@@ -221,6 +216,7 @@ if(USE_CUDA)
         list(APPEND CUDA_ARCHS "8.7")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
+        list(APPEND CUDA_ARCHS "8.9")
         list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
@@ -330,7 +326,7 @@ endif()
 if(UNIX OR MINGW OR CYGWIN)
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+    "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
   if(MINGW)
     # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
@@ -434,7 +430,10 @@ file(
       src/network/*.cpp
       src/treelearner/*.cpp
       src/utils/*.cpp
-if(USE_CUDA)
+)
+file(
+    GLOB
+    LGBM_CUDA_SOURCES
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
@@ -448,8 +447,11 @@ if(USE_CUDA)
       src/io/cuda/*.cpp
       src/cuda/*.cpp
       src/cuda/*.cu
-endif()
 )
+
+if(USE_CUDA)
+  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
@@ -515,7 +517,18 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     endif()
@@ -524,9 +537,16 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
-          cp
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
+          com/microsoft/ml/lightgbm/osx/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
           "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
           com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
@@ -536,7 +556,12 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
+          com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   endif()
@@ -635,7 +660,7 @@ if(BUILD_CPP_TEST)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        release-1.11.0
+      GIT_TAG        v1.14.0
     )
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
