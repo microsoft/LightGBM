@@ -38,6 +38,7 @@ class NCCLGBDTComponent: public NCCLInfo {
     dataset_->CopySubrowToDevice(train_data, used_indices.data(), num_data_in_gpu_, true, gpu_device_id_);
 
     objective_function_.reset(ObjectiveFunction::CreateObjectiveFunctionCUDA(config->objective, *config));
+    objective_function_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, train_data->num_data());
     train_score_updater_.reset(new CUDAScoreUpdater(dataset_.get(), num_tree_per_iteration, boosting_on_gpu));
     gradients_.reset(new CUDAVector<score_t>(num_data_in_gpu_));
     hessians_.reset(new CUDAVector<score_t>(num_data_in_gpu_));

@@ -180,7 +180,6 @@ void CUDAColumnData::CopySubrow(
   if (cuda_used_indices_ == nullptr) {
     // initialize the subset cuda column data
     const size_t num_used_indices_size = static_cast<size_t>(num_used_indices);
-    Log::Warning("num_used_indices_size = %ld", num_used_indices_size);
     AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
     data_by_column_.resize(num_columns_, nullptr);
     OMP_INIT_EX();
@@ -219,7 +218,25 @@ void CUDAColumnData::CopySubrow(
   }
   CopyFromHostToCUDADevice<data_size_t>(cuda_used_indices_, used_indices, static_cast<size_t>(num_used_indices), __FILE__, __LINE__);
   num_used_indices_ = num_used_indices;
-  LaunchCopySubrowKernel(full_set->cuda_data_by_column());
+  for (int column_index = 0; column_index < num_columns_; ++column_index) {
+    if (column_bit_type_[column_index] == 8) {
+      CopyFromCUDADeviceToCUDADevice<uint8_t>(
+        reinterpret_cast<uint8_t*>(data_by_column_[column_index]),
+        reinterpret_cast<const uint8_t*>(full_set->data_by_column()[column_index]) + used_indices[0],
+        static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    } else if (column_bit_type_[column_index] == 16) {
+      CopyFromCUDADeviceToCUDADevice<uint16_t>(
+        reinterpret_cast<uint16_t*>(data_by_column_[column_index]),
+        reinterpret_cast<const uint16_t*>(full_set->data_by_column()[column_index]) + used_indices[0],
+        static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    } else if (column_bit_type_[column_index] == 32) {
+      CopyFromCUDADeviceToCUDADevice<uint32_t>(
+        reinterpret_cast<uint32_t*>(data_by_column_[column_index]),
+        reinterpret_cast<const uint32_t*>(full_set->data_by_column()[column_index]) + used_indices[0],
+        static_cast<size_t>(num_used_indices_), __FILE__, __LINE__);
+    }
+  }
+  SynchronizeCUDADevice(__FILE__, __LINE__);
 }
 
 void CUDAColumnData::ResizeWhenCopySubrow(const data_size_t num_used_indices) {

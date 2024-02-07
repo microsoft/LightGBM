@@ -22,8 +22,10 @@ template <typename HOST_OBJECTIVE>
 class CUDAObjectiveInterface: public HOST_OBJECTIVE, NCCLInfo {
  public:
   explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {
-    const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;
-    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
+    if (nccl_communicator_ == nullptr) {
+      const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;
+      SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
+    }
   }
 
   explicit CUDAObjectiveInterface(const std::vector<std::string>& strs): HOST_OBJECTIVE(strs) {}
@@ -32,6 +34,15 @@ class CUDAObjectiveInterface: public HOST_OBJECTIVE, NCCLInfo {
     HOST_OBJECTIVE::Init(metadata, num_data);
     cuda_labels_ = metadata.cuda_metadata()->cuda_label();
     cuda_weights_ = metadata.cuda_metadata()->cuda_weights();
+  }
+
+  void SetNCCLInfo(
+    ncclComm_t nccl_communicator,
+    int nccl_gpu_rank,
+    int local_gpu_rank,
+    int gpu_device_id,
+    data_size_t global_num_data) override {
+    NCCLInfo::SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
   }
 
   virtual const double* ConvertOutputCUDA(const data_size_t num_data, const double* input, double* output) const {

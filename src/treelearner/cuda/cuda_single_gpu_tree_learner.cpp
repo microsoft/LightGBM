@@ -35,9 +35,10 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   SerialTreeLearner::Init(train_data, is_constant_hessian);
   num_threads_ = OMP_NUM_THREADS();
   // use the first gpu by default
-  gpu_device_id_ = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
-  SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
-
+  if (nccl_communicator_ == nullptr) {
+    gpu_device_id_ = config_->gpu_device_id >= 0 ? config_->gpu_device_id : 0;
+    SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+  }
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
   cuda_smaller_leaf_splits_->Init(config_->use_quantized_grad);
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
@@ -161,7 +162,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
   global_timer.Stop("CUDASingleGPUTreeLearner::BeforeTrain");
   const bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features,
-    config_->linear_tree, config_->gpu_device_id, has_categorical_feature_));
+    config_->linear_tree, gpu_device_id_, has_categorical_feature_));
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     const data_size_t num_data_in_smaller_leaf = leaf_num_data_[smaller_leaf_index_];
