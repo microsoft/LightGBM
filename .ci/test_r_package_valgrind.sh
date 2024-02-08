@@ -1,12 +1,12 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com')" || exit -1
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com')" || exit 1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
   --no-build-vignettes \
-  || exit -1
+  || exit 1
 
-RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
+RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit 1
 
 cd R-package/tests
 
@@ -18,7 +18,7 @@ RDvalgrind \
   --vanilla \
   -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes" \
   -f testthat.R \
-  > ${ALL_LOGS_FILE} 2>&1 || exit -1
+  > ${ALL_LOGS_FILE} 2>&1 || exit 1
 
 cat ${ALL_LOGS_FILE}
 
@@ -33,7 +33,7 @@ bytes_definitely_lost=$(
 )
 echo "valgrind found ${bytes_definitely_lost} bytes definitely lost"
 if [[ ${bytes_definitely_lost} -gt 0 ]]; then
-    exit -1
+    exit 1
 fi
 
 bytes_indirectly_lost=$(
@@ -44,7 +44,7 @@ bytes_indirectly_lost=$(
 )
 echo "valgrind found ${bytes_indirectly_lost} bytes indirectly lost"
 if [[ ${bytes_indirectly_lost} -gt 0 ]]; then
-    exit -1
+    exit 1
 fi
 
 # one error caused by a false positive between valgrind and openmp is allowed
@@ -71,7 +71,7 @@ bytes_possibly_lost=$(
 )
 echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
 if [[ ${bytes_possibly_lost} -gt 1056 ]]; then
-    exit -1
+    exit 1
 fi
 
 invalid_reads=$(
@@ -80,7 +80,7 @@ invalid_reads=$(
 )
 if [[ ${invalid_reads} -gt 0 ]]; then
     echo "valgrind found invalid reads: ${invalid_reads}"
-    exit -1
+    exit 1
 fi
 
 invalid_writes=$(
@@ -89,5 +89,5 @@ invalid_writes=$(
 )
 if [[ ${invalid_writes} -gt 0 ]]; then
     echo "valgrind found invalid writes: ${invalid_writes}"
-    exit -1
+    exit 1
 fi
