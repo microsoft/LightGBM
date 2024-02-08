@@ -571,7 +571,7 @@ if(USE_MPI)
 endif()
 
 if(USE_OPENMP)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang|AppleClang")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
     # c_api headers also includes OpenMP headers, thus compiling
     # lightgbm_capi_objs needs include directory for OpenMP.
