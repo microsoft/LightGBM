@@ -5,7 +5,6 @@
 #ifndef LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 
-#include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>

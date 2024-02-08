@@ -6,6 +6,9 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
+elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang-17" ]]; then
+    export CXX=clang++-17
+    export CC=clang-17
 fi
 
 if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
@@ -316,9 +319,9 @@ matplotlib.use\(\"Agg\"\)\
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit -1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
-    conda uninstall --force --yes \
+    conda uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask \
+        dask-core \
         distributed \
         joblib \
         matplotlib \

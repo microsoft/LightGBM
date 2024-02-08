@@ -110,10 +110,13 @@ class Metadata {
                         const std::vector<data_size_t>& used_data_indices);
 
   void SetLabel(const label_t* label, data_size_t len);
+  void SetLabel(const ArrowChunkedArray& array);
 
   void SetWeights(const label_t* weights, data_size_t len);
+  void SetWeights(const ArrowChunkedArray& array);
 
   void SetQuery(const data_size_t* query, data_size_t len);
+  void SetQuery(const ArrowChunkedArray& array);
 
   void SetPosition(const data_size_t* position, data_size_t len);
 
@@ -122,6 +125,7 @@ class Metadata {
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
   void SetInitScore(const double* init_score, data_size_t len);
+  void SetInitScore(const ArrowChunkedArray& array);
 
 
   /*!
@@ -334,12 +338,24 @@ class Metadata {
   void CalculateQueryBoundaries();
   /*! \brief Insert labels at the given index */
   void InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len);
+  /*! \brief Set labels from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetLabelsFromIterator(It first, It last);
   /*! \brief Insert weights at the given index */
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
+  /*! \brief Set weights from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetWeightsFromIterator(It first, It last);
   /*! \brief Insert initial scores at the given index */
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
+  /*! \brief Set init scores from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetInitScoresFromIterator(It first, It last);
   /*! \brief Insert queries at the given index */
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
+  /*! \brief Set queries from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetQueriesFromIterator(It first, It last);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -654,6 +670,8 @@ class Dataset {
       bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
+
+  bool SetFieldFromArrow(const char* field_name, const ArrowChunkedArray& ca);
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 
