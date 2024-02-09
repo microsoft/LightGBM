@@ -8,14 +8,18 @@
 
 #ifdef USE_CUDA
 
-#include "../gbdt.h"
+#include "cuda_score_updater.hpp"
+#include "nccl_gbdt_component.hpp"
+
 #include <LightGBM/cuda/cuda_nccl_topology.hpp>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/network.h>
-#include "cuda_score_updater.hpp"
+
 #include <pthread.h>
 #include <memory>
-#include "nccl_gbdt_component.hpp"
+#include <vector>
+
+#include "../gbdt.h"
 
 namespace LightGBM {
 
@@ -69,7 +73,7 @@ class NCCLGBDT: public GBDT_T {
     int gpu_index;
     TreeLearner* gpu_tree_learner;
     const score_t* gradients;
-    const score_t* hessians; 
+    const score_t* hessians;
     bool is_first_time;
     int class_id;
     data_size_t num_data_in_gpu;

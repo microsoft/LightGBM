@@ -5,6 +5,7 @@
 
 #include "nccl_gbdt.hpp"
 #include "nccl_gbdt_component.hpp"
+
 #include <LightGBM/metric.h>
 
 #include <set>

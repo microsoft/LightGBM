@@ -9,7 +9,6 @@
 #ifdef USE_CUDA
 
 #include "cuda_score_updater.hpp"
-#include "../../treelearner/cuda/cuda_single_gpu_tree_learner.hpp"
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 #include <LightGBM/objective_function.h>
@@ -18,6 +17,8 @@
 #include <algorithm>
 #include <vector>
 #include <memory>
+
+#include "../../treelearner/cuda/cuda_single_gpu_tree_learner.hpp"
 
 namespace LightGBM {
 
