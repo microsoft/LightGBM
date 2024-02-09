@@ -124,7 +124,7 @@ class NDCGMetric:public Metric {
 
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-                                pairwise_scores_? scores_pointwise_.data(): score + query_boundaries_[i],
+                                (pairwise_scores_? scores_pointwise_.data(): score) + query_boundaries_[i],
                                 query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
@@ -153,7 +153,7 @@ class NDCGMetric:public Metric {
           }
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-                                pairwise_scores_ ? scores_pointwise_.data() : score + query_boundaries_[i],
+                                (pairwise_scores_ ? scores_pointwise_.data() : score) + query_boundaries_[i],
                                 query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
