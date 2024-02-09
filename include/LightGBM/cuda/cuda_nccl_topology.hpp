@@ -3,13 +3,15 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
+#include <nccl.h>
+
 #include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/network.h>
 #include <LightGBM/utils/common.h>
+
 #include <set>
 #include <string>
 #include <vector>
-#include <nccl.h>
 #include <functional>
 #include <thread>
 
@@ -40,7 +42,7 @@ class NCCLTopology {
       }
     }
     if (!gpu_list_.empty() && num_gpus_ != static_cast<int>(gpu_list_.size())) {
-      Log::Warning("num_gpus_ = %d is different from the number of valid device IDs in gpu_device_list (%d), using %d GPUs instead.",\
+      Log::Warning("num_gpus_ = %d is different from the number of valid device IDs in gpu_device_list (%d), using %d GPUs instead.", \
                   num_gpus_, static_cast<int>(gpu_list_.size()), static_cast<int>(gpu_list_.size()));
       num_gpus_ = static_cast<int>(gpu_list_.size());
     }
@@ -147,24 +149,24 @@ class NCCLTopology {
   }
 
   template <typename RET_T>
-  void InitPerDevice(std::vector<std::unique_ptr<RET_T>>& vec) {
-    vec.resize(num_gpus_);
+  void InitPerDevice(std::vector<std::unique_ptr<RET_T>>* vec) {
+    vec->resize(num_gpus_);
     #pragma omp parallel for schedule(static) num_threads(num_gpus_)
     for (int i = 0; i < num_gpus_; ++i) {
       CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[i]));
       RET_T* nccl_info = new RET_T();
       nccl_info->SetNCCLInfo(nccl_communicators_[i], nccl_gpu_rank_[i], i, gpu_list_[i], global_num_data_);
-      vec[i].reset(nccl_info);
+      vec->operator[](i).reset(nccl_info);
     }
     CUDASUCCESS_OR_FATAL(cudaSetDevice(master_gpu_device_id_));
   }
 
   template <typename ARG_T>
-  void DispatchPerDevice(std::vector<std::unique_ptr<ARG_T>>& objs, const std::function<void(ARG_T*)>& func) {
+  void DispatchPerDevice(std::vector<std::unique_ptr<ARG_T>>* objs, const std::function<void(ARG_T*)>& func) {
     for (int i = 0; i < num_gpus_; ++i) {
-      host_threads_[i] = std::thread([this, i, &func, &objs] () {
+      host_threads_[i] = std::thread([this, i, &func, objs] () {
         CUDASUCCESS_OR_FATAL(cudaSetDevice(gpu_list_[i]))
-        func(objs[i].get());
+        func(objs->operator[](i).get());
       });
     }
     for (int i = 0; i < num_gpus_; ++i) {

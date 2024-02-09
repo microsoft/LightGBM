@@ -8,12 +8,16 @@
 
 #ifdef USE_CUDA
 
+#include "cuda_score_updater.hpp"
+#include "../../treelearner/cuda/cuda_single_gpu_tree_learner.hpp"
 
 #include <LightGBM/cuda/cuda_objective_function.hpp>
 #include <LightGBM/objective_function.h>
-#include "cuda_score_updater.hpp"
-#include "../../treelearner/cuda/cuda_single_gpu_tree_learner.hpp"
 #include <LightGBM/tree.h>
+
+#include <algorithm>
+#include <vector>
+#include <memory>
 
 namespace LightGBM {
 
@@ -43,7 +47,7 @@ class NCCLGBDTComponent: public NCCLInfo {
     gradients_.reset(new CUDAVector<score_t>(num_data_in_gpu_));
     hessians_.reset(new CUDAVector<score_t>(num_data_in_gpu_));
     tree_learner_.reset(new CUDASingleGPUTreeLearner(config, boosting_on_gpu));
-  
+
     tree_learner_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, train_data->num_data());
 
     objective_function_->Init(dataset_->metadata(), dataset_->num_data());

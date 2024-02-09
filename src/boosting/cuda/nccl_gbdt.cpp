@@ -8,6 +8,7 @@
 #include <LightGBM/metric.h>
 
 #include <set>
+#include <vector>
 
 #ifdef USE_CUDA
 
@@ -30,11 +31,10 @@ void NCCLGBDT<GBDT_T>::Init(
 
   nccl_topology_->InitNCCL();
 
-  nccl_topology_->InitPerDevice<NCCLGBDTComponent>(nccl_gbdt_components_);
+  nccl_topology_->InitPerDevice<NCCLGBDTComponent>(&nccl_gbdt_components_);
   nccl_topology_->RunPerDevice<NCCLGBDTComponent, void>(nccl_gbdt_components_, [this, gbdt_config, train_data]
     (NCCLGBDTComponent* nccl_gbdt_component) { nccl_gbdt_component->Init(
-      gbdt_config, train_data, this->num_tree_per_iteration_, this->boosting_on_gpu_, this->is_constant_hessian_
-    );
+      gbdt_config, train_data, this->num_tree_per_iteration_, this->boosting_on_gpu_, this->is_constant_hessian_);
   });
 }
 
@@ -53,7 +53,7 @@ void NCCLGBDT<GBDT_T>::Boosting() {
   if (this->objective_function_ == nullptr) {
     Log::Fatal("No object function provided");
   }
-  nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(nccl_gbdt_components_, BoostingThread);
+  nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(&nccl_gbdt_components_, BoostingThread);
 }
 
 template <typename GBDT_T>
@@ -110,13 +110,13 @@ bool NCCLGBDT<GBDT_T>::TrainOneIter(const score_t* gradients, const score_t* hes
         Log::Fatal("Bagging is not supported for NCCLGBDT");
       }
       bool is_first_tree = this->models_.size() < static_cast<size_t>(this->num_tree_per_iteration_);
-      nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(nccl_gbdt_components_,
+      nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(&nccl_gbdt_components_,
         [is_first_tree, cur_tree_id] (NCCLGBDTComponent* thread_data) -> void {
           TrainTreeLearnerThread(thread_data, cur_tree_id, is_first_tree);
       });
     }
 
-    nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(nccl_gbdt_components_, [cur_tree_id, this, init_scores] (NCCLGBDTComponent* thread_data) -> void {
+    nccl_topology_->DispatchPerDevice<NCCLGBDTComponent>(&nccl_gbdt_components_, [cur_tree_id, this, init_scores] (NCCLGBDTComponent* thread_data) -> void {
       this->UpdateScoreThread(thread_data, cur_tree_id, this->config_->learning_rate, init_scores[cur_tree_id]);
     });
 
@@ -201,6 +201,6 @@ std::vector<double> NCCLGBDT<GBDT_T>::EvalOneMetric(const Metric* metric, const 
 
 template class NCCLGBDT<GBDT>;
 
-}  // LightGBM
+}  // namespace LightGBM
 
 #endif  // USE_CUDA
