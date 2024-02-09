@@ -110,6 +110,9 @@ class ObjectiveFunction {
   #endif  // USE_CUDA
 };
 
+void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score, data_size_t cnt_pointwise,
+  data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map, int truncation_level, double sigma);
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_OBJECTIVE_FUNCTION_H_
