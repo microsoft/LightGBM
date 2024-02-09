@@ -62,10 +62,10 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       if (type == std::string("gbdt")) {
         #ifdef USE_CUDA
         if (device_type == std::string("cuda") && num_gpus > 1) {
-          return new NCCLGBDT<GBDT>();
+          ret.reset(new NCCLGBDT<GBDT>());
         } else {
         #endif  // USE_CUDA
-          return new GBDT();
+          ret.reset(new GBDT());
         #ifdef USE_CUDA
         }
         #endif  // USE_CUDA
@@ -74,7 +74,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       } else if (type == std::string("goss")) {
         ret.reset(new GBDT());
       } else if (type == std::string("rf")) {
-        return new RF();
+        ret.reset(new RF());
       } else {
         Log::Fatal("Unknown boosting type %s", type.c_str());
       }
