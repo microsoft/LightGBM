@@ -35,7 +35,16 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
   return true;
 }
 
-Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename, const std::string& device_type, const int num_gpus) {
+Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename,
+  const std::string&
+  #ifdef USE_CUDA
+  device_type
+  #endif  // USE_CUDA
+  , const int
+  #ifdef USE_CUDA
+  num_gpus
+  #endif  // USE_CUDA
+  ) {
   if (filename == nullptr || filename[0] == '\0') {
     if (type == std::string("gbdt")) {
       #ifdef USE_CUDA
