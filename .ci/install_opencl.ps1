@@ -12,7 +12,7 @@ if (Test-Path "$installer") {
   Write-Output "Unable to download OpenCL platform installer"
   Write-Output "Setting EXIT"
   $host.SetShouldExit(-1)
-  Exit -1
+  exit 1
 }
 
 # Install OpenCL platform from installer executable
@@ -26,7 +26,7 @@ if ($property -eq $null) {
   Get-Content "opencl.log"
   Write-Output "Setting EXIT"
   $host.SetShouldExit(-1)
-  Exit -1
+  exit 1
 } else {
   Write-Output "Successfully installed OpenCL CPU platform"
   Write-Output "Current OpenCL drivers:"

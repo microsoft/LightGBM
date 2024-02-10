@@ -189,12 +189,12 @@ jobs:
       export CONDA=\$HOME/miniforge
       export PATH=\$CONDA/bin:/opt/rh/llvm-toolset-7.0/root/usr/bin:\$PATH
       export LD_LIBRARY_PATH=/opt/rh/llvm-toolset-7.0/root/usr/lib64:\$LD_LIBRARY_PATH
-      $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
-      $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
+      $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
+      $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
       EOF
       IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
-      docker pull "${IMAGE_URI}" || exit -1
-      PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit -1
+      docker pull "${IMAGE_URI}" || exit 1
+      PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit 1
       echo "detected image platform: ${PLATFORM}"
       docker run \
         --platform "${PLATFORM}" \
@@ -309,8 +309,8 @@ jobs:
       R_LIB_PATH=~/Rlib
       export R_LIBS=${R_LIB_PATH}
       mkdir -p ${R_LIB_PATH}
-      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit -1
-      sh build-cran-package.sh --r-executable=RD || exit -1
+      RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit 1
+      sh build-cran-package.sh --r-executable=RD || exit 1
       mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
     displayName: 'Build CRAN R-package'
   - task: PublishBuildArtifacts@1
