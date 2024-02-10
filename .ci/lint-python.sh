@@ -1,11 +1,8 @@
 #!/bin/sh
 
-echo "running ruff"
-ruff check \
-    --config=./python-package/pyproject.toml \
-    . \
-|| exit -1
-echo "done running ruff"
+echo "running pre-commit checks"
+pre-commit run --all-files || exit 1
+echo "done running pre-commit checks"
 
 echo "running isort"
 isort \
