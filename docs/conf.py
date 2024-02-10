@@ -270,13 +270,13 @@ def generate_r_docs(app: Sphinx) -> None:
     export TAR=/bin/tar
     cd {CURR_PATH.parent}
     export R_LIBS="$CONDA_PREFIX/lib/R/library"
-    sh build-cran-package.sh || exit -1
-    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+    sh build-cran-package.sh || exit 1
+    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
     cp -R \
         {CURR_PATH.parent / "R-package" / "pkgdown"} \
         {CURR_PATH.parent / "lightgbm_r" / "pkgdown"}
     cd {CURR_PATH.parent / "lightgbm_r"}
-    Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit -1
+    Rscript -e "roxygen2::roxygenize(load = 'installed')" || exit 1
     Rscript -e "pkgdown::build_site( \
             lazy = FALSE \
             , install = FALSE \
@@ -287,7 +287,7 @@ def generate_r_docs(app: Sphinx) -> None:
             , preview = FALSE \
             , new_process = TRUE \
         )
-        " || exit -1
+        " || exit 1
     cd {CURR_PATH.parent}
     """
     try:
