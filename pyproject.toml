@@ -83,5 +83,4 @@ select = [
 ]
 
 [tool.ruff.lint.pydocstyle]
-
 convention = "numpy"
