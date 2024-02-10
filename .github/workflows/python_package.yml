@@ -74,8 +74,8 @@ jobs:
           export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
     runs-on: ubuntu-latest
