@@ -1,12 +1,9 @@
 exclude: |
   (?x)^(
       build|
-      examples|
       external_libs|
       lightgbm-python|
       lightgbm_r|
-      python-package|
-      tests|
   )$
 
 repos:
