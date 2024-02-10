@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
       ;;
     *)
       echo "invalid argument '${1}'"
-      exit -1
+      exit 1
       ;;
   esac
   shift
