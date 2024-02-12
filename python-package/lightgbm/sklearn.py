@@ -1119,6 +1119,11 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
+    
+    @property
+    def feature_names_in_(self) -> List[str]:
+        """:obj:`list` of shape = [n_features]: Sklearn-style property for feature names."""
+        return self.feature_name_
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
