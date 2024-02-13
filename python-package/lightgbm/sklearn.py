@@ -1122,7 +1122,7 @@ class LGBMModel(_LGBMModelBase):
     
     @property
     def feature_names_in_(self) -> List[str]:
-        """:obj:`list` of shape = [n_features]: Sklearn-style property for feature names."""
+        """:obj:`list` of shape = [n_features]: The names of features."""
         return self.feature_name_
 
 
