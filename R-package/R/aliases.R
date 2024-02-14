@@ -33,11 +33,18 @@
     )])
 }
 
+# [description] Non-exported environment, used for caching details that only need to be
+#               computed once per R session.
+.lgb_session_cache_env <- new.env()
+
 # [description] List of respected parameter aliases. Wrapped in a function to take advantage of
 #               lazy evaluation (so it doesn't matter what order R sources files during installation).
 # [return] A named list, where each key is a main LightGBM parameter and each value is a character
 #          vector of corresponding aliases.
 .PARAMETER_ALIASES <- function() {
+    if (exists("PARAMETER_ALIASES", where = .lgb_session_cache_env)) {
+        return(get("PARAMETER_ALIASES", envir = .lgb_session_cache_env))
+    }
     params_to_aliases <- jsonlite::fromJSON(
         .Call(
             LGBM_DumpParamAliases_R
@@ -47,6 +54,12 @@
         aliases_with_main_name <- c(main_name, unlist(params_to_aliases[[main_name]]))
         params_to_aliases[[main_name]] <- aliases_with_main_name
     }
+    # store in cache so the next call to `.PARAMETER_ALIASES()` doesn't need to recompute this
+    assign(
+        x = "PARAMETER_ALIASES"
+        , value = params_to_aliases
+        , envir = .lgb_session_cache_env
+    )
     return(params_to_aliases)
 }
 
@@ -62,6 +75,30 @@
             , "None"
             , "null"
             , "custom"
+        )
+    )
+}
+
+.MULTICLASS_OBJECTIVES <- function() {
+    return(
+        c(
+            "multi_logloss"
+            , "multiclass"
+            , "softmax"
+            , "multiclassova"
+            , "multiclass_ova"
+            , "ova"
+            , "ovr"
+        )
+    )
+}
+
+.BINARY_OBJECTIVES <- function() {
+    return(
+        c(
+            "binary_logloss"
+            , "binary"
+            , "binary_error"
         )
     )
 }

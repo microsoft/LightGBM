@@ -354,7 +354,7 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   std::vector<std::string> tree_strs(num_used_model - start_model);
   std::vector<size_t> tree_sizes(num_used_model - start_model);
   // output tree models
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (int i = start_model; i < num_used_model; ++i) {
     const int idx = i - start_model;
     tree_strs[idx] = "Tree=" + std::to_string(idx) + '\n';
@@ -552,7 +552,7 @@ bool GBDT::LoadModelFromString(const char* buffer, size_t len) {
       models_.emplace_back(nullptr);
     }
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_trees; ++i) {
       OMP_LOOP_EX_BEGIN();
       auto cur_p = p + tree_boundries[i];

@@ -6,10 +6,31 @@
 ###########################
 
 R_EXE="${R_HOME}/bin${R_ARCH_BIN}/R"
-CXX11=`"${R_EXE}" CMD config CXX11`
-CXX11STD=`"${R_EXE}" CMD config CXX11STD`
-CXX="${CXX11} ${CXX11STD}"
-CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
+
+# As described in "Using C++ code" in "Writing R Extensions",
+# Rtools35 shipped with g++ 4.9, which didn't support C++17.
+#
+# Testing here for C++17 support, to account for that possibility
+# and to continue supporting R 3.6.
+#
+CXX17=`"${R_EXE}" CMD config CXX17`
+CXX17STD=`"${R_EXE}" CMD config CXX17STD`
+CXX="${CXX17} ${CXX17STD}"
+CXXFLAGS=`"${R_EXE}" CMD config CXX17FLAGS`
+CXX_STD="CXX17"
+
+cpp17_supported="yes"
+if test "${CXX17}" = "";
+then
+    cpp17_supported="no"
+    CXX11=`"${R_EXE}" CMD config CXX11`
+    CXX11STD=`"${R_EXE}" CMD config CXX11STD`
+    CXX="${CXX11} ${CXX11STD}"
+    CXXFLAGS=`"${R_EXE}" CMD config CXX11FLAGS`
+    CXX_STD="CXX11"
+fi
+echo "checking whether C++17 is supported...${cpp17_supported}"
+
 CPPFLAGS=`"${R_EXE}" CMD config CPPFLAGS`
 
 # LightGBM-specific flags
@@ -19,7 +40,7 @@ LGB_CPPFLAGS=""
 # Eigen #
 #########
 
-LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY"
+LGB_CPPFLAGS="${LGB_CPPFLAGS} -DEIGEN_MPL2_ONLY -DEIGEN_DONT_PARALLELIZE"
 
 ###############
 # MM_PREFETCH #
@@ -70,7 +91,35 @@ then
     LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
+#############
+# INET_PTON #
+#############
+
+ac_inet_pton="no"
+
+cat > conftest.cpp <<EOL
+#include <ws2tcpip.h>
+int main() {
+  int (*fptr)(int, const char*, void*);
+  fptr = &inet_pton;
+  return 0;
+}
+EOL
+
+${CXX} ${CXXFLAGS} ${CPPFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_inet_pton="yes"
+rm -f ./conftest
+rm -f ./conftest.cpp
+echo "checking whether INET_PTON works...${ac_inet_pton}"
+
+if test "${ac_inet_pton}" = "yes";
+then
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DWIN_HAS_INET_PTON=1"
+fi
+
 # Generate Makevars.win from Makevars.win.in
+sed -e \
+    "s/@CXX_STD@/$CXX_STD/" \
+    < src/Makevars.win.in > src/Makevars.win
 sed -e \
     "s/@LGB_CPPFLAGS@/$LGB_CPPFLAGS/" \
     < src/Makevars.win.in > src/Makevars.win

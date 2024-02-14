@@ -3,23 +3,7 @@ import pytest
 
 import lightgbm as lgb
 
-from .utils import pickle_obj, unpickle_obj
-
-SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
-
-
-def pickle_and_unpickle_object(obj, serializer):
-    with lgb.basic._TempFile() as tmp_file:
-        pickle_obj(
-            obj=obj,
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
-        obj_from_disk = unpickle_obj(
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
-    return obj_from_disk
+from .utils import SERIALIZERS, pickle_and_unpickle_object
 
 
 def reset_feature_fraction(boosting_round):
@@ -35,6 +19,17 @@ def test_early_stopping_callback_is_picklable(serializer):
     assert callback_from_disk.before_iteration is False
     assert callback.stopping_rounds == callback_from_disk.stopping_rounds
     assert callback.stopping_rounds == rounds
+
+
+def test_early_stopping_callback_rejects_invalid_stopping_rounds_with_informative_errors():
+    with pytest.raises(ValueError, match="stopping_rounds should be an integer and greater than 0. got: 0"):
+        lgb.early_stopping(stopping_rounds=0)
+
+    with pytest.raises(ValueError, match="stopping_rounds should be an integer and greater than 0. got: -1"):
+        lgb.early_stopping(stopping_rounds=-1)
+
+    with pytest.raises(ValueError, match="stopping_rounds should be an integer and greater than 0. got: neverrrr"):
+        lgb.early_stopping(stopping_rounds="neverrrr")
 
 
 @pytest.mark.parametrize('serializer', SERIALIZERS)

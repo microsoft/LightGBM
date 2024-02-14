@@ -1,27 +1,57 @@
 # coding: utf-8
 import itertools
 import math
+import re
+from functools import partial
 from os import getenv
 from pathlib import Path
 
 import joblib
 import numpy as np
 import pytest
+import scipy.sparse
+from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
 from sklearn.ensemble import StackingClassifier, StackingRegressor
-from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
 from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
 
-from .utils import (load_boston, load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking,
-                    make_synthetic_regression, sklearn_multiclass_custom_objective, softmax)
+from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
+                    sklearn_multiclass_custom_objective, softmax)
 
 decreasing_generator = itertools.count(0, -1)
+task_to_model_factory = {
+    'ranking': lgb.LGBMRanker,
+    'binary-classification': lgb.LGBMClassifier,
+    'multiclass-classification': lgb.LGBMClassifier,
+    'regression': lgb.LGBMRegressor,
+}
+
+
+def _create_data(task, n_samples=100, n_features=4):
+    if task == 'ranking':
+        X, y, g = make_ranking(n_features=4, n_samples=n_samples)
+        g = np.bincount(g)
+    elif task.endswith('classification'):
+        if task == 'binary-classification':
+            centers = 2
+        elif task == 'multiclass-classification':
+            centers = 3
+        else:
+            ValueError(f"Unknown classification task '{task}'")
+        X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
+        g = None
+    elif task == 'regression':
+        X, y = make_synthetic_regression(n_samples=n_samples, n_features=n_features)
+        g = None
+    return X, y, g
 
 
 class UnpicklableCallback:
@@ -29,7 +59,7 @@ class UnpicklableCallback:
         raise Exception("This class in not picklable")
 
     def __call__(self, env):
-        env.model.set_attr(attr_set_inside_callback=str(env.iteration * 10))
+        env.model.attr_set_inside_callback = env.iteration * 10
 
 
 def custom_asymmetric_obj(y_true, y_pred):
@@ -91,16 +121,16 @@ def test_binary():
 
 
 def test_regression():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7
+    assert ret < 174
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_multiclass():
     X, y = load_digits(n_class=10, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -113,7 +143,7 @@ def test_multiclass():
     assert gbm.evals_result_['valid_0']['multi_logloss'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_lambdarank():
     rank_example_dir = Path(__file__).absolute().parents[2] / 'examples' / 'lambdarank'
     X_train, y_train = load_svmlight_file(str(rank_example_dir / 'rank.train'))
@@ -205,12 +235,12 @@ def test_objective_aliases(custom_objective):
 
 
 def test_regression_with_custom_objective():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=50, verbose=-1, objective=objective_ls)
     gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(5)])
     ret = mean_squared_error(y_test, gbm.predict(X_test))
-    assert ret < 7.0
+    assert ret < 174
     assert gbm.evals_result_['valid_0']['l2'][gbm.best_iteration_ - 1] == pytest.approx(ret)
 
 
@@ -228,13 +258,12 @@ def test_binary_classification_with_custom_objective():
 
 
 def test_dart():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(boosting_type='dart', n_estimators=50)
     gbm.fit(X_train, y_train)
     score = gbm.score(X_test, y_test)
-    assert score >= 0.8
-    assert score <= 1.
+    assert 0.8 <= score <= 1.0
 
 
 def test_stacking_classifier():
@@ -259,7 +288,9 @@ def test_stacking_classifier():
 
 
 def test_stacking_regressor():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression(n_samples=200)
+    n_features = X.shape[1]
+    n_input_models = 2
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     regressors = [('gbm1', lgb.LGBMRegressor(n_estimators=3)),
                   ('gbm2', lgb.LGBMRegressor(n_estimators=3))]
@@ -270,11 +301,11 @@ def test_stacking_regressor():
     score = reg.score(X_test, y_test)
     assert score >= 0.2
     assert score <= 1.
-    assert reg.n_features_in_ == 13  # number of input features
-    assert len(reg.named_estimators_['gbm1'].feature_importances_) == 13
+    assert reg.n_features_in_ == n_features  # number of input features
+    assert len(reg.named_estimators_['gbm1'].feature_importances_) == n_features
     assert reg.named_estimators_['gbm1'].n_features_in_ == reg.named_estimators_['gbm2'].n_features_in_
-    assert reg.final_estimator_.n_features_in_ == 15  # number of concatenated features
-    assert len(reg.final_estimator_.feature_importances_) == 15
+    assert reg.final_estimator_.n_features_in_ == n_features + n_input_models  # number of concatenated features
+    assert len(reg.final_estimator_.feature_importances_) == n_features + n_input_models
 
 
 def test_grid_search():
@@ -282,20 +313,24 @@ def test_grid_search():
     y = y.astype(str)  # utilize label encoder at it's max power
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=42)
-    params = dict(subsample=0.8,
-                  subsample_freq=1)
-    grid_params = dict(boosting_type=['rf', 'gbdt'],
-                       n_estimators=[4, 6],
-                       reg_alpha=[0.01, 0.005])
+    params = {
+        "subsample": 0.8,
+        "subsample_freq": 1
+    }
+    grid_params = {
+        "boosting_type": ['rf', 'gbdt'],
+        "n_estimators": [4, 6],
+        "reg_alpha": [0.01, 0.005]
+    }
     evals_result = {}
-    fit_params = dict(
-        eval_set=[(X_val, y_val)],
-        eval_metric=constant_metric,
-        callbacks=[
+    fit_params = {
+        "eval_set": [(X_val, y_val)],
+        "eval_metric": constant_metric,
+        "callbacks": [
             lgb.early_stopping(2),
             lgb.record_evaluation(evals_result)
         ]
-    )
+    }
     grid = GridSearchCV(estimator=lgb.LGBMClassifier(**params), param_grid=grid_params, cv=2)
     grid.fit(X_train, y_train, **fit_params)
     score = grid.score(X_test, y_test)  # utilizes GridSearchCV default refit=True
@@ -319,14 +354,20 @@ def test_random_search():
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1,
                                                       random_state=42)
     n_iter = 3  # Number of samples
-    params = dict(subsample=0.8,
-                  subsample_freq=1)
-    param_dist = dict(boosting_type=['rf', 'gbdt'],
-                      n_estimators=[np.random.randint(low=3, high=10) for i in range(n_iter)],
-                      reg_alpha=[np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)])
-    fit_params = dict(eval_set=[(X_val, y_val)],
-                      eval_metric=constant_metric,
-                      callbacks=[lgb.early_stopping(2)])
+    params = {
+        "subsample": 0.8,
+        "subsample_freq": 1
+    }
+    param_dist = {
+        "boosting_type": ['rf', 'gbdt'],
+        "n_estimators": [np.random.randint(low=3, high=10) for i in range(n_iter)],
+        "reg_alpha": [np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)]
+    }
+    fit_params = {
+        "eval_set": [(X_val, y_val)],
+        "eval_metric": constant_metric,
+        "callbacks": [lgb.early_stopping(2)]
+    }
     rand = RandomizedSearchCV(estimator=lgb.LGBMClassifier(**params),
                               param_distributions=param_dist, cv=2,
                               n_iter=n_iter, random_state=42)
@@ -423,8 +464,18 @@ def test_clone_and_property():
     gbm.fit(X, y)
 
     gbm_clone = clone(gbm)
+
+    # original estimator is unaffected
+    assert gbm.n_estimators == 10
+    assert gbm.verbose == -1
     assert isinstance(gbm.booster_, lgb.Booster)
     assert isinstance(gbm.feature_importances_, np.ndarray)
+
+    # new estimator is unfitted, but has the same parameters
+    assert gbm_clone.__sklearn_is_fitted__() is False
+    assert gbm_clone.n_estimators == 10
+    assert gbm_clone.verbose == -1
+    assert gbm_clone.get_params() == gbm.get_params()
 
     X, y = load_digits(n_class=2, return_X_y=True)
     clf = lgb.LGBMClassifier(n_estimators=10, verbose=-1)
@@ -480,14 +531,15 @@ def test_non_serializable_objects_in_callbacks(tmp_path):
     X, y = make_synthetic_regression()
     gbm = lgb.LGBMRegressor(n_estimators=5)
     gbm.fit(X, y, callbacks=[unpicklable_callback])
-    assert gbm.booster_.attr('attr_set_inside_callback') == '40'
+    assert gbm.booster_.attr_set_inside_callback == 40
 
 
-def test_random_state_object():
+@pytest.mark.parametrize("rng_constructor", [np.random.RandomState, np.random.default_rng])
+def test_random_state_object(rng_constructor):
     X, y = load_iris(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    state1 = np.random.RandomState(123)
-    state2 = np.random.RandomState(123)
+    state1 = rng_constructor(123)
+    state2 = rng_constructor(123)
     clf1 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state1)
     clf2 = lgb.LGBMClassifier(n_estimators=10, subsample=0.5, subsample_freq=1, random_state=state2)
     # Test if random_state is properly stored
@@ -744,7 +796,8 @@ def test_evaluate_train_set():
 
 
 def test_metrics():
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression()
+    y = abs(y)
     params = {'n_estimators': 2, 'verbose': -1}
     params_fit = {'X': X, 'y': y, 'eval_set': (X, y)}
 
@@ -1045,19 +1098,6 @@ def test_multiple_eval_metrics():
     assert 'binary_logloss' in gbm.evals_result_['training']
 
 
-def test_inf_handle():
-    nrows = 100
-    ncols = 10
-    X = np.random.randn(nrows, ncols)
-    y = np.random.randn(nrows) + np.full(nrows, 1e30)
-    weight = np.full(nrows, 1e10)
-    params = {'n_estimators': 20, 'verbose': -1}
-    params_fit = {'X': X, 'y': y, 'sample_weight': weight, 'eval_set': (X, y),
-                  'callbacks': [lgb.early_stopping(5)]}
-    gbm = lgb.LGBMRegressor(**params).fit(**params_fit)
-    np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.inf)
-
-
 def test_nan_handle():
     nrows = 100
     ncols = 10
@@ -1071,7 +1111,7 @@ def test_nan_handle():
     np.testing.assert_allclose(gbm.evals_result_['training']['l2'], np.nan)
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Skip due to differences in implementation details of CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Skip due to differences in implementation details of CUDA version')
 def test_first_metric_only():
 
     def fit_and_check(eval_set_names, metric_names, assumed_iteration, first_metric_only):
@@ -1094,7 +1134,7 @@ def test_first_metric_only():
                 else:
                     assert gbm.n_estimators == gbm.best_iteration_
 
-    X, y = load_boston(return_X_y=True)
+    X, y = make_synthetic_regression(n_samples=300)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     X_test1, X_test2, y_test1, y_test2 = train_test_split(X_test, y_test, test_size=0.5, random_state=72)
     params = {'n_estimators': 30,
@@ -1106,20 +1146,15 @@ def test_first_metric_only():
     params_fit = {'X': X_train,
                   'y': y_train}
 
-    iter_valid1_l1 = 3
-    iter_valid1_l2 = 18
-    iter_valid2_l1 = 11
-    iter_valid2_l2 = 7
-    assert len(set([iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2])) == 4
+    iter_valid1_l1 = 4
+    iter_valid1_l2 = 4
+    iter_valid2_l1 = 2
+    iter_valid2_l2 = 2
+    assert len({iter_valid1_l1, iter_valid1_l2, iter_valid2_l1, iter_valid2_l2}) == 2
     iter_min_l1 = min([iter_valid1_l1, iter_valid2_l1])
     iter_min_l2 = min([iter_valid1_l2, iter_valid2_l2])
     iter_min = min([iter_min_l1, iter_min_l2])
     iter_min_valid1 = min([iter_valid1_l1, iter_valid1_l2])
-
-    # training data as eval_set
-    params_fit['eval_set'] = (X_train, y_train)
-    fit_and_check(['training'], ['l2'], 30, False)
-    fit_and_check(['training'], ['l2'], 30, True)
 
     # feval
     params['metric'] = 'None'
@@ -1253,19 +1288,10 @@ def test_sklearn_integration(estimator, check):
     check(estimator)
 
 
-@pytest.mark.parametrize('task', ['classification', 'ranking', 'regression'])
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'ranking', 'regression'])
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
-    if task == 'ranking':
-        X, y, g = make_ranking()
-        g = np.bincount(g)
-        model_factory = lgb.LGBMRanker
-    elif task == 'classification':
-        X, y = load_iris(return_X_y=True)
-        model_factory = lgb.LGBMClassifier
-    elif task == 'regression':
-        X, y = make_synthetic_regression()
-        model_factory = lgb.LGBMRegressor
+    X, y, g = _create_data(task)
     X = pd.DataFrame(X)
     y_col_array = y.reshape(-1, 1)
     params = {
@@ -1273,6 +1299,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
         'num_leaves': 3,
         'random_state': 0
     }
+    model_factory = task_to_model_factory[task]
     with pytest.warns(UserWarning, match='column-vector'):
         if task == 'ranking':
             model_1d = model_factory(**params).fit(X, y, group=g)
@@ -1286,18 +1313,269 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     np.testing.assert_array_equal(preds_1d, preds_2d)
 
 
-def test_multiclass_custom_objective():
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_objective(use_weight):
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    weight = np.full_like(y, 2) if use_weight else None
     params = {'n_estimators': 10, 'num_leaves': 7}
     builtin_obj_model = lgb.LGBMClassifier(**params)
-    builtin_obj_model.fit(X, y)
+    builtin_obj_model.fit(X, y, sample_weight=weight)
     builtin_obj_preds = builtin_obj_model.predict_proba(X)
 
     custom_obj_model = lgb.LGBMClassifier(objective=sklearn_multiclass_custom_objective, **params)
-    custom_obj_model.fit(X, y)
+    custom_obj_model.fit(X, y, sample_weight=weight)
     custom_obj_preds = softmax(custom_obj_model.predict(X, raw_score=True))
 
     np.testing.assert_allclose(builtin_obj_preds, custom_obj_preds, rtol=0.01)
     assert not callable(builtin_obj_model.objective_)
     assert callable(custom_obj_model.objective_)
+
+
+@pytest.mark.parametrize('use_weight', [True, False])
+def test_multiclass_custom_eval(use_weight):
+    def custom_eval(y_true, y_pred, weight):
+        loss = log_loss(y_true, y_pred, sample_weight=weight)
+        return 'custom_logloss', loss, False
+
+    centers = [[-4, -4], [4, 4], [-4, 4]]
+    X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
+    train_test_split_func = partial(train_test_split, test_size=0.2, random_state=0)
+    X_train, X_valid, y_train, y_valid = train_test_split_func(X, y)
+    if use_weight:
+        weight = np.full_like(y, 2)
+        weight_train, weight_valid = train_test_split_func(weight)
+    else:
+        weight_train = None
+        weight_valid = None
+    params = {'objective': 'multiclass', 'num_class': 3, 'num_leaves': 7}
+    model = lgb.LGBMClassifier(**params)
+    model.fit(
+        X_train,
+        y_train,
+        sample_weight=weight_train,
+        eval_set=[(X_train, y_train), (X_valid, y_valid)],
+        eval_names=['train', 'valid'],
+        eval_sample_weight=[weight_train, weight_valid],
+        eval_metric=custom_eval,
+    )
+    eval_result = model.evals_result_
+    train_ds = (X_train, y_train, weight_train)
+    valid_ds = (X_valid, y_valid, weight_valid)
+    for key, (X, y_true, weight) in zip(['train', 'valid'], [train_ds, valid_ds]):
+        np.testing.assert_allclose(
+            eval_result[key]['multi_logloss'], eval_result[key]['custom_logloss']
+        )
+        y_pred = model.predict_proba(X)
+        _, metric_value, _ = custom_eval(y_true, y_pred, weight)
+        np.testing.assert_allclose(metric_value, eval_result[key]['custom_logloss'][-1])
+
+
+def test_negative_n_jobs(tmp_path):
+    n_threads = joblib.cpu_count()
+    if n_threads <= 1:
+        return None
+    # 'val_minus_two' here is the expected number of threads for n_jobs=-2
+    val_minus_two = n_threads - 1
+    X, y = load_breast_cancer(return_X_y=True)
+    # Note: according to joblib's formula, a value of n_jobs=-2 means
+    # "use all but one thread" (formula: n_cpus + 1 + n_jobs)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=-2).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {val_minus_two}\]", model_txt))
+
+
+def test_default_n_jobs(tmp_path):
+    n_cores = joblib.cpu_count(only_physical_cores=True)
+    X, y = load_breast_cancer(return_X_y=True)
+    gbm = lgb.LGBMClassifier(n_estimators=2, verbose=-1, n_jobs=None).fit(X, y)
+    gbm.booster_.save_model(tmp_path / "model.txt")
+    with open(tmp_path / "model.txt", "r") as f:
+        model_txt = f.read()
+    assert bool(re.search(rf"\[num_threads: {n_cores}\]", model_txt))
+
+
+@pytest.mark.skipif(not PANDAS_INSTALLED, reason='pandas is not installed')
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'ranking', 'regression'])
+def test_validate_features(task):
+    X, y, g = _create_data(task, n_features=4)
+    features = ['x1', 'x2', 'x3', 'x4']
+    df = pd_DataFrame(X, columns=features)
+    model = task_to_model_factory[task](n_estimators=10, num_leaves=15, verbose=-1)
+    if task == 'ranking':
+        model.fit(df, y, group=g)
+    else:
+        model.fit(df, y)
+    assert model.feature_name_ == features
+
+    # try to predict with a different feature
+    df2 = df.rename(columns={'x2': 'z'})
+    with pytest.raises(lgb.basic.LightGBMError, match="Expected 'x2' at position 1 but found 'z'"):
+        model.predict(df2, validate_features=True)
+
+    # check that disabling the check doesn't raise the error
+    model.predict(df2, validate_features=False)
+
+
+@pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
+@pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_Series', 'pd_DataFrame'])
+@pytest.mark.parametrize('task', ['binary-classification', 'multiclass-classification', 'regression'])
+def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task):
+    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
+        pytest.skip('pandas is not installed')
+    if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
+        pytest.skip('datatable is not installed')
+    X, y, g = _create_data(task, n_samples=2_000)
+    weights = np.abs(np.random.randn(y.shape[0]))
+
+    if task == 'binary-classification' or task == 'regression':
+        init_score = np.full_like(y, np.mean(y))
+    elif task == 'multiclass-classification':
+        init_score = np.outer(y, np.array([0.1, 0.2, 0.7]))
+    else:
+        raise ValueError(f"Unrecognized task '{task}'")
+
+    X_valid = X * 2
+    if X_type == 'dt_DataTable':
+        X = dt_DataTable(X)
+    elif X_type == 'list2d':
+        X = X.tolist()
+    elif X_type == 'scipy_csc':
+        X = scipy.sparse.csc_matrix(X)
+    elif X_type == 'scipy_csr':
+        X = scipy.sparse.csr_matrix(X)
+    elif X_type == 'pd_DataFrame':
+        X = pd_DataFrame(X)
+    elif X_type != 'numpy':
+        raise ValueError(f"Unrecognized X_type: '{X_type}'")
+
+    # make weights and init_score same types as y, just to avoid
+    # a huge number of combinations and therefore test cases
+    if y_type == 'list1d':
+        y = y.tolist()
+        weights = weights.tolist()
+        init_score = init_score.tolist()
+    elif y_type == 'pd_DataFrame':
+        y = pd_DataFrame(y)
+        weights = pd_Series(weights)
+        if task == 'multiclass-classification':
+            init_score = pd_DataFrame(init_score)
+        else:
+            init_score = pd_Series(init_score)
+    elif y_type == 'pd_Series':
+        y = pd_Series(y)
+        weights = pd_Series(weights)
+        if task == 'multiclass-classification':
+            init_score = pd_DataFrame(init_score)
+        else:
+            init_score = pd_Series(init_score)
+    elif y_type != 'numpy':
+        raise ValueError(f"Unrecognized y_type: '{y_type}'")
+
+    model = task_to_model_factory[task](n_estimators=10, verbose=-1)
+    model.fit(
+        X=X,
+        y=y,
+        sample_weight=weights,
+        init_score=init_score,
+        eval_set=[(X_valid, y)],
+        eval_sample_weight=[weights],
+        eval_init_score=[init_score]
+    )
+
+    preds = model.predict(X)
+    if task == 'binary-classification':
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == 'multiclass-classification':
+        assert accuracy_score(y, preds) >= 0.99
+    elif task == 'regression':
+        assert r2_score(y, preds) > 0.86
+    else:
+        raise ValueError(f"Unrecognized task: '{task}'")
+
+
+@pytest.mark.parametrize('X_type', ['dt_DataTable', 'list2d', 'numpy', 'scipy_csc', 'scipy_csr', 'pd_DataFrame'])
+@pytest.mark.parametrize('y_type', ['list1d', 'numpy', 'pd_DataFrame', 'pd_Series'])
+@pytest.mark.parametrize('g_type', ['list1d_float', 'list1d_int', 'numpy', 'pd_Series'])
+def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type):
+    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
+        pytest.skip('pandas is not installed')
+    if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
+        pytest.skip('datatable is not installed')
+    X, y, g = _create_data(task='ranking', n_samples=1_000)
+    weights = np.abs(np.random.randn(y.shape[0]))
+    init_score = np.full_like(y, np.mean(y))
+    X_valid = X * 2
+
+    if X_type == 'dt_DataTable':
+        X = dt_DataTable(X)
+    elif X_type == 'list2d':
+        X = X.tolist()
+    elif X_type == 'scipy_csc':
+        X = scipy.sparse.csc_matrix(X)
+    elif X_type == 'scipy_csr':
+        X = scipy.sparse.csr_matrix(X)
+    elif X_type == 'pd_DataFrame':
+        X = pd_DataFrame(X)
+    elif X_type != 'numpy':
+        raise ValueError(f"Unrecognized X_type: '{X_type}'")
+
+    # make weights and init_score same types as y, just to avoid
+    # a huge number of combinations and therefore test cases
+    if y_type == 'list1d':
+        y = y.tolist()
+        weights = weights.tolist()
+        init_score = init_score.tolist()
+    elif y_type == 'pd_DataFrame':
+        y = pd_DataFrame(y)
+        weights = pd_Series(weights)
+        init_score = pd_Series(init_score)
+    elif y_type == 'pd_Series':
+        y = pd_Series(y)
+        weights = pd_Series(weights)
+        init_score = pd_Series(init_score)
+    elif y_type != 'numpy':
+        raise ValueError(f"Unrecognized y_type: '{y_type}'")
+
+    if g_type == 'list1d_float':
+        g = g.astype("float").tolist()
+    elif g_type == 'list1d_int':
+        g = g.astype("int").tolist()
+    elif g_type == 'pd_Series':
+        g = pd_Series(g)
+    elif g_type != 'numpy':
+        raise ValueError(f"Unrecognized g_type: '{g_type}'")
+
+    model = task_to_model_factory['ranking'](n_estimators=10, verbose=-1)
+    model.fit(
+        X=X,
+        y=y,
+        sample_weight=weights,
+        init_score=init_score,
+        group=g,
+        eval_set=[(X_valid, y)],
+        eval_sample_weight=[weights],
+        eval_init_score=[init_score],
+        eval_group=[g]
+    )
+    preds = model.predict(X)
+    assert spearmanr(preds, y).correlation >= 0.99
+
+
+def test_classifier_fit_detects_classes_every_time():
+    rng = np.random.default_rng(seed=123)
+    nrows = 1000
+    ncols = 20
+
+    X = rng.standard_normal(size=(nrows, ncols))
+    y_bin = (rng.random(size=nrows) <= .3).astype(np.float64)
+    y_multi = rng.integers(4, size=nrows)
+
+    model = lgb.LGBMClassifier(verbose=-1)
+    for _ in range(2):
+        model.fit(X, y_multi)
+        assert model.objective_ == "multiclass"
+        model.fit(X, y_bin)
+        assert model.objective_ == "binary"

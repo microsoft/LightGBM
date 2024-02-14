@@ -9,7 +9,7 @@ lgb.load(filename = NULL, model_str = NULL)
 \arguments{
 \item{filename}{path of model file}
 
-\item{model_str}{a str containing the model (as a `character` or `raw` vector)}
+\item{model_str}{a str containing the model (as a \code{character} or \code{raw} vector)}
 }
 \value{
 lgb.Booster
@@ -20,6 +20,8 @@ Load LightGBM takes in either a file path or model string.
 }
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -31,6 +33,7 @@ params <- list(
   , metric = "l2"
   , min_data = 1L
   , learning_rate = 1.0
+  , num_threads = 2L
 )
 valids <- list(test = dtest)
 model <- lgb.train(

@@ -24,6 +24,7 @@
 #include "col_sampler.hpp"
 #include "data_partition.hpp"
 #include "feature_histogram.hpp"
+#include "gradient_discretizer.hpp"
 #include "leaf_splits.hpp"
 #include "monotone_constraints.hpp"
 #include "split_info.hpp"
@@ -36,7 +37,7 @@
 
 namespace LightGBM {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
@@ -102,7 +103,7 @@ class SerialTreeLearner: public TreeLearner {
     if (tree->num_leaves() <= 1) {
       return;
     }
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int i = 0; i < tree->num_leaves(); ++i) {
       double output = static_cast<double>(tree->LeafOutput(i));
       data_size_t cnt_leaf_data = 0;
@@ -114,7 +115,7 @@ class SerialTreeLearner: public TreeLearner {
   }
 
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt) const override;
+                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const override;
 
   /*! \brief Get output of parent node, used for path smoothing */
   double GetParentOutput(const Tree* tree, const LeafSplits* leaf_splits) const;
@@ -170,6 +171,10 @@ class SerialTreeLearner: public TreeLearner {
 
   std::set<int> FindAllForceFeatures(Json force_split_leaf_setting);
 
+  #ifdef DEBUG
+  void CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index);
+  #endif
+
   /*!
   * \brief Get the number of data in a leaf
   * \param leaf_idx The index of leaf
@@ -211,7 +216,7 @@ class SerialTreeLearner: public TreeLearner {
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized, aligned to 4K page */
   std::vector<score_t, boost::alignment::aligned_allocator<score_t, 4096>> ordered_hessians_;
-#elif defined(USE_CUDA) || defined(USE_CUDA_EXP)
+#elif defined(USE_CUDA)
   /*! \brief gradients of current iteration, ordered for cache optimized */
   std::vector<score_t, CHAllocator<score_t>> ordered_gradients_;
   /*! \brief hessians of current iteration, ordered for cache optimized */
@@ -230,6 +235,7 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
 };
 
 inline data_size_t SerialTreeLearner::GetGlobalDataCountInLeaf(int leaf_idx) const {

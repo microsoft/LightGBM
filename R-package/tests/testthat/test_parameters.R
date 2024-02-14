@@ -20,6 +20,7 @@ test_that("Feature penalties work properly", {
         , objective = "binary"
         , feature_penalty = paste0(feature_penalties, collapse = ",")
         , metric = "binary_error"
+        , num_threads = .LGB_MAX_THREADS
       )
       , nrounds = 5L
       , verbose = -1L
@@ -56,6 +57,38 @@ test_that(".PARAMETER_ALIASES() returns a named list of character vectors, where
   expect_true(all(sapply(param_aliases, is.character)))
   expect_true(length(unique(names(param_aliases))) == length(param_aliases))
   expect_equal(sort(param_aliases[["task"]]), c("task", "task_type"))
+  expect_equal(param_aliases[["bagging_fraction"]], c("bagging_fraction", "bagging", "sub_row", "subsample"))
+})
+
+test_that(".PARAMETER_ALIASES() uses the internal session cache", {
+
+  cache_key <- "PARAMETER_ALIASES"
+
+  # clear cache, so this test isn't reliant on the order unit tests are run in
+  if (exists(cache_key, where = .lgb_session_cache_env)) {
+    rm(list = cache_key, envir = .lgb_session_cache_env)
+  }
+  expect_false(exists(cache_key, where = .lgb_session_cache_env))
+
+  # check that result looks correct for at least one parameter
+  iter_aliases <- .PARAMETER_ALIASES()[["num_iterations"]]
+  expect_true(is.character(iter_aliases))
+  expect_true(all(c("num_round", "nrounds") %in% iter_aliases))
+
+  # patch the cache to check that .PARAMETER_ALIASES() checks it
+  assign(
+    x = cache_key
+    , value = list(num_iterations = c("test", "other_test"))
+    , envir = .lgb_session_cache_env
+  )
+  iter_aliases <- .PARAMETER_ALIASES()[["num_iterations"]]
+  expect_equal(iter_aliases, c("test", "other_test"))
+
+  # re-set cache so this doesn't interfere with other unit tests
+  if (exists(cache_key, where = .lgb_session_cache_env)) {
+    rm(list = cache_key, envir = .lgb_session_cache_env)
+  }
+  expect_false(exists(cache_key, where = .lgb_session_cache_env))
 })
 
 test_that("training should warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
@@ -65,6 +98,7 @@ test_that("training should warn if you use 'dart' boosting, specified with 'boos
         , learning_rate = 0.05
         , objective = "binary"
         , metric = "binary_error"
+        , num_threads = .LGB_MAX_THREADS
     )
     params[[boosting_param]] <- "dart"
     expect_warning({

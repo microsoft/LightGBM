@@ -34,7 +34,7 @@ class BinaryLogloss: public ObjectiveFunction {
     }
     is_pos_ = is_pos;
     if (is_pos_ == nullptr) {
-      is_pos_ = [](label_t label) {return label > 0; };
+      is_pos_ = [](label_t label) { return label > 0; };
     }
   }
 
@@ -63,7 +63,7 @@ class BinaryLogloss: public ObjectiveFunction {
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
     // count for positive and negative samples
-    #pragma omp parallel for schedule(static) reduction(+:cnt_positive, cnt_negative)
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (is_pos_(label_[i])) {
         ++cnt_positive;
@@ -107,7 +107,7 @@ class BinaryLogloss: public ObjectiveFunction {
       return;
     }
     if (weights_ == nullptr) {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -120,7 +120,7 @@ class BinaryLogloss: public ObjectiveFunction {
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
-      #pragma omp parallel for schedule(static)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -129,7 +129,7 @@ class BinaryLogloss: public ObjectiveFunction {
         // calculate gradients and hessians
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
-        gradients[i] = static_cast<score_t>(response * label_weight  * weights_[i]);
+        gradients[i] = static_cast<score_t>(response * label_weight * weights_[i]);
         hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
       }
     }
@@ -140,14 +140,14 @@ class BinaryLogloss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for schedule(static) reduction(+:suml) if (!deterministic_)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }
@@ -160,7 +160,7 @@ class BinaryLogloss: public ObjectiveFunction {
     pavg = std::min(pavg, 1.0 - kEpsilon);
     pavg = std::max<double>(pavg, kEpsilon);
     double initscore = std::log(pavg / (1.0f - pavg)) / sigmoid_;
-    Log::Info("[%s:%s]: pavg=%f -> initscore=%f",  GetName(), __func__, pavg, initscore);
+    Log::Info("[%s:%s]: pavg=%f -> initscore=%f", GetName(), __func__, pavg, initscore);
     return initscore;
   }
 
@@ -189,7 +189,7 @@ class BinaryLogloss: public ObjectiveFunction {
 
   data_size_t NumPositiveData() const override { return num_pos_data_; }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of positive samples */

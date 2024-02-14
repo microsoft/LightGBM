@@ -1,24 +1,42 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
-import collections
 import copy
+import json
+from collections import OrderedDict, defaultdict
 from operator import attrgetter
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
 from . import callback
-from .basic import Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor, _log_warning
-from .compat import SKLEARN_INSTALLED, _LGBMGroupKFold, _LGBMStratifiedKFold
+from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
+                    _LGBM_BoosterEvalMethodResultType, _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType,
+                    _LGBM_FeatureNameConfiguration, _log_warning)
+from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
-_LGBM_CustomObjectiveFunction = Callable[
-    [np.ndarray, Dataset],
-    Tuple[np.ndarray, np.ndarray]
+__all__ = [
+    'cv',
+    'CVBooster',
+    'train',
 ]
-_LGBM_CustomMetricFunction = Callable[
-    [np.ndarray, Dataset],
-    Tuple[str, float, bool]
+
+
+_LGBM_CustomMetricFunction = Union[
+    Callable[
+        [np.ndarray, Dataset],
+        _LGBM_EvalFunctionResultType,
+    ],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalFunctionResultType]
+    ],
+]
+
+_LGBM_PreprocFunction = Callable[
+    [Dataset, Dataset, Dict[str, Any]],
+    Tuple[Dataset, Dataset, Dict[str, Any]]
 ]
 
 
@@ -28,11 +46,10 @@ def train(
     num_boost_round: int = 100,
     valid_sets: Optional[List[Dataset]] = None,
     valid_names: Optional[List[str]] = None,
-    fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
-    feature_name: Union[List[str], str] = 'auto',
-    categorical_feature: Union[List[str], List[int], str] = 'auto',
+    feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None
 ) -> Booster:
@@ -41,7 +58,8 @@ def train(
     Parameters
     ----------
     params : dict
-        Parameters for training.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -50,27 +68,6 @@ def train(
         List of data to be evaluated on during training.
     valid_names : list of str, or None, optional (default=None)
         Names of ``valid_sets``.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -79,7 +76,7 @@ def train(
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -118,17 +115,57 @@ def train(
         List of callback functions that are applied at each iteration.
         See Callbacks in Python API for more information.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
     booster : Booster
         The trained Booster model.
     """
+    if not isinstance(train_set, Dataset):
+        raise TypeError(f"train() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
+
+    if num_boost_round <= 0:
+        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
+
+    if isinstance(valid_sets, list):
+        for i, valid_item in enumerate(valid_sets):
+            if not isinstance(valid_item, Dataset):
+                raise TypeError(
+                    "Every item in valid_sets must be a Dataset object. "
+                    f"Item {i} has type '{type(valid_item).__name__}'."
+                )
+
     # create predictor first
     params = copy.deepcopy(params)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=None
+    )
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             num_boost_round = params.pop(alias)
@@ -144,17 +181,22 @@ def train(
         params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
-    if num_boost_round <= 0:
-        raise ValueError("num_boost_round should be greater than zero.")
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(dict(init_model.params, **params))
-    init_iteration = predictor.num_total_iteration if predictor is not None else 0
-    # check dataset
-    if not isinstance(train_set, Dataset):
-        raise TypeError("Training only accepts Dataset object")
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
+
+    if predictor is not None:
+        init_iteration = predictor.current_iteration()
+    else:
+        init_iteration = 0
 
     train_set._update_params(params) \
              ._set_predictor(predictor) \
@@ -177,8 +219,6 @@ def train(
                 if valid_names is not None:
                     train_data_name = valid_names[i]
                 continue
-            if not isinstance(valid_data, Dataset):
-                raise TypeError("Training only accepts Dataset object")
             reduced_valid_sets.append(valid_data._update_params(params).set_reference(train_set))
             if valid_names is not None and len(valid_names) > i:
                 name_valid_sets.append(valid_names[i])
@@ -195,7 +235,7 @@ def train(
     if "early_stopping_round" in params:
         callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
@@ -235,7 +275,7 @@ def train(
 
         booster.update(fobj=fobj)
 
-        evaluation_result_list = []
+        evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:
@@ -253,7 +293,7 @@ def train(
             booster.best_iteration = earlyStopException.best_iteration + 1
             evaluation_result_list = earlyStopException.best_score
             break
-    booster.best_score = collections.defaultdict(collections.OrderedDict)
+    booster.best_score = defaultdict(OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
         booster.best_score[dataset_name][eval_name] = score
     if not keep_training_booster:
@@ -264,9 +304,14 @@ def train(
 class CVBooster:
     """CVBooster in LightGBM.
 
-    Auxiliary data structure to hold and redirect all boosters of ``cv`` function.
+    Auxiliary data structure to hold and redirect all boosters of ``cv()`` function.
     This class has the same methods as Booster class.
-    All method calls are actually performed for underlying Boosters and then all returned results are returned in a list.
+    All method calls, except for the following methods, are actually performed for underlying Boosters and
+    then all returned results are returned in a list.
+
+    - ``model_from_string()``
+    - ``model_to_string()``
+    - ``save_model()``
 
     Attributes
     ----------
@@ -276,21 +321,42 @@ class CVBooster:
         The best iteration of fitted model.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        model_file: Optional[Union[str, Path]] = None
+    ):
         """Initialize the CVBooster.
 
-        Generally, no need to instantiate manually.
+        Parameters
+        ----------
+        model_file : str, pathlib.Path or None, optional (default=None)
+            Path to the CVBooster model file.
         """
-        self.boosters = []
+        self.boosters: List[Booster] = []
         self.best_iteration = -1
 
-    def _append(self, booster):
-        """Add a booster to CVBooster."""
-        self.boosters.append(booster)
+        if model_file is not None:
+            with open(model_file, "r") as file:
+                self._from_dict(json.load(file))
 
-    def __getattr__(self, name):
+    def _from_dict(self, models: Dict[str, Any]) -> None:
+        """Load CVBooster from dict."""
+        self.best_iteration = models["best_iteration"]
+        self.boosters = []
+        for model_str in models["boosters"]:
+            self.boosters.append(Booster(model_str=model_str))
+
+    def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
+        """Serialize CVBooster to dict."""
+        models_str = []
+        for booster in self.boosters:
+            models_str.append(booster.model_to_string(num_iteration=num_iteration, start_iteration=start_iteration,
+                                                      importance_type=importance_type))
+        return {"boosters": models_str, "best_iteration": self.best_iteration}
+
+    def __getattr__(self, name: str) -> Callable[[Any, Any], List[Any]]:
         """Redirect methods call of CVBooster."""
-        def handler_function(*args, **kwargs):
+        def handler_function(*args: Any, **kwargs: Any) -> List[Any]:
             """Call methods with each booster, and concatenate their results."""
             ret = []
             for booster in self.boosters:
@@ -298,9 +364,102 @@ class CVBooster:
             return ret
         return handler_function
 
+    def __getstate__(self) -> Dict[str, Any]:
+        return vars(self)
 
-def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratified=True,
-                  shuffle=True, eval_train_metric=False):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        vars(self).update(state)
+
+    def model_from_string(self, model_str: str) -> "CVBooster":
+        """Load CVBooster from a string.
+
+        Parameters
+        ----------
+        model_str : str
+            Model will be loaded from this string.
+
+        Returns
+        -------
+        self : CVBooster
+            Loaded CVBooster object.
+        """
+        self._from_dict(json.loads(model_str))
+        return self
+
+    def model_to_string(
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> str:
+        """Save CVBooster to JSON string.
+
+        Parameters
+        ----------
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        str_repr : str
+            JSON string representation of CVBooster.
+        """
+        return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
+
+    def save_model(
+        self,
+        filename: Union[str, Path],
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = 'split'
+    ) -> "CVBooster":
+        """Save CVBooster to a file as JSON text.
+
+        Parameters
+        ----------
+        filename : str or pathlib.Path
+            Filename to save CVBooster.
+        num_iteration : int or None, optional (default=None)
+            Index of the iteration that should be saved.
+            If None, if the best iteration exists, it is saved; otherwise, all iterations are saved.
+            If <= 0, all iterations are saved.
+        start_iteration : int, optional (default=0)
+            Start index of the iteration that should be saved.
+        importance_type : str, optional (default="split")
+            What type of feature importance should be saved.
+            If "split", result contains numbers of times the feature is used in a model.
+            If "gain", result contains total gains of splits which use the feature.
+
+        Returns
+        -------
+        self : CVBooster
+            Returns self.
+        """
+        with open(filename, "w") as file:
+            json.dump(self._to_dict(num_iteration, start_iteration, importance_type), file)
+
+        return self
+
+
+def _make_n_folds(
+    full_data: Dataset,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
+    nfold: int,
+    params: Dict[str, Any],
+    seed: int,
+    fpreproc: Optional[_LGBM_PreprocFunction],
+    stratified: bool,
+    shuffle: bool,
+    eval_train_metric: bool
+) -> CVBooster:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -351,39 +510,55 @@ def _make_n_folds(full_data, folds, nfold, params, seed, fpreproc=None, stratifi
             train_set, valid_set, tparam = fpreproc(train_set, valid_set, params.copy())
         else:
             tparam = params
-        cvbooster = Booster(tparam, train_set)
+        booster_for_fold = Booster(tparam, train_set)
         if eval_train_metric:
-            cvbooster.add_valid(train_set, 'train')
-        cvbooster.add_valid(valid_set, 'valid')
-        ret._append(cvbooster)
+            booster_for_fold.add_valid(train_set, 'train')
+        booster_for_fold.add_valid(valid_set, 'valid')
+        ret.boosters.append(booster_for_fold)
     return ret
 
 
-def _agg_cv_result(raw_results):
+def _agg_cv_result(
+    raw_results: List[List[_LGBM_BoosterEvalMethodResultType]]
+) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    cvmap = collections.OrderedDict()
-    metric_type = {}
+    cvmap: Dict[str, List[float]] = OrderedDict()
+    metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
             key = f"{one_line[0]} {one_line[1]}"
             metric_type[key] = one_line[3]
             cvmap.setdefault(key, [])
             cvmap[key].append(one_line[2])
-    return [('cv_agg', k, np.mean(v), metric_type[k], np.std(v)) for k, v in cvmap.items()]
+    return [('cv_agg', k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
 
 
-def cv(params, train_set, num_boost_round=100,
-       folds=None, nfold=5, stratified=True, shuffle=True,
-       metrics=None, fobj=None, feval=None, init_model=None,
-       feature_name='auto', categorical_feature='auto',
-       fpreproc=None, seed=0, callbacks=None, eval_train_metric=False,
-       return_cvbooster=False):
+def cv(
+    params: Dict[str, Any],
+    train_set: Dataset,
+    num_boost_round: int = 100,
+    folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]] = None,
+    nfold: int = 5,
+    stratified: bool = True,
+    shuffle: bool = True,
+    metrics: Optional[Union[str, List[str]]] = None,
+    feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
+    init_model: Optional[Union[str, Path, Booster]] = None,
+    feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+    categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+    fpreproc: Optional[_LGBM_PreprocFunction] = None,
+    seed: int = 0,
+    callbacks: Optional[List[Callable]] = None,
+    eval_train_metric: bool = False,
+    return_cvbooster: bool = False
+) -> Dict[str, Union[List[float], CVBooster]]:
     """Perform the cross-validation with given parameters.
 
     Parameters
     ----------
     params : dict
-        Parameters for Booster.
+        Parameters for training. Values passed through ``params`` take precedence over those
+        supplied via arguments.
     train_set : Dataset
         Data to be trained on.
     num_boost_round : int, optional (default=100)
@@ -403,27 +578,6 @@ def cv(params, train_set, num_boost_round=100,
     metrics : str, list of str, or None, optional (default=None)
         Evaluation metrics to be monitored while CV.
         If not None, the metric in ``params`` will be overridden.
-    fobj : callable or None, optional (default=None)
-        Customized objective function.
-        Should accept two parameters: preds, train_data,
-        and return (grad, hess).
-
-            preds : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The predicted values.
-                Predicted values are returned before any transformation,
-                e.g. they are raw margin instead of probability of positive class for binary task.
-            train_data : Dataset
-                The training dataset.
-            grad : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the first order derivative (gradient) of the loss
-                with respect to the elements of preds for each sample point.
-            hess : numpy 1-D array or numpy 2-D array (for multi-class task)
-                The value of the second order derivative (Hessian) of the loss
-                with respect to the elements of preds for each sample point.
-
-        For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
-        and grad and hess should be returned in the same format.
-
     feval : callable, list of callable, or None, optional (default=None)
         Customized evaluation function.
         Each evaluation function should accept two parameters: preds, eval_data,
@@ -432,7 +586,7 @@ def cv(params, train_set, num_boost_round=100,
             preds : numpy 1-D array or numpy 2-D array (for multi-class task)
                 The predicted values.
                 For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes].
-                If ``fobj`` is specified, predicted values are returned before any transformation,
+                If custom objective function is used, predicted values are returned before any transformation,
                 e.g. they are raw margin instead of probability of positive class for binary task in this case.
             eval_data : Dataset
                 A ``Dataset`` to evaluate.
@@ -474,24 +628,58 @@ def cv(params, train_set, num_boost_round=100,
     return_cvbooster : bool, optional (default=False)
         Whether to return Booster models trained on each fold through ``CVBooster``.
 
+    Note
+    ----
+    A custom objective function can be provided for the ``objective`` parameter.
+    It should accept two parameters: preds, train_data and return (grad, hess).
+
+        preds : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The predicted values.
+            Predicted values are returned before any transformation,
+            e.g. they are raw margin instead of probability of positive class for binary task.
+        train_data : Dataset
+            The training dataset.
+        grad : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the first order derivative (gradient) of the loss
+            with respect to the elements of preds for each sample point.
+        hess : numpy 1-D array or numpy 2-D array (for multi-class task)
+            The value of the second order derivative (Hessian) of the loss
+            with respect to the elements of preds for each sample point.
+
+    For multi-class task, preds are numpy 2-D array of shape = [n_samples, n_classes],
+    and grad and hess should be returned in the same format.
+
     Returns
     -------
-    eval_hist : dict
-        Evaluation history.
+    eval_results : dict
+        History of evaluation results of each metric.
         The dictionary has the following format:
-        {'metric1-mean': [values], 'metric1-stdv': [values],
-        'metric2-mean': [values], 'metric2-stdv': [values],
+        {'valid metric1-mean': [values], 'valid metric1-stdv': [values],
+        'valid metric2-mean': [values], 'valid metric2-stdv': [values],
         ...}.
-        If ``return_cvbooster=True``, also returns trained boosters via ``cvbooster`` key.
+        If ``return_cvbooster=True``, also returns trained boosters wrapped in a ``CVBooster`` object via ``cvbooster`` key.
+        If ``eval_train_metric=True``, also returns the train metric history.
+        In this case, the dictionary has the following format:
+        {'train metric1-mean': [values], 'valid metric1-mean': [values],
+        'train metric2-mean': [values], 'valid metric2-mean': [values],
+        ...}.
     """
     if not isinstance(train_set, Dataset):
-        raise TypeError("Training only accepts Dataset object")
+        raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
+
+    if num_boost_round <= 0:
+        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
 
     params = copy.deepcopy(params)
-    if fobj is not None:
-        for obj_alias in _ConfigAliases.get("objective"):
-            params.pop(obj_alias, None)
-        params['objective'] = 'none'
+    params = _choose_param_value(
+        main_param_name='objective',
+        params=params,
+        default_value=None
+    )
+    fobj: Optional[_LGBM_CustomObjectiveFunction] = None
+    if callable(params["objective"]):
+        fobj = params["objective"]
+        params["objective"] = 'none'
     for alias in _ConfigAliases.get("num_iterations"):
         if alias in params:
             _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
@@ -507,12 +695,16 @@ def cv(params, train_set, num_boost_round=100,
         params.pop("early_stopping_round")
     first_metric_only = params.get('first_metric_only', False)
 
-    if num_boost_round <= 0:
-        raise ValueError("num_boost_round should be greater than zero.")
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params
+        )
     elif isinstance(init_model, Booster):
-        predictor = init_model._to_predictor(dict(init_model.params, **params))
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params)
+        )
     else:
         predictor = None
 
@@ -526,24 +718,24 @@ def cv(params, train_set, num_boost_round=100,
              .set_feature_name(feature_name) \
              .set_categorical_feature(categorical_feature)
 
-    results = collections.defaultdict(list)
-    cvfolds = _make_n_folds(train_set, folds=folds, nfold=nfold,
+    results = defaultdict(list)
+    cvfolds = _make_n_folds(full_data=train_set, folds=folds, nfold=nfold,
                             params=params, seed=seed, fpreproc=fpreproc,
                             stratified=stratified, shuffle=shuffle,
                             eval_train_metric=eval_train_metric)
 
     # setup callbacks
     if callbacks is None:
-        callbacks = set()
+        callbacks_set = set()
     else:
         for i, cb in enumerate(callbacks):
             cb.__dict__.setdefault('order', i - len(callbacks))
-        callbacks = set(callbacks)
+        callbacks_set = set(callbacks)
 
     if "early_stopping_round" in params:
-        callbacks.add(
+        callbacks_set.add(
             callback.early_stopping(
-                stopping_rounds=params["early_stopping_round"],
+                stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
@@ -553,10 +745,10 @@ def cv(params, train_set, num_boost_round=100,
             )
         )
 
-    callbacks_before_iter = {cb for cb in callbacks if getattr(cb, 'before_iteration', False)}
-    callbacks_after_iter = callbacks - callbacks_before_iter
-    callbacks_before_iter = sorted(callbacks_before_iter, key=attrgetter('order'))
-    callbacks_after_iter = sorted(callbacks_after_iter, key=attrgetter('order'))
+    callbacks_before_iter_set = {cb for cb in callbacks_set if getattr(cb, 'before_iteration', False)}
+    callbacks_after_iter_set = callbacks_set - callbacks_before_iter_set
+    callbacks_before_iter = sorted(callbacks_before_iter_set, key=attrgetter('order'))
+    callbacks_after_iter = sorted(callbacks_after_iter_set, key=attrgetter('order'))
 
     for i in range(num_boost_round):
         for cb in callbacks_before_iter:
@@ -566,8 +758,8 @@ def cv(params, train_set, num_boost_round=100,
                                     begin_iteration=0,
                                     end_iteration=num_boost_round,
                                     evaluation_result_list=None))
-        cvfolds.update(fobj=fobj)
-        res = _agg_cv_result(cvfolds.eval_valid(feval))
+        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
             results[f'{key}-mean'].append(mean)
             results[f'{key}-stdv'].append(std)
@@ -588,6 +780,6 @@ def cv(params, train_set, num_boost_round=100,
             break
 
     if return_cvbooster:
-        results['cvbooster'] = cvfolds
+        results['cvbooster'] = cvfolds  # type: ignore[assignment]
 
     return dict(results)

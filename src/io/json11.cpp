@@ -27,14 +27,13 @@
 #include <cstdlib>
 #include <limits>
 
-namespace json11 {
+namespace json11_internal_lightgbm {
 
 static const int max_depth = 200;
 
 using std::initializer_list;
 using std::make_shared;
 using std::map;
-using std::move;
 using std::string;
 using std::vector;
 
@@ -147,7 +146,7 @@ class Value : public JsonValue {
  protected:
   // Constructors
   explicit Value(const T &value) : m_value(value) {}
-  explicit Value(T &&value) : m_value(move(value)) {}
+  explicit Value(T &&value) : m_value(std::move(value)) {}
 
   // Get type tag
   Json::Type type() const override { return tag; }
@@ -161,7 +160,7 @@ class Value : public JsonValue {
   }
 
   const T m_value;
-  void dump(string *out) const override { json11::dump(m_value, out); }
+  void dump(string *out) const override { json11_internal_lightgbm::dump(m_value, out); }
 };
 
 class JsonDouble final : public Value<Json::NUMBER, double> {
@@ -204,7 +203,7 @@ class JsonString final : public Value<Json::STRING, string> {
 
  public:
   explicit JsonString(const string &value) : Value(value) {}
-  explicit JsonString(string &&value) : Value(move(value)) {}
+  explicit JsonString(string &&value) : Value(std::move(value)) {}
 };
 
 class JsonArray final : public Value<Json::ARRAY, Json::array> {
@@ -213,7 +212,7 @@ class JsonArray final : public Value<Json::ARRAY, Json::array> {
 
  public:
   explicit JsonArray(const Json::array &value) : Value(value) {}
-  explicit JsonArray(Json::array &&value) : Value(move(value)) {}
+  explicit JsonArray(Json::array &&value) : Value(std::move(value)) {}
 };
 
 class JsonObject final : public Value<Json::OBJECT, Json::object> {
@@ -222,7 +221,7 @@ class JsonObject final : public Value<Json::OBJECT, Json::object> {
 
  public:
   explicit JsonObject(const Json::object &value) : Value(value) {}
-  explicit JsonObject(Json::object &&value) : Value(move(value)) {}
+  explicit JsonObject(Json::object &&value) : Value(std::move(value)) {}
 };
 
 class JsonNull final : public Value<Json::NUL, NullStruct> {
@@ -265,15 +264,15 @@ Json::Json(double value) : m_ptr(make_shared<JsonDouble>(value)) {}
 Json::Json(int value) : m_ptr(make_shared<JsonInt>(value)) {}
 Json::Json(bool value) : m_ptr(value ? statics().t : statics().f) {}
 Json::Json(const string &value) : m_ptr(make_shared<JsonString>(value)) {}
-Json::Json(string &&value) : m_ptr(make_shared<JsonString>(move(value))) {}
+Json::Json(string &&value) : m_ptr(make_shared<JsonString>(std::move(value))) {}
 Json::Json(const char *value) : m_ptr(make_shared<JsonString>(value)) {}
 Json::Json(const Json::array &values) : m_ptr(make_shared<JsonArray>(values)) {}
 Json::Json(Json::array &&values)
-    : m_ptr(make_shared<JsonArray>(move(values))) {}
+    : m_ptr(make_shared<JsonArray>(std::move(values))) {}
 Json::Json(const Json::object &values)
     : m_ptr(make_shared<JsonObject>(values)) {}
 Json::Json(Json::object &&values)
-    : m_ptr(make_shared<JsonObject>(move(values))) {}
+    : m_ptr(make_shared<JsonObject>(std::move(values))) {}
 
 /* * * * * * * * * * * * * * * * * * * *
  * Accessors
@@ -378,7 +377,7 @@ struct JsonParser final {
    *
    * Mark this parse as failed.
    */
-  Json fail(string &&msg) { return fail(move(msg), Json()); }
+  Json fail(string &&msg) { return fail(std::move(msg), Json()); }
 
   template <typename T>
   T fail(string &&msg, const T err_ret) {
@@ -778,4 +777,4 @@ bool Json::has_shape(const shape &types, string *err) const {
   return true;
 }
 
-}  // namespace json11
+}  // namespace json11_internal_lightgbm

@@ -11,44 +11,15 @@ LightGBM FAQ
 
 ------
 
-Critical Issues
-===============
+Please post questions, feature requests, and bug reports at https://github.com/microsoft/LightGBM/issues.
 
-A **critical issue** could be a *crash*, *prediction error*, *nonsense output*, or something else requiring immediate attention.
+This project is mostly maintained by volunteers, so please be patient.
+If your request is time-sensitive or more than a month goes by without a response, please tag the maintainers below for help.
 
-Please post such an issue in the `Microsoft/LightGBM repository <https://github.com/microsoft/LightGBM/issues>`__.
-
-You may also ping a member of the core team according to the relevant area of expertise by mentioning them with the arabase (@) symbol:
-
--  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke** (C++ code / R-package / Python-package)
--  `@chivee <https://github.com/chivee>`__ **Qiwei Ye** (C++ code / Python-package)
--  `@shiyu1994 <https://github.com/shiyu1994>`__ **Yu Shi** (C++ code / Python-package)
--  `@tongwu-msft <https://github.com/tongwu-msft>`__ **Tong Wu** (C++ code / Python-package)
--  `@hzy46 <https://github.com/hzy46>`__ **Zhiyuan He** (C++ code / Python-package)
--  `@btrotta <https://github.com/btrotta>`__ **Belinda Trotta** (C++ code)
--  `@Laurae2 <https://github.com/Laurae2>`__ **Damien Soukhavong** (R-package)
--  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb** (R-package / Dask-package)
--  `@jmoralez <https://github.com/jmoralez>`__ **José Morales** (Dask-package)
--  `@wxchan <https://github.com/wxchan>`__ **Wenxuan Chen** (Python-package)
--  `@henry0312 <https://github.com/henry0312>`__ **Tsukasa Omoto** (Python-package)
--  `@StrikerRUS <https://github.com/StrikerRUS>`__ **Nikita Titov** (Python-package)
--  `@huanzhang12 <https://github.com/huanzhang12>`__ **Huan Zhang** (GPU support)
-
-Please include as much of the following information as possible when submitting a critical issue:
-
--  Is it reproducible on CLI (command line interface), R, and/or Python?
-
--  Is it specific to a wrapper? (R or Python?)
-
--  Is it specific to the compiler? (gcc or Clang version? MinGW or Visual Studio version?)
-
--  Is it specific to your Operating System? (Windows? Linux? macOS?)
-
--  Are you able to reproduce this issue with a simple case?
-
--  Does the issue persist after removing all optimization flags and compiling LightGBM in debug mode?
-
-When submitting issues, please keep in mind that this is largely a volunteer effort, and we may not be available 24/7 to provide support.
+-  `@guolinke <https://github.com/guolinke>`__ **Guolin Ke**
+-  `@shiyu1994 <https://github.com/shiyu1994>`__ **Yu Shi**
+-  `@jameslamb <https://github.com/jameslamb>`__ **James Lamb**
+-  `@jmoralez <https://github.com/jmoralez>`__ **José Morales**
 
 --------------
 
@@ -62,7 +33,7 @@ General LightGBM Questions
 1. Where do I find more details about LightGBM parameters?
 ----------------------------------------------------------
 
-Take a look at `Parameters <./Parameters.rst>`__ and the `Laurae++/Parameters <https://sites.google.com/view/lauraepp/parameters>`__ website.
+Take a look at `Parameters <./Parameters.rst>`__.
 
 2. On datasets with millions of features, training does not start (or starts after a very long time).
 -----------------------------------------------------------------------------------------------------
@@ -176,8 +147,8 @@ For C/C++ users, any OpenMP feature cannot be used before the fork happens. If a
 fork happens (example: using OpenMP for forking), OpenMP will hang inside the forked sessions. Use new processes instead
 and copy memory as required by creating new processes instead of forking (or, use Intel compilers).
 
-Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a 
-single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent 
+Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a
+single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent
 <https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
 
 12. Why is early stopping not enabled by default in LightGBM?
@@ -220,7 +191,7 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 .. code-block:: console
 
-    /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning: 
+    /root/miniconda/envs/test-env/lib/python3.8/site-packages/threadpoolctl.py:546: RuntimeWarning:
     Found Intel OpenMP ('libiomp') and LLVM OpenMP ('libomp') loaded at
     the same time. Both libraries are known to be incompatible and this
     can cause random crashes or deadlocks on Linux when loaded in the
@@ -231,7 +202,7 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 Detailed description of conflicts between multiple OpenMP instances is provided in the `following document <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__.
 
-**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
+**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#user-content-workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
@@ -247,9 +218,9 @@ R-package
 1. Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
 ------------------------------------------------------------------------------------------------------------------------------
 
-Run ``lgb.unloader(wipe = TRUE)`` in the R console, and recreate the LightGBM datasets (this will wipe all LightGBM-related variables).
-Due to the pointers, choosing to not wipe variables will not fix the error.
-This is a known issue: `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
+In older versions of the R package (prior to ``v3.3.0``), this could happen occasionally and the solution was to run ``lgb.unloader(wipe = TRUE)`` to remove all LightGBM-related objects. Some conversation about this could be found in `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
+
+That is no longer necessary as of ``v3.3.0``, and function ``lgb.unloader()`` has since been removed from the R package.
 
 2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
 ----------------------------------------------------------------------------------------
@@ -263,7 +234,7 @@ As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_fi
 3. ``error in data.table::data.table()...argument 2 is NULL``
 -------------------------------------------------------------
 
-If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that some in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
+If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
 ------
 
@@ -277,6 +248,10 @@ Python-package
 1. ``Error: setup script specifies an absolute path`` when installing from GitHub using ``python setup.py install``.
 --------------------------------------------------------------------------------------------------------------------
 
+.. note::
+    As of v4.0.0, ``lightgbm`` does not support directly invoking ``setup.py``.
+    This answer refers only to versions of ``lightgbm`` prior to v4.0.0.
+
 .. code-block:: console
 
    error: Error: setup script specifies an absolute path:
@@ -285,7 +260,7 @@ Python-package
 
 This error should be solved in latest version.
 If you still meet this error, try to remove ``lightgbm.egg-info`` folder in your Python-package and reinstall,
-or check `this thread on stackoverflow <http://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
+or check `this thread on stackoverflow <https://stackoverflow.com/questions/18085571/pip-install-error-setup-script-specifies-an-absolute-path>`__.
 
 2. Error messages: ``Cannot ... before construct dataset``.
 -----------------------------------------------------------
@@ -329,7 +304,7 @@ So, if you want to:
 We are doing our best to provide universal wheels which have high running speed and are compatible with any hardware, OS, compiler, etc. at the same time.
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
-Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary :all: lightgbm``.
+Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary lightgbm lightgbm``.
 For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.

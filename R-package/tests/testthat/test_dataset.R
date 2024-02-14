@@ -1,7 +1,3 @@
-VERBOSITY <- as.integer(
-  Sys.getenv("LIGHTGBM_TEST_VERBOSITY", "-1")
-)
-
 data(agaricus.train, package = "lightgbm")
 train_data <- agaricus.train$data[seq_len(1000L), ]
 train_label <- agaricus.train$label[seq_len(1000L)]
@@ -12,7 +8,13 @@ test_label <- agaricus.test$label[1L:100L]
 
 test_that("lgb.Dataset: basic construction, saving, loading", {
   # from sparse matrix
-  dtest1 <- lgb.Dataset(test_data, label = test_label)
+  dtest1 <- lgb.Dataset(
+    test_data
+    , label = test_label
+    , params = list(
+      verbose = .LGB_VERBOSITY
+    )
+  )
   # from dense matrix
   dtest2 <- lgb.Dataset(as.matrix(test_data), label = test_label)
   expect_equal(get_field(dtest1, "label"), get_field(dtest2, "label"))
@@ -21,7 +23,12 @@ test_that("lgb.Dataset: basic construction, saving, loading", {
   tmp_file <- tempfile("lgb.Dataset_")
   lgb.Dataset.save(dtest1, tmp_file)
   # read from a local file
-  dtest3 <- lgb.Dataset(tmp_file)
+  dtest3 <- lgb.Dataset(
+    tmp_file
+    , params = list(
+      verbose = .LGB_VERBOSITY
+    )
+  )
   lgb.Dataset.construct(dtest3)
   unlink(tmp_file)
   expect_equal(get_field(dtest1, "label"), get_field(dtest3, "label"))
@@ -122,7 +129,7 @@ test_that("Dataset$set_reference() updates categorical_feature, colnames, and pr
   dtrain$construct()
   bst <- Booster$new(
     train_set = dtrain
-    , params = list(verbose = -1L)
+    , params = list(verbose = -1L, num_threads = .LGB_MAX_THREADS)
   )
   dtrain$.__enclos_env__$private$predictor <- bst$to_predictor()
 
@@ -176,7 +183,9 @@ test_that("lgb.Dataset: colnames", {
     colnames(dtest) <- "asdf"
   })
   new_names <- make.names(seq_len(ncol(test_data)))
-  expect_silent(colnames(dtest) <- new_names)
+  expect_silent({
+    colnames(dtest) <- new_names
+  })
   expect_equal(colnames(dtest), new_names)
 })
 
@@ -197,7 +206,7 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
     , rawData
     , nrow(rawData)
     , ncol(rawData)
-    , lightgbm:::lgb.params2str(params = list())
+    , lightgbm:::.params2str(params = list())
     , ref_handle
   )
   expect_true(methods::is(handle, "externalptr"))
@@ -207,6 +216,10 @@ test_that("lgb.Dataset: Dataset should be able to construct from matrix and retu
 })
 
 test_that("cpp errors should be raised as proper R errors", {
+  testthat::skip_if(
+    Sys.getenv("COMPILER", "") == "MSVC"
+    , message = "Skipping on Visual Studio"
+  )
   data(agaricus.train, package = "lightgbm")
   train <- agaricus.train
   dtrain <- lgb.Dataset(
@@ -215,7 +228,9 @@ test_that("cpp errors should be raised as proper R errors", {
     , init_score = seq_len(10L)
   )
   expect_error({
-    dtrain$construct()
+    capture.output({
+      dtrain$construct()
+    }, type = "message")
   }, regexp = "Initial score size doesn't match data size")
 })
 
@@ -307,7 +322,7 @@ test_that("Dataset$update_parameters() does nothing for empty inputs", {
   res <- ds$update_params(
     params = list()
   )
-  expect_true(lgb.is.Dataset(res))
+  expect_true(.is_Dataset(res))
 
   new_params <- ds$get_params()
   expect_identical(new_params, initial_params)
@@ -328,7 +343,7 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   res <- ds$update_params(
     params = new_params
   )
-  expect_true(lgb.is.Dataset(res))
+  expect_true(.is_Dataset(res))
 
   updated_params <- ds$get_params()
   for (param_name in names(new_params)) {
@@ -341,23 +356,26 @@ test_that("Dataset$finalize() should not fail on an already-finalized Dataset", 
     data = test_data
     , label = test_label
   )
-  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
   dtest$construct()
-  expect_false(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+  expect_false(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
   dtest$finalize()
-  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
   # calling finalize() a second time shouldn't cause any issues
   dtest$finalize()
-  expect_true(lgb.is.null.handle(dtest$.__enclos_env__$private$handle))
+  expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.Dataset: should be able to run lgb.train() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(
+      verbose = .LGB_VERBOSITY
+    )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -373,7 +391,8 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
-    , verbose = VERBOSITY
+    , verbose = .LGB_VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # should be able to train right away
@@ -382,13 +401,16 @@ test_that("lgb.Dataset: should be able to run lgb.train() immediately after usin
     , data = dtest_read_in
   )
 
-  expect_true(lgb.is.Booster(x = bst))
+  expect_true(.is_Booster(x = bst))
 })
 
 test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using lgb.Dataset() on a file", {
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
+    , params = list(
+      verbosity = .LGB_VERBOSITY
+    )
   )
   tmp_file <- tempfile(pattern = "lgb.Dataset_")
   lgb.Dataset.save(
@@ -404,6 +426,9 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
     , metric = "binary_logloss"
     , num_leaves = 5L
     , learning_rate = 1.0
+    , num_iterations = 5L
+    , verbosity = .LGB_VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
   )
 
   # should be able to train right away
@@ -419,7 +444,7 @@ test_that("lgb.Dataset: should be able to use and retrieve long feature names", 
   # set one feature to a value longer than the default buffer size used
   # in LGBM_DatasetGetFeatureNames_R
   feature_names <- names(iris)
-  long_name <- paste0(rep("a", 1000L), collapse = "")
+  long_name <- strrep("a", 1000L)
   feature_names[1L] <- long_name
   names(iris) <- feature_names
   # check that feature name survived the trip from R to C++ and back
@@ -446,7 +471,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = TRUE)
+    , params = list(
+      header = TRUE
+      , verbosity = .LGB_VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("x1", "x2"))
@@ -467,7 +495,10 @@ test_that("lgb.Dataset: should be able to create a Dataset from a text file with
 
   dtrain <- lgb.Dataset(
     data = train_file
-    , params = list(header = FALSE)
+    , params = list(
+      header = FALSE
+      , verbosity = .LGB_VERBOSITY
+    )
   )
   dtrain$construct()
   expect_identical(dtrain$get_colnames(), c("Column_0", "Column_1"))
@@ -533,10 +564,16 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
     , three_vals = c(rep(c(0.0, 1.0, 2.0), 33L), 0.0)
     , two_vals_plus_missing = c(rep(c(1.0, 2.0), 49L), NA_real_, NA_real_)
     , all_zero = rep(0.0, 100L)
+    , categorical = sample.int(2L, 100L, replace = TRUE)
   )
+  n_features <- ncol(raw_df)
   raw_mat <- data.matrix(raw_df)
   min_data_in_bin <- 2L
-  ds <- lgb.Dataset(raw_mat, params = list(min_data_in_bin = min_data_in_bin))
+  ds <- lgb.Dataset(
+    raw_mat
+    , params = list(min_data_in_bin = min_data_in_bin)
+    , categorical_feature = n_features
+  )
   ds$construct()
   expected_num_bins <- c(
     100L %/% min_data_in_bin + 1L  # extra bin for zero
@@ -544,7 +581,43 @@ test_that("lgb.Dataset$get_feature_num_bin() works", {
     , 3L  # 0, 1, 2
     , 4L  # 0, 1, 2 + NA
     , 0L  # unused
+    , 3L  # 1, 2 + NA
   )
-  actual_num_bins <- sapply(1L:5L, ds$get_feature_num_bin)
+  actual_num_bins <- sapply(1L:n_features, ds$get_feature_num_bin)
   expect_identical(actual_num_bins, expected_num_bins)
+  # test using defined feature names
+  bins_by_name <- sapply(colnames(raw_mat), ds$get_feature_num_bin)
+  expect_identical(unname(bins_by_name), expected_num_bins)
+  # test using default feature names
+  no_names_mat <- raw_mat
+  colnames(no_names_mat) <- NULL
+  ds_no_names <- lgb.Dataset(
+    no_names_mat
+    , params = list(min_data_in_bin = min_data_in_bin)
+    , categorical_feature = n_features
+  )
+  ds_no_names$construct()
+  default_names <- lapply(
+    X = seq(1L, ncol(raw_mat))
+    , FUN = function(i) {
+      sprintf("Column_%d", i - 1L)
+    }
+  )
+  bins_by_default_name <- sapply(default_names, ds_no_names$get_feature_num_bin)
+  expect_identical(bins_by_default_name, expected_num_bins)
+})
+
+test_that("lgb.Dataset can be constructed with categorical features and without colnames", {
+  # check that dataset can be constructed
+  raw_mat <- matrix(rep(c(0L, 1L), 50L), ncol = 1L)
+  ds <- lgb.Dataset(raw_mat, categorical_feature = 1L)$construct()
+  sparse_mat <- as(raw_mat, "dgCMatrix")
+  ds2 <- lgb.Dataset(sparse_mat, categorical_feature = 1L)$construct()
+  # check that the column names are the default ones
+  expect_equal(ds$.__enclos_env__$private$colnames, "Column_0")
+  expect_equal(ds2$.__enclos_env__$private$colnames, "Column_0")
+  # check for error when index is greater than the number of columns
+  expect_error({
+    lgb.Dataset(raw_mat, categorical_feature = 2L)$construct()
+  }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
 })

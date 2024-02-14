@@ -86,7 +86,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -107,7 +107,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
       }
     } else {
       std::vector<double> rec;
-      #pragma omp parallel for schedule(static) private(rec)
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -121,7 +121,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           if (label_int_[i] == k) {
             gradients[idx] = static_cast<score_t>((p - 1.0f) * weights_[i]);
           } else {
-            gradients[idx] = static_cast<score_t>((p) * weights_[i]);
+            gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
           hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
         }
@@ -165,7 +165,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
- private:
+ protected:
   double factor_;
   /*! \brief Number of data */
   data_size_t num_data_;
@@ -266,7 +266,7 @@ class MulticlassOVA: public ObjectiveFunction {
     return binary_loss_[class_id]->ClassNeedTrain(0);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Number of classes */

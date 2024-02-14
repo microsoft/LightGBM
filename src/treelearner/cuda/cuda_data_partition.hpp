@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/bin.h>
 #include <LightGBM/meta.h>
@@ -77,6 +77,10 @@ class CUDADataPartition {
   void ResetConfig(const Config* config, hist_t* cuda_hist);
 
   void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves);
+
+  void ReduceLeafGradStat(
+    const score_t* gradients, const score_t* hessians,
+    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
 
   data_size_t root_num_data() const {
     if (use_bagging_) {
@@ -292,6 +296,10 @@ class CUDADataPartition {
 
   void LaunchFillDataIndexToLeafIndex();
 
+  void LaunchReduceLeafGradStat(
+    const score_t* gradients, const score_t* hessians,
+    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
+
   // Host memory
 
   // dataset information
@@ -307,8 +315,6 @@ class CUDADataPartition {
   int grid_dim_;
   /*! \brief block dimension when splitting one leaf */
   int block_dim_;
-  /*! \brief add train score buffer in host */
-  mutable std::vector<double> add_train_score_;
   /*! \brief data indices used in this iteration */
   const data_size_t* used_indices_;
   /*! \brief marks whether a feature is a categorical feature */
@@ -348,7 +354,7 @@ class CUDADataPartition {
   data_size_t* cuda_data_indices_;
   /*! \brief start position of each leaf in cuda_data_indices_ */
   data_size_t* cuda_leaf_data_start_;
-  /*! \brief end position of each leaf in cuda_data_indices_  */
+  /*! \brief end position of each leaf in cuda_data_indices_ */
   data_size_t* cuda_leaf_data_end_;
   /*! \brief number of data in each leaf */
   data_size_t* cuda_leaf_num_data_;
@@ -376,10 +382,6 @@ class CUDADataPartition {
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
 
-  // for train score update
-  /*! \brief added train score buffer in CUDA */
-  double* cuda_add_train_score_;
-
 
   // CUDA memory, held by other object
 
@@ -390,5 +392,5 @@ class CUDADataPartition {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_DATA_PARTITION_HPP_

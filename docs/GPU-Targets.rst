@@ -4,7 +4,7 @@ GPU SDK Correspondence and Device Targeting Table
 GPU Targets Table
 =================
 
-OpenCL is a universal massively parallel programming framework that targets to multiple backends (GPU, CPU, FPGA, etc).
+OpenCL is a universal massively parallel programming framework that targets multiple backends (GPU, CPU, FPGA, etc).
 Basically, to use a device from a vendor, you have to install drivers from that specific vendor.
 Intel's and AMD's OpenCL runtime also include x86 CPU target support.
 NVIDIA's OpenCL runtime only supports NVIDIA GPU (no CPU support).
@@ -18,6 +18,8 @@ You can find below a table of correspondence:
 | `Intel SDK for OpenCL`_   | Supported       | Supported       | Not Supported   | Not Supported|
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 | AMD APP SDK \*            | Supported       | Not Supported   | Supported       | Not Supported|
++---------------------------+-----------------+-----------------+-----------------+--------------+
+| `PoCL`_                   | Supported       | Not Supported   | Supported       | Not Supported|
 +---------------------------+-----------------+-----------------+-----------------+--------------+
 | `NVIDIA CUDA Toolkit`_    | Not Supported   | Not Supported   | Not Supported   | Supported    |
 +---------------------------+-----------------+-----------------+-----------------+--------------+
@@ -167,4 +169,6 @@ Known issues:
 
 .. _clinfo: https://github.com/Oblomov/clinfo
 
-.. _GPUCapsViewer: http://www.ozone3d.net/gpu_caps_viewer/
+.. _GPUCapsViewer: https://www.ozone3d.net/gpu_caps_viewer/
+
+.. _PoCL: http://portablecl.org/

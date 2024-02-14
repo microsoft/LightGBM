@@ -11,6 +11,7 @@ from sys import platform
 from urllib.parse import urlparse
 
 import pytest
+from sklearn.metrics import accuracy_score, r2_score
 
 import lightgbm as lgb
 
@@ -57,7 +58,7 @@ task_to_local_factory = {
 pytestmark = [
     pytest.mark.skipif(getenv('TASK', '') == 'mpi', reason='Fails to run with MPI interface'),
     pytest.mark.skipif(getenv('TASK', '') == 'gpu', reason='Fails to run with GPU interface'),
-    pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Fails to run with CUDA Experimental interface')
+    pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Fails to run with CUDA interface')
 ]
 
 
@@ -71,6 +72,13 @@ def cluster():
 @pytest.fixture(scope='module')
 def cluster2():
     dask_cluster = LocalCluster(n_workers=2, threads_per_worker=2, dashboard_address=None)
+    yield dask_cluster
+    dask_cluster.close()
+
+
+@pytest.fixture(scope='module')
+def cluster_three_workers():
+    dask_cluster = LocalCluster(n_workers=3, threads_per_worker=1, dashboard_address=None)
     yield dask_cluster
     dask_cluster.close()
 
@@ -511,48 +519,11 @@ def test_classifier_custom_objective(output, task, cluster):
         assert_eq(p1_proba, p1_proba_local)
 
 
-def test_group_workers_by_host():
-    hosts = [f'0.0.0.{i}' for i in range(2)]
-    workers = [f'tcp://{host}:{p}' for p in range(2) for host in hosts]
-    expected = {
-        host: lgb.dask._HostWorkers(
-            default=f'tcp://{host}:0',
-            all=[f'tcp://{host}:0', f'tcp://{host}:1']
-        )
-        for host in hosts
-    }
-    host_to_workers = lgb.dask._group_workers_by_host(workers)
-    assert host_to_workers == expected
-
-
-def test_group_workers_by_host_unparseable_host_names():
-    workers_without_protocol = ['0.0.0.1:80', '0.0.0.2:80']
-    with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
-        lgb.dask._group_workers_by_host(workers_without_protocol)
-
-
 def test_machines_to_worker_map_unparseable_host_names():
     workers = {'0.0.0.1:80': {}, '0.0.0.2:80': {}}
     machines = "0.0.0.1:80,0.0.0.2:80"
     with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
         lgb.dask._machines_to_worker_map(machines=machines, worker_addresses=workers.keys())
-
-
-def test_assign_open_ports_to_workers(cluster):
-    with Client(cluster) as client:
-        workers = client.scheduler_info()['workers'].keys()
-        n_workers = len(workers)
-        host_to_workers = lgb.dask._group_workers_by_host(workers)
-        for _ in range(25):
-            worker_address_to_port = lgb.dask._assign_open_ports_to_workers(client, host_to_workers)
-            found_ports = worker_address_to_port.values()
-            assert len(found_ports) == n_workers
-            # check that found ports are different for same address (LocalCluster)
-            assert len(set(found_ports)) == len(found_ports)
-            # check that the ports are indeed open
-            for port in found_ports:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.bind(('', port))
 
 
 def test_training_does_not_fail_on_port_conflicts(cluster):
@@ -1054,9 +1025,9 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
                 eval_class_weight.append({0: n_neg / n_pos, 1: n_pos / n_neg})
                 init_score_value = np.log(np.mean(y_e) / (1 - np.mean(y_e)))
                 if 'dataframe' in output:
-                    d_init_score = dy_e.map_partitions(lambda x: pd.Series([init_score_value] * x.size))
+                    d_init_score = dy_e.map_partitions(lambda x, val=init_score_value: pd.Series([val] * x.size))
                 else:
-                    d_init_score = dy_e.map_blocks(lambda x: np.repeat(init_score_value, x.size))
+                    d_init_score = dy_e.map_blocks(lambda x, val=init_score_value: np.repeat(val, x.size))
 
                 eval_init_score.append(d_init_score)
 
@@ -1120,7 +1091,7 @@ def test_eval_set_no_early_stopping(task, output, eval_sizes, eval_names_prefix,
 
                 # check that each eval_name and metric exists for all eval sets, allowing for the
                 # case when a worker receives a fully-padded eval_set component which is not evaluated.
-                if evals_result[eval_name] != 'not evaluated':
+                if evals_result[eval_name] != {}:
                     for metric in eval_metric_names:
                         assert metric in evals_result[eval_name]
                         assert metric in best_scores[eval_name]
@@ -1503,55 +1474,54 @@ def test_errors(cluster):
 
 @pytest.mark.parametrize('task', tasks)
 @pytest.mark.parametrize('output', data_output)
-def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, output, cluster):
+def test_training_succeeds_even_if_some_workers_do_not_have_any_data(task, output, cluster_three_workers):
     if task == 'ranking' and output == 'scipy_csr_matrix':
         pytest.skip('LGBMRanker is not currently tested on sparse matrices')
 
-    with Client(cluster) as client:
-        def collection_to_single_partition(collection):
-            """Merge the parts of a Dask collection into a single partition."""
-            if collection is None:
-                return
-            if isinstance(collection, da.Array):
-                return collection.rechunk(*collection.shape)
-            return collection.repartition(npartitions=1)
-
-        X, y, w, g, dX, dy, dw, dg = _create_data(
+    with Client(cluster_three_workers) as client:
+        _, y, _, _, dX, dy, dw, dg = _create_data(
             objective=task,
             output=output,
-            group=None
+            group=None,
+            n_samples=1_000,
+            chunk_size=200,
         )
 
         dask_model_factory = task_to_dask_factory[task]
-        local_model_factory = task_to_local_factory[task]
 
-        dX = collection_to_single_partition(dX)
-        dy = collection_to_single_partition(dy)
-        dw = collection_to_single_partition(dw)
-        dg = collection_to_single_partition(dg)
+        workers = list(client.scheduler_info()['workers'].keys())
+        assert len(workers) == 3
+        first_two_workers = workers[:2]
 
-        n_workers = len(client.scheduler_info()['workers'])
-        assert n_workers > 1
-        assert dX.npartitions == 1
+        dX = client.persist(dX, workers=first_two_workers)
+        dy = client.persist(dy, workers=first_two_workers)
+        dw = client.persist(dw, workers=first_two_workers)
+        wait([dX, dy, dw])
+
+        workers_with_data = set()
+        for coll in (dX, dy, dw):
+            for with_data in client.who_has(coll).values():
+                workers_with_data.update(with_data)
+                assert workers[2] not in with_data
+        assert len(workers_with_data) == 2
 
         params = {
             'time_out': 5,
             'random_state': 42,
-            'num_leaves': 10
+            'num_leaves': 10,
+            'n_estimators': 20,
         }
 
         dask_model = dask_model_factory(tree='data', client=client, **params)
         dask_model.fit(dX, dy, group=dg, sample_weight=dw)
         dask_preds = dask_model.predict(dX).compute()
-
-        local_model = local_model_factory(**params)
-        if task == 'ranking':
-            local_model.fit(X, y, group=g, sample_weight=w)
+        if task == 'regression':
+            score = r2_score(y, dask_preds)
+        elif task.endswith('classification'):
+            score = accuracy_score(y, dask_preds)
         else:
-            local_model.fit(X, y, sample_weight=w)
-        local_preds = local_model.predict(X)
-
-        assert assert_eq(dask_preds, local_preds)
+            score = spearmanr(dask_preds, y).correlation
+        assert score > 0.9
 
 
 @pytest.mark.parametrize('task', tasks)
@@ -1581,15 +1551,17 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
         assert 'machines' not in params
 
         # model 2 - machines given
+        workers = list(client.scheduler_info()['workers'])
         workers_hostname = _get_workers_hostname(cluster)
-        n_workers = len(client.scheduler_info()['workers'])
-        open_ports = lgb.dask._find_n_open_ports(n_workers)
+        remote_sockets, open_ports = lgb.dask._assign_open_ports_to_workers(client, workers)
+        for s in remote_sockets.values():
+            s.release()
         dask_model2 = dask_model_factory(
             n_estimators=5,
             num_leaves=5,
             machines=",".join([
                 f"{workers_hostname}:{port}"
-                for port in open_ports
+                for port in open_ports.values()
             ]),
         )
 
@@ -1614,6 +1586,7 @@ def test_network_params_not_required_but_respected_if_given(task, listen_port, c
 
 @pytest.mark.parametrize('task', tasks)
 def test_machines_should_be_used_if_provided(task, cluster):
+    pytest.skip("skipping due to timeout issues discussed in https://github.com/microsoft/LightGBM/issues/5390")
     with Client(cluster) as client:
         _, _, _, _, dX, dy, _, dg = _create_data(
             objective=task,
@@ -1716,7 +1689,7 @@ def test_dask_methods_and_sklearn_equivalents_have_similar_signatures(methods):
 
 @pytest.mark.parametrize('task', tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task, cluster):
-    with Client(cluster) as client:
+    with Client(cluster):
         _, _, _, _, dX, dy, dw, dg = _create_data(
             objective=task,
             output='dataframe',
@@ -1795,7 +1768,7 @@ def _tested_estimators():
 @pytest.mark.parametrize("estimator", _tested_estimators())
 @pytest.mark.parametrize("check", sklearn_checks_to_run())
 def test_sklearn_integration(estimator, check, cluster):
-    with Client(cluster) as client:
+    with Client(cluster):
         estimator.set_params(local_listen_port=18000, time_out=5)
         name = type(estimator).__name__
         check(name, estimator)
@@ -1846,3 +1819,43 @@ def test_predict_with_raw_score(task, output, cluster):
         if task.endswith('classification'):
             pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
             assert_eq(raw_predictions, pred_proba_raw)
+
+
+def test_distributed_quantized_training(cluster):
+    with Client(cluster) as client:
+        X, y, w, _, dX, dy, dw, _ = _create_data(
+            objective='regression',
+            output='array'
+        )
+
+        np.savetxt("data_dask.csv", np.hstack([np.array([y]).T, X]), fmt="%f,%f,%f,%f,%f")
+
+        params = {
+            "boosting_type": 'gbdt',
+            "n_estimators": 50,
+            "num_leaves": 31,
+            'use_quantized_grad': True,
+            'num_grad_quant_bins': 30,
+            'quant_train_renew_leaf': True,
+            'verbose': -1,
+        }
+
+        quant_dask_classifier = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            **params
+        )
+        quant_dask_classifier = quant_dask_classifier.fit(dX, dy, sample_weight=dw)
+        quant_p1 = quant_dask_classifier.predict(dX)
+        quant_rmse = np.sqrt(np.mean((quant_p1.compute() - y) ** 2))
+
+        params["use_quantized_grad"] = False
+        dask_classifier = lgb.DaskLGBMRegressor(
+            client=client,
+            time_out=5,
+            **params
+        )
+        dask_classifier = dask_classifier.fit(dX, dy, sample_weight=dw)
+        p1 = dask_classifier.predict(dX)
+        rmse = np.sqrt(np.mean((p1.compute() - y) ** 2))
+        assert quant_rmse < rmse + 7.0

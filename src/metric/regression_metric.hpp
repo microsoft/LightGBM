@@ -59,13 +59,13 @@ class RegressionMetric: public Metric {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_) * weights_[i];
@@ -73,7 +73,7 @@ class RegressionMetric: public Metric {
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           double t = 0;
@@ -81,7 +81,7 @@ class RegressionMetric: public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, config_);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           double t = 0;
@@ -101,7 +101,7 @@ class RegressionMetric: public Metric {
   inline static void CheckLabel(label_t) {
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

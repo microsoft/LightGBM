@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set up R environment
-CRAN_MIRROR="https://cloud.r-project.org/"
+CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
@@ -17,12 +17,14 @@ fi
 R_MAJOR_VERSION=( ${R_VERSION//./ } )
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
-    export R_MAC_VERSION=4.1.2
-    export R_LINUX_VERSION="4.1.2-1.2004.0"
-    export R_APT_REPO="focal-cran40/"
+    export R_MAC_VERSION=4.3.1
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-x86_64/base/R-${R_MAC_VERSION}-x86_64.pkg
+    export R_LINUX_VERSION="4.3.1-1.2204.0"
+    export R_APT_REPO="jammy-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
     exit -1
@@ -34,22 +36,27 @@ fi
 #
 # `devscripts` is required for 'checkbashisms' (https://github.com/r-lib/actions/issues/111)
 if [[ $OS_NAME == "linux" ]]; then
+    mkdir -p ~/.gnupg
+    echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
     sudo apt-key adv \
+        --homedir ~/.gnupg \
         --keyserver keyserver.ubuntu.com \
-        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
     sudo add-apt-repository \
-        "deb https://cloud.r-project.org/bin/linux/ubuntu ${R_APT_REPO}"
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}" || exit -1
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
-        -y --allow-downgrades \
+        -y \
             devscripts \
+            r-base-core=${R_LINUX_VERSION} \
             r-base-dev=${R_LINUX_VERSION} \
             texinfo \
             texlive-latex-extra \
             texlive-latex-recommended \
             texlive-fonts-recommended \
             texlive-fonts-extra \
+            tidy \
             qpdf \
             || exit -1
 
@@ -58,28 +65,37 @@ if [[ $OS_NAME == "linux" ]]; then
             --no-install-recommends \
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
+                automake \
                 || exit -1
+    fi
+    if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
+        curl -O -L \
+            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
+        || exit -1
+
+        sudo mkdir /opt/cmake || exit -1
+        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit -1
+        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit -1
     fi
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
-    brew update-reset && brew update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install automake
+        brew install automake || exit -1
     fi
     brew install \
         checkbashisms \
-        qpdf
-    brew install --cask basictex
+        qpdf || exit -1
+    brew install basictex || exit -1
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr --verify-repo=none update --self
-    sudo tlmgr --verify-repo=none install inconsolata helvetic
+    sudo tlmgr --verify-repo=none update --self || exit -1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit -1
 
-    curl -sL https://cran.r-project.org/bin/macosx/R-${R_MAC_VERSION}.pkg -o R.pkg
+    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
     sudo installer \
         -pkg $(pwd)/R.pkg \
-        -target /
+        -target / || exit -1
 
     # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
     # See https://github.com/r-lib/actions/issues/412.
@@ -105,13 +121,19 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 fi
 
-# Manually install Depends and Imports libraries + 'knitr', 'RhpcBLASctl', 'rmarkdown', 'testthat'
+# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# "Warning: dependency ‘lattice’ is not available"
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+    Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+fi
+
+# Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl')"
 else
-    packages="c('data.table', 'jsonlite', 'knitr', 'Matrix', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -161,11 +183,12 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         || (cat ${RCHK_LOG_FILE} && exit -1)
         cat ${RCHK_LOG_FILE}
 
-        # the exception below is from R itself and not LightGBM:
+        # the exceptions below are from R itself and not LightGBM:
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
         exit $(
             cat ${RCHK_LOG_FILE} \
             | grep -v "in function strptime_internal" \
+            | grep -v "in function RunGenCollect" \
             | grep --count -E '\[PB\]|ERROR'
         )
     fi
@@ -207,6 +230,27 @@ cat ${BUILD_LOG_FILE}
 if [[ $check_succeeded == "no" ]]; then
     exit -1
 fi
+
+used_correct_r_version=$(
+    cat $LOG_FILE_NAME \
+    | grep --count "using R version ${R_VERSION}"
+)
+if [[ $used_correct_r_version -ne 1 ]]; then
+    echo "Unexpected R version was used. Expected '${R_VERSION}'."
+    exit -1
+fi
+
+if [[ $R_BUILD_TYPE == "cmake" ]]; then
+    passed_correct_r_version_to_cmake=$(
+        cat $BUILD_LOG_FILE \
+        | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
+    )
+    if [[ $used_correct_r_version -ne 1 ]]; then
+        echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
+        exit -1
+    fi
+fi
+
 
 if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"

@@ -25,7 +25,7 @@ def _find_random_open_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('', 0))
         port = s.getsockname()[1]
-    return port
+    return port  # noqa: RET504
 
 
 def _generate_n_ports(n: int) -> Generator[int, None, None]:
@@ -47,8 +47,7 @@ def create_data(task: str, n_samples: int = 1_000) -> np.ndarray:
         X, y = make_blobs(n_samples, centers=centers, random_state=42)
     elif task == 'regression':
         X, y = make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
-    dataset = np.hstack([y.reshape(-1, 1), X])
-    return dataset
+    return np.hstack([y.reshape(-1, 1), X])
 
 
 class DistributedMockup:
@@ -106,7 +105,7 @@ class DistributedMockup:
         for i, partition in enumerate(partitions):
             np.savetxt(str(TESTS_DIR / f'train{i}.txt'), partition, delimiter=',')
 
-    def fit(self, partitions: List[np.ndarray], train_config: Dict = {}) -> None:
+    def fit(self, partitions: List[np.ndarray], train_config: Dict) -> None:
         """Run the distributed training process on a single machine.
 
         For each worker i:
@@ -134,7 +133,7 @@ class DistributedMockup:
             if result.returncode != 0:
                 raise RuntimeError('Error in training')
 
-    def predict(self, predict_config: Dict[str, Any] = {}) -> np.ndarray:
+    def predict(self, predict_config: Dict[str, Any]) -> np.ndarray:
         """Compute the predictions using the model created in the fit step.
 
         predict_config is used to predict the training set train.txt
@@ -149,8 +148,7 @@ class DistributedMockup:
         result = subprocess.run(cmd)
         if result.returncode != 0:
             raise RuntimeError('Error in prediction')
-        y_pred = np.loadtxt(str(TESTS_DIR / 'predictions.txt'))
-        return y_pred
+        return np.loadtxt(str(TESTS_DIR / 'predictions.txt'))
 
     def write_train_config(self, i: int) -> None:
         """Create a file train{i}.conf with the required configuration to train.
@@ -178,7 +176,7 @@ def test_classifier(executable):
     }
     clf = DistributedMockup(executable)
     clf.fit(partitions, train_params)
-    y_probas = clf.predict()
+    y_probas = clf.predict(predict_config={})
     y_pred = y_probas > 0.5
     assert accuracy_score(clf.label_, y_pred) == 1.
 
@@ -194,5 +192,5 @@ def test_regressor(executable):
     }
     reg = DistributedMockup(executable)
     reg.fit(partitions, train_params)
-    y_pred = reg.predict()
+    y_pred = reg.predict(predict_config={})
     np.testing.assert_allclose(y_pred, reg.label_, rtol=0.2, atol=50.)

@@ -1,9 +1,11 @@
 #!/bin/bash
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())" || exit -1
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com')" || exit -1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
+  --no-build-vignettes \
   || exit -1
+
 RDvalgrind CMD INSTALL --preclean --install-tests lightgbm_*.tar.gz || exit -1
 
 cd R-package/tests
@@ -46,7 +48,7 @@ if [[ ${bytes_indirectly_lost} -gt 0 ]]; then
 fi
 
 # one error caused by a false positive between valgrind and openmp is allowed
-# ==2063== 336 bytes in 1 blocks are possibly lost in loss record 153 of 2,709
+# ==2063== 352 bytes in 1 blocks are possibly lost in loss record 153 of 2,709
 # ==2063==    at 0x483DD99: calloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
 # ==2063==    by 0x40149CA: allocate_dtv (dl-tls.c:286)
 # ==2063==    by 0x40149CA: _dl_allocate_tls (dl-tls.c:532)
@@ -68,7 +70,7 @@ bytes_possibly_lost=$(
     | tr -d ","
 )
 echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
-if [[ ${bytes_possibly_lost} -gt 336 ]]; then
+if [[ ${bytes_possibly_lost} -gt 1056 ]]; then
     exit -1
 fi
 

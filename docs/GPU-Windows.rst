@@ -112,7 +112,7 @@ You may choose a version other than the most recent one if you need a previous M
 
 Then, add to your PATH the following (to adjust to your MinGW version):
 
-::
+.. code:: text
 
     C:\Program Files\mingw-w64\x86_64-5.3.0-posix-seh-rt_v4-rev0\mingw64\bin
 
@@ -152,7 +152,7 @@ Download  `Prebuilt Boost x86_64`_ or `Prebuilt Boost i686`_ and unpack them wit
 Boost Compilation
 -----------------
 
-Installing Boost requires to download Boost and to install it.
+Installing Boost requires downloading Boost and installing it.
 It takes about 10 minutes to several hours depending on your CPU speed and network speed.
 
 We will assume an installation in ``C:\boost`` and a general installation (like in Unix variants: without versioning and without type tags).
@@ -181,7 +181,7 @@ We can now start downloading and compiling the required Boost libraries:
 
 -  Open a command prompt, and run
 
-   .. code::
+   .. code:: console
 
        cd C:\boost\boost_1_63_0\tools\build
        bootstrap.bat gcc
@@ -192,14 +192,14 @@ To build the Boost libraries, you have two choices for command prompt:
 
 -  If you have only one single core, you can use the default
 
-   .. code::
+   .. code:: console
 
        b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release
 
 -  If you want to do a multithreaded library building (faster), add ``-j N`` by replacing N by the number of cores/threads you have.
    For instance, for 2 cores, you would do
 
-   .. code::
+   .. code:: console
 
        b2 install --build_dir="C:\boost\boost-build" --prefix="C:\boost\boost-build" toolset=gcc --with=filesystem,system threading=multi --layout=system release -j 2
 
@@ -207,7 +207,7 @@ Ignore all the errors popping up, like Python, etc., they do not matter for us.
 
 Your folder should look like this at the end (not fully detailed):
 
-::
+.. code:: text
 
     - C
       |--- boost
@@ -253,7 +253,7 @@ Installing Git for Windows is straightforward, use the following `link`_.
 
 Now, we can fetch LightGBM repository for GitHub. Run Git Bash and the following command:
 
-::
+.. code:: console
 
     cd C:/
     mkdir github_repos
@@ -279,7 +279,7 @@ Installing CMake requires one download first and then a lot of configuration for
    :target: ./_static/images/screenshot-downloading-cmake.png
    :alt: A screenshot of the binary distributions of C Make for downloading on 64 bit Windows.
 
--  Download `CMake`_ (3.8 or higher)
+-  Download `CMake`_
 
 -  Install CMake
 
@@ -319,7 +319,7 @@ Installing CMake requires one download first and then a lot of configuration for
       :target: ./_static/images/screenshot-configured-lightgbm.png
       :alt: A screenshot of the C Make window after clicking on the configure button.
 
-   ::
+   .. code:: text
 
        Looking for CL_VERSION_2_0
        Looking for CL_VERSION_2_0 - found
@@ -333,7 +333,7 @@ Installing CMake requires one download first and then a lot of configuration for
 
 -  Click ``Generate`` to get the following message:
 
-   ::
+   .. code:: text
 
        Generating done
 
@@ -355,19 +355,19 @@ You can do everything in the Git Bash console you left open:
 
 -  If you closed Git Bash console previously, run this to get back to the build folder:
 
-   ::
+   .. code:: console
 
        cd C:/github_repos/LightGBM/build
 
 -  If you did not close the Git Bash console previously, run this to get to the build folder:
 
-   ::
+   .. code:: console
 
        cd LightGBM/build
 
 -  Setup MinGW as ``make`` using
 
-   ::
+   .. code:: console
 
        alias make='mingw32-make'
 
@@ -387,7 +387,7 @@ Testing in CLI
 
 You can now test LightGBM directly in CLI in a **command prompt** (not Git Bash):
 
-::
+.. code:: console
 
     cd C:/github_repos/LightGBM/examples/binary_classification
     "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
@@ -448,7 +448,7 @@ And then, follow the regular LightGBM CLI installation from there.
 Once you have installed LightGBM CLI, assuming your LightGBM is in ``C:\github_repos\LightGBM``,
 open a command prompt and run the following:
 
-::
+.. code:: console
 
     gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
 
@@ -461,7 +461,7 @@ Type ``run`` and press the Enter key.
 
 You will probably get something similar to this:
 
-::
+.. code:: text
 
     [LightGBM] [Info] This is the GPU trainer!!
     [LightGBM] [Info] Total Bins 6143
@@ -476,7 +476,7 @@ You will probably get something similar to this:
 
 There, write ``backtrace`` and press the Enter key as many times as gdb requests two choices:
 
-::
+.. code:: text
 
     Program received signal SIGSEGV, Segmentation fault.
     0x00007ffbb37c11f1 in strlen () from C:\Windows\system32\msvcrt.dll
@@ -511,7 +511,7 @@ There, write ``backtrace`` and press the Enter key as many times as gdb requests
 
 Right-click the command prompt, click "Mark", and select all the text from the first line (with the command prompt containing gdb) to the last line printed, containing all the log, such as:
 
-::
+.. code:: text
 
     C:\LightGBM\examples\binary_classification>gdb --args "../../lightgbm.exe" config=train.conf data=binary.train valid=binary.test objective=binary device=gpu
     GNU gdb (GDB) 7.10.1
@@ -598,13 +598,13 @@ And open an issue in GitHub `here`_ with that log.
 
 .. _Khronos official OpenCL headers: https://github.com/KhronosGroup/OpenCL-Headers
 
-.. _this: http://iweb.dl.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe
+.. _this: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download
 
 .. _Boost: https://www.boost.org/users/history/
 
-.. _Prebuilt Boost x86_64: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.66.0-6.fc32.noarch.rpm
+.. _Prebuilt Boost x86_64: https://www.rpmfind.net/linux/fedora/linux/releases/38/Everything/x86_64/os/Packages/m/mingw64-boost-static-1.78.0-4.fc38.noarch.rpm
 
-.. _Prebuilt Boost i686: https://mirror.linux-ia64.org/fedora/linux/releases/32/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.66.0-6.fc32.noarch.rpm
+.. _Prebuilt Boost i686: https://www.rpmfind.net/linux/fedora/linux/releases/38/Everything/x86_64/os/Packages/m/mingw32-boost-static-1.78.0-4.fc38.noarch.rpm
 
 .. _7zip: https://www.7-zip.org/download.html
 

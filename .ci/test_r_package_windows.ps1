@@ -54,11 +54,15 @@ Remove-From-Path ".*PostgreSQL.*"
 Remove-From-Path ".*\\R\\.*"
 Remove-From-Path ".*R Client.*"
 Remove-From-Path ".*rtools40.*"
+Remove-From-Path ".*rtools42.*"
+Remove-From-Path ".*rtools43.*"
 Remove-From-Path ".*shells.*"
 Remove-From-Path ".*Strawberry.*"
 Remove-From-Path ".*tools.*"
 
 Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
+Remove-Item C:\rtools43 -Force -Recurse -ErrorAction Ignore
 
 # Get details needed for installing R components
 #
@@ -74,11 +78,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools35-x86_64.exe"
   $env:R_WINDOWS_VERSION = "3.6.3"
 } elseif ($env:R_MAJOR_VERSION -eq "4") {
-  $RTOOLS_INSTALL_PATH = "C:\rtools40"
+  $RTOOLS_INSTALL_PATH = "C:\rtools43"
   $env:RTOOLS_BIN = "$RTOOLS_INSTALL_PATH\usr\bin"
-  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\mingw64\bin"
-  $env:RTOOLS_EXE_FILE = "rtools40v2-x86_64.exe"
-  $env:R_WINDOWS_VERSION = "4.1.2"
+  $env:RTOOLS_MINGW_BIN = "$RTOOLS_INSTALL_PATH\x86_64-w64-mingw32.static.posix\bin"
+  $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
+  $env:R_WINDOWS_VERSION = "4.3.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
@@ -86,10 +90,8 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:R_LIB_PATH/miktex/texmfs/install/miktex/bin/x64;" + $env:PATH
-$env:CRAN_MIRROR = "https://cloud.r-project.org/"
-$env:CTAN_MIRROR = "https://ctan.math.illinois.edu/systems/win32/miktex"
-$env:CTAN_PACKAGE_ARCHIVE = "$env:CTAN_MIRROR/tm/packages/"
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;"+ $env:PATH
+$env:CRAN_MIRROR = "https://cran.rstudio.com"
 $env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
@@ -109,7 +111,7 @@ tzutil /s "GMT Standard Time"
 
 # download R and RTools
 Write-Output "Downloading R and Rtools"
-Download-File-With-Retries -url "https://cran.r-project.org/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
+Download-File-With-Retries -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
 Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
 
 # Install R
@@ -122,32 +124,15 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
-
-# MiKTeX and pandoc can be skipped on non-MinGW builds, since we don't
-# build the package documentation for those.
-#
-# MiKTeX always needs to be built to test a CRAN package.
-if (($env:COMPILER -eq "MINGW") -or ($env:R_BUILD_TYPE -eq "cran")) {
-    Download-File-With-Retries "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/miktexsetup-4.0-x64.zip" -destfile "miktexsetup-x64.zip"
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("miktexsetup-x64.zip", "miktex")
-    Write-Output "Setting up MiKTeX"
-    .\miktex\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --local-package-repository=./miktex/download --package-set=essential --quiet download ; Check-Output $?
-    Write-Output "Installing MiKTeX"
-    .\miktex\download\miktexsetup.exe --remote-package-repository="$env:CTAN_PACKAGE_ARCHIVE" --portable="$env:R_LIB_PATH/miktex" --quiet install ; Check-Output $?
-    Write-Output "Done installing MiKTeX"
-
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'initexmf', args = c('--set-config-value', '[MPM]AutoInstall=1'), echo = TRUE, windows_verbatim_args = TRUE, error_on_status = TRUE)" ; Check-Output $?
-}
 
 Write-Output "Building R package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
 
-  $PKG_FILE_NAME = "lightgbm_*.tar.gz"
+  $PKG_FILE_NAME = "lightgbm_$env:LGB_VER.tar.gz"
   $LOG_FILE_NAME = "lightgbm.Rcheck/00check.log"
 
   if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -220,6 +205,19 @@ if ($env:COMPILER -ne "MSVC") {
   }
 }
 
+# Checking that the correct R version was used
+if ($env:TOOLCHAIN -ne "MSVC") {
+  $checks = Select-String -Path "${LOG_FILE_NAME}" -Pattern "using R version $env:R_WINDOWS_VERSION"
+  $checks_cnt = $checks.Matches.length
+} else {
+  $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "R version passed into FindLibR.* $env:R_WINDOWS_VERSION"
+  $checks_cnt = $checks.Matches.length
+}
+if ($checks_cnt -eq 0) {
+  Write-Output "Wrong R version was found (expected '$env:R_WINDOWS_VERSION'). Check the build logs."
+  Check-Output $False
+}
+
 # Checking that we actually got the expected compiler. The R package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
@@ -283,7 +281,10 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  Run-R-Code-Redirect-Stderr "source('testthat.R')" ; Check-Output $?
+  # NOTE: using Rscript.exe intentionally here, instead of Run-R-Code-Redirect-Stderr,
+  #       because something about the interaction between Run-R-Code-Redirect-Stderr
+  #       and testthat results in failing tests not exiting with a non-0 exit code.
+  Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
 Write-Output "No issues were found checking the R package"

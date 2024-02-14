@@ -1,48 +1,20 @@
 # coding: utf-8
 import ctypes
-from os import environ
 from pathlib import Path
 from platform import system
 
 import numpy as np
 from scipy import sparse
 
-
-def find_lib_path():
-    if environ.get('LIGHTGBM_BUILD_DOC', False):
-        # we don't need lib_lightgbm while building docs
-        return []
-
-    curr_path = Path(__file__).absolute().parent
-    dll_path = [curr_path,
-                curr_path.parents[1],
-                curr_path.parents[1] / 'python-package' / 'lightgbm' / 'compile',
-                curr_path.parents[1] / 'python-package' / 'compile',
-                curr_path.parents[1] / 'lib']
+try:
+    from lightgbm.basic import _LIB as LIB
+except ModuleNotFoundError:
+    print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
     if system() in ('Windows', 'Microsoft'):
-        dll_path.append(curr_path.parents[1] / 'python-package' / 'compile' / 'Release/')
-        dll_path.append(curr_path.parents[1] / 'python-package' / 'compile' / 'windows' / 'x64' / 'DLL')
-        dll_path.append(curr_path.parents[1] / 'Release')
-        dll_path.append(curr_path.parents[1] / 'windows' / 'x64' / 'DLL')
-        dll_path = [p / 'lib_lightgbm.dll' for p in dll_path]
+        lib_file = Path(__file__).absolute().parents[2] / "Release" / "lib_lightgbm.dll"
     else:
-        dll_path = [p / 'lib_lightgbm.so' for p in dll_path]
-    lib_path = [str(p) for p in dll_path if p.is_file()]
-    if not lib_path:
-        dll_path_joined = '\n'.join(map(str, dll_path))
-        raise Exception(f'Cannot find lightgbm library file in following paths:\n{dll_path_joined}')
-    return lib_path
-
-
-def LoadDll():
-    lib_path = find_lib_path()
-    if len(lib_path) == 0:
-        return None
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
-    return lib
-
-
-LIB = LoadDll()
+        lib_file = Path(__file__).absolute().parents[2] / "lib_lightgbm.so"
+    LIB = ctypes.cdll.LoadLibrary(lib_file)
 
 LIB.LGBM_GetLastError.restype = ctypes.c_char_p
 
@@ -275,3 +247,36 @@ def test_booster():
         c_str(''),
         c_str('preb.txt'))
     LIB.LGBM_BoosterFree(booster2)
+
+
+def test_max_thread_control():
+    # at initialization, should be -1
+    num_threads = ctypes.c_int(0)
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == -1
+
+    # updating that value through the C API should work
+    ret = LIB.LGBM_SetMaxThreads(
+        ctypes.c_int(6)
+    )
+    assert ret == 0
+
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == 6
+
+    # resetting to any negative number should set it to -1
+    ret = LIB.LGBM_SetMaxThreads(
+        ctypes.c_int(-123)
+    )
+    assert ret == 0
+    ret = LIB.LGBM_GetMaxThreads(
+        ctypes.byref(num_threads)
+    )
+    assert ret == 0
+    assert num_threads.value == -1

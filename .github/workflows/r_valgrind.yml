@@ -7,7 +7,7 @@ on:
 jobs:
   test-r-valgrind:
     name: r-package (ubuntu-latest, R-devel, valgrind)
-    timeout-minutes: 240
+    timeout-minutes: 360
     runs-on: ubuntu-latest
     container: wch1/r-debug
     env:
@@ -20,8 +20,11 @@ jobs:
           apt-get install --no-install-recommends -y \
             curl \
             jq
+      - name: Trust git cloning LightGBM
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
         with:
           fetch-depth: 5
           submodules: true

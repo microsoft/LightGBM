@@ -1,79 +1,87 @@
 /*!
- * Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+ * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
-#ifndef LIGHTGBM_BOOSTING_GOSS_H_
-#define LIGHTGBM_BOOSTING_GOSS_H_
 
-#include <LightGBM/boosting.h>
+#ifndef LIGHTGBM_BOOSTING_GOSS_HPP_
+#define LIGHTGBM_BOOSTING_GOSS_HPP_
+
 #include <LightGBM/utils/array_args.h>
-#include <LightGBM/utils/log.h>
+#include <LightGBM/sample_strategy.h>
 
-#include <string>
 #include <algorithm>
-#include <chrono>
-#include <cstdio>
-#include <cstdint>
-#include <fstream>
+#include <string>
 #include <vector>
-
-#include "gbdt.h"
-#include "score_updater.hpp"
 
 namespace LightGBM {
 
-class GOSS: public GBDT {
+class GOSSStrategy : public SampleStrategy {
  public:
-  /*!
-  * \brief Constructor
-  */
-  GOSS() : GBDT() {
+  GOSSStrategy(const Config* config, const Dataset* train_data, int num_tree_per_iteration) {
+    config_ = config;
+    train_data_ = train_data;
+    num_tree_per_iteration_ = num_tree_per_iteration;
+    num_data_ = train_data->num_data();
   }
 
-  ~GOSS() {
+  ~GOSSStrategy() {
   }
 
-  void Init(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function,
-            const std::vector<const Metric*>& training_metrics) override {
-    GBDT::Init(config, train_data, objective_function, training_metrics);
-    ResetGoss();
-    if (objective_function_ == nullptr) {
-      // use customized objective function
-      size_t total_size = static_cast<size_t>(num_data_) * num_tree_per_iteration_;
-      gradients_.resize(total_size, 0.0f);
-      hessians_.resize(total_size, 0.0f);
-    }
-  }
-
-  void ResetTrainingData(const Dataset* train_data, const ObjectiveFunction* objective_function,
-                         const std::vector<const Metric*>& training_metrics) override {
-    GBDT::ResetTrainingData(train_data, objective_function, training_metrics);
-    ResetGoss();
-  }
-
-  void ResetConfig(const Config* config) override {
-    GBDT::ResetConfig(config);
-    ResetGoss();
-  }
-
-  bool TrainOneIter(const score_t* gradients, const score_t* hessians) override {
-    if (gradients != nullptr) {
-      // use customized objective function
-      CHECK(hessians != nullptr && objective_function_ == nullptr);
-      int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration_;
-      #pragma omp parallel for schedule(static)
-      for (int64_t i = 0; i < total_size; ++i) {
-        gradients_[i] = gradients[i];
-        hessians_[i] = hessians[i];
+  void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
+    bag_data_cnt_ = num_data_;
+    // not subsample for first iterations
+    if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
+    auto left_cnt = bagging_runner_.Run<true>(
+        num_data_,
+        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
+            data_size_t*) {
+          data_size_t cur_left_count = 0;
+          cur_left_count = Helper(cur_start, cur_cnt, left, gradients, hessians);
+          return cur_left_count;
+        },
+        bag_data_indices_.data());
+    bag_data_cnt_ = left_cnt;
+    // set bagging data to tree learner
+    if (!is_use_subset_) {
+      #ifdef USE_CUDA
+      if (config_->device_type == std::string("cuda")) {
+        CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+        tree_learner->SetBaggingData(nullptr, cuda_bag_data_indices_.RawData(), bag_data_cnt_);
+      } else {
+      #endif  // USE_CUDA
+        tree_learner->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
+      #ifdef USE_CUDA
       }
-      return GBDT::TrainOneIter(gradients_.data(), hessians_.data());
+      #endif  // USE_CUDA
     } else {
-      CHECK(hessians == nullptr);
-      return GBDT::TrainOneIter(nullptr, nullptr);
+      // get subset
+      tmp_subset_->ReSize(bag_data_cnt_);
+      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
+                              bag_data_cnt_, false);
+      #ifdef USE_CUDA
+      if (config_->device_type == std::string("cuda")) {
+        CopyFromHostToCUDADevice<data_size_t>(cuda_bag_data_indices_.RawData(), bag_data_indices_.data(), static_cast<size_t>(num_data_), __FILE__, __LINE__);
+        tree_learner->SetBaggingData(tmp_subset_.get(), cuda_bag_data_indices_.RawData(),
+                                      bag_data_cnt_);
+      } else {
+      #endif  // USE_CUDA
+        tree_learner->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
+                                     bag_data_cnt_);
+      #ifdef USE_CUDA
+      }
+      #endif  // USE_CUDA
     }
   }
 
-  void ResetGoss() {
+  void ResetSampleConfig(const Config* config, bool /*is_change_dataset*/) override {
+    // Cannot use bagging in GOSS
+    config_ = config;
+    need_resize_gradients_ = false;
+    if (objective_function_ == nullptr) {
+      // resize gradient vectors to copy the customized gradients for goss
+      need_resize_gradients_ = true;
+    }
+
     CHECK_LE(config_->top_rate + config_->other_rate, 1.0f);
     CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
     if (config_->bagging_freq > 0 && config_->bagging_fraction != 1.0f) {
@@ -100,7 +108,12 @@ class GOSS: public GBDT {
     bag_data_cnt_ = num_data_;
   }
 
-  data_size_t BaggingHelper(data_size_t start, data_size_t cnt, data_size_t* buffer) override {
+  bool IsHessianChange() const override {
+    return true;
+  }
+
+ private:
+  data_size_t Helper(data_size_t start, data_size_t cnt, data_size_t* buffer, score_t* gradients, score_t* hessians) {
     if (cnt <= 0) {
       return 0;
     }
@@ -108,7 +121,7 @@ class GOSS: public GBDT {
     for (data_size_t i = 0; i < cnt; ++i) {
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
         size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + start + i;
-        tmp_gradients[i] += std::fabs(gradients_[idx] * hessians_[idx]);
+        tmp_gradients[i] += std::fabs(gradients[idx] * hessians[idx]);
       }
     }
     data_size_t top_k = static_cast<data_size_t>(cnt * config_->top_rate);
@@ -126,7 +139,7 @@ class GOSS: public GBDT {
       score_t grad = 0.0f;
       for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
         size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + cur_idx;
-        grad += std::fabs(gradients_[idx] * hessians_[idx]);
+        grad += std::fabs(gradients[idx] * hessians[idx]);
       }
       if (grad >= threshold) {
         buffer[cur_left_cnt++] = cur_idx;
@@ -140,8 +153,8 @@ class GOSS: public GBDT {
           buffer[cur_left_cnt++] = cur_idx;
           for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
             size_t idx = static_cast<size_t>(cur_tree_id) * num_data_ + cur_idx;
-            gradients_[idx] *= multiply;
-            hessians_[idx] *= multiply;
+            gradients[idx] *= multiply;
+            hessians[idx] *= multiply;
           }
         } else {
           buffer[--cur_right_pos] = cur_idx;
@@ -150,39 +163,8 @@ class GOSS: public GBDT {
     }
     return cur_left_cnt;
   }
-
-  void Bagging(int iter) override {
-    bag_data_cnt_ = num_data_;
-    // not subsample for first iterations
-    if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
-    auto left_cnt = bagging_runner_.Run<true>(
-        num_data_,
-        [=](int, data_size_t cur_start, data_size_t cur_cnt, data_size_t* left,
-            data_size_t*) {
-          data_size_t cur_left_count = 0;
-          cur_left_count = BaggingHelper(cur_start, cur_cnt, left);
-          return cur_left_count;
-        },
-        bag_data_indices_.data());
-    bag_data_cnt_ = left_cnt;
-    // set bagging data to tree learner
-    if (!is_use_subset_) {
-      tree_learner_->SetBaggingData(nullptr, bag_data_indices_.data(), bag_data_cnt_);
-    } else {
-      // get subset
-      tmp_subset_->ReSize(bag_data_cnt_);
-      tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
-                              bag_data_cnt_, false);
-      tree_learner_->SetBaggingData(tmp_subset_.get(), bag_data_indices_.data(),
-                                    bag_data_cnt_);
-    }
-  }
-
- protected:
-  bool GetIsConstHessian(const ObjectiveFunction*) override {
-    return false;
-  }
 };
 
 }  // namespace LightGBM
-#endif   // LIGHTGBM_BOOSTING_GOSS_H_
+
+#endif  // LIGHTGBM_BOOSTING_GOSS_HPP_

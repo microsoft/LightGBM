@@ -5,7 +5,6 @@
 #ifndef LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 #define LIGHTGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
 
-#include <string>
 #include <cmath>
 #include <cstdio>
 #include <memory>
@@ -75,7 +74,7 @@ class LinearTreeLearner: public SerialTreeLearner {
       leaf_num_features[leaf_num] = static_cast<int>(feat_ptr[leaf_num].size());
     }
     OMP_INIT_EX();
-#pragma omp parallel for schedule(static) if (num_data_ > 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) if (num_data_ > 1024)
     for (int i = 0; i < num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       int leaf_num = leaf_map_[i];
@@ -118,10 +117,10 @@ class LinearTreeLearner: public SerialTreeLearner {
   /*! \brief map dataset to leaves */
   mutable std::vector<int> leaf_map_;
   /*! \brief temporary storage for calculating linear model coefficients */
-  mutable std::vector<std::vector<float>> XTHX_;
-  mutable std::vector<std::vector<float>> XTg_;
-  mutable std::vector<std::vector<std::vector<float>>> XTHX_by_thread_;
-  mutable std::vector<std::vector<std::vector<float>>> XTg_by_thread_;
+  mutable std::vector<std::vector<double>> XTHX_;
+  mutable std::vector<std::vector<double>> XTg_;
+  mutable std::vector<std::vector<std::vector<double>>> XTHX_by_thread_;
+  mutable std::vector<std::vector<std::vector<double>>> XTg_by_thread_;
 };
 
 }  // namespace LightGBM

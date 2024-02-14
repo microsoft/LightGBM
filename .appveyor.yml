@@ -1,15 +1,16 @@
-version: 3.3.2.99.{build}
+version: 4.3.0.{build}
 
 image: Visual Studio 2015
 platform: x64
 configuration:  # a trick to construct a build matrix with multiple Python versions
-  - '3.7'
+  - '3.8'
 
 # only build pull requests and
-# commits to 'master'
+# commits to 'master' or any branch starting with 'release'
 branches:
   only:
     - master
+    - /^release/
 
 environment:
   matrix:
@@ -22,7 +23,6 @@ clone_depth: 5
 
 install:
   - git submodule update --init --recursive  # get `external_libs` folder
-  - set PATH=%PATH:C:\Program Files\Git\usr\bin;=%  # delete sh.exe from PATH (mingw32-make fix)
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
   - set CONDA_ENV="test-env"
@@ -35,6 +35,8 @@ install:
 build: false
 
 test_script:
+  - conda config --remove channels defaults
+  - conda config --add channels nodefaults
   - conda config --add channels conda-forge
   - conda config --set channel_priority strict
   - conda init powershell

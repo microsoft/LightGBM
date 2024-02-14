@@ -186,6 +186,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "task",
   "objective",
   "boosting",
+  "data_sample_strategy",
   "data",
   "valid",
   "num_iterations",
@@ -251,6 +252,10 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "output_model",
   "saved_feature_importance_type",
   "snapshot_freq",
+  "use_quantized_grad",
+  "num_grad_quant_bins",
+  "quant_train_renew_leaf",
+  "stochastic_rounding",
   "linear_tree",
   "max_bin",
   "max_bin_by_feature",
@@ -300,6 +305,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_truncation_level",
   "lambdarank_norm",
   "label_gain",
+  "lambdarank_position_bias_regularization",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -495,6 +501,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "snapshot_freq", &snapshot_freq);
 
+  GetBool(params, "use_quantized_grad", &use_quantized_grad);
+
+  GetInt(params, "num_grad_quant_bins", &num_grad_quant_bins);
+
+  GetBool(params, "quant_train_renew_leaf", &quant_train_renew_leaf);
+
+  GetBool(params, "stochastic_rounding", &stochastic_rounding);
+
   GetBool(params, "linear_tree", &linear_tree);
 
   GetInt(params, "max_bin", &max_bin);
@@ -609,6 +623,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
     label_gain = Common::StringToArray<double>(tmp_str, ',');
   }
 
+  GetDouble(params, "lambdarank_position_bias_regularization", &lambdarank_position_bias_regularization);
+  CHECK_GE(lambdarank_position_bias_regularization, 0.0);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -650,12 +667,14 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
 std::string Config::SaveMembersToString() const {
   std::stringstream str_buf;
+  str_buf << "[data_sample_strategy: " << data_sample_strategy << "]\n";
   str_buf << "[data: " << data << "]\n";
   str_buf << "[valid: " << Common::Join(valid, ",") << "]\n";
   str_buf << "[num_iterations: " << num_iterations << "]\n";
   str_buf << "[learning_rate: " << learning_rate << "]\n";
   str_buf << "[num_leaves: " << num_leaves << "]\n";
   str_buf << "[num_threads: " << num_threads << "]\n";
+  str_buf << "[seed: " << seed << "]\n";
   str_buf << "[deterministic: " << deterministic << "]\n";
   str_buf << "[force_col_wise: " << force_col_wise << "]\n";
   str_buf << "[force_row_wise: " << force_row_wise << "]\n";
@@ -709,6 +728,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[tree_interaction_constraints: " << tree_interaction_constraints << "]\n";
   str_buf << "[verbosity: " << verbosity << "]\n";
   str_buf << "[saved_feature_importance_type: " << saved_feature_importance_type << "]\n";
+  str_buf << "[use_quantized_grad: " << use_quantized_grad << "]\n";
+  str_buf << "[num_grad_quant_bins: " << num_grad_quant_bins << "]\n";
+  str_buf << "[quant_train_renew_leaf: " << quant_train_renew_leaf << "]\n";
+  str_buf << "[stochastic_rounding: " << stochastic_rounding << "]\n";
   str_buf << "[linear_tree: " << linear_tree << "]\n";
   str_buf << "[max_bin: " << max_bin << "]\n";
   str_buf << "[max_bin_by_feature: " << Common::Join(max_bin_by_feature, ",") << "]\n";
@@ -745,6 +768,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_truncation_level: " << lambdarank_truncation_level << "]\n";
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
+  str_buf << "[lambdarank_position_bias_regularization: " << lambdarank_position_bias_regularization << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -760,6 +784,148 @@ std::string Config::SaveMembersToString() const {
   return str_buf.str();
 }
 
+const std::unordered_map<std::string, std::vector<std::string>>& Config::parameter2aliases() {
+  static std::unordered_map<std::string, std::vector<std::string>> map({
+    {"config", {"config_file"}},
+    {"task", {"task_type"}},
+    {"objective", {"objective_type", "app", "application", "loss"}},
+    {"boosting", {"boosting_type", "boost"}},
+    {"data_sample_strategy", {}},
+    {"data", {"train", "train_data", "train_data_file", "data_filename"}},
+    {"valid", {"test", "valid_data", "valid_data_file", "test_data", "test_data_file", "valid_filenames"}},
+    {"num_iterations", {"num_iteration", "n_iter", "num_tree", "num_trees", "num_round", "num_rounds", "nrounds", "num_boost_round", "n_estimators", "max_iter"}},
+    {"learning_rate", {"shrinkage_rate", "eta"}},
+    {"num_leaves", {"num_leaf", "max_leaves", "max_leaf", "max_leaf_nodes"}},
+    {"tree_learner", {"tree", "tree_type", "tree_learner_type"}},
+    {"num_threads", {"num_thread", "nthread", "nthreads", "n_jobs"}},
+    {"device_type", {"device"}},
+    {"seed", {"random_seed", "random_state"}},
+    {"deterministic", {}},
+    {"force_col_wise", {}},
+    {"force_row_wise", {}},
+    {"histogram_pool_size", {"hist_pool_size"}},
+    {"max_depth", {}},
+    {"min_data_in_leaf", {"min_data_per_leaf", "min_data", "min_child_samples", "min_samples_leaf"}},
+    {"min_sum_hessian_in_leaf", {"min_sum_hessian_per_leaf", "min_sum_hessian", "min_hessian", "min_child_weight"}},
+    {"bagging_fraction", {"sub_row", "subsample", "bagging"}},
+    {"pos_bagging_fraction", {"pos_sub_row", "pos_subsample", "pos_bagging"}},
+    {"neg_bagging_fraction", {"neg_sub_row", "neg_subsample", "neg_bagging"}},
+    {"bagging_freq", {"subsample_freq"}},
+    {"bagging_seed", {"bagging_fraction_seed"}},
+    {"feature_fraction", {"sub_feature", "colsample_bytree"}},
+    {"feature_fraction_bynode", {"sub_feature_bynode", "colsample_bynode"}},
+    {"feature_fraction_seed", {}},
+    {"extra_trees", {"extra_tree"}},
+    {"extra_seed", {}},
+    {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
+    {"first_metric_only", {}},
+    {"max_delta_step", {"max_tree_output", "max_leaf_output"}},
+    {"lambda_l1", {"reg_alpha", "l1_regularization"}},
+    {"lambda_l2", {"reg_lambda", "lambda", "l2_regularization"}},
+    {"linear_lambda", {}},
+    {"min_gain_to_split", {"min_split_gain"}},
+    {"drop_rate", {"rate_drop"}},
+    {"max_drop", {}},
+    {"skip_drop", {}},
+    {"xgboost_dart_mode", {}},
+    {"uniform_drop", {}},
+    {"drop_seed", {}},
+    {"top_rate", {}},
+    {"other_rate", {}},
+    {"min_data_per_group", {}},
+    {"max_cat_threshold", {}},
+    {"cat_l2", {}},
+    {"cat_smooth", {}},
+    {"max_cat_to_onehot", {}},
+    {"top_k", {"topk"}},
+    {"monotone_constraints", {"mc", "monotone_constraint", "monotonic_cst"}},
+    {"monotone_constraints_method", {"monotone_constraining_method", "mc_method"}},
+    {"monotone_penalty", {"monotone_splits_penalty", "ms_penalty", "mc_penalty"}},
+    {"feature_contri", {"feature_contrib", "fc", "fp", "feature_penalty"}},
+    {"forcedsplits_filename", {"fs", "forced_splits_filename", "forced_splits_file", "forced_splits"}},
+    {"refit_decay_rate", {}},
+    {"cegb_tradeoff", {}},
+    {"cegb_penalty_split", {}},
+    {"cegb_penalty_feature_lazy", {}},
+    {"cegb_penalty_feature_coupled", {}},
+    {"path_smooth", {}},
+    {"interaction_constraints", {}},
+    {"verbosity", {"verbose"}},
+    {"input_model", {"model_input", "model_in"}},
+    {"output_model", {"model_output", "model_out"}},
+    {"saved_feature_importance_type", {}},
+    {"snapshot_freq", {"save_period"}},
+    {"use_quantized_grad", {}},
+    {"num_grad_quant_bins", {}},
+    {"quant_train_renew_leaf", {}},
+    {"stochastic_rounding", {}},
+    {"linear_tree", {"linear_trees"}},
+    {"max_bin", {"max_bins"}},
+    {"max_bin_by_feature", {}},
+    {"min_data_in_bin", {}},
+    {"bin_construct_sample_cnt", {"subsample_for_bin"}},
+    {"data_random_seed", {"data_seed"}},
+    {"is_enable_sparse", {"is_sparse", "enable_sparse", "sparse"}},
+    {"enable_bundle", {"is_enable_bundle", "bundle"}},
+    {"use_missing", {}},
+    {"zero_as_missing", {}},
+    {"feature_pre_filter", {}},
+    {"pre_partition", {"is_pre_partition"}},
+    {"two_round", {"two_round_loading", "use_two_round_loading"}},
+    {"header", {"has_header"}},
+    {"label_column", {"label"}},
+    {"weight_column", {"weight"}},
+    {"group_column", {"group", "group_id", "query_column", "query", "query_id"}},
+    {"ignore_column", {"ignore_feature", "blacklist"}},
+    {"categorical_feature", {"cat_feature", "categorical_column", "cat_column", "categorical_features"}},
+    {"forcedbins_filename", {}},
+    {"save_binary", {"is_save_binary", "is_save_binary_file"}},
+    {"precise_float_parser", {}},
+    {"parser_config_file", {}},
+    {"start_iteration_predict", {}},
+    {"num_iteration_predict", {}},
+    {"predict_raw_score", {"is_predict_raw_score", "predict_rawscore", "raw_score"}},
+    {"predict_leaf_index", {"is_predict_leaf_index", "leaf_index"}},
+    {"predict_contrib", {"is_predict_contrib", "contrib"}},
+    {"predict_disable_shape_check", {}},
+    {"pred_early_stop", {}},
+    {"pred_early_stop_freq", {}},
+    {"pred_early_stop_margin", {}},
+    {"output_result", {"predict_result", "prediction_result", "predict_name", "prediction_name", "pred_name", "name_pred"}},
+    {"convert_model_language", {}},
+    {"convert_model", {"convert_model_file"}},
+    {"objective_seed", {}},
+    {"num_class", {"num_classes"}},
+    {"is_unbalance", {"unbalance", "unbalanced_sets"}},
+    {"scale_pos_weight", {}},
+    {"sigmoid", {}},
+    {"boost_from_average", {}},
+    {"reg_sqrt", {}},
+    {"alpha", {}},
+    {"fair_c", {}},
+    {"poisson_max_delta_step", {}},
+    {"tweedie_variance_power", {}},
+    {"lambdarank_truncation_level", {}},
+    {"lambdarank_norm", {}},
+    {"label_gain", {}},
+    {"lambdarank_position_bias_regularization", {}},
+    {"metric", {"metrics", "metric_types"}},
+    {"metric_freq", {"output_freq"}},
+    {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
+    {"eval_at", {"ndcg_eval_at", "ndcg_at", "map_eval_at", "map_at"}},
+    {"multi_error_top_k", {}},
+    {"auc_mu_weights", {}},
+    {"num_machines", {"num_machine"}},
+    {"local_listen_port", {"local_port", "port"}},
+    {"time_out", {}},
+    {"machine_list_filename", {"machine_list_file", "machine_list", "mlist"}},
+    {"machines", {"workers", "nodes"}},
+    {"gpu_platform_id", {}},
+    {"gpu_device_id", {}},
+    {"gpu_use_dp", {}},
+    {"num_gpu", {}},
+  });
+  return map;
 const std::string Config::DumpAliases() {
   std::stringstream str_buf;
   str_buf << "{";
@@ -898,6 +1064,149 @@ const std::string Config::DumpAliases() {
   str_buf << "\"num_gpu\": []";
   str_buf << "}";
   return str_buf.str();
+}
+
+const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
+  static std::unordered_map<std::string, std::string> map({
+    {"config", "string"},
+    {"objective", "string"},
+    {"boosting", "string"},
+    {"data_sample_strategy", "string"},
+    {"data", "string"},
+    {"valid", "vector<string>"},
+    {"num_iterations", "int"},
+    {"learning_rate", "double"},
+    {"num_leaves", "int"},
+    {"tree_learner", "string"},
+    {"num_threads", "int"},
+    {"device_type", "string"},
+    {"seed", "int"},
+    {"deterministic", "bool"},
+    {"force_col_wise", "bool"},
+    {"force_row_wise", "bool"},
+    {"histogram_pool_size", "double"},
+    {"max_depth", "int"},
+    {"min_data_in_leaf", "int"},
+    {"min_sum_hessian_in_leaf", "double"},
+    {"bagging_fraction", "double"},
+    {"pos_bagging_fraction", "double"},
+    {"neg_bagging_fraction", "double"},
+    {"bagging_freq", "int"},
+    {"bagging_seed", "int"},
+    {"feature_fraction", "double"},
+    {"feature_fraction_bynode", "double"},
+    {"feature_fraction_seed", "int"},
+    {"extra_trees", "bool"},
+    {"extra_seed", "int"},
+    {"early_stopping_round", "int"},
+    {"first_metric_only", "bool"},
+    {"max_delta_step", "double"},
+    {"lambda_l1", "double"},
+    {"lambda_l2", "double"},
+    {"linear_lambda", "double"},
+    {"min_gain_to_split", "double"},
+    {"drop_rate", "double"},
+    {"max_drop", "int"},
+    {"skip_drop", "double"},
+    {"xgboost_dart_mode", "bool"},
+    {"uniform_drop", "bool"},
+    {"drop_seed", "int"},
+    {"top_rate", "double"},
+    {"other_rate", "double"},
+    {"min_data_per_group", "int"},
+    {"max_cat_threshold", "int"},
+    {"cat_l2", "double"},
+    {"cat_smooth", "double"},
+    {"max_cat_to_onehot", "int"},
+    {"top_k", "int"},
+    {"monotone_constraints", "vector<int>"},
+    {"monotone_constraints_method", "string"},
+    {"monotone_penalty", "double"},
+    {"feature_contri", "vector<double>"},
+    {"forcedsplits_filename", "string"},
+    {"refit_decay_rate", "double"},
+    {"cegb_tradeoff", "double"},
+    {"cegb_penalty_split", "double"},
+    {"cegb_penalty_feature_lazy", "vector<double>"},
+    {"cegb_penalty_feature_coupled", "vector<double>"},
+    {"path_smooth", "double"},
+    {"interaction_constraints", "vector<vector<int>>"},
+    {"verbosity", "int"},
+    {"input_model", "string"},
+    {"output_model", "string"},
+    {"saved_feature_importance_type", "int"},
+    {"snapshot_freq", "int"},
+    {"use_quantized_grad", "bool"},
+    {"num_grad_quant_bins", "int"},
+    {"quant_train_renew_leaf", "bool"},
+    {"stochastic_rounding", "bool"},
+    {"linear_tree", "bool"},
+    {"max_bin", "int"},
+    {"max_bin_by_feature", "vector<int>"},
+    {"min_data_in_bin", "int"},
+    {"bin_construct_sample_cnt", "int"},
+    {"data_random_seed", "int"},
+    {"is_enable_sparse", "bool"},
+    {"enable_bundle", "bool"},
+    {"use_missing", "bool"},
+    {"zero_as_missing", "bool"},
+    {"feature_pre_filter", "bool"},
+    {"pre_partition", "bool"},
+    {"two_round", "bool"},
+    {"header", "bool"},
+    {"label_column", "string"},
+    {"weight_column", "string"},
+    {"group_column", "string"},
+    {"ignore_column", "vector<int>"},
+    {"categorical_feature", "vector<int>"},
+    {"forcedbins_filename", "string"},
+    {"save_binary", "bool"},
+    {"precise_float_parser", "bool"},
+    {"parser_config_file", "string"},
+    {"start_iteration_predict", "int"},
+    {"num_iteration_predict", "int"},
+    {"predict_raw_score", "bool"},
+    {"predict_leaf_index", "bool"},
+    {"predict_contrib", "bool"},
+    {"predict_disable_shape_check", "bool"},
+    {"pred_early_stop", "bool"},
+    {"pred_early_stop_freq", "int"},
+    {"pred_early_stop_margin", "double"},
+    {"output_result", "string"},
+    {"convert_model_language", "string"},
+    {"convert_model", "string"},
+    {"objective_seed", "int"},
+    {"num_class", "int"},
+    {"is_unbalance", "bool"},
+    {"scale_pos_weight", "double"},
+    {"sigmoid", "double"},
+    {"boost_from_average", "bool"},
+    {"reg_sqrt", "bool"},
+    {"alpha", "double"},
+    {"fair_c", "double"},
+    {"poisson_max_delta_step", "double"},
+    {"tweedie_variance_power", "double"},
+    {"lambdarank_truncation_level", "int"},
+    {"lambdarank_norm", "bool"},
+    {"label_gain", "vector<double>"},
+    {"lambdarank_position_bias_regularization", "double"},
+    {"metric", "vector<string>"},
+    {"metric_freq", "int"},
+    {"is_provide_training_metric", "bool"},
+    {"eval_at", "vector<int>"},
+    {"multi_error_top_k", "int"},
+    {"auc_mu_weights", "vector<double>"},
+    {"num_machines", "int"},
+    {"local_listen_port", "int"},
+    {"time_out", "int"},
+    {"machine_list_filename", "string"},
+    {"machines", "string"},
+    {"gpu_platform_id", "int"},
+    {"gpu_device_id", "int"},
+    {"gpu_use_dp", "bool"},
+    {"num_gpu", "int"},
+  });
+  return map;
 }
 
 }  // namespace LightGBM

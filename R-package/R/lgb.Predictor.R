@@ -1,6 +1,7 @@
-#' @importFrom methods is
+#' @importFrom methods is new
 #' @importFrom R6 R6Class
 #' @importFrom utils read.delim
+#' @importClassesFrom Matrix dsparseMatrix dsparseVector dgCMatrix dgRMatrix CsparseMatrix RsparseMatrix
 Predictor <- R6::R6Class(
 
   classname = "lgb.Predictor",
@@ -26,8 +27,8 @@ Predictor <- R6::R6Class(
     },
 
     # Initialize will create a starter model
-    initialize = function(modelfile, params = list()) {
-      private$params <- lgb.params2str(params = params)
+    initialize = function(modelfile, params = list(), fast_predict_config = list()) {
+      private$params <- .params2str(params = params)
       handle <- NULL
 
       if (is.character(modelfile)) {
@@ -45,7 +46,7 @@ Predictor <- R6::R6Class(
         handle <- modelfile
         private$need_free_handle <- FALSE
 
-      } else if (lgb.is.Booster(modelfile)) {
+      } else if (.is_Booster(modelfile)) {
 
         handle <- modelfile$get_handle()
         private$need_free_handle <- FALSE
@@ -55,6 +56,8 @@ Predictor <- R6::R6Class(
         stop("lgb.Predictor: modelfile must be either a character filename or an lgb.Booster.handle")
 
       }
+
+      private$fast_predict_config <- fast_predict_config
 
       # Override class and store it
       class(handle) <- "lgb.Booster.handle"
@@ -95,8 +98,6 @@ Predictor <- R6::R6Class(
         start_iteration <- 0L
       }
 
-      num_row <- 0L
-
       # Check if data is a file name and not a matrix
       if (identical(class(data), "character") && length(data) == 1L) {
 
@@ -126,10 +127,118 @@ Predictor <- R6::R6Class(
         num_row <- nrow(preds)
         preds <- as.vector(t(preds))
 
+      } else if (predcontrib && inherits(data, c("dsparseMatrix", "dsparseVector"))) {
+
+        ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
+        ncols_out <- integer(1L)
+        .Call(LGBM_BoosterGetNumClasses_R, private$handle, ncols_out)
+        ncols_out <- (ncols + 1L) * max(ncols_out, 1L)
+        if (is.na(ncols_out)) {
+          ncols_out <- as.numeric(ncols + 1L) * as.numeric(max(ncols_out, 1L))
+        }
+        if (!inherits(data, "dsparseVector") && ncols_out > .Machine$integer.max) {
+          stop("Resulting matrix of feature contributions is too large for R to handle.")
+        }
+
+        if (inherits(data, "dsparseVector")) {
+
+          if (length(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , length(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , c(0L, as.integer(length(data@x)))
+            , data@i - 1L
+            , data@x
+            , TRUE
+            , 1L
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dsparseVector")
+          out@i <- res$indices + 1L
+          out@x <- res$data
+          out@length <- ncols_out
+          return(out)
+
+        } else if (inherits(data, "dgRMatrix")) {
+
+          if (ncol(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , ncol(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , data@p
+            , data@j
+            , data@x
+            , TRUE
+            , nrow(data)
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dgRMatrix")
+          out@p <- res$indptr
+          out@j <- res$indices
+          out@x <- res$data
+          out@Dim <- as.integer(c(nrow(data), ncols_out))
+
+        } else if (inherits(data, "dgCMatrix")) {
+
+          if (ncol(data) != ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , ncol(data)))
+          }
+          res <- .Call(
+            LGBM_BoosterPredictSparseOutput_R
+            , private$handle
+            , data@p
+            , data@i
+            , data@x
+            , FALSE
+            , nrow(data)
+            , ncols
+            , start_iteration
+            , num_iteration
+            , private$params
+          )
+          out <- methods::new("dgCMatrix")
+          out@p <- res$indptr
+          out@i <- res$indices
+          out@x <- res$data
+          out@Dim <- as.integer(c(nrow(data), length(res$indptr) - 1L))
+
+        } else {
+
+          stop(sprintf("Predictions on sparse inputs are only allowed for '%s', '%s', '%s' - got: %s"
+                       , "dsparseVector"
+                       , "dgRMatrix"
+                       , "dgCMatrix"
+                       , toString(class(data))))
+        }
+
+        if (NROW(row.names(data))) {
+          out@Dimnames[[1L]] <- row.names(data)
+        }
+        return(out)
+
       } else {
 
         # Not a file, we need to predict from R object
         num_row <- nrow(data)
+        if (is.null(num_row)) {
+          num_row <- 1L
+        }
 
         npred <- 0L
 
@@ -156,20 +265,175 @@ Predictor <- R6::R6Class(
           if (storage.mode(data) != "double") {
             storage.mode(data) <- "double"
           }
-          .Call(
-            LGBM_BoosterPredictForMat_R
-            , private$handle
-            , data
-            , as.integer(nrow(data))
-            , as.integer(ncol(data))
-            , as.integer(rawscore)
-            , as.integer(predleaf)
-            , as.integer(predcontrib)
-            , as.integer(start_iteration)
-            , as.integer(num_iteration)
-            , private$params
-            , preds
-          )
+
+          if (nrow(data) == 1L) {
+
+            use_fast_config <- private$check_can_use_fast_predict_config(
+              csr = FALSE
+              , rawscore = rawscore
+              , predleaf = predleaf
+              , predcontrib = predcontrib
+              , start_iteration = start_iteration
+              , num_iteration = num_iteration
+            )
+
+            if (use_fast_config) {
+              .Call(
+                LGBM_BoosterPredictForMatSingleRowFast_R
+                , private$fast_predict_config$handle
+                , data
+                , preds
+              )
+            } else {
+              .Call(
+                LGBM_BoosterPredictForMatSingleRow_R
+                , private$handle
+                , data
+                , rawscore
+                , predleaf
+                , predcontrib
+                , start_iteration
+                , num_iteration
+                , private$params
+                , preds
+              )
+            }
+
+          } else {
+            .Call(
+              LGBM_BoosterPredictForMat_R
+              , private$handle
+              , data
+              , as.integer(nrow(data))
+              , as.integer(ncol(data))
+              , as.integer(rawscore)
+              , as.integer(predleaf)
+              , as.integer(predcontrib)
+              , as.integer(start_iteration)
+              , as.integer(num_iteration)
+              , private$params
+              , preds
+            )
+          }
+
+        } else if (inherits(data, "dsparseVector")) {
+
+          if (length(self$fast_predict_config)) {
+            ncols <- self$fast_predict_config$ncols
+            use_fast_config <- private$check_can_use_fast_predict_config(
+                csr = TRUE
+                , rawscore = rawscore
+                , predleaf = predleaf
+                , predcontrib = predcontrib
+                , start_iteration = start_iteration
+                , num_iteration = num_iteration
+              )
+          } else {
+            ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
+            use_fast_config <- FALSE
+          }
+
+          if (length(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , length(data)))
+          }
+
+          if (use_fast_config) {
+            .Call(
+              LGBM_BoosterPredictForCSRSingleRowFast_R
+              , self$fast_predict_config$handle
+              , data@i - 1L
+              , data@x
+              , preds
+            )
+          } else {
+            .Call(
+              LGBM_BoosterPredictForCSRSingleRow_R
+              , private$handle
+              , data@i - 1L
+              , data@x
+              , ncols
+              , as.integer(rawscore)
+              , as.integer(predleaf)
+              , as.integer(predcontrib)
+              , start_iteration
+              , num_iteration
+              , private$params
+              , preds
+            )
+          }
+
+        } else if (inherits(data, "dgRMatrix")) {
+
+          ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
+          if (ncol(data) > ncols) {
+            stop(sprintf("Model was fitted to data with %d columns, input data has %.0f columns."
+                         , ncols
+                         , ncol(data)))
+          }
+
+          if (nrow(data) == 1L) {
+
+            if (length(self$fast_predict_config)) {
+              ncols <- self$fast_predict_config$ncols
+              use_fast_config <- private$check_can_use_fast_predict_config(
+                csr = TRUE
+                , rawscore = rawscore
+                , predleaf = predleaf
+                , predcontrib = predcontrib
+                , start_iteration = start_iteration
+                , num_iteration = num_iteration
+              )
+            } else {
+              ncols <- .Call(LGBM_BoosterGetNumFeature_R, private$handle)
+              use_fast_config <- FALSE
+            }
+
+            if (use_fast_config) {
+              .Call(
+                LGBM_BoosterPredictForCSRSingleRowFast_R
+                , self$fast_predict_config$handle
+                , data@j
+                , data@x
+                , preds
+              )
+            } else {
+              .Call(
+                LGBM_BoosterPredictForCSRSingleRow_R
+                , private$handle
+                , data@j
+                , data@x
+                , ncols
+                , as.integer(rawscore)
+                , as.integer(predleaf)
+                , as.integer(predcontrib)
+                , start_iteration
+                , num_iteration
+                , private$params
+                , preds
+              )
+            }
+
+          } else {
+
+            .Call(
+              LGBM_BoosterPredictForCSR_R
+              , private$handle
+              , data@p
+              , data@j
+              , data@x
+              , ncols
+              , as.integer(rawscore)
+              , as.integer(predleaf)
+              , as.integer(predcontrib)
+              , start_iteration
+              , num_iteration
+              , private$params
+              , preds
+            )
+
+          }
 
         } else if (methods::is(data, "dgCMatrix")) {
           if (length(data@p) > 2147483647L) {
@@ -236,5 +500,36 @@ Predictor <- R6::R6Class(
     handle = NULL
     , need_free_handle = FALSE
     , params = ""
+    , fast_predict_config = list()
+    , check_can_use_fast_predict_config = function(csr,
+                                                   rawscore,
+                                                   predleaf,
+                                                   predcontrib,
+                                                   start_iteration,
+                                                   num_iteration) {
+
+      if (!NROW(private$fast_predict_config)) {
+        return(FALSE)
+      }
+
+      if (.is_null_handle(private$fast_predict_config$handle)) {
+        warning(paste0("Model had fast CSR predict configuration, but it is inactive."
+                       , " Try re-generating it through 'lgb.configure_fast_predict'."))
+        return(FALSE)
+      }
+
+      if (isTRUE(csr) != private$fast_predict_config$csr) {
+        return(FALSE)
+      }
+
+      return(
+        private$params == "" &&
+        private$fast_predict_config$rawscore == rawscore &&
+        private$fast_predict_config$predleaf == predleaf &&
+        private$fast_predict_config$predcontrib == predcontrib &&
+        .equal_or_both_null(private$fast_predict_config$start_iteration, start_iteration) &&
+        .equal_or_both_null(private$fast_predict_config$num_iteration, num_iteration)
+      )
+    }
   )
 )

@@ -43,15 +43,16 @@
 #'                     These should follow the requirements from the descriptions above.
 #'                 }
 #'             }
-#' @param eval_freq evaluation output frequency, only effect when verbose > 0
-#' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
+#' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
+#' @param init_model path of model file or \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
 #'            \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}
 #' @param params a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 #'               the "Parameters" section of the documentation} for a list of parameters and valid values.
-#' @param verbose verbosity for output, if <= 0, also will disable the print of evaluation during training
+#' @param verbose verbosity for output, if <= 0 and \code{valids} has been provided, also will disable the
+#'                printing of evaluation during training
 #' @param serializable whether to make the resulting objects serializable through functions such as
 #'                     \code{save} or \code{saveRDS} (see section "Model serialization").
 #' @section Early Stopping:
@@ -83,21 +84,47 @@
 #'          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
 #'          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
 #'          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
+#'
+#'          \emph{New in version 4.0.0}
+#'
 #' @keywords internal
 NULL
 
 #' @name lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+#'              is focused on compatibility with other statistics and machine learning interfaces in R.
+#'              This focus on compatibility means that this interface may experience more frequent breaking API changes
+#'              than \code{\link{lgb.train}}.
+#'              For efficiency-sensitive applications, or for applications where breaking API changes across releases
+#'              is very expensive, use \code{\link{lgb.train}}.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
 #'                observations / rows have the same importance / weight.
+#'
+#'                \emph{Changed from 'weight', in version 4.0.0}
+#'
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
 #'                  the "objective" item of the "Parameters" section of the documentation}.
+#'
+#'                  If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+#'                  be determined according to what is passed for \code{label}:\itemize{
+#'                  \item If passing a factor with two variables, will use objective \code{"binary"}.
+#'                  \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+#'                  (note that parameter \code{num_class} in this case will also be determined automatically from
+#'                  \code{label}).
+#'                  \item Otherwise (or if passing \code{lgb.Dataset} as input), will use objective \code{"regression"}.
+#'                  }
+#'
+#'                  \emph{New in version 4.0.0}
+#'
 #' @param init_score initial score is the base prediction lightgbm will boost from
+#'
+#'                   \emph{New in version 4.0.0}
+#'
 #' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
 #'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
 #'                    number of maximum threads.
@@ -114,6 +141,9 @@ NULL
 #'
 #'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
 #'                    if passed there.
+#'
+#'                    \emph{New in version 4.0.0}
+#'
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -143,7 +173,7 @@ lightgbm <- function(data,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
-                     objective = "regression",
+                     objective = "auto",
                      init_score = NULL,
                      num_threads = NULL,
                      ...) {
@@ -154,19 +184,43 @@ lightgbm <- function(data,
   }
 
   if (is.null(num_threads)) {
-    num_threads <- lgb.get.default.num.threads()
+    num_threads <- .get_default_num_threads()
   }
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "num_threads"
     , params = params
     , alternative_kwarg_value = num_threads
   )
+  params <- .check_wrapper_param(
+    main_param_name = "verbosity"
+    , params = params
+    , alternative_kwarg_value = verbose
+  )
+
+  # Process factors as labels and auto-determine objective
+  if (!.is_Dataset(data)) {
+    data_processor <- DataProcessor$new()
+    temp <- data_processor$process_label(
+        label = label
+        , objective = objective
+        , params = params
+    )
+    label <- temp$label
+    objective <- temp$objective
+    params <- temp$params
+    rm(temp)
+  } else {
+    data_processor <- NULL
+    if (objective == "auto") {
+      objective <- "regression"
+    }
+  }
 
   # Set data to a temporary variable
   dtrain <- data
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
-  if (!lgb.is.Dataset(x = dtrain)) {
+  if (!.is_Dataset(x = dtrain)) {
     dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
   }
 
@@ -175,7 +229,7 @@ lightgbm <- function(data,
     , "data" = dtrain
     , "nrounds" = nrounds
     , "obj" = objective
-    , "verbose" = verbose
+    , "verbose" = params[["verbosity"]]
     , "eval_freq" = eval_freq
     , "early_stopping_rounds" = early_stopping_rounds
     , "init_model" = init_model
@@ -188,16 +242,12 @@ lightgbm <- function(data,
     train_args[["valids"]] <- list()
   }
 
-  # Set validation as oneself
-  if (verbose > 0L) {
-    train_args[["valids"]][["train"]] <- dtrain
-  }
-
   # Train a model using the regular way
   bst <- do.call(
     what = lgb.train
     , args = train_args
   )
+  bst$data_processor <- data_processor
 
   return(bst)
 }

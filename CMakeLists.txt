@@ -4,8 +4,7 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
-option(USE_CUDA "Enable CUDA-accelerated training (EXPERIMENTAL)" OFF)
-option(USE_CUDA_EXP "Enable CUDA-accelerated training with more acceleration (EXPERIMENTAL)" OFF)
+option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 set(
@@ -16,8 +15,11 @@ set(
   "Semicolon separated list of sanitizer names, e.g., 'address;leak'. \
 Supported sanitizers are address, leak, undefined and thread."
 )
+option(BUILD_CLI "Build the 'lightbgm' command-line interface in addition to lib_lightgbm" ON)
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
+option(INSTALL_HEADERS "Install headers to CMAKE_INSTALL_PREFIX (e.g. '/usr/local/include')" ON)
+option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the Python package" OFF)
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
@@ -25,17 +27,16 @@ if(APPLE)
   option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
 endif()
 
-if(__INTEGRATE_OPENCL)
-  cmake_minimum_required(VERSION 3.11)
-elseif(USE_GPU OR APPLE)
-  cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA OR USE_CUDA_EXP)
-  cmake_minimum_required(VERSION 3.16)
-else()
-  cmake_minimum_required(VERSION 3.0)
-endif()
+cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
+
+if(BUILD_CPP_TEST)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 11)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
@@ -54,6 +55,14 @@ if(__INTEGRATE_OPENCL)
   message(STATUS "Building library with integrated OpenCL components")
 endif()
 
+if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R)
+    # the Python and R package don't require the CLI
+    set(BUILD_CLI OFF)
+    # installing the R and Python package shouldn't place LightGBM's headers
+    # outside of where the package is installed
+    set(INSTALL_HEADERS OFF)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.2")
     message(FATAL_ERROR "Insufficient gcc version")
@@ -66,7 +75,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
     message(FATAL_ERROR "Insufficient AppleClang version")
   endif()
-  cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
     message(
@@ -74,7 +82,6 @@ elseif(MSVC)
       "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
     )
   endif()
-  cmake_minimum_required(VERSION 3.8)
 endif()
 
 if(USE_SWIG)
@@ -109,6 +116,7 @@ include_directories(${EIGEN_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
+add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -134,14 +142,31 @@ else()
     add_definitions(-DUSE_SOCKET)
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
 
 if(USE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    if(APPLE)
+        find_package(OpenMP)
+        if(NOT OpenMP_FOUND)
+            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+            execute_process(COMMAND brew --prefix libomp
+                            OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
+                            OUTPUT_STRIP_TRAILING_WHITESPACE)
+            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+            set(OpenMP_C_LIB_NAMES omp)
+            set(OpenMP_CXX_LIB_NAMES omp)
+            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            find_package(OpenMP REQUIRED)
+        endif()
+    else()
+        find_package(OpenMP REQUIRED)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
@@ -164,32 +189,34 @@ if(USE_GPU)
 endif()
 
 if(__INTEGRATE_OPENCL)
-    if(WIN32)
+    if(APPLE)
+        message(FATAL_ERROR "Integrated OpenCL build is not available on macOS")
+    else()
         include(cmake/IntegratedOpenCL.cmake)
         add_definitions(-DUSE_GPU)
-    else()
-        message(FATAL_ERROR "Integrated OpenCL build is available only for Windows")
     endif()
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
-    if(USE_CUDA)
-      find_package(CUDA 9.0 REQUIRED)
-    else()
-      find_package(CUDA 10.0 REQUIRED)
-    endif()
+if(USE_CUDA)
+    find_package(CUDA 11.0 REQUIRED)
     include_directories(${CUDA_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "10.0")
-        list(APPEND CUDA_ARCHS "7.5")
-    endif()
+    # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
+    # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
+    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "8.0")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "8.6")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.5")
+        list(APPEND CUDA_ARCHS "8.7")
+    endif()
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
+        list(APPEND CUDA_ARCHS "8.9")
+        list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
@@ -204,11 +231,7 @@ if(USE_CUDA OR USE_CUDA_EXP)
     endif()
     message(STATUS "CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
 
-    if(USE_CUDA)
-      add_definitions(-DUSE_CUDA)
-    elseif(USE_CUDA_EXP)
-      add_definitions(-DUSE_CUDA_EXP)
-    endif()
+    add_definitions(-DUSE_CUDA)
 
     if(NOT DEFINED CMAKE_CUDA_STANDARD)
       set(CMAKE_CUDA_STANDARD 11)
@@ -302,8 +325,15 @@ endif()
 if(UNIX OR MINGW OR CYGWIN)
   set(
     CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
+    "${CMAKE_CXX_FLAGS} -pthread -Wextra -Wall -Wno-ignored-attributes -Wno-unknown-pragmas -Wno-return-type"
   )
+  if(MINGW)
+    # ignore this warning: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=95353
+    set(
+      CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -Wno-stringop-overflow"
+    )
+  endif()
   if(USE_DEBUG)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O0")
   else()
@@ -324,6 +354,18 @@ if(WIN32 AND MINGW)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libstdc++")
 endif()
 
+# Check if inet_pton is already available, to avoid conflicts with the implementation in LightGBM.
+# As of 2022, MinGW started including a definition of inet_pton.
+if(WIN32)
+  include(CheckSymbolExists)
+  list(APPEND CMAKE_REQUIRED_LIBRARIES "ws2_32")
+  check_symbol_exists(inet_pton "ws2tcpip.h" WIN_INET_PTON_FOUND)
+  if(WIN_INET_PTON_FOUND)
+    add_definitions(-DWIN_HAS_INET_PTON)
+  endif()
+  list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES "ws2_32")
+endif()
+
 if(MSVC)
     set(
       variables
@@ -337,6 +379,13 @@ if(MSVC)
         CMAKE_CXX_FLAGS_RELWITHDEBINFO
     )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    if(__BUILD_FOR_R)
+        # MSVC does not like this commit:
+        # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
+        #
+        # and raises "error C3646: 'private_data_c': unknown override specifier"
+        add_definitions(-DR_LEGACY_RCOMPLEX)
+    endif()
     if(USE_DEBUG)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Od")
     else()
@@ -379,23 +428,36 @@ file(
       src/objective/*.cpp
       src/network/*.cpp
       src/treelearner/*.cpp
-if(USE_CUDA OR USE_CUDA_EXP)
+      src/utils/*.cpp
+)
+file(
+    GLOB
+    LGBM_CUDA_SOURCES
       src/treelearner/*.cu
-endif()
-if(USE_CUDA_EXP)
+      src/boosting/cuda/*.cpp
+      src/boosting/cuda/*.cu
+      src/metric/cuda/*.cpp
+      src/metric/cuda/*.cu
+      src/objective/cuda/*.cpp
+      src/objective/cuda/*.cu
       src/treelearner/cuda/*.cpp
       src/treelearner/cuda/*.cu
       src/io/cuda/*.cu
       src/io/cuda/*.cpp
       src/cuda/*.cpp
       src/cuda/*.cu
-endif()
 )
+
+if(USE_CUDA)
+  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
-add_executable(lightgbm src/main.cpp src/application/application.cpp)
-target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+if(BUILD_CLI)
+    add_executable(lightgbm src/main.cpp src/application/application.cpp)
+    target_link_libraries(lightgbm PRIVATE lightgbm_objs)
+endif()
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
@@ -423,7 +485,7 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY CPLUSPLUS ON)
   list(APPEND swig_options -package com.microsoft.ml.lightgbm)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
-  swig_add_module(_lightgbm_swig java swig/lightgbmlib.i)
+  swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
   # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
   set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
@@ -454,7 +516,18 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     endif()
@@ -463,9 +536,16 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
-          cp
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
+          com/microsoft/ml/lightgbm/osx/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
           "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
           com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
@@ -475,7 +555,12 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
+          com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   endif()
@@ -508,28 +593,34 @@ if(__INTEGRATE_OPENCL)
   # variables INTEGRATED_OPENCL_* are set in IntegratedOpenCL.cmake
   target_include_directories(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_INCLUDES})
   target_compile_definitions(lightgbm_objs PRIVATE ${INTEGRATED_OPENCL_DEFINITIONS})
-  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES})
+  target_link_libraries(lightgbm_objs PUBLIC ${INTEGRATED_OPENCL_LIBRARIES} ${CMAKE_DL_LIBS})
 endif()
 
-if(USE_CUDA OR USE_CUDA_EXP)
+if(USE_CUDA)
   # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
   # Custom target properties does not propagate, thus we need to specify for
   # each target that contains or depends on cuda source.
   set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
   set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
-  set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  if(BUILD_CLI)
+    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  endif()
 
   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Device linking is not supported for object libraries.
   # Thus we have to specify them on final targets.
-  set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  if(BUILD_CLI)
+    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  endif()
   set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
-  target_link_libraries(lightgbm PRIVATE ${histograms})
+  if(BUILD_CLI)
+    target_link_libraries(lightgbm PRIVATE ${histograms})
+  endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
@@ -539,7 +630,7 @@ endif()
 
 if(WIN32)
     if(MINGW OR CYGWIN)
-      target_link_libraries(lightgbm_objs PUBLIC Ws2_32 IPHLPAPI)
+      target_link_libraries(lightgbm_objs PUBLIC ws2_32 iphlpapi)
     endif()
 endif()
 
@@ -564,13 +655,18 @@ if(BUILD_CPP_TEST)
     FetchContent_Declare(
       googletest
       GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        release-1.11.0
+      GIT_TAG        v1.14.0
     )
     FetchContent_MakeAvailable(googletest)
     add_library(GTest::GTest ALIAS gtest)
   endif()
+
+  set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
+  include_directories(${LightGBM_TEST_HEADER_DIR})
+
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
     set(
       CompilerFlags
         CMAKE_CXX_FLAGS
@@ -585,14 +681,27 @@ if(BUILD_CPP_TEST)
     endforeach()
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
-  target_link_libraries(testlightgbm PRIVATE lightgbm_objs GTest::GTest)
+  target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
+endif()
+
+if(BUILD_CLI)
+    install(
+      TARGETS lightgbm
+      RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
+    )
+endif()
+
+if(__BUILD_FOR_PYTHON)
+    set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
 install(
-  TARGETS lightgbm _lightgbm
+  TARGETS _lightgbm
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+if(INSTALL_HEADERS)
+    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+endif()

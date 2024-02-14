@@ -61,13 +61,13 @@ class BinaryMetric: public Metric {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i]) * weights_[i];
@@ -75,7 +75,7 @@ class BinaryMetric: public Metric {
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double prob = 0;
           objective->ConvertOutput(&score[i], &prob);
@@ -83,7 +83,7 @@ class BinaryMetric: public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], prob);
         }
       } else {
-        #pragma omp parallel for schedule(static) reduction(+:sum_loss)
+        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double prob = 0;
           objective->ConvertOutput(&score[i], &prob);
@@ -96,7 +96,7 @@ class BinaryMetric: public Metric {
     return std::vector<double>(1, loss);
   }
 
- private:
+ protected:
   /*! \brief Number of data */
   data_size_t num_data_;
   /*! \brief Pointer of label */

@@ -155,7 +155,7 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
       rec_map.ranks[i] = next_node_idx;
       // get receive block information
       const int recv_block_start = cur_group_idx / distance[i];
-      rec_map.recv_block_start[i] = group_block_start[recv_block_start * distance[i]];
+      rec_map.recv_block_start[i] = group_block_start[static_cast<size_t>(recv_block_start) * distance[i]];
       int recv_block_len = 0;
       // accumulate block len
       for (int j = 0; j < distance[i]; ++j) {
@@ -164,7 +164,7 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
       rec_map.recv_block_len[i] = recv_block_len;
       // get send block information
       const int send_block_start = (cur_group_idx + dir * distance[i]) / distance[i];
-      rec_map.send_block_start[i] = group_block_start[send_block_start * distance[i]];
+      rec_map.send_block_start[i] = group_block_start[static_cast<size_t>(send_block_start) * distance[i]];
       int send_block_len = 0;
       // accumulate block len
       for (int j = 0; j < distance[i]; ++j) {
