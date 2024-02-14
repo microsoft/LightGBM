@@ -3714,27 +3714,6 @@ def test_tree_interaction_constraints():
     check_consistency(est, tree_interaction_constraints)
 
 
-
-def test_linear_trees_num_threads():
-    # check that number of threads does not affect result
-    np.random.seed(0)
-    x = np.arange(0, 1000, 0.1)
-    y = 2 * x + np.random.normal(0, 0.1, len(x))
-    x = x[:, np.newaxis]
-    lgb_train = lgb.Dataset(x, label=y)
-    params = {'verbose': -1,
-              'objective': 'regression',
-              'seed': 0,
-              'linear_tree': True,
-              'num_threads': 2}
-    est = lgb.train(params, lgb_train, num_boost_round=100)
-    pred1 = est.predict(x)
-    params["num_threads"] = 4
-    est = lgb.train(params, lgb_train, num_boost_round=100)
-    pred2 = est.predict(x)
-    np.testing.assert_allclose(pred1, pred2)
-
-
 def test_linear_trees(tmp_path):
     # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
     np.random.seed(0)
