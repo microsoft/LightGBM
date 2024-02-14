@@ -80,6 +80,90 @@ minimum-version = "0.4.4"
 
 # end:build-system
 
+[tool.isort]
+line_length = 120
+skip_glob = [
+    "*/external_libs/*",
+    "*/lightgbm-python/*"
+]
+
 [tool.mypy]
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
+
+[tool.ruff]
+exclude = [
+    "build",
+    "compile",
+    "external_libs",
+    "lightgbm-python",
+]
+line-length = 120
+
+# this should be set to the oldest version of python LightGBM supports
+target-version = "py37"
+
+[tool.ruff.format]
+docstring-code-format = false
+exclude = [
+    "build/*.py",
+    "compile/*.py",
+    "examples/*.py",
+    "external_libs/*.py",
+    "lightgbm-python/*.py",
+    "python-package/*.py",
+    "tests/*.py"
+]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint]
+ignore = [
+    # (pydocstyle) Missing docstring in magic method
+    "D105",
+    # (pycodestyle) Line too long
+    "E501"
+]
+select = [
+    # flake8-bugbear
+    "B",
+    # flake8-comprehensions
+    "C4",
+    # pydocstyle
+    "D",
+    # pycodestyle
+    "E",
+    # pyflakes
+    "F",
+    # flake8-return: unnecessary assignment before return
+    "RET504",
+    # flake8-simplify: use dict.get() instead of an if-else block
+    "SIM401",
+    # flake8-print
+    "T",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/conf.py" = [
+    # (flake8-bugbear) raise exceptions with "raise ... from errr"
+    "B904",
+    # (flake8-print) flake8-print
+    "T"
+]
+"examples/*" = [
+    # pydocstyle
+    "D",
+    # flake8-print
+    "T"
+]
+"tests/*" = [
+    # (flake8-bugbear) Found useless expression
+    "B018",
+    # pydocstyle
+    "D",
+    # flake8-print
+    "T"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"

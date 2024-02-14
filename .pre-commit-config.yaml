@@ -13,10 +13,13 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff
+        args: ["--config", "python-package/pyproject.toml"]
       # Run the formatter.
       - id: ruff-format
+        args: ["--config", "python-package/pyproject.toml"]
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         name: isort (python)
+        args: ["--settings-path", "python-package/pyproject.toml"]
