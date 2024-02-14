@@ -937,6 +937,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"num_gpu", {}},
   });
   return map;
+}
 const std::string Config::DumpAliases() {
   std::stringstream str_buf;
   str_buf << "{";
