@@ -58,6 +58,9 @@ jobs:
         METHOD: source
       swig:
         TASK: swig
+      cpp_tests:
+        TASK: cpp-tests
+        METHOD: with-sanitizers
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
