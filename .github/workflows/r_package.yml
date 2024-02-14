@@ -179,6 +179,13 @@ jobs:
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
+        if: matrix.container != 'ubuntu:18.04'
+      # R 3.6 binary isn't easily available on buntu 18.04,
+      # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
+      # ref: https://github.com/microsoft/LightGBM/issues/6298
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v2.6.0
+        if: matrix.container == 'ubuntu:18.04'
       - name: install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
@@ -248,7 +255,7 @@ jobs:
         run: |
           RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
-          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
+          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
         shell: bash
         run: |
@@ -296,7 +303,7 @@ jobs:
           export PATH=/opt/R-devel/bin/:${PATH}
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
+          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit 1
           echo ""
           echo "install logs:"
           echo ""
@@ -304,7 +311,7 @@ jobs:
           echo ""
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
               echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-              exit -1
+              exit 1
           fi
   all-r-package-jobs-successful:
     if: always()

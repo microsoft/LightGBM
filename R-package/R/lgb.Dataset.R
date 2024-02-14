@@ -1061,21 +1061,15 @@ dimnames.lgb.Dataset <- function(x) {
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
 #'
-#' dsub <- lightgbm::slice(dtrain, seq_len(42L))
+#' dsub <- lgb.slice.Dataset(dtrain, seq_len(42L))
 #' lgb.Dataset.construct(dsub)
 #' labels <- lightgbm::get_field(dsub, "label")
 #' }
 #' @export
-slice <- function(dataset, idxset) {
-  UseMethod("slice")
-}
-
-#' @rdname slice
-#' @export
-slice.lgb.Dataset <- function(dataset, idxset) {
+lgb.slice.Dataset <- function(dataset, idxset) {
 
   if (!.is_Dataset(x = dataset)) {
-    stop("slice.lgb.Dataset: input dataset should be an lgb.Dataset object")
+    stop("lgb.slice.Dataset: input dataset should be an lgb.Dataset object")
   }
 
   return(invisible(dataset$slice(idxset = idxset)))

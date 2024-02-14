@@ -28,7 +28,7 @@ sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" ${TMP_CONFIGURE_AC}
 autoconf \
     --output configure \
     ${TMP_CONFIGURE_AC} \
-    || exit -1
+    || exit 1
 
 rm ${TMP_CONFIGURE_AC}
 
