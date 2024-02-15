@@ -3330,7 +3330,7 @@ def test_early_stopping_for_only_first_metric():
                                       feval=lambda preds, train_data: [constant_metric(preds, train_data),
                                                                        decreasing_metric(preds, train_data)])
 
-#TODO investigate why this test fails
+
 def test_node_level_subcol():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -3663,6 +3663,27 @@ def test_interaction_constraints():
     est = lgb.train(dict(params, interaction_constraints=[[0] + list(range(2, num_features)),
                                                           [1] + list(range(2, num_features))]),
                     train_data, num_boost_round=10)
+
+
+def test_linear_trees_num_threads():
+    # check that number of threads does not affect result
+    np.random.seed(0)
+    x = np.arange(0, 1000, 0.1)
+    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    x = x[:, np.newaxis]
+    lgb_train = lgb.Dataset(x, label=y)
+    params = {'verbose': -1,
+              'objective': 'regression',
+              'seed': 0,
+              'linear_tree': True,
+              'num_threads': 2}
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred1 = est.predict(x)
+    params["num_threads"] = 4
+    est = lgb.train(params, lgb_train, num_boost_round=100)
+    pred2 = est.predict(x)
+    np.testing.assert_allclose(pred1, pred2)
+
 
 def test_linear_trees(tmp_path):
     # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
