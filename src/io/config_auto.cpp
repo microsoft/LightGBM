@@ -491,9 +491,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "interaction_constraints", &interaction_constraints);
 
-  GetString(params, "tree_interaction_constraints",&tree_interaction_constraints);
+  GetString(params, "tree_interaction_constraints", &tree_interaction_constraints);
 
-  GetInt(params, "n_tree_interaction_constraints",&n_tree_interaction_constraints);
+  GetInt(params, "n_tree_interaction_constraints", &n_tree_interaction_constraints);
   CHECK_GT(n_tree_interaction_constraints, -1);
 
   GetInt(params, "max_interactions", &max_interactions);
@@ -671,7 +671,6 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "num_gpu", &num_gpu);
   CHECK_GT(num_gpu, 0);
-
 }
 
 std::string Config::SaveMembersToString() const {

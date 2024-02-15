@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "cuda/cuda_score_updater.hpp"
 #include "score_updater.hpp"

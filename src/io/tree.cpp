@@ -419,9 +419,9 @@ std::string Tree::ToJSON() const {
   auto feats_used = tree_features();
   size_t i = 0;
   str_buf << "\"tree_features\":[";
-  for (int feat: feats_used) {
+  for (int feat : feats_used) {
     str_buf << feat;
-    if(i != feats_used.size() - 1) {
+    if (i != feats_used.size() - 1) {
       str_buf << ",";
     }
     ++i;
