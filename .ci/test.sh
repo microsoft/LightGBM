@@ -74,10 +74,9 @@ if [[ $TASK == "lint" ]]; then
         ${CONDA_PYTHON_REQUIREMENT} \
         cmakelint \
         cpplint \
-        isort \
         mypy \
-        'r-lintr>=3.1' \
-        ruff
+        'pre-commit>=3.6.0' \
+        'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
     sh ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
