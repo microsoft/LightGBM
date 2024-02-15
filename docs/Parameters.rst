@@ -689,7 +689,7 @@ Learning Control Parameters
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
--  ``tree_interaction_constraints`` :raw-html:`<a id="interaction_constraints" title="Permalink to this parameter" href="#interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+-  ``tree_interaction_constraints`` :raw-html:`<a id="tree_interaction_constraints" title="Permalink to this parameter" href="#tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
 
    -  controls which features can appear in the same tree
 
@@ -704,13 +704,15 @@ Learning Control Parameters
    -  any two features can only appear in the same tree only if there exists a constraint containing both features
 
 -  ``n_tree_interaction_constraints`` :raw-html:`<a id="n_tree_interaction_constraints" title="Permalink to this parameter" href="#n_tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
     - controls how many features can appear in the same tree
 
     - by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
 
 -  ``max_interactions`` :raw-html:`<a id="max_interactions" title="Permalink to this parameter" href="#max_interactions">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+
     - controls how many features interactions can be added to the final model
-    
+
     - by default no limit is imposed on the interaction with max_interactions = 0
 
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``

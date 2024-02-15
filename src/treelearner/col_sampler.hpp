@@ -152,7 +152,7 @@ class ColSampler {
       if (n_tree_interaction_constraints_ == 0 || tree_features.size() < (std::set<int>::size_type) n_tree_interaction_constraints_) {
           ComputeTreeAllowedFeatures(&tree_allowed_features, &tree_features);
       } else {
-          for(int feat : tree_features) {
+          for (int feat : tree_features) {
               tree_allowed_features.insert(feat);
           }
       }
