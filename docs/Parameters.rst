@@ -705,15 +705,15 @@ Learning Control Parameters
 
 -  ``n_tree_interaction_constraints`` :raw-html:`<a id="n_tree_interaction_constraints" title="Permalink to this parameter" href="#n_tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
 
-   - controls how many features can appear in the same tree
+   -  controls how many features can appear in the same tree
 
-   - by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
+   -  by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
 
 -  ``max_interactions`` :raw-html:`<a id="max_interactions" title="Permalink to this parameter" href="#max_interactions">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
 
-   - controls how many features interactions can be added to the final model
+   -  controls how many features interactions can be added to the final model
 
-   - by default no limit is imposed on the interaction with max_interactions = 0
+   -  by default no limit is imposed on the interaction with max_interactions = 0
 
 -  ``verbosity`` :raw-html:`<a id="verbosity" title="Permalink to this parameter" href="#verbosity">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, aliases: ``verbose``
 
