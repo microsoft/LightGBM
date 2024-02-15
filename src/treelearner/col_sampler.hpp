@@ -101,23 +101,23 @@ class ColSampler {
     }
   }
 
-  void ComputeTreeAllowedFeatures(std::unordered_set<int> &tree_allowed_features, std::set<int> *tree_features) {
-    tree_allowed_features.insert((*tree_features).begin(), (*tree_features).end());
+  void ComputeTreeAllowedFeatures(std::unordered_set<int> *tree_allowed_features, std::set<int> *tree_features) {
+    tree_allowed_features->insert(tree_features->begin(), tree_features->end());
     if (tree_interaction_constraints_.empty()) {
         for (int i = 0; i < train_data_->num_features(); ++i) {
-            tree_allowed_features.insert(tree_allowed_features.end(), i);
+            tree_allowed_features->insert(tree_allowed_features->end(), i);
         }
     }
     for (auto constraint : tree_interaction_constraints_) {
       int num_feat_found = 0;
-      if ((*tree_features).empty()) {
-        tree_allowed_features.insert(constraint.begin(), constraint.end());
+      if (tree_features->empty()) {
+        tree_allowed_features->insert(constraint.begin(), constraint.end());
       }
       for (int feat : *tree_features) {
         if (constraint.count(feat) == 0) { break; }
         ++num_feat_found;
-        if (num_feat_found == static_cast<int>((*tree_features).size())) {
-          tree_allowed_features.insert(constraint.begin(), constraint.end());
+        if (num_feat_found == static_cast<int>(tree_features->size())) {
+          tree_allowed_features->insert(constraint.begin(), constraint.end());
           break;
         }
       }
@@ -150,7 +150,7 @@ class ColSampler {
     if (!tree_interaction_constraints_.empty() || n_tree_interaction_constraints_ > 0) {
       std::set<int> tree_features = tree->tree_features();
       if (n_tree_interaction_constraints_ == 0 || tree_features.size() < (std::set<int>::size_type) n_tree_interaction_constraints_) {
-          ComputeTreeAllowedFeatures(tree_allowed_features, &tree_features);
+          ComputeTreeAllowedFeatures(&tree_allowed_features, &tree_features);
       } else {
           for(int feat : tree_features) {
               tree_allowed_features.insert(feat);
