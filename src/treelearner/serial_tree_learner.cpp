@@ -341,7 +341,7 @@ void SerialTreeLearner::BeforeTrain() {
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit", global_timer);
-  #pragma omp parallel for schedule(static)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (int i = 0; i < config_->num_leaves; ++i) {
     int feat_index = best_split_per_leaf_[i].feature;
     if (feat_index == -1) continue;
