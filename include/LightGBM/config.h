@@ -605,7 +605,6 @@ struct Config {
 
   // desc = controls how many features interactions can be added to the final model
   // desc = by default no limit is imposed on the interaction with max_interactions = 0
-  // desc = any two features can only appear in the same tree only if there exists a constraint containing both features
   int max_interactions = 0;
 
   // alias = verbose

@@ -254,7 +254,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
     }
     interactions_used.insert(models_[models_.size() - 1]->tree_features());
 
-    if (config_->max_interactions != 0 && (int)interactions_used.size() >= config_->max_interactions) {
+    if (config_->max_interactions != 0 && static_cast<int>(interactions_used.size()) >= config_->max_interactions) {
       auto new_config = std::unique_ptr<Config>(new Config(*config_));
       new_config->tree_interaction_constraints_vector.clear();
       for (auto &inter_set : interactions_used) {

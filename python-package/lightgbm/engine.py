@@ -323,7 +323,7 @@ def train(
         booster.update(fobj=fobj)
 
         evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []
-        if params["max_interactions"] > 0:
+        if params.get("max_interactions", 0) > 0:
             interaction_used = booster.dump_model(num_iteration=1, start_iteration=i)["tree_info"][0]["tree_features"]
             interaction_used.sort()
             interactions_used.add(tuple(interaction_used))
