@@ -14,9 +14,11 @@ repos:
       # Run the linter.
       - id: ruff
         args: ["--config", "python-package/pyproject.toml"]
+        types_or: [python, jupyter]
       # Run the formatter.
       - id: ruff-format
         args: ["--config", "python-package/pyproject.toml"]
+        types_or: [python, jupyter]
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
