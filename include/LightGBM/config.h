@@ -598,10 +598,12 @@ struct Config {
   // desc = any two features can only appear in the same tree only if there exists a constraint containing both features
   std::string tree_interaction_constraints = "";
 
+  // check = >= 0.0
   // desc = controls how many features can appear in the same tree
   // desc = by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
   int n_tree_interaction_constraints = 0;
 
+  // check = >= 0.0
   // desc = controls how many features interactions can be added to the final model
   // desc = by default no limit is imposed on the interaction with max_interactions = 0
   int max_interactions = 0;

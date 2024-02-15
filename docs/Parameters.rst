@@ -703,13 +703,13 @@ Learning Control Parameters
 
    -  any two features can only appear in the same tree only if there exists a constraint containing both features
 
--  ``n_tree_interaction_constraints`` :raw-html:`<a id="n_tree_interaction_constraints" title="Permalink to this parameter" href="#n_tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+-  ``n_tree_interaction_constraints`` :raw-html:`<a id="n_tree_interaction_constraints" title="Permalink to this parameter" href="#n_tree_interaction_constraints">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, constraints: ``n_tree_interaction_constraints >=  0.0``
 
    -  controls how many features can appear in the same tree
 
    -  by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
 
--  ``max_interactions`` :raw-html:`<a id="max_interactions" title="Permalink to this parameter" href="#max_interactions">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int
+-  ``max_interactions`` :raw-html:`<a id="max_interactions" title="Permalink to this parameter" href="#max_interactions">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, constraints: ``max_interactions >=  0.0``
 
    -  controls how many features interactions can be added to the final model
 
