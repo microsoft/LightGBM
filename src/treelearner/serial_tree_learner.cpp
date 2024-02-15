@@ -197,7 +197,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   BeforeTrain();
 
   bool track_branch_features = !(config_->interaction_constraints_vector.empty()
-                                 && config_->tree_interaction_constraints_vector.empty());
+                                 && config_->tree_interaction_constraints_vector.empty()
+                                 && config_->n_tree_interaction_constraints == 0);
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_ptr = tree.get();
   constraints_->ShareTreePointer(tree_ptr);
@@ -340,7 +341,6 @@ void SerialTreeLearner::BeforeTrain() {
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit", global_timer);
-
   #pragma omp parallel for schedule(static)
   for (int i = 0; i < config_->num_leaves; ++i) {
     int feat_index = best_split_per_leaf_[i].feature;

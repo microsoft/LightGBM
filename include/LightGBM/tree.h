@@ -157,10 +157,10 @@ class Tree {
   inline int split_feature_inner(int split_idx) const { return split_feature_inner_[split_idx]; }
 
   /*! \brief Get features on leaf's branch*/
-  inline std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
+  std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
 
   std::set<int> tree_features() const {
-    return tree_features_;
+     return tree_features_;
   }
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
@@ -591,7 +591,6 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
     branch_features_[leaf].push_back(split_feature_[new_node_idx]);
     tree_features_.insert(split_feature_[new_node_idx]);
   }
-
 }
 
 inline double Tree::Predict(const double* feature_values) const {

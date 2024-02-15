@@ -551,6 +551,8 @@ class GBDT : public GBDTBase {
   std::vector<std::vector<std::string>> best_msg_;
   /*! \brief Trained models(trees) */
   std::vector<std::unique_ptr<Tree>> models_;
+  /*! \brief Trained models(trees) */
+  std::set<std::set<int>> interactions_used;
   /*! \brief Max feature index of training data*/
   int max_feature_idx_;
   /*! \brief Parser config file content */

@@ -3301,7 +3301,7 @@ def test_early_stopping_for_only_first_metric():
         feval=lambda preds, train_data: [constant_metric(preds, train_data), decreasing_metric(preds, train_data)],
     )
 
-#TODO investigate why this test fails
+
 def test_node_level_subcol():
     X, y = load_breast_cancer(return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
