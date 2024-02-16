@@ -82,11 +82,9 @@ minimum-version = "0.4.4"
 
 [tool.isort]
 line_length = 120
-profile = "black"
 skip_glob = [
     "*/external_libs/*",
     "*/lightgbm-python/*",
-    "*/python-package/*"
 ]
 
 [tool.mypy]
