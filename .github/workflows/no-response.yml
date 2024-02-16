@@ -1,5 +1,9 @@
 name: No Response Bot
 
+permissions:
+  issues: write
+  pull-requests: write
+
 on:
   issue_comment:
     types: [created]
