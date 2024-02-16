@@ -341,16 +341,19 @@ void SerialTreeLearner::BeforeTrain() {
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeFindBestSplit", global_timer);
-  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
-  for (int i = 0; i < config_->num_leaves; ++i) {
-    int feat_index = best_split_per_leaf_[i].feature;
-    if (feat_index == -1) continue;
 
-    int inner_feat_index = train_data_->InnerFeatureIndex(feat_index);
-    auto allowed_feature = col_sampler_.GetByNode(tree, i);
-    if (!allowed_feature[inner_feat_index]) {
-      RecomputeBestSplitForLeaf(tree, i, &best_split_per_leaf_[i]);
-    }
+  if (tree->is_tracking_branch_features()) {
+      #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+      for (int i = 0; i < config_->num_leaves; ++i) {
+          int feat_index = best_split_per_leaf_[i].feature;
+          if (feat_index == -1) continue;
+
+          int inner_feat_index = train_data_->InnerFeatureIndex(feat_index);
+          auto allowed_feature = col_sampler_.GetByNode(tree, i);
+          if (!allowed_feature[inner_feat_index]) {
+              RecomputeBestSplitForLeaf(tree, i, &best_split_per_leaf_[i]);
+          }
+      }
   }
 
   // check depth of current leaf

@@ -158,8 +158,9 @@ class Tree {
   inline int split_feature_inner(int split_idx) const { return split_feature_inner_[split_idx]; }
 
   /*! \brief Get features on leaf's branch*/
-  std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
+  inline std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
 
+  /*! \brief Get unique features used by the current tree*/
   std::set<int> tree_features() const {
      return tree_features_;
   }
@@ -325,6 +326,8 @@ class Tree {
   }
 
   inline bool is_linear() const { return is_linear_; }
+
+  inline bool is_tracking_branch_features() const { return track_branch_features_; }
 
   #ifdef USE_CUDA
   inline bool is_cuda_tree() const { return is_cuda_tree_; }
