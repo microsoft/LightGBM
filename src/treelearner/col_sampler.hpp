@@ -163,7 +163,7 @@ class ColSampler {
     ComputeBranchAllowedFeatures(tree, leaf, &branch_allowed_features);
 
 
-        // intersect allowed features for branch and tree
+    // intersect allowed features for branch and tree
     std::unordered_set<int> allowed_features;
 
     if ((tree_interaction_constraints_.empty() && n_tree_interaction_constraints_ == 0) && !interaction_constraints_.empty()) {
