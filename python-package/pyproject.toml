@@ -82,9 +82,11 @@ minimum-version = "0.4.4"
 
 [tool.isort]
 line_length = 120
+profile = "black"
 skip_glob = [
     "*/external_libs/*",
-    "*/lightgbm-python/*"
+    "*/lightgbm-python/*",
+    "*/python-package/*"
 ]
 
 [tool.mypy]
@@ -114,6 +116,7 @@ exclude = [
 ]
 indent-style = "space"
 quote-style = "double"
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 ignore = [

@@ -22,9 +22,19 @@ from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_spli
 import lightgbm as lgb
 from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
-from .utils import (SERIALIZERS, dummy_obj, load_breast_cancer, load_digits, load_iris, logistic_sigmoid,
-                    make_synthetic_regression, mse_obj, pickle_and_unpickle_object, sklearn_multiclass_custom_objective,
-                    softmax)
+from .utils import (
+    SERIALIZERS,
+    dummy_obj,
+    load_breast_cancer,
+    load_digits,
+    load_iris,
+    logistic_sigmoid,
+    make_synthetic_regression,
+    mse_obj,
+    pickle_and_unpickle_object,
+    sklearn_multiclass_custom_objective,
+    softmax,
+)
 
 decreasing_generator = itertools.count(0, -1)
 

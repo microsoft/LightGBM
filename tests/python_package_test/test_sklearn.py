@@ -23,8 +23,16 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
 
-from .utils import (load_breast_cancer, load_digits, load_iris, load_linnerud, make_ranking, make_synthetic_regression,
-                    sklearn_multiclass_custom_objective, softmax)
+from .utils import (
+    load_breast_cancer,
+    load_digits,
+    load_iris,
+    load_linnerud,
+    make_ranking,
+    make_synthetic_regression,
+    sklearn_multiclass_custom_objective,
+    softmax,
+)
 
 decreasing_generator = itertools.count(0, -1)
 task_to_model_factory = {
