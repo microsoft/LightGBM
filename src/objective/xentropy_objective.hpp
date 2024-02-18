@@ -100,7 +100,7 @@ class CrossEntropy: public ObjectiveFunction {
       // compute pointwise gradients and Hessians with implied unit weights
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        if (score > -37) {
+        if (score[i] > -37.0) {
           const double exp_tmp = std::exp(-score[i]);
           gradients[i] = static_cast<score_t>(((1.0f - label_[i]) - label_[i] * exp_tmp) / (1.0f + exp_tmp));
           hessians[i] = static_cast<score_t>(exp_tmp / (1 + exp_tmp) * (1 + exp_tmp));
@@ -114,7 +114,7 @@ class CrossEntropy: public ObjectiveFunction {
       // compute pointwise gradients and Hessians with given weights
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
-        if (score > -37) {
+        if (score[i] > -37.0) {
           const double exp_tmp = std::exp(-score[i]);
           gradients[i] = static_cast<score_t>(((1.0f - label_[i]) - label_[i] * exp_tmp) / (1.0f + exp_tmp) * weights_[i]);
           hessians[i] = static_cast<score_t>(exp_tmp / (1 + exp_tmp) * (1 + exp_tmp) * weights_[i]);
