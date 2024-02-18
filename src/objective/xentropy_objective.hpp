@@ -123,6 +123,7 @@ class CrossEntropy: public ObjectiveFunction {
           gradients[i] = static_cast<score_t>((exp_tmp - label_[i]) * weights_[i]);
           hessians[i] = static_cast<score_t>(exp_tmp * weights_[i]);
         }
+      }
     }
   }
 
