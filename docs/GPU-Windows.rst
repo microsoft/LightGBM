@@ -279,7 +279,7 @@ Installing CMake requires one download first and then a lot of configuration for
    :target: ./_static/images/screenshot-downloading-cmake.png
    :alt: A screenshot of the binary distributions of C Make for downloading on 64 bit Windows.
 
--  Download `CMake`_ (3.8 or higher)
+-  Download `CMake`_
 
 -  Install CMake
 

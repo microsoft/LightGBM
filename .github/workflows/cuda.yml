@@ -92,8 +92,8 @@ jobs:
             export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
-            $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit -1
-            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit -1
+            $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
+            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
             EOF
             cuda_version="${{ matrix.cuda_version }}"
             cuda_major=${cuda_version%%.*}
