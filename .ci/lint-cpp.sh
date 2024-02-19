@@ -35,11 +35,11 @@ get_omp_pragmas_without_num_threads() {
     | grep -v ' num_threads'
 }
 # https://www.gnu.org/software/grep/manual/html_node/Exit-Status.html
-set +o pipefail
+set +e +o pipefail
 PROBLEMATIC_LINES=$(
     get_omp_pragmas_without_num_threads
 )
-set -o pipefail
+set -e -o pipefail
 if test "${PROBLEMATIC_LINES}" != ""; then
     get_omp_pragmas_without_num_threads
     echo "Found '#pragma omp parallel' not using explicit num_threads() configuration. Fix those."
