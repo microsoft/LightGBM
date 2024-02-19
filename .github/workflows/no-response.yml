@@ -1,11 +1,17 @@
 name: No Response Bot
 
+permissions:
+  issues: write
+  pull-requests: write
+
 on:
   issue_comment:
     types: [created]
   schedule:
     # "every day at 04:00 UTC"
     - cron: '0 4 * * *'
+  # Run manually by clicking a button in the UI
+  workflow_dispatch:
 
 jobs:
   noResponse:
