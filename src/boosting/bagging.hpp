@@ -6,14 +6,15 @@
 #ifndef LIGHTGBM_BOOSTING_BAGGING_HPP_
 #define LIGHTGBM_BOOSTING_BAGGING_HPP_
 
+#include <memory>
 #include <string>
+#include <vector>
 
 namespace LightGBM {
 
 class BaggingSampleStrategy : public SampleStrategy {
  public:
-  BaggingSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration)
-    : need_re_bagging_(false) {
+  BaggingSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration) {
     config_ = config;
     train_data_ = train_data;
     num_data_ = train_data->num_data();
@@ -23,7 +24,7 @@ class BaggingSampleStrategy : public SampleStrategy {
 
   ~BaggingSampleStrategy() {}
 
-  void Bagging(int iter, TreeLearner* tree_learner, score_t* /*gradients*/, score_t* /*hessians*/) override {
+  void Bagging(int iter, TreeLearner* tree_learner, score_t* /*gradients*/, score_t* /*hessians*/, const std::vector<std::unique_ptr<Tree>>& /*models*/) override {
     Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
     // if need bagging
     if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
@@ -199,9 +200,6 @@ class BaggingSampleStrategy : public SampleStrategy {
     }
     return cur_left_cnt;
   }
-
-  /*! \brief whether need restart bagging in continued training */
-  bool need_re_bagging_;
 };
 
 }  // namespace LightGBM

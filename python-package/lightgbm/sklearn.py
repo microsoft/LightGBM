@@ -461,6 +461,7 @@ class LGBMModel(_LGBMModelBase):
             'gbdt', traditional Gradient Boosting Decision Tree.
             'dart', Dropouts meet Multiple Additive Regression Trees.
             'rf', Random Forest.
+            'mvs', Minimal Variance Sampling.
         num_leaves : int, optional (default=31)
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)

@@ -21,6 +21,7 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
   #ifdef USE_CUDA
   if (config.device_type == std::string("cuda") &&
       config.data_sample_strategy != std::string("goss") &&
+      config.data_sample_strategy != std::string("mvs") &&
       config.boosting != std::string("rf")) {
     if (type == std::string("regression")) {
       return new CUDARegressionL2loss(config);

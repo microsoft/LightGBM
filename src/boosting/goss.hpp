@@ -10,6 +10,7 @@
 #include <LightGBM/sample_strategy.h>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -27,7 +28,7 @@ class GOSSStrategy : public SampleStrategy {
   ~GOSSStrategy() {
   }
 
-  void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) override {
+  void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians, const std::vector<std::unique_ptr<Tree>>& /*models*/) override {
     bag_data_cnt_ = num_data_;
     // not subsample for first iterations
     if (iter < static_cast<int>(1.0f / config_->learning_rate)) { return; }
@@ -84,12 +85,15 @@ class GOSSStrategy : public SampleStrategy {
 
     CHECK_LE(config_->top_rate + config_->other_rate, 1.0f);
     CHECK(config_->top_rate > 0.0f && config_->other_rate > 0.0f);
-    if (config_->bagging_freq > 0 && config_->bagging_fraction != 1.0f) {
-      Log::Fatal("Cannot use bagging in GOSS");
-    }
+
     Log::Info("Using GOSS");
     balanced_bagging_ = false;
     bag_data_indices_.resize(num_data_);
+    #ifdef USE_CUDA
+    if (config_->device_type == std::string("cuda")) {
+      cuda_bag_data_indices_.Resize(num_data_);
+    }
+    #endif  // USE_CUDA
     bagging_runner_.ReSize(num_data_);
     bagging_rands_.clear();
     for (int i = 0;
@@ -97,7 +101,7 @@ class GOSSStrategy : public SampleStrategy {
       bagging_rands_.emplace_back(config_->bagging_seed + i);
     }
     is_use_subset_ = false;
-    if (config_->top_rate + config_->other_rate <= 0.5) {
+    if (config_->device_type != std::string("cuda") && config_->top_rate + config_->other_rate <= 0.5) {
       auto bag_data_cnt = static_cast<data_size_t>((config_->top_rate + config_->other_rate) * num_data_);
       bag_data_cnt = std::max(1, bag_data_cnt);
       tmp_subset_.reset(new Dataset(bag_data_cnt));

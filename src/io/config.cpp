@@ -93,6 +93,8 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
       *boosting = "goss";
     } else if (value == std::string("rf") || value == std::string("random_forest")) {
       *boosting = "rf";
+    } else if (value == std::string("mvs")) {
+      *boosting = "mvs";
     } else {
       Log::Fatal("Unknown boosting type %s", value.c_str());
     }
@@ -107,6 +109,8 @@ void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& p
       *strategy = "goss";
     } else if (value == std::string("bagging")) {
       *strategy = "bagging";
+    } else if (value == std::string("mvs")) {
+      *strategy = "mvs";
     } else {
       Log::Fatal("Unknown sample strategy %s", value.c_str());
     }
@@ -435,11 +439,12 @@ void Config::CheckParamConflict() {
         "Will set min_data_in_leaf to 1.");
     min_data_in_leaf = 1;
   }
-  if (boosting == std::string("goss")) {
+  if (boosting == std::string("goss") || boosting == std::string("mvs")) {
+    data_sample_strategy = boosting;
     boosting = std::string("gbdt");
-    data_sample_strategy = std::string("goss");
-    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
-                 "To suppress this warning, set data_sample_strategy=goss instead.");
+    Log::Warning("Found boosting=%s. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=%s. "
+                 "To suppress this warning, set data_sample_strategy=%s instead.",
+                 data_sample_strategy.c_str(), data_sample_strategy.c_str(), data_sample_strategy.c_str());
   }
 }
 

@@ -361,7 +361,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
 
   // bagging logic
-  data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+  data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data(), models_);
   const bool is_use_subset = data_sample_strategy_->is_use_subset();
   const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
   const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();

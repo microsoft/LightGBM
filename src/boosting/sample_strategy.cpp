@@ -4,8 +4,10 @@
  */
 
 #include <LightGBM/sample_strategy.h>
-#include "goss.hpp"
+
 #include "bagging.hpp"
+#include "goss.hpp"
+#include "mvs.hpp"
 
 namespace LightGBM {
 
@@ -16,6 +18,8 @@ SampleStrategy* SampleStrategy::CreateSampleStrategy(
   int num_tree_per_iteration) {
   if (config->data_sample_strategy == std::string("goss")) {
     return new GOSSStrategy(config, train_data, num_tree_per_iteration);
+  } else if (config->data_sample_strategy == std::string("mvs")) {
+    return new MVS(config, train_data, num_tree_per_iteration);
   } else {
     return new BaggingSampleStrategy(config, train_data, objective_function, num_tree_per_iteration);
   }

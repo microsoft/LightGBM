@@ -22,13 +22,13 @@ namespace LightGBM {
 
 class SampleStrategy {
  public:
-  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false) {}
+  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false), need_re_bagging_(false) {}
 
   virtual ~SampleStrategy() {}
 
   static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
 
-  virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
+  virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians, const std::vector<std::unique_ptr<Tree>>& models) = 0;
 
   virtual void ResetSampleConfig(const Config* config, bool is_change_dataset) = 0;
 
@@ -71,6 +71,8 @@ class SampleStrategy {
   ParallelPartitionRunner<data_size_t, false> bagging_runner_;
   /*! \brief whether need to resize the gradient vectors */
   bool need_resize_gradients_;
+  /*! \brief whether need restart bagging in continued training */
+  bool need_re_bagging_;
 
   #ifdef USE_CUDA
   /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda */

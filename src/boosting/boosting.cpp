@@ -7,6 +7,7 @@
 #include "dart.hpp"
 #include "gbdt.h"
 #include "rf.hpp"
+#include "mvs.hpp"
 
 namespace LightGBM {
 
@@ -37,7 +38,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
       return new GBDT();
     } else if (type == std::string("dart")) {
       return new DART();
-    } else if (type == std::string("goss")) {
+    } else if (type == std::string("goss") || type == std::string("mvs")) {
       return new GBDT();
     } else if (type == std::string("rf")) {
       return new RF();
@@ -51,7 +52,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
         ret.reset(new GBDT());
       } else if (type == std::string("dart")) {
         ret.reset(new DART());
-      } else if (type == std::string("goss")) {
+      } else if (type == std::string("goss") || type == std::string("mvs")) {
         ret.reset(new GBDT());
       } else if (type == std::string("rf")) {
         return new RF();
