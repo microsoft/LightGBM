@@ -1273,45 +1273,6 @@ test_that("params (including dataset params) should be stored in .rds file for B
         , train_set = dtrain
     )
     bst_file <- tempfile(fileext = ".rds")
-    expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
-
-    expect_warning({
-        bst_from_file <- readRDS.lgb.Booster(file = bst_file)
-    })
-    expect_identical(
-        bst_from_file$params
-        , list(
-            objective = "binary"
-            , max_depth = 4L
-            , bagging_fraction = 0.8
-            , verbose = .LGB_VERBOSITY
-            , num_threads = .LGB_MAX_THREADS
-            , max_bin = 17L
-        )
-    )
-})
-
-test_that("params (including dataset params) should be stored in .rds file for Booster", {
-    data(agaricus.train, package = "lightgbm")
-    dtrain <- lgb.Dataset(
-        agaricus.train$data
-        , label = agaricus.train$label
-        , params = list(
-            max_bin = 17L
-        )
-    )
-    params <- list(
-        objective = "binary"
-        , max_depth = 4L
-        , bagging_fraction = 0.8
-        , verbose = .LGB_VERBOSITY
-        , num_threads = .LGB_MAX_THREADS
-    )
-    bst <- Booster$new(
-        params = params
-        , train_set = dtrain
-    )
-    bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
 
     bst_from_file <- readRDS(file = bst_file)
@@ -1348,46 +1309,6 @@ test_that("Handle is automatically restored when calling predict", {
     pred_before <- predict(bst, agaricus.train$data)
     pred_after <- predict(bst_from_file, agaricus.train$data)
     expect_equal(pred_before, pred_after)
-})
-
-test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster and readRDS.lgb.Booster", {
-    X <- matrix(rnorm(100L), ncol = 1L)
-    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
-    dtrain <- lgb.Dataset(
-        data = X
-        , label = labels
-    )
-
-    params <- list(
-        objective = "regression"
-        , verbose = .LGB_VERBOSITY
-        , metric = "mse"
-        , seed = 0L
-        , num_leaves = 2L
-        , num_threads = .LGB_MAX_THREADS
-    )
-
-    bst <- lgb.train(
-        data = dtrain
-        , nrounds = 10L
-        , params = params
-    )
-    expect_true(.is_Booster(bst))
-
-    # save predictions, then write the model to a file and destroy it in R
-    preds <- predict(bst, X)
-    model_file <- tempfile(fileext = ".rds")
-    expect_warning(saveRDS.lgb.Booster(bst, file = model_file))
-    bst$finalize()
-    expect_null(bst$.__enclos_env__$private$handle)
-    rm(bst)
-
-    # load the booster and make predictions...should be the same
-    expect_warning({
-        bst2 <- readRDS.lgb.Booster(file = model_file)
-    })
-    preds2 <- predict(bst2, X)
-    expect_identical(preds, preds2)
 })
 
 test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {

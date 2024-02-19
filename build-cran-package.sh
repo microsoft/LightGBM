@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
       ;;
     *)
       echo "invalid argument '${1}'"
-      exit -1
+      exit 1
       ;;
   esac
   shift
@@ -227,6 +227,7 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/network/*.o
         rm -f ./lightgbm/src/objective/*.o
         rm -f ./lightgbm/src/treelearner/*.o
+        rm -f ./lightgbm/src/utils/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
         tar \

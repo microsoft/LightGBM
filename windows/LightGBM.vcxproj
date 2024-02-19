@@ -347,6 +347,7 @@
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\gradient_discretizer.cpp" />
+    <ClCompile Include="..\src\utils\openmp_wrapper.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

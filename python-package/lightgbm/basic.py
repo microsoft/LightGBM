@@ -115,7 +115,8 @@ _LGBM_PredictDataType = Union[
     np.ndarray,
     pd_DataFrame,
     dt_DataTable,
-    scipy.sparse.spmatrix
+    scipy.sparse.spmatrix,
+    pa_Table,
 ]
 _LGBM_WeightType = Union[
     List[float],
@@ -785,9 +786,13 @@ def _data_from_pandas(
     feature_name: _LGBM_FeatureNameConfiguration,
     categorical_feature: _LGBM_CategoricalFeatureConfiguration,
     pandas_categorical: Optional[List[List]]
-) -> Tuple[np.ndarray, List[str], List[str], List[List]]:
+) -> Tuple[np.ndarray, List[str], Union[List[str], List[int]], List[List]]:
     if len(data.shape) != 2 or data.shape[0] < 1:
         raise ValueError('Input data must be 2 dimensional and non empty.')
+
+    # take shallow copy in case we modify categorical columns
+    # whole column modifications don't change the original df
+    data = data.copy(deep=False)
 
     # determine feature names
     if feature_name == 'auto':
@@ -795,7 +800,7 @@ def _data_from_pandas(
 
     # determine categorical features
     cat_cols = [col for col, dtype in zip(data.columns, data.dtypes) if isinstance(dtype, pd_CategoricalDtype)]
-    cat_cols_not_ordered = [col for col in cat_cols if not data[col].cat.ordered]
+    cat_cols_not_ordered: List[str] = [col for col in cat_cols if not data[col].cat.ordered]
     if pandas_categorical is None:  # train dataset
         pandas_categorical = [list(data[col].cat.categories) for col in cat_cols]
     else:
@@ -805,12 +810,11 @@ def _data_from_pandas(
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
     if len(cat_cols):  # cat_cols is list
-        data = data.copy(deep=False)  # not alter origin DataFrame
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
-    if categorical_feature == 'auto':  # use cat cols from DataFrame
+
+    # use cat cols from DataFrame
+    if categorical_feature == 'auto':
         categorical_feature = cat_cols_not_ordered
-    else:  # use cat cols specified by user
-        categorical_feature = list(categorical_feature)  # type: ignore[assignment]
 
     df_dtypes = [dtype.type for dtype in data.dtypes]
     # so that the target dtype considers floats
@@ -1066,7 +1070,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1154,6 +1158,13 @@ class _InnerPredictor:
         elif isinstance(data, np.ndarray):
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
+                start_iteration=start_iteration,
+                num_iteration=num_iteration,
+                predict_type=predict_type
+            )
+        elif _is_pyarrow_table(data):
+            preds, nrow = self.__pred_for_pyarrow_table(
+                table=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type
@@ -1611,6 +1622,48 @@ class _InnerPredictor:
         if n_preds != out_num_preds.value:
             raise ValueError("Wrong length for predict results")
         return preds, nrow
+    
+    def __pred_for_pyarrow_table(
+        self,
+        table: pa_Table,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int
+    ) -> Tuple[np.ndarray, int]:
+        """Predict for a PyArrow table."""
+        if not PYARROW_INSTALLED:
+            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+
+        # Check that the input is valid: we only handle numbers (for now)
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+            raise ValueError("Arrow table may only have integer or floating point datatypes")
+
+        # Prepare prediction output array
+        n_preds = self.__get_num_preds(
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            nrow=table.num_rows,
+            predict_type=predict_type
+        )
+        preds = np.empty(n_preds, dtype=np.float64)
+        out_num_preds = ctypes.c_int64(0)
+
+        # Export Arrow table to C and run prediction
+        c_array = _export_arrow_to_c(table)
+        _safe_call(_LIB.LGBM_BoosterPredictForArrow(
+            self._handle,
+            ctypes.c_int64(c_array.n_chunks),
+            ctypes.c_void_p(c_array.chunks_ptr),
+            ctypes.c_void_p(c_array.schema_ptr),
+            ctypes.c_int(predict_type),
+            ctypes.c_int(start_iteration),
+            ctypes.c_int(num_iteration),
+            _c_str(self.pred_parameter),
+            ctypes.byref(out_num_preds),
+            preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double))))
+        if n_preds != out_num_preds.value:
+            raise ValueError("Wrong length for predict results")
+        return preds, table.num_rows
 
     def current_iteration(self) -> int:
         """Get the index of the current iteration.
@@ -4347,7 +4400,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)

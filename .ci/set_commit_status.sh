@@ -18,12 +18,12 @@ set -e
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"
-  exit -1
+  exit 1
 fi
 
 if [ $# -ne 3 ]; then
   echo "Usage: $0 <NAME> <STATUS> <SHA>"
-  exit -1
+  exit 1
 fi
 
 name=$1

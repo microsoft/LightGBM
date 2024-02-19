@@ -4,10 +4,10 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit -1
+            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
         fi
     else  # gcc
-        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
+        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit 1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -49,11 +49,19 @@ else  # Linux
             locales-all \
             netcat \
             unzip \
-            zip || exit -1
+            zip || exit 1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
+        elif [[ $COMPILER == "clang-17" ]]; then
+            sudo apt-get install wget
+            wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+            sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
+            sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
+            sudo apt-get update
+            sudo apt-get install -y clang-17
+            sudo apt-get install --no-install-recommends -y libomp-17-dev
         fi
 
         export LANG="en_US.UTF-8"
@@ -74,7 +82,7 @@ else  # Linux
             sudo yum update -y
             sudo yum install -y \
                 openmpi-devel \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "gpu" ]]; then
@@ -90,7 +98,7 @@ else  # Linux
                 boost-devel \
                 ocl-icd-devel \
                 opencl-headers \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
@@ -103,7 +111,7 @@ else  # Linux
             sudo yum install -y \
                 ocl-icd-devel \
                 opencl-headers \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "cuda" ]]; then

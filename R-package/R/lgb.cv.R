@@ -51,6 +51,8 @@ CVBooster <- R6::R6Class(
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -325,7 +327,7 @@ lgb.cv <- function(params = list()
         , init_score = get_field(dataset = data, field_name = "init_score")[test_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
-      dtest <- slice(data, indexDT$indices)
+      dtest <- lgb.slice.Dataset(data, indexDT$indices)
       set_field(dataset = dtest, field_name = "weight", data = indexDT$weight)
       set_field(dataset = dtest, field_name = "init_score", data = indexDT$init_score)
 
@@ -336,7 +338,7 @@ lgb.cv <- function(params = list()
         , init_score = get_field(dataset = data, field_name = "init_score")[train_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
-      dtrain <- slice(data, indexDT$indices)
+      dtrain <- lgb.slice.Dataset(data, indexDT$indices)
       set_field(dataset = dtrain, field_name = "weight", data = indexDT$weight)
       set_field(dataset = dtrain, field_name = "init_score", data = indexDT$init_score)
 
