@@ -876,17 +876,21 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
 
     // copy labels
     const data_size_t pointwise_num_data = query_boundaries[num_queries_];
-    label_.resize(pointwise_num_data);
-    #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
-    for (data_size_t i = 0; i < pointwise_num_data; ++i) {
-      label_[i] = pointwise_label[i];
+    if (pointwise_label != nullptr) {
+      label_.resize(pointwise_num_data);
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
+      for (data_size_t i = 0; i < pointwise_num_data; ++i) {
+        label_[i] = pointwise_label[i];
+      }
     }
 
     // copy weights
-    weights_.resize(pointwise_num_data);
-    #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
-    for (data_size_t i = 0; i < pointwise_num_data; ++i) {
-      weights_[i] = pointwise_weights[i];
+    if (pointwise_weights != nullptr) {
+      weights_.resize(pointwise_num_data);
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
+      for (data_size_t i = 0; i < pointwise_num_data; ++i) {
+        weights_[i] = pointwise_weights[i];
+      }
     }
 
     // copy position information
