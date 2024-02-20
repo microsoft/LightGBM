@@ -969,7 +969,7 @@ class FeatureHistogram {
         return (sum_grad) / (sum_hess + meta_->config->cat_smooth);
       };
       std::stable_sort(
-          sorted_idx.begin(), sorted_idx.end(), [this, data_ptr, &ctr_fun, grad_scale, hess_scale](int i, int j) {
+          sorted_idx.begin(), sorted_idx.end(), [data_ptr, &ctr_fun, grad_scale, hess_scale](int i, int j) {
             const PACKED_HIST_BIN_T int_grad_and_hess_i = data_ptr[i];
             const PACKED_HIST_BIN_T int_grad_and_hess_j = data_ptr[j];
             const int32_t int_grad_i = HIST_BITS_BIN == 16 ?
