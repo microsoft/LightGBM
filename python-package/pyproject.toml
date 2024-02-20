@@ -95,11 +95,29 @@ ignore_missing_imports = true
 exclude = [
     "build",
     "compile",
-    "docs",
     "external_libs",
     "lightgbm-python",
-    "setup.py"
 ]
+line-length = 120
+
+# this should be set to the oldest version of python LightGBM supports
+target-version = "py37"
+
+[tool.ruff.format]
+docstring-code-format = false
+exclude = [
+    "build/*.py",
+    "compile/*.py",
+    "examples/*.py",
+    "external_libs/*.py",
+    "lightgbm-python/*.py",
+    "python-package/*.py",
+    "tests/*.py"
+]
+indent-style = "space"
+quote-style = "double"
+
+[tool.ruff.lint]
 ignore = [
     # (pydocstyle) Missing docstring in magic method
     "D105",
@@ -125,10 +143,13 @@ select = [
     "T",
 ]
 
-# this should be set to the oldest version of python LightGBM supports
-target-version = "py37"
-
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
+"docs/conf.py" = [
+    # (flake8-bugbear) raise exceptions with "raise ... from errr"
+    "B904",
+    # (flake8-print) flake8-print
+    "T"
+]
 "examples/*" = [
     # pydocstyle
     "D",
@@ -144,6 +165,5 @@ target-version = "py37"
     "T"
 ]
 
-[tool.ruff.pydocstyle]
-
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
