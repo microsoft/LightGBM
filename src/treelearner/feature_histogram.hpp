@@ -1027,7 +1027,7 @@ class FeatureHistogram {
 
           if (HIST_BITS_ACC != HIST_BITS_BIN) {
             PACKED_HIST_ACC_T int_grad_and_hess_acc =
-              (static_cast<PACKED_HIST_ACC_T>(int_grad_and_hess & 0xffff0000) << 32) |
+              (static_cast<PACKED_HIST_ACC_T>(int_grad_and_hess & 0xffff0000) << HIST_BITS_ACC) |
               (static_cast<PACKED_HIST_ACC_T>(int_grad_and_hess & 0x0000ffff));
             int_sum_left_gradient_and_hessian += int_grad_and_hess_acc;
           } else {
