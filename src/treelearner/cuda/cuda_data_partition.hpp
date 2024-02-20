@@ -26,13 +26,14 @@
 
 namespace LightGBM {
 
-class CUDADataPartition {
+class CUDADataPartition: public NCCLInfo {
  public:
   CUDADataPartition(
     const Dataset* train_data,
     const int num_total_bin,
     const int num_leaves,
     const int num_threads,
+    const bool use_quantized_grad,
     hist_t* cuda_hist);
 
   ~CUDADataPartition();
@@ -64,7 +65,9 @@ class CUDADataPartition {
     double* left_leaf_sum_of_hessians,
     double* right_leaf_sum_of_hessians,
     double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+    double* right_leaf_sum_of_gradients,
+    data_size_t* global_left_leaf_num_data,
+    data_size_t* global_right_leaf_num_data);
 
   void UpdateTrainScore(const Tree* tree, double* cuda_scores);
 
@@ -131,7 +134,9 @@ class CUDADataPartition {
     double* left_leaf_sum_of_hessians,
     double* right_leaf_sum_of_hessians,
     double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+    double* right_leaf_sum_of_gradients,
+    data_size_t* global_left_leaf_num_data,
+    data_size_t* global_right_leaf_num_data);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
@@ -153,7 +158,9 @@ class CUDADataPartition {
     double* left_leaf_sum_of_hessians,
     double* right_leaf_sum_of_hessians,
     double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+    double* right_leaf_sum_of_gradients,
+    data_size_t* global_left_leaf_num_data,
+    data_size_t* global_right_leaf_num_data);
 
   void LaunchGenDataToLeftBitVectorKernel(
     const data_size_t num_data_in_leaf,
@@ -327,6 +334,8 @@ class CUDADataPartition {
   int num_leaves_;
   /*! \brief number of threads */
   int num_threads_;
+  /*! \brief whether to use quantized gradients */
+  bool use_quantized_grad_;
 
   // per iteration information
   /*! \brief whether bagging is used in this iteration */
@@ -376,7 +385,7 @@ class CUDADataPartition {
 
   // split tree structure algorithm related
   /*! \brief buffer to store split information, prepared to be copied to cpu */
-  int* cuda_split_info_buffer_;
+  CUDAVector<int> cuda_split_info_buffer_;
 
   // dataset information
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */

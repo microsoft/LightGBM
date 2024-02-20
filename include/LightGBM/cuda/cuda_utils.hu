@@ -102,6 +102,8 @@ void CopyFromCUDADeviceToCUDADeviceAsync(T* dst_ptr, const T* src_ptr, size_t si
 
 void SynchronizeCUDADevice(const char* file, const int line);
 
+void SynchronizeCUDAStream(cudaStream_t cuda_stream, const char* file, const int line);
+
 template <typename T>
 void SetCUDAMemory(T* dst_ptr, int value, size_t size, const char* file, const int line) {
   CUDASUCCESS_OR_FATAL_OUTER(cudaMemset(reinterpret_cast<void*>(dst_ptr), value, size * sizeof(T)));
@@ -220,7 +222,7 @@ class NCCLInfo {
  public:
   NCCLInfo() {}
 
-  void SetNCCLInfo(
+  virtual void SetNCCLInfo(
     ncclComm_t nccl_communicator,
     int nccl_gpu_rank,
     int local_gpu_rank,
@@ -241,6 +243,48 @@ class NCCLInfo {
   int num_gpu_in_node_ = 0;
   data_size_t global_num_data_ = 0;
 };
+
+cudaStream_t CUDAStreamCreate();
+
+void CUDAStreamDestroy(cudaStream_t cuda_stream);
+
+void NCCLGroupStart();
+
+void NCCLGroupEnd();
+
+template <typename T>
+void NCCLAllReduce(const T* send_buffer, T* recv_buffer, size_t count, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream) {
+  NCCLCHECK(ncclAllReduce(reinterpret_cast<const void*>(send_buffer), reinterpret_cast<void*>(recv_buffer), count, datatype, op, comm, stream));
+}
+
+template <typename T>
+void NCCLAllReduce(const T* send_buffer, T* recv_buffer, size_t count, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm) {
+  cudaStream_t nccl_stream;
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&nccl_stream));
+  NCCLCHECK(ncclAllReduce(reinterpret_cast<const void*>(send_buffer), reinterpret_cast<void*>(recv_buffer), count, datatype, op, comm, nccl_stream));
+  CUDASUCCESS_OR_FATAL(cudaStreamSynchronize(nccl_stream));
+  CUDASUCCESS_OR_FATAL(cudaStreamDestroy(nccl_stream));
+}
+
+template <typename T>
+T NCCLAllReduce(T send_value, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream) {
+  CUDAVector<T> send_buffer(1);
+  CopyFromHostToCUDADevice<T>(send_buffer.RawData(), &send_value, 1, __FILE__, __LINE__);
+  NCCLAllReduce<T>(send_buffer.RawDataReadOnly(), send_buffer.RawData(), 1, datatype, op, comm, stream);
+  T recv_value = 0;
+  CopyFromCUDADeviceToHost<T>(&recv_value, send_buffer.RawDataReadOnly(), 1, __FILE__, __LINE__);
+  return recv_value;
+}
+
+template <typename T>
+T NCCLAllReduce(T send_value, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm) {
+  CUDAVector<T> send_buffer(1);
+  CopyFromHostToCUDADevice<T>(send_buffer.RawData(), &send_value, 1, __FILE__, __LINE__);
+  NCCLAllReduce<T>(send_buffer.RawDataReadOnly(), send_buffer.RawData(), 1, datatype, op, comm);
+  T recv_value = 0;
+  CopyFromCUDADeviceToHost<T>(&recv_value, send_buffer.RawDataReadOnly(), 1, __FILE__, __LINE__);
+  return recv_value;
+}
 
 }  // namespace LightGBM
 

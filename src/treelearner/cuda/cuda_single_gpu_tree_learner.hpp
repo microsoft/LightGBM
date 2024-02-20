@@ -52,6 +52,13 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
 
   void ResetBoostingOnGPU(const bool boosting_on_gpu) override;
 
+  void SetNCCLInfo(
+    ncclComm_t nccl_communicator,
+    int nccl_gpu_rank,
+    int local_gpu_rank,
+    int gpu_device_id,
+    data_size_t global_num_data) override;
+
  protected:
   void BeforeTrain() override;
 
@@ -78,6 +85,8 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
 
   void LaunchCalcLeafValuesGivenGradStat(CUDATree* cuda_tree, const data_size_t* num_data_in_leaf);
+
+  void NCCLReduceHistogram();
 
   // number of threads on CPU
   int num_threads_;
@@ -131,6 +140,18 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
   score_t* cuda_hessians_;
   /*! \brief whether boosting is done on CUDA */
   bool boosting_on_cuda_;
+
+  // members used in multi-GPU training
+  /*! \brief cuda stream for nccl operations */
+  cudaStream_t nccl_stream_;
+  /*! \brief index map from leaf index to histogram index */
+  std::vector<int> leaf_to_hist_index_map_;
+  /*! \brief number of total histogram bins */
+  int num_total_bin_;
+  /*! \brief global number of data in the leaves across */
+  std::vector<data_size_t> global_num_data_in_leaf_;
+  /*! \brief global number of data in the training set */
+  data_size_t global_num_data_;
 
   #ifdef DEBUG
   /*! \brief gradients on CPU */

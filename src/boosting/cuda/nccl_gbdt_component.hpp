@@ -49,10 +49,9 @@ class NCCLGBDTComponent: public NCCLInfo {
     hessians_.reset(new CUDAVector<score_t>(num_data_in_gpu_));
     tree_learner_.reset(new CUDASingleGPUTreeLearner(config, boosting_on_gpu));
 
-    tree_learner_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, train_data->num_data());
-
     objective_function_->Init(dataset_->metadata(), dataset_->num_data());
     tree_learner_->Init(dataset_.get(), is_constant_hessian);
+    tree_learner_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, train_data->num_data());
   }
 
   ObjectiveFunction* objective_function() { return objective_function_.get(); }

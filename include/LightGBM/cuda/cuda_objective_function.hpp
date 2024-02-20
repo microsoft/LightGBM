@@ -19,7 +19,7 @@
 namespace LightGBM {
 
 template <typename HOST_OBJECTIVE>
-class CUDAObjectiveInterface: public HOST_OBJECTIVE, NCCLInfo {
+class CUDAObjectiveInterface: public HOST_OBJECTIVE, public NCCLInfo {
  public:
   explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {
     if (config.num_gpus <= 1) {
