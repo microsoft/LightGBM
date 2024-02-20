@@ -29,5 +29,5 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${HOME}/.local/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit 1

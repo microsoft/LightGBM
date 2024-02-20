@@ -27,7 +27,7 @@ elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_APT_REPO="jammy-cran40/"
 else
     echo "Unrecognized R version: ${R_VERSION}"
-    exit -1
+    exit 1
 fi
 
 # installing precompiled R for Ubuntu
@@ -41,9 +41,9 @@ if [[ $OS_NAME == "linux" ]]; then
     sudo apt-key adv \
         --homedir ~/.gnupg \
         --keyserver keyserver.ubuntu.com \
-        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit -1
+        --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 || exit 1
     sudo add-apt-repository \
-        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}" || exit -1
+        "deb ${CRAN_MIRROR}/bin/linux/ubuntu ${R_APT_REPO}" || exit 1
     sudo apt-get update
     sudo apt-get install \
         --no-install-recommends \
@@ -58,7 +58,7 @@ if [[ $OS_NAME == "linux" ]]; then
             texlive-fonts-extra \
             tidy \
             qpdf \
-            || exit -1
+            || exit 1
 
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         sudo apt-get install \
@@ -66,36 +66,36 @@ if [[ $OS_NAME == "linux" ]]; then
             -y \
                 autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
                 automake \
-                || exit -1
+                || exit 1
     fi
     if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
         curl -O -L \
             https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
-        || exit -1
+        || exit 1
 
-        sudo mkdir /opt/cmake || exit -1
-        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit -1
-        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit -1
+        sudo mkdir /opt/cmake || exit 1
+        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit 1
+        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
     fi
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
     if [[ $R_BUILD_TYPE == "cran" ]]; then
-        brew install automake || exit -1
+        brew install automake || exit 1
     fi
     brew install \
         checkbashisms \
-        qpdf || exit -1
-    brew install basictex || exit -1
+        qpdf || exit 1
+    brew install basictex || exit 1
     export PATH="/Library/TeX/texbin:$PATH"
-    sudo tlmgr --verify-repo=none update --self || exit -1
-    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit -1
+    sudo tlmgr --verify-repo=none update --self || exit 1
+    sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
 
-    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit -1
+    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit 1
     sudo installer \
         -pkg $(pwd)/R.pkg \
-        -target / || exit -1
+        -target / || exit 1
 
     # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
     # See https://github.com/r-lib/actions/issues/412.
@@ -140,14 +140,14 @@ if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
     compile_from_source="never"
 fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit -1
+Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
 cd ${BUILD_DIRECTORY}
 
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build_r.R -j4 --skip-install || exit -1
+    Rscript build_r.R -j4 --skip-install || exit 1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if
@@ -164,11 +164,11 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             git diff --compact-summary
             echo "See R-package/README.md for details on how to recreate this script."
             echo ""
-            exit -1
+            exit 1
         fi
     fi
 
-    ./build-cran-package.sh || exit -1
+    ./build-cran-package.sh || exit 1
 
     if [[ "${TASK}" == "r-rchk" ]]; then
         echo "Checking R package with rchk"
@@ -180,7 +180,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             kalibera/rchk:latest \
             "/rchk/packages/${PKG_TARBALL}" \
         2>&1 > ${RCHK_LOG_FILE} \
-        || (cat ${RCHK_LOG_FILE} && exit -1)
+        || (cat ${RCHK_LOG_FILE} && exit 1)
         cat ${RCHK_LOG_FILE}
 
         # the exceptions below are from R itself and not LightGBM:
@@ -228,7 +228,7 @@ BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
 cat ${BUILD_LOG_FILE}
 
 if [[ $check_succeeded == "no" ]]; then
-    exit -1
+    exit 1
 fi
 
 used_correct_r_version=$(
@@ -237,7 +237,7 @@ used_correct_r_version=$(
 )
 if [[ $used_correct_r_version -ne 1 ]]; then
     echo "Unexpected R version was used. Expected '${R_VERSION}'."
-    exit -1
+    exit 1
 fi
 
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
@@ -247,14 +247,14 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     )
     if [[ $used_correct_r_version -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
-        exit -1
+        exit 1
     fi
 fi
 
 
 if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-    exit -1
+    exit 1
 fi
 
 # this check makes sure that CI builds of the package actually use OpenMP
@@ -273,7 +273,7 @@ else
 fi
 if [[ $omp_working -ne 1 ]]; then
     echo "OpenMP was not found"
-    exit -1
+    exit 1
 fi
 
 # this check makes sure that CI builds of the package
@@ -291,7 +291,7 @@ else
 fi
 if [[ $mm_prefetch_working -ne 1 ]]; then
     echo "MM_PREFETCH test was not passed"
-    exit -1
+    exit 1
 fi
 
 # this check makes sure that CI builds of the package
@@ -309,7 +309,7 @@ else
 fi
 if [[ $mm_malloc_working -ne 1 ]]; then
     echo "MM_MALLOC test was not passed"
-    exit -1
+    exit 1
 fi
 
 # this check makes sure that no "warning: unknown pragma ignored" logs
@@ -321,6 +321,6 @@ if [[ $R_BUILD_TYPE == "cran" ]]; then
     )
     if [[ $pragma_warning_present -ne 0 ]]; then
         echo "Unknown pragma warning is present, pragmas should have been removed before build"
-        exit -1
+        exit 1
     fi
 fi
