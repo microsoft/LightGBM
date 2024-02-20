@@ -31,7 +31,7 @@ jobs:
           persist-credentials: true
       - name: Update configure
         shell: bash
-        run: ./R-package/recreate-configure.sh || exit -1
+        run: ./R-package/recreate-configure.sh || exit 1
       - name: Push changes
         run: |
           git config --global user.name "GitHub Actions Bot"

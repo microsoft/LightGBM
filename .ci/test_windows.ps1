@@ -2,7 +2,7 @@ function Check-Output {
   param( [bool]$success )
   if (!$success) {
     $host.SetShouldExit(-1)
-    Exit -1
+    exit 1
   }
 }
 
