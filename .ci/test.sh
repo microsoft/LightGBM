@@ -16,7 +16,7 @@ if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
     export LC_ALL="en_US.UTF-8"
 fi
 
-if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit 1
     exit 0
 fi
