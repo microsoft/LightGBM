@@ -101,16 +101,6 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit 1
-
-    # Fix "duplicate libomp versions" issue on Mac
-    # by replacing the R libomp.dylib with a symlink to the one installed with brew
-    if [[ $COMPILER == "clang" ]]; then
-        ver_arr=( ${R_MAC_VERSION//./ } )
-        R_MAJOR_MINOR="${ver_arr[0]}.${ver_arr[1]}"
-        sudo ln -sf \
-            "$(brew --cellar libomp)"/*/lib/libomp.dylib \
-            /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
-    fi
 fi
 
 # fix for issue where CRAN was not returning {lattice} when using R 3.6
