@@ -22,7 +22,6 @@ environment:
 clone_depth: 5
 
 install:
-  - git submodule update --init --recursive  # get `external_libs` folder
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
   - set CONDA_ENV="test-env"

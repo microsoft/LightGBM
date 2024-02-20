@@ -31,6 +31,21 @@ cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
 
+include(FetchContent)
+FetchContent_Declare(
+  fast_double_parser
+  GIT_REPOSITORY https://github.com/lemire/fast_double_parser.git
+  GIT_TAG efec03532ef65984786e5e32dbc81f6e6a55a115
+)
+FetchContent_Declare(
+  fmt
+  GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+  GIT_TAG f5e54359df4c26b6230fc61d38aa294581393084
+)
+FetchContent_MakeAvailable(fast_double_parser fmt)
+include_directories(${fast_double_parser_SOURCE_DIR}/include)
+include_directories(${fmt_SOURCE_DIR}/include/fmt)
+
 if(BUILD_CPP_TEST)
   set(CMAKE_CXX_STANDARD 14)
 else()
@@ -111,8 +126,13 @@ if(USE_SWIG)
   endif()
 endif()
 
-set(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
-include_directories(${EIGEN_DIR})
+FetchContent_Declare(
+  eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG 3147391d946bb4b6c68edd901f2add6ac1f31f8c
+)
+FetchContent_MakeAvailable(eigen)
+include_directories(${eigen_SOURCE_DIR})
 
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
@@ -171,8 +191,13 @@ if(USE_OPENMP)
 endif()
 
 if(USE_GPU)
-    set(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
-    include_directories(${BOOST_COMPUTE_HEADER_DIR})
+    FetchContent_Declare(
+      compute
+      GIT_REPOSITORY https://github.com/boostorg/compute.git
+      GIT_TAG 36350b7de849300bd3d72a05d8bf890ca405a014
+    )
+    FetchContent_MakeAvailable(compute)
+    include_directories(${compute_SOURCE_DIR}/include)
     find_package(OpenCL REQUIRED)
     include_directories(${OpenCL_INCLUDE_DIRS})
     message(STATUS "OpenCL include directory: " ${OpenCL_INCLUDE_DIRS})

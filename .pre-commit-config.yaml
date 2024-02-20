@@ -1,7 +1,6 @@
 exclude: |
   (?x)^(
       build|
-      external_libs|
       lightgbm-python|
       lightgbm_r|
   )$

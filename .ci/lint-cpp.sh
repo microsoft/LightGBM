@@ -9,8 +9,7 @@ echo "done running cpplint"
 
 echo "running cmakelint"
 cmake_files=$(
-    find . -name CMakeLists.txt -o -path "./cmake/*.cmake" \
-    | grep -v external_libs
+    find . -name CMakeLists.txt -o -path "./cmake/*.cmake"
 )
 cmakelint \
     --linelength=120 \

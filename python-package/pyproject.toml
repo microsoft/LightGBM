@@ -83,19 +83,17 @@ minimum-version = "0.4.4"
 [tool.isort]
 line_length = 120
 skip_glob = [
-    "*/external_libs/*",
     "*/lightgbm-python/*"
 ]
 
 [tool.mypy]
-exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
+exclude = 'build/*|compile/*|docs/*|examples/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
 [tool.ruff]
 exclude = [
     "build",
     "compile",
-    "external_libs",
     "lightgbm-python",
 ]
 line-length = 120
@@ -109,7 +107,6 @@ exclude = [
     "build/*.py",
     "compile/*.py",
     "examples/*.py",
-    "external_libs/*.py",
     "lightgbm-python/*.py",
     "python-package/*.py",
     "tests/*.py"
