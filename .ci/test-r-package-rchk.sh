@@ -13,7 +13,7 @@ RCHK_LOG_FILE="rchk-logs.txt"
 docker run \
     --rm \
     -v $(pwd)/packages:/rchk/packages \
-    -it kalibera/rchk:latest \
+    -i kalibera/rchk:latest \
     "/rchk/packages/${PKG_TARBALL}" \
     2>&1 > ${RCHK_LOG_FILE} \
 || (cat ${RCHK_LOG_FILE} && exit 1)
