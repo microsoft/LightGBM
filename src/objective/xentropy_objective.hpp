@@ -103,7 +103,7 @@ class CrossEntropy: public ObjectiveFunction {
         if (score[i] > -37.0) {
           const double exp_tmp = std::exp(-score[i]);
           gradients[i] = static_cast<score_t>(((1.0f - label_[i]) - label_[i] * exp_tmp) / (1.0f + exp_tmp));
-          hessians[i] = static_cast<score_t>(exp_tmp / (1 + exp_tmp) * (1 + exp_tmp));
+          hessians[i] = static_cast<score_t>(exp_tmp / ((1 + exp_tmp) * (1 + exp_tmp)));
         } else {
           const double exp_tmp = std::exp(score[i]);
           gradients[i] = static_cast<score_t>(exp_tmp - label_[i]);
@@ -117,7 +117,7 @@ class CrossEntropy: public ObjectiveFunction {
         if (score[i] > -37.0) {
           const double exp_tmp = std::exp(-score[i]);
           gradients[i] = static_cast<score_t>(((1.0f - label_[i]) - label_[i] * exp_tmp) / (1.0f + exp_tmp) * weights_[i]);
-          hessians[i] = static_cast<score_t>(exp_tmp / (1 + exp_tmp) * (1 + exp_tmp) * weights_[i]);
+          hessians[i] = static_cast<score_t>(exp_tmp / ((1 + exp_tmp) * (1 + exp_tmp)) * weights_[i]);
         } else {
           const double exp_tmp = std::exp(score[i]);
           gradients[i] = static_cast<score_t>((exp_tmp - label_[i]) * weights_[i]);
