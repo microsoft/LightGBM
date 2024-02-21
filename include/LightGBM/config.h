@@ -600,8 +600,8 @@ struct Config {
 
   // check = >= 0.0
   // desc = controls how many features can appear in the same tree
-  // desc = by default (n_tree_interaction_constraints = 0) interaction constraints are disabled
-  int n_tree_interaction_constraints = 0;
+  // desc = by default (max_tree_interactions = 0) interaction constraints are disabled
+  int max_tree_interactions = 0;
 
   // check = >= 0.0
   // desc = controls how many features interactions can be added to the final model
