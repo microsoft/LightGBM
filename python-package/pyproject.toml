@@ -125,7 +125,7 @@ ignore = [
     "E501",
     # (pylint) Too many branches
     "PLR0912",
-    # (pylint) Too mmany arguments in function definition
+    # (pylint) Too many arguments in function definition
     "PLR0913",
     # (pylint) Too many statements
     "PLR0915",
