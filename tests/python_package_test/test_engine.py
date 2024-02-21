@@ -3727,7 +3727,7 @@ def test_tree_interaction_constraints():
     check_consistency(est, tree_interaction_constraints)
 
     # check if tree features interaction constraints works with multiple set of features
-    tree_interaction_constraints = [[i for i in range(i, i + 5)] for i in range(0, num_features - 5, 5)]
+    tree_interaction_constraints = [list(range(i, i + 5)) for i in range(0, num_features - 5, 5)]
     new_params = dict(params, tree_interaction_constraints=tree_interaction_constraints)
     est = lgb.train(new_params, train_data, num_boost_round=100)
     check_consistency(est, tree_interaction_constraints)
