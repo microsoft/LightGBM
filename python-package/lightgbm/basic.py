@@ -364,7 +364,7 @@ def _is_2d_collection(data: Any) -> bool:
     )
 
 
-def _is_pyarrow_array(data: Any) -> bool:
+def _is_pyarrow_array(data: Any) -> "TypeGuard[Union[pa_Array, pa_ChunkedArray]]":
     """Check whether data is a PyArrow array."""
     return isinstance(data, (pa_Array, pa_ChunkedArray))
 
