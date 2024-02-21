@@ -29,6 +29,9 @@ CUDASingleGPUTreeLearner::~CUDASingleGPUTreeLearner() {
     DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
     DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
   }
+  if (nccl_communicator_ != nullptr) {
+    CUDAStreamDestroy(nccl_stream_);
+  }
 }
 
 void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
@@ -40,8 +43,10 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
     SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
   }
   cuda_smaller_leaf_splits_.reset(new CUDALeafSplits(num_data_));
+  cuda_smaller_leaf_splits_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, global_num_data_);
   cuda_smaller_leaf_splits_->Init(config_->use_quantized_grad);
   cuda_larger_leaf_splits_.reset(new CUDALeafSplits(num_data_));
+  cuda_larger_leaf_splits_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, global_num_data_);
   cuda_larger_leaf_splits_->Init(config_->use_quantized_grad);
 
   cuda_histogram_constructor_.reset(new CUDAHistogramConstructor(train_data_, config_->num_leaves, num_threads_,
@@ -51,10 +56,11 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   cuda_histogram_constructor_->Init(train_data_, share_state_.get());
 
   const auto& feature_hist_offsets = share_state_->feature_hist_offsets();
-  const int num_total_bin = feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back());
+  num_total_bin_ = feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back());
   cuda_data_partition_.reset(new CUDADataPartition(
-    train_data_, num_total_bin, config_->num_leaves, num_threads_, config_->use_quantized_grad,
+    train_data_, num_total_bin_, config_->num_leaves, num_threads_, config_->use_quantized_grad,
     cuda_histogram_constructor_->cuda_hist_pointer()));
+  cuda_data_partition_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, global_num_data_);
   cuda_data_partition_->Init();
 
   select_features_by_node_ = !config_->interaction_constraints_vector.empty() || config_->feature_fraction_bynode < 1.0;
@@ -83,6 +89,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
     cuda_leaf_hessian_stat_buffer_.Resize(config_->num_leaves);
     cuda_gradient_discretizer_.reset(new CUDAGradientDiscretizer(
       config_->num_grad_quant_bins, config_->num_iterations, config_->seed, is_constant_hessian, config_->stochastic_rounding));
+    cuda_gradient_discretizer_->SetNCCLInfo(nccl_communicator_, nccl_gpu_rank_, local_gpu_rank_, gpu_device_id_, global_num_data_);
     cuda_gradient_discretizer_->Init(num_data_, config_->num_leaves, train_data_->num_features(), train_data_);
   } else {
     cuda_gradient_discretizer_.reset(nullptr);
@@ -260,7 +267,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
         cuda_smaller_leaf_splits_->GetCUDAStruct(),
         cuda_larger_leaf_splits_->GetCUDAStruct(),
         smaller_leaf_index_, larger_leaf_index_,
-        num_data_in_smaller_leaf, num_data_in_larger_leaf,
+        global_num_data_in_smaller_leaf, global_num_data_in_larger_leaf,
         sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf,
         cuda_gradient_discretizer_->grad_scale_ptr(),
         cuda_gradient_discretizer_->hess_scale_ptr(),
@@ -271,7 +278,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
         cuda_smaller_leaf_splits_->GetCUDAStruct(),
         cuda_larger_leaf_splits_->GetCUDAStruct(),
         smaller_leaf_index_, larger_leaf_index_,
-        num_data_in_smaller_leaf, num_data_in_larger_leaf,
+        global_num_data_in_smaller_leaf, global_num_data_in_larger_leaf,
         sum_hessians_in_smaller_leaf, sum_hessians_in_larger_leaf,
         nullptr, nullptr, 0, 0);
     }
@@ -644,6 +651,12 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
     sum_right_gradients += host_gradients_[index];
     sum_right_hessians += host_hessians_[index];
   }
+  if (nccl_communicator_ != nullptr) {
+    sum_left_gradients = NCCLAllReduce<double>(sum_left_gradients, ncclFloat64, ncclSum, nccl_communicator_);
+    sum_left_hessians = NCCLAllReduce<double>(sum_left_hessians, ncclFloat64, ncclSum, nccl_communicator_);
+    sum_right_gradients = NCCLAllReduce<double>(sum_right_gradients, ncclFloat64, ncclSum, nccl_communicator_);
+    sum_right_hessians = NCCLAllReduce<double>(sum_right_hessians, ncclFloat64, ncclSum, nccl_communicator_);
+  }
   CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
   CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_right_gradients - split_sum_right_gradients), 1e-6f);
@@ -667,13 +680,6 @@ void CUDASingleGPUTreeLearner::SetNCCLInfo(
   int gpu_device_id,
   data_size_t global_num_data) {
   NCCLInfo::SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
-  if (config_->use_quantized_grad) {
-    cuda_gradient_discretizer_->SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
-  }
-  cuda_smaller_leaf_splits_->SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
-  cuda_larger_leaf_splits_->SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
-  cuda_data_partition_->SetNCCLInfo(nccl_communicator, nccl_gpu_rank, local_gpu_rank, gpu_device_id, global_num_data);
-
   leaf_to_hist_index_map_.resize(config_->num_leaves - 1);
   global_num_data_in_leaf_.resize(config_->num_leaves, 0);
   nccl_stream_ = CUDAStreamCreate();

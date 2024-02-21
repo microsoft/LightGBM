@@ -150,8 +150,6 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
   int num_total_bin_;
   /*! \brief global number of data in the leaves across */
   std::vector<data_size_t> global_num_data_in_leaf_;
-  /*! \brief global number of data in the training set */
-  data_size_t global_num_data_;
 
   #ifdef DEBUG
   /*! \brief gradients on CPU */
