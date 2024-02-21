@@ -659,7 +659,12 @@ _FIELD_TYPE_MAPPER = {
 }
 
 """String name to int feature importance type mapper"""
-_FEATURE_IMPORTANCE_TYPE_MAPPER = {"split": _C_API_FEATURE_IMPORTANCE_SPLIT, "gain": _C_API_FEATURE_IMPORTANCE_GAIN}
+# fmt: off
+_FEATURE_IMPORTANCE_TYPE_MAPPER = {
+    "split": _C_API_FEATURE_IMPORTANCE_SPLIT,
+    "gain": _C_API_FEATURE_IMPORTANCE_GAIN
+}
+# fmt: on
 
 
 def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
