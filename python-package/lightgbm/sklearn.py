@@ -8,14 +8,41 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import scipy.sparse
 
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _LGBM_BoosterBestScoreType,
-                    _LGBM_CategoricalFeatureConfiguration, _LGBM_EvalFunctionResultType, _LGBM_FeatureNameConfiguration,
-                    _LGBM_GroupType, _LGBM_InitScoreType, _LGBM_LabelType, _LGBM_WeightType, _log_warning)
+from .basic import (
+    Booster,
+    Dataset,
+    LightGBMError,
+    _choose_param_value,
+    _ConfigAliases,
+    _LGBM_BoosterBestScoreType,
+    _LGBM_CategoricalFeatureConfiguration,
+    _LGBM_EvalFunctionResultType,
+    _LGBM_FeatureNameConfiguration,
+    _LGBM_GroupType,
+    _LGBM_InitScoreType,
+    _LGBM_LabelType,
+    _LGBM_WeightType,
+    _log_warning,
+)
 from .callback import _EvalResultDict, record_evaluation
-from .compat import (SKLEARN_INSTALLED, LGBMNotFittedError, _LGBMAssertAllFinite, _LGBMCheckArray,
-                     _LGBMCheckClassificationTargets, _LGBMCheckSampleWeight, _LGBMCheckXY, _LGBMClassifierBase,
-                     _LGBMComputeSampleWeight, _LGBMCpuCount, _LGBMLabelEncoder, _LGBMModelBase, _LGBMRegressorBase,
-                     dt_DataTable, np_random_Generator, pd_DataFrame)
+from .compat import (
+    SKLEARN_INSTALLED,
+    LGBMNotFittedError,
+    _LGBMAssertAllFinite,
+    _LGBMCheckArray,
+    _LGBMCheckClassificationTargets,
+    _LGBMCheckSampleWeight,
+    _LGBMCheckXY,
+    _LGBMClassifierBase,
+    _LGBMComputeSampleWeight,
+    _LGBMCpuCount,
+    _LGBMLabelEncoder,
+    _LGBMModelBase,
+    _LGBMRegressorBase,
+    dt_DataTable,
+    np_random_Generator,
+    pd_DataFrame,
+)
 from .engine import train
 
 __all__ = [

@@ -34,8 +34,9 @@ def load_linnerud(**kwargs):
     return sklearn.datasets.load_linnerud(**kwargs)
 
 
-def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
-                 group=None, random_gs=False, avg_gs=10, random_state=0):
+def make_ranking(
+    n_samples=100, n_features=20, n_informative=5, gmax=2, group=None, random_gs=False, avg_gs=10, random_state=0
+):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
     if ranking objective becomes supported in sklearn.datasets module.
@@ -81,7 +82,7 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
     relvalues = range(gmax + 1)
 
     # build y/target and group-id vectors with user-specified group sizes.
-    if group is not None and hasattr(group, '__len__'):
+    if group is not None and hasattr(group, "__len__"):
         n_samples = np.sum(group)
 
         for i, gsize in enumerate(group):
@@ -116,8 +117,9 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 
 @lru_cache(maxsize=None)
 def make_synthetic_regression(n_samples=100, n_features=4, n_informative=2, random_state=42):
-    return sklearn.datasets.make_regression(n_samples=n_samples, n_features=n_features,
-                                            n_informative=n_informative, random_state=random_state)
+    return sklearn.datasets.make_regression(
+        n_samples=n_samples, n_features=n_features, n_informative=n_informative, random_state=random_state
+    )
 
 
 def dummy_obj(preds, train_data):
@@ -126,7 +128,7 @@ def dummy_obj(preds, train_data):
 
 def mse_obj(y_pred, dtrain):
     y_true = dtrain.get_label()
-    grad = (y_pred - y_true)
+    grad = y_pred - y_true
     hess = np.ones(len(grad))
     return grad, hess
 
@@ -157,50 +159,41 @@ def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
 
 
 def pickle_obj(obj, filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'wb') as f:
+    if serializer == "pickle":
+        with open(filepath, "wb") as f:
             pickle.dump(obj, f)
-    elif serializer == 'joblib':
+    elif serializer == "joblib":
         joblib.dump(obj, filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'wb') as f:
+    elif serializer == "cloudpickle":
+        with open(filepath, "wb") as f:
             cloudpickle.dump(obj, f)
     else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
+        raise ValueError(f"Unrecognized serializer type: {serializer}")
 
 
 def unpickle_obj(filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'rb') as f:
+    if serializer == "pickle":
+        with open(filepath, "rb") as f:
             return pickle.load(f)
-    elif serializer == 'joblib':
+    elif serializer == "joblib":
         return joblib.load(filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'rb') as f:
+    elif serializer == "cloudpickle":
+        with open(filepath, "rb") as f:
             return cloudpickle.load(f)
     else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
+        raise ValueError(f"Unrecognized serializer type: {serializer}")
 
 
 def pickle_and_unpickle_object(obj, serializer):
     with lgb.basic._TempFile() as tmp_file:
-        pickle_obj(
-            obj=obj,
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
-        obj_from_disk = unpickle_obj(
-            filepath=tmp_file.name,
-            serializer=serializer
-        )
+        pickle_obj(obj=obj, filepath=tmp_file.name, serializer=serializer)
+        obj_from_disk = unpickle_obj(filepath=tmp_file.name, serializer=serializer)
     return obj_from_disk  # noqa: RET504
 
 
 # doing this here, at import time, to ensure it only runs once_per import
 # instead of once per assertion
-_numpy_testing_supports_strict_kwarg = (
-    "strict" in getfullargspec(np.testing.assert_array_equal).kwonlyargs
-)
+_numpy_testing_supports_strict_kwarg = "strict" in getfullargspec(np.testing.assert_array_equal).kwonlyargs
 
 
 def np_assert_array_equal(*args, **kwargs):
