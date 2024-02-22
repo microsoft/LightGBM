@@ -273,7 +273,9 @@ class _EvalFunctionWrapper:
         self.func = func
 
     def __call__(
-        self, preds: np.ndarray, dataset: Dataset
+        self,
+        preds: np.ndarray,
+        dataset: Dataset,
     ) -> Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]:
         """Call passed function with appropriate arguments.
 

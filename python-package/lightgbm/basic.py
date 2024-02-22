@@ -3429,7 +3429,12 @@ class Dataset:
         """
         if self._handle is None or other._handle is None:
             raise ValueError("Both source and target Datasets must be constructed before adding features")
-        _safe_call(_LIB.LGBM_DatasetAddFeaturesFrom(self._handle, other._handle))
+        _safe_call(
+            _LIB.LGBM_DatasetAddFeaturesFrom(
+                self._handle,
+                other._handle,
+            )
+        )
         was_none = self.data is None
         old_self_data_type = type(self.data).__name__
         if other.data is None:
@@ -4013,7 +4018,12 @@ class Booster:
             raise TypeError(f"Validation data should be Dataset instance, met {type(data).__name__}")
         if data._predictor is not self.__init_predictor:
             raise LightGBMError("Add validation data failed, " "you should use same predictor for these data")
-        _safe_call(_LIB.LGBM_BoosterAddValidData(self._handle, data.construct()._handle))
+        _safe_call(
+            _LIB.LGBM_BoosterAddValidData(
+                self._handle,
+                data.construct()._handle,
+            )
+        )
         self.valid_sets.append(data)
         self.name_valid_sets.append(name)
         self.__num_dataset += 1
@@ -4036,7 +4046,12 @@ class Booster:
         """
         params_str = _param_dict_to_str(params)
         if params_str:
-            _safe_call(_LIB.LGBM_BoosterResetParameter(self._handle, _c_str(params_str)))
+            _safe_call(
+                _LIB.LGBM_BoosterResetParameter(
+                    self._handle,
+                    _c_str(params_str),
+                )
+            )
         self.params.update(params)
         return self
 
@@ -4102,7 +4117,12 @@ class Booster:
         if fobj is None:
             if self.__set_objective_to_none:
                 raise LightGBMError("Cannot update due to null objective function.")
-            _safe_call(_LIB.LGBM_BoosterUpdateOneIter(self._handle, ctypes.byref(is_finished)))
+            _safe_call(
+                _LIB.LGBM_BoosterUpdateOneIter(
+                    self._handle,
+                    ctypes.byref(is_finished),
+                )
+            )
             self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
             return is_finished.value == 1
         else:
@@ -4205,7 +4225,12 @@ class Booster:
             The number of models per iteration.
         """
         model_per_iter = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterNumModelPerIteration(self._handle, ctypes.byref(model_per_iter)))
+        _safe_call(
+            _LIB.LGBM_BoosterNumModelPerIteration(
+                self._handle,
+                ctypes.byref(model_per_iter),
+            )
+        )
         return model_per_iter.value
 
     def num_trees(self) -> int:
@@ -4229,7 +4254,12 @@ class Booster:
             Upper bound value of the model.
         """
         ret = ctypes.c_double(0)
-        _safe_call(_LIB.LGBM_BoosterGetUpperBoundValue(self._handle, ctypes.byref(ret)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetUpperBoundValue(
+                self._handle,
+                ctypes.byref(ret),
+            )
+        )
         return ret.value
 
     def lower_bound(self) -> float:
@@ -4241,7 +4271,12 @@ class Booster:
             Lower bound value of the model.
         """
         ret = ctypes.c_double(0)
-        _safe_call(_LIB.LGBM_BoosterGetLowerBoundValue(self._handle, ctypes.byref(ret)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetLowerBoundValue(
+                self._handle,
+                ctypes.byref(ret),
+            )
+        )
         return ret.value
 
     def eval(
@@ -4467,7 +4502,12 @@ class Booster:
             )
         )
         out_num_class = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetNumClasses(self._handle, ctypes.byref(out_num_class)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumClasses(
+                self._handle,
+                ctypes.byref(out_num_class),
+            )
+        )
         self.__num_class = out_num_class.value
         self.pandas_categorical = _load_pandas_categorical(model_str=model_str)
         return self
@@ -4796,7 +4836,12 @@ class Booster:
         )
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetLinear(self._handle, ctypes.byref(out_is_linear)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetLinear(
+                self._handle,
+                ctypes.byref(out_is_linear),
+            )
+        )
         new_params = _choose_param_value(
             main_param_name="linear_tree",
             params=self.params,
@@ -4819,10 +4864,22 @@ class Booster:
         new_params["refit_decay_rate"] = decay_rate
         new_booster = Booster(new_params, train_set)
         # Copy models
-        _safe_call(_LIB.LGBM_BoosterMerge(new_booster._handle, predictor._handle))
+        _safe_call(
+            _LIB.LGBM_BoosterMerge(
+                new_booster._handle,
+                predictor._handle,
+            )
+        )
         leaf_preds = leaf_preds.reshape(-1)
         ptr_data, _, _ = _c_int_array(leaf_preds)
-        _safe_call(_LIB.LGBM_BoosterRefit(new_booster._handle, ptr_data, ctypes.c_int32(nrow), ctypes.c_int32(ncol)))
+        _safe_call(
+            _LIB.LGBM_BoosterRefit(
+                new_booster._handle,
+                ptr_data,
+                ctypes.c_int32(nrow),
+                ctypes.c_int32(ncol),
+            )
+        )
         new_booster._network = self._network
         return new_booster
 
@@ -4887,7 +4944,12 @@ class Booster:
             The number of features.
         """
         out_num_feature = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterGetNumFeature(self._handle, ctypes.byref(out_num_feature)))
+        _safe_call(
+            _LIB.LGBM_BoosterGetNumFeature(
+                self._handle,
+                ctypes.byref(out_num_feature),
+            )
+        )
         return out_num_feature.value
 
     def feature_name(self) -> List[str]:
@@ -5128,7 +5190,12 @@ class Booster:
             self.__need_reload_eval_info = False
             out_num_eval = ctypes.c_int(0)
             # Get num of inner evals
-            _safe_call(_LIB.LGBM_BoosterGetEvalCounts(self._handle, ctypes.byref(out_num_eval)))
+            _safe_call(
+                _LIB.LGBM_BoosterGetEvalCounts(
+                    self._handle,
+                    ctypes.byref(out_num_eval),
+                )
+            )
             self.__num_inner_eval = out_num_eval.value
             if self.__num_inner_eval > 0:
                 # Get name of eval metrics
