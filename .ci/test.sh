@@ -76,6 +76,7 @@ if [[ $TASK == "lint" ]]; then
         cpplint \
         mypy \
         'pre-commit>=3.6.0' \
+        'pyarrow>=14.0' \
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
