@@ -28,7 +28,7 @@ def test_cpu_and_gpu_work():
     params_gpu = params_cpu.copy()
     params_gpu["device"] = "gpu"
     # Double-precision floats are only supported on x86_64 with PoCL
-    params_gpu["gpu_use_dp"] = (platform.machine() == "x86_64")
+    params_gpu["gpu_use_dp"] = platform.machine() == "x86_64"
     gpu_bst = lgb.train(params_gpu, data, num_boost_round=10)
     gpu_score = log_loss(y, gpu_bst.predict(X))
 
