@@ -184,10 +184,10 @@ def train(
     params["num_iterations"] = num_boost_round
     # setting early stopping via global params should be possible
     params = _choose_param_value(
-        main_param_name="early_stopping_round", 
-        params=params, 
+        main_param_name="early_stopping_round",
+        params=params,
         default_value=None,
-        )
+    )
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
@@ -245,7 +245,8 @@ def train(
                     main_param_name="verbosity",
                     params=params,
                     default_value=1,
-                ).pop("verbosity")> 0,
+                ).pop("verbosity")
+                > 0,
             )
         )
 
@@ -711,7 +712,7 @@ def cv(
         main_param_name="early_stopping_round",
         params=params,
         default_value=None,
-        )
+    )
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
@@ -762,7 +763,8 @@ def cv(
                     main_param_name="verbosity",
                     params=params,
                     default_value=1,
-                ).pop("verbosity") > 0,
+                ).pop("verbosity")
+                > 0,
             )
         )
 
