@@ -26,9 +26,13 @@ __all__ = [
 ]
 
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
-_EvalResultTuple = Union[_LGBM_BoosterEvalMethodResultType, _LGBM_BoosterEvalMethodResultWithStandardDeviationType]
+_EvalResultTuple = Union[
+    _LGBM_BoosterEvalMethodResultType,
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+]
 _ListOfEvalResultTuples = Union[
-    List[_LGBM_BoosterEvalMethodResultType], List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]
+    List[_LGBM_BoosterEvalMethodResultType],
+    List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType],
 ]
 
 

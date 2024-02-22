@@ -4242,7 +4242,12 @@ class Booster:
             The number of weak sub-models.
         """
         num_trees = ctypes.c_int(0)
-        _safe_call(_LIB.LGBM_BoosterNumberOfTotalModel(self._handle, ctypes.byref(num_trees)))
+        _safe_call(
+            _LIB.LGBM_BoosterNumberOfTotalModel(
+                self._handle,
+                ctypes.byref(num_trees),
+            )
+        )
         return num_trees.value
 
     def upper_bound(self) -> float:
@@ -4471,7 +4476,11 @@ class Booster:
             Booster with shuffled models.
         """
         _safe_call(
-            _LIB.LGBM_BoosterShuffleModels(self._handle, ctypes.c_int(start_iteration), ctypes.c_int(end_iteration))
+            _LIB.LGBM_BoosterShuffleModels(
+                self._handle,
+                ctypes.c_int(start_iteration),
+                ctypes.c_int(end_iteration),
+            )
         )
         return self
 
@@ -4647,7 +4656,12 @@ class Booster:
                 )
             )
         ret = json.loads(string_buffer.value.decode("utf-8"), object_hook=object_hook)
-        ret["pandas_categorical"] = json.loads(json.dumps(self.pandas_categorical, default=_json_default_with_numpy))
+        ret["pandas_categorical"] = json.loads(
+            json.dumps(
+                self.pandas_categorical,
+                default=_json_default_with_numpy,
+            )
+        )
         return ret
 
     def predict(
@@ -4900,7 +4914,12 @@ class Booster:
         """
         ret = ctypes.c_double(0)
         _safe_call(
-            _LIB.LGBM_BoosterGetLeafValue(self._handle, ctypes.c_int(tree_id), ctypes.c_int(leaf_id), ctypes.byref(ret))
+            _LIB.LGBM_BoosterGetLeafValue(
+                self._handle,
+                ctypes.c_int(tree_id),
+                ctypes.c_int(leaf_id),
+                ctypes.byref(ret),
+            )
         )
         return ret.value
 
@@ -4930,7 +4949,10 @@ class Booster:
         """
         _safe_call(
             _LIB.LGBM_BoosterSetLeafValue(
-                self._handle, ctypes.c_int(tree_id), ctypes.c_int(leaf_id), ctypes.c_double(value)
+                self._handle,
+                ctypes.c_int(tree_id),
+                ctypes.c_int(leaf_id),
+                ctypes.c_double(value),
             )
         )
         return self
@@ -5037,7 +5059,10 @@ class Booster:
             return result
 
     def get_split_value_histogram(
-        self, feature: Union[int, str], bins: Optional[Union[int, str]] = None, xgboost_style: bool = False
+        self,
+        feature: Union[int, str],
+        bins: Optional[Union[int, str]] = None,
+        xgboost_style: bool = False,
     ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray, pd_DataFrame]:
         """Get split value histogram for the specified feature.
 

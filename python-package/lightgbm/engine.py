@@ -718,9 +718,15 @@ def cv(
     first_metric_only = params.get("first_metric_only", False)
 
     if isinstance(init_model, (str, Path)):
-        predictor = _InnerPredictor.from_model_file(model_file=init_model, pred_parameter=params)
+        predictor = _InnerPredictor.from_model_file(
+            model_file=init_model,
+            pred_parameter=params,
+        )
     elif isinstance(init_model, Booster):
-        predictor = _InnerPredictor.from_booster(booster=init_model, pred_parameter=dict(init_model.params, **params))
+        predictor = _InnerPredictor.from_booster(
+            booster=init_model,
+            pred_parameter=dict(init_model.params, **params),
+        )
     else:
         predictor = None
 
