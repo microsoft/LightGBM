@@ -2771,8 +2771,8 @@ class Dataset:
                 data = pa_chunked_array(
                     [
                         chunk
-                        for array in data.columns
-                        for chunk in array.chunks  # type: ignore
+                        for array in data.columns  # type: ignore
+                        for chunk in array.chunks
                     ]
                 )
 
