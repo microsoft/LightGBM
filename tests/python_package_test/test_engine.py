@@ -3458,7 +3458,7 @@ def test_interaction_constraints():
         num_boost_round=10,
     )
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Interaction constraints are not yet supported on the CUDA version')
 def test_tree_interaction_constraints():
     def check_consistency(est, tree_interaction_constraints):
         feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
@@ -3508,7 +3508,7 @@ def test_tree_interaction_constraints():
 
 
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Interaction constraints are not yet supported on the CUDA version')
 def test_max_tree_interactions():
     def check_n_interactions(est):
         feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
@@ -3545,7 +3545,7 @@ def test_max_tree_interactions():
     est = lgb.train(new_params, train_data, num_boost_round=100)
     check_n_interactions(est)
 
-@pytest.mark.skipif(getenv('TASK', '') == 'cuda_exp', reason='Interaction constraints are not yet supported by CUDA Experimental version')
+@pytest.mark.skipif(getenv('TASK', '') == 'cuda', reason='Interaction constraints are not yet supported on the CUDA version')
 def test_max_interactions():
     def check_interactions(est, max_interactions):
         feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
