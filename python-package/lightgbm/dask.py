@@ -521,8 +521,19 @@ def _train(
     # capture whether machines or its aliases were provided
     machines_in_params = any(alias in params for alias in _ConfigAliases.get("machines"))
 
-    params = _choose_param_value(main_param_name="tree_learner", params=params, default_value="data")
-    allowed_tree_learners = {"data", "data_parallel", "feature", "feature_parallel", "voting", "voting_parallel"}
+    params = _choose_param_value(
+        main_param_name="tree_learner",
+        params=params,
+        default_value="data",
+    )
+    allowed_tree_learners = {
+        'data',
+        'data_parallel',
+        'feature',
+        'feature_parallel',
+        'voting',
+        'voting_parallel',
+    }
     if params["tree_learner"] not in allowed_tree_learners:
         _log_warning(
             f'Parameter tree_learner set to {params["tree_learner"]}, which is not allowed. Using "data" as default'
@@ -720,10 +731,18 @@ def _train(
 
     # resolve aliases for network parameters and pop the result off params.
     # these values are added back in calls to `_train_part()`
-    params = _choose_param_value(main_param_name="local_listen_port", params=params, default_value=12400)
+    params = _choose_param_value(
+        main_param_name="local_listen_port",
+        params=params,
+        default_value=12400,
+    )
     local_listen_port = params.pop("local_listen_port")
 
-    params = _choose_param_value(main_param_name="machines", params=params, default_value=None)
+    params = _choose_param_value(
+        main_param_name="machines",
+        params=params,
+        default_value=None,
+    )
     machines = params.pop("machines")
 
     # figure out network params
@@ -731,7 +750,10 @@ def _train(
     worker_addresses = worker_map.keys()
     if machines is not None:
         _log_info("Using passed-in 'machines' parameter")
-        worker_address_to_port = _machines_to_worker_map(machines=machines, worker_addresses=worker_addresses)
+        worker_address_to_port = _machines_to_worker_map(
+            machines=machines,
+            worker_addresses=worker_addresses,
+        )
     else:
         if listen_port_in_params:
             _log_info("Using passed-in 'local_listen_port' for all workers")
@@ -821,10 +843,20 @@ def _predict_part(
         result = np.array([])
     elif pred_proba:
         result = model.predict_proba(
-            part, raw_score=raw_score, pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs
+            part,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs,
         )
     else:
-        result = model.predict(part, raw_score=raw_score, pred_leaf=pred_leaf, pred_contrib=pred_contrib, **kwargs)
+        result = model.predict(
+            part,
+            raw_score=raw_score,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            **kwargs,
+        )
 
     # dask.DataFrame.map_partitions() expects each call to return a pandas DataFrame or Series
     if isinstance(part, pd_DataFrame):
@@ -927,7 +959,9 @@ def _predict(
             for j, partition in enumerate(preds.to_delayed()):
                 for i in range(num_classes):
                     part = dask_array_from_delayed(
-                        value=_extract(partition, i), shape=(nrows_per_chunk[j], num_cols), meta=pred_meta
+                        value=_extract(partition, i),
+                        shape=(nrows_per_chunk[j], num_cols),
+                        meta=pred_meta,
                     )
                     out[i].append(part)
 
@@ -946,7 +980,9 @@ def _predict(
             for i in range(num_classes):
                 out_arrays.append(
                     dask_array_from_delayed(
-                        value=delayed(concat_fn)(out[i]), shape=(data.shape[0], num_cols), meta=pred_meta
+                        value=delayed(concat_fn)(out[i]),
+                        shape=(data.shape[0], num_cols),
+                        meta=pred_meta,
                     )
                 )
 
@@ -1063,7 +1099,8 @@ class _DaskLGBMModel:
 
     @staticmethod
     def _lgb_dask_copy_extra_params(
-        source: Union["_DaskLGBMModel", LGBMModel], dest: Union["_DaskLGBMModel", LGBMModel]
+        source: Union["_DaskLGBMModel", LGBMModel],
+        dest: Union["_DaskLGBMModel", LGBMModel],
     ) -> None:
         params = source.get_params()  # type: ignore[union-attr]
         attributes = source.__dict__
