@@ -117,7 +117,7 @@ class FeatureHistogram {
             (static_cast<int64_t>(static_cast<int16_t>(other_grad_hess >> 16)) << 32) |
             (static_cast<int64_t>(other_grad_hess & 0x0000ffff));
           const int64_t result_grad_hess = this_grad_hess - other_grad_hess_int64;
-          result_int_data[i] = result_grad_hess;
+          result_int_data[i] = static_cast<RESULT_HIST_T>(result_grad_hess);
         }
       } else if (THIS_HIST_BITS == 32 && OTHER_HIST_BITS == 16 && RESULT_HIST_BITS == 16) {
         for (int i = 0; i < meta_->num_bin - meta_->offset; ++i) {
@@ -839,7 +839,7 @@ class FeatureHistogram {
     PACKED_HIST_ACC_T local_int_sum_gradient_and_hessian =
       HIST_BITS_ACC == 16 ?
       ((static_cast<int32_t>(int_sum_gradient_and_hessian >> 32) << 16) | static_cast<int32_t>(int_sum_gradient_and_hessian & 0x0000ffff)) :
-      int_sum_gradient_and_hessian;
+      static_cast<PACKED_HIST_ACC_T>(int_sum_gradient_and_hessian);
 
     // recover sum of gradient and hessian from the sum of quantized gradient and hessian
     double sum_gradient = static_cast<double>(static_cast<int32_t>(int_sum_gradient_and_hessian >> 32)) * grad_scale;
@@ -918,12 +918,12 @@ class FeatureHistogram {
 
         const int32_t int_grad = HIST_BITS_ACC == 16 ?
           static_cast<int32_t>(static_cast<int16_t>(grad_and_hess_acc >> 16)) :
-          static_cast<int32_t>(grad_and_hess_acc >> 32);
+          static_cast<int32_t>(static_cast<int64_t>(grad_and_hess_acc) >> 32);
         const double grad = int_grad * grad_scale;
 
         const int32_t sum_other_grad_int = HIST_BITS_ACC == 16 ?
           static_cast<int32_t>(static_cast<int16_t>(sum_other_grad_and_hess >> 16)) :
-          static_cast<int32_t>(sum_other_grad_and_hess >> 32);
+          static_cast<int32_t>(static_cast<int64_t>(sum_other_grad_and_hess) >> 32);
         const double sum_other_gradient = sum_other_grad_int * grad_scale;
 
         if (USE_RAND) {
@@ -974,13 +974,13 @@ class FeatureHistogram {
             const PACKED_HIST_BIN_T int_grad_and_hess_j = data_ptr[j];
             const int32_t int_grad_i = HIST_BITS_BIN == 16 ?
               static_cast<int32_t>(static_cast<int16_t>(int_grad_and_hess_i >> 16)) :
-              static_cast<int32_t>(int_grad_and_hess_i >> 32);
+              static_cast<int32_t>(static_cast<int64_t>(int_grad_and_hess_i) >> 32);
             const uint32_t int_hess_i = HIST_BITS_BIN == 16 ?
               static_cast<int32_t>(int_grad_and_hess_i & 0x0000ffff) :
               static_cast<int32_t>(int_grad_and_hess_i & 0x00000000ffffffff);
             const int32_t int_grad_j = HIST_BITS_BIN == 16 ?
               static_cast<int32_t>(static_cast<int16_t>(int_grad_and_hess_j >> 16)) :
-              static_cast<int32_t>(int_grad_and_hess_j >> 32);
+              static_cast<int32_t>(static_cast<int64_t>(int_grad_and_hess_j) >> 32);
             const uint32_t int_hess_j = HIST_BITS_BIN == 16 ?
               static_cast<int32_t>(int_grad_and_hess_j & 0x0000ffff) :
               static_cast<int32_t>(int_grad_and_hess_j & 0x00000000ffffffff);
@@ -1027,7 +1027,7 @@ class FeatureHistogram {
 
           if (HIST_BITS_ACC != HIST_BITS_BIN) {
             PACKED_HIST_ACC_T int_grad_and_hess_acc =
-              (static_cast<PACKED_HIST_ACC_T>(int_grad_and_hess & 0xffff0000) << 32) |
+              (static_cast<PACKED_HIST_ACC_T>(static_cast<int64_t>(int_grad_and_hess & 0xffff0000)) << 32) |
               (static_cast<PACKED_HIST_ACC_T>(int_grad_and_hess & 0x0000ffff));
             int_sum_left_gradient_and_hessian += int_grad_and_hess_acc;
           } else {
@@ -1070,12 +1070,12 @@ class FeatureHistogram {
 
           const int32_t int_sum_left_gradient = HIST_BITS_ACC == 16 ?
             static_cast<int32_t>(static_cast<int16_t>(int_sum_left_gradient_and_hessian >> 16)) :
-            static_cast<int32_t>(int_sum_left_gradient_and_hessian >> 32);
+            static_cast<int32_t>(static_cast<int64_t>(int_sum_left_gradient_and_hessian) >> 32);
           const double sum_left_gradient = int_sum_left_gradient * grad_scale;
 
           const int32_t int_sum_right_gradient = HIST_BITS_ACC == 16 ?
             static_cast<int32_t>(static_cast<int16_t>(int_sum_right_gradient_and_hessian >> 16)) :
-            static_cast<int32_t>(int_sum_right_gradient_and_hessian >> 32);
+            static_cast<int32_t>(static_cast<int64_t>(int_sum_right_gradient_and_hessian) >> 32);
           const double sum_right_gradient = int_sum_right_gradient * grad_scale;
 
           if (USE_RAND) {
@@ -1105,7 +1105,7 @@ class FeatureHistogram {
     if (is_splittable_) {
       const int32_t int_best_sum_left_gradient = HIST_BITS_ACC == 16 ?
         static_cast<int32_t>(static_cast<int16_t>(best_sum_left_gradient_and_hessian >> 16)) :
-        static_cast<int32_t>(best_sum_left_gradient_and_hessian >> 32);
+        static_cast<int32_t>(static_cast<int64_t>(best_sum_left_gradient_and_hessian) >> 32);
       const uint32_t int_best_sum_left_hessian = HIST_BITS_ACC == 16 ?
         static_cast<uint32_t>(best_sum_left_gradient_and_hessian & 0x0000ffff) :
         static_cast<uint32_t>(best_sum_left_gradient_and_hessian & 0x00000000ffffffff);
@@ -1115,7 +1115,7 @@ class FeatureHistogram {
       const PACKED_HIST_ACC_T best_sum_right_gradient_and_hessian = local_int_sum_gradient_and_hessian - best_sum_left_gradient_and_hessian;
       const int32_t int_best_sum_right_gradient = HIST_BITS_ACC == 16 ?
         static_cast<int32_t>(static_cast<int16_t>(best_sum_right_gradient_and_hessian >> 16)) :
-        static_cast<int32_t>(best_sum_right_gradient_and_hessian >> 32);
+        static_cast<int32_t>(static_cast<int64_t>(best_sum_right_gradient_and_hessian) >> 32);
       const uint32_t int_best_sum_right_hessian = HIST_BITS_ACC == 16 ?
         static_cast<uint32_t>(best_sum_right_gradient_and_hessian & 0x0000ffff) :
         static_cast<uint32_t>(best_sum_right_gradient_and_hessian & 0x00000000ffffffff);
@@ -1773,7 +1773,7 @@ class FeatureHistogram {
     PACKED_HIST_ACC_T local_int_sum_gradient_and_hessian =
       HIST_BITS_ACC == 16 ?
       ((static_cast<int32_t>(int_sum_gradient_and_hessian >> 32) << 16) | static_cast<int32_t>(int_sum_gradient_and_hessian & 0x0000ffff)) :
-      int_sum_gradient_and_hessian;
+      static_cast<PACKED_HIST_ACC_T>(int_sum_gradient_and_hessian);
     double best_gain = kMinScore;
     uint32_t best_threshold = static_cast<uint32_t>(meta_->num_bin);
     const double cnt_factor = static_cast<double>(num_data) /
@@ -1847,10 +1847,10 @@ class FeatureHistogram {
 
         double sum_right_gradient = HIST_BITS_ACC == 16 ?
           static_cast<double>(static_cast<int16_t>(sum_right_gradient_and_hessian >> 16)) * grad_scale :
-          static_cast<double>(static_cast<int32_t>(sum_right_gradient_and_hessian >> 32)) * grad_scale;
+          static_cast<double>(static_cast<int32_t>(static_cast<int64_t>(sum_right_gradient_and_hessian) >> 32)) * grad_scale;
         double sum_left_gradient = HIST_BITS_ACC == 16 ?
           static_cast<double>(static_cast<int16_t>(sum_left_gradient_and_hessian >> 16)) * grad_scale :
-          static_cast<double>(static_cast<int32_t>(sum_left_gradient_and_hessian >> 32)) * grad_scale;
+          static_cast<double>(static_cast<int32_t>(static_cast<int64_t>(sum_left_gradient_and_hessian) >> 32)) * grad_scale;
         if (USE_RAND) {
           if (t - 1 + offset != rand_threshold) {
             continue;
@@ -1964,10 +1964,10 @@ class FeatureHistogram {
 
         double sum_right_gradient = HIST_BITS_ACC == 16 ?
           static_cast<double>(static_cast<int16_t>(sum_right_gradient_and_hessian >> 16)) * grad_scale :
-          static_cast<double>(static_cast<int32_t>(sum_right_gradient_and_hessian >> 32)) * grad_scale;
+          static_cast<double>(static_cast<int32_t>(static_cast<int64_t>(sum_right_gradient_and_hessian) >> 32)) * grad_scale;
         double sum_left_gradient = HIST_BITS_ACC == 16 ?
           static_cast<double>(static_cast<int16_t>(sum_left_gradient_and_hessian >> 16)) * grad_scale :
-          static_cast<double>(static_cast<int32_t>(sum_left_gradient_and_hessian >> 32)) * grad_scale;
+          static_cast<double>(static_cast<int32_t>(static_cast<int64_t>(sum_left_gradient_and_hessian) >> 32)) * grad_scale;
         if (USE_RAND) {
           if (t + offset != rand_threshold) {
             continue;
@@ -2007,7 +2007,7 @@ class FeatureHistogram {
     if (is_splittable_ && best_gain > output->gain + min_gain_shift) {
       const int32_t int_best_sum_left_gradient = HIST_BITS_ACC == 16 ?
         static_cast<int32_t>(static_cast<int16_t>(best_sum_left_gradient_and_hessian >> 16)) :
-        static_cast<int32_t>(best_sum_left_gradient_and_hessian >> 32);
+        static_cast<int32_t>(static_cast<int64_t>(best_sum_left_gradient_and_hessian) >> 32);
       const uint32_t int_best_sum_left_hessian = HIST_BITS_ACC == 16 ?
         static_cast<uint32_t>(best_sum_left_gradient_and_hessian & 0x0000ffff) :
         static_cast<uint32_t>(best_sum_left_gradient_and_hessian & 0x00000000ffffffff);
