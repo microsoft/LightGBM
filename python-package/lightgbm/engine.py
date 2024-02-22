@@ -10,10 +10,21 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from . import callback
-from .basic import (Booster, Dataset, LightGBMError, _choose_param_value, _ConfigAliases, _InnerPredictor,
-                    _LGBM_BoosterEvalMethodResultType, _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
-                    _LGBM_CategoricalFeatureConfiguration, _LGBM_CustomObjectiveFunction, _LGBM_EvalFunctionResultType,
-                    _LGBM_FeatureNameConfiguration, _log_warning)
+from .basic import (
+    Booster,
+    Dataset,
+    LightGBMError,
+    _choose_param_value,
+    _ConfigAliases,
+    _InnerPredictor,
+    _LGBM_BoosterEvalMethodResultType,
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+    _LGBM_CategoricalFeatureConfiguration,
+    _LGBM_CustomObjectiveFunction,
+    _LGBM_EvalFunctionResultType,
+    _LGBM_FeatureNameConfiguration,
+    _log_warning,
+)
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
 
 __all__ = [

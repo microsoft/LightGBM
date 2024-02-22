@@ -5,8 +5,14 @@ from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
-from .basic import (Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType,
-                    _LGBM_BoosterEvalMethodResultWithStandardDeviationType, _log_info, _log_warning)
+from .basic import (
+    Booster,
+    _ConfigAliases,
+    _LGBM_BoosterEvalMethodResultType,
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+    _log_info,
+    _log_warning,
+)
 
 if TYPE_CHECKING:
     from .engine import CVBooster
