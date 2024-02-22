@@ -195,7 +195,11 @@ def _has_method(logger: Any, method_name: str) -> bool:
     return callable(getattr(logger, method_name, None))
 
 
-def register_logger(logger: Any, info_method_name: str = "info", warning_method_name: str = "warning") -> None:
+def register_logger(
+    logger: Any,
+    info_method_name: str = "info",
+    warning_method_name: str = "warning",
+) -> None:
     """Register custom logger.
 
     Parameters
@@ -338,7 +342,11 @@ def _is_1d_collection(data: Any) -> bool:
     return _is_numpy_1d_array(data) or _is_numpy_column_array(data) or _is_1d_list(data) or isinstance(data, pd_Series)
 
 
-def _list_to_1d_numpy(data: Any, dtype: "np.typing.DTypeLike", name: str) -> np.ndarray:
+def _list_to_1d_numpy(
+    data: Any,
+    dtype: "np.typing.DTypeLike",
+    name: str,
+) -> np.ndarray:
     """Convert data to numpy 1-D array."""
     if _is_numpy_1d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -433,7 +441,11 @@ def _export_arrow_to_c(data: pa_Table) -> _ArrowCArray:
     return _ArrowCArray(len(chunks), chunks, schema)
 
 
-def _data_to_2d_numpy(data: Any, dtype: "np.typing.DTypeLike", name: str) -> np.ndarray:
+def _data_to_2d_numpy(
+    data: Any,
+    dtype: "np.typing.DTypeLike",
+    name: str,
+) -> np.ndarray:
     """Convert data to numpy 2-D array."""
     if _is_numpy_2d_array(data):
         return _cast_numpy_array_to_dtype(data, dtype)
@@ -818,7 +830,12 @@ def _data_from_pandas(
     df_dtypes.append(np.float32)
     target_dtype = np.result_type(*df_dtypes)
 
-    return (_pandas_to_numpy(data, target_dtype=target_dtype), feature_name, categorical_feature, pandas_categorical)
+    return (
+        _pandas_to_numpy(data, target_dtype=target_dtype),
+        feature_name,
+        categorical_feature,
+        pandas_categorical,
+    )
 
 
 def _dump_pandas_categorical(
@@ -1415,7 +1432,11 @@ class _InnerPredictor:
         return preds, nrow
 
     def __inner_predict_csr_sparse(
-        self, csr: scipy.sparse.csr_matrix, start_iteration: int, num_iteration: int, predict_type: int
+        self,
+        csr: scipy.sparse.csr_matrix,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int,
     ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
@@ -1469,7 +1490,11 @@ class _InnerPredictor:
         return matrices, nrow
 
     def __pred_for_csr(
-        self, csr: scipy.sparse.csr_matrix, start_iteration: int, num_iteration: int, predict_type: int
+        self,
+        csr: scipy.sparse.csr_matrix,
+        start_iteration: int,
+        num_iteration: int,
+        predict_type: int,
     ) -> Tuple[np.ndarray, int]:
         """Predict for a CSR data."""
         if predict_type == _C_API_PREDICT_CONTRIB:
@@ -1981,7 +2006,9 @@ class Dataset:
         num_data = self.num_data()
         if predictor is not None:
             init_score: Union[np.ndarray, scipy.sparse.spmatrix] = predictor.predict(
-                data=data, raw_score=True, data_has_header=data_has_header
+                data=data,
+                raw_score=True,
+                data_has_header=data_has_header,
             )
             init_score = init_score.ravel()
             if used_indices is not None:
@@ -3495,7 +3522,11 @@ class Booster:
                     params=params,
                     default_value=num_machines_from_machine_list,
                 )
-                params = _choose_param_value(main_param_name="local_listen_port", params=params, default_value=12400)
+                params = _choose_param_value(
+                    main_param_name="local_listen_port",
+                    params=params,
+                    default_value=12400,
+                )
                 self.set_network(
                     machines=machines,
                     local_listen_port=params["local_listen_port"],
@@ -3726,7 +3757,10 @@ class Booster:
             feature_names: Optional[List[str]] = None,
             parent_node: Optional[str] = None,
         ) -> Dict[str, Any]:
-            def _get_node_index(tree: Dict[str, Any], tree_index: Optional[int]) -> str:
+            def _get_node_index(
+                tree: Dict[str, Any],
+                tree_index: Optional[int],
+            ) -> str:
                 tree_num = f"{tree_index}-" if tree_index is not None else ""
                 is_split = _is_split_node(tree)
                 node_type = "S" if is_split else "L"
@@ -4260,7 +4294,11 @@ class Booster:
         _dump_pandas_categorical(self.pandas_categorical, filename)
         return self
 
-    def shuffle_models(self, start_iteration: int = 0, end_iteration: int = -1) -> "Booster":
+    def shuffle_models(
+        self,
+        start_iteration: int = 0,
+        end_iteration: int = -1,
+    ) -> "Booster":
         """Shuffle models.
 
         Parameters
@@ -4945,7 +4983,12 @@ class Booster:
             tmp_out_len = ctypes.c_int64(0)
             data_ptr = self.__inner_predict_buffer[data_idx].ctypes.data_as(ctypes.POINTER(ctypes.c_double))  # type: ignore[union-attr]
             _safe_call(
-                _LIB.LGBM_BoosterGetPredict(self._handle, ctypes.c_int(data_idx), ctypes.byref(tmp_out_len), data_ptr)
+                _LIB.LGBM_BoosterGetPredict(
+                    self._handle,
+                    ctypes.c_int(data_idx),
+                    ctypes.byref(tmp_out_len),
+                    data_ptr,
+                )
             )
             if tmp_out_len.value != len(self.__inner_predict_buffer[data_idx]):  # type: ignore[arg-type]
                 raise ValueError(f"Wrong length of predict results for data {data_idx}")

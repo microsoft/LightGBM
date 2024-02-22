@@ -416,7 +416,11 @@ class _EarlyStoppingCallback:
             eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
             if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
                 continue  # use only the first metric for early stopping
-            if self._is_train_set(ds_name=env.evaluation_result_list[i][0], eval_name=eval_name_splitted[0], env=env):
+            if self._is_train_set(
+                ds_name=env.evaluation_result_list[i][0],
+                eval_name=eval_name_splitted[0],
+                env=env,
+            ):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - self.best_iter[i] >= self.stopping_rounds:
                 if self.verbose:
