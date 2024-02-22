@@ -39,10 +39,16 @@ _LGBM_CustomMetricFunction = Union[
         [np.ndarray, Dataset],
         _LGBM_EvalFunctionResultType,
     ],
-    Callable[[np.ndarray, Dataset], List[_LGBM_EvalFunctionResultType]],
+    Callable[
+        [np.ndarray, Dataset],
+        List[_LGBM_EvalFunctionResultType],
+    ],
 ]
 
-_LGBM_PreprocFunction = Callable[[Dataset, Dataset, Dict[str, Any]], Tuple[Dataset, Dataset, Dict[str, Any]]]
+_LGBM_PreprocFunction = Callable[
+    [Dataset, Dataset, Dict[str, Any]],
+    Tuple[Dataset, Dataset, Dict[str, Any]],
+]
 
 
 def train(
@@ -162,7 +168,11 @@ def train(
 
     # create predictor first
     params = copy.deepcopy(params)
-    params = _choose_param_value(main_param_name="objective", params=params, default_value=None)
+    params = _choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=None,
+    )
     fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
@@ -173,7 +183,11 @@ def train(
             _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
     params["num_iterations"] = num_boost_round
     # setting early stopping via global params should be possible
-    params = _choose_param_value(main_param_name="early_stopping_round", params=params, default_value=None)
+    params = _choose_param_value(
+        main_param_name="early_stopping_round", 
+        params=params, 
+        default_value=None,
+        )
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
@@ -227,10 +241,11 @@ def train(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
-                verbose=_choose_param_value(main_param_name="verbosity", params=params, default_value=1).pop(
-                    "verbosity"
-                )
-                > 0,
+                verbose=_choose_param_value(
+                    main_param_name="verbosity",
+                    params=params,
+                    default_value=1,
+                ).pop("verbosity")> 0,
             )
         )
 
@@ -318,7 +333,10 @@ class CVBooster:
         The best iteration of fitted model.
     """
 
-    def __init__(self, model_file: Optional[Union[str, Path]] = None):
+    def __init__(
+        self,
+        model_file: Optional[Union[str, Path]] = None,
+    ):
         """Initialize the CVBooster.
 
         Parameters
@@ -386,7 +404,10 @@ class CVBooster:
         return self
 
     def model_to_string(
-        self, num_iteration: Optional[int] = None, start_iteration: int = 0, importance_type: str = "split"
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = "split",
     ) -> str:
         """Save CVBooster to JSON string.
 
@@ -671,7 +692,11 @@ def cv(
         raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
 
     params = copy.deepcopy(params)
-    params = _choose_param_value(main_param_name="objective", params=params, default_value=None)
+    params = _choose_param_value(
+        main_param_name="objective",
+        params=params,
+        default_value=None,
+    )
     fobj: Optional[_LGBM_CustomObjectiveFunction] = None
     if callable(params["objective"]):
         fobj = params["objective"]
@@ -682,7 +707,11 @@ def cv(
             num_boost_round = params.pop(alias)
     params["num_iterations"] = num_boost_round
     # setting early stopping via global params should be possible
-    params = _choose_param_value(main_param_name="early_stopping_round", params=params, default_value=None)
+    params = _choose_param_value(
+        main_param_name="early_stopping_round",
+        params=params,
+        default_value=None,
+        )
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
@@ -729,10 +758,11 @@ def cv(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
-                verbose=_choose_param_value(main_param_name="verbosity", params=params, default_value=1).pop(
-                    "verbosity"
-                )
-                > 0,
+                verbose=_choose_param_value(
+                    main_param_name="verbosity",
+                    params=params,
+                    default_value=1,
+                ).pop("verbosity") > 0,
             )
         )
 

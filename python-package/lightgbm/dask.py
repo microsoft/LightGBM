@@ -527,12 +527,12 @@ def _train(
         default_value="data",
     )
     allowed_tree_learners = {
-        'data',
-        'data_parallel',
-        'feature',
-        'feature_parallel',
-        'voting',
-        'voting_parallel',
+        "data",
+        "data_parallel",
+        "feature",
+        "feature_parallel",
+        "voting",
+        "voting_parallel",
     }
     if params["tree_learner"] not in allowed_tree_learners:
         _log_warning(
