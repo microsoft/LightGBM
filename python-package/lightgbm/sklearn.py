@@ -53,28 +53,52 @@ __all__ = [
 ]
 
 _LGBM_ScikitMatrixLike = Union[
-    dt_DataTable, List[Union[List[float], List[int]]], np.ndarray, pd_DataFrame, scipy.sparse.spmatrix
+    dt_DataTable,
+    List[Union[List[float], List[int]]],
+    np.ndarray,
+    pd_DataFrame,
+    scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
     # f(labels, preds)
-    Callable[[Optional[np.ndarray], np.ndarray], Tuple[np.ndarray, np.ndarray]],
+    Callable[
+        [Optional[np.ndarray], np.ndarray],
+        Tuple[np.ndarray, np.ndarray],
+    ],
     # f(labels, preds, weights)
-    Callable[[Optional[np.ndarray], np.ndarray, Optional[np.ndarray]], Tuple[np.ndarray, np.ndarray]],
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        Tuple[np.ndarray, np.ndarray],
+    ],
     # f(labels, preds, weights, group)
     Callable[
-        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]], Tuple[np.ndarray, np.ndarray]
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+        Tuple[np.ndarray, np.ndarray],
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     # f(labels, preds)
-    Callable[[Optional[np.ndarray], np.ndarray], _LGBM_EvalFunctionResultType],
-    Callable[[Optional[np.ndarray], np.ndarray], List[_LGBM_EvalFunctionResultType]],
+    Callable[
+        [Optional[np.ndarray], np.ndarray],
+        _LGBM_EvalFunctionResultType,
+    ],
+    Callable[
+        [Optional[np.ndarray], np.ndarray],
+        List[_LGBM_EvalFunctionResultType],
+    ],
     # f(labels, preds, weights)
-    Callable[[Optional[np.ndarray], np.ndarray, Optional[np.ndarray]], _LGBM_EvalFunctionResultType],
-    Callable[[Optional[np.ndarray], np.ndarray, Optional[np.ndarray]], List[_LGBM_EvalFunctionResultType]],
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType,
+    ],
+    Callable[
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
+        List[_LGBM_EvalFunctionResultType],
+    ],
     # f(labels, preds, weights, group)
     Callable[
-        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]], _LGBM_EvalFunctionResultType
+        [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+        _LGBM_EvalFunctionResultType,
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
@@ -82,7 +106,9 @@ _LGBM_ScikitCustomEvalFunction = Union[
     ],
 ]
 _LGBM_ScikitEvalMetricType = Union[
-    str, _LGBM_ScikitCustomEvalFunction, List[Union[str, _LGBM_ScikitCustomEvalFunction]]
+    str,
+    _LGBM_ScikitCustomEvalFunction,
+    List[Union[str, _LGBM_ScikitCustomEvalFunction]],
 ]
 _LGBM_ScikitValidSet = Tuple[_LGBM_ScikitMatrixLike, _LGBM_LabelType]
 
@@ -163,7 +189,11 @@ class _ObjectiveFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[np.ndarray, np.ndarray]:
+    def __call__(
+        self,
+        preds: np.ndarray,
+        dataset: Dataset,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -953,7 +983,14 @@ class LGBMModel(_LGBMModelBase):
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
-            "data", "X", "raw_score", "start_iteration", "num_iteration", "pred_leaf", "pred_contrib", *kwargs.keys()
+            "data",
+            "X",
+            "raw_score",
+            "start_iteration",
+            "num_iteration",
+            "pred_leaf",
+            "pred_contrib",
+            *kwargs.keys(),
         ):
             predict_params.pop(alias, None)
         predict_params.update(kwargs)
