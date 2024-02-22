@@ -1328,7 +1328,7 @@ def test_feature_name_with_non_ascii():
     X_train = np.random.normal(size=(100, 4))
     y_train = np.random.random(100)
     # This has non-ascii strings.
-    feature_names = ["F_Áã", "F_Ò»", "F_¶ş", "F_Èı"]
+    feature_names = ["F_é›¶", "F_ä¸€", "F_äºŒ", "F_ä¸‰"]
     params = {"verbose": -1}
     lgb_train = lgb.Dataset(X_train, y_train)
 
