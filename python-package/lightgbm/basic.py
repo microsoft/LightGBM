@@ -3734,7 +3734,10 @@ class Booster:
                 node_num = tree.get("split_index" if is_split else "leaf_index", 0)
                 return f"{tree_num}{node_type}{node_num}"
 
-            def _get_split_feature(tree: Dict[str, Any], feature_names: Optional[List[str]]) -> Optional[str]:
+            def _get_split_feature(
+                tree: Dict[str, Any],
+                feature_names: Optional[List[str]],
+            ) -> Optional[str]:
                 if _is_split_node(tree):
                     if feature_names is not None:
                         feature_name = feature_names[tree["split_feature"]]
@@ -3892,7 +3895,11 @@ class Booster:
         self.params.update(params)
         return self
 
-    def update(self, train_set: Optional[Dataset] = None, fobj: Optional[_LGBM_CustomObjectiveFunction] = None) -> bool:
+    def update(
+        self,
+        train_set: Optional[Dataset] = None,
+        fobj: Optional[_LGBM_CustomObjectiveFunction] = None,
+    ) -> bool:
         """Update Booster for one iteration.
 
         Parameters
@@ -3954,7 +3961,11 @@ class Booster:
             grad, hess = fobj(self.__inner_predict(0), self.train_set)
             return self.__boost(grad, hess)
 
-    def __boost(self, grad: np.ndarray, hess: np.ndarray) -> bool:
+    def __boost(
+        self,
+        grad: np.ndarray,
+        hess: np.ndarray,
+    ) -> bool:
         """Boost Booster for one iteration with customized gradient statistics.
 
         .. note::
@@ -4134,7 +4145,8 @@ class Booster:
         return self.__inner_eval(name, data_idx, feval)
 
     def eval_train(
-        self, feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None,
     ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for training data.
 
@@ -4167,7 +4179,8 @@ class Booster:
         return self.__inner_eval(self._train_data_name, 0, feval)
 
     def eval_valid(
-        self, feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None
+        self,
+        feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]] = None,
     ) -> List[_LGBM_BoosterEvalMethodResultType]:
         """Evaluate for validation data.
 
@@ -4299,7 +4312,10 @@ class Booster:
         return self
 
     def model_to_string(
-        self, num_iteration: Optional[int] = None, start_iteration: int = 0, importance_type: str = "split"
+        self,
+        num_iteration: Optional[int] = None,
+        start_iteration: int = 0,
+        importance_type: str = "split",
     ) -> str:
         """Save Booster to string.
 
@@ -4612,7 +4628,10 @@ class Booster:
             dataset_params = {}
         predictor = _InnerPredictor.from_booster(booster=self, pred_parameter=deepcopy(kwargs))
         leaf_preds: np.ndarray = predictor.predict(  # type: ignore[assignment]
-            data=data, start_iteration=-1, pred_leaf=True, validate_features=validate_features
+            data=data,
+            start_iteration=-1,
+            pred_leaf=True,
+            validate_features=validate_features,
         )
         nrow, ncol = leaf_preds.shape
         out_is_linear = ctypes.c_int(0)
@@ -4754,7 +4773,11 @@ class Booster:
             )
         return [string_buffers[i].value.decode("utf-8") for i in range(num_feature)]
 
-    def feature_importance(self, importance_type: str = "split", iteration: Optional[int] = None) -> np.ndarray:
+    def feature_importance(
+        self,
+        importance_type: str = "split",
+        iteration: Optional[int] = None,
+    ) -> np.ndarray:
         """Get feature importances.
 
         Parameters
