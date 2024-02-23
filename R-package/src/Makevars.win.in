@@ -47,6 +47,7 @@ OBJECTS = \
     network/linkers_socket.o \
     network/network.o \
     treelearner/data_parallel_tree_learner.o \
+    treelearner/feature_histogram.o \
     treelearner/feature_parallel_tree_learner.o \
     treelearner/gpu_tree_learner.o \
     treelearner/gradient_discretizer.o \
