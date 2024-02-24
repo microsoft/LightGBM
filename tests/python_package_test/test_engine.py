@@ -275,7 +275,20 @@ def test_missing_value_handle_none():
     assert evals_result["valid_0"]["auc"][-1] == pytest.approx(ret)
 
 
-def test_categorical_handle():
+@pytest.mark.parametrize(
+    "use_quantized_grad",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                getenv("TASK", "") == "cuda",
+                reason="Skip because quantized training with categorical features is not supported for cuda version",
+            ),
+        ),
+        False,
+    ],
+)
+def test_categorical_handle(use_quantized_grad):
     x = [0, 1, 2, 3, 4, 5, 6, 7]
     y = [0, 1, 0, 1, 0, 1, 0, 1]
 
@@ -299,6 +312,7 @@ def test_categorical_handle():
         "max_cat_to_onehot": 1,
         "zero_as_missing": True,
         "categorical_column": 0,
+        "use_quantized_grad": use_quantized_grad,
     }
     evals_result = {}
     gbm = lgb.train(
@@ -311,7 +325,20 @@ def test_categorical_handle():
     assert evals_result["valid_0"]["auc"][-1] == pytest.approx(ret)
 
 
-def test_categorical_handle_na():
+@pytest.mark.parametrize(
+    "use_quantized_grad",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                getenv("TASK", "") == "cuda",
+                reason="Skip because quantized training with categorical features is not supported for cuda version",
+            ),
+        ),
+        False,
+    ],
+)
+def test_categorical_handle_na(use_quantized_grad):
     x = [0, np.nan, 0, np.nan, 0, np.nan]
     y = [0, 1, 0, 1, 0, 1]
 
@@ -335,6 +362,7 @@ def test_categorical_handle_na():
         "max_cat_to_onehot": 1,
         "zero_as_missing": False,
         "categorical_column": 0,
+        "use_quantized_grad": use_quantized_grad,
     }
     evals_result = {}
     gbm = lgb.train(
@@ -347,7 +375,20 @@ def test_categorical_handle_na():
     assert evals_result["valid_0"]["auc"][-1] == pytest.approx(ret)
 
 
-def test_categorical_non_zero_inputs():
+@pytest.mark.parametrize(
+    "use_quantized_grad",
+    [
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                getenv("TASK", "") == "cuda",
+                reason="Skip because quantized training with categorical features is not supported for cuda version",
+            ),
+        ),
+        False,
+    ],
+)
+def test_categorical_non_zero_inputs(use_quantized_grad):
     x = [1, 1, 1, 1, 1, 1, 2, 2]
     y = [1, 1, 1, 1, 1, 1, 0, 0]
 
@@ -371,6 +412,7 @@ def test_categorical_non_zero_inputs():
         "max_cat_to_onehot": 1,
         "zero_as_missing": False,
         "categorical_column": 0,
+        "use_quantized_grad": use_quantized_grad,
     }
     evals_result = {}
     gbm = lgb.train(
