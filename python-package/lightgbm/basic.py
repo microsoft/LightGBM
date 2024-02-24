@@ -2803,7 +2803,7 @@ class Dataset:
                     "In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame."
                 )
         else:
-            if field_name in {'group', 'position'}:
+            if field_name in {"group", "position"}:
                 dtype = np.int32
             else:
                 dtype = np.float32
