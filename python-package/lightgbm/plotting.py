@@ -393,8 +393,8 @@ def plot_metric(
     for name in dataset_names_iter:
         metrics_for_one = eval_results[name]
         results = metrics_for_one[metric]
-        max_result = max(max(results), max_result)
-        min_result = min(min(results), min_result)
+        max_result = max(*results, max_result)
+        min_result = min(*results, min_result)
         ax.plot(x_, results, label=name)
 
     ax.legend(loc='best')
@@ -804,7 +804,7 @@ def plot_tree(
         The plot with single tree.
     """
     if MATPLOTLIB_INSTALLED:
-        import matplotlib.image as image
+        import matplotlib.image
         import matplotlib.pyplot as plt
     else:
         raise ImportError('You must install matplotlib and restart your session to plot tree.')
@@ -821,7 +821,7 @@ def plot_tree(
     s = BytesIO()
     s.write(graph.pipe(format='png'))
     s.seek(0)
-    img = image.imread(s)
+    img = matplotlib.image.imread(s)
 
     ax.imshow(img)
     ax.axis('off')

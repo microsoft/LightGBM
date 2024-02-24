@@ -79,7 +79,7 @@ class DistributedMockup:
         """Start the training process on the `i`-th worker."""
         config_path = TESTS_DIR / f"train{i}.conf"
         cmd = [self.executable, f"config={config_path}"]
-        return subprocess.run(cmd)
+        return subprocess.run(cmd, check=True)
 
     def _set_ports(self) -> None:
         """Randomly assign a port for training to each worker and save all ports to mlist.txt."""
@@ -145,7 +145,7 @@ class DistributedMockup:
         with open(config_path, "wt") as file:
             _write_dict(self.predict_config, file)
         cmd = [self.executable, f"config={config_path}"]
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd, check=True)
         if result.returncode != 0:
             raise RuntimeError("Error in prediction")
         return np.loadtxt(str(TESTS_DIR / "predictions.txt"))

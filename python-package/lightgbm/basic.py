@@ -1215,7 +1215,7 @@ class _InnerPredictor:
             )
         if pred_leaf:
             preds = preds.astype(np.int32)
-        is_sparse = isinstance(preds, scipy.sparse.spmatrix) or isinstance(preds, list)
+        is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
         if not is_sparse and preds.size != nrow:
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
@@ -2681,7 +2681,10 @@ class Dataset:
                     'In multiclass classification init_score can also be a list of lists, numpy 2-D array or pandas DataFrame.'
                 )
         else:
-            dtype = np.int32 if (field_name == 'group' or field_name == 'position') else np.float32
+            if field_name in {'group', 'position'}:
+                dtype = np.int32
+            else:
+                dtype = np.float32
             data = _list_to_1d_numpy(data, dtype=dtype, name=field_name)
 
         ptr_data: Union[_ctypes_float_ptr, _ctypes_int_ptr]
@@ -3106,7 +3109,7 @@ class Dataset:
         if self._need_slice and self.used_indices is not None and self.reference is not None:
             self.data = self.reference.data
             if self.data is not None:
-                if isinstance(self.data, np.ndarray) or isinstance(self.data, scipy.sparse.spmatrix):
+                if isinstance(self.data, (np.ndarray, scipy.sparse.spmatrix)):
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
@@ -3284,7 +3287,7 @@ class Dataset:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
                 sparse_format = self.data.getformat()
-                if isinstance(other.data, np.ndarray) or isinstance(other.data, scipy.sparse.spmatrix):
+                if isinstance(other.data, (np.ndarray, scipy.sparse.spmatrix)):
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
