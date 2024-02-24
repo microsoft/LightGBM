@@ -1,7 +1,7 @@
 # coding: utf-8
 """Compatibility library."""
 
-from typing import List
+from typing import Any, List
 
 """pandas"""
 try:
@@ -19,19 +19,19 @@ except ImportError:
     class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pd_CategoricalDtype:  # type: ignore
         """Dummy class for pandas.CategoricalDtype."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     concat = None
@@ -43,7 +43,7 @@ except ImportError:
     class np_random_Generator:  # type: ignore
         """Dummy class for np.random.Generator."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
 """matplotlib"""
@@ -74,7 +74,7 @@ except ImportError:
     class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
 
@@ -97,7 +97,7 @@ try:
         from sklearn.utils.validation import check_consistent_length
 
         # dummy function to support older version of scikit-learn
-        def _check_sample_weight(sample_weight, X, dtype=None):
+        def _check_sample_weight(sample_weight: Any, X: Any, dtype: Any = None) -> Any:
             check_consistent_length(sample_weight, X)
             return sample_weight
 
@@ -168,31 +168,31 @@ except ImportError:
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class Future:  # type: ignore
         """Dummy class for dask.distributed.Future."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
 """pyarrow"""
@@ -212,19 +212,19 @@ except ImportError:
     class pa_Array:  # type: ignore
         """Dummy class for pa.Array."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_ChunkedArray:  # type: ignore
         """Dummy class for pa.ChunkedArray."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_Table:  # type: ignore
         """Dummy class for pa.Table."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class arrow_cffi:  # type: ignore
@@ -235,7 +235,7 @@ except ImportError:
         cast = None
         new = None
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_compute:  # type: ignore

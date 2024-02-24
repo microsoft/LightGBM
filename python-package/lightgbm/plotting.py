@@ -34,7 +34,7 @@ def _float2str(value: float, precision: Optional[int]) -> str:
 
 def plot_importance(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: Optional[Any] = None,
     height: float = 0.2,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -172,7 +172,7 @@ def plot_split_value_histogram(
     booster: Union[Booster, LGBMModel],
     feature: Union[int, str],
     bins: Union[int, str, None] = None,
-    ax=None,
+    ax: Optional[Any] = None,
     width_coef: float = 0.8,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -289,7 +289,7 @@ def plot_metric(
     booster: Union[Dict, LGBMModel],
     metric: Optional[str] = None,
     dataset_names: Optional[List[str]] = None,
-    ax=None,
+    ax: Optional[Any] = None,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     title: Optional[str] = 'Metric during training',
@@ -733,7 +733,7 @@ def create_tree_digraph(
 
 def plot_tree(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: Optional[Any] = None,
     tree_index: int = 0,
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,
