@@ -478,5 +478,8 @@ def early_stopping(
         The callback that activates early stopping.
     """
     return _EarlyStoppingCallback(
-        stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta
+        stopping_rounds=stopping_rounds,
+        first_metric_only=first_metric_only,
+        verbose=verbose,
+        min_delta=min_delta,
     )
