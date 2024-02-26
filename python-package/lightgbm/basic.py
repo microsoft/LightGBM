@@ -262,7 +262,6 @@ else:
 
 
 _NUMERIC_TYPES = (int, float, bool)
-_ArrayLike = Union[List, np.ndarray, pd_Series]
 
 
 def _safe_call(ret: int) -> None:
