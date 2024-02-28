@@ -72,9 +72,9 @@ if [[ $TASK == "lint" ]]; then
     cd ${BUILD_DIRECTORY}
     mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
-        cmakelint \
-        cpplint \
-        mypy \
+        'cmakelint>=1.4.2' \
+        'cpplint>=1.6.0' \
+        'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
         'pyarrow>=14.0' \
         'r-lintr>=3.1'
@@ -97,8 +97,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -q \
         -y \
         -n $CONDA_ENV \
-            doxygen \
-            'rstcheck>=6.0.0' || exit 1
+            'doxygen>=1.10.0' \
+            'rstcheck>=6.2.0' || exit 1
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
