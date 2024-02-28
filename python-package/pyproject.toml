@@ -114,7 +114,6 @@ exclude = [
     "compile/*.py",
     "external_libs/*.py",
     "lightgbm-python/*.py",
-    "python-package/*.py",
 ]
 indent-style = "space"
 quote-style = "double"
