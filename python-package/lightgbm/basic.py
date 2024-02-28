@@ -1563,7 +1563,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]::
+    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -2195,10 +2195,7 @@ class Dataset:
         return self.set_feature_name(feature_name)
 
     @staticmethod
-    def _yield_row_from_seqlist(
-        seqs: List[Sequence],
-        indices: Iterable[int]
-    ) -> Iterator[np.ndarray]:
+    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
         offset = 0
         seq_id = 0
         seq = seqs[seq_id]
