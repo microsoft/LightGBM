@@ -149,7 +149,7 @@ void DCGCalculator::CheckLabel(const label_t* label, data_size_t num_data) {
     label_t delta = std::fabs(label[i] - static_cast<int>(label[i]));
     if (delta > kEpsilon) {
       Log::Fatal("label should be int type (met %f) for ranking task,\n"
-                 "for the gain of label, please set the label_gain parameter, i = %d", label[i], i);
+                 "for the gain of label, please set the label_gain parameter", label[i]);
     }
 
     if (label[i] < 0) {

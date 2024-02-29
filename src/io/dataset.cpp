@@ -869,7 +869,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset) {
       feature2subfeature_.push_back(dataset->feature2subfeature_[original_group_feature_start + feature_index_in_group]);
       cur_feature_index += 1;
     }
-    feature_groups_.emplace_back(new PairwiseRankingFeatureGroup(*dataset->feature_groups_[original_group_index].get(), dataset->num_data(), is_first_or_second_in_pairing, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_index_map()));
+    feature_groups_.emplace_back(new PairwiseRankingFeatureGroup(*dataset->feature_groups_[original_group_index].get(), dataset->num_data(), is_first_or_second_in_pairing, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map()));
     num_total_bin += dataset->FeatureGroupNumBin(original_group_index);
     group_bin_boundaries_.push_back(num_total_bin);
     group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];

@@ -260,12 +260,24 @@ class Metadata {
   }
 
   /*!
-  * \brief Get the pairwise item index map in ranking with pairwise features
-  * \return Pointer to the pairwise item index map
+  * \brief Get the pairwise item index map within query in ranking with pairwise features
+  * \return Pointer to the pairwise item index map within query
   */
   inline const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map() const {
     if (!paired_ranking_item_index_map_.empty()) {
       return paired_ranking_item_index_map_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
+  * \brief Get the pairwise item global index map in ranking with pairwise features
+  * \return Pointer to the pairwise item global index map
+  */
+  inline const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map() const {
+    if (!paired_ranking_item_global_index_map_.empty()) {
+      return paired_ranking_item_global_index_map_.data();
     } else {
       return nullptr;
     }
@@ -424,8 +436,10 @@ class Metadata {
   std::vector<data_size_t> queries_;
   /*! \brief Mode for pairwise ranking */
   PairwiseRankingMode pairwise_ranking_mode_ = PairwiseRankingMode::kRelevance;
-  /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
+  /*! \brief Pairwise data index within query to original data indices for ranking with pairwise features  */
   std::vector<std::pair<data_size_t, data_size_t>> paired_ranking_item_index_map_;
+  /*! \brief Pairwise global data index to original data indices for ranking with pairwise features  */
+  std::vector<std::pair<data_size_t, data_size_t>> paired_ranking_item_global_index_map_;
   /*! \brief mutex for threading safe call */
   std::mutex mutex_;
   bool weight_load_from_file_;

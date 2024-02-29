@@ -863,6 +863,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     const label_t* pointwise_label = metadata.label();
     const label_t* pointwise_weights = metadata.weights();
     paired_ranking_item_index_map_.clear();
+    paired_ranking_item_global_index_map_.clear();
     const data_size_t* query_boundaries = metadata.query_boundaries();
 
     // backup pointwise query boundaries
@@ -926,7 +927,8 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
           }
           const label_t label_j = label_[item_index_j];
           if (label_i != label_j) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
+            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
             ++num_pairs_in_query;
             ++num_data_;
           }

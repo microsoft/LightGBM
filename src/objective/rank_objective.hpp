@@ -560,12 +560,13 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
   ~PairwiseLambdarankNDCG() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
-    LambdarankNDCG::Init(metadata, num_data);
     query_boundaries_pointwise_ = metadata.pointwise_query_boundaries();
     if (query_boundaries_pointwise_ == nullptr) {
       Log::Fatal("Ranking tasks require query information");
     }
-    num_data_pointwise_ = query_boundaries_pointwise_[num_queries_];
+    num_data_pointwise_ = query_boundaries_pointwise_[metadata.num_queries()];
+    LambdarankNDCG::Init(metadata, num_data_pointwise_);
+    num_data_ = num_data;
     paired_index_map_ = metadata.paired_ranking_item_index_map();
     scores_pointwise_.resize(num_data_pointwise_, 0.0);
   }
