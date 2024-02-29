@@ -6,7 +6,9 @@
 
 #include <iostream>
 
-#include "network/linkers.h"
+#ifdef USE_MPI
+  #include "network/linkers.h"
+#endif
 
 int main(int argc, char** argv) {
   bool success = false;
