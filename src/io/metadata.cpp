@@ -867,12 +867,12 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
     const data_size_t* query_boundaries = metadata.query_boundaries();
 
     // backup pointwise query boundaries
-    pointwise_query_boundaries_.clear();
-    pointwise_query_boundaries_.resize(num_queries_);
+    query_boundaries_.clear();
+    query_boundaries_.resize(num_queries_);
     const int num_threads = OMP_NUM_THREADS();
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_queries_ >= 1024)
     for (data_size_t i = 0; i < num_queries_; ++i) {
-      pointwise_query_boundaries_[i] = query_boundaries[i];
+      query_boundaries_[i] = query_boundaries[i];
     }
 
     // copy labels
@@ -912,8 +912,8 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
       }
     }
 
-    query_boundaries_.clear();
-    query_boundaries_.push_back(0);
+    pairwise_query_boundaries_.clear();
+    pairwise_query_boundaries_.push_back(0);
     num_queries_ = 0;
     for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
       data_size_t num_pairs_in_query = 0;
@@ -935,7 +935,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
         }
       }
       if (num_pairs_in_query > 0) {
-        query_boundaries_.push_back(num_pairs_in_query);
+        pairwise_query_boundaries_.push_back(num_pairs_in_query);
         ++num_queries_;
       }
     }

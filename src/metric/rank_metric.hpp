@@ -39,14 +39,14 @@ class NDCGMetric:public Metric {
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("ndcg@") + std::to_string(k));
     }
-    num_data_ = pairwise_scores_? metadata.pointwise_query_boundaries()[metadata.num_queries()] : num_data;
+    num_data_ = pairwise_scores_? metadata.query_boundaries()[metadata.num_queries()] : num_data;
     // get label
     label_ = metadata.label();
     num_queries_ = metadata.num_queries();
     DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     // get query boundaries
-    query_boundaries_ = pairwise_scores_? metadata.pointwise_query_boundaries() : metadata.query_boundaries();
+    query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
       Log::Fatal("The NDCG metric requires query information");
     }
@@ -82,7 +82,7 @@ class NDCGMetric:public Metric {
       paired_index_map_ = metadata.paired_ranking_item_index_map();
       scores_pointwise_.resize(num_data_, 0.0);
       num_data_pairwise_ = num_data;
-      query_boundaries_pairwise_ = metadata.query_boundaries();
+      query_boundaries_pairwise_ = metadata.pairwise_query_boundaries();
     }
   }
 

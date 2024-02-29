@@ -307,9 +307,9 @@ class Metadata {
   * \brief Used in pairwise ranking. Pointwise query boundaries.
   * \return Pointer of data boundaries on queries
   */
-  inline const data_size_t* pointwise_query_boundaries() const {
-    if (!pointwise_query_boundaries_.empty()) {
-      return pointwise_query_boundaries_.data();
+  inline const data_size_t* pairwise_query_boundaries() const {
+    if (!pairwise_query_boundaries_.empty()) {
+      return pairwise_query_boundaries_.data();
     } else {
       return nullptr;
     }
@@ -423,7 +423,7 @@ class Metadata {
   /*! \brief Query boundaries */
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Original query boundaries, used in pairwise ranking */
-  std::vector<data_size_t> pointwise_query_boundaries_;
+  std::vector<data_size_t> pairwise_query_boundaries_;
   /*! \brief Query weights */
   std::vector<label_t> query_weights_;
   /*! \brief Number of querys */
