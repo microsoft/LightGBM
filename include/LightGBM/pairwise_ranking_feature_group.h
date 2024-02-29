@@ -72,12 +72,35 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   }
 
   inline void FinishLoad() {
-    // TODO(shiyu1994)
+    CHECK(!is_multi_val_);
+    bin_data_->FinishLoad();
   }
 
   inline BinIterator* FeatureGroupIterator() {
     // TODO(shiyu1994)
     return nullptr;
+  }
+
+    /*!
+   * \brief Push one record, will auto convert to bin and push to bin data
+   * \param tid Thread id
+   * \param sub_feature_idx Index of the subfeature
+   * \param line_idx Index of record
+   * \param bin feature bin value of record
+   */
+  inline void PushBinData(int tid, int sub_feature_idx, data_size_t line_idx, uint32_t bin) {
+    if (bin == bin_mappers_[sub_feature_idx]->GetMostFreqBin()) {
+      return;
+    }
+    if (bin_mappers_[sub_feature_idx]->GetMostFreqBin() == 0) {
+      bin -= 1;
+    }
+    if (is_multi_val_) {
+      multi_bin_data_[sub_feature_idx]->Push(tid, line_idx, bin + 1);
+    } else {
+      bin += bin_offsets_[sub_feature_idx];
+      bin_data_->Push(tid, line_idx, bin);
+    }
   }
 
  private:

@@ -16,22 +16,12 @@ PairwiseRankingFeatureGroup::PairwiseRankingFeatureGroup(const FeatureGroup& oth
 
   CreateBinData(num_original_data, is_multi_val_, !is_sparse_, is_sparse_);
 
-  // copy from original bin data
-  const int num_threads = OMP_NUM_THREADS();
-  std::vector<std::vector<std::unique_ptr<BinIterator>>> bin_iterators(num_threads);
-  for (int i = 0; i < num_threads; ++i) {
-    for (int j = 0; j < num_feature_; ++j) {
-      bin_iterators[i].emplace_back(other.SubFeatureIterator(j));
-      bin_iterators[i].back()->Reset(0);
-    }
-  }
-
   Threading::For<data_size_t>(0, num_original_data, 512, [this, &other] (int block_index, data_size_t block_start, data_size_t block_end) {
     for (int feature_index = 0; feature_index < num_feature_; ++feature_index) {
       std::unique_ptr<BinIterator> bin_iterator(other.SubFeatureIterator(feature_index));
       bin_iterator->Reset(block_start);
       for (data_size_t index = block_start; index < block_end; ++index) {
-        PushData(block_index, feature_index, index, bin_iterator->RawGet(index));
+        PushBinData(block_index, feature_index, index, bin_iterator->Get(index));
       }
     }
   });
@@ -50,7 +40,7 @@ void PairwiseRankingFeatureGroup::CreateBinData(int num_data, bool is_multi_val,
           multi_bin_data_.emplace_back(Bin::CreateSparsePairwiseRankingFirstBin(
               num_data, bin_mappers_[i]->num_bin() + addi, num_data_, paired_ranking_item_index_map_));
         } else {
-            multi_bin_data_.emplace_back(Bin::CreateSparsePairwiseRankingSecondBin(
+          multi_bin_data_.emplace_back(Bin::CreateSparsePairwiseRankingSecondBin(
               num_data, bin_mappers_[i]->num_bin() + addi, num_data_, paired_ranking_item_index_map_));
         }
       } else {
@@ -69,14 +59,14 @@ void PairwiseRankingFeatureGroup::CreateBinData(int num_data, bool is_multi_val,
         (!force_dense && num_feature_ == 1 &&
           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
       is_sparse_ = true;
-      if (is_first_or_second_in_pairing_) {
+      if (is_first_or_second_in_pairing_ == 0) {
         bin_data_.reset(Bin::CreateSparsePairwiseRankingFirstBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_));
       } else {
         bin_data_.reset(Bin::CreateSparsePairwiseRankingSecondBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_));
       }
     } else {
       is_sparse_ = false;
-      if (is_first_or_second_in_pairing_) {
+      if (is_first_or_second_in_pairing_ == 0) {
         bin_data_.reset(Bin::CreateDensePairwiseRankingFirstBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_));
       } else {
         bin_data_.reset(Bin::CreateDensePairwiseRankingSecondBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_));

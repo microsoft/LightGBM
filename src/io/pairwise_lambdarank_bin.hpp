@@ -32,7 +32,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
     unpaired_bin_iterator_.reset(unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin));
     unpaired_bin_iterator_->Reset(0);
     paired_ranking_item_index_map_ = paired_ranking_item_index_map;
-    prev_index_ = 0;
+    prev_index_ = -1;
     prev_val_ = 0;
   }
 
@@ -41,7 +41,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
   uint32_t Get(data_size_t idx) {
     const data_size_t data_index = paired_ranking_item_index_map_[idx].first;
     if (data_index != prev_index_) {
-      CHECK_GT(data_index, prev_index_);
+      CHECK_GE(data_index, prev_index_);
       prev_val_ = unpaired_bin_iterator_->Get(data_index);
     }
     prev_index_ = data_index;
@@ -51,7 +51,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
   uint32_t RawGet(data_size_t idx) {
     const data_size_t data_index = paired_ranking_item_index_map_[idx].first;
     if (data_index != prev_index_) {
-      CHECK_GT(data_index, prev_index_);
+      CHECK_GE(data_index, prev_index_);
       prev_val_ = unpaired_bin_iterator_->RawGet(data_index);
     }
     prev_index_ = data_index;
@@ -60,7 +60,7 @@ class PairwiseRankingFirstIterator: public BinIterator {
 
   void Reset(data_size_t idx) {
     unpaired_bin_iterator_->Reset(idx);
-    prev_index_ = 0;
+    prev_index_ = -1;
     prev_val_ = 0;
   }
 
@@ -133,6 +133,10 @@ class PairwiseRankingBin: public BIN_TYPE {
   void InitStreaming(uint32_t num_thread, int32_t omp_max_threads) override;
 
   void Push(int tid, data_size_t idx, uint32_t value) override;
+
+  void FinishLoad() override {
+    unpaired_bin_->FinishLoad();
+  }
 
   void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) override;
 

@@ -911,11 +911,11 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
       }
     }
 
-    data_size_t num_pairs_in_query = 0;
     query_boundaries_.clear();
     query_boundaries_.push_back(0);
     num_queries_ = 0;
-    for (data_size_t query_index = 0; query_index < num_queries_; ++query_index) {
+    for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
+      data_size_t num_pairs_in_query = 0;
       const data_size_t query_start = query_boundaries[query_index];
       const data_size_t query_end = query_boundaries[query_index + 1];
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
@@ -926,7 +926,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
           }
           const label_t label_j = label_[item_index_j];
           if (label_i != label_j) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
             ++num_pairs_in_query;
             ++num_data_;
           }

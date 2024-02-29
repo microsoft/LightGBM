@@ -293,12 +293,6 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
   // need to check training data
   CheckDataset(dataset.get(), is_load_from_binary);
 
-  if (config_.objective == std::string("pairwise_lambdarank")) {
-    std::unique_ptr<Dataset> original_dataset(dataset.release());
-    dataset.reset(new Dataset());
-    dataset->CreatePairWiseRankingData(original_dataset.get());
-  }
-
   return dataset.release();
 }
 
@@ -356,9 +350,6 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   // not need to check validation data
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
-
-  // TODO(shiyu1994)
-  Log::Warning("Pairwise ranking with validation set is not supported yet.");
 
   return dataset.release();
 }
