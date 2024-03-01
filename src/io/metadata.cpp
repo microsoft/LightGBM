@@ -854,7 +854,6 @@ size_t Metadata::SizesInByte() const {
 }
 
 data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
-  num_data_ = 0;
   num_queries_ = metadata.num_queries();
   label_.clear();
   positions_.clear();
@@ -868,10 +867,10 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
 
     // backup pointwise query boundaries
     query_boundaries_.clear();
-    query_boundaries_.resize(num_queries_);
+    query_boundaries_.resize(num_queries_ + 1);
     const int num_threads = OMP_NUM_THREADS();
     #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_queries_ >= 1024)
-    for (data_size_t i = 0; i < num_queries_; ++i) {
+    for (data_size_t i = 0; i < num_queries_ + 1; ++i) {
       query_boundaries_[i] = query_boundaries[i];
     }
 
@@ -914,9 +913,8 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
 
     pairwise_query_boundaries_.clear();
     pairwise_query_boundaries_.push_back(0);
-    num_queries_ = metadata.num_queries();
+    num_data_ = 0;
     for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
-      data_size_t num_pairs_in_query = 0;
       const data_size_t query_start = query_boundaries[query_index];
       const data_size_t query_end = query_boundaries[query_index + 1];
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
@@ -929,12 +927,11 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
           if (label_i != label_j) {
             paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
             paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
-            ++num_pairs_in_query;
             ++num_data_;
           }
         }
       }
-      pairwise_query_boundaries_.push_back(num_pairs_in_query);
+      pairwise_query_boundaries_.push_back(num_data_);
     }
   } else {
     // TODO(shiyu1994)
