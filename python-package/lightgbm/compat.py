@@ -157,8 +157,6 @@ except ImportError:
 try:
     from dask import delayed
     from dask.array import Array as dask_Array
-    from dask.array import from_delayed as dask_array_from_delayed
-    from dask.bag import from_delayed as dask_bag_from_delayed
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
     from dask.distributed import Client, Future, default_client, wait
@@ -167,8 +165,6 @@ try:
 except ImportError:
     DASK_INSTALLED = False
 
-    dask_array_from_delayed = None  # type: ignore[assignment]
-    dask_bag_from_delayed = None  # type: ignore[assignment]
     delayed = None
     default_client = None  # type: ignore[assignment]
     wait = None  # type: ignore[assignment]

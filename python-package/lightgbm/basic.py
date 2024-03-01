@@ -1083,7 +1083,7 @@ class _InnerPredictor:
         pred_contrib: bool = False,
         data_has_header: bool = False,
         validate_features: bool = False,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
         """Predict logic.
 
         Parameters
@@ -1112,9 +1112,9 @@ class _InnerPredictor:
 
         Returns
         -------
-        result : numpy array, scipy.sparse or list of scipy.sparse
+        result : numpy array or scipy.sparse
             Prediction result.
-            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
+            If ``data`` is a sparse matrix, result will be a sparse matrix.
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
@@ -1354,7 +1354,7 @@ class _InnerPredictor:
         indptr_type: int,
         data_type: int,
         is_csr: bool,
-    ) -> Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]]:
+    ) -> Union[scipy.sparse.csc_matrix, scipy.sparse.csr_matrix]:
         # create numpy array from output arrays
         data_indices_len = out_shape[0]
         indptr_len = out_shape[1]
@@ -1402,9 +1402,10 @@ class _InnerPredictor:
                 ctypes.c_int(data_type),
             )
         )
-        if len(cs_output_matrices) == 1:
-            return cs_output_matrices[0]
-        return cs_output_matrices
+        if is_csr:
+            return scipy.sparse.hstack(cs_output_matrices, format="csr")
+        else:
+            return scipy.sparse.hstack(cs_output_matrices, format="csc")
 
     def __inner_predict_csr(
         self,
@@ -1462,7 +1463,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
+    ) -> Tuple[Union[scipy.sparse.csc_matrix, scipy.sparse.csr_matrix], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csr.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csr.data)
         csr_indices = csr.indices.astype(np.int32, copy=False)
@@ -1501,7 +1502,7 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data),
             )
         )
-        matrices = self.__create_sparse_native(
+        out_mat = self.__create_sparse_native(
             cs=csr,
             out_shape=out_shape,
             out_ptr_indptr=out_ptr_indptr,
@@ -1512,7 +1513,7 @@ class _InnerPredictor:
             is_csr=True,
         )
         nrow = len(csr.indptr) - 1
-        return matrices, nrow
+        return out_mat, nrow
 
     def __pred_for_csr(
         self,
@@ -1563,7 +1564,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ):
+    ) -> Tuple[scipy.sparse.csc_matrix, int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -1602,7 +1603,7 @@ class _InnerPredictor:
                 ctypes.byref(out_ptr_data),
             )
         )
-        matrices = self.__create_sparse_native(
+        out_mat = self.__create_sparse_native(
             cs=csc,
             out_shape=out_shape,
             out_ptr_indptr=out_ptr_indptr,
@@ -1613,7 +1614,7 @@ class _InnerPredictor:
             is_csr=False,
         )
         nrow = csc.shape[0]
-        return matrices, nrow
+        return out_mat, nrow
 
     def __pred_for_csc(
         self,
@@ -4677,7 +4678,7 @@ class Booster:
         data_has_header: bool = False,
         validate_features: bool = False,
         **kwargs: Any,
-    ) -> Union[np.ndarray, scipy.sparse.spmatrix, List[scipy.sparse.spmatrix]]:
+    ) -> Union[np.ndarray, scipy.sparse.spmatrix]:
         """Make a prediction.
 
         Parameters
@@ -4719,9 +4720,9 @@ class Booster:
 
         Returns
         -------
-        result : numpy array, scipy.sparse or list of scipy.sparse
+        result : numpy array or scipy.sparse
             Prediction result.
-            Can be sparse or a list of sparse objects (each element represents predictions for one class) for feature contributions (when ``pred_contrib=True``).
+            If ``data`` is a sparse matrix, result will be a sparse matrix.
         """
         predictor = _InnerPredictor.from_booster(
             booster=self,
