@@ -865,6 +865,10 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
     paired_ranking_item_global_index_map_.clear();
     const data_size_t* query_boundaries = metadata.query_boundaries();
 
+    if (query_boundaries == nullptr) {
+      Log::Fatal("Query boundaries must be provided for ranking.");
+    }
+
     // backup pointwise query boundaries
     query_boundaries_.clear();
     query_boundaries_.resize(num_queries_ + 1);
