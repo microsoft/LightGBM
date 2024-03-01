@@ -28,8 +28,6 @@ from .compat import (
     LGBMNotFittedError,
     concat,
     dask_Array,
-    dask_array_from_delayed,
-    dask_bag_from_delayed,
     dask_DataFrame,
     dask_Series,
     default_client,
@@ -906,7 +904,7 @@ def _predict(
         The predicted values.
     X_leaves : Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]
         If ``pred_leaf=True``, the predicted leaf of every tree for each sample.
-    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]
+    X_SHAP_values : Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
     if not all((DASK_INSTALLED, PANDAS_INSTALLED, SKLEARN_INSTALLED)):
@@ -922,72 +920,6 @@ def _predict(
             **kwargs,
         ).values
     elif isinstance(data, dask_Array):
-        # for multi-class classification with sparse matrices, pred_contrib predictions
-        # are returned as a list of sparse matrices (one per class)
-        num_classes = model._n_classes
-
-        if num_classes > 2 and pred_contrib and isinstance(data._meta, ss.spmatrix):
-            predict_function = partial(
-                _predict_part,
-                model=model,
-                raw_score=False,
-                pred_proba=pred_proba,
-                pred_leaf=False,
-                pred_contrib=True,
-                **kwargs,
-            )
-
-            delayed_chunks = data.to_delayed()
-            bag = dask_bag_from_delayed(delayed_chunks[:, 0])
-
-            @delayed
-            def _extract(items: List[Any], i: int) -> Any:
-                return items[i]
-
-            preds = bag.map_partitions(predict_function)
-
-            # pred_contrib output will have one column per feature,
-            # plus one more for the base value
-            num_cols = model.n_features_ + 1
-
-            nrows_per_chunk = data.chunks[0]
-            out: List[List[dask_Array]] = [[] for _ in range(num_classes)]
-
-            # need to tell Dask the expected type and shape of individual preds
-            pred_meta = data._meta
-
-            for j, partition in enumerate(preds.to_delayed()):
-                for i in range(num_classes):
-                    part = dask_array_from_delayed(
-                        value=_extract(partition, i),
-                        shape=(nrows_per_chunk[j], num_cols),
-                        meta=pred_meta,
-                    )
-                    out[i].append(part)
-
-            # by default, dask.array.concatenate() concatenates sparse arrays into a COO matrix
-            # the code below is used instead to ensure that the sparse type is preserved during concatentation
-            if isinstance(pred_meta, ss.csr_matrix):
-                concat_fn = partial(ss.vstack, format="csr")
-            elif isinstance(pred_meta, ss.csc_matrix):
-                concat_fn = partial(ss.vstack, format="csc")
-            else:
-                concat_fn = ss.vstack
-
-            # At this point, `out` is a list of lists of delayeds (each of which points to a matrix).
-            # Concatenate them to return a list of Dask Arrays.
-            out_arrays: List[dask_Array] = []
-            for i in range(num_classes):
-                out_arrays.append(
-                    dask_array_from_delayed(
-                        value=delayed(concat_fn)(out[i]),
-                        shape=(data.shape[0], num_cols),
-                        meta=pred_meta,
-                    )
-                )
-
-            return out_arrays
-
         data_row = client.compute(data[[0]]).result()
         predict_fn = partial(
             _predict_part,
@@ -1263,7 +1195,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         output_name="predicted_result",
         predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]",
     )
 
     def predict_proba(
@@ -1298,7 +1230,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         output_name="predicted_probability",
         predicted_result_shape="Dask Array of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="Dask Array of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or (if multi-class and using sparse inputs) a list of ``n_classes`` Dask Arrays of shape = [n_samples, n_features + 1]",
+        X_SHAP_values_shape="Dask Array of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes]",
     )
 
     def to_local(self) -> LGBMClassifier:

@@ -343,35 +343,6 @@ def test_classifier_pred_contrib(output, task, cluster):
         else:
             expected_num_cols = (num_features + 1) * num_classes
 
-        # in the special case of multi-class classification using scipy sparse matrices,
-        # the output of `.predict(..., pred_contrib=True)` is a list of sparse matrices (one per class)
-        #
-        # since that case is so different than all other cases, check the relevant things here
-        # and then return early
-        if output.startswith("scipy") and task == "multiclass-classification":
-            if output == "scipy_csr_matrix":
-                expected_type = csr_matrix
-            elif output == "scipy_csc_matrix":
-                expected_type = csc_matrix
-            else:
-                raise ValueError(f"Unrecognized output type: {output}")
-            assert isinstance(preds_with_contrib, list)
-            assert all(isinstance(arr, da.Array) for arr in preds_with_contrib)
-            assert all(isinstance(arr._meta, expected_type) for arr in preds_with_contrib)
-            assert len(preds_with_contrib) == num_classes
-            assert len(preds_with_contrib) == len(local_preds_with_contrib)
-            for i in range(num_classes):
-                computed_preds = preds_with_contrib[i].compute()
-                assert isinstance(computed_preds, expected_type)
-                assert computed_preds.shape[1] == num_classes
-                assert computed_preds.shape == local_preds_with_contrib[i].shape
-                assert len(np.unique(computed_preds[:, -1])) == 1
-                # raw scores will probably be different, but at least check that all predicted classes are the same
-                pred_classes = np.argmax(computed_preds.toarray(), axis=1)
-                local_pred_classes = np.argmax(local_preds_with_contrib[i].toarray(), axis=1)
-                np.testing.assert_array_equal(pred_classes, local_pred_classes)
-            return
-
         preds_with_contrib = preds_with_contrib.compute()
         if output.startswith("scipy"):
             preds_with_contrib = preds_with_contrib.toarray()
