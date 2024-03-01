@@ -853,7 +853,7 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
-data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation) {
   num_queries_ = metadata.num_queries();
   label_.clear();
   positions_.clear();
@@ -920,7 +920,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata) {
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
         const label_t label_i = label_[item_index_i];
         for (data_size_t item_index_j = query_start; item_index_j < query_end; ++item_index_j) {
-          if (item_index_i == item_index_j) {
+          if (item_index_i == item_index_j && !is_validation) {
             continue;
           }
           const label_t label_j = label_[item_index_j];

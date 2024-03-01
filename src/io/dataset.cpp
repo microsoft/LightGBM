@@ -823,8 +823,8 @@ void Dataset::CreateValid(const Dataset* dataset) {
   gpu_device_id_ = dataset->gpu_device_id_;
 }
 
-void Dataset::CreatePairWiseRankingData(const Dataset* dataset) {
-  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata());
+void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation) {
+  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), is_validation);
 
   feature_groups_.clear();
   num_features_ = dataset->num_features_ * 2;

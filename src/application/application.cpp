@@ -122,7 +122,7 @@ void Application::LoadData() {
   if (config_.objective == std::string("pairwise_lambdarank")) {
     ref_train_data = train_data_.release();
     train_data_.reset(new Dataset());
-    train_data_->CreatePairWiseRankingData(ref_train_data);
+    train_data_->CreatePairWiseRankingData(ref_train_data, false);
   } else {
     ref_train_data = train_data_.get();
   }
@@ -150,7 +150,7 @@ void Application::LoadData() {
       if (config_.objective == std::string("pairwise_lambdarank")) {
         const Dataset* original_dataset = new_dataset.release();
         new_dataset.reset(new Dataset());
-        new_dataset->CreatePairWiseRankingData(original_dataset);
+        new_dataset->CreatePairWiseRankingData(original_dataset, true);
       }
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
