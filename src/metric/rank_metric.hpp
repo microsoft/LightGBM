@@ -39,7 +39,7 @@ class NDCGMetric:public Metric {
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("ndcg@") + std::to_string(k));
     }
-    num_data_ = pairwise_scores_? metadata.query_boundaries()[metadata.num_queries()] : num_data;
+    num_data_ = metadata.query_boundaries()[metadata.num_queries()];
     // get label
     label_ = metadata.label();
     num_queries_ = metadata.num_queries();
@@ -81,7 +81,7 @@ class NDCGMetric:public Metric {
     if (pairwise_scores_) {
       paired_index_map_ = metadata.paired_ranking_item_index_map();
       scores_pointwise_.resize(num_data_, 0.0);
-      num_data_pairwise_ = num_data;
+      num_data_pairwise_ = metadata.pairwise_query_boundaries()[metadata.num_queries()];
       query_boundaries_pairwise_ = metadata.pairwise_query_boundaries();
     }
   }
@@ -116,7 +116,7 @@ class NDCGMetric:public Metric {
             const data_size_t start_pointwise = query_boundaries_[i];
             const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
             const data_size_t start_pairwise = query_boundaries_pairwise_[i];
-            const data_size_t cnt_pairwise = query_boundaries_[i + 1] - query_boundaries_[i];
+            const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
             UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(), paired_index_map_ + start_pairwise, truncation_level_, sigmoid_);
@@ -146,7 +146,7 @@ class NDCGMetric:public Metric {
             const data_size_t start_pointwise = query_boundaries_[i];
             const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
             const data_size_t start_pairwise = query_boundaries_pairwise_[i];
-            const data_size_t cnt_pairwise = query_boundaries_[i + 1] - query_boundaries_[i];
+            const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
             std::vector<data_size_t> all_pairs(cnt_pairwise);
             std::iota(all_pairs.begin(), all_pairs.end(), 0);
             UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(), paired_index_map_ + start_pairwise, truncation_level_, sigmoid_);
