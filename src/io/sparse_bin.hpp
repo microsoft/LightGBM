@@ -844,9 +844,6 @@ inline VAL_T SparseBinIterator<VAL_T>::InnerRawGet(data_size_t idx) {
 template <typename VAL_T>
 inline void SparseBinIterator<VAL_T>::Reset(data_size_t start_idx) {
   bin_data_->InitIndex(start_idx, &i_delta_, &cur_pos_);
-  if (start_idx == 1920 || start_idx == 4320) {
-    Log::Warning("i_delta_ = %d, cur_pos_ = %d, start_idx = %d", i_delta_, cur_pos_, start_idx);
-  }
 }
 
 template <typename VAL_T>
