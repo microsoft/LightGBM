@@ -207,9 +207,10 @@ class Metadata {
   /*!
   * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
   * \param metadata Reference to metadata of the existing ranking dataset
+  * \param is_validation Whether the dataset is a validation set
   * \return The number of paired data
   */
-  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata);
+  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
@@ -757,7 +758,7 @@ class Dataset {
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
-  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset);
+  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;
