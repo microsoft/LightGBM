@@ -5,28 +5,34 @@ from dataclasses import dataclass
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
-from .basic import (Booster, _ConfigAliases, _LGBM_BoosterEvalMethodResultType,
-                    _LGBM_BoosterEvalMethodResultWithStandardDeviationType, _log_info, _log_warning)
+from .basic import (
+    Booster,
+    _ConfigAliases,
+    _LGBM_BoosterEvalMethodResultType,
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
+    _log_info,
+    _log_warning,
+)
 
 if TYPE_CHECKING:
     from .engine import CVBooster
 
 __all__ = [
-    'EarlyStopException',
-    'early_stopping',
-    'log_evaluation',
-    'record_evaluation',
-    'reset_parameter',
+    "EarlyStopException",
+    "early_stopping",
+    "log_evaluation",
+    "record_evaluation",
+    "reset_parameter",
 ]
 
 _EvalResultDict = Dict[str, Dict[str, List[Any]]]
 _EvalResultTuple = Union[
     _LGBM_BoosterEvalMethodResultType,
-    _LGBM_BoosterEvalMethodResultWithStandardDeviationType
+    _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
 ]
 _ListOfEvalResultTuples = Union[
     List[_LGBM_BoosterEvalMethodResultType],
-    List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]
+    List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType],
 ]
 
 
@@ -89,8 +95,8 @@ class _LogEvaluationCallback:
 
     def __call__(self, env: CallbackEnv) -> None:
         if self.period > 0 and env.evaluation_result_list and (env.iteration + 1) % self.period == 0:
-            result = '\t'.join([_format_eval_result(x, self.show_stdv) for x in env.evaluation_result_list])
-            _log_info(f'[{env.iteration + 1}]\t{result}')
+            result = "\t".join([_format_eval_result(x, self.show_stdv) for x in env.evaluation_result_list])
+            _log_info(f"[{env.iteration + 1}]\t{result}")
 
 
 def log_evaluation(period: int = 1, show_stdv: bool = True) -> _LogEvaluationCallback:
@@ -127,7 +133,7 @@ class _RecordEvaluationCallback:
         self.before_iteration = False
 
         if not isinstance(eval_result, dict):
-            raise TypeError('eval_result should be a dictionary')
+            raise TypeError("eval_result should be a dictionary")
         self.eval_result = eval_result
 
     def _init(self, env: CallbackEnv) -> None:
@@ -146,8 +152,8 @@ class _RecordEvaluationCallback:
             if len(item) == 4:
                 self.eval_result[data_name].setdefault(eval_name, [])
             else:
-                self.eval_result[data_name].setdefault(f'{eval_name}-mean', [])
-                self.eval_result[data_name].setdefault(f'{eval_name}-stdv', [])
+                self.eval_result[data_name].setdefault(f"{eval_name}-mean", [])
+                self.eval_result[data_name].setdefault(f"{eval_name}-stdv", [])
 
     def __call__(self, env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
@@ -165,8 +171,8 @@ class _RecordEvaluationCallback:
                 data_name, eval_name = item[1].split()
                 res_mean = item[2]
                 res_stdv = item[4]  # type: ignore[misc]
-                self.eval_result[data_name][f'{eval_name}-mean'].append(res_mean)
-                self.eval_result[data_name][f'{eval_name}-stdv'].append(res_stdv)
+                self.eval_result[data_name][f"{eval_name}-mean"].append(res_mean)
+                self.eval_result[data_name][f"{eval_name}-stdv"].append(res_stdv)
 
 
 def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
@@ -224,8 +230,10 @@ class _ResetParameterCallback:
             elif callable(value):
                 new_param = value(env.iteration - env.begin_iteration)
             else:
-                raise ValueError("Only list and callable values are supported "
-                                 "as a mapping from boosting round index to new parameter value.")
+                raise ValueError(
+                    "Only list and callable values are supported "
+                    "as a mapping from boosting round index to new parameter value."
+                )
             if new_param != env.params.get(key, None):
                 new_parameters[key] = new_param
         if new_parameters:
@@ -270,9 +278,8 @@ class _EarlyStoppingCallback:
         stopping_rounds: int,
         first_metric_only: bool = False,
         verbose: bool = True,
-        min_delta: Union[float, List[float]] = 0.0
+        min_delta: Union[float, List[float]] = 0.0,
     ) -> None:
-
         if not isinstance(stopping_rounds, int) or stopping_rounds <= 0:
             raise ValueError(f"stopping_rounds should be an integer and greater than 0. got: {stopping_rounds}")
 
@@ -292,7 +299,7 @@ class _EarlyStoppingCallback:
         self.best_iter: List[int] = []
         self.best_score_list: List[_ListOfEvalResultTuples] = []
         self.cmp_op: List[Callable[[float, float], bool]] = []
-        self.first_metric = ''
+        self.first_metric = ""
 
     def _gt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score > best_score + delta
@@ -315,29 +322,24 @@ class _EarlyStoppingCallback:
 
     def _init(self, env: CallbackEnv) -> None:
         if env.evaluation_result_list is None or env.evaluation_result_list == []:
-            raise ValueError(
-                "For early stopping, at least one dataset and eval metric is required for evaluation"
-            )
+            raise ValueError("For early stopping, at least one dataset and eval metric is required for evaluation")
 
-        is_dart = any(env.params.get(alias, "") == 'dart' for alias in _ConfigAliases.get("boosting"))
+        is_dart = any(env.params.get(alias, "") == "dart" for alias in _ConfigAliases.get("boosting"))
         if is_dart:
             self.enabled = False
-            _log_warning('Early stopping is not available in dart mode')
+            _log_warning("Early stopping is not available in dart mode")
             return
 
         # validation sets are guaranteed to not be identical to the training data in cv()
         if isinstance(env.model, Booster):
-            only_train_set = (
-                len(env.evaluation_result_list) == 1
-                and self._is_train_set(
-                    ds_name=env.evaluation_result_list[0][0],
-                    eval_name=env.evaluation_result_list[0][1].split(" ")[0],
-                    env=env
-                )
+            only_train_set = len(env.evaluation_result_list) == 1 and self._is_train_set(
+                ds_name=env.evaluation_result_list[0][0],
+                eval_name=env.evaluation_result_list[0][1].split(" ")[0],
+                env=env,
             )
             if only_train_set:
                 self.enabled = False
-                _log_warning('Only training set found, disabling early stopping.')
+                _log_warning("Only training set found, disabling early stopping.")
                 return
 
         if self.verbose:
@@ -349,26 +351,26 @@ class _EarlyStoppingCallback:
         n_datasets = len(env.evaluation_result_list) // n_metrics
         if isinstance(self.min_delta, list):
             if not all(t >= 0 for t in self.min_delta):
-                raise ValueError('Values for early stopping min_delta must be non-negative.')
+                raise ValueError("Values for early stopping min_delta must be non-negative.")
             if len(self.min_delta) == 0:
                 if self.verbose:
-                    _log_info('Disabling min_delta for early stopping.')
+                    _log_info("Disabling min_delta for early stopping.")
                 deltas = [0.0] * n_datasets * n_metrics
             elif len(self.min_delta) == 1:
                 if self.verbose:
-                    _log_info(f'Using {self.min_delta[0]} as min_delta for all metrics.')
+                    _log_info(f"Using {self.min_delta[0]} as min_delta for all metrics.")
                 deltas = self.min_delta * n_datasets * n_metrics
             else:
                 if len(self.min_delta) != n_metrics:
-                    raise ValueError('Must provide a single value for min_delta or as many as metrics.')
+                    raise ValueError("Must provide a single value for min_delta or as many as metrics.")
                 if self.first_metric_only and self.verbose:
-                    _log_info(f'Using only {self.min_delta[0]} as early stopping min_delta.')
+                    _log_info(f"Using only {self.min_delta[0]} as early stopping min_delta.")
                 deltas = self.min_delta * n_datasets
         else:
             if self.min_delta < 0:
-                raise ValueError('Early stopping min_delta must be non-negative.')
+                raise ValueError("Early stopping min_delta must be non-negative.")
             if self.min_delta > 0 and n_metrics > 1 and not self.first_metric_only and self.verbose:
-                _log_info(f'Using {self.min_delta} as min_delta for all metrics.')
+                _log_info(f"Using {self.min_delta} as min_delta for all metrics.")
             deltas = [self.min_delta] * n_datasets * n_metrics
 
         # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
@@ -376,18 +378,19 @@ class _EarlyStoppingCallback:
         for eval_ret, delta in zip(env.evaluation_result_list, deltas):
             self.best_iter.append(0)
             if eval_ret[3]:  # greater is better
-                self.best_score.append(float('-inf'))
+                self.best_score.append(float("-inf"))
                 self.cmp_op.append(partial(self._gt_delta, delta=delta))
             else:
-                self.best_score.append(float('inf'))
+                self.best_score.append(float("inf"))
                 self.cmp_op.append(partial(self._lt_delta, delta=delta))
 
     def _final_iteration_check(self, env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
         if env.iteration == env.end_iteration - 1:
             if self.verbose:
-                best_score_str = '\t'.join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
-                _log_info('Did not meet early stopping. '
-                          f'Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}')
+                best_score_str = "\t".join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
+                _log_info(
+                    "Did not meet early stopping. " f"Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}"
+                )
                 if self.first_metric_only:
                     _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
             raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
@@ -403,7 +406,7 @@ class _EarlyStoppingCallback:
                 "Please report it at https://github.com/microsoft/LightGBM/issues"
             )
         # self.best_score_list is initialized to an empty list
-        first_time_updating_best_score_list = (self.best_score_list == [])
+        first_time_updating_best_score_list = self.best_score_list == []
         for i in range(len(env.evaluation_result_list)):
             score = env.evaluation_result_list[i][2]
             if first_time_updating_best_score_list or self.cmp_op[i](score, self.best_score[i]):
@@ -420,12 +423,14 @@ class _EarlyStoppingCallback:
             if self._is_train_set(
                 ds_name=env.evaluation_result_list[i][0],
                 eval_name=eval_name_splitted[0],
-                env=env
+                env=env,
             ):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
             elif env.iteration - self.best_iter[i] >= self.stopping_rounds:
                 if self.verbose:
-                    eval_result_str = '\t'.join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
+                    eval_result_str = "\t".join(
+                        [_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]]
+                    )
                     _log_info(f"Early stopping, best iteration is:\n[{self.best_iter[i] + 1}]\t{eval_result_str}")
                     if self.first_metric_only:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
@@ -433,7 +438,12 @@ class _EarlyStoppingCallback:
             self._final_iteration_check(env, eval_name_splitted, i)
 
 
-def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbose: bool = True, min_delta: Union[float, List[float]] = 0.0) -> _EarlyStoppingCallback:
+def early_stopping(
+    stopping_rounds: int,
+    first_metric_only: bool = False,
+    verbose: bool = True,
+    min_delta: Union[float, List[float]] = 0.0,
+) -> _EarlyStoppingCallback:
     """Create a callback that activates early stopping.
 
     Activates early stopping.
@@ -467,4 +477,9 @@ def early_stopping(stopping_rounds: int, first_metric_only: bool = False, verbos
     callback : _EarlyStoppingCallback
         The callback that activates early stopping.
     """
-    return _EarlyStoppingCallback(stopping_rounds=stopping_rounds, first_metric_only=first_metric_only, verbose=verbose, min_delta=min_delta)
+    return _EarlyStoppingCallback(
+        stopping_rounds=stopping_rounds,
+        first_metric_only=first_metric_only,
+        verbose=verbose,
+        min_delta=min_delta,
+    )
