@@ -13,7 +13,7 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -537,13 +537,13 @@ def _param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
 class _TempFile:
     """Proxy class to workaround errors on Windows."""
 
-    def __enter__(self):
+    def __enter__(self) -> "_TempFile":
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
             self.path = Path(self.name)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.path.is_file():
             self.path.unlink()
 
@@ -595,7 +595,7 @@ class _ConfigAliases:
         )
 
     @classmethod
-    def get(cls, *args) -> Set[str]:
+    def get(cls, *args: str) -> Set[str]:
         if cls.aliases is None:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
@@ -610,7 +610,7 @@ class _ConfigAliases:
         return cls.aliases.get(name, [name])
 
     @classmethod
-    def get_by_alias(cls, *args) -> Set[str]:
+    def get_by_alias(cls, *args: str) -> Set[str]:
         if cls.aliases is None:
             cls.aliases = cls._get_all_param_aliases()
         ret = set(args)
@@ -1563,7 +1563,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ):
+    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -1813,7 +1813,7 @@ class Dataset:
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
         self.pandas_categorical: Optional[List[List]] = None
-        self._params_back_up = None
+        self._params_back_up: Optional[Dict[str, Any]] = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
 
@@ -2195,7 +2195,7 @@ class Dataset:
         return self.set_feature_name(feature_name)
 
     @staticmethod
-    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]):
+    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
         offset = 0
         seq_id = 0
         seq = seqs[seq_id]
@@ -2697,7 +2697,7 @@ class Dataset:
             return self
         params = deepcopy(params)
 
-        def update():
+        def update() -> None:
             if not self.params:
                 self.params = params
             else:
@@ -3704,7 +3704,7 @@ class Booster:
     def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _) -> "Booster":
+    def __deepcopy__(self, *args: Any, **kwargs: Any) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         return Booster(model_str=model_str)
 
@@ -4757,7 +4757,7 @@ class Booster:
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Booster":
         """Refit the existing Booster by new data.
 
