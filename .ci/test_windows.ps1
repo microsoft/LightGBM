@@ -17,11 +17,9 @@ if ($env:TASK -eq "r-package") {
 }
 
 if ($env:TASK -eq "cpp-tests") {
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64 ..
-  cmake --build . --target testlightgbm --config Debug ; Check-Output $?
-  cd ../Debug
-  .\testlightgbm.exe ; Check-Output $?
+  cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64
+  cmake --build build --target testlightgbm --config Debug ; Check-Output $?
+  .\Debug\testlightgbm.exe ; Check-Output $?
   Exit 0
 }
 
@@ -32,8 +30,8 @@ if ($env:TASK -eq "swig") {
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
   $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin-4.0.2;" + $env:PATH
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -A x64 -DUSE_SWIG=ON .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON ; Check-Output $?
+  cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
     cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
   }
@@ -71,8 +69,8 @@ if ($env:TASK -ne "bdist") {
 }
 
 if ($env:TASK -eq "regular") {
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
+  cmake -B build -S . -A x64 ; Check-Output $?
+  cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY
   sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
   cp $env:BUILD_SOURCESDIRECTORY/Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
