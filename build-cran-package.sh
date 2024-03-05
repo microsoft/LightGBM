@@ -177,10 +177,20 @@ cd "${TEMP_R_DIR}"
             -e 's/lib_lightgbm/lightgbm/' \
             "${file}"
     done
+    for file in src/*.cpp; do
+        sed \
+            -i.bak \
+            -e 's/lib_lightgbm/lightgbm/' \
+            "${file}"
+    done
     sed \
         -i.bak \
         -e 's/lib_lightgbm/lightgbm/' \
         NAMESPACE
+    sed \
+        -i.bak \
+        -e 's/lib_lightgbm/lightgbm/' \
+        src/lightgbm-win.def
 
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
