@@ -3,10 +3,11 @@ import filecmp
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import lightgbm as lgb
 import numpy as np
 import pyarrow as pa
 import pytest
+
+import lightgbm as lgb
 
 from .utils import np_assert_array_equal
 
@@ -72,9 +73,7 @@ def generate_random_arrow_table(
     values: Optional[np.ndarray] = None,
 ) -> pa.Table:
     columns = [
-        generate_random_arrow_array(
-            num_datapoints, seed + i, generate_nulls=generate_nulls, values=values
-        )
+        generate_random_arrow_array(num_datapoints, seed + i, generate_nulls=generate_nulls, values=values)
         for i in range(num_columns)
     ]
     names = [f"col_{i}" for i in range(num_columns)]
@@ -154,13 +153,9 @@ def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
 
 
 def test_dataset_construct_fuzzy_boolean(tmp_path):
-    boolean_data = generate_random_arrow_table(
-        10, 10000, 42, generate_nulls=False, values=np.array([True, False])
-    )
+    boolean_data = generate_random_arrow_table(10, 10000, 42, generate_nulls=False, values=np.array([True, False]))
 
-    float_schema = pa.schema(
-        [pa.field(f"col_{i}", pa.float32()) for i in range(len(boolean_data.columns))]
-    )
+    float_schema = pa.schema([pa.field(f"col_{i}", pa.float32()) for i in range(len(boolean_data.columns))])
     float_data = boolean_data.cast(float_schema)
 
     arrow_dataset = lgb.Dataset(boolean_data)
@@ -181,9 +176,7 @@ def test_dataset_construct_fields_fuzzy():
     arrow_weights = generate_random_arrow_array(1000, 42, generate_nulls=False)
     arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.int32())
 
-    arrow_dataset = lgb.Dataset(
-        arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups
-    )
+    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups)
     arrow_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -196,9 +189,7 @@ def test_dataset_construct_fields_fuzzy():
 
     # Check for equality
     for field in ("label", "weight", "group"):
-        np_assert_array_equal(
-            arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
-        )
+        np_assert_array_equal(arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True)
     np_assert_array_equal(arrow_dataset.get_label(), pandas_dataset.get_label(), strict=True)
     np_assert_array_equal(arrow_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
 
@@ -313,9 +304,7 @@ def test_dataset_construct_groups(array_type, group_data, arrow_type):
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_dataset_construct_init_scores_array(
-    array_type: Any, init_score_data: Any, arrow_type: Any
-):
+def test_dataset_construct_init_scores_array(array_type: Any, init_score_data: Any, arrow_type: Any):
     data = generate_dummy_arrow_table()
     init_scores = array_type(init_score_data, type=arrow_type)
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -364,20 +353,14 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
     np_assert_array_equal(p_pred_contrib_arrow, p_pred_contrib_pandas, strict=True)
 
     p_first_iter_arrow = booster.predict(data, start_iteration=0, num_iteration=1, raw_score=True)
-    p_first_iter_pandas = booster.predict(
-        data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True
-    )
+    p_first_iter_pandas = booster.predict(data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True)
     np_assert_array_equal(p_first_iter_arrow, p_first_iter_pandas, strict=True)
 
 
 def test_predict_regression():
     data_float = generate_random_arrow_table(10, 10000, 42)
-    data_bool = generate_random_arrow_table(
-        1, 10000, 42, generate_nulls=False, values=np.array([True, False])
-    )
-    data = pa.Table.from_arrays(
-        data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"]
-    )
+    data_bool = generate_random_arrow_table(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    data = pa.Table.from_arrays(data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"])
 
     dataset = lgb.Dataset(
         data,

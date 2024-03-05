@@ -53,7 +53,7 @@ static void release_array(struct ArrowArray* array) {
   // Free buffers
   for (int64_t i = 0; i < array->n_buffers; ++i) {
     if (array->buffers[i]) {
-      free((void*)array->buffers[i]);
+      free(const_cast<void*>(array->buffers[i]));
     }
   }
   free(array->buffers);
@@ -89,16 +89,16 @@ class ArrowChunkedArrayTest : public testing::Test {
     buffers[0] = build_validity_bitmap(size, null_indices);
     buffers[1] = data;
 
-    return (ArrowArray){.length = size - offset,
-                        .null_count = static_cast<int64_t>(null_indices.size()),
-                        .offset = offset,
-                        .n_buffers = 2,
-                        .n_children = 0,
-                        .buffers = buffers,
-                        .children = nullptr,
-                        .dictionary = nullptr,
-                        .private_data = nullptr,
-                        .release = &release_array};
+    return (ArrowArray) {.length = size - offset,
+                         .null_count = static_cast<int64_t>(null_indices.size()),
+                         .offset = offset,
+                         .n_buffers = 2,
+                         .n_children = 0,
+                         .buffers = buffers,
+                         .children = nullptr,
+                         .dictionary = nullptr,
+                         .private_data = nullptr,
+                         .release = &release_array}
   }
 
   template <typename T>
@@ -132,7 +132,7 @@ class ArrowChunkedArrayTest : public testing::Test {
       *child = *arrays[i];
       children[i] = child;
     }
-    return (ArrowArray){
+    return (ArrowArray) {
         .length = children[0]->length,
         .null_count = 0,
         .offset = 0,
@@ -143,7 +143,7 @@ class ArrowChunkedArrayTest : public testing::Test {
         .dictionary = nullptr,
         .private_data = nullptr,
         .release = &release_array,
-    };
+    }
   }
 
   /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
@@ -155,28 +155,28 @@ class ArrowChunkedArrayTest : public testing::Test {
 
   template <>
   ArrowSchema create_primitive_schema<float>() {
-    return (ArrowSchema){.format = "f",
-                         .name = nullptr,
-                         .metadata = nullptr,
-                         .flags = 0,
-                         .n_children = 0,
-                         .children = nullptr,
-                         .dictionary = nullptr,
-                         .private_data = nullptr,
-                         .release = nullptr};
+    return (ArrowSchema) {.format = "f",
+                          .name = nullptr,
+                          .metadata = nullptr,
+                          .flags = 0,
+                          .n_children = 0,
+                          .children = nullptr,
+                          .dictionary = nullptr,
+                          .private_data = nullptr,
+                          .release = nullptr}
   }
 
   template <>
   ArrowSchema create_primitive_schema<bool>() {
-    return (ArrowSchema){.format = "b",
-                         .name = nullptr,
-                         .metadata = nullptr,
-                         .flags = 0,
-                         .n_children = 0,
-                         .children = nullptr,
-                         .dictionary = nullptr,
-                         .private_data = nullptr,
-                         .release = nullptr};
+    return (ArrowSchema) {.format = "b",
+                          .name = nullptr,
+                          .metadata = nullptr,
+                          .flags = 0,
+                          .n_children = 0,
+                          .children = nullptr,
+                          .dictionary = nullptr,
+                          .private_data = nullptr,
+                          .release = nullptr}
   }
 
   ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
@@ -186,15 +186,15 @@ class ArrowChunkedArrayTest : public testing::Test {
       *child = *arrays[i];
       children[i] = child;
     }
-    return (ArrowSchema){.format = "+s",
-                         .name = nullptr,
-                         .metadata = nullptr,
-                         .flags = 0,
-                         .n_children = static_cast<int64_t>(arrays.size()),
-                         .children = children,
-                         .dictionary = nullptr,
-                         .private_data = nullptr,
-                         .release = &release_schema};
+    return (ArrowSchema) {.format = "+s",
+                          .name = nullptr,
+                          .metadata = nullptr,
+                          .flags = 0,
+                          .n_children = static_cast<int64_t>(arrays.size()),
+                          .children = children,
+                          .dictionary = nullptr,
+                          .private_data = nullptr,
+                          .release = &release_schema}
   }
 };
 
@@ -302,7 +302,7 @@ TEST_F(ArrowChunkedArrayTest, BooleanIterator) {
   ASSERT_EQ(*it, 0);
   ASSERT_EQ(*(++it), 1);
   ASSERT_TRUE(std::isnan(*(++it)));
-  
+
   // Check for some values in second chunk
   ASSERT_EQ(*(++it), 0);
   it += 3;
