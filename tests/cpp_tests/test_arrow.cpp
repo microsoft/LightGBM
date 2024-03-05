@@ -98,7 +98,7 @@ class ArrowChunkedArrayTest : public testing::Test {
                          .children = nullptr,
                          .dictionary = nullptr,
                          .private_data = nullptr,
-                         .release = &release_array}
+                         .release = &release_array}; // NOLINT
   }
 
   template <typename T>
@@ -143,7 +143,7 @@ class ArrowChunkedArrayTest : public testing::Test {
         .dictionary = nullptr,
         .private_data = nullptr,
         .release = &release_array,
-    }
+    }; // NOLINT
   }
 
   /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
@@ -163,7 +163,7 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = nullptr,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = nullptr}
+                          .release = nullptr}; // NOLINT
   }
 
   template <>
@@ -176,7 +176,7 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = nullptr,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = nullptr}
+                          .release = nullptr}; // NOLINT
   }
 
   ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
@@ -194,7 +194,7 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = children,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = &release_schema}
+                          .release = &release_schema}; // NOLINT
   }
 };
 
