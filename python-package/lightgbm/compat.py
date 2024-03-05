@@ -212,6 +212,7 @@ try:
     from pyarrow import Table as pa_Table
     from pyarrow import chunked_array as pa_chunked_array
     from pyarrow.cffi import ffi as arrow_cffi
+    from pyarrow.types import is_boolean as arrow_is_boolean
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
 
@@ -255,6 +256,7 @@ except ImportError:
         equal = None
 
     pa_chunked_array = None
+    arrow_is_boolean = None
     arrow_is_integer = None
     arrow_is_floating = None
 
