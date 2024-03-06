@@ -1,13 +1,14 @@
 # coding: utf-8
 """Compatibility library."""
 
-from typing import List
+from typing import Any, List
 
 """pandas"""
 try:
     from pandas import DataFrame as pd_DataFrame
     from pandas import Series as pd_Series
     from pandas import concat
+
     try:
         from pandas import CategoricalDtype as pd_CategoricalDtype
     except ImportError:
@@ -19,19 +20,19 @@ except ImportError:
     class pd_Series:  # type: ignore
         """Dummy class for pandas.Series."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pd_DataFrame:  # type: ignore
         """Dummy class for pandas.DataFrame."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pd_CategoricalDtype:  # type: ignore
         """Dummy class for pandas.CategoricalDtype."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     concat = None
@@ -40,15 +41,18 @@ except ImportError:
 try:
     from numpy.random import Generator as np_random_Generator
 except ImportError:
+
     class np_random_Generator:  # type: ignore
         """Dummy class for np.random.Generator."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
+
 
 """matplotlib"""
 try:
     import matplotlib  # noqa: F401
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -56,6 +60,7 @@ except ImportError:
 """graphviz"""
 try:
     import graphviz  # noqa: F401
+
     GRAPHVIZ_INSTALLED = True
 except ImportError:
     GRAPHVIZ_INSTALLED = False
@@ -63,6 +68,7 @@ except ImportError:
 """datatable"""
 try:
     import datatable
+
     if hasattr(datatable, "Frame"):
         dt_DataTable = datatable.Frame
     else:
@@ -74,7 +80,7 @@ except ImportError:
     class dt_DataTable:  # type: ignore
         """Dummy class for datatable.DataTable."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
 
@@ -85,6 +91,7 @@ try:
     from sklearn.utils.class_weight import compute_sample_weight
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
+
     try:
         from sklearn.exceptions import NotFittedError
         from sklearn.model_selection import BaseCrossValidator, GroupKFold, StratifiedKFold
@@ -97,7 +104,7 @@ try:
         from sklearn.utils.validation import check_consistent_length
 
         # dummy function to support older version of scikit-learn
-        def _check_sample_weight(sample_weight, X, dtype=None):
+        def _check_sample_weight(sample_weight: Any, X: Any, dtype: Any = None) -> Any:
             check_consistent_length(sample_weight, X)
             return sample_weight
 
@@ -155,6 +162,7 @@ try:
     from dask.dataframe import DataFrame as dask_DataFrame
     from dask.dataframe import Series as dask_Series
     from dask.distributed import Client, Future, default_client, wait
+
     DASK_INSTALLED = True
 except ImportError:
     DASK_INSTALLED = False
@@ -168,32 +176,33 @@ except ImportError:
     class Client:  # type: ignore
         """Dummy class for dask.distributed.Client."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class Future:  # type: ignore
         """Dummy class for dask.distributed.Future."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_Array:  # type: ignore
         """Dummy class for dask.array.Array."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_DataFrame:  # type: ignore
         """Dummy class for dask.dataframe.DataFrame."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class dask_Series:  # type: ignore
         """Dummy class for dask.dataframe.Series."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
+
 
 """pyarrow"""
 try:
@@ -205,6 +214,7 @@ try:
     from pyarrow.cffi import ffi as arrow_cffi
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
+
     PYARROW_INSTALLED = True
 except ImportError:
     PYARROW_INSTALLED = False
@@ -212,19 +222,19 @@ except ImportError:
     class pa_Array:  # type: ignore
         """Dummy class for pa.Array."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_ChunkedArray:  # type: ignore
         """Dummy class for pa.ChunkedArray."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_Table:  # type: ignore
         """Dummy class for pa.Table."""
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class arrow_cffi:  # type: ignore
@@ -235,7 +245,7 @@ except ImportError:
         cast = None
         new = None
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args: Any, **kwargs: Any):
             pass
 
     class pa_compute:  # type: ignore
@@ -265,5 +275,6 @@ except ImportError:
 
         def _LGBMCpuCount(only_physical_cores: bool = True) -> int:
             return cpu_count()
+
 
 __all__: List[str] = []

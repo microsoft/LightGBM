@@ -74,6 +74,7 @@ if [[ $TASK == "lint" ]]; then
         ${CONDA_PYTHON_REQUIREMENT} \
         cmakelint \
         cpplint \
+        'matplotlib>=3.8.3' \
         mypy \
         'pre-commit>=3.6.0' \
         'pyarrow>=14.0' \
