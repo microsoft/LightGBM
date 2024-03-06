@@ -16,6 +16,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 /* -------------------------------------- C DATA INTERFACE ------------------------------------- */
 // The C data interface is taken from
