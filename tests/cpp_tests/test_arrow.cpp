@@ -97,8 +97,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                       .buffers = buffers,
                       .children = nullptr,
                       .dictionary = nullptr,
-                      .private_data = nullptr,
-                      .release = &release_array};  // NOLINT
+                      .release = &release_array,
+                      .private_data = nullptr};  // NOLINT
     return arr;
   }
 
@@ -143,8 +143,8 @@ class ArrowChunkedArrayTest : public testing::Test {
         .buffers = nullptr,
         .children = children,
         .dictionary = nullptr,
-        .private_data = nullptr,
         .release = &release_array,
+        .private_data = nullptr,
     };  // NOLINT
     return arr;
   }
@@ -165,8 +165,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .n_children = 0,
                           .children = nullptr,
                           .dictionary = nullptr,
-                          .private_data = nullptr,
-                          .release = nullptr};  // NOLINT
+                          .release = nullptr,
+                          .private_data = nullptr};  // NOLINT
     return schema;
   }
 
@@ -179,8 +179,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .n_children = 0,
                           .children = nullptr,
                           .dictionary = nullptr,
-                          .private_data = nullptr,
-                          .release = nullptr};  // NOLINT
+                          .release = nullptr,
+                          .private_data = nullptr};  // NOLINT
     return schema;
   }
 
@@ -199,8 +199,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .n_children = static_cast<int64_t>(arrays.size()),
                           .children = children,
                           .dictionary = nullptr,
-                          .private_data = nullptr,
-                          .release = &release_schema};  // NOLINT
+                          .release = &release_schema,
+                          .private_data = nullptr};  // NOLINT
     return schema;
   }
 };
