@@ -89,16 +89,17 @@ class ArrowChunkedArrayTest : public testing::Test {
     buffers[0] = build_validity_bitmap(size, null_indices);
     buffers[1] = data;
 
-    ArrowArray arr = {.length = size - offset,
-                      .null_count = static_cast<int64_t>(null_indices.size()),
-                      .offset = offset,
-                      .n_buffers = 2,
-                      .n_children = 0,
-                      .buffers = buffers,
-                      .children = nullptr,
-                      .dictionary = nullptr,
-                      .release = &release_array,
-                      .private_data = nullptr};  // NOLINT
+    ArrowArray arr;
+    arr.length = size - offset;
+    arr.null_count = static_cast<int64_t>(null_indices.size());
+    arr.offset = offset;
+    arr.n_buffers = 2;
+    arr.n_children = 0;
+    arr.buffers = buffers;
+    arr.children = nullptr;
+    arr.dictionary = nullptr;
+    arr.release = &release_array;
+    arr.private_data = nullptr;
     return arr;
   }
 
@@ -134,18 +135,17 @@ class ArrowChunkedArrayTest : public testing::Test {
       children[i] = child;
     }
 
-    ArrowArray arr = {
-        .length = children[0]->length,
-        .null_count = 0,
-        .offset = 0,
-        .n_buffers = 0,
-        .n_children = static_cast<int64_t>(arrays.size()),
-        .buffers = nullptr,
-        .children = children,
-        .dictionary = nullptr,
-        .release = &release_array,
-        .private_data = nullptr,
-    };  // NOLINT
+    ArrowArray arr;
+    arr.length = children[0]->length;
+    arr.null_count = 0;
+    arr.offset = 0;
+    arr.n_buffers = 0;
+    arr.n_children = static_cast<int64_t>(arrays.size());
+    arr.buffers = nullptr;
+    arr.children = children;
+    arr.dictionary = nullptr;
+    arr.release = &release_array;
+    arr.private_data = nullptr;
     return arr;
   }
 
@@ -158,29 +158,31 @@ class ArrowChunkedArrayTest : public testing::Test {
 
   template <>
   ArrowSchema create_primitive_schema<float>() {
-    ArrowSchema schema = {.format = "f",
-                          .name = nullptr,
-                          .metadata = nullptr,
-                          .flags = 0,
-                          .n_children = 0,
-                          .children = nullptr,
-                          .dictionary = nullptr,
-                          .release = nullptr,
-                          .private_data = nullptr};  // NOLINT
+    ArrowSchema schema;
+    schema.format = "f";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = 0;
+    schema.children = nullptr;
+    schema.dictionary = nullptr;
+    schema.release = nullptr;
+    schema.private_data = nullptr;
     return schema;
   }
 
   template <>
   ArrowSchema create_primitive_schema<bool>() {
-    ArrowSchema schema = {.format = "b",
-                          .name = nullptr,
-                          .metadata = nullptr,
-                          .flags = 0,
-                          .n_children = 0,
-                          .children = nullptr,
-                          .dictionary = nullptr,
-                          .release = nullptr,
-                          .private_data = nullptr};  // NOLINT
+    ArrowSchema schema;
+    schema.format = "b";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = 0;
+    schema.children = nullptr;
+    schema.dictionary = nullptr;
+    schema.release = nullptr;
+    schema.private_data = nullptr;
     return schema;
   }
 
@@ -192,15 +194,16 @@ class ArrowChunkedArrayTest : public testing::Test {
       children[i] = child;
     }
 
-    ArrowSchema schema = {.format = "+s",
-                          .name = nullptr,
-                          .metadata = nullptr,
-                          .flags = 0,
-                          .n_children = static_cast<int64_t>(arrays.size()),
-                          .children = children,
-                          .dictionary = nullptr,
-                          .release = &release_schema,
-                          .private_data = nullptr};  // NOLINT
+    ArrowSchema schema;
+    schema.format = "+s";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = static_cast<int64_t>(arrays.size());
+    schema.children = children;
+    schema.dictionary = nullptr;
+    schema.release = &release_schema;
+    schema.private_data = nullptr;
     return schema;
   }
 };
