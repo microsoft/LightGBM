@@ -89,16 +89,17 @@ class ArrowChunkedArrayTest : public testing::Test {
     buffers[0] = build_validity_bitmap(size, null_indices);
     buffers[1] = data;
 
-    return (ArrowArray) {.length = size - offset,
-                         .null_count = static_cast<int64_t>(null_indices.size()),
-                         .offset = offset,
-                         .n_buffers = 2,
-                         .n_children = 0,
-                         .buffers = buffers,
-                         .children = nullptr,
-                         .dictionary = nullptr,
-                         .private_data = nullptr,
-                         .release = &release_array}; // NOLINT
+    ArrowArray arr = {.length = size - offset,
+                      .null_count = static_cast<int64_t>(null_indices.size()),
+                      .offset = offset,
+                      .n_buffers = 2,
+                      .n_children = 0,
+                      .buffers = buffers,
+                      .children = nullptr,
+                      .dictionary = nullptr,
+                      .private_data = nullptr,
+                      .release = &release_array};  // NOLINT
+    return arr;
   }
 
   template <typename T>
@@ -132,7 +133,8 @@ class ArrowChunkedArrayTest : public testing::Test {
       *child = *arrays[i];
       children[i] = child;
     }
-    return (ArrowArray) {
+
+    ArrowArray arr = {
         .length = children[0]->length,
         .null_count = 0,
         .offset = 0,
@@ -143,7 +145,8 @@ class ArrowChunkedArrayTest : public testing::Test {
         .dictionary = nullptr,
         .private_data = nullptr,
         .release = &release_array,
-    }; // NOLINT
+    };  // NOLINT
+    return arr;
   }
 
   /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
@@ -155,7 +158,7 @@ class ArrowChunkedArrayTest : public testing::Test {
 
   template <>
   ArrowSchema create_primitive_schema<float>() {
-    return (ArrowSchema) {.format = "f",
+    ArrowSchema schema = {.format = "f",
                           .name = nullptr,
                           .metadata = nullptr,
                           .flags = 0,
@@ -163,12 +166,13 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = nullptr,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = nullptr}; // NOLINT
+                          .release = nullptr};  // NOLINT
+    return schema;
   }
 
   template <>
   ArrowSchema create_primitive_schema<bool>() {
-    return (ArrowSchema) {.format = "b",
+    ArrowSchema schema = {.format = "b",
                           .name = nullptr,
                           .metadata = nullptr,
                           .flags = 0,
@@ -176,7 +180,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = nullptr,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = nullptr}; // NOLINT
+                          .release = nullptr};  // NOLINT
+    return schema;
   }
 
   ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
@@ -186,7 +191,8 @@ class ArrowChunkedArrayTest : public testing::Test {
       *child = *arrays[i];
       children[i] = child;
     }
-    return (ArrowSchema) {.format = "+s",
+
+    ArrowSchema schema = {.format = "+s",
                           .name = nullptr,
                           .metadata = nullptr,
                           .flags = 0,
@@ -194,7 +200,8 @@ class ArrowChunkedArrayTest : public testing::Test {
                           .children = children,
                           .dictionary = nullptr,
                           .private_data = nullptr,
-                          .release = &release_schema}; // NOLINT
+                          .release = &release_schema};  // NOLINT
+    return schema;
   }
 };
 
