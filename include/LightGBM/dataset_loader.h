@@ -82,6 +82,22 @@ class DatasetLoader {
    */
   void CheckCategoricalFeatureNumBin(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers, const int max_bin, const std::vector<int>& max_bin_by_feature) const;
 
+  /*! \brief Create differential features for pairwise lambdarank
+   * \param sample_values sampled values from the file
+   * \param sample_indices sampled data indices from the file
+   * \param bin_mappers bin mappers of the original features
+   * \param filter_cnt filter count for bin finding
+   * \param num_total_sample_data number of all sampled data
+   * \param differential_feature_bin_mappers output differential feature bin mapppers
+   */
+  void CreatePairwiseRankingDifferentialFeatures(
+    const std::vector<std::vector<double>>& sample_values,
+    const std::vector<std::vector<int>>& sample_indices,
+    const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+    const data_size_t filter_cnt,
+    const data_size_t num_total_sample_data,
+    std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers) const;
+
   const Config& config_;
   /*! \brief Random generator*/
   Random random_;

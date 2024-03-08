@@ -1163,6 +1163,9 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
+
+    if () {}
+
   } else {
     // start and len will store the process feature indices for different machines
     // machine i will find bins for features in [ start[i], start[i] + len[i] )
@@ -1564,6 +1567,69 @@ void DatasetLoader::CheckCategoricalFeatureNumBin(
   if (need_warning) {
     Log::Warning("Categorical features with more bins than the configured maximum bin number found.");
     Log::Warning("For categorical features, max_bin and max_bin_by_feature may be ignored with a large number of categories.");
+  }
+}
+
+void DatasetLoader::CreatePairwiseRankingDifferentialFeatures(
+  const std::vector<std::vector<double>>& sample_values,
+  const std::vector<std::vector<int>>& sample_indices,
+  const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+  const data_size_t filter_cnt,
+  const data_size_t num_total_sample_data,
+  std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers) const {
+  const int num_original_features = static_cast<int>(sample_values.size());
+  std::vector<int> numerical_feature_indices;
+  for (int i = 0; i < num_original_features; ++i) {
+    if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
+      numerical_feature_indices.push_back(i);
+    }
+  }
+  const int num_numerical_features = static_cast<int>(numerical_feature_indices.size());
+  std::vector<std::vector<double>> sampled_differential_values(num_original_features);
+  differential_feature_bin_mappers->resize(num_numerical_features, nullptr);
+  const int num_threads = OMP_NUM_THREADS();
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (int i = 0; i < num_numerical_features; ++i) {
+    const int feature_index = numerical_feature_indices[i];
+    const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
+    if (config_.zero_as_missing) {
+      for (int j = 0; j < num_samples_for_feature; ++j) {
+        const double value = sample_values[feature_index][j];
+        for (int k = j + 1; k < num_samples_for_feature; ++k) {
+          const double diff_value = value - sample_values[feature_index][k];
+          sampled_differential_values[i].push_back(diff_value);
+        }
+      }
+    } else {
+      CHECK_GT(sample_indices[feature_index].size(), 0);
+      int cur_pos_j = 0;
+      for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
+        double value_j = 0.0;
+        if (j == sample_indices[feature_index][cur_pos_j]) {
+          value_j = sample_values[feature_index][cur_pos_j];
+          ++cur_pos_j;
+        }
+        int cur_pos_k = 0;
+        for (int k = 0; k < sample_indices[feature_index].back() + 1; ++k) {
+          double value_k = 0.0;
+          if (k == sample_indices[feature_index][cur_pos_k]) {
+            value_k = sample_values[feature_index][cur_pos_k];
+            ++cur_pos_k;
+          }
+          const double diff_value = value_j - value_k;
+          sampled_differential_values.push_back(diff_value);
+        }
+      }
+    }
+    differential_feature_bin_mappers->operator[](i).reset(new BinMapper());
+    std::vector<double> forced_upper_bounds;
+    differential_feature_bin_mappers->operator[](i)->FindBin(
+      sampled_differential_values[i].data(),
+      static_cast<int>(sampled_differential_values[i].size()),
+      static_cast<size_t>(num_total_sample_data * (num_total_sample_data) / 2),
+      config_.max_bin, config_.min_data_in_bin, filter_cnt, config_.feature_pre_filter,
+      BinType::NumericalBin, config_.use_missing, config_.zero_as_missing, forced_upper_bounds
+    );
   }
 }
 
