@@ -220,7 +220,14 @@ static __device__ T SafeLog(T x) {
 
 class NCCLInfo {
  public:
-  NCCLInfo() {}
+  NCCLInfo() {
+    nccl_communicator_ = nullptr;
+    nccl_gpu_rank_ = -1;
+    local_gpu_rank_ = -1;
+    gpu_device_id_ = -1;
+    num_gpu_in_node_ = 0;
+    global_num_data_ = 0;
+  }
 
   virtual void SetNCCLInfo(
     ncclComm_t nccl_communicator,
