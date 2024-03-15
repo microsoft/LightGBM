@@ -180,4 +180,3 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
   return(single_tree_dt)
 }
-
