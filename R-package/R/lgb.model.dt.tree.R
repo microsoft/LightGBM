@@ -100,10 +100,10 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
     , "internal_value"
     , "internal_count"
   )
-  
+
   # Traverse tree function
   pre_order_traversal <- function(env = NULL, tree_node_leaf, current_depth = 0L, parent_index = NA_integer_) {
-    
+
     if (is.null(env)) {
       # Setup initial default data.table with default types
       env <- new.env(parent = emptyenv())
@@ -133,16 +133,16 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
         , parent_index = parent_index
       )
     } else {
-      
+
       # Check if split index is not null in leaf
       if (!is.null(tree_node_leaf$split_index)) {
-        
+
         # update data.table
         env$single_tree_dt[[length(env$single_tree_dt) + 1L]] <- c(
           tree_node_leaf[long_list]
           , list("depth" = current_depth, "node_parent" = parent_index)
         )
-        
+
         # Traverse tree again both left and right
         pre_order_traversal(
           env = env
@@ -156,9 +156,8 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
           , current_depth = current_depth + 1L
           , parent_index = tree_node_leaf$split_index
         )
-        
       } else if (!is.null(tree_node_leaf$leaf_index)) {
-        
+
         # update list
         env$single_tree_dt[[length(env$single_tree_dt) + 1L]] <- c(
           tree_node_leaf[c("leaf_index", "leaf_value", "leaf_count")]
@@ -168,17 +167,17 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
     }
     return(env$single_tree_dt)
   }
-  
+
   # Traverse structure and rowbind everything
   single_tree_dt <- data.table::rbindlist(
     pre_order_traversal(tree_node_leaf = lgb_tree$tree_structure)
     , use.names = TRUE
     , fill = TRUE
   )
-  
+
   # Store index
   single_tree_dt[, tree_index := lgb_tree$tree_index]
-  
+
   return(single_tree_dt)
 }
 
