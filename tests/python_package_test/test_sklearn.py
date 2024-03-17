@@ -1397,6 +1397,7 @@ def test_validate_features(task):
     else:
         model.fit(df, y)
     assert model.feature_name_ == features
+    assert model.feature_names_in_ == features
 
     # try to predict with a different feature
     df2 = df.rename(columns={"x2": "z"})
