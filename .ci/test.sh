@@ -44,7 +44,6 @@ if [[ $TASK == "if-else" ]]; then
     cmake -B build -S . || exit 1
     cmake --build build --target lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit 1
-    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit 1
     exit 0
 fi
@@ -274,7 +273,7 @@ elif [[ $TASK == "mpi" ]]; then
         cmake -B build -S . -DUSE_MPI=ON -DUSE_DEBUG=ON
     fi
 else
-    cmake --build build
+    cmake -B build -S .
 fi
 
 cmake --build build --target _lightgbm -j4 || exit 1
