@@ -31,7 +31,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
         extra_cmake_opts=""
     fi
     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
-    make -C build testlightgbm -j4 || exit 1
+    cmake -j4 --build build --target testlightgbm || exit 1
     ./testlightgbm || exit 1
     exit 0
 fi
@@ -55,7 +55,7 @@ if [[ $TASK == "swig" ]]; then
     else
         cmake -B build -S . -DUSE_SWIG=ON
     fi
-    make -C build -j4 || exit 1
+    cmake -j4 --build build || exit 1
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
         objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit 1
