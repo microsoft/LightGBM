@@ -1,8 +1,6 @@
 #!/bin/bash
 
 if [[ $OS_NAME == "macos" ]]; then
-    brew update-reset --auto-update
-    brew update --auto-update
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
