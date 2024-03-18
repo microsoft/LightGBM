@@ -624,7 +624,7 @@ Build CUDA Version
 
 The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
-The CUDA-based build (``device_type=cuda``) is a separate implementation. with compute capability 6.0 and higher.
+The CUDA-based build (``device_type=cuda``) is a separate implementation.
 Use this version in Linux environments with an NVIDIA GPU with compute capability 6.0 or higher.
 
 Linux
