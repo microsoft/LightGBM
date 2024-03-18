@@ -1,7 +1,7 @@
 NROUNDS <- 10L
 MAX_DEPTH <- 3L
 N <- nrow(iris)
-FEATURES <- colnames(iris[2:5])
+FEATURES <- colnames(iris[2L:5L])
 
 model_reg <- lgb.train(
   params = list(
@@ -25,7 +25,7 @@ test_that("lgb.model.dt.tree() returns the right number of trees", {
 })
 
 test_that("Tree index from lgb.model.dt.tree() is in 0:(NROUNS-1)", {
-  expect_equal(unique(df$tree_index), (0:(NROUNDS - 1L)))
+  expect_equal(unique(df$tree_index), (0L:(NROUNDS - 1L)))
 })
 
 test_that("Depth calculated from lgb.model.dt.tree() respects max.depth", {
@@ -61,13 +61,13 @@ test_that("leaves from lgb.model.dt.tree() do not have split info", {
 })
 
 test_that("leaves from lgb.model.dt.tree() have valid leaf info", {
-  expect_true(all(df_leaf$leaf_index %in% 0:(2^MAX_DEPTH - 1)))
+  expect_true(all(df_leaf$leaf_index %in% 0L:(2.0^MAX_DEPTH - 1.0)))
   expect_true(all(is.finite(df_leaf$leaf_value)))
   expect_true(all(df_leaf$leaf_count > 0L & df_leaf$leaf_count <= N))
 })
 
 test_that("non-leaves from lgb.model.dt.tree() do not have leaf info", {
-  leaf_node_cols <- c("leaf_index" , "leaf_parent", "leaf_value", "leaf_count")
+  leaf_node_cols <- c("leaf_index", "leaf_parent", "leaf_value", "leaf_count")
   expect_true(all(is.na(df_internal[leaf_node_cols])))
 })
 
@@ -75,20 +75,20 @@ test_that("non-leaves from lgb.model.dt.tree() have valid split info", {
   expect_true(
     all(
       sapply(
-        split(df_internal, df_internal$tree_index), 
-        function(x) all(x$split_index %in% 0:(nrow(x) - 1L))
+        split(df_internal, df_internal$tree_index),
+        function(x) all(x$split_index %in% 0L:(nrow(x) - 1L))
       )
     )
   )
 
   expect_true(all(df_internal$split_feature %in% FEATURES))
-  
+
   num_cols <- c("split_gain", "threshold", "internal_value")
   expect_true(all(is.finite(unlist(df_internal[, num_cols]))))
-  
+
   # range of decision type?
   expect_true(all(df_internal$default_left %in% c(TRUE, FALSE)))
-  
+
   counts <- df_internal$internal_count
   expect_true(all(counts > 1L & counts <= N))
 })
