@@ -478,7 +478,7 @@ class LGBMModel(_LGBMModelBase):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
-        **kwargs,
+        **kwargs: Any,
     ):
         r"""Construct a gradient boosting model.
 

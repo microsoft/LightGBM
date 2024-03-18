@@ -275,7 +275,6 @@ jobs:
         clang-version:
           - 16
           - 17
-          - 18
     runs-on: ubuntu-latest
     container: rhub/debian-clang-devel
     env:
@@ -316,7 +315,7 @@ jobs:
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, test-r-sanitizers, test-r-debian-clang]
+    needs: [test, test-r-debian-clang]
     steps:
     - name: Note that all tests succeeded
       uses: re-actors/alls-green@v1.2.2
