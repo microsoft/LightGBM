@@ -25,36 +25,36 @@ typedef unsigned char uchar;
 template<typename T>
 __device__ double as_double(const T t) {
   static_assert(sizeof(T) == sizeof(double), "size mismatch");
-  double d; 
-  memcpy(&d, &t, sizeof(T)); 
+  double d;
+  memcpy(&d, &t, sizeof(T));
   return d;
 }
 template<typename T>
 __device__ unsigned long long as_ulong_ulong(const T t) {
   static_assert(sizeof(T) == sizeof(unsigned long long), "size mismatch");
-  unsigned long long u; 
-  memcpy(&u, &t, sizeof(T)); 
+  unsigned long long u;
+  memcpy(&u, &t, sizeof(T));
   return u;
 }
 template<typename T>
 __device__ float as_float(const T t) {
   static_assert(sizeof(T) == sizeof(float), "size mismatch");
-  float f; 
-  memcpy(&f, &t, sizeof(T)); 
+  float f;
+  memcpy(&f, &t, sizeof(T));
   return f;
 }
 template<typename T>
 __device__ unsigned int as_uint(const T t) {
   static_assert(sizeof(T) == sizeof(unsigned int), "size_mismatch");
-  unsigned int u; 
-  memcpy(&u, &t, sizeof(T)); 
+  unsigned int u;
+  memcpy(&u, &t, sizeof(T));
   return u;
 }
 template<typename T>
 __device__ uchar4 as_uchar4(const T t) {
   static_assert(sizeof(T) == sizeof(uchar4), "size mismatch");
-  uchar4 u; 
-  memcpy(&u, &t, sizeof(T)); 
+  uchar4 u;
+  memcpy(&u, &t, sizeof(T));
   return u;
 }
 
@@ -158,4 +158,3 @@ DECLARE(histogram256);
 }  // namespace LightGBM
 
 #endif  // LIGHTGBM_TREELEARNER_KERNELS_HISTOGRAM_16_64_256_HU_
-

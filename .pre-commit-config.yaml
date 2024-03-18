@@ -5,8 +5,14 @@ exclude: |
       lightgbm-python|
       lightgbm_r|
   )$
+  |R-package/configure$
 
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 'v4.5.0'
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
