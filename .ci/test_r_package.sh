@@ -81,6 +81,8 @@ fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+    brew update-reset --auto-update
+    brew update --auto-update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install automake || exit 1
     fi
