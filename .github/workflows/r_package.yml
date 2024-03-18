@@ -232,7 +232,7 @@ jobs:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: wch1/r-debug
+    #container: wch1/r-debug
     strategy:
       fail-fast: false
       matrix:
@@ -242,6 +242,10 @@ jobs:
           - r_customization: csan
             compiler: clang
     steps:
+      - name: get docker info
+        run: |
+          docker info
+          exit 1
       - name: Trust git cloning LightGBM
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
