@@ -128,7 +128,7 @@ fi
 # ref: https://github.com/microsoft/LightGBM/issues/6030
 CONSTRAINED_DEPENDENCIES="'dask>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0' python-graphviz"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'python-graphviz<9.0' 'pandas<2.0'"
+    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'python-graphviz<0.20.2' 'pandas<2.0'"
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
