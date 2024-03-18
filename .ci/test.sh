@@ -74,6 +74,7 @@ if [[ $TASK == "lint" ]]; then
         ${CONDA_PYTHON_REQUIREMENT} \
         'cmakelint>=1.4.2' \
         'cpplint>=1.6.0' \
+        'matplotlib>=3.8.3' \
         'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
         'pyarrow>=14.0' \
@@ -125,9 +126,9 @@ fi
 # older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
 #
 # ref: https://github.com/microsoft/LightGBM/issues/6030
-CONSTRAINED_DEPENDENCIES="'dask-core>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
+CONSTRAINED_DEPENDENCIES="'dask>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask-core' 'distributed' 'pandas<2.0'"
+    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'pandas<2.0'"
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
@@ -321,7 +322,7 @@ matplotlib.use\(\"Agg\"\)\
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask-core \
+        dask \
         distributed \
         joblib \
         matplotlib \
