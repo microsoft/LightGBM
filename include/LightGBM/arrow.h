@@ -207,6 +207,9 @@ class ArrowChunkedArray {
  */
 class ArrowTable {
   std::vector<ArrowChunkedArray> columns_;
+  const int64_t n_chunks_;
+  const ArrowArray* chunks_ptr_;
+  const ArrowSchema* schema_ptr_;
 
  public:
   /**
@@ -216,7 +219,8 @@ class ArrowTable {
    * @param chunks A C-style array containing the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowTable(int64_t n_chunks, const ArrowArray* chunks, const ArrowSchema* schema) {
+  inline ArrowTable(int64_t n_chunks, const ArrowArray *chunks, const ArrowSchema *schema)
+      : n_chunks_(n_chunks), chunks_ptr_(chunks), schema_ptr_(schema) {
     columns_.reserve(schema->n_children);
     for (int64_t j = 0; j < schema->n_children; ++j) {
       std::vector<const ArrowArray*> children_chunks;
@@ -226,6 +230,21 @@ class ArrowTable {
         children_chunks.push_back(chunks[k].children[j]);
       }
       columns_.emplace_back(children_chunks, schema->children[j]);
+    }
+  }
+
+  ~ArrowTable() {
+    // As consumer of the Arrow array, the Arrow table must release all Arrow arrays it receives
+    // as well as the schema. As per the specification, children arrays are released by the
+    // producer. See: https://arrow.apache.org/docs/format/CDataInterface.html#release-callback-semantics-for-consumers
+    for (int64_t i = 0; i < n_chunks_; ++i) {
+      auto chunk = &chunks_ptr_[i];
+      if (chunk->release) {
+        chunk->release(const_cast<ArrowArray*>(chunk));
+      }
+    }
+    if (schema_ptr_->release) {
+      schema_ptr_->release(const_cast<ArrowSchema*>(schema_ptr_));
     }
   }
 

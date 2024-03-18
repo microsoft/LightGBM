@@ -14,12 +14,12 @@ set -e
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"
-  exit -1
+  exit 1
 fi
 
 if [ $# -ne 2 ]; then
   echo "Usage: $0 <COMMENT_ID> <BODY>"
-  exit -1
+  exit 1
 fi
 
 comment_id=$1
