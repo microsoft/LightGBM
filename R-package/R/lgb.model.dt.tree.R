@@ -139,7 +139,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
         # update data.table
         env$single_tree_dt[[length(env$single_tree_dt) + 1L]] <- c(
-          tree_node_leaf[long_list]
+          tree_node_leaf[tree_info_cols]
           , list("depth" = current_depth, "node_parent" = parent_index)
         )
 
