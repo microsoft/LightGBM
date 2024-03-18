@@ -139,3 +139,4 @@ High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}
          a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
          or \code{objective} (passed into \code{params}).
 }
+

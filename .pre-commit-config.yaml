@@ -7,6 +7,7 @@ exclude: |
       lightgbm_r|
   )$
   |R-package/configure$
+  |R-package/man/.*Rd$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
