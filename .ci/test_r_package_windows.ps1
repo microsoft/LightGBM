@@ -91,7 +91,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;"+ $env:PATH
-$env:CRAN_MIRROR = "https://cran.rstudio.com"
+if ([version]$env:R_VERSION -lt [version]"4.0") {
+  $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
+} else {
+  $env:CRAN_MIRROR = "https://cran.rstudio.com"
+}
 $env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.

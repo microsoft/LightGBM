@@ -47,8 +47,8 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
@@ -67,12 +67,12 @@ jobs:
         shell: bash
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'roxygen2', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh || exit -1
-          R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+          sh build-cran-package.sh || exit 1
+          R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
       - name: Test documentation
         shell: bash --noprofile --norc {0}
         run: |
-          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
+          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit 1
           num_doc_files_changed=$(
               git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
           )
@@ -83,7 +83,7 @@ jobs:
               echo "    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz"
               echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
               echo ""
-              exit -1
+              exit 1
           fi
   all-static-analysis-jobs-successful:
     if: always()
