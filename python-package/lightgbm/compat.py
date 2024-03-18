@@ -164,7 +164,17 @@ try:
     from dask.distributed import Client, Future, default_client, wait
 
     DASK_INSTALLED = True
-except ImportError:
+# catching 'ValueError' here because of this:
+# https://github.com/microsoft/LightGBM/issues/6365#issuecomment-2002330003
+#
+# That's potentially risky as dask does some significant import-time processing,
+# like loading configuration from environment variables and files, and catching
+# ValueError here might hide issues with that config-loading.
+#
+# But in exchange, it's less likely that 'import lightgbm' will fail for
+# dask-related reasons, which is beneficial for any workloads that are using
+# lightgbm but not its Dask functionality.
+except (ImportError, ValueError):
     DASK_INSTALLED = False
 
     dask_array_from_delayed = None  # type: ignore[assignment]
