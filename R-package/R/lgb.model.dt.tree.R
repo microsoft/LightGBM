@@ -90,7 +90,7 @@ lgb.model.dt.tree <- function(model, num_iteration = NULL) {
 
 #' @importFrom data.table := data.table rbindlist
 .single_tree_parse <- function(lgb_tree) {
-  long_list <- c(
+  tree_info_cols <- c(
     "split_index"
     , "split_feature"
     , "split_gain"
