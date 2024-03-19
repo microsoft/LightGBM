@@ -624,9 +624,8 @@ Build CUDA Version
 
 The `original GPU build <#build-gpu-version>`__ of LightGBM (``device_type=gpu``) is based on OpenCL.
 
-The CUDA-based build (``device_type=cuda``) is a separate implementation and requires an NVIDIA graphics card with compute capability 6.0 and higher. It should be considered experimental, and we suggest using it only when it is impossible to use OpenCL version (for example, on IBM POWER microprocessors).
-
-**Note**: only Linux is supported, other operating systems are not supported yet.
+The CUDA-based build (``device_type=cuda``) is a separate implementation.
+Use this version in Linux environments with an NVIDIA GPU with compute capability 6.0 or higher.
 
 Linux
 ^^^^^
@@ -653,6 +652,17 @@ To build LightGBM CUDA version, run the following commands:
 **Note**: glibc >= 2.14 is required.
 
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
+macOS
+^^^^^
+
+The CUDA version is not supported on macOS.
+
+Windows
+^^^^^^^
+
+The CUDA version is not supported on Windows.
+Use the GPU version (``device_type=gpu``) for GPU acceleration on Windows.
 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
