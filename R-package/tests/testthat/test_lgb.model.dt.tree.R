@@ -39,7 +39,28 @@ model_multiclass <- lgb.train(
   , nrounds = NROUNDS
 )
 
-models <- list(reg = model_reg, bin = model_binary, multi = model_multiclass)
+model_rank <- lgb.train(
+  params = list(
+    objective = "lambdarank"
+    , num_threads = .LGB_MAX_THREADS
+    , max.depth = MAX_DEPTH
+    , lambdarank_truncation_level = 3L
+  )
+  , data = lgb.Dataset(
+    X
+    , label = as.integer(iris[, 1L] > 5.8)
+    , group = rep(10L, times = 15L)
+  )
+  , verbose = .LGB_VERBOSITY
+  , nrounds = NROUNDS
+)
+
+models <- list(
+  reg = model_reg
+  , bin = model_binary
+  , multi = model_multiclass
+  , rank = model_rank
+)
 
 for (model_name in names(models)) {
   model <- models[[model_name]]
