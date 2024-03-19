@@ -232,7 +232,11 @@ jobs:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    #container: wch1/r-debug
+    # ref: https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container#setting-container-resource-options
+    # ref: https://docs.docker.com/config/containers/resource_constraints/#limit-a-containers-access-to-memory
+    container:
+      image: wch1/r-debug
+      options: --cpus 2 --memory 8g
     strategy:
       fail-fast: false
       matrix:
@@ -242,10 +246,6 @@ jobs:
           - r_customization: csan
             compiler: clang
     steps:
-      - name: get docker info
-        run: |
-          docker info
-          exit 1
       - name: Trust git cloning LightGBM
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -257,9 +257,9 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.r-project.org')"
-          sh build-cran-package.sh --r-executable=RD
-          RD CMD INSTALL lightgbm_*.tar.gz || exit 1
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
+          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
         shell: bash
         run: |
