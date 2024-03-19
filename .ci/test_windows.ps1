@@ -48,23 +48,23 @@ conda config --set always_yes yes --set changeps1 no
 # ref:
 # * https://stackoverflow.com/a/62897729/3986677
 # * https://github.com/microsoft/LightGBM/issues/5899
-conda install brotlipy
+conda install "brotlipy>=0.7"
 
 conda update -q -y conda
 conda create -q -y -n $env:CONDA_ENV `
-  cffi `
-  cloudpickle `
-  joblib `
-  matplotlib `
-  numpy `
-  pandas `
-  psutil `
-  pyarrow `
-  pytest `
+  "cffi>=1.16" `
+  "cloudpickle>=3.0" `
+  "joblib>=1.3.2" `
+  "matplotlib-base>=3.7.3" `
+  "numpy>=1.24.4" `
+  "pandas>=1.5" `
+  "psutil>=5.9.8" `
+  "pyarrow>=15.0" `
+  "pytest>=8.1.1" `
   "python=$env:PYTHON_VERSION[build=*cpython]" `
-  python-graphviz `
-  scikit-learn `
-  scipy ; Check-Output $?
+  "python-graphviz>=0.20" `
+  "scikit-learn>=1.3.2" `
+  "scipy>=1.10" ; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
@@ -126,7 +126,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
-  conda install -q -y -n $env:CONDA_ENV "h5py>3.0" ipywidgets notebook
+  conda install -q -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
   foreach ($file in @(Get-ChildItem *.py)) {
     @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
     python $file ; Check-Output $?
