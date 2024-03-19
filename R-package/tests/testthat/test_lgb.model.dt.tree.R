@@ -19,7 +19,7 @@ model_reg <- lgb.train(
 model_binary <- lgb.train(
   params = list(
     objective = "binary"
-    ,  num_threads = .LGB_MAX_THREADS
+    , num_threads = .LGB_MAX_THREADS
     , max.depth = MAX_DEPTH
   )
   , data = lgb.Dataset(X, label = iris[, 5L] == "setosa")
