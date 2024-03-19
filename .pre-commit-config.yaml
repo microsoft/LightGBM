@@ -7,6 +7,8 @@ exclude: |
       lightgbm_r|
   )$
   |R-package/configure$
+  |R-package/inst/Makevars$
+  |R-package/inst/Makevars.win$
   |R-package/man/.*Rd$
 
 repos:
