@@ -57,7 +57,7 @@ for (model_name in names(models)) {
     expect_equal(length(unique(df$tree_index)), nrounds)
   })
 
-  test_that("num_iteration() can return less trees", {
+  test_that("num_iteration can return less trees", {
     expect_equal(
       length(unique(lgb.model.dt.tree(model, num_iteration = 2L)$tree_index))
       , 2L * (if (model_name == "multi") NCLASS else 1L)
