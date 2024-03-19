@@ -107,7 +107,7 @@ class SingleRowPredictorInner {
 
 /*!
  * \brief Object to store resources meant for single-row Fast Predict methods.
- * 
+ *
  * For legacy reasons this is called `FastConfig` in the public C API.
  *
  * Meant to be used by the *Fast* predict methods only.
