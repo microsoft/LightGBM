@@ -30,7 +30,7 @@ model_binary <- lgb.train(
 model_multiclass <- lgb.train(
   params = list(
     objective = "multiclass"
-    ,  num_threads = .LGB_MAX_THREADS
+    , num_threads = .LGB_MAX_THREADS
     , max.depth = MAX_DEPTH
     , num_classes = NCLASS
   )
