@@ -5,87 +5,151 @@
  * Author: Oliver Borchert
  */
 
-#include <gtest/gtest.h>
 #include <LightGBM/arrow.h>
+#include <gtest/gtest.h>
 
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
 
 using LightGBM::ArrowChunkedArray;
 using LightGBM::ArrowTable;
+
+/* --------------------------------------------------------------------------------------------- */
+/*                                             UTILS                                             */
+/* --------------------------------------------------------------------------------------------- */
+// This code is copied and adapted from the official Arrow producer examples:
+// https://arrow.apache.org/docs/format/CDataInterface.html#exporting-a-struct-float32-utf8-array
+
+static void release_schema(struct ArrowSchema* schema) {
+  // Free children
+  if (schema->children) {
+    for (int64_t i = 0; i < schema->n_children; ++i) {
+      struct ArrowSchema* child = schema->children[i];
+      if (child->release) {
+        child->release(child);
+      }
+      free(child);
+    }
+    free(schema->children);
+  }
+
+  // Finalize
+  schema->release = nullptr;
+}
+
+static void release_array(struct ArrowArray* array) {
+  // Free children
+  if (array->children) {
+    for (int64_t i = 0; i < array->n_children; ++i) {
+      struct ArrowArray* child = array->children[i];
+      if (child->release) {
+        child->release(child);
+      }
+      free(child);
+    }
+    free(array->children);
+  }
+
+  // Free buffers
+  for (int64_t i = 0; i < array->n_buffers; ++i) {
+    if (array->buffers[i]) {
+      free(const_cast<void*>(array->buffers[i]));
+    }
+  }
+  free(array->buffers);
+
+  // Finalize
+  array->release = nullptr;
+}
+
+/* ------------------------------------------ PRODUCER ----------------------------------------- */
 
 class ArrowChunkedArrayTest : public testing::Test {
  protected:
   void SetUp() override {}
 
-  ArrowArray created_nested_array(const std::vector<ArrowArray*>& arrays) {
+  /* -------------------------------------- ARRAY CREATION ------------------------------------- */
+
+  char* build_validity_bitmap(int64_t size, std::vector<int64_t> null_indices = {}) {
+    if (null_indices.empty()) {
+      return nullptr;
+    }
+    auto num_bytes = (size + 7) / 8;
+    auto validity = static_cast<char*>(malloc(num_bytes * sizeof(char)));
+    memset(validity, 0xff, num_bytes * sizeof(char));
+    for (auto idx : null_indices) {
+      validity[idx / 8] &= ~(1 << (idx % 8));
+    }
+    return validity;
+  }
+
+  ArrowArray build_primitive_array(void* data, int64_t size, int64_t offset,
+                                   std::vector<int64_t> null_indices) {
+    const void** buffers = (const void**)malloc(sizeof(void*) * 2);
+    buffers[0] = build_validity_bitmap(size, null_indices);
+    buffers[1] = data;
+
     ArrowArray arr;
-    arr.buffers = nullptr;
-    arr.children = (ArrowArray**)arrays.data();  // NOLINT
+    arr.length = size - offset;
+    arr.null_count = static_cast<int64_t>(null_indices.size());
+    arr.offset = offset;
+    arr.n_buffers = 2;
+    arr.n_children = 0;
+    arr.buffers = buffers;
+    arr.children = nullptr;
     arr.dictionary = nullptr;
-    arr.length = arrays[0]->length;
-    arr.n_buffers = 0;
-    arr.n_children = arrays.size();
-    arr.null_count = 0;
-    arr.offset = 0;
+    arr.release = &release_array;
     arr.private_data = nullptr;
-    arr.release = nullptr;
     return arr;
   }
 
   template <typename T>
-  ArrowArray create_primitive_array(const std::vector<T>& values,
-                                    int64_t offset = 0,
+  ArrowArray create_primitive_array(const std::vector<T>& values, int64_t offset = 0,
                                     std::vector<int64_t> null_indices = {}) {
     // NOTE: Arrow arrays have 64-bit alignment but we can safely ignore this in tests
-    // 1) Create validity bitmap
-    char* validity = nullptr;
-    if (!null_indices.empty()) {
-      auto num_bytes = (values.size() + 7) / 8;
-      validity = static_cast<char*>(calloc(num_bytes, sizeof(char)));
-      memset(validity, 0xff, num_bytes * sizeof(char));
-      for (size_t i = 0; i < values.size(); ++i) {
-        if (std::find(null_indices.begin(), null_indices.end(), i) != null_indices.end()) {
-          validity[i / 8] &= ~(1 << (i % 8));
-        }
+    auto buffer = static_cast<T*>(malloc(sizeof(T) * values.size()));
+    for (size_t i = 0; i < values.size(); ++i) {
+      buffer[i] = values[i];
+    }
+    return build_primitive_array(buffer, values.size(), offset, null_indices);
+  }
+
+  ArrowArray create_primitive_array(const std::vector<bool>& values, int64_t offset = 0,
+                                    std::vector<int64_t> null_indices = {}) {
+    auto num_bytes = (values.size() + 7) / 8;
+    auto buffer = static_cast<char*>(calloc(sizeof(char), num_bytes));
+    for (size_t i = 0; i < values.size(); ++i) {
+      // By using `calloc` above, we only need to set 'true' values
+      if (values[i]) {
+        buffer[i / 8] |= (1 << (i % 8));
       }
     }
+    return build_primitive_array(buffer, values.size(), offset, null_indices);
+  }
 
-    // 2) Create buffers
-    const void** buffers = (const void**)malloc(sizeof(void*) * 2);
-    buffers[0] = validity;
-    buffers[1] = values.data() + offset;
+  ArrowArray created_nested_array(const std::vector<ArrowArray*>& arrays) {
+    auto children = static_cast<ArrowArray**>(malloc(sizeof(ArrowArray*) * arrays.size()));
+    for (size_t i = 0; i < arrays.size(); ++i) {
+      auto child = static_cast<ArrowArray*>(malloc(sizeof(ArrowArray)));
+      *child = *arrays[i];
+      children[i] = child;
+    }
 
-    // Create arrow array
     ArrowArray arr;
-    arr.buffers = buffers;
-    arr.children = nullptr;
-    arr.dictionary = nullptr;
-    arr.length = values.size() - offset;
+    arr.length = children[0]->length;
     arr.null_count = 0;
     arr.offset = 0;
+    arr.n_buffers = 0;
+    arr.n_children = static_cast<int64_t>(arrays.size());
+    arr.buffers = nullptr;
+    arr.children = children;
+    arr.dictionary = nullptr;
+    arr.release = &release_array;
     arr.private_data = nullptr;
-    arr.release = [](ArrowArray* arr) {
-      if (arr->buffers[0] != nullptr)
-        free((void*)(arr->buffers[0]));  // NOLINT
-      free((void*)(arr->buffers));  // NOLINT
-    };
     return arr;
   }
 
-  ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
-    ArrowSchema schema;
-    schema.format = "+s";
-    schema.name = nullptr;
-    schema.metadata = nullptr;
-    schema.flags = 0;
-    schema.n_children = arrays.size();
-    schema.children = (ArrowSchema**)arrays.data();  // NOLINT
-    schema.dictionary = nullptr;
-    schema.private_data = nullptr;
-    schema.release = nullptr;
-    return schema;
-  }
+  /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
 
   template <typename T>
   ArrowSchema create_primitive_schema() {
@@ -102,27 +166,71 @@ class ArrowChunkedArrayTest : public testing::Test {
     schema.n_children = 0;
     schema.children = nullptr;
     schema.dictionary = nullptr;
-    schema.private_data = nullptr;
     schema.release = nullptr;
+    schema.private_data = nullptr;
+    return schema;
+  }
+
+  template <>
+  ArrowSchema create_primitive_schema<bool>() {
+    ArrowSchema schema;
+    schema.format = "b";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = 0;
+    schema.children = nullptr;
+    schema.dictionary = nullptr;
+    schema.release = nullptr;
+    schema.private_data = nullptr;
+    return schema;
+  }
+
+  ArrowSchema create_nested_schema(const std::vector<ArrowSchema*>& arrays) {
+    auto children = static_cast<ArrowSchema**>(malloc(sizeof(ArrowSchema*) * arrays.size()));
+    for (size_t i = 0; i < arrays.size(); ++i) {
+      auto child = static_cast<ArrowSchema*>(malloc(sizeof(ArrowSchema)));
+      *child = *arrays[i];
+      children[i] = child;
+    }
+
+    ArrowSchema schema;
+    schema.format = "+s";
+    schema.name = nullptr;
+    schema.metadata = nullptr;
+    schema.flags = 0;
+    schema.n_children = static_cast<int64_t>(arrays.size());
+    schema.children = children;
+    schema.dictionary = nullptr;
+    schema.release = &release_schema;
+    schema.private_data = nullptr;
     return schema;
   }
 };
 
+/* --------------------------------------------------------------------------------------------- */
+/*                                             TESTS                                             */
+/* --------------------------------------------------------------------------------------------- */
+
 TEST_F(ArrowChunkedArrayTest, GetLength) {
+  auto schema = create_primitive_schema<float>();
+
   std::vector<float> dat1 = {1, 2};
   auto arr1 = create_primitive_array(dat1);
-
-  ArrowChunkedArray ca1(1, &arr1, nullptr);
+  ArrowChunkedArray ca1(1, &arr1, &schema);
   ASSERT_EQ(ca1.get_length(), 2);
 
   std::vector<float> dat2 = {3, 4, 5, 6};
-  auto arr2 = create_primitive_array<float>(dat2);
-  ArrowArray arrs[2] = {arr1, arr2};
-  ArrowChunkedArray ca2(2, arrs, nullptr);
+  auto arr2 = create_primitive_array(dat1);
+  auto arr3 = create_primitive_array(dat2);
+  ArrowArray arrs[2] = {arr2, arr3};
+  ArrowChunkedArray ca2(2, arrs, &schema);
   ASSERT_EQ(ca2.get_length(), 6);
 
-  arr1.release(&arr1);
-  arr2.release(&arr2);
+  std::vector<bool> dat3 = {true, false, true, true};
+  auto arr4 = create_primitive_array(dat3, 1);
+  ArrowChunkedArray ca3(1, &arr4, &schema);
+  ASSERT_EQ(ca3.get_length(), 3);
 }
 
 TEST_F(ArrowChunkedArrayTest, GetColumns) {
@@ -149,18 +257,15 @@ TEST_F(ArrowChunkedArrayTest, GetColumns) {
   auto ca2 = table.get_column(1);
   ASSERT_EQ(ca2.get_length(), 3);
   ASSERT_EQ(*ca2.begin<int32_t>(), 4);
-
-  arr1.release(&arr1);
-  arr2.release(&arr2);
 }
 
 TEST_F(ArrowChunkedArrayTest, IteratorArithmetic) {
   std::vector<float> dat1 = {1, 2};
-  auto arr1 = create_primitive_array<float>(dat1);
+  auto arr1 = create_primitive_array(dat1);
   std::vector<float> dat2 = {3, 4, 5, 6};
-  auto arr2 = create_primitive_array<float>(dat2);
+  auto arr2 = create_primitive_array(dat2);
   std::vector<float> dat3 = {7};
-  auto arr3 = create_primitive_array<float>(dat3);
+  auto arr3 = create_primitive_array(dat3);
   auto schema = create_primitive_schema<float>();
 
   ArrowArray arrs[3] = {arr1, arr2, arr3};
@@ -190,15 +295,39 @@ TEST_F(ArrowChunkedArrayTest, IteratorArithmetic) {
   auto end = ca.end<int32_t>();
   ASSERT_EQ(end - it, 2);
   ASSERT_EQ(end - ca.begin<int32_t>(), 7);
+}
 
-  arr1.release(&arr1);
-  arr2.release(&arr2);
-  arr2.release(&arr3);
+TEST_F(ArrowChunkedArrayTest, BooleanIterator) {
+  std::vector<bool> dat1 = {false, true, false};
+  auto arr1 = create_primitive_array(dat1, 0, {2});
+  std::vector<bool> dat2 = {false, false, false, false, true, true, true, true, false, true};
+  auto arr2 = create_primitive_array(dat2, 1);
+  auto schema = create_primitive_schema<bool>();
+
+  ArrowArray arrs[2] = {arr1, arr2};
+  ArrowChunkedArray ca(2, arrs, &schema);
+
+  // Check for values in first chunk
+  auto it = ca.begin<float>();
+  ASSERT_EQ(*it, 0);
+  ASSERT_EQ(*(++it), 1);
+  ASSERT_TRUE(std::isnan(*(++it)));
+
+  // Check for some values in second chunk
+  ASSERT_EQ(*(++it), 0);
+  it += 3;
+  ASSERT_EQ(*it, 1);
+  it += 4;
+  ASSERT_EQ(*it, 0);
+  ASSERT_EQ(*(++it), 1);
+
+  // Check end
+  ASSERT_EQ(++it, ca.end<float>());
 }
 
 TEST_F(ArrowChunkedArrayTest, OffsetAndValidity) {
   std::vector<float> dat = {0, 1, 2, 3, 4, 5, 6};
-  auto arr = create_primitive_array(dat, 2, {0, 1});
+  auto arr = create_primitive_array(dat, 2, {2, 3});
   auto schema = create_primitive_schema<float>();
   ArrowChunkedArray ca(1, &arr, &schema);
 

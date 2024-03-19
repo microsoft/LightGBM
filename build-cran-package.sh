@@ -4,7 +4,7 @@
 #     Prepare a source distribution of the R package
 #     to be submitted to CRAN.
 #
-# [arguments] 
+# [arguments]
 #
 #     --r-executable Customize the R executable used by `R CMD build`.
 #                    Useful if building the R package in an environment with
