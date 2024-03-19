@@ -8,7 +8,7 @@ NCLASS <- nlevels(iris[, 5L])
 model_reg <- lgb.train(
   params = list(
     objective = "regression"
-    ,  num_threads = .LGB_MAX_THREADS
+    , num_threads = .LGB_MAX_THREADS
     , max.depth = MAX_DEPTH
   )
   , data = lgb.Dataset(X, label = iris[, 1L])
