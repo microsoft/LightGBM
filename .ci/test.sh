@@ -74,10 +74,10 @@ if [[ $TASK == "lint" ]]; then
         ${CONDA_PYTHON_REQUIREMENT} \
         'cmakelint>=1.4.2' \
         'cpplint>=1.6.0' \
-        'matplotlib>=3.8.3' \
+        'matplotlib-base>=3.8.3' \
         'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
-        'pyarrow>=14.0' \
+        'pyarrow>=12.0' \
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
@@ -313,7 +313,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -q -y -n $CONDA_ENV \
+    mamba install -y -n $CONDA_ENV \
         'h5py>=3.10' \
         'ipywidgets>=8.1.2' \
         'notebook>=7.1.2'
@@ -328,7 +328,7 @@ matplotlib.use\(\"Agg\"\)\
         dask \
         distributed \
         joblib \
-        matplotlib \
+        matplotlib-base \
         psutil \
         pyarrow \
         python-graphviz \
