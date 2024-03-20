@@ -232,11 +232,7 @@ jobs:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    # ref: https://docs.github.com/en/actions/using-jobs/running-jobs-in-a-container#setting-container-resource-options
-    # ref: https://docs.docker.com/config/containers/resource_constraints/#limit-a-containers-access-to-memory
-    container:
-      image: wch1/r-debug
-      options: --cpus 2 --memory 8g
+    container: wch1/r-debug
     strategy:
       fail-fast: false
       matrix:
@@ -319,7 +315,7 @@ jobs:
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, test-r-debian-clang]
+    needs: [test, test-r-sanitizers, test-r-debian-clang]
     steps:
     - name: Note that all tests succeeded
       uses: re-actors/alls-green@v1.2.2
