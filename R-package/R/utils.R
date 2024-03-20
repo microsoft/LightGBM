@@ -107,7 +107,9 @@
     column_indices, sort(unique(unlist(interaction_constraints)))
   )
   if (length(remaining_indices) > 0L) {
-    interaction_constraints <- c(interaction_constraints, remaining_indices)
+    interaction_constraints <- c(
+      interaction_constraints, list(remaining_indices)
+    )
   }
 
   # Turn indices 0-based and convert to string
