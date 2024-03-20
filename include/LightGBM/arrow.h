@@ -84,6 +84,10 @@ class ArrowChunkedArray {
   const ArrowSchema* schema_;
   /* List of length `n + 1` for `n` chunks containing the offsets for each chunk. */
   std::vector<int64_t> chunk_offsets_;
+  /* Indicator whether this chunked array needs to call the arrays' release callbacks.
+     NOTE: This is MUST only be set to `true` if this chunked array is not part of a
+           `ArrowTable` as children arrays may not be released by the consumer (see below). */
+  const bool releases_arrow_;
 
   inline void construct_chunk_offsets() {
     chunk_offsets_.reserve(chunks_.size() + 1);
@@ -100,7 +104,8 @@ class ArrowChunkedArray {
    * @param chunks A list with the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowChunkedArray(std::vector<const ArrowArray*> chunks, const ArrowSchema* schema) {
+  inline ArrowChunkedArray(std::vector<const ArrowArray*> chunks, const ArrowSchema* schema)
+      : releases_arrow_(false) {
     chunks_ = chunks;
     schema_ = schema;
     construct_chunk_offsets();
@@ -113,9 +118,9 @@ class ArrowChunkedArray {
    * @param chunks A C-style array containing the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowChunkedArray(int64_t n_chunks,
-                           const struct ArrowArray* chunks,
-                           const struct ArrowSchema* schema) {
+  inline ArrowChunkedArray(int64_t n_chunks, const struct ArrowArray* chunks,
+                           const struct ArrowSchema* schema)
+      : releases_arrow_(true) {
     chunks_.reserve(n_chunks);
     for (auto k = 0; k < n_chunks; ++k) {
       if (chunks[k].length == 0) continue;
@@ -123,6 +128,21 @@ class ArrowChunkedArray {
     }
     schema_ = schema;
     construct_chunk_offsets();
+  }
+
+  ~ArrowChunkedArray() {
+    if (!releases_arrow_) {
+      return;
+    }
+    for (size_t i = 0; i < chunks_.size(); ++i) {
+      auto chunk = chunks_[i];
+      if (chunk->release) {
+        chunk->release(const_cast<ArrowArray*>(chunk));
+      }
+    }
+    if (schema_->release) {
+      schema_->release(const_cast<ArrowSchema*>(schema_));
+    }
   }
 
   /**
@@ -219,7 +239,7 @@ class ArrowTable {
    * @param chunks A C-style array containing the chunks.
    * @param schema The schema for all chunks.
    */
-  inline ArrowTable(int64_t n_chunks, const ArrowArray *chunks, const ArrowSchema *schema)
+  inline ArrowTable(int64_t n_chunks, const ArrowArray* chunks, const ArrowSchema* schema)
       : n_chunks_(n_chunks), chunks_ptr_(chunks), schema_ptr_(schema) {
     columns_.reserve(schema->n_children);
     for (int64_t j = 0; j < schema->n_children; ++j) {
@@ -236,7 +256,8 @@ class ArrowTable {
   ~ArrowTable() {
     // As consumer of the Arrow array, the Arrow table must release all Arrow arrays it receives
     // as well as the schema. As per the specification, children arrays are released by the
-    // producer. See: https://arrow.apache.org/docs/format/CDataInterface.html#release-callback-semantics-for-consumers
+    // producer. See:
+    // https://arrow.apache.org/docs/format/CDataInterface.html#release-callback-semantics-for-consumers
     for (int64_t i = 0; i < n_chunks_; ++i) {
       auto chunk = &chunks_ptr_[i];
       if (chunk->release) {

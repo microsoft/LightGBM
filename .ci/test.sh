@@ -80,9 +80,10 @@ if [[ $TASK == "lint" ]]; then
     cd ${BUILD_DIRECTORY}
     mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
-        cmakelint \
-        cpplint \
-        mypy \
+        'cmakelint>=1.4.2' \
+        'cpplint>=1.6.0' \
+        'matplotlib>=3.8.3' \
+        'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
         'pyarrow>=14.0' \
         'r-lintr>=3.1'
@@ -105,8 +106,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -q \
         -y \
         -n $CONDA_ENV \
-            doxygen \
-            'rstcheck>=6.0.0' || exit 1
+            'doxygen>=1.10.0' \
+            'rstcheck>=6.2.0' || exit 1
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
@@ -133,9 +134,9 @@ fi
 # older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
 #
 # ref: https://github.com/microsoft/LightGBM/issues/6030
-CONSTRAINED_DEPENDENCIES="'dask-core>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
+CONSTRAINED_DEPENDENCIES="'dask>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0' python-graphviz"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask-core' 'distributed' 'pandas<2.0'"
+    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'python-graphviz<0.20.2' 'pandas<2.0'"
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
@@ -150,7 +151,6 @@ mamba create -q -y -n $CONDA_ENV \
     pyarrow \
     pytest \
     ${CONDA_PYTHON_REQUIREMENT} \
-    python-graphviz \
     scikit-learn \
     scipy || exit 1
 
@@ -329,7 +329,7 @@ matplotlib.use\(\"Agg\"\)\
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask-core \
+        dask \
         distributed \
         joblib \
         matplotlib \

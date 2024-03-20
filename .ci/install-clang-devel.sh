@@ -56,7 +56,7 @@ cp --remove-destination /usr/lib/llvm-${CLANG_VERSION}/bin/* /usr/bin/
 # per https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
 #
 # clang was built to use libc++: for a version built to default to libstdc++
-# (as shipped by Fedora/Debian/Ubuntu), add -stdlib=libc++ to CXX 
+# (as shipped by Fedora/Debian/Ubuntu), add -stdlib=libc++ to CXX
 # and install the libcxx-devel/libc++-dev package.
 mkdir -p "${HOME}/.R"
 
