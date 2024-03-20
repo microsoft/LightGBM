@@ -22,7 +22,6 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
 fi
 
 if [[ "$TASK" == "cpp-tests" ]]; then
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
     if [[ $METHOD == "with-sanitizers" ]]; then
         extra_cmake_opts="-DUSE_SANITIZER=ON"
         if [[ -n $SANITIZERS ]]; then
@@ -31,9 +30,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
-    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts ..
-    make testlightgbm -j4 || exit 1
-    ./../testlightgbm || exit 1
+    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake --build build --target testlightgbm -j4 || exit 1
+    ./testlightgbm || exit 1
     exit 0
 fi
 
@@ -42,21 +41,20 @@ CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 if [[ $TASK == "if-else" ]]; then
     mamba create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
     source activate $CONDA_ENV
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit 1
+    cmake -B build -S . || exit 1
+    cmake --build build --target lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit 1
-    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit 1
     exit 0
 fi
 
 if [[ $TASK == "swig" ]]; then
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
     if [[ $OS_NAME == "macos" ]]; then
-        cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
+        cmake -B build -S . -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON
     else
-        cmake -DUSE_SWIG=ON ..
+        cmake -B build -S . -DUSE_SWIG=ON
     fi
-    make -j4 || exit 1
+    cmake --build build -j4 || exit 1
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
         objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit 1
@@ -224,9 +222,7 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_GPU=ON ..
+        cmake -B build -S . -DUSE_GPU=ON
     fi
 elif [[ $TASK == "cuda" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
@@ -252,9 +248,7 @@ elif [[ $TASK == "cuda" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_CUDA=ON ..
+        cmake -B build -S . -DUSE_CUDA=ON
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
@@ -275,17 +269,13 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
+        cmake -B build -S . -DUSE_MPI=ON -DUSE_DEBUG=ON
     fi
 else
-    mkdir $BUILD_DIRECTORY/build
-    cd $BUILD_DIRECTORY/build
-    cmake ..
+    cmake -B build -S .
 fi
 
-make _lightgbm -j4 || exit 1
+cmake --build build --target _lightgbm -j4 || exit 1
 
 cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile --user || exit 1
 pytest $BUILD_DIRECTORY/tests || exit 1
