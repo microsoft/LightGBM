@@ -1163,9 +1163,6 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
       OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
-
-    if () {}
-
   } else {
     // start and len will store the process feature indices for different machines
     // machine i will find bins for features in [ start[i], start[i] + len[i] )
@@ -1253,7 +1250,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
-                     Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
+                     Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()),
+                     sample_data.size(), config_);
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
@@ -1585,8 +1583,10 @@ void DatasetLoader::CreatePairwiseRankingDifferentialFeatures(
     }
   }
   const int num_numerical_features = static_cast<int>(numerical_feature_indices.size());
-  std::vector<std::vector<double>> sampled_differential_values(num_original_features);
-  differential_feature_bin_mappers->resize(num_numerical_features, nullptr);
+  std::vector<std::vector<double>> sampled_differential_values(num_numerical_features);
+  for (int i = 0; i < num_numerical_features; ++i) {
+    differential_feature_bin_mappers->push_back(nullptr);
+  }
   const int num_threads = OMP_NUM_THREADS();
   #pragma omp parallel for schedule(static) num_threads(num_threads)
   for (int i = 0; i < num_numerical_features; ++i) {
@@ -1617,7 +1617,7 @@ void DatasetLoader::CreatePairwiseRankingDifferentialFeatures(
             ++cur_pos_k;
           }
           const double diff_value = value_j - value_k;
-          sampled_differential_values.push_back(diff_value);
+          sampled_differential_values[i].push_back(diff_value);
         }
       }
     }

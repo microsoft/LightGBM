@@ -442,6 +442,24 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
   }
   device_type_ = io_config.device_type;
   gpu_device_id_ = io_config.gpu_device_id;
+
+  if (io_config.objective == std::string("pairwise_lambdarank")) {
+    // store sampled values for constructing differential features
+    const int num_threads = OMP_NUM_THREADS();
+    sampled_values_.resize(static_cast<size_t>(num_sample_col));
+    sampled_indices_.resize(static_cast<size_t>(num_sample_col));
+    #pragma omp parallel for schedule(static) num_threads(num_threads)
+    for (int col_idx = 0; col_idx < num_sample_col; ++col_idx) {
+      const int num_samples_in_col = num_per_col[col_idx];
+      sampled_values_[col_idx].reserve(static_cast<size_t>(num_samples_in_col));
+      sampled_indices_[col_idx].reserve(static_cast<size_t>(num_samples_in_col));
+      for (int i = 0; i < num_samples_in_col; ++i) {
+        sampled_values_[col_idx].push_back(sample_values[col_idx][i]);
+        sampled_indices_[col_idx].push_back(sample_non_zero_indices[col_idx][i]);
+      }
+    }
+    num_total_sampled_data_ = static_cast<data_size_t>(total_sample_cnt);
+  }
 }
 
 void Dataset::FinishLoad() {
@@ -823,7 +841,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
   gpu_device_id_ = dataset->gpu_device_id_;
 }
 
-void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation) {
+void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation, const Config& config) {
   num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), is_validation);
 
   feature_groups_.clear();
@@ -853,6 +871,23 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   group_bin_boundaries_.push_back(num_total_bin);
   group_feature_start_.resize(num_groups_);
   group_feature_cnt_.resize(num_groups_);
+
+  std::vector<std::unique_ptr<BinMapper>> diff_feature_bin_mappers;
+  if (config.objective == std::string("pairwise_lambdarank")) {
+    std::vector<const BinMapper*> original_bin_mappers;
+    for (int i = 0; i < dataset->num_total_features_; ++i) {
+      const int inner_feature_index = dataset->InnerFeatureIndex(i);
+      if (inner_feature_index >= 0) {
+        original_bin_mappers.push_back(dataset->FeatureBinMapper(inner_feature_index));
+      } else {
+        original_bin_mappers.push_back(nullptr);
+      }
+    }
+
+    //CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, config);
+
+    num_features_ += dataset->num_features_;
+  }
 
   int cur_feature_index = 0;
   for (int i = 0; i < num_groups_; ++i) {
@@ -1858,6 +1893,73 @@ const void* Dataset::GetColWiseData(
   bool* is_sparse,
   BinIterator** bin_iterator) const {
   return feature_groups_[feature_group_index]->GetColWiseData(sub_feature_index, bit_type, is_sparse, bin_iterator);
+}
+
+void Dataset::CreatePairwiseRankingDifferentialFeatures(
+  const std::vector<std::vector<double>>& sample_values,
+  const std::vector<std::vector<int>>& sample_indices,
+  const std::vector<const BinMapper*>& bin_mappers,
+  const data_size_t num_total_sample_data,
+  std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
+  const Config& config) const {
+  const int num_original_features = static_cast<int>(sample_values.size());
+  const data_size_t filter_cnt = static_cast<data_size_t>(
+    static_cast<double>(config.min_data_in_leaf * num_total_sample_data) / num_data_);
+  std::vector<int> numerical_feature_indices;
+  for (int i = 0; i < num_original_features; ++i) {
+    if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
+      numerical_feature_indices.push_back(i);
+    }
+  }
+  const int num_numerical_features = static_cast<int>(numerical_feature_indices.size());
+  std::vector<std::vector<double>> sampled_differential_values(num_numerical_features);
+  for (int i = 0; i < num_numerical_features; ++i) {
+    differential_feature_bin_mappers->push_back(nullptr);
+  }
+  const int num_threads = OMP_NUM_THREADS();
+  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  for (int i = 0; i < num_numerical_features; ++i) {
+    const int feature_index = numerical_feature_indices[i];
+    const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
+    if (config.zero_as_missing) {
+      for (int j = 0; j < num_samples_for_feature; ++j) {
+        const double value = sample_values[feature_index][j];
+        for (int k = j + 1; k < num_samples_for_feature; ++k) {
+          const double diff_value = value - sample_values[feature_index][k];
+          sampled_differential_values[i].push_back(diff_value);
+        }
+      }
+    } else {
+      CHECK_GT(sample_indices[feature_index].size(), 0);
+      int cur_pos_j = 0;
+      for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
+        double value_j = 0.0;
+        if (j == sample_indices[feature_index][cur_pos_j]) {
+          value_j = sample_values[feature_index][cur_pos_j];
+          ++cur_pos_j;
+        }
+        int cur_pos_k = 0;
+        for (int k = 0; k < sample_indices[feature_index].back() + 1; ++k) {
+          double value_k = 0.0;
+          if (k == sample_indices[feature_index][cur_pos_k]) {
+            value_k = sample_values[feature_index][cur_pos_k];
+            ++cur_pos_k;
+          }
+          const double diff_value = value_j - value_k;
+          sampled_differential_values[i].push_back(diff_value);
+        }
+      }
+    }
+    differential_feature_bin_mappers->operator[](i).reset(new BinMapper());
+    std::vector<double> forced_upper_bounds;
+    differential_feature_bin_mappers->operator[](i)->FindBin(
+      sampled_differential_values[i].data(),
+      static_cast<int>(sampled_differential_values[i].size()),
+      static_cast<size_t>(num_total_sample_data * (num_total_sample_data) / 2),
+      config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
+      BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
+    );
+  }
 }
 
 #ifdef USE_CUDA

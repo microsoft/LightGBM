@@ -758,7 +758,7 @@ class Dataset {
 
   LIGHTGBM_EXPORT void CreateValid(const Dataset* dataset);
 
-  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation);
+  LIGHTGBM_EXPORT void CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation, const Config& config);
 
   void InitTrain(const std::vector<int8_t>& is_feature_used,
                  TrainingShareStates* share_state) const;
@@ -1062,6 +1062,14 @@ class Dataset {
 
   void CreateCUDAColumnData();
 
+  void CreatePairwiseRankingDifferentialFeatures(
+    const std::vector<std::vector<double>>& sample_values,
+    const std::vector<std::vector<int>>& sample_indices,
+    const std::vector<const BinMapper*>& bin_mappers,
+    const data_size_t num_total_sample_data,
+    std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
+    const Config& config) const;
+
   std::string data_filename_;
   /*! \brief Store used features */
   std::vector<std::unique_ptr<FeatureGroup>> feature_groups_;
@@ -1117,6 +1125,13 @@ class Dataset {
   #endif  // USE_CUDA
 
   std::string parser_config_str_;
+
+  /*! \brief stored sampled features, for creating differential features in pairwise lambdarank */
+  std::vector<std::vector<double>> sampled_values_;
+  /*! \brief stored sampled data indices, for creating differential features in pairwise lambdarank */
+  std::vector<std::vector<data_size_t>> sampled_indices_;
+  /*! \brief stored number of totally sampled data, for creating differential features in pairwise lambdarank */
+  data_size_t num_total_sampled_data_;
 };
 
 }  // namespace LightGBM
