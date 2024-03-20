@@ -72,7 +72,7 @@
   if (is.null(interaction_constraints)) {
     return(list())
   }
-  if (!is.list(interaction_constraints)) {
+  if (!identical(class(interaction_constraints), "list")) {
     stop("interaction_constraints must be a list")
   }
 
