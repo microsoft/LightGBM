@@ -75,7 +75,7 @@ if [[ $TASK == "lint" ]]; then
         'matplotlib-base>=3.8.3' \
         'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
-        'pyarrow>=12.0' \
+        'pyarrow>=6.0' \
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
@@ -142,7 +142,7 @@ mamba create -y -n $CONDA_ENV \
     'matplotlib-base>=3.7.3' \
     'numpy>=1.24.4' \
     'psutil>=5.9.8' \
-    'pyarrow>=12.0' \
+    'pyarrow>=6.0' \
     'pytest>=8.1.1' \
     ${CONDA_PYTHON_REQUIREMENT} \
     'scikit-learn>=1.3.2' \
