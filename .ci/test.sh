@@ -144,7 +144,7 @@ mamba create -y -n $CONDA_ENV \
     'matplotlib-base>=3.7.3' \
     'numpy>=1.24.4' \
     'psutil>=5.9.8' \
-    'pyarrow>=15.0' \
+    'pyarrow>=12.0' \
     'pytest>=8.1.1' \
     ${CONDA_PYTHON_REQUIREMENT} \
     'scikit-learn>=1.3.2' \
