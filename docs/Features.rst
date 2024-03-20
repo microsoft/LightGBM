@@ -21,7 +21,7 @@ LightGBM uses histogram-based algorithms\ `[4, 5, 6] <#references>`__, which buc
    -  To get one leaf's histograms in a binary tree, use the histogram subtraction of its parent and its neighbor
 
    -  So it needs to construct histograms for only one leaf (with smaller ``#data`` than its neighbor). It then can get histograms of its neighbor by histogram subtraction with small cost (``O(#bins)``)
-   
+
 -  **Reduce memory usage**
 
    -  Replaces continuous values with discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
