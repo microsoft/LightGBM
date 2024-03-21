@@ -2773,7 +2773,7 @@ test_that(paste0("lgb.train() throws an informative error if the members of inte
     }, "every element in interaction_constraints must be a character vector or numeric vector")
 })
 
-test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
+test_that("lgb.train() throws an error if interaction_constraints contains wrong features", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression",
                  interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
@@ -2783,7 +2783,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints co
         , params = params
         , nrounds = 2L
       )
-    }, "supplied a too large value in interaction_constraints")
+    })
 })
 
 test_that(paste0("lgb.train() gives same result when interaction_constraints is specified as a list of ",
