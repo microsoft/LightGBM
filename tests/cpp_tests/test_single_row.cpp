@@ -49,7 +49,7 @@ TEST(SingleRow, JustWorks) {
         &output_size);
     EXPECT_EQ(0, result) << "LGBM_BoosterCalcNumPredict result code: " << result;
 
-    std::ifstream test_file("../examples/binary_classification/binary.test");
+    std::ifstream test_file("examples/binary_classification/binary.test");
     std::vector<double> test;
     double x;
     int test_set_size = 0;

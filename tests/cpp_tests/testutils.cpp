@@ -21,7 +21,7 @@ namespace LightGBM {
   * Creates a Dataset from the internal repository examples.
   */
   int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle* out) {
-    std::string fullPath("../examples/");
+    std::string fullPath("examples/");
     fullPath += filename;
     Log::Info("Debug sample data path: %s", fullPath.c_str());
     return LGBM_DatasetCreateFromFile(
