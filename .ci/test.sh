@@ -36,6 +36,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
+# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
@@ -121,32 +122,18 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-# older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
-#
-# ref: https://github.com/microsoft/LightGBM/issues/6030
-CONSTRAINED_DEPENDENCIES="'dask>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0' 'python-graphviz>=0.20'"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'python-graphviz<0.20.2' 'pandas<2.0'"
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
+else
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
-# notes:
-#   * including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-#   * these floors are not the oldest versions LightGBM supports... they're here just to make conda
-#     solves faster, and should generally be the latest versions that work for all CI jobs using
-#     this script
-mamba create -y -n $CONDA_ENV \
-    ${CONSTRAINED_DEPENDENCIES} \
-    'cffi>=1.16' \
-    'cloudpickle>=3.0.0' \
-    'joblib>=1.3.2' \
-    'matplotlib-base>=3.7.3' \
-    'numpy>=1.24.4' \
-    'psutil>=5.9.8' \
-    'pyarrow>=6.0' \
-    'pytest>=8.1.1' \
+mamba create \
+    -y \
+    -n $CONDA_ENV \
+    ${CONDA_REQUIREMENT_FILES} \
     ${CONDA_PYTHON_REQUIREMENT} \
-    'scikit-learn>=1.3.2' \
-    'scipy>=1.10' || exit 1
+|| exit 1
 
 source activate $CONDA_ENV
 

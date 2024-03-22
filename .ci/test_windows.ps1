@@ -49,20 +49,19 @@ conda config --set always_yes yes --set changeps1 no
 conda install "brotlipy>=0.7"
 
 conda update -q -y conda
-conda create -y -n $env:CONDA_ENV `
-  "cffi>=1.16" `
-  "cloudpickle>=3.0" `
-  "joblib>=1.3.2" `
-  "matplotlib-base>=3.7.3" `
-  "numpy>=1.24.4" `
-  "pandas>=1.5" `
-  "psutil>=5.9.8" `
-  "pyarrow>=12.0" `
-  "pytest>=8.1.1" `
+
+if ($env:PYTHON_VERSION -eq "3.7") {
+  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/ci-core-py37.txt"
+} else {
+  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/ci-core.txt"
+}
+
+conda create `
+  -y  
+  -n $env:CONDA_ENV `
+  $env:CONDA_REQUIREMENT_FILES `
   "python=$env:PYTHON_VERSION[build=*cpython]" `
-  "python-graphviz>=0.20" `
-  "scikit-learn>=1.3.2" `
-  "scipy>=1.10" ; Check-Output $?
+; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
