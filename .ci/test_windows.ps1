@@ -51,17 +51,16 @@ conda install "brotlipy>=0.7"
 conda update -q -y conda
 
 if ($env:PYTHON_VERSION -eq "3.7") {
-  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/ci-core-py37.txt"
+  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
 } else {
-  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/ci-core.txt"
+  $env:CONDA_REQUIREMENT_FILES = "--file $env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
 
 conda create `
   -y `
   -n $env:CONDA_ENV `
   $env:CONDA_REQUIREMENT_FILES `
-  "python=$env:PYTHON_VERSION[build=*cpython]" `
-; Check-Output $?
+  "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
