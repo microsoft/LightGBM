@@ -57,7 +57,7 @@ if ($env:PYTHON_VERSION -eq "3.7") {
 }
 
 conda create `
-  -y  
+  -y `
   -n $env:CONDA_ENV `
   $env:CONDA_REQUIREMENT_FILES `
   "python=$env:PYTHON_VERSION[build=*cpython]" `
