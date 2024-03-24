@@ -100,7 +100,12 @@ R CMD config --all \
 # Replace all uses of LLVM stuff with the version of clang requested
 sed \
     -i=.bak \
-    -E "s/clang.*\-[0-9]+/clang-${CLANG_VERSION}/g" \
+    -E "s|clang\-[0-9]+|clang-${CLANG_VERSION}|g" \
+    "${HOME}/.R/Makevars"
+
+sed \
+    -i=.bak \
+    -E "s|clang\+\+\-[0-9]+|clang\+\+-${CLANG_VERSION}|g" \
     "${HOME}/.R/Makevars"
 
 # ensure that -stdlib=libc++ is used for all the CXX variables
