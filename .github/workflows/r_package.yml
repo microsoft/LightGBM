@@ -264,19 +264,25 @@ jobs:
           RDscript${{ matrix.r_customization }} testthat.R >> tests.log 2>&1 || exit_code=-1
           cat ./tests.log
           exit ${exit_code}
-  test-r-debian-clang:
-    name: r-package (debian, R-devel, clang-${{ matrix.clang-version }})
+  test-r-devel-clang:
+    name: r-package (${{ matrix.os }}, R-devel, clang-${{ matrix.clang-version }})
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         # list of versions tested in CRAN "Additional Checks":
         # https://cran.r-project.org/web/checks/check_issue_kinds.html
-        clang-version:
-          - 16
-          - 17
+        include:
+          - clang-version: 16
+            container: rhub/debian-clang-devel
+            os: debian
+          - clang-version: 17
+            container: rhub/debian-clang-devel
+            os: debian
+          - clang-version: 18
+            container: ghcr.io/r-hub/containers/ubuntu-clang
+            os: ubuntu
     runs-on: ubuntu-latest
-    container: rhub/debian-clang-devel
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -315,7 +321,7 @@ jobs:
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, test-r-debian-clang]
+    needs: [test, test-r-devel-clang]
     steps:
     - name: Note that all tests succeeded
       uses: re-actors/alls-green@v1.2.2

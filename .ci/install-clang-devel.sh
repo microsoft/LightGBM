@@ -4,10 +4,29 @@
 #
 #   Installs a development version of clang and the other LLVM tools.
 #
+#   Supported operating systems:
+#
+#     - Debian
+#     - Ubuntu
+#
+# [usage]
+#
+#   ./install-clang-devel.sh 18
+#
 
 set -e -E -u -o pipefail
 
 CLANG_VERSION=${1}
+
+# get short name, e.g. 'debian', 'ubuntu'
+OS_NAME=$(
+    cat /etc/os-release \
+    | grep -E '^NAME' \
+    | cut -d '=' -f2 \
+    | cut -d ' ' -f1 \
+    | tr -d '"' \
+    | tr '[:upper:]' '[:lower:]'
+)
 
 apt-get autoremove -y --purge \
     clang-* \
@@ -25,10 +44,17 @@ apt-get install --no-install-recommends -y \
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
 # ref: https://apt.llvm.org/
-add-apt-repository -y "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
-add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain main"
-add-apt-repository -y "deb http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
-add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
+if [[ ${OS_NAME} == "debian" ]]; then
+    add-apt-repository -y "deb [trusted=yes] http://apt.llvm.org/unstable/ llvm-toolchain main"
+    add-apt-repository -y "deb-src [trusted=yes] http://apt.llvm.org/unstable/ llvm-toolchain main"
+    add-apt-repository -y "deb [trusted=yes] http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
+    add-apt-repository -y "deb-src [trusted=yes] http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
+elif [[ ${OS_NAME} == "ubuntu" ]]; then
+    UBUNTU_CODENAME=$(lsb_release --codename --short)
+    add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_VERSION} main"
+    add-apt-repository -y "deb-src http://apt.llvm.org/jammy/ llvm-toolchain-${UBUNTU_CODENAME}-${CLANG_VERSION} main"
+fi
+
 apt-get update -y
 
 apt-get install -y --no-install-recommends \
