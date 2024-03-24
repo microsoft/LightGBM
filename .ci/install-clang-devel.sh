@@ -86,12 +86,31 @@ cp --remove-destination /usr/lib/llvm-${CLANG_VERSION}/bin/* /usr/bin/
 # and install the libcxx-devel/libc++-dev package.
 mkdir -p "${HOME}/.R"
 
-cat << EOF > "${HOME}/.R/Makevars"
+# populate ~/.R/Makevars with all configuration R recognizes
+#
+# The grep for lines with '=' handles other non-parseable output that
+# 'R CMD config --all' prints.
+#
+# For more details, see the "R config" sections at
+# https://r-hub.github.io/containers/containers.html
+R CMD config --all \
+| grep -E '.*=.*' \
+> "${HOME}/.R/Makevars"
+
+# Replace all uses of LLVM stuff with the version of clang requested
+sed \
+    -i=.bak \
+    -E "s/clang.*\-[0-9]+/clang-${CLANG_VERSION}/g" \
+    "${HOME}/.R/Makevars"
+
+# ensure that -stdlib=libc++ is used for all the CXX variables
+cat << EOF >> "${HOME}/.R/Makevars"
 CXX += -stdlib=libc++
 CXX11 += -stdlib=libc++
 CXX14 += -stdlib=libc++
 CXX17 += -stdlib=libc++
 CXX20 += -stdlib=libc++
+CXX23 += -stdlib=libc++
 EOF
 
 echo ""
