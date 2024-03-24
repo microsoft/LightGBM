@@ -283,6 +283,7 @@ jobs:
             container: ghcr.io/r-hub/containers/ubuntu-clang
             os: ubuntu
     runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
