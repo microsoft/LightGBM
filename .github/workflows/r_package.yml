@@ -302,6 +302,7 @@ jobs:
           submodules: true
       - name: install clang
         run: |
+          export PATH=/opt/R-devel/bin/:${PATH}
           ./.ci/install-clang-devel.sh ${{ matrix.clang-version }}
       - name: Install packages and run tests
         shell: bash
