@@ -98,9 +98,21 @@ double CUDABinaryLogloss::LaunchCalcInitScoreKernel(const int /*class_id*/) cons
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   if (cuda_weights_ == nullptr) {
-    BoostFromScoreKernel_2_BinaryLogloss<false><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
+    if (nccl_communicator_ == nullptr) {
+      BoostFromScoreKernel_2_BinaryLogloss<false><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
+    } else {
+      NCCLAllReduce<double>(cuda_boost_from_score_, cuda_boost_from_score_, 1, ncclFloat64, ncclSum, nccl_communicator_);
+      const data_size_t global_num_data = NCCLAllReduce<data_size_t>(num_data_, ncclInt32, ncclSum, nccl_communicator_);
+      BoostFromScoreKernel_2_BinaryLogloss<false><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, global_num_data, sigmoid_);
+    }
   } else {
-    BoostFromScoreKernel_2_BinaryLogloss<true><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
+    if (nccl_communicator_ == nullptr) {
+      BoostFromScoreKernel_2_BinaryLogloss<true><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
+    } else {
+      NCCLAllReduce<double>(cuda_boost_from_score_, cuda_boost_from_score_, 1, ncclFloat64, ncclSum, nccl_communicator_);
+      NCCLAllReduce<double>(cuda_sum_weights_, cuda_sum_weights_, 1, ncclFloat64, ncclSum, nccl_communicator_);
+      BoostFromScoreKernel_2_BinaryLogloss<true><<<1, 1>>>(cuda_boost_from_score_, cuda_sum_weights_, num_data_, sigmoid_);
+    }
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   double boost_from_score = 0.0f;

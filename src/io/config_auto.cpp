@@ -318,8 +318,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "machines",
   "gpu_platform_id",
   "gpu_device_id",
+  "num_gpus",
+  "gpu_device_id_list",
   "gpu_use_dp",
-  "num_gpu",
   });
   return params;
 }
@@ -656,10 +657,11 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetInt(params, "gpu_device_id", &gpu_device_id);
 
-  GetBool(params, "gpu_use_dp", &gpu_use_dp);
+  GetInt(params, "num_gpus", &num_gpus);
 
-  GetInt(params, "num_gpu", &num_gpu);
-  CHECK_GT(num_gpu, 0);
+  GetString(params, "gpu_device_id_list", &gpu_device_id_list);
+
+  GetBool(params, "gpu_use_dp", &gpu_use_dp);
 }
 
 std::string Config::SaveMembersToString() const {
@@ -775,8 +777,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[machines: " << machines << "]\n";
   str_buf << "[gpu_platform_id: " << gpu_platform_id << "]\n";
   str_buf << "[gpu_device_id: " << gpu_device_id << "]\n";
+  str_buf << "[num_gpus: " << num_gpus << "]\n";
+  str_buf << "[gpu_device_id_list: " << gpu_device_id_list << "]\n";
   str_buf << "[gpu_use_dp: " << gpu_use_dp << "]\n";
-  str_buf << "[num_gpu: " << num_gpu << "]\n";
   return str_buf.str();
 }
 
@@ -918,8 +921,9 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"machines", {"workers", "nodes"}},
     {"gpu_platform_id", {}},
     {"gpu_device_id", {}},
+    {"num_gpus", {}},
+    {"gpu_device_id_list", {}},
     {"gpu_use_dp", {}},
-    {"num_gpu", {}},
   });
   return map;
 }
@@ -1061,8 +1065,9 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"machines", "string"},
     {"gpu_platform_id", "int"},
     {"gpu_device_id", "int"},
+    {"num_gpus", "int"},
+    {"gpu_device_id_list", "string"},
     {"gpu_use_dp", "bool"},
-    {"num_gpu", "int"},
   });
   return map;
 }
