@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 # recreates 'configure' from 'configure.ac'
 # this script should run on Ubuntu 22.04
 AUTOCONF_VERSION=$(cat R-package/AUTOCONF_UBUNTU_VERSION)

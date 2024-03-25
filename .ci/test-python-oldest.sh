@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 # oldest versions of dependencies published after
 # minimum supported Python version's first release
 #

@@ -12,7 +12,7 @@
 #
 # PR_BRANCH: Name of pull request's branch.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

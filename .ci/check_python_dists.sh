@@ -1,6 +1,12 @@
 #!/bin/sh
 
+set -e -E -u
+
 DIST_DIR=${1}
+
+# defaults
+METHOD=${METHOD:-""}
+TASK=${TASK:-""}
 
 echo "checking Python package distributions in '${DIST_DIR}'"
 

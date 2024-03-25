@@ -62,7 +62,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-set -e -u
+set -e -E -u
 
 echo "building lightgbm"
 
