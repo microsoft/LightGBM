@@ -22,6 +22,7 @@ from .compat import (
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
+    arrow_is_boolean,
     arrow_is_floating,
     arrow_is_integer,
     concat,
@@ -1688,7 +1689,7 @@ class _InnerPredictor:
             raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Prepare prediction output array
@@ -2435,7 +2436,7 @@ class Dataset:
             raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Export Arrow table to C
