@@ -110,8 +110,11 @@ class ObjectiveFunction {
   #endif  // USE_CUDA
 };
 
-void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score, data_size_t cnt_pointwise,
-  data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map, int truncation_level, double sigma);
+void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,
+  data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
+  const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
+  const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
+  int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache);
 
 }  // namespace LightGBM
 

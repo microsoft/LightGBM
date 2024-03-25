@@ -6,10 +6,11 @@
 #ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
-#define model_indirect_comparisons_ true
+#define model_indirect_comparisons_ false
 #define model_conditional_rel_ true
 #define indirect_comparisons_above_only true
 #define logarithmic_discounts true
+#define hard_pairwise_preference false
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
@@ -27,7 +28,10 @@
 namespace LightGBM {
 
   void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,
-    data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map, int truncation_level, double sigma) {
+      data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
+      const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
+      const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
+      int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache) {
     // get sorted indices for scores
     std::vector<data_size_t> sorted_idx(cnt_pointwise);
     for (data_size_t i = 0; i < cnt_pointwise; ++i) {
@@ -42,18 +46,6 @@ namespace LightGBM {
       ranks[sorted_idx.at(i)] = i;
     }
 
-    std::multimap<data_size_t, data_size_t> mapRight2Left;
-    std::multimap<data_size_t, data_size_t> mapLeft2Right;
-    std::map<std::pair<data_size_t, data_size_t>, data_size_t> mapLeftRight2Pair;
-    for (data_size_t i = 0; i < selected_pairs_cnt; ++i) {
-      data_size_t current_pair = selected_pairs[i];
-      int indexLeft = paired_index_map[current_pair].first;
-      int indexRight = paired_index_map[current_pair].second;
-      mapRight2Left.insert(std::make_pair(indexRight, indexLeft));
-      mapLeft2Right.insert(std::make_pair(indexLeft, indexRight));
-      mapLeftRight2Pair.insert(std::make_pair(std::make_pair(indexLeft, indexRight), current_pair));
-    }
-
     std::vector<double> gradients(cnt_pointwise);
     std::vector<double> hessians(cnt_pointwise);
     for (data_size_t i = 0; i < selected_pairs_cnt; i++) {
@@ -65,31 +57,31 @@ namespace LightGBM {
       double delta_score = score_pairwise[current_pair];
       int comparisons = 1;
       data_size_t current_pair_inverse = -1;
-      if (mapLeftRight2Pair.count(std::make_pair(indexRight, indexLeft)) > 0) {
-        current_pair_inverse = mapLeftRight2Pair.at(std::make_pair(indexRight, indexLeft));
+      if (left_right2pair_map.count(std::make_pair(indexRight, indexLeft)) > 0) {
+        current_pair_inverse = left_right2pair_map.at(std::make_pair(indexRight, indexLeft));
         delta_score -= score_pairwise[current_pair_inverse];
         comparisons++;
       }
       if (model_indirect_comparisons_) {
-        auto indexHead_range = mapRight2Left.equal_range(indexLeft);
+        auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexHead, indexRight)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
             (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
-            data_size_t indexHeadLeft = mapLeftRight2Pair.at(std::make_pair(indexHead, indexLeft));
-            data_size_t indexHeadRight = mapLeftRight2Pair.at(std::make_pair(indexHead, indexRight));
+            data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
+            data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
             delta_score += score_pairwise[indexHeadRight] - score_pairwise[indexHeadLeft];
             comparisons++;
           }
         }
-        auto indexTail_range = mapLeft2Right.equal_range(indexLeft);
+        auto indexTail_range = left2right_map.equal_range(indexLeft);
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexRight, indexTail)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
             (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
             (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
-            data_size_t indexLeftTail = mapLeftRight2Pair.at(std::make_pair(indexLeft, indexTail));
-            data_size_t indexRightTail = mapLeftRight2Pair.at(std::make_pair(indexRight, indexTail));
+            data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
+            data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
             delta_score += score_pairwise[indexLeftTail] - score_pairwise[indexRightTail];
             comparisons++;
           }
@@ -99,16 +91,23 @@ namespace LightGBM {
       if (delta_score_pointwise == kMinScore || -delta_score_pointwise == kMinScore || delta_score == kMinScore || -delta_score == kMinScore) { continue; }
       delta_score /= comparisons;
       // get discount of this pair	
-      const double paired_discount = logarithmic_discounts ? fabs(DCGCalculator::GetDiscount(ranks[indexRight]) - DCGCalculator::GetDiscount(ranks[indexLeft])) : 1.0;
-      //double p_lr = GetSigmoid(delta_score);
-      double p_lr = 1.0f / (1.0f + std::exp(-delta_score * sigma));
-      double p_rl = 1.0 - p_lr;
-      //double p_lr_pointwise = GetSigmoid(delta_score_pointwise);
-      double p_lr_pointwise = 1.0f / (1.0f + std::exp(-delta_score_pointwise * sigma));
+      double paired_discount = logarithmic_discounts ? fabs(DCGCalculator::GetDiscount(ranks[indexRight]) - DCGCalculator::GetDiscount(ranks[indexLeft])) : 1.0;
+      //double p_lr_pairwise = 1.0f / (1.0f + std::exp(-delta_score * sigma));
+      double p_lr_pairwise = sigmoid_cache.compute(-delta_score);
+      double p_rl_pairwise = 1.0 - p_lr_pairwise;
+      //double p_lr_pointwise = 1.0f / (1.0f + std::exp(-delta_score_pointwise * sigma));
+      double p_lr_pointwise = sigmoid_cache.compute(-delta_score_pointwise);
       double p_rl_pointwise = 1.0 - p_lr_pointwise;
-      gradients[indexLeft] += sigma * paired_discount * (p_rl_pointwise - p_rl);
+
+      if (hard_pairwise_preference) {
+        paired_discount *= std::abs(0.5 - p_lr_pairwise);
+        p_lr_pairwise = p_lr_pairwise >= 0.5 ? 1.0 : 0.0;
+        p_rl_pairwise = 1.0 - p_lr_pairwise;
+      }
+
+      gradients[indexLeft] += sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
       hessians[indexLeft] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
-      gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl);
+      gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
       hessians[indexRight] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
     }
 
@@ -270,6 +269,7 @@ class LambdarankNDCG : public RankingObjective {
     }
     // construct Sigmoid table to speed up Sigmoid transform
     ConstructSigmoidTable();
+    sigmoid_cache_.Init(sigmoid_);
   }
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -464,6 +464,7 @@ class LambdarankNDCG : public RankingObjective {
   double max_sigmoid_input_ = 50;
   /*! \brief Factor that covert score to bin in Sigmoid table */
   double sigmoid_table_idx_factor_;
+  CommonC::SigmoidCache sigmoid_cache_;
 };
 
 /*!
@@ -570,6 +571,29 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     }
     paired_index_map_ = metadata.paired_ranking_item_index_map();
     scores_pointwise_.resize(num_data_pointwise, 0.0);
+
+    right2left_map_byquery_.resize(num_queries_);
+    left2right_map_byquery_.resize(num_queries_);
+    left_right2pair_map_byquery_.resize(num_queries_);
+    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
+    for (data_size_t q = 0; q < num_queries_; ++q) {
+      const data_size_t start_pairwise = query_boundaries_pairwise_[q];
+      const data_size_t cnt_pairwise = query_boundaries_pairwise_[q + 1] - query_boundaries_pairwise_[q];
+      std::multimap<data_size_t, data_size_t> right2left_map_;
+      std::multimap < data_size_t, data_size_t> left2right_map_;
+      std::map<std::pair<data_size_t, data_size_t>, data_size_t> left_right2pair_map_;
+      for (data_size_t i = 0; i < cnt_pairwise; ++i) {
+        //data_size_t current_pair = selected_pairs[i];
+        int index_left = paired_index_map_[i + start_pairwise].first;
+        int index_right = paired_index_map_[i + start_pairwise].second;
+        right2left_map_.insert(std::make_pair(index_right, index_left));
+        left2right_map_.insert(std::make_pair(index_left, index_right));
+        left_right2pair_map_.insert(std::make_pair(std::make_pair(index_left, index_right), i));
+      }
+      right2left_map_byquery_[q] = right2left_map_;
+      left2right_map_byquery_[q] = left2right_map_;
+      left_right2pair_map_byquery_[q] = left_right2pair_map_;
+    }
   }
 
   void GetGradients(const double* score_pairwise, score_t* gradients_pairwise,
@@ -587,12 +611,13 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
             pos_biases_[positions_[start_pointwise + paired_index_map_[start_pairwise + j].second]]);
         }
       }
-      GetGradientsForOneQuery(i, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data(), num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
+      GetGradientsForOneQuery(i, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data() + start_pointwise, num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
+        right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i],
         gradients_pairwise + start_pairwise, hessians_pairwise + start_pairwise);
       std::vector<data_size_t> all_pairs(cnt_pairwise);
       std::iota(all_pairs.begin(), all_pairs.end(), 0);
       UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-        paired_index_map_ + start_pairwise, truncation_level_, sigmoid_);
+        paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_, sigmoid_, sigmoid_cache_);
     }     
     if (num_position_ids_ > 0) {
       std::vector<score_t> gradients_pointwise(num_data_);
@@ -628,6 +653,8 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
 
   inline void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt_pointwise, data_size_t cnt_pairwise,
     const label_t* label, const double* score_pointwise, const double* score_pairwise,
+    const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
+    const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
     score_t* lambdas_pairwise,
     score_t* hessians_pairwise) const {
 
@@ -661,19 +688,6 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       worst_idx -= 1;
     }
     const double worst_score = score_pointwise[sorted_idx[worst_idx]];
-
-    std::multimap<data_size_t, data_size_t> mapRight2Left;
-    std::multimap<data_size_t, data_size_t> mapLeft2Right;
-    std::map<std::pair<data_size_t, data_size_t>, data_size_t> mapLeftRight2Pair;
-
-    for (data_size_t i = 0; i < cnt_pairwise; ++i) {
-      int indexLeft = paired_index_map_[i + start_pairwise].first;
-      int indexRight = paired_index_map_[i + start_pairwise].second;
-      mapRight2Left.insert(std::make_pair(indexRight, indexLeft));
-      mapLeft2Right.insert(std::make_pair(indexLeft, indexRight));
-      mapLeftRight2Pair.insert(std::make_pair(std::make_pair(indexLeft, indexRight), i));
-    }
-
     double sum_lambdas = 0.0;
     // start accmulate lambdas by pairs
     for (data_size_t i = 0; i < cnt_pairwise; i++) {
@@ -698,31 +712,31 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       int comparisons = 1;
 
       data_size_t i_inverse = -1;
-      if (mapLeftRight2Pair.count(std::make_pair(indexRight, indexLeft)) > 0) {
-        i_inverse = mapLeftRight2Pair.at(std::make_pair(indexRight, indexLeft));
+      if (left_right2pair_map.count(std::make_pair(indexRight, indexLeft)) > 0) {
+        i_inverse = left_right2pair_map.at(std::make_pair(indexRight, indexLeft));
         delta_score -= score_pairwise[i_inverse];
         comparisons++;
       }
       if (model_indirect_comparisons_) {
-        auto indexHead_range = mapRight2Left.equal_range(indexLeft);
+        auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexHead, indexRight)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
             (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
-              data_size_t indexHeadLeft = mapLeftRight2Pair.at(std::make_pair(indexHead, indexLeft));
-              data_size_t indexHeadRight = mapLeftRight2Pair.at(std::make_pair(indexHead, indexRight));
+              data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
+              data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
               delta_score += score_pairwise[indexHeadRight] - score_pairwise[indexHeadLeft];
               comparisons++;
           }
         }
-        auto indexTail_range = mapLeft2Right.equal_range(indexLeft);
+        auto indexTail_range = left2right_map.equal_range(indexLeft);
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexRight, indexTail)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
             (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
               (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
-                data_size_t indexLeftTail = mapLeftRight2Pair.at(std::make_pair(indexLeft, indexTail));
-                data_size_t indexRightTail = mapLeftRight2Pair.at(std::make_pair(indexRight, indexTail));
+                data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
+                data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
                 delta_score += score_pairwise[indexLeftTail] - score_pairwise[indexRightTail];
                 comparisons++;
           }
@@ -759,27 +773,27 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
         hessians_pairwise[i_inverse] += static_cast<score_t>(p_hessian / comparisons);
       }
       if (model_indirect_comparisons_) {
-        auto indexHead_range = mapRight2Left.equal_range(indexLeft);
+        auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexHead, indexRight)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
             (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
-              data_size_t indexHeadLeft = mapLeftRight2Pair.at(std::make_pair(indexHead, indexLeft));
-              data_size_t indexHeadRight = mapLeftRight2Pair.at(std::make_pair(indexHead, indexRight));
+              data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
+              data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
               lambdas_pairwise[indexHeadRight] += static_cast<score_t>(p_lambda / comparisons);
               hessians_pairwise[indexHeadRight] += static_cast<score_t>(p_hessian / comparisons);
               lambdas_pairwise[indexHeadLeft] -= static_cast<score_t>(p_lambda / comparisons);
               hessians_pairwise[indexHeadLeft] += static_cast<score_t>(p_hessian / comparisons);
           }
         }
-        auto indexTail_range = mapLeft2Right.equal_range(indexLeft);
+        auto indexTail_range = left2right_map.equal_range(indexLeft);
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
-          if (mapLeftRight2Pair.count(std::make_pair(indexRight, indexTail)) > 0 &&
+          if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
             (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
               (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
-                data_size_t indexLeftTail = mapLeftRight2Pair.at(std::make_pair(indexLeft, indexTail));
-                data_size_t indexRightTail = mapLeftRight2Pair.at(std::make_pair(indexRight, indexTail));
+                data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
+                data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
                 lambdas_pairwise[indexLeftTail] += static_cast<score_t>(p_lambda / comparisons);
                 hessians_pairwise[indexLeftTail] += static_cast<score_t>(p_hessian / comparisons);
                 lambdas_pairwise[indexRightTail] -= static_cast<score_t>(p_lambda / comparisons);
@@ -826,6 +840,9 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
 
  private:
   const std::pair<data_size_t, data_size_t>* paired_index_map_;
+  std::vector<std::multimap<data_size_t, data_size_t>> right2left_map_byquery_;
+  std::vector<std::multimap < data_size_t, data_size_t>> left2right_map_byquery_;
+  std::vector<std::map<std::pair<data_size_t, data_size_t>, data_size_t>> left_right2pair_map_byquery_;
 };
 
 
