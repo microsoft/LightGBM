@@ -241,6 +241,7 @@ def train(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
@@ -765,6 +766,7 @@ def cv(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
