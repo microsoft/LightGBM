@@ -1232,7 +1232,7 @@ struct __TToStringHelper<T, true, true> {
 * Converts an array to a string with with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
 * and is locale-independent.
-* 
+*
 * \note If ``high_precision_output`` is set to true,
 *       floating point values are output with more digits of precision.
 */
