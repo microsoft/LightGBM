@@ -13,6 +13,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 namespace LightGBM {
 
@@ -157,6 +158,11 @@ class Tree {
 
   /*! \brief Get features on leaf's branch*/
   inline std::vector<int> branch_features(int leaf) const { return branch_features_[leaf]; }
+
+  /*! \brief Get unique features used by the current tree*/
+  std::set<int> tree_features() const {
+     return tree_features_;
+  }
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
@@ -318,6 +324,8 @@ class Tree {
   }
 
   inline bool is_linear() const { return is_linear_; }
+
+  inline bool is_tracking_branch_features() const { return track_branch_features_; }
 
   #ifdef USE_CUDA
   inline bool is_cuda_tree() const { return is_cuda_tree_; }
@@ -520,6 +528,10 @@ class Tree {
   bool track_branch_features_;
   /*! \brief Features on leaf's branch, original index */
   std::vector<std::vector<int>> branch_features_;
+
+  /*! \brief Features used by the tree, original index */
+  std::set<int> tree_features_;
+
   double shrinkage_;
   int max_depth_;
   /*! \brief Tree has linear model at each leaf */
@@ -579,6 +591,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
     branch_features_[num_leaves_] = branch_features_[leaf];
     branch_features_[num_leaves_].push_back(split_feature_[new_node_idx]);
     branch_features_[leaf].push_back(split_feature_[new_node_idx]);
+    tree_features_.insert(split_feature_[new_node_idx]);
   }
 }
 

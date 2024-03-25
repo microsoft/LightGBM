@@ -130,7 +130,7 @@ class SerialTreeLearner: public TreeLearner {
 
   void GetShareStates(const Dataset* dataset, bool is_constant_hessian, bool is_first_time);
 
-  void RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInfo* split);
+  void RecomputeBestSplitForLeaf(const Tree* tree, int leaf, SplitInfo* split);
 
   /*!
   * \brief Some initial works before training
