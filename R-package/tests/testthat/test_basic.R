@@ -2776,10 +2776,10 @@ test_that(paste0("lgb.train() throws an informative error if the members of inte
 test_that("lgb.train() throws an informative error if interaction_constraints contains a too large index", {
   dtrain <- lgb.Dataset(train$data, label = train$label)
   params <- list(objective = "regression",
-                 interaction_constraints = list(c(1L, length(colnames(train$data)) + 1L), 3L))
+                 interaction_constraints = list(c(1L, length(colnames(train$data)) + 2L), 3L))
     expect_error(
-      bst <- lightgbm(data = dtrain, params = params, nrounds = 2L)
-      , "supplied an unknown feature in interaction_constraints ‘127’"
+      lightgbm(data = dtrain, params = params, nrounds = 2L)
+      , "unknown feature(s) in interaction_constraints: '127', '128'"
     )
 })
 
