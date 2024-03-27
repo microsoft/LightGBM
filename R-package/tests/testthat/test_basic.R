@@ -2780,7 +2780,7 @@ test_that("lgb.train() throws an informative error if interaction_constraints co
     expect_error(
       lightgbm(data = dtrain, params = params, nrounds = 2L)
       , "unknown feature(s) in interaction_constraints: '127', '128'"
-      , fixed=TRUE
+      , fixed = TRUE
     )
 })
 
