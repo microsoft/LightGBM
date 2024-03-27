@@ -65,8 +65,8 @@
 #
 #         1. turns feature *names* into 1-based integer positions, then
 #         2. adds an extra list element with skipped features, then
-#         2. turns 1-based integer positions into 0-based positions, and finally
-#         3. collapses the values of each list element into a string like "[0, 1]".
+#         3. turns 1-based integer positions into 0-based positions, and finally
+#         4. collapses the values of each list element into a string like "[0, 1]".
 #
 .check_interaction_constraints <- function(interaction_constraints, column_names) {
   if (is.null(interaction_constraints)) {
