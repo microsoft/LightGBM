@@ -94,8 +94,8 @@
     bad <- !(constraint_indices %in% column_indices)
     if (any(bad)) {
       stop(
-        "supplied an unknown feature in interaction_constraints "
-        , sQuote(constraint[bad])
+        "unknown feature(s) in interaction_constraints: "
+        , paste(sQuote(constraint[bad], q = "'"), collapse = ", "))
       )
     }
 
