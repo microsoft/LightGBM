@@ -677,6 +677,16 @@ namespace LightGBM {
     }
   }
 
+  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers) {
+    // TODO(shiyu1994)
+    return nullptr;
+  }
+
+  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers) {
+    // TODO(shiyu1994)
+    return nullptr;
+  }
+
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
     double sparse_rate, const std::vector<uint32_t>& offsets) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {

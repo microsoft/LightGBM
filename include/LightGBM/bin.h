@@ -468,7 +468,7 @@ class Bin {
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
 
   /*!
-  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original dense bin
+  * \brief Create object for bin data of the first feature in pair, used for pairwise ranking, for an original dense bin
   * \param num_data Size of the pairwise dataset
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
@@ -477,7 +477,7 @@ class Bin {
   static Bin* CreateDensePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
-  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original sparse bin
+  * \brief Create object for bin data of the first feature in pair, used for pairwise ranking, for an original sparse bin
   * \param num_data Size of the pairwise dataset
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
@@ -486,7 +486,7 @@ class Bin {
   static Bin* CreateSparsePairwiseRankingFirstBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
-  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original dense bin
+  * \brief Create object for bin data of the second feature in pair, used for pairwise ranking, for an original dense bin
   * \param num_data Size of the pairwise dataset
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
@@ -495,13 +495,33 @@ class Bin {
   static Bin* CreateDensePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
 
   /*!
-  * \brief Create object for bin data of one feature, used for pairwise ranking, for an original sparse bin
+  * \brief Create object for bin data of the second feature in pair, used for pairwise ranking, for an original sparse bin
   * \param num_data Size of the pairwise dataset
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \return The bin data object
   */
   static Bin* CreateSparsePairwiseRankingSecondBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map);
+
+  /*!
+  * \brief Create object for bin data of the differential feature in pair, used for pairwise ranking, for an original dense bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \return The bin data object
+  */
+  static Bin* CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers);
+
+  /*!
+  * \brief Create object for bin data of the differential feature in pair, used for pairwise ranking, for an original sparse bin
+  * \param num_data Size of the pairwise dataset
+  * \param num_bin Number of bin
+  * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
+  * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \return The bin data object
+  */
+  static Bin* CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers);
 
   /*!
   * \brief Deep copy the bin

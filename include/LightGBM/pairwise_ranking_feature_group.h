@@ -15,8 +15,7 @@
 
 namespace LightGBM {
 
-/*! \brief Using to store data and providing some operations on one feature
-group*/
+/*! \brief Using to store data and providing some operations on one pairwise feature group for pairwise ranking */
 class PairwiseRankingFeatureGroup: public FeatureGroup {
  public:
   /*!
@@ -103,7 +102,7 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
     }
   }
 
- private:
+ protected:
   void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;
 
   /*! \brief Pairwise data index to original data indices for ranking with pairwise features  */
@@ -113,6 +112,31 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   /*! \brief Mark whether features in this group belong to the first or second element in the pairing */
   const int is_first_or_second_in_pairing_;
 };
+
+
+/*! \brief One differential feature group in pairwise ranking */
+class PairwiseRankingDifferentialFeatureGroup: public PairwiseRankingFeatureGroup {
+ public:
+  /*!
+  * \brief Constructor
+  * \param num_feature number of features of this group
+  * \param bin_mappers Bin mapper for features
+  * \param num_data Total number of data
+  * \param is_enable_sparse True if enable sparse feature
+  * \param is_first_or_second_in_pairing Mark whether features in this group belong to the first or second element in the pairing
+  */
+
+  PairwiseRankingDifferentialFeatureGroup(const FeatureGroup& other, int num_original_data, const int is_first_or_second_in_pairing, int num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, std::vector<std::unique_ptr<const BinMapper>>& diff_feature_bin_mappers);
+
+  /*! \brief Destructor */
+  ~PairwiseRankingDifferentialFeatureGroup() {}
+
+ private:
+  void CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) override;
+
+  std::vector<std::unique_ptr<const BinMapper>> diff_feature_bin_mappers_;
+};
+
 
 }  // namespace LightGBM
 

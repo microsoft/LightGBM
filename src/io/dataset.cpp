@@ -872,22 +872,34 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   group_feature_start_.resize(num_groups_);
   group_feature_cnt_.resize(num_groups_);
 
+
+  // create differential features
   std::vector<std::unique_ptr<BinMapper>> diff_feature_bin_mappers;
-  if (config.objective == std::string("pairwise_lambdarank")) {
-    std::vector<const BinMapper*> original_bin_mappers;
-    for (int i = 0; i < dataset->num_total_features_; ++i) {
-      const int inner_feature_index = dataset->InnerFeatureIndex(i);
-      if (inner_feature_index >= 0) {
-        original_bin_mappers.push_back(dataset->FeatureBinMapper(inner_feature_index));
-      } else {
-        original_bin_mappers.push_back(nullptr);
-      }
+  std::vector<const BinMapper*> original_bin_mappers;
+  for (int i = 0; i < dataset->num_total_features_; ++i) {
+    const int inner_feature_index = dataset->InnerFeatureIndex(i);
+    if (inner_feature_index >= 0) {
+      original_bin_mappers.push_back(dataset->FeatureBinMapper(inner_feature_index));
+    } else {
+      original_bin_mappers.push_back(nullptr);
     }
-
-    //CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, config);
-
-    num_features_ += dataset->num_features_;
   }
+
+  CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, config);
+
+  std::vector<int> used_diff_features;
+  for (int diff_feature_index = 0; diff_feature_index < static_cast<int>(diff_feature_bin_mappers.size()); ++diff_feature_index) {
+    if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
+      num_numeric_features_ += 1;
+      num_features_ += 1;
+      used_diff_features.push_back(diff_feature_index);
+    }
+  }
+
+  const bool is_use_gpu = config.device_type == std::string("cuda") || config.device_type == std::string("gpu");
+  std::vector<int8_t> group_is_multi_val;
+  std::vector<std::vector<int>> diff_feature_groups = FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(&sampled_indices_).data(), Common::VectorSize<int>(sampled_indices_).data(), static_cast<int>(sampled_indices_.size()), num_total_sampled_data_, num_data_, is_use_gpu, false, &group_is_multi_val);
+
 
   int cur_feature_index = 0;
   for (int i = 0; i < num_groups_; ++i) {
@@ -909,6 +921,27 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     group_bin_boundaries_.push_back(num_total_bin);
     group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];
   }
+
+  for (size_t i = 0; i < diff_feature_groups.size(); ++i) {
+    const std::vector<int>& features_in_group = diff_feature_groups[i];
+    group_feature_start_.push_back(cur_feature_index);
+    int sub_feature_index = 0;
+    for (size_t j = 0; j < features_in_group.size(); ++j) {
+      const int diff_feature_index = features_in_group[j];
+      if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
+        if (diff_feature_bin_mappers[diff_feature_index]->GetDefaultBin() != diff_feature_bin_mappers[diff_feature_index]->GetMostFreqBin()) {
+          feature_need_push_zeros_.push_back(cur_feature_index);
+        }
+        feature2group_.push_back(i + num_groups_);
+        feature2subfeature_.push_back(sub_feature_index);
+        ++cur_feature_index;
+        ++sub_feature_index;
+      }
+    }
+
+    group_feature_cnt_.push_back(cur_feature_index - group_feature_start_.back());
+  }
+
 
   feature_groups_.shrink_to_fit();
 
@@ -946,6 +979,12 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   forced_bin_bounds_.insert(forced_bin_bounds_.begin() + dataset->forced_bin_bounds_.size(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
 
   num_total_features_ = dataset->num_total_features_ * 2;
+  for (const auto& bin_mapper_ref : diff_feature_bin_mappers) {
+    if (!bin_mapper_ref->is_trivial()) {
+      num_total_features_ += 1;
+    }
+  }
+
   label_idx_ = dataset->label_idx_;
   device_type_ = dataset->device_type_;
   gpu_device_id_ = dataset->gpu_device_id_;
