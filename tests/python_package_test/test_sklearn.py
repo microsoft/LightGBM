@@ -1277,6 +1277,8 @@ def test_check_is_fitted():
 
 
 def test_getting_feature_names_in_np_input():
+    # input is a numpy array, which doesn't have feature names. LightGBM adds
+    # feature names to the fitted model, which is inconsistent with sklearn's behavior
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
     with pytest.raises(lgb.compat.LGBMNotFittedError):
@@ -1285,6 +1287,16 @@ def test_getting_feature_names_in_np_input():
     assert est.feature_names_in_ == [
         f"Column_{i}" for i in range(X.shape[1])
     ]
+
+
+def test_getting_feature_names_in_pd_input():
+    # as_frame=True means input has column names and these should propagate to fitted model
+    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
+    est = lgb.LGBMModel(n_estimators=5, objective="binary")
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        est.feature_names_in_
+    est.fit(X, y)
+    assert est.feature_names_in_ == list(X.columns)
 
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
