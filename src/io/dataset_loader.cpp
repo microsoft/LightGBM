@@ -350,6 +350,11 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   // not need to check validation data
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
+
+  dataset->sampled_values_ = train_data->sampled_values_;
+  dataset->sampled_indices_ = train_data->sampled_indices_;
+  dataset->num_total_sampled_data_ = train_data->num_total_sampled_data_;
+
   return dataset.release();
 }
 
@@ -1249,7 +1254,8 @@ void DatasetLoader::ConstructBinMappersFromTextData(int rank, int num_machines,
   CheckCategoricalFeatureNumBin(bin_mappers, config_.max_bin, config_.max_bin_by_feature);
   dataset->Construct(&bin_mappers, dataset->num_total_features_, forced_bin_bounds, Common::Vector2Ptr<int>(&sample_indices).data(),
                      Common::Vector2Ptr<double>(&sample_values).data(),
-                     Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()), sample_data.size(), config_);
+                     Common::VectorSize<int>(sample_indices).data(), static_cast<int>(sample_indices.size()),
+                     sample_data.size(), config_);
   if (dataset->has_raw()) {
     dataset->ResizeRaw(static_cast<int>(sample_data.size()));
   }
