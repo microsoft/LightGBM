@@ -453,7 +453,7 @@ class DensePairwiseRankingBin: public PairwiseRankingBin<DenseBin<VAL_T, IS_4BIT
                             data_size_t* lte_indices,
                             data_size_t* gt_indices) const override;
 
- private:
+ protected:
   template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
   void ConstructHistogramInner(const data_size_t* data_indices,
                                data_size_t start, data_size_t end,
@@ -475,6 +475,11 @@ class DensePairwiseRankingBin: public PairwiseRankingBin<DenseBin<VAL_T, IS_4BIT
                          const data_size_t* data_indices, data_size_t cnt,
                          data_size_t* lte_indices,
                          data_size_t* gt_indices) const;
+
+  virtual inline uint32_t GetBinAt(const data_size_t paired_data_index) const {
+    const data_size_t idx = this->get_unpaired_index(paired_data_index);
+    return this->unpaired_bin_->data(idx);
+  }
 };
 
 template <typename VAL_T, template<typename> class ITERATOR_TYPE>
@@ -527,7 +532,7 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
     for (int i = 0; i < static_cast<int>(bin_offsets_->size()); ++i) {
       if (bin_offsets_->at(i) == min_bin) {
         CHECK_GT(i, 0);
-        sub_feature_index = i - 1;
+        sub_feature_index = i;
         break;
       }
     }
@@ -539,6 +544,8 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
   data_size_t get_unpaired_index(const data_size_t /*paired_index*/) const {
     Log::Fatal("get_unpaired_index of DensePairwiseRankingDiffBin should not be called.");
   }
+
+  inline uint32_t GetBinAt(const data_size_t paired_data_index) const override;
 
   const std::vector<uint32_t>* bin_offsets_;
   const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
@@ -589,7 +596,7 @@ class SparsePairwiseRankingDiffBin: public SparsePairwiseRankingBin<VAL_T, Pairw
     for (int i = 0; i < static_cast<int>(bin_offsets_->size()); ++i) {
       if (bin_offsets_->at(i) == min_bin) {
         CHECK_GT(i, 0);
-        sub_feature_index = i - 1;
+        sub_feature_index = i;
         break;
       }
     }

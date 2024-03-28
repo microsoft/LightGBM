@@ -888,12 +888,28 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
 
   CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, &diff_original_feature_index, config);
 
+  used_feature_map_.clear();
+  used_feature_map_.reserve(2 * dataset->used_feature_map_.size());
+  used_feature_map_.insert(used_feature_map_.begin(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
+
+  for (int i = 0; i < dataset->num_total_features_; ++i) {
+    if (dataset->used_feature_map_[i] != -1) {
+      used_feature_map_.push_back(dataset->used_feature_map_[i] + dataset->num_features_);
+    } else {
+      used_feature_map_.push_back(-1);
+    }
+  }
+
   std::vector<int> used_diff_features;
   for (int diff_feature_index = 0; diff_feature_index < static_cast<int>(diff_feature_bin_mappers.size()); ++diff_feature_index) {
     if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
+      used_feature_map_.push_back(num_features_);
+      numeric_feature_map_.push_back(num_features_);
       num_numeric_features_ += 1;
       num_features_ += 1;
       used_diff_features.push_back(diff_feature_index);
+    } else {
+      used_feature_map_.push_back(-1);
     }
   }
 
@@ -949,22 +965,13 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     feature_groups_.emplace_back(new PairwiseRankingDifferentialFeatureGroup(feature_group, dataset->num_data(), 2, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, ori_bin_mappers));
 
     group_feature_cnt_.push_back(cur_feature_index - group_feature_start_.back());
+    num_total_bin += feature_groups_.back()->num_total_bin_;
+    group_bin_boundaries_.push_back(num_total_bin);
   }
 
+  num_groups_ += static_cast<int>(diff_feature_groups.size());
 
   feature_groups_.shrink_to_fit();
-
-  used_feature_map_.clear();
-  used_feature_map_.reserve(2 * dataset->used_feature_map_.size());
-  used_feature_map_.insert(used_feature_map_.begin(), dataset->used_feature_map_.begin(), dataset->used_feature_map_.end());
-
-  for (int i = 0; i < dataset->num_total_features_; ++i) {
-    if (dataset->used_feature_map_[i] != -1) {
-      used_feature_map_.push_back(dataset->used_feature_map_[i] + dataset->num_features_);
-    } else {
-      used_feature_map_.push_back(-1);
-    }
-  }
 
   feature_names_.clear();
   for (const std::string& feature_name : dataset->feature_names_) {
@@ -972,6 +979,9 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   }
   for (const std::string& feature_name : dataset->feature_names_) {
     feature_names_.push_back(feature_name + std::string("_j"));
+  }
+  for (const int real_feature_index : diff_original_feature_index) {
+    feature_names_.push_back(dataset->feature_names_[real_feature_index] + std::string("_k"));
   }
 
   real_feature_idx_.clear();
@@ -981,18 +991,19 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   for (const int idx : dataset->real_feature_idx_) {
     real_feature_idx_.push_back(idx + dataset->num_total_features_);
   }
-
-  forced_bin_bounds_.clear();
-  forced_bin_bounds_.reserve(dataset->forced_bin_bounds_.size() * 2);
-  forced_bin_bounds_.insert(forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
-  forced_bin_bounds_.insert(forced_bin_bounds_.begin() + dataset->forced_bin_bounds_.size(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
-
-  num_total_features_ = dataset->num_total_features_ * 2;
-  for (const auto& bin_mapper_ref : diff_feature_bin_mappers) {
-    if (!bin_mapper_ref->is_trivial()) {
-      num_total_features_ += 1;
+  for (const auto& features_in_diff_group : diff_feature_groups) {
+    for (const int idx : features_in_diff_group) {
+      real_feature_idx_.push_back(idx + 2 * dataset->num_total_features_);
     }
   }
+
+  num_total_features_ = dataset->num_total_features_ * 2 + static_cast<int>(diff_feature_bin_mappers.size());
+
+  forced_bin_bounds_.clear();
+  forced_bin_bounds_.reserve(2 * dataset->num_total_features_);
+  forced_bin_bounds_.insert(forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
+  forced_bin_bounds_.insert(forced_bin_bounds_.begin() + dataset->forced_bin_bounds_.size(), dataset->forced_bin_bounds_.begin(), dataset->forced_bin_bounds_.end());
+  forced_bin_bounds_.resize(num_total_features_);
 
   label_idx_ = dataset->label_idx_;
   device_type_ = dataset->device_type_;

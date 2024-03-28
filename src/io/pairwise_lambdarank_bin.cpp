@@ -6,7 +6,30 @@
 
 #include "pairwise_lambdarank_bin.hpp"
 
+#include <algorithm>
+
 namespace LightGBM {
+
+template <typename VAL_T, bool IS_4BIT>
+uint32_t DensePairwiseRankingDiffBin<VAL_T, IS_4BIT>::GetBinAt(const data_size_t paired_data_index) const {
+  const data_size_t first_data_index = this->paired_ranking_item_index_map_[paired_data_index].first;
+  const data_size_t second_data_index = this->paired_ranking_item_index_map_[paired_data_index].second;
+  const uint32_t first_bin = static_cast<uint32_t>(this->unpaired_bin_->data(first_data_index));
+  const uint32_t second_bin = static_cast<uint32_t>(this->unpaired_bin_->data(second_data_index));
+  int first_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), first_bin) - bin_offsets_->begin()) - 1;
+  int second_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), second_bin) - bin_offsets_->begin()) - 1;
+  // TODO(shiyu1994): better original value, handle nan as missing
+  const double first_value = first_feature_index >= 0 ? ori_bin_mappers_->at(first_feature_index)->BinToValue(first_bin) : 0.0;
+  const double second_value = second_feature_index >= 0 ? ori_bin_mappers_->at(second_feature_index)->BinToValue(second_bin) : 0.0;
+  const double diff_value = first_value - second_value;
+  const uint32_t diff_bin = diff_bin_mappers_->at(first_feature_index)->ValueToBin(diff_value);
+  return diff_bin;
+}
+
+template uint32_t DensePairwiseRankingDiffBin<uint8_t, true>::GetBinAt(const data_size_t paired_data_index) const;
+template uint32_t DensePairwiseRankingDiffBin<uint8_t, false>::GetBinAt(const data_size_t paired_data_index) const;
+template uint32_t DensePairwiseRankingDiffBin<uint16_t, false>::GetBinAt(const data_size_t paired_data_index) const;
+template uint32_t DensePairwiseRankingDiffBin<uint32_t, false>::GetBinAt(const data_size_t paired_data_index) const;
 
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads) {
@@ -60,22 +83,12 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   hist_t* grad = out;
   hist_t* hess = out + 1;
   hist_cnt_t* cnt = reinterpret_cast<hist_cnt_t*>(hess);
-  const VAL_T* base_data_ptr = reinterpret_cast<const VAL_T*>(this->unpaired_bin_->get_data());
   if (USE_PREFETCH) {
     const data_size_t pf_offset = 64 / sizeof(VAL_T);
     const data_size_t pf_end = end - pf_offset;
     for (; i < pf_end; ++i) {
       const auto paired_idx = USE_INDICES ? data_indices[i] : i;
-      const auto idx = this->get_unpaired_index(paired_idx);
-      const auto paired_pf_idx =
-          USE_INDICES ? data_indices[i + pf_offset] : i + pf_offset;
-      const auto pf_idx = this->get_unpaired_index(paired_pf_idx);
-      if (IS_4BIT) {
-        PREFETCH_T0(base_data_ptr + (pf_idx >> 1));
-      } else {
-        PREFETCH_T0(base_data_ptr + pf_idx);
-      }
-      const auto ti = static_cast<uint32_t>(this->unpaired_bin_->data(idx)) << 1;
+      const auto ti = GetBinAt(paired_idx) << 1;
       if (USE_HESSIAN) {
         grad[ti] += ordered_gradients[i];
         hess[ti] += ordered_hessians[i];
@@ -87,8 +100,7 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   }
   for (; i < end; ++i) {
     const auto paired_idx = USE_INDICES ? data_indices[i] : i;
-    const auto idx = this->get_unpaired_index(paired_idx);
-    const auto ti = static_cast<uint32_t>(this->unpaired_bin_->data(idx)) << 1;
+    const auto ti = GetBinAt(paired_idx) << 1;
     if (USE_HESSIAN) {
       grad[ti] += ordered_gradients[i];
       hess[ti] += ordered_hessians[i];
@@ -109,22 +121,12 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   data_size_t i = start;
   PACKED_HIST_T* out_ptr = reinterpret_cast<PACKED_HIST_T*>(out);
   const int16_t* gradients_ptr = reinterpret_cast<const int16_t*>(ordered_gradients);
-  const VAL_T* data_ptr_base = reinterpret_cast<const VAL_T*>(this->unpaired_bin_->get_data());
   if (USE_PREFETCH) {
     const data_size_t pf_offset = 64 / sizeof(VAL_T);
     const data_size_t pf_end = end - pf_offset;
     for (; i < pf_end; ++i) {
       const auto paired_idx = USE_INDICES ? data_indices[i] : i;
-      const auto paired_pf_idx =
-          USE_INDICES ? data_indices[i + pf_offset] : i + pf_offset;
-      const auto idx = this->get_unpaired_index(paired_idx);
-      const auto pf_idx = this->get_unpaired_index(paired_pf_idx);
-      if (IS_4BIT) {
-        PREFETCH_T0(data_ptr_base + (pf_idx >> 1));
-      } else {
-        PREFETCH_T0(data_ptr_base + pf_idx);
-      }
-      const auto ti = static_cast<uint32_t>(this->unpaired_bin_->data(idx));
+      const auto ti = GetBinAt(paired_idx) << 1;
       const int16_t gradient_16 = gradients_ptr[i];
       if (USE_HESSIAN) {
         const PACKED_HIST_T gradient_packed = HIST_BITS == 8 ? gradient_16 :
@@ -139,8 +141,7 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   }
   for (; i < end; ++i) {
     const auto paired_idx = USE_INDICES ? data_indices[i] : i;
-    const auto idx = this->get_unpaired_index(paired_idx);
-    const auto ti = static_cast<uint32_t>(this->unpaired_bin_->data(idx));
+    const auto ti = GetBinAt(paired_idx) << 1;
     const int16_t gradient_16 = gradients_ptr[i];
     if (USE_HESSIAN) {
       const PACKED_HIST_T gradient_packed = HIST_BITS == 8 ? gradient_16 :
@@ -341,8 +342,7 @@ data_size_t DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::SplitInner(u
   if (min_bin < max_bin) {
     for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t paired_idx = data_indices[i];
-      const data_size_t idx = this->get_unpaired_index(paired_idx);
-      const auto bin = this->unpaired_bin_->data(idx);
+      const auto bin = GetBinAt(paired_idx);
       if ((MISS_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
           (MISS_IS_NA && !MFB_IS_NA && bin == maxb)) {
         missing_default_indices[(*missing_default_count)++] = paired_idx;
@@ -368,8 +368,7 @@ data_size_t DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::SplitInner(u
     }
     for (data_size_t i = 0; i < cnt; ++i) {
       const data_size_t paired_idx = data_indices[i];
-      const data_size_t idx = this->get_unpaired_index(paired_idx);
-      const auto bin = this->unpaired_bin_->data(idx);
+      const auto bin = GetBinAt(paired_idx);
       if (MISS_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) {
         missing_default_indices[(*missing_default_count)++] = paired_idx;
       } else if (bin != maxb) {

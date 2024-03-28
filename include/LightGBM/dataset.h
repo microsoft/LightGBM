@@ -1062,6 +1062,14 @@ class Dataset {
 
   void CreateCUDAColumnData();
 
+  /*! \brief Create differential features for pairwise lambdarank
+   * \param sample_values sampled values from the file
+   * \param sample_indices sampled data indices from the file
+   * \param bin_mappers bin mappers of the original features
+   * \param filter_cnt filter count for bin finding
+   * \param num_total_sample_data number of all sampled data
+   * \param differential_feature_bin_mappers output differential feature bin mapppers
+   */
   void CreatePairwiseRankingDifferentialFeatures(
     const std::vector<std::vector<double>>& sample_values,
     const std::vector<std::vector<int>>& sample_indices,
