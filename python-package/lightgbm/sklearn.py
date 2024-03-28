@@ -1119,17 +1119,17 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
-    
+
     @property
     def feature_names_in_(self) -> List[str]:
         """:obj:`list` of shape = [n_features]: The names of features.
-        
+
         .. note::
 
             If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
         """
-        if not self.__sklearn_is_fitted__(): 
-            raise LGBMNotFittedError('No feature_names_in_ found. Need to call fit beforehand.') 
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
         return self.feature_name_
 
 

@@ -1284,9 +1284,7 @@ def test_getting_feature_names_in_np_input():
     with pytest.raises(lgb.compat.LGBMNotFittedError):
         est.feature_names_in_
     est.fit(X, y)
-    assert est.feature_names_in_ == [
-        f"Column_{i}" for i in range(X.shape[1])
-    ]
+    assert est.feature_names_in_ == [f"Column_{i}" for i in range(X.shape[1])]
 
 
 def test_getting_feature_names_in_pd_input():
