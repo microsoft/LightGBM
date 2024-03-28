@@ -1136,9 +1136,9 @@ class Dataset {
   std::string parser_config_str_;
 
   /*! \brief stored sampled features, for creating differential features in pairwise lambdarank */
-  std::vector<std::vector<double>> sampled_values_;
+  std::shared_ptr<std::vector<std::vector<double>>> sampled_values_;
   /*! \brief stored sampled data indices, for creating differential features in pairwise lambdarank */
-  std::vector<std::vector<data_size_t>> sampled_indices_;
+  std::shared_ptr<std::vector<std::vector<data_size_t>>> sampled_indices_;
   /*! \brief stored number of totally sampled data, for creating differential features in pairwise lambdarank */
   data_size_t num_total_sampled_data_;
 };

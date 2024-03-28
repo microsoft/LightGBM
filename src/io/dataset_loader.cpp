@@ -351,6 +351,10 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   // check meta data
   dataset->metadata_.CheckOrPartition(num_global_data, used_data_indices);
 
+  dataset->sampled_values_ = train_data->sampled_values_;
+  dataset->sampled_indices_ = train_data->sampled_indices_;
+  dataset->num_total_sampled_data_ = train_data->num_total_sampled_data_;
+
   return dataset.release();
 }
 
