@@ -1276,6 +1276,17 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
+def test_getting_feature_names_in_np_input():
+    X, y = load_digits(n_class=2, return_X_y=True)
+    est = lgb.LGBMModel(n_estimators=5, objective="binary")
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        est.feature_names_in_
+    est.fit(X, y)
+    assert est.feature_names_in_ == [
+        f"Column_{i}" for i in range(X.shape[1])
+    ]
+
+
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
