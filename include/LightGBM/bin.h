@@ -509,9 +509,10 @@ class Bin {
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \param bin_offsets Bin offsets in feature group
   * \return The bin data object
   */
-  static Bin* CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers);
+  static Bin* CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets);
 
   /*!
   * \brief Create object for bin data of the differential feature in pair, used for pairwise ranking, for an original sparse bin
@@ -519,9 +520,10 @@ class Bin {
   * \param num_bin Number of bin
   * \param paired_ranking_item_index_map Map from data index to the original index for items in the pair
   * \param diff_bin_mappers Bin mappers for differential features in this group
+  * \param bin_offsets Bin offsets in feature group
   * \return The bin data object
   */
-  static Bin* CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers);
+  static Bin* CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets);
 
   /*!
   * \brief Deep copy the bin

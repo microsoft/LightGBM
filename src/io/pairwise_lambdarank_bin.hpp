@@ -23,6 +23,9 @@ template <typename BIN_TYPE>
 class PairwiseRankingSecondBin;
 
 template <typename BIN_TYPE>
+class PairwiseRankingDiffBin;
+
+template <typename BIN_TYPE>
 class PairwiseRankingFirstIterator: public BinIterator {
  public:
   friend PairwiseRankingFirstBin<BIN_TYPE>;
@@ -59,7 +62,8 @@ class PairwiseRankingFirstIterator: public BinIterator {
   }
 
   void Reset(data_size_t idx) {
-    unpaired_bin_iterator_->Reset(idx);
+    const data_size_t first_idx = paired_ranking_item_index_map_[idx].first;
+    unpaired_bin_iterator_->Reset(first_idx);
     prev_index_ = -1;
     prev_val_ = 0;
   }
@@ -106,7 +110,8 @@ class PairwiseRankingSecondIterator: public BinIterator {
   }
 
   void Reset(data_size_t idx) {
-    unpaired_bin_iterator_->Reset(idx);
+    const data_size_t second_idx = paired_ranking_item_index_map_[idx].second;
+    unpaired_bin_iterator_->Reset(second_idx);
     prev_index_ = 0;
   }
 
@@ -117,6 +122,74 @@ class PairwiseRankingSecondIterator: public BinIterator {
   data_size_t prev_index_;
 };
 
+
+template <typename BIN_TYPE>
+class PairwiseRankingDiffIterator: public BinIterator {
+ public:
+  friend PairwiseRankingDiffBin<BIN_TYPE>;
+
+  PairwiseRankingDiffIterator(const BIN_TYPE* unpaired_bin, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const uint32_t min_bin, const uint32_t max_bin, const uint32_t most_freq_bin, const BinMapper* original_feature_bin_mapper, const BinMapper* diff_feature_bin_mapper): min_bin_(min_bin), max_bin_(max_bin), offset_(diff_feature_bin_mapper->GetMostFreqBin() == 0) {
+    unpaired_bin_ = unpaired_bin;
+    first_unpaired_bin_iterator_.reset(unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin));
+    first_unpaired_bin_iterator_->Reset(0);
+    second_unpaired_bin_iterator_.reset(unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin));
+    second_unpaired_bin_iterator_->Reset(0);
+    paired_ranking_item_index_map_ = paired_ranking_item_index_map;
+    first_prev_index_ = 0;
+    second_prev_index_ = 0;
+    original_feature_bin_mapper_ = original_feature_bin_mapper;
+    diff_feature_bin_mapper_ = diff_feature_bin_mapper;
+  }
+
+  ~PairwiseRankingDiffIterator() {}
+
+  uint32_t Get(data_size_t idx) {
+    const data_size_t first_data_index = paired_ranking_item_index_map_[idx].first;
+    const data_size_t second_data_index = paired_ranking_item_index_map_[idx].second;
+    if (second_data_index < second_prev_index_) {
+      second_unpaired_bin_iterator_->Reset(0);
+    }
+    first_prev_index_ = first_data_index;
+    second_prev_index_ = second_data_index;
+    const uint32_t first_bin = first_unpaired_bin_iterator_->Get(first_data_index);
+    const uint32_t second_bin = second_unpaired_bin_iterator_->Get(second_data_index);
+    // TODO(shiyu1994): better original value
+    const double first_value = original_feature_bin_mapper_->BinToValue(first_bin);
+    const double second_value = original_feature_bin_mapper_->BinToValue(second_bin);
+    const double diff_value = first_value - second_value;
+    const uint32_t diff_bin = diff_feature_bin_mapper_->ValueToBin(diff_value);
+    return diff_bin;
+  }
+
+  uint32_t RawGet(data_size_t idx) {
+    const uint32_t bin = Get(idx);
+    return bin + min_bin_ - offset_;
+  }
+
+  void Reset(data_size_t idx) {
+    const data_size_t first_idx = paired_ranking_item_index_map_[idx].first;
+    const data_size_t second_idx = paired_ranking_item_index_map_[idx].second;
+    first_unpaired_bin_iterator_->Reset(first_idx);
+    second_unpaired_bin_iterator_->Reset(second_idx);
+    first_prev_index_ = -1;
+    second_prev_index_ = 0;
+  }
+
+ private:
+  const BIN_TYPE* unpaired_bin_;
+  std::unique_ptr<BinIterator> first_unpaired_bin_iterator_;
+  std::unique_ptr<BinIterator> second_unpaired_bin_iterator_;
+  const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map_;
+  const BinMapper* original_feature_bin_mapper_;
+  const BinMapper* diff_feature_bin_mapper_;
+  data_size_t first_prev_index_;
+  data_size_t second_prev_index_;
+  const uint32_t min_bin_;
+  const uint32_t max_bin_;
+  const uint32_t offset_;
+};
+
+
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 class PairwiseRankingBin: public BIN_TYPE {
  public:
@@ -125,10 +198,6 @@ class PairwiseRankingBin: public BIN_TYPE {
   }
 
   virtual ~PairwiseRankingBin() {}
-
-  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
-    return new ITERATOR_TYPE<BIN_TYPE>(unpaired_bin_.get(), paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
-  }
 
   void InitStreaming(uint32_t num_thread, int32_t omp_max_threads) override;
 
@@ -191,6 +260,98 @@ class PairwiseRankingBin: public BIN_TYPE {
       data_size_t* /*lte_indices*/, data_size_t* /*gt_indices*/) const override {
     Log::Fatal("Not implemented.");
     return 0;
+  }
+
+  void ConstructHistogram(
+    const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogram(data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt8(
+    const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt8(data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt16(
+    const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt16(data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt32(
+    const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt32(data_size_t /*start*/, data_size_t /*end*/,
+    const score_t* /*ordered_gradients*/, const score_t* /*ordered_hessians*/,
+    hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogram(const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+                                  const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogram(data_size_t /*start*/, data_size_t /*end*/,
+                                  const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt8(const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt8(data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt16(const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt16(data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt32(const data_size_t* /*data_indices*/, data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
+  }
+
+  void ConstructHistogramInt32(data_size_t /*start*/, data_size_t /*end*/,
+                                       const score_t* /*ordered_gradients*/, hist_t* /*out*/) const override {
+    Log::Fatal("Not implemented.");
   }
 
   const void* GetColWiseData(uint8_t* /*bit_type*/, bool* /*is_sparse*/, std::vector<BinIterator*>* /*bin_iterator*/, const int /*num_threads*/) const override {
@@ -326,6 +487,11 @@ template <typename VAL_T, bool IS_4BIT>
 class DensePairwiseRankingFirstBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingFirstIterator> {
  public:
   DensePairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    return new PairwiseRankingFirstIterator<DenseBin<VAL_T, IS_4BIT>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
+  }
+
  private:
   data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].first;
@@ -336,16 +502,58 @@ template <typename VAL_T, bool IS_4BIT>
 class DensePairwiseRankingSecondBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingSecondIterator> {
  public:
   DensePairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    return new PairwiseRankingSecondIterator<DenseBin<VAL_T, IS_4BIT>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
+  }
+
  private:
   data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].second;
   }
 };
 
+template <typename VAL_T, bool IS_4BIT>
+class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingDiffIterator> {
+ public:
+  DensePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
+    diff_bin_mappers_ = diff_bin_mappers;
+    ori_bin_mappers_ = ori_bin_mappers;
+    bin_offsets_ = bin_offsets;
+  }
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    int sub_feature_index = -1;
+    for (int i = 0; i < static_cast<int>(bin_offsets_->size()); ++i) {
+      if (bin_offsets_->at(i) == min_bin) {
+        CHECK_GT(i, 0);
+        sub_feature_index = i - 1;
+        break;
+      }
+    }
+    CHECK_GE(sub_feature_index, 0);
+    return new PairwiseRankingDiffIterator<DenseBin<VAL_T, IS_4BIT>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin, ori_bin_mappers_->at(sub_feature_index).get(), diff_bin_mappers_->at(sub_feature_index).get());
+  }
+
+ private:
+  data_size_t get_unpaired_index(const data_size_t /*paired_index*/) const {
+    Log::Fatal("get_unpaired_index of DensePairwiseRankingDiffBin should not be called.");
+  }
+
+  const std::vector<uint32_t>* bin_offsets_;
+  const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
+  const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
+};
+
 template <typename VAL_T>
 class SparsePairwiseRankingFirstBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingFirstIterator> {
  public:
   SparsePairwiseRankingFirstBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin): SparsePairwiseRankingBin<VAL_T, PairwiseRankingFirstIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    return new PairwiseRankingFirstIterator<SparseBin<VAL_T>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
+  }
+
  private:
   data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].first;
@@ -356,10 +564,47 @@ template <typename VAL_T>
 class SparsePairwiseRankingSecondBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingSecondIterator> {
  public:
   SparsePairwiseRankingSecondBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin): SparsePairwiseRankingBin<VAL_T, PairwiseRankingSecondIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {}
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    return new PairwiseRankingSecondIterator<SparseBin<VAL_T>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin);
+  }
+
  private:
   data_size_t get_unpaired_index(const data_size_t paired_index) const {
     return this->paired_ranking_item_index_map_[paired_index].second;
   }
+};
+
+template <typename VAL_T>
+class SparsePairwiseRankingDiffBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingDiffIterator> {
+ public:
+  SparsePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets): SparsePairwiseRankingBin<VAL_T, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
+    bin_offsets_ = bin_offsets;
+    diff_bin_mappers_ = diff_bin_mappers;
+    ori_bin_mappers_ = ori_bin_mappers;
+  }
+
+  BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    int sub_feature_index = -1;
+    for (int i = 0; i < static_cast<int>(bin_offsets_->size()); ++i) {
+      if (bin_offsets_->at(i) == min_bin) {
+        CHECK_GT(i, 0);
+        sub_feature_index = i - 1;
+        break;
+      }
+    }
+    CHECK_GE(sub_feature_index, 0);
+    return new PairwiseRankingDiffIterator<SparseBin<VAL_T>>(this->unpaired_bin_.get(), this->paired_ranking_item_index_map_, min_bin, max_bin, most_freq_bin, ori_bin_mappers_->at(sub_feature_index).get(), diff_bin_mappers_->at(sub_feature_index).get());
+  }
+
+ private:
+  data_size_t get_unpaired_index(const data_size_t /*paired_index*/) const {
+    Log::Fatal("get_unpaired_index of SparsePairwiseRankingDiffBin should not be called.");
+  }
+
+  const std::vector<uint32_t>* bin_offsets_;
+  const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
+  const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
 };
 
 

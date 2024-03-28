@@ -13,160 +13,40 @@ void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::InitStreaming(uint32_t num_thr
   unpaired_bin_->InitStreaming(num_thread, omp_max_threads);
 }
 
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads);
-
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::Push(int tid, data_size_t idx, uint32_t value) {
   unpaired_bin_->Push(tid, idx, value);
 }
-
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::Push(int tid, data_size_t idx, uint32_t value);
 
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) {
   unpaired_bin_->CopySubrow(full_bin, used_indices, num_used_indices);
 }
 
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices);
-
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::SaveBinaryToFile(BinaryWriter* writer) const {
   unpaired_bin_->SaveBinaryToFile(writer);
 }
-
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::SaveBinaryToFile(BinaryWriter* writer) const;
 
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices) {
   unpaired_bin_->LoadFromMemory(memory, local_used_indices);
 }
 
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices);
-
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 size_t PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::SizesInByte() const {
   return unpaired_bin_->SizesInByte();
 }
-
-template size_t PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::SizesInByte() const;
-template size_t PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::SizesInByte() const;
 
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 data_size_t PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::num_data() const {
   return unpaired_bin_->num_data();
 }
 
-template data_size_t PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::num_data() const;
-template data_size_t PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::num_data() const;
-
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::ReSize(data_size_t num_data) {
   return unpaired_bin_->ReSize(num_data);
 }
-
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingFirstIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint8_t, true>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint8_t, false>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint16_t, false>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<DenseBin<uint32_t, false>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint8_t>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint16_t>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
-template void PairwiseRankingBin<SparseBin<uint32_t>, PairwiseRankingSecondIterator>::ReSize(data_size_t num_data);
 
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 template <bool USE_INDICES, bool USE_PREFETCH, bool USE_HESSIAN>
@@ -283,46 +163,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
         data_indices, start, end, ordered_gradients, ordered_hessians, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start, data_size_t end,
-  const score_t* ordered_gradients, const score_t* ordered_hessians,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
   data_size_t start, data_size_t end,
@@ -333,54 +173,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
       nullptr, start, end, ordered_gradients, ordered_hessians, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* ordered_hessians,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
   const data_size_t* data_indices, data_size_t start,
@@ -390,46 +182,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
                                               ordered_gradients, nullptr, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
   data_size_t start, data_size_t end,
@@ -438,46 +190,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogram(
   ConstructHistogramInner<false, false, false>(
       nullptr, start, end, ordered_gradients, nullptr, out);
 }
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogram(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
 
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt8(
@@ -489,54 +201,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt8(
   data_size_t start, data_size_t end,
@@ -547,54 +211,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       nullptr, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt8(
   const data_size_t* data_indices, data_size_t start,
@@ -604,46 +220,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
     data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt8(
   data_size_t start, data_size_t end,
@@ -652,46 +228,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   ConstructHistogramIntInner<false, false, false, int16_t, 8>(
       nullptr, start, end, ordered_gradients, out);
 }
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt8(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
 
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt16(
@@ -703,54 +239,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt16(
   data_size_t start, data_size_t end,
@@ -761,54 +249,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       nullptr, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt16(
   const data_size_t* data_indices, data_size_t start,
@@ -818,46 +258,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
     data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt16(
   data_size_t start, data_size_t end,
@@ -866,46 +266,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   ConstructHistogramIntInner<false, false, false, int32_t, 16>(
       nullptr, start, end, ordered_gradients, out);
 }
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt16(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
 
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt32(
@@ -917,54 +277,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt32(
   data_size_t start, data_size_t end,
@@ -975,54 +287,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
       nullptr, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  const score_t* /*ordered_hessians*/,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt32(
   const data_size_t* data_indices, data_size_t start,
@@ -1032,46 +296,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
     data_indices, start, end, ordered_gradients, out);
 }
 
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  const data_size_t* data_indices, data_size_t start,
-  data_size_t end, const score_t* ordered_gradients,
-  hist_t* out) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramInt32(
   data_size_t start, data_size_t end,
@@ -1080,46 +304,6 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   ConstructHistogramIntInner<false, false, false, int64_t, 32>(
       nullptr, start, end, ordered_gradients, out);
 }
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
-
-template void DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::ConstructHistogramInt32(
-  data_size_t start, data_size_t end,
-  const score_t* ordered_gradients,
-  hist_t* out) const;
 
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 template <bool MISS_IS_ZERO, bool MISS_IS_NA, bool MFB_IS_ZERO,
@@ -1235,70 +419,6 @@ data_size_t DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::Split(uint32
 #undef ARGUMENTS
 }
 
-template data_size_t DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
-template data_size_t DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::Split(uint32_t min_bin, uint32_t max_bin,
-                    uint32_t default_bin, uint32_t most_freq_bin,
-                    MissingType missing_type, bool default_left,
-                    uint32_t threshold, const data_size_t* data_indices,
-                    data_size_t cnt,
-                    data_size_t* lte_indices,
-                    data_size_t* gt_indices) const;
-
 template <typename VAL_T, bool IS_4BIT, template<typename> class ITERATOR_TYPE>
 data_size_t DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::Split(uint32_t max_bin, uint32_t default_bin,
                             uint32_t most_freq_bin, MissingType missing_type,
@@ -1327,60 +447,88 @@ data_size_t DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::Split(uint32
 #undef ARGUMENTS
 }
 
-template data_size_t DensePairwiseRankingBin<uint8_t, true, PairwiseRankingFirstIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
+
+#define REGISTER_BIN_TYPE(BIN_TYPE, ITERATOR_TYPE) \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::InitStreaming(uint32_t num_thread, int32_t omp_max_threads); \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::Push(int tid, data_size_t idx, uint32_t value); \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices); \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::SaveBinaryToFile(BinaryWriter* writer) const; \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::LoadFromMemory(const void* memory, const std::vector<data_size_t>& local_used_indices); \
+  template size_t PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::SizesInByte() const; \
+  template data_size_t PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::num_data() const; \
+  template void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::ReSize(data_size_t num_data);
+
+#define COMMA ,
+
+#define REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME(DATA_TYPE, USE_4BIT, ITERATOR_TYPE, FUNC_NAME) \
+  template void DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::FUNC_NAME( \
+  const data_size_t* data_indices, data_size_t start, data_size_t end, \
+  const score_t* ordered_gradients, const score_t* ordered_hessians, \
+  hist_t* out) const; \
+  template void DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::FUNC_NAME( \
+  data_size_t start, data_size_t end, \
+  const score_t* ordered_gradients, \
+  const score_t* ordered_hessians, \
+  hist_t* out) const; \
+  template void DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::FUNC_NAME( \
+  const data_size_t* data_indices, data_size_t start, \
+  data_size_t end, const score_t* ordered_gradients, \
+  hist_t* out) const; \
+  template void DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::FUNC_NAME( \
+  data_size_t start, data_size_t end, \
+  const score_t* ordered_gradients, \
+  hist_t* out) const;
+
+
+#define REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE(DATA_TYPE, USE_4BIT, ITERATOR_TYPE) \
+  REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME(DATA_TYPE, USE_4BIT, ITERATOR_TYPE, ConstructHistogram) \
+  REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME(DATA_TYPE, USE_4BIT, ITERATOR_TYPE, ConstructHistogramInt8) \
+  REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME(DATA_TYPE, USE_4BIT, ITERATOR_TYPE, ConstructHistogramInt16) \
+  REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME(DATA_TYPE, USE_4BIT, ITERATOR_TYPE, ConstructHistogramInt32) \
+  template data_size_t DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::Split(uint32_t min_bin, uint32_t max_bin, \
+                    uint32_t default_bin, uint32_t most_freq_bin, \
+                    MissingType missing_type, bool default_left, \
+                    uint32_t threshold, const data_size_t* data_indices, \
+                    data_size_t cnt, \
+                    data_size_t* lte_indices, \
+                    data_size_t* gt_indices) const; \
+  template data_size_t DensePairwiseRankingBin<DATA_TYPE, USE_4BIT, ITERATOR_TYPE>::Split(uint32_t max_bin, uint32_t default_bin, \
+                            uint32_t most_freq_bin, MissingType missing_type, \
+                            bool default_left, uint32_t threshold, \
+                            const data_size_t* data_indices, data_size_t cnt, \
+                            data_size_t* lte_indices, \
                             data_size_t* gt_indices) const;
 
-template data_size_t DensePairwiseRankingBin<uint8_t, false, PairwiseRankingFirstIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
 
-template data_size_t DensePairwiseRankingBin<uint16_t, false, PairwiseRankingFirstIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
+#define REGISTER_DENSE_TREE_LEARNING_FUNC_FOR_ITERATOR_TYPE(ITERATOR_TYPE) \
+  REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE(uint8_t, true, ITERATOR_TYPE) \
+  REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE(uint8_t, false, ITERATOR_TYPE) \
+  REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE(uint16_t, false, ITERATOR_TYPE) \
+  REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE(uint32_t, false, ITERATOR_TYPE)
 
-template data_size_t DensePairwiseRankingBin<uint32_t, false, PairwiseRankingFirstIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
 
-template data_size_t DensePairwiseRankingBin<uint8_t, true, PairwiseRankingSecondIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
+#define REGISTER_ITERATOR(ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(DenseBin<uint8_t COMMA true>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(DenseBin<uint8_t COMMA false>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(DenseBin<uint16_t COMMA false>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(DenseBin<uint32_t COMMA false>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(SparseBin<uint8_t>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(SparseBin<uint16_t>, ITERATOR_TYPE) \
+  REGISTER_BIN_TYPE(SparseBin<uint32_t>, ITERATOR_TYPE) \
+  REGISTER_DENSE_TREE_LEARNING_FUNC_FOR_ITERATOR_TYPE(ITERATOR_TYPE)
 
-template data_size_t DensePairwiseRankingBin<uint8_t, false, PairwiseRankingSecondIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
 
-template data_size_t DensePairwiseRankingBin<uint16_t, false, PairwiseRankingSecondIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
+REGISTER_ITERATOR(PairwiseRankingFirstIterator)
+REGISTER_ITERATOR(PairwiseRankingSecondIterator)
+REGISTER_ITERATOR(PairwiseRankingDiffIterator)
 
-template data_size_t DensePairwiseRankingBin<uint32_t, false, PairwiseRankingSecondIterator>::Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
-                            const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const;
+
+#undef COMMA
+#undef REGISTER_TYPE
+#undef REGISTER_BIN_TYPE
+#undef REGISTER_DENSE_TREE_LEARNING_FUNC_FOR_ITERATOR_TYPE
+#undef REGISTER_DENSE_TREE_LEARNING_FUNC_WITH_ITERATOR_TYPE
+#undef REGISTER_DENSE_HISTOGRAM_CONSTRUCTION_WITH_ITERATOR_TYPE_AND_FUNC_NAME
+
 
 }  // namespace LightGBM

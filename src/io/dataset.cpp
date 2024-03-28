@@ -875,17 +875,18 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
 
   // create differential features
   std::vector<std::unique_ptr<BinMapper>> diff_feature_bin_mappers;
-  std::vector<const BinMapper*> original_bin_mappers;
+  std::vector<std::unique_ptr<const BinMapper>> original_bin_mappers;
+  std::vector<int> diff_original_feature_index;
   for (int i = 0; i < dataset->num_total_features_; ++i) {
     const int inner_feature_index = dataset->InnerFeatureIndex(i);
     if (inner_feature_index >= 0) {
-      original_bin_mappers.push_back(dataset->FeatureBinMapper(inner_feature_index));
+      original_bin_mappers.emplace_back(dataset->FeatureBinMapper(inner_feature_index));
     } else {
-      original_bin_mappers.push_back(nullptr);
+      original_bin_mappers.emplace_back(nullptr);
     }
   }
 
-  CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, config);
+  CreatePairwiseRankingDifferentialFeatures(sampled_values_, sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, &diff_original_feature_index, config);
 
   std::vector<int> used_diff_features;
   for (int diff_feature_index = 0; diff_feature_index < static_cast<int>(diff_feature_bin_mappers.size()); ++diff_feature_index) {
@@ -926,6 +927,8 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     const std::vector<int>& features_in_group = diff_feature_groups[i];
     group_feature_start_.push_back(cur_feature_index);
     int sub_feature_index = 0;
+    std::vector<std::unique_ptr<BinMapper>> ori_bin_mappers;
+    std::vector<std::unique_ptr<BinMapper>> diff_bin_mappers;
     for (size_t j = 0; j < features_in_group.size(); ++j) {
       const int diff_feature_index = features_in_group[j];
       if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
@@ -936,8 +939,14 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
         feature2subfeature_.push_back(sub_feature_index);
         ++cur_feature_index;
         ++sub_feature_index;
+        const int ori_feature_index = dataset->InnerFeatureIndex(diff_original_feature_index[diff_feature_index]);
+        ori_bin_mappers.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
+        diff_bin_mappers.emplace_back(new BinMapper(*diff_feature_bin_mappers[diff_feature_index]));
       }
     }
+
+    FeatureGroup feature_group(sub_feature_index, 0, &ori_bin_mappers, dataset->num_data(), i + num_groups_);
+    feature_groups_.emplace_back(new PairwiseRankingDifferentialFeatureGroup(feature_group, dataset->num_data(), 2, metadata_.paired_ranking_item_index_map_size(), metadata_.paired_ranking_item_global_index_map(), diff_bin_mappers, ori_bin_mappers));
 
     group_feature_cnt_.push_back(cur_feature_index - group_feature_start_.back());
   }
@@ -1937,16 +1946,17 @@ const void* Dataset::GetColWiseData(
 void Dataset::CreatePairwiseRankingDifferentialFeatures(
   const std::vector<std::vector<double>>& sample_values,
   const std::vector<std::vector<int>>& sample_indices,
-  const std::vector<const BinMapper*>& bin_mappers,
+  const std::vector<std::unique_ptr<const BinMapper>>& bin_mappers,
   const data_size_t num_total_sample_data,
   std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
+  std::vector<int>* diff_original_feature_index,
   const Config& config) const {
   const int num_original_features = static_cast<int>(sample_values.size());
   const data_size_t filter_cnt = static_cast<data_size_t>(
     static_cast<double>(config.min_data_in_leaf * num_total_sample_data) / num_data_);
   std::vector<int> numerical_feature_indices;
   for (int i = 0; i < num_original_features; ++i) {
-    if (bin_mappers[i] != nullptr && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
+    if (bin_mappers[i] != nullptr && !bin_mappers[i]->is_trivial() && bin_mappers[i]->bin_type() == BinType::NumericalBin) {
       numerical_feature_indices.push_back(i);
     }
   }
@@ -1959,6 +1969,7 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
   #pragma omp parallel for schedule(static) num_threads(num_threads)
   for (int i = 0; i < num_numerical_features; ++i) {
     const int feature_index = numerical_feature_indices[i];
+    diff_original_feature_index->push_back(feature_index);
     const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
     if (config.zero_as_missing) {
       for (int j = 0; j < num_samples_for_feature; ++j) {

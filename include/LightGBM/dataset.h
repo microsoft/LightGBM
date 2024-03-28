@@ -1065,9 +1065,10 @@ class Dataset {
   void CreatePairwiseRankingDifferentialFeatures(
     const std::vector<std::vector<double>>& sample_values,
     const std::vector<std::vector<int>>& sample_indices,
-    const std::vector<const BinMapper*>& bin_mappers,
+    const std::vector<std::unique_ptr<const BinMapper>>& bin_mappers,
     const data_size_t num_total_sample_data,
     std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
+    std::vector<int>* diff_original_feature_index,
     const Config& config) const;
 
   std::string data_filename_;
