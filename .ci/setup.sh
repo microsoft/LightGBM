@@ -1,8 +1,8 @@
 #!/bin/bash
 
-echo -n "--- detected arch: "
-echo $(uname -m)
-echo "---"
+ARCH=$(uname -m)
+echo "--- detected arch: ${ARCH}"
+echo ""
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
@@ -25,7 +25,7 @@ if [[ $OS_NAME == "macos" ]]; then
     curl \
         -sL \
         -o miniforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-${ARCH}.sh
 else  # Linux
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -137,7 +137,6 @@ else  # Linux
             cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        ARCH=$(uname -m)
         curl \
             -sL \
             -o miniforge.sh \
