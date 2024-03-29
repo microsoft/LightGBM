@@ -163,20 +163,25 @@ if [[ $TASK == "sdist" ]]; then
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
+    ARCH=$(uname -m)
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         mv \
             ./dist/*.whl \
             ./dist/tmp.whl || exit 1
+        if [[ $ARCH == "x86_64" ]]; then
+            PLATFORM="macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64"
+        else
+            PLATFORM="macosx_14_0_arm64"
+        fi
         mv \
             ./dist/tmp.whl \
-            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl || exit 1
+            dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
     else
-        ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="manylinux_2_28_x86_64"
         else

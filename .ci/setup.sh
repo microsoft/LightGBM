@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo -n "--- detected arch: "
+echo $(uname -m)
+echo "---"
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
