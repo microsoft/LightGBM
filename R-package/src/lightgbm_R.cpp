@@ -1129,6 +1129,7 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
 
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
+  SEXP start_iteration,
   SEXP feature_importance_type) {
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
@@ -1137,13 +1138,14 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   int num_iter = Rf_asInteger(num_iteration);
+  int start_iter = Rf_asInteger(start_iteration);
   int importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
   // if the model string was larger than the initial buffer, allocate a bigger buffer and try again
   if (out_len > buf_len) {
     inner_char_buf.resize(out_len);
-    CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
+    CHECK_CALL(LGBM_BoosterDumpModel(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, out_len, &out_len, inner_char_buf.data()));
   }
   model_str = PROTECT(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
@@ -1263,7 +1265,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterPredictForMatSingleRowFast_R"    , (DL_FUNC) &LGBM_BoosterPredictForMatSingleRowFast_R    , 3},
   {"LGBM_BoosterSaveModel_R"                     , (DL_FUNC) &LGBM_BoosterSaveModel_R                     , 4},
   {"LGBM_BoosterSaveModelToString_R"             , (DL_FUNC) &LGBM_BoosterSaveModelToString_R             , 3},
-  {"LGBM_BoosterDumpModel_R"                     , (DL_FUNC) &LGBM_BoosterDumpModel_R                     , 3},
+  {"LGBM_BoosterDumpModel_R"                     , (DL_FUNC) &LGBM_BoosterDumpModel_R                     , 4},
   {"LGBM_NullBoosterHandleError_R"               , (DL_FUNC) &LGBM_NullBoosterHandleError_R               , 0},
   {"LGBM_DumpParamAliases_R"                     , (DL_FUNC) &LGBM_DumpParamAliases_R                     , 0},
   {"LGBM_GetMaxThreads_R"                        , (DL_FUNC) &LGBM_GetMaxThreads_R                        , 1},

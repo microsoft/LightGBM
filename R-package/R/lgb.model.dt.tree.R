@@ -1,9 +1,9 @@
 #' @name lgb.model.dt.tree
 #' @title Parse a LightGBM model json dump
 #' @description Parse a LightGBM model json dump into a \code{data.table} structure.
-#' @param model object of class \code{lgb.Booster}
-#' @param num_iteration number of iterations you want to predict with. NULL or
-#'                      <= 0 means use best iteration
+#' @param model object of class \code{lgb.Booster}.
+#' @param num_iteration Number of iterations to be parsed. NULL or <= 0 means use best iteration.
+#' @param start_iteration Start index of the iteration (default 0).
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
 #'
@@ -51,9 +51,15 @@
 #' @importFrom data.table := rbindlist
 #' @importFrom jsonlite fromJSON
 #' @export
-lgb.model.dt.tree <- function(model, num_iteration = NULL) {
+lgb.model.dt.tree <- function(
+    model, num_iteration = NULL, start_iteration = 0L
+  ) {
 
-  json_model <- lgb.dump(booster = model, num_iteration = num_iteration)
+  json_model <- lgb.dump(
+    booster = model
+    , num_iteration = num_iteration
+    , start_iteration = start_iteration
+  )
 
   parsed_json_model <- jsonlite::fromJSON(
     txt = json_model

@@ -461,7 +461,9 @@ Booster <- R6::R6Class(
     },
 
     # Dump model in memory
-    dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
+    dump_model = function(
+      num_iteration = NULL, start_iteration = 0L, feature_importance_type = 0L
+    ) {
 
       self$restore_handle()
 
@@ -473,6 +475,7 @@ Booster <- R6::R6Class(
         LGBM_BoosterDumpModel_R
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(start_iteration)
         , as.integer(feature_importance_type)
       )
 
@@ -1347,7 +1350,8 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @title Dump LightGBM model to json
 #' @description Dump LightGBM model to json
 #' @param booster Object of class \code{lgb.Booster}
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param num_iteration Number of iterations to be dumped. NULL or <= 0 means use best iteration
+#' @param start_iteration Start index of iteration. Default is 0, i.e., start at the first iteration
 #'
 #' @return json format of model
 #'
@@ -1380,14 +1384,18 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' json_model <- lgb.dump(model)
 #' }
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL) {
+lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 0L) {
 
   if (!.is_Booster(x = booster)) {
     stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
   }
 
   # Return booster at requested iteration
-  return(booster$dump_model(num_iteration =  num_iteration))
+  return(
+    booster$dump_model(
+      num_iteration =  num_iteration, start_iteration = start_iteration
+    )
+  )
 
 }
 
