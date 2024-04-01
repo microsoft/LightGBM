@@ -441,7 +441,12 @@ Booster <- R6::R6Class(
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
+    save_model_to_string = function(
+      num_iteration = NULL
+      , start_iteration = 0L
+      , feature_importance_type = 0L
+      , as_char = TRUE
+    ) {
 
       self$restore_handle()
 
@@ -453,6 +458,7 @@ Booster <- R6::R6Class(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
+          , as.integer(start_iteration)
           , as.integer(feature_importance_type)
       )
 

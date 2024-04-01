@@ -1106,6 +1106,7 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
+  SEXP start_iteration,
   SEXP feature_importance_type) {
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
@@ -1113,9 +1114,10 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   int num_iter = Rf_asInteger(num_iteration);
+  int start_iter = Rf_asInteger(start_iteration);
   int importance_type = Rf_asInteger(feature_importance_type);
   std::vector<char> inner_char_buf(buf_len);
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
   SEXP model_str = PROTECT(safe_R_raw(out_len, &cont_token));
   // if the model string was larger than the initial buffer, call the function again, writing directly to the R object
   if (out_len > buf_len) {
@@ -1265,7 +1267,7 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterPredictForMatSingleRowFastInit_R", (DL_FUNC) &LGBM_BoosterPredictForMatSingleRowFastInit_R, 8},
   {"LGBM_BoosterPredictForMatSingleRowFast_R"    , (DL_FUNC) &LGBM_BoosterPredictForMatSingleRowFast_R    , 3},
   {"LGBM_BoosterSaveModel_R"                     , (DL_FUNC) &LGBM_BoosterSaveModel_R                     , 5},
-  {"LGBM_BoosterSaveModelToString_R"             , (DL_FUNC) &LGBM_BoosterSaveModelToString_R             , 3},
+  {"LGBM_BoosterSaveModelToString_R"             , (DL_FUNC) &LGBM_BoosterSaveModelToString_R             , 4},
   {"LGBM_BoosterDumpModel_R"                     , (DL_FUNC) &LGBM_BoosterDumpModel_R                     , 4},
   {"LGBM_NullBoosterHandleError_R"               , (DL_FUNC) &LGBM_NullBoosterHandleError_R               , 0},
   {"LGBM_DumpParamAliases_R"                     , (DL_FUNC) &LGBM_DumpParamAliases_R                     , 0},

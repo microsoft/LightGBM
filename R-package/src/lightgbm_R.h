@@ -824,12 +824,14 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
 * \brief create string containing model
 * \param handle Booster handle
 * \param num_iteration, <= 0 means save all
+* \param start_iteration Starting iteration
 * \param feature_importance_type type of feature importance, 0: split, 1: gain
 * \return R character vector (length=1) with model string
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
   SEXP handle,
   SEXP num_iteration,
+  SEXP start_iteration,
   SEXP feature_importance_type
 );
 
