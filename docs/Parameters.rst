@@ -123,11 +123,11 @@ Core Parameters
 
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
-    -  custom
+   -  custom objective function (gradients and hessians not computed directly by LightGBM)
 
-      - ``custom``
+      -  ``custom``
 
-      - **Note**: Not supported in CLI version; must be set explicitly when using the C API (for Python and R APIs, pass the custom objective directly into the train method)
+      -  **Note**: Not supported in CLI version; must be passed through parameters explicitly
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
 
