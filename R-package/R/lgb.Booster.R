@@ -416,7 +416,11 @@ Booster <- R6::R6Class(
     },
 
     # Save model
-    save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
+    save_model = function(
+      filename, num_iteration = NULL
+      , start_iteration = 0L
+      , feature_importance_type = 0L
+    ) {
 
       self$restore_handle()
 
@@ -1291,8 +1295,9 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @title Save LightGBM model
 #' @description Save LightGBM model
 #' @param booster Object of class \code{lgb.Booster}
-#' @param filename saved filename
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param filename Saved filename
+#' @param num_iteration Number of iterations to save, NULL or <= 0 means use best iteration
+#' @param start_iteration First iteration to save. Default is 0, i.e., start at first
 #'
 #' @return lgb.Booster
 #'
@@ -1325,7 +1330,9 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' lgb.save(model, tempfile(fileext = ".txt"))
 #' }
 #' @export
-lgb.save <- function(booster, filename, num_iteration = NULL) {
+lgb.save <- function(
+    booster, filename, num_iteration = NULL, start_iteration = 0L
+  ) {
 
   if (!.is_Booster(x = booster)) {
     stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
@@ -1341,6 +1348,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
     invisible(booster$save_model(
       filename = filename
       , num_iteration = num_iteration
+      , start_iteration = start_iteration
     ))
   )
 

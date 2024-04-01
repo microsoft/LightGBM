@@ -807,6 +807,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRowFast_R(
 * \brief save model into file
 * \param handle Booster handle
 * \param num_iteration, <= 0 means save all
+* \param start_iteration Starting iteration
 * \param feature_importance_type type of feature importance, 0: split, 1: gain
 * \param filename file name
 * \return R NULL value
@@ -814,6 +815,7 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRowFast_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
   SEXP handle,
   SEXP num_iteration,
+  SEXP start_iteration,
   SEXP feature_importance_type,
   SEXP filename
 );
