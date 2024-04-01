@@ -158,7 +158,7 @@ struct Config {
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
-  // desc = custom
+  // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
   // descl2 = ``custom``
   // descl2 = **Note**: Not supported in CLI version; must be set explicitly when using the C API (for Python and R APIs, pass the custom objective directly into the train method)
   std::string objective = "regression";
