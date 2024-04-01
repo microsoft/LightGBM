@@ -160,7 +160,7 @@ struct Config {
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
   // descl2 = ``custom``
-  // descl2 = **Note**: Not supported in CLI version; must be set explicitly when using the C API (for Python and R APIs, pass the custom objective directly into the train method)
+  // descl2 = **Note**: Not supported in CLI version; must be passed through parameters explicitly
   std::string objective = "regression";
 
   // [no-automatically-extract]
