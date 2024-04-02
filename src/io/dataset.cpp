@@ -280,6 +280,7 @@ std::vector<std::vector<int>> FastFeatureBundling(
   }
 
   std::vector<std::vector<int>> tmp_indices;
+  std::vector<int*> tmp_indices_ptr(num_sample_col, nullptr);
   std::vector<int> tmp_num_per_col(num_sample_col, 0);
   for (auto fidx : used_features) {
     if (fidx >= num_sample_col) {
@@ -291,18 +292,19 @@ std::vector<std::vector<int>> FastFeatureBundling(
     if (!ret.empty()) {
       tmp_indices.push_back(ret);
       tmp_num_per_col[fidx] = static_cast<int>(ret.size());
-      sample_indices[fidx] = tmp_indices.back().data();
+      tmp_indices_ptr[fidx] = tmp_indices.back().data();
     } else {
       tmp_num_per_col[fidx] = num_per_col[fidx];
+      tmp_indices_ptr[fidx] = sample_indices[fidx];
     }
   }
   std::vector<int8_t> group_is_multi_val, group_is_multi_val2;
   auto features_in_group =
-      FindGroups(bin_mappers, used_features, sample_indices,
+      FindGroups(bin_mappers, used_features, tmp_indices_ptr.data(),
                  tmp_num_per_col.data(), num_sample_col, total_sample_cnt,
                  num_data, is_use_gpu, is_sparse, &group_is_multi_val);
   auto group2 =
-      FindGroups(bin_mappers, feature_order_by_cnt, sample_indices,
+      FindGroups(bin_mappers, feature_order_by_cnt, tmp_indices_ptr.data(),
                  tmp_num_per_col.data(), num_sample_col, total_sample_cnt,
                  num_data, is_use_gpu, is_sparse, &group_is_multi_val2);
 
@@ -453,11 +455,11 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     #pragma omp parallel for schedule(static) num_threads(num_threads)
     for (int col_idx = 0; col_idx < num_sample_col; ++col_idx) {
       const int num_samples_in_col = num_per_col[col_idx];
-      sampled_values_->at(col_idx).reserve(static_cast<size_t>(num_samples_in_col));
-      sampled_indices_->at(col_idx).reserve(static_cast<size_t>(num_samples_in_col));
+      sampled_values_->at(col_idx).resize(num_samples_in_col);
+      sampled_indices_->at(col_idx).resize(num_samples_in_col);
       for (int i = 0; i < num_samples_in_col; ++i) {
-        sampled_values_->at(col_idx).push_back(sample_values[col_idx][i]);
-        sampled_indices_->at(col_idx).push_back(sample_non_zero_indices[col_idx][i]);
+        sampled_values_->at(col_idx)[i] = sample_values[col_idx][i];
+        sampled_indices_->at(col_idx)[i] = sample_non_zero_indices[col_idx][i];
       }
     }
     num_total_sampled_data_ = static_cast<data_size_t>(total_sample_cnt);
@@ -891,7 +893,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     }
   }
 
-  CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, &diff_feature_bin_mappers, &diff_original_feature_index, config);
+  CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, metadata_.query_boundaries(), metadata_.num_queries(), &diff_feature_bin_mappers, &diff_original_feature_index, config);
 
   used_feature_map_.clear();
   used_feature_map_.reserve(2 * dataset->used_feature_map_.size());
@@ -1964,6 +1966,8 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
   const std::vector<std::vector<int>>& sample_indices,
   const std::vector<std::unique_ptr<const BinMapper>>& bin_mappers,
   const data_size_t num_total_sample_data,
+  const data_size_t* query_boundaries,
+  const data_size_t num_queries,
   std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
   std::vector<int>* diff_original_feature_index,
   const Config& config) const {
@@ -1988,7 +1992,12 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
     if (config.zero_as_missing) {
       for (int j = 0; j < num_samples_for_feature; ++j) {
         const double value = sample_values[feature_index][j];
-        for (int k = j + 1; k < num_samples_for_feature; ++k) {
+        int cur_query = 0;
+        data_size_t cur_data_index = sample_indices[feature_index][j];
+        while (query_boundaries[cur_query + 1] <= cur_data_index) {
+          ++cur_query;
+        }
+        for (int k = j + 1; sample_indices[feature_index][k] < query_boundaries[cur_query + 1]; ++k) {
           const double diff_value = value - sample_values[feature_index][k];
           sampled_differential_values[i].push_back(diff_value);
         }
@@ -1997,13 +2006,17 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
       CHECK_GT(sample_indices[feature_index].size(), 0);
       int cur_pos_j = 0;
       for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
+        int cur_query = 0;
+        while (query_boundaries[cur_query + 1] <= j) {
+          ++cur_query;
+        }
         double value_j = 0.0;
         if (j == sample_indices[feature_index][cur_pos_j]) {
           value_j = sample_values[feature_index][cur_pos_j];
           ++cur_pos_j;
         }
-        int cur_pos_k = 0;
-        for (int k = 0; k < sample_indices[feature_index].back() + 1; ++k) {
+        int cur_pos_k = cur_pos_j;
+        for (int k = j + 1; k < query_boundaries[cur_query + 1] && k < sample_indices[feature_index].back() + 1; ++k) {
           double value_k = 0.0;
           if (k == sample_indices[feature_index][cur_pos_k]) {
             value_k = sample_values[feature_index][cur_pos_k];

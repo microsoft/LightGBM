@@ -1075,6 +1075,8 @@ class Dataset {
     const std::vector<std::vector<int>>& sample_indices,
     const std::vector<std::unique_ptr<const BinMapper>>& bin_mappers,
     const data_size_t num_total_sample_data,
+    const data_size_t* query_boundaries,
+    const data_size_t num_queries,
     std::vector<std::unique_ptr<BinMapper>>* differential_feature_bin_mappers,
     std::vector<int>* diff_original_feature_index,
     const Config& config) const;
