@@ -289,14 +289,14 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
 
   // check for conflicts
-  CheckParamConflict();
+  CheckParamConflict(params);
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
   return (objective == std::string("multiclass") || objective == std::string("multiclassova"));
 }
 
-void Config::CheckParamConflict() {
+void Config::CheckParamConflict(const std::unordered_map<std::string, std::string>& params) {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
   bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective == std::string("custom") && num_class_check > 1);
@@ -357,13 +357,19 @@ void Config::CheckParamConflict() {
     }
   }
   // Check max_depth and num_leaves
-  if (max_depth > 0) {
+  // max_depth defaults to -1, so max_depth>0 implies "you explicitly overrode the default"
+  // ref: https://github.com/microsoft/LightGBM/issues/2898#issuecomment-1002860601
+  if (max_depth > 0 && (params.count("num_leaves") == 0 || params.at("num_leaves").empty())) {
     double full_num_leaves = std::pow(2, max_depth);
-    if (full_num_leaves > num_leaves
-        && num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't explicitly set num_leaves OR 2^max_depth > num_leaves."
-                   " (num_leaves=%d).",
-                   num_leaves);
+    if (full_num_leaves > num_leaves) {
+      Log::Warning("Provided parameters constrain tree depth (max_depth=%d) but did not explicitly set 'num_leaves'. "
+                  "With these settings, LightGBM will not be able to grow full depth-wise trees, which may lead to bad accuracy. "
+                  "To resolve this warning, pass 'num_leaves' in params. Pass (num_leaves=%.0f) to allow LightGBM "
+                  "to grow full depth-wise trees, or some smaller positive number to intentionally choose not to grow full "
+                  "depth-wise trees. Alternatively, pass (max_depth=-1) and just use num_leaves to constrain model complexity.",
+                  max_depth,
+                  full_num_leaves
+                  );
     }
 
     if (full_num_leaves < num_leaves) {

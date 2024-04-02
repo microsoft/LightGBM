@@ -1275,6 +1275,27 @@ def test_check_is_fitted():
     for model in models:
         check_is_fitted(model)
 
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("max_depth", [5, 6, 7, 8])
+def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_eq_31(capsys, estimator_class, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    params = {"num_iterations": 1, "max_depth": max_depth, "verbose": 0}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"}).fit(X, y)
+    elif estimator_class is lgb.LGBMRanker:
+        model = estimator_class(**params).fit(X, y, group=np.ones(X.shape[0]))
+    else:
+        model = estimator_class(**params).fit(X, y)
+    expected_warning = (
+        f"[LightGBM] [Warning] Provided parameters constrain tree depth (max_depth={max_depth}) but did not "
+        "explicitly set 'num_leaves'. With these settings, LightGBM will not be able to grow full depth-wise trees, "
+        f"which may lead to bad accuracy. To resolve this warning, pass 'num_leaves' in params. Pass (num_leaves={2**max_depth}) "
+        "to allow LightGBM to grow full depth-wise trees, or some smaller positive number to intentionally choose not to grow full "
+        "depth-wise trees. Alternatively, pass (max_depth=-1) and just use num_leaves to constrain model complexity."
+    )
+    raise RuntimeError
+    assert expected_warning in capsys.readouterr().out
+
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
