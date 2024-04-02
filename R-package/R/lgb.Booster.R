@@ -417,7 +417,8 @@ Booster <- R6::R6Class(
 
     # Save model
     save_model = function(
-      filename, num_iteration = NULL
+      filename
+      , num_iteration = NULL
       , start_iteration = 0L
       , feature_importance_type = 0L
     ) {
@@ -434,6 +435,7 @@ Booster <- R6::R6Class(
         LGBM_BoosterSaveModel_R
         , private$handle
         , as.integer(num_iteration)
+        , as.integer(start_iteration)
         , as.integer(feature_importance_type)
         , filename
       )
