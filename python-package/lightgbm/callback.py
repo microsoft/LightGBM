@@ -280,18 +280,24 @@ class _EarlyStoppingCallback:
         verbose: bool = True,
         min_delta: Union[float, List[float]] = 0.0,
     ) -> None:
-        if not isinstance(stopping_rounds, int) or stopping_rounds <= 0:
-            raise ValueError(f"stopping_rounds should be an integer and greater than 0. got: {stopping_rounds}")
+        if not isinstance(stopping_rounds, int):
+            raise TypeError(
+                f"stopping_rounds should be an integer. Got {type(stopping_rounds)}")
+
+        self.stopping_rounds = stopping_rounds
+
+        if stopping_rounds > 0:
+            self.enabled = True
+        else:
+            self.enabled = False
 
         self.order = 30
         self.before_iteration = False
 
-        self.stopping_rounds = stopping_rounds
         self.first_metric_only = first_metric_only
         self.verbose = verbose
         self.min_delta = min_delta
 
-        self.enabled = True
         self._reset_storages()
 
     def _reset_storages(self) -> None:

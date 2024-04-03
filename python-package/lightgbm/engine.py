@@ -188,8 +188,17 @@ def train(
         params=params,
         default_value=None,
     )
-    if params["early_stopping_round"] is None:
-        params.pop("early_stopping_round")
+    if "early_stopping_round" in params:
+        if params["early_stopping_round"] is None:
+            params.pop("early_stopping_round")
+        # the check below happens if the callback is instantiated, but if the user
+        # passes a non-numeric value `params.get("early_stopping_round", 0) > 0` below
+        # will fail prior to the callback instantiation, so a TypeError should be raised
+        # here as well
+        elif not isinstance(params["early_stopping_round"], int):
+            raise TypeError(
+                f"stopping_rounds should be an integer. Got {type(params['early_stopping_round'])}")
+
     first_metric_only = params.get("first_metric_only", False)
 
     predictor: Optional[_InnerPredictor] = None
@@ -236,7 +245,7 @@ def train(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if params.get("early_stopping_round", 0) > 0:
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
@@ -760,7 +769,7 @@ def cv(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if params.get("early_stopping_round", 0) > 0:
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
