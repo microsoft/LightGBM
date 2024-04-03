@@ -33,6 +33,7 @@ To get good results using a leaf-wise tree, these are some important parameters:
    In practice, setting it to hundreds or thousands is enough for a large dataset.
 
 3. ``max_depth``. You also can use ``max_depth`` to limit the tree depth explicitly.
+   If you set ``max_depth``, also explicitly set ``num_leaves`` to some value ``<= 2^max_depth``.
 
 For Faster Speed
 ----------------
