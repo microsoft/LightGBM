@@ -926,10 +926,8 @@ def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(c
         train_set=lgb.Dataset(X, label=y),
     )
     expected_warning = (
-        f"[LightGBM] [Warning] Provided parameters constrain tree depth (max_depth={max_depth}) but did not "
-        "explicitly set 'num_leaves'. With these settings, LightGBM will not be able to grow full depth-wise trees, "
-        f"which may lead to bad accuracy. To resolve this warning, pass 'num_leaves' in params. Pass (num_leaves={2**max_depth}) "
-        "to allow LightGBM to grow full depth-wise trees, or some smaller positive number to intentionally choose not to grow full "
-        "depth-wise trees. Alternatively, pass (max_depth=-1) and just use num_leaves to constrain model complexity."
+        f"[LightGBM] [Warning] Provided parameters constrain tree depth (max_depth={max_depth}) without explicitly "
+        f"setting 'num_leaves'. This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<={2**max_depth}) "
+        "in params. Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity."
     )
     assert expected_warning in capsys.readouterr().out
