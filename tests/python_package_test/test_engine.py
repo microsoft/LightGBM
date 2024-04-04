@@ -957,20 +957,29 @@ def test_early_stopping_non_positive_values(early_stopping_round):
 
     if early_stopping_round is None:
         gbm = lgb.train(
-            params, lgb_train, feval=[decreasing_metric, constant_metric],
-            valid_sets=lgb_eval, valid_names=valid_set_name
+            params,
+            lgb_train,
+            feval=[decreasing_metric, constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
         )
-        assert not "early_stopping_round" in gbm.params
+        assert "early_stopping_round" not in gbm.params
     elif early_stopping_round == "None":
         with pytest.raises(TypeError):
             gbm = lgb.train(
-                params, lgb_train, feval=[decreasing_metric, constant_metric],
-                valid_sets=lgb_eval, valid_names=valid_set_name
+                params,
+                lgb_train,
+                feval=[decreasing_metric, constant_metric],
+                valid_sets=lgb_eval,
+                valid_names=valid_set_name,
             )
-    elif early_stopping_round <=0:
+    elif early_stopping_round <= 0:
         gbm = lgb.train(
-            params, lgb_train, feval=[decreasing_metric, constant_metric],
-            valid_sets=lgb_eval, valid_names=valid_set_name
+            params,
+            lgb_train,
+            feval=[decreasing_metric, constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
         )
         assert gbm.params["early_stopping_round"] == early_stopping_round
 
