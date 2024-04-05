@@ -22,8 +22,14 @@ def test_early_stopping_callback_is_picklable(serializer):
 
 
 def test_early_stopping_callback_rejects_invalid_stopping_rounds_with_informative_errors():
-    with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got " "<class 'str'>"):
+    with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got str"):
         lgb.early_stopping(stopping_rounds="neverrrr")
+
+
+@pytest.mark.parametrize("stopping_rounds", [-10, -1, 0])
+def test_early_stopping_callback_accepts_non_positive_stopping_rounds(stopping_rounds):
+    cb = lgb.early_stopping(stopping_rounds=stopping_rounds)
+    assert cb.enabled is False
 
 
 @pytest.mark.parametrize("serializer", SERIALIZERS)

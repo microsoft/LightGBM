@@ -939,7 +939,7 @@ def test_early_stopping_via_global_params(first_metric_only):
 
 
 @pytest.mark.parametrize("early_stopping_round", [-10, -1, 0, None, "None"])
-def test_early_stopping_non_positive_values(early_stopping_round):
+def test_early_stopping_is_not_enabled_for_non_positive_stopping_rounds(early_stopping_round):
     X, y = load_breast_cancer(return_X_y=True)
     num_trees = 5
     params = {
@@ -959,17 +959,18 @@ def test_early_stopping_non_positive_values(early_stopping_round):
         gbm = lgb.train(
             params,
             lgb_train,
-            feval=[decreasing_metric, constant_metric],
+            feval=[constant_metric],
             valid_sets=lgb_eval,
             valid_names=valid_set_name,
         )
         assert "early_stopping_round" not in gbm.params
+        assert gbm.num_trees() == num_trees
     elif early_stopping_round == "None":
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got str"):
             gbm = lgb.train(
                 params,
                 lgb_train,
-                feval=[decreasing_metric, constant_metric],
+                feval=[constant_metric],
                 valid_sets=lgb_eval,
                 valid_names=valid_set_name,
             )
@@ -977,11 +978,12 @@ def test_early_stopping_non_positive_values(early_stopping_round):
         gbm = lgb.train(
             params,
             lgb_train,
-            feval=[decreasing_metric, constant_metric],
+            feval=[constant_metric],
             valid_sets=lgb_eval,
             valid_names=valid_set_name,
         )
         assert gbm.params["early_stopping_round"] == early_stopping_round
+        assert gbm.num_trees() == num_trees
 
 
 @pytest.mark.parametrize("first_only", [True, False])
