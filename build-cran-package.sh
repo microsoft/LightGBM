@@ -76,12 +76,12 @@ fi
 
 cp \
     external_libs/fast_double_parser/include/fast_double_parser.h \
-    "${TEMP_R_DIR}/src/include/"
+    "${TEMP_R_DIR}/src/include/LightGBM/utils"
 
-mkdir -p "${TEMP_R_DIR}/src/include/fmt"
+mkdir -p "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 cp \
     external_libs/fmt/include/fmt/*.h \
-    "${TEMP_R_DIR}/src/include/fmt/"
+    "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 
 # including only specific files from Eigen, to keep the R package
 # small and avoid redistributing code with licenses incompatible with

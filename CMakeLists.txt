@@ -714,11 +714,12 @@ if(INSTALL_HEADERS)
       DESTINATION ${CMAKE_INSTALL_PREFIX}/include
     )
     install(
-      DIRECTORY ${FAST_DOUBLE_PARSER_INCLUDE_DIR}
-      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/external_libs
+      FILES ${FAST_DOUBLE_PARSER_INCLUDE_DIR}/fast_double_parser.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
     )
     install(
-      DIRECTORY ${FMT_INCLUDE_DIR}
-      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/external_libs
+      DIRECTORY ${FMT_INCLUDE_DIR}/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+      FILES_MATCHING PATTERN "*.h"
     )
 endif()
