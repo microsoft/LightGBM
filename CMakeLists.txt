@@ -118,6 +118,12 @@ include_directories(${EIGEN_DIR})
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
+set(FAST_DOUBLE_PARSER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
+
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+include_directories(${FMT_INCLUDE_DIR})
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -703,5 +709,16 @@ install(
 )
 
 if(INSTALL_HEADERS)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    install(
+      DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    )
+    install(
+      DIRECTORY ${FAST_DOUBLE_PARSER_INCLUDE_DIR}
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/external_libs
+    )
+    install(
+      DIRECTORY ${FMT_INCLUDE_DIR}
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/external_libs
+    )
 endif()
