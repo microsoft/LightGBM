@@ -1192,15 +1192,18 @@ class _InnerPredictor:
                 predict_type=predict_type,
             )
         elif isinstance(data, list):
-            try:
-                data = np.array(data)
-            except BaseException as err:
-                raise ValueError("Cannot convert data list to numpy array.") from err
+            if isinstance(data[0], Sequence):
+                data = np.concatenate([i[:] for i in data])
+            else:
+                try:
+                    data = np.array(data)
+                except BaseException as err:
+                    raise ValueError('Cannot convert data list to numpy array.') from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
-                predict_type=predict_type,
+                predict_type=predict_type
             )
         elif isinstance(data, dt_DataTable):
             preds, nrow = self.__pred_for_np2d(
