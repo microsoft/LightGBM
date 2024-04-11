@@ -83,6 +83,20 @@ PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup
   for (auto& bin_mapper_ref : ori_feature_bin_mappers) {
     ori_feature_bin_mappers_.emplace_back(bin_mapper_ref.release());
   }
+
+  CreateBinData(num_original_data, is_multi_val_, !is_sparse_, is_sparse_);
+
+  Threading::For<data_size_t>(0, num_original_data, 512, [this, &other] (int block_index, data_size_t block_start, data_size_t block_end) {
+    for (int feature_index = 0; feature_index < num_feature_; ++feature_index) {
+      std::unique_ptr<BinIterator> bin_iterator(other.SubFeatureIterator(feature_index));
+      bin_iterator->Reset(block_start);
+      for (data_size_t index = block_start; index < block_end; ++index) {
+        PushBinData(block_index, feature_index, index, bin_iterator->Get(index));
+      }
+    }
+  });
+
+  FinishLoad();
 }
 
 void PairwiseRankingDifferentialFeatureGroup::CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {

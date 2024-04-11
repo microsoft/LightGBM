@@ -33,6 +33,7 @@ namespace LightGBM {
       const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
       int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache) {
     // get sorted indices for scores
+    global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
     std::vector<data_size_t> sorted_idx(cnt_pointwise);
     for (data_size_t i = 0; i < cnt_pointwise; ++i) {
       sorted_idx[i] = i;
@@ -45,7 +46,8 @@ namespace LightGBM {
     for (int i = 0; i < cnt_pointwise; i++) {
       ranks[sorted_idx.at(i)] = i;
     }
-
+    global_timer.Stop("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
+    global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 1");
     std::vector<double> gradients(cnt_pointwise);
     std::vector<double> hessians(cnt_pointwise);
     for (data_size_t i = 0; i < selected_pairs_cnt; i++) {
@@ -110,13 +112,15 @@ namespace LightGBM {
       gradients[indexRight] -= sigma * paired_discount * (p_rl_pointwise - p_rl_pairwise);
       hessians[indexRight] += sigma * sigma * paired_discount * p_rl_pointwise * p_lr_pointwise;
     }
-
+    global_timer.Stop("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 1");
+    global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 2");
     for (data_size_t i = 0; i < cnt_pointwise; i++) {
       double delta = 0.3 * gradients[i] / (std::abs(hessians[i]) + 0.001);
       delta = std::min(delta, 0.3);
       delta = std::max(delta, -0.3);
       score_pointwise[i] += delta;
     }
+    global_timer.Stop("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 2");
   }
 
 /*!
@@ -600,6 +604,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     score_t* hessians_pairwise) const override {
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (data_size_t i = 0; i < num_queries_; ++i) {
+      global_timer.Start("pairwise_lambdarank::GetGradients part 0");
       const data_size_t start_pointwise = query_boundaries_[i];
       const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
       const data_size_t start_pairwise = query_boundaries_pairwise_[i];
@@ -611,14 +616,19 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
             pos_biases_[positions_[start_pointwise + paired_index_map_[start_pairwise + j].second]]);
         }
       }
+      global_timer.Stop("pairwise_lambdarank::GetGradients part 0");
+      global_timer.Start("pairwise_lambdarank::GetGradients part 1");
       GetGradientsForOneQuery(i, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data() + start_pointwise, num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
         right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i],
         gradients_pairwise + start_pairwise, hessians_pairwise + start_pairwise);
       std::vector<data_size_t> all_pairs(cnt_pairwise);
       std::iota(all_pairs.begin(), all_pairs.end(), 0);
+      global_timer.Stop("pairwise_lambdarank::GetGradients part 1");
+      global_timer.Start("pairwise_lambdarank::GetGradients part 2");
       UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
         paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_, sigmoid_, sigmoid_cache_);
-    }     
+      global_timer.Stop("pairwise_lambdarank::GetGradients part 2");
+    }
     if (num_position_ids_ > 0) {
       std::vector<score_t> gradients_pointwise(num_data_);
       std::vector<score_t> hessians_pointwise(num_data_);

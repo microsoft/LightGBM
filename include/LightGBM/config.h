@@ -981,6 +981,10 @@ struct Config {
   // desc = *New in version 4.1.0*
   double lambdarank_position_bias_regularization = 0.0;
 
+  // desc = whether to use differential features in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool use_differential_feature_in_pairwise_ranking = false;
+
   #ifndef __NVCC__
   #pragma endregion
 

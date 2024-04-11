@@ -531,7 +531,6 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
     int sub_feature_index = -1;
     for (int i = 0; i < static_cast<int>(bin_offsets_->size()); ++i) {
       if (bin_offsets_->at(i) == min_bin) {
-        CHECK_GT(i, 0);
         sub_feature_index = i;
         break;
       }

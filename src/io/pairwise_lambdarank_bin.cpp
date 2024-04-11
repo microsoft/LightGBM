@@ -18,12 +18,26 @@ uint32_t DensePairwiseRankingDiffBin<VAL_T, IS_4BIT>::GetBinAt(const data_size_t
   const uint32_t second_bin = static_cast<uint32_t>(this->unpaired_bin_->data(second_data_index));
   int first_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), first_bin) - bin_offsets_->begin()) - 1;
   int second_feature_index = static_cast<int>(std::upper_bound(bin_offsets_->begin(), bin_offsets_->end(), second_bin) - bin_offsets_->begin()) - 1;
+  // CHECK_GE(first_feature_index, 0);
+  // CHECK_GE(second_feature_index, 0);
+  // CHECK_LT(first_feature_index, diff_bin_mappers_->size());
   // TODO(shiyu1994): better original value, handle nan as missing
   const double first_value = first_feature_index >= 0 ? ori_bin_mappers_->at(first_feature_index)->BinToValue(first_bin) : 0.0;
   const double second_value = second_feature_index >= 0 ? ori_bin_mappers_->at(second_feature_index)->BinToValue(second_bin) : 0.0;
   const double diff_value = first_value - second_value;
-  const uint32_t diff_bin = diff_bin_mappers_->at(first_feature_index)->ValueToBin(diff_value);
-  return diff_bin;
+  if (first_feature_index >= 0) {
+    const uint32_t min_bin = bin_offsets_->at(first_feature_index);
+    const uint32_t max_bin = bin_offsets_->at(first_feature_index + 1) - 1;
+    const uint32_t most_freq_bin = diff_bin_mappers_->at(first_feature_index)->GetMostFreqBin();
+    const uint32_t diff_bin = diff_bin_mappers_->at(first_feature_index)->ValueToBin(diff_value) + bin_offsets_->at(first_feature_index);
+    if (diff_bin < min_bin || diff_bin > max_bin) {
+      return 0;
+    } else {
+      return diff_bin + min_bin - static_cast<uint32_t>(most_freq_bin == 0);
+    }
+  } else {
+    return 0;
+  }
 }
 
 template uint32_t DensePairwiseRankingDiffBin<uint8_t, true>::GetBinAt(const data_size_t paired_data_index) const;

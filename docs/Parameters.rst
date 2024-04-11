@@ -121,6 +121,8 @@ Core Parameters
 
       -  ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
 
+      -  ``pairwise_lambdarank``, pairwise lambdarank algorithm
+
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
@@ -1138,6 +1140,12 @@ Objective Parameters
    -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
 
    -  *New in version 4.1.0*
+
+-  ``use_differential_feature_in_pairwise_ranking`` :raw-html:`<a id="use_differential_feature_in_pairwise_ranking" title="Permalink to this parameter" href="#use_differential_feature_in_pairwise_ranking">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use differential features in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
 
 Metric Parameters
 -----------------
