@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +x -e -o pipefail
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11

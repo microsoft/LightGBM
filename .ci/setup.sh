@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set +x -e -o pipefail
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
@@ -23,7 +25,9 @@ if [[ $OS_NAME == "macos" ]]; then
         -o miniforge.sh \
         https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
+    echo "--- line 28 ---"
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
+        echo "--- line 30 ---"
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
@@ -51,10 +55,12 @@ else  # Linux
             unzip \
             zip || exit 1
         if [[ $COMPILER == "clang" ]]; then
+            echo "--- line 58 ---"
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         elif [[ $COMPILER == "clang-17" ]]; then
+        echo "--- line 63 ---"
             sudo apt-get install wget
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
