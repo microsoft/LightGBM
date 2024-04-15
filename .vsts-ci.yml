@@ -68,8 +68,10 @@ jobs:
   - script: |
       echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
     displayName: 'Add commit hash to artifacts archive'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+  - task: Bash@3
     displayName: Setup
+    inputs:
+      fileType: $(Build.SourcesDirectory)/.ci/setup.sh
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
   - task: PublishBuildArtifacts@1
