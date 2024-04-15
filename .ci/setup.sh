@@ -60,7 +60,7 @@ else  # Linux
                 clang \
                 libomp-dev
         elif [[ $COMPILER == "clang-17" ]]; then
-        echo "--- line 63 ---"
+            echo "--- line 63 ---"
             sudo apt-get install wget
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
@@ -139,18 +139,26 @@ else  # Linux
             cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
+        echo "--- line 142 ---"
         ARCH=$(uname -m)
         curl \
             -sL \
             -o miniforge.sh \
             https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
+        echo "--- line 148 ---"
     fi
 fi
 
 if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
+    echo "--- line 153 ---"
     if [[ $SETUP_CONDA != "false" ]]; then
+        echo "--- line 155 ---"
         sh miniforge.sh -b -p $CONDA
+        echo "--- line 157 ---"
     fi
+    echo "--- line 159 ---"
     conda config --set always_yes yes --set changeps1 no
+    echo "--- line 161 ---"
     conda update -q -y conda
+    echo "--- line 163 ---"
 fi
