@@ -11,6 +11,8 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang-17" ]]; then
     export CXX=clang++-17
     export CC=clang-17
+else
+    echo "--- not sure what compiler to set ---"
 fi
 
 if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
