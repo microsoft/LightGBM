@@ -73,8 +73,11 @@ jobs:
     inputs:
       filePath: $(Build.SourcesDirectory)/.ci/setup.sh
       targetType: 'filePath'
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+  - task: Bash@3
     displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: 'filePath'
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
@@ -142,10 +145,16 @@ jobs:
       /tmp/docker exec -t -u 0 ci-container \
       sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
     displayName: 'Install sudo'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+  - task: Bash@3
     displayName: Setup
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      targetType: 'filePath'
+  - task: Bash@3
     displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: 'filePath'
 # ###########################################
 # - job: QEMU_multiarch
 # ###########################################
