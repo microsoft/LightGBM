@@ -71,7 +71,7 @@ jobs:
   - task: Bash@3
     displayName: Setup
     inputs:
-      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      fileType: $(Build.SourcesDirectory)/.ci/setup.sh
   - bash: $(Build.SourcesDirectory)/.ci/test.sh
     displayName: Test
   - task: PublishBuildArtifacts@1
