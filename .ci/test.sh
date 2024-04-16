@@ -3,7 +3,12 @@
 set +x -e -o pipefail
 
 export PATH="/usr/lib64/openmpi/bin:${CONDA}/bin:${PATH}"
-BUILD_DIRECTORY="$BUILD_SOURCESDIRECTORY"
+
+# Azure DevOps checks out the repo to a path defined at BUILD_SOURCESDIRECTORY
+if [-z $BUILD_SOURCESDIRECTORY]; then
+    BUILD_DIRECTORY="$BUILD_SOURCESDIRECTORY"
+fi
+
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
@@ -38,8 +43,11 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
+    echo "--- line 46 ---"
     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    echo "--- line 48 ---"
     cmake --build build --target testlightgbm -j4 || exit 1
+    echo "--- line 50 ---"
     ./testlightgbm || exit 1
     exit 0
 fi
