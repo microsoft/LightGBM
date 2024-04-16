@@ -53,21 +53,21 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: '3.9'
-      # sdist:
-      #   TASK: sdist
-      #   PYTHON_VERSION: '3.7'
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: '3.8'
-      # inference:
-      #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      #   PYTHON_VERSION: '3.8'
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: '3.7'
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: '3.8'
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+        PYTHON_VERSION: '3.8'
+      gpu_source:
+        TASK: gpu
+        METHOD: source
       # swig:
       #   TASK: swig
   steps:
@@ -77,6 +77,9 @@ jobs:
       echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean build directories left over from previous runs'
   - script: |
       echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
     displayName: 'Add commit hash to artifacts archive'
@@ -109,13 +112,13 @@ jobs:
   container: ubuntu-latest
   strategy:
     matrix:
-      # regular:
-      #   TASK: regular
-      # sdist:
-      #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: '3.9'
+      regular:
+        TASK: regular
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: '3.9'
       # inference:
       #   TASK: if-else
       # mpi_source:
@@ -152,6 +155,9 @@ jobs:
       echo "##vso[task.setvariable variable=CONDA]$CONDA"
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean build directories left over from previous runs'
   # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
   - script: |
       /tmp/docker exec -t -u 0 ci-container \

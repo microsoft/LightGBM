@@ -2,15 +2,6 @@
 
 set +x -e -E -o pipefail
 
-export PATH="/usr/lib64/openmpi/bin:${CONDA}/bin:${PATH}"
-
-# Azure DevOps checks out the repo to a path defined at BUILD_SOURCESDIRECTORY
-if [[ -z "$BUILD_SOURCESDIRECTORY" ]]; then
-    BUILD_DIRECTORY="$BUILD_SOURCESDIRECTORY"
-fi
-
-LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
-
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -20,8 +11,6 @@ elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang-17" ]]; then
     export CXX=clang++-17
     export CC=clang-17
-else
-    echo "--- not sure what compiler to set ---"
 fi
 
 if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
@@ -34,18 +23,6 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     exit 0
 fi
 
-echo "--- what is the environment? ---"
-echo "BUILD_SOURCESDIRECTORY=$BUILD_SOURCESDIRECTORY"
-echo "BUILD_ARTIFACTSSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY"
-pwd
-echo "---"
-
-echo "--- is there a CMakeCache laying around? ---"
-ls -alF ./build
-cat ./build/CMakeCache.txt
-echo "---"
-rm -rf ./build
-
 if [[ "$TASK" == "cpp-tests" ]]; then
     if [[ $METHOD == "with-sanitizers" ]]; then
         extra_cmake_opts="-DUSE_SANITIZER=ON"
@@ -55,11 +32,8 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
-    echo "--- line 46 ---"
-    cmake --log-level=NOTICE -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_MPI=OFF -DUSE_DEBUG=ON $extra_cmake_opts
-    echo "--- line 48 ---"
+    cmake --log-level=NOTICE -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
     cmake --build build --target testlightgbm -j4 || exit 1
-    echo "--- line 50 ---"
     ./testlightgbm || exit 1
     exit 0
 fi
