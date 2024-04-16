@@ -17,11 +17,15 @@ variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
+  # The __work/ directory, where Azure DevOps writes the source files, needs to be read-write because
+  # LightGBM's CI jobs write files in the source directory.
+  #
+  # For all the containers included here, all other directories that Azure mounts in are mounted as read-only
+  # to minimize the risk of side effects from one run affecting future runs.
+  # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container
   containers:
   - container: linux-artifact-builder
     image: lightgbm/vsts-agent:manylinux_2_28_x86_64
-    # mount the __work/ directory (where Azure DevOps writes the source files) as read-only
-    # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container?view=azure-pipelines
     mountReadOnly:
       work: false
       externals: true
@@ -208,6 +212,9 @@ jobs:
       docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     displayName: 'Enable Docker multi-architecture support'
   - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - script: |
       export ROOT_DOCKER_FOLDER=/LightGBM
       cat > docker.env <<EOF
       AZURE=$AZURE
@@ -226,8 +233,6 @@ jobs:
       export CONDA=\$HOME/miniforge
       export PATH=\$CONDA/bin:/opt/rh/llvm-toolset-7.0/root/usr/bin:\$PATH
       export LD_LIBRARY_PATH=/opt/rh/llvm-toolset-7.0/root/usr/lib64:\$LD_LIBRARY_PATH
-      git clean -d -f -x
-      exit 0
       $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
       $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
       EOF
