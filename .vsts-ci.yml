@@ -37,6 +37,11 @@ resources:
       tasks: true
   - container: rbase
     image: wch1/r-debug
+    mountReadOnly:
+      work: false
+      externals: true
+      tools: true
+      tasks: true
 jobs:
 ###########################################
 - job: Linux
@@ -68,8 +73,8 @@ jobs:
       gpu_source:
         TASK: gpu
         METHOD: source
-      # swig:
-      #   TASK: swig
+      swig:
+        TASK: swig
   steps:
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
@@ -78,10 +83,8 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - script: |
-      apt-get update
-      apt-get install -y --no-install-recommends git
       git clean -d -f -x
-    displayName: 'Clean build directories left over from previous runs'
+    displayName: 'Clean source directory'
   - script: |
       echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
     displayName: 'Add commit hash to artifacts archive'
@@ -121,31 +124,31 @@ jobs:
       bdist:
         TASK: bdist
         PYTHON_VERSION: '3.9'
-      # inference:
-      #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      # mpi_pip:
-      #   TASK: mpi
-      #   METHOD: pip
-      #   PYTHON_VERSION: '3.10'
-      # mpi_wheel:
-      #   TASK: mpi
-      #   METHOD: wheel
-      #   PYTHON_VERSION: '3.8'
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
-      #   PYTHON_VERSION: '3.10'
-      # gpu_pip:
-      #   TASK: gpu
-      #   METHOD: pip
-      #   PYTHON_VERSION: '3.9'
-      # gpu_wheel:
-      #   TASK: gpu
-      #   METHOD: wheel
-      #   PYTHON_VERSION: '3.8'
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+      mpi_pip:
+        TASK: mpi
+        METHOD: pip
+        PYTHON_VERSION: '3.10'
+      mpi_wheel:
+        TASK: mpi
+        METHOD: wheel
+        PYTHON_VERSION: '3.8'
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: '3.10'
+      gpu_pip:
+        TASK: gpu
+        METHOD: pip
+        PYTHON_VERSION: '3.9'
+      gpu_wheel:
+        TASK: gpu
+        METHOD: wheel
+        PYTHON_VERSION: '3.8'
       cpp_tests:
         TASK: cpp-tests
         METHOD: with-sanitizers
@@ -161,7 +164,7 @@ jobs:
       apt-get update
       apt-get install -y --no-install-recommends git
       git clean -d -f -x
-    displayName: 'Clean build directories left over from previous runs'
+    displayName: 'Clean source directory'
   # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
   - script: |
       /tmp/docker exec -t -u 0 ci-container \
@@ -245,50 +248,59 @@ jobs:
 #       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
 #       artifactName: PackageAssets
 #       artifactType: container
-# ###########################################
-# - job: macOS
-# ###########################################
-#   variables:
-#     COMPILER: clang
-#     OS_NAME: 'macos'
-#     PRODUCES_ARTIFACTS: 'true'
-#   pool:
-#     vmImage: 'macOS-11'
-#   strategy:
-#     matrix:
-#       regular:
-#         TASK: regular
-#         PYTHON_VERSION: '3.10'
-#       sdist:
-#         TASK: sdist
-#         PYTHON_VERSION: '3.9'
-#       bdist:
-#         TASK: bdist
-#       swig:
-#         TASK: swig
-#       cpp_tests:
-#         TASK: cpp-tests
-#         METHOD: with-sanitizers
-#         SANITIZERS: "address;undefined"
-#   steps:
-#   - script: |
-#       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
-#       echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
-#       CONDA=$AGENT_HOMEDIRECTORY/miniforge
-#       echo "##vso[task.setvariable variable=CONDA]$CONDA"
-#       echo "##vso[task.prependpath]$CONDA/bin"
-#       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
-#     displayName: 'Set variables'
-#   - bash: $(Build.SourcesDirectory)/.ci/setup.sh
-#     displayName: Setup
-#   - bash: $(Build.SourcesDirectory)/.ci/test.sh
-#     displayName: Test
-#   - task: PublishBuildArtifacts@1
-#     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
-#     inputs:
-#       pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-#       artifactName: PackageAssets
-#       artifactType: container
+###########################################
+- job: macOS
+###########################################
+  variables:
+    COMPILER: clang
+    OS_NAME: 'macos'
+    PRODUCES_ARTIFACTS: 'true'
+  pool:
+    vmImage: 'macOS-11'
+  strategy:
+    matrix:
+      regular:
+        TASK: regular
+        PYTHON_VERSION: '3.10'
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: '3.9'
+      bdist:
+        TASK: bdist
+      swig:
+        TASK: swig
+      cpp_tests:
+        TASK: cpp-tests
+        METHOD: with-sanitizers
+        SANITIZERS: "address;undefined"
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+      echo "##vso[task.setvariable variable=LGB_VER]$(head -n 1 VERSION.txt)"
+      CONDA=$AGENT_HOMEDIRECTORY/miniforge
+      echo "##vso[task.setvariable variable=CONDA]$CONDA"
+      echo "##vso[task.prependpath]$CONDA/bin"
+      echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
+    displayName: 'Set variables'
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - task: Bash@3
+    displayName: Setup
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      targetType: filePath
+  - task: Bash@3
+    displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: filePath
+  - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
+    inputs:
+      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: PackageAssets
+      artifactType: container
 # ###########################################
 # - job: Windows
 # ###########################################
