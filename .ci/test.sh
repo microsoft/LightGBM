@@ -2,6 +2,10 @@
 
 set +x -e -o pipefail
 
+export PATH="/usr/lib64/openmpi/bin:${CONDA}/bin:${PATH}"
+BUILD_DIRECTORY="$BUILD_SOURCESDIRECTORY"
+LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11

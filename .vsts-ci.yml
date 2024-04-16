@@ -72,12 +72,12 @@ jobs:
     displayName: Setup
     inputs:
       filePath: $(Build.SourcesDirectory)/.ci/setup.sh
-      targetType: 'filePath'
+      targetType: filePath
   - task: Bash@3
     displayName: Test
     inputs:
       filePath: $(Build.SourcesDirectory)/.ci/test.sh
-      targetType: 'filePath'
+      targetType: filePath
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
