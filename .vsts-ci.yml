@@ -78,6 +78,8 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - script: |
+      apt-get update
+      apt-get install -y --no-install-recommends git
       git clean -d -f -x
     displayName: 'Clean build directories left over from previous runs'
   - script: |
