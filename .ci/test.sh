@@ -34,6 +34,11 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     exit 0
 fi
 
+echo "--- what is the environment? ---"
+echo "BUILD_SOURCESDIRECTORY=$BUILD_SOURCESDIRECTORY"
+pwd
+echo "---"
+
 echo "--- is there a CMakeCache laying around? ---"
 ls -alF ./build
 cat ./build/CMakeCache.txt
