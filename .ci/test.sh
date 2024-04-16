@@ -38,6 +38,7 @@ echo "--- is there a CMakeCache laying around? ---"
 ls -alF ./build
 cat ./build/CMakeCache.txt
 echo "---"
+rm -rf ./build
 
 if [[ "$TASK" == "cpp-tests" ]]; then
     if [[ $METHOD == "with-sanitizers" ]]; then
