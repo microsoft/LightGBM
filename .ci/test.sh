@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set +x -e -E -o
+set +x -e -E -o pipefail
 
 export PATH="/usr/lib64/openmpi/bin:${CONDA}/bin:${PATH}"
 
