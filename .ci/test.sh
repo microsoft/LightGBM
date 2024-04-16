@@ -34,6 +34,10 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     exit 0
 fi
 
+echo "--- is there a CMakeCache laying around? ---"
+ls -alF ./build
+echo "---"
+
 if [[ "$TASK" == "cpp-tests" ]]; then
     if [[ $METHOD == "with-sanitizers" ]]; then
         extra_cmake_opts="-DUSE_SANITIZER=ON"
@@ -44,7 +48,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
         extra_cmake_opts=""
     fi
     echo "--- line 46 ---"
-    cmake --log-level=NOTICE -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake --log-level=NOTICE -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_MPI=OFF -DUSE_DEBUG=ON $extra_cmake_opts
     echo "--- line 48 ---"
     cmake --build build --target testlightgbm -j4 || exit 1
     echo "--- line 50 ---"
