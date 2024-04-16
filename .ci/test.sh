@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set +x -e -o pipefail
+set +x -e -E -o -u pipefail
 
 export PATH="/usr/lib64/openmpi/bin:${CONDA}/bin:${PATH}"
 
 # Azure DevOps checks out the repo to a path defined at BUILD_SOURCESDIRECTORY
-if [-z $BUILD_SOURCESDIRECTORY]; then
+if [[ -z "$BUILD_SOURCESDIRECTORY" ]]; then
     BUILD_DIRECTORY="$BUILD_SOURCESDIRECTORY"
 fi
 
@@ -44,7 +44,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
         extra_cmake_opts=""
     fi
     echo "--- line 46 ---"
-    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake --log-level=NOTICE -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
     echo "--- line 48 ---"
     cmake --build build --target testlightgbm -j4 || exit 1
     echo "--- line 50 ---"

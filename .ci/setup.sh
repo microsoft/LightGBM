@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set +x -e -o pipefail
+set +x -e -E -o -u pipefail
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
