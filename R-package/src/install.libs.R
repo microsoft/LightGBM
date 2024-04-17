@@ -184,7 +184,7 @@ R_version_string <- paste(
 )
 r_version_arg <- sprintf("-DCMAKE_R_VERSION='%s'", R_version_string)
 # ensure CMake build respects how R is configured (`R CMD config SHLIB_EXT`)
-shlib_ext_arg <- sprintf("-DCMAKE_SHARED_LIBRARY_SUFFIX='%s'", SHLIB_EXT)
+shlib_ext_arg <- sprintf("-DCMAKE_SHARED_LIBRARY_SUFFIX_CXX='%s'", SHLIB_EXT)
 cmake_args <- c(cmake_args, r_version_arg, shlib_ext_arg)
 
 # the checks below might already run `cmake -G`. If they do, set this flag
