@@ -21,11 +21,10 @@ RUN git clone \
         --branch stable \
         --depth 1 \
         https://github.com/Microsoft/LightGBM && \
-    mkdir LightGBM/build && \
-    cd LightGBM/build && \
-    cmake .. && \
-    make -j4 && \
-    make install && \
+    cd ./Lightgbm && \
+    cmake -B build -S . && \
+    cmake --build build -j4 && \
+    cmake --install build && \
     cd "${HOME}" && \
     rm -rf LightGBM
 
