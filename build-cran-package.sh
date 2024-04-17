@@ -167,7 +167,7 @@ cd "${TEMP_R_DIR}"
 
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
-    #  <packagename>.so/dll. The package source code expects
+    #  <packagename>.so/dll/dylib. The package source code expects
     # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
     # this project has historically handled installation
     echo "Changing lib_lightgbm to lightgbm"

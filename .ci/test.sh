@@ -49,11 +49,7 @@ if [[ $TASK == "if-else" ]]; then
 fi
 
 if [[ $TASK == "swig" ]]; then
-    if [[ $OS_NAME == "macos" ]]; then
-        cmake -B build -S . -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON
-    else
-        cmake -B build -S . -DUSE_SWIG=ON
-    fi
+    cmake -B build -S . -DUSE_SWIG=ON
     cmake --build build -j4 || exit 1
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
@@ -283,7 +279,7 @@ pytest $BUILD_DIRECTORY/tests || exit 1
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         if [[ $OS_NAME == "macos" ]]; then
-            cp $BUILD_DIRECTORY/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
+            cp $BUILD_DIRECTORY/lib_lightgbm.dylib $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
