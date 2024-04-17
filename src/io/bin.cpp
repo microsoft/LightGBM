@@ -677,25 +677,25 @@ namespace LightGBM {
     }
   }
 
-  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets) {
+  Bin* Bin::CreateDensePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
     if (num_bin <= 16) {
-      return new DensePairwiseRankingDiffBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint8_t, true>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, true>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     } else if (num_bin <= 256) {
-      return new DensePairwiseRankingDiffBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint8_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint8_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     } else if (num_bin <= 65536) {
-      return new DensePairwiseRankingDiffBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint16_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint16_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     } else {
-      return new DensePairwiseRankingDiffBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new DensePairwiseRankingDiffBin<uint32_t, false>(num_pairs, paired_ranking_item_index_map, new DenseBin<uint32_t, false>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     }
   }
 
-  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets) {
+  Bin* Bin::CreateSparsePairwiseRankingDiffBin(data_size_t num_original_data, int num_bin, data_size_t num_pairs, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets) {
     if (num_bin <= 256) {
-      return new SparsePairwiseRankingDiffBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint8_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint8_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     } else if (num_bin <= 65536) {
-      return new SparsePairwiseRankingDiffBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint16_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint16_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     } else {
-      return new SparsePairwiseRankingDiffBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets);
+      return new SparsePairwiseRankingDiffBin<uint32_t>(num_pairs, paired_ranking_item_index_map, new SparseBin<uint32_t>(num_original_data), diff_bin_mappers, ori_bin_mappers, bin_offsets, diff_bin_offsets);
     }
   }
 

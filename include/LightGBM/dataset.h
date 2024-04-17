@@ -841,6 +841,13 @@ class Dataset {
     }
   }
 
+  void PrintGroupFeatureInfo(int group_index) const {
+    for (int sub_feature = 0; sub_feature < group_feature_cnt_[group_index]; ++sub_feature) {
+      const BinMapper* bin_mapper = feature_groups_[group_index]->bin_mappers_[sub_feature].get();
+      Log::Warning("sub_feature = %d, missing_type = %d, most_freq_bin = %d", sub_feature, bin_mapper->missing_type(), bin_mapper->GetMostFreqBin());
+    }
+  }
+
   inline int FeatureNumBin(int i) const {
     const int group = feature2group_[i];
     const int sub_feature = feature2subfeature_[i];

@@ -343,7 +343,7 @@ class FeatureGroup {
     num_feature_ += other->num_feature_;
   }
 
-  inline BinIterator* SubFeatureIterator(int sub_feature) const {
+  virtual inline BinIterator* SubFeatureIterator(int sub_feature) const {
     uint32_t most_freq_bin = bin_mappers_[sub_feature]->GetMostFreqBin();
     if (!is_multi_val_) {
       uint32_t min_bin = bin_offsets_[sub_feature];
@@ -373,7 +373,7 @@ class FeatureGroup {
     }
   }
 
-  inline BinIterator* FeatureGroupIterator() {
+  virtual inline BinIterator* FeatureGroupIterator() {
     if (is_multi_val_) {
       return nullptr;
     }

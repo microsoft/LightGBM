@@ -1097,6 +1097,41 @@ void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int l
     CHECK_EQ(sum_right_gradient, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian >> 32));
     CHECK_EQ(sum_right_hessian, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian & 0x00000000ffffffff));
     Log::Warning("============================ end leaf split info ============================");
+    Log::Warning("============================ pass split check ============================");
+  } else {
+    double sum_left_gradient = 0;
+    double sum_left_hessian = 0;
+    double sum_right_gradient = 0;
+    double sum_right_hessian = 0;
+
+    for (data_size_t i = 0; i < num_data_in_left; ++i) {
+      const data_size_t index = data_indices_in_left[i];
+      sum_left_gradient += gradients_[index];
+      sum_left_hessian += hessians_[index];
+    }
+    for (data_size_t i = 0; i < num_data_in_right; ++i) {
+      const data_size_t index = data_indices_in_right[i];
+      sum_right_gradient += gradients_[index];
+      sum_right_hessian += hessians_[index];
+    }
+    // Log::Warning("============================ start leaf split info ============================");
+    // Log::Warning("left_leaf_index = %d, right_leaf_index = %d", left_leaf_index, right_leaf_index);
+    // Log::Warning("num_data_in_left = %d, num_data_in_right = %d", num_data_in_left, num_data_in_right);
+    // Log::Warning("sum_left_gradient = %d, best_split_info->left_sum_gradient_and_hessian.gradient = %d", sum_left_gradient,
+    //   static_cast<int32_t>(best_split_info.left_sum_gradient_and_hessian >> 32));
+    // Log::Warning("sum_left_hessian = %d, best_split_info->left_sum_gradient_and_hessian.hessian = %d", sum_left_hessian,
+    //   static_cast<int32_t>(best_split_info.left_sum_gradient_and_hessian & 0x00000000ffffffff));
+    // Log::Warning("sum_right_gradient = %d, best_split_info->right_sum_gradient_and_hessian.gradient = %d", sum_right_gradient,
+    //   static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian >> 32));
+    // Log::Warning("sum_right_hessian = %d, best_split_info->right_sum_gradient_and_hessian.hessian = %d", sum_right_hessian,
+    //   static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian & 0x00000000ffffffff));
+    CHECK_EQ(num_data_in_left, best_split_info.left_count);
+    CHECK_EQ(num_data_in_right, best_split_info.right_count);
+    CHECK_LE(std::fabs(sum_left_gradient - best_split_info.left_sum_gradient), 1e-3);
+    CHECK_LE(std::fabs(sum_left_hessian - best_split_info.left_sum_hessian), 1e-3);
+    CHECK_LE(std::fabs(sum_right_gradient - best_split_info.right_sum_gradient), 1e-3);
+    CHECK_LE(std::fabs(sum_right_hessian - best_split_info.right_sum_hessian), 1e-3);
+    Log::Warning("============================ pass split check ============================");
   }
 }
 #endif

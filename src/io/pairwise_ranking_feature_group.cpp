@@ -97,6 +97,26 @@ PairwiseRankingDifferentialFeatureGroup::PairwiseRankingDifferentialFeatureGroup
   });
 
   FinishLoad();
+
+  // calculate diff bin offsets
+  const int offset = 1;
+  original_bin_offsets_ = bin_offsets_;
+  bin_offsets_.clear();
+  num_total_bin_ = offset;
+  bin_offsets_.emplace_back(num_total_bin_);
+  for (int i = 0; i < num_feature_; ++i) {
+    auto num_bin = diff_feature_bin_mappers_[i]->num_bin();
+    if (diff_feature_bin_mappers_[i]->GetMostFreqBin() == 0) {
+      num_bin -= offset;
+    }
+    num_total_bin_ += num_bin;
+    bin_offsets_.emplace_back(num_total_bin_);
+  }
+
+  bin_mappers_.clear();
+  for (const auto& bin_mapper : diff_feature_bin_mappers_) {
+    bin_mappers_.emplace_back(new BinMapper(*bin_mapper.get()));
+  }
 }
 
 void PairwiseRankingDifferentialFeatureGroup::CreateBinData(int num_data, bool is_multi_val, bool force_dense, bool force_sparse) {
@@ -105,12 +125,37 @@ void PairwiseRankingDifferentialFeatureGroup::CreateBinData(int num_data, bool i
       (!force_dense && num_feature_ == 1 &&
         bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
     is_sparse_ = true;
-    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &bin_offsets_));
+    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_));
   } else {
     is_sparse_ = false;
-    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &bin_offsets_));
+    bin_data_.reset(Bin::CreateDensePairwiseRankingDiffBin(num_data, num_total_bin_, num_data_, paired_ranking_item_index_map_, &diff_feature_bin_mappers_, &ori_feature_bin_mappers_, &original_bin_offsets_, &bin_offsets_));
   }
   is_multi_val_ = false;
+}
+
+inline BinIterator* PairwiseRankingDifferentialFeatureGroup::SubFeatureIterator(int sub_feature) const {
+  uint32_t most_freq_bin = ori_feature_bin_mappers_[sub_feature]->GetMostFreqBin();
+  if (!is_multi_val_) {
+    uint32_t min_bin = original_bin_offsets_[sub_feature];
+    uint32_t max_bin = original_bin_offsets_[sub_feature + 1] - 1;
+    return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
+  } else {
+    int addi = most_freq_bin == 0 ? 0 : 1;
+    uint32_t min_bin = 1;
+    uint32_t max_bin = ori_feature_bin_mappers_[sub_feature]->num_bin() - 1 + addi;
+    return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
+                                                      most_freq_bin);
+  }
+}
+
+inline BinIterator* PairwiseRankingDifferentialFeatureGroup::FeatureGroupIterator() {
+  if (is_multi_val_) {
+    return nullptr;
+  }
+  uint32_t min_bin = original_bin_offsets_[0];
+  uint32_t max_bin = original_bin_offsets_.back() - 1;
+  uint32_t most_freq_bin = 0;
+  return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
 }
 
 }  // namespace LightGBM

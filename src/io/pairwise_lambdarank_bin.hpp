@@ -521,10 +521,11 @@ class DensePairwiseRankingSecondBin: public DensePairwiseRankingBin<VAL_T, IS_4B
 template <typename VAL_T, bool IS_4BIT>
 class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingDiffIterator> {
  public:
-  DensePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
+  DensePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, DenseBin<VAL_T, IS_4BIT>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets): DensePairwiseRankingBin<VAL_T, IS_4BIT, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
     diff_bin_mappers_ = diff_bin_mappers;
     ori_bin_mappers_ = ori_bin_mappers;
     bin_offsets_ = bin_offsets;
+    diff_bin_offsets_ = diff_bin_offsets;
   }
 
   BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
@@ -547,6 +548,7 @@ class DensePairwiseRankingDiffBin: public DensePairwiseRankingBin<VAL_T, IS_4BIT
   inline uint32_t GetBinAt(const data_size_t paired_data_index) const override;
 
   const std::vector<uint32_t>* bin_offsets_;
+  const std::vector<uint32_t>* diff_bin_offsets_;
   const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
   const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
 };
@@ -584,8 +586,9 @@ class SparsePairwiseRankingSecondBin: public SparsePairwiseRankingBin<VAL_T, Pai
 template <typename VAL_T>
 class SparsePairwiseRankingDiffBin: public SparsePairwiseRankingBin<VAL_T, PairwiseRankingDiffIterator> {
  public:
-  SparsePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets): SparsePairwiseRankingBin<VAL_T, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
+  SparsePairwiseRankingDiffBin(data_size_t num_data, const std::pair<data_size_t, data_size_t>* paired_ranking_item_index_map, SparseBin<VAL_T>* unpaired_bin, const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers, const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers, const std::vector<uint32_t>* bin_offsets, const std::vector<uint32_t>* diff_bin_offsets): SparsePairwiseRankingBin<VAL_T, PairwiseRankingDiffIterator>(num_data, paired_ranking_item_index_map, unpaired_bin) {
     bin_offsets_ = bin_offsets;
+    diff_bin_offsets_ = diff_bin_offsets;
     diff_bin_mappers_ = diff_bin_mappers;
     ori_bin_mappers_ = ori_bin_mappers;
   }
@@ -609,6 +612,7 @@ class SparsePairwiseRankingDiffBin: public SparsePairwiseRankingBin<VAL_T, Pairw
   }
 
   const std::vector<uint32_t>* bin_offsets_;
+  const std::vector<uint32_t>* diff_bin_offsets_;
   const std::vector<std::unique_ptr<const BinMapper>>* diff_bin_mappers_;
   const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
 };

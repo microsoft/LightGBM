@@ -913,15 +913,13 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   if (config.use_differential_feature_in_pairwise_ranking) {
     for (int diff_feature_index = 0; diff_feature_index < static_cast<int>(diff_feature_bin_mappers.size()); ++diff_feature_index) {
       if (!diff_feature_bin_mappers[diff_feature_index]->is_trivial()) {
-        used_feature_map_.push_back(num_features_);
-        numeric_feature_map_.push_back(num_features_);
         num_numeric_features_ += 1;
         num_features_ += 1;
         used_diff_features.push_back(diff_feature_index);
-      } else {
-        used_feature_map_.push_back(-1);
       }
     }
+    numeric_feature_map_.resize(num_features_, -1);
+    used_feature_map_.resize(2 * dataset->num_total_features_ + static_cast<int>(diff_feature_bin_mappers.size()), -1);
   }
 
   const bool is_use_gpu = config.device_type == std::string("cuda") || config.device_type == std::string("gpu");
@@ -966,6 +964,8 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
           }
           feature2group_.push_back(i + num_groups_);
           feature2subfeature_.push_back(num_features_in_group);
+          numeric_feature_map_[cur_feature_index] = cur_feature_index;
+          used_feature_map_[diff_feature_index + dataset->num_total_features_ * 2] = cur_feature_index;
           ++cur_feature_index;
           ++num_features_in_group;
           const int ori_feature_index = dataset->InnerFeatureIndex(diff_original_feature_index[diff_feature_index]);
