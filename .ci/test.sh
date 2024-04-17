@@ -2,6 +2,8 @@
 
 set -e -E -u -o pipefail
 
+git clean -d -f -x
+
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 METHOD=${METHOD:-""}
