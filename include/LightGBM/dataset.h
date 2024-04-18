@@ -1150,6 +1150,10 @@ class Dataset {
   std::shared_ptr<std::vector<std::vector<data_size_t>>> sampled_indices_;
   /*! \brief stored number of totally sampled data, for creating differential features in pairwise lambdarank */
   data_size_t num_total_sampled_data_;
+  /*! \brief stored query boundaries from training dataset, for creating differential features in pairwise lambdarank */
+  const data_size_t* train_query_boundaries_;
+  /*! \brief stored number of queries from training dataset, for creating differential features in pairwise lambdarank */
+  data_size_t train_num_queries_;
 };
 
 }  // namespace LightGBM

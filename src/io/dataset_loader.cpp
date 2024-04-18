@@ -354,6 +354,8 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
   dataset->sampled_values_ = train_data->sampled_values_;
   dataset->sampled_indices_ = train_data->sampled_indices_;
   dataset->num_total_sampled_data_ = train_data->num_total_sampled_data_;
+  dataset->train_query_boundaries_ = train_data->metadata().query_boundaries();
+  dataset->train_num_queries_ = train_data->metadata().num_queries();
 
   return dataset.release();
 }

@@ -894,7 +894,15 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
       }
     }
 
-    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, metadata_.query_boundaries(), metadata_.num_queries(), &diff_feature_bin_mappers, &diff_original_feature_index, config);
+    if (!is_validation) {
+      train_query_boundaries_ = metadata_.query_boundaries();
+      train_num_queries_ = metadata_.num_queries();
+    } else {
+      train_query_boundaries_ = dataset->train_query_boundaries_;
+      train_num_queries_ = dataset->train_num_queries_;
+    }
+    // TODO(shiyu1994): verify the difference in training and validation results even when they share the same dataset
+    CreatePairwiseRankingDifferentialFeatures(*sampled_values_, *sampled_indices_, original_bin_mappers, num_total_sampled_data_, train_query_boundaries_, train_num_queries_, &diff_feature_bin_mappers, &diff_original_feature_index, config);
   }
 
   used_feature_map_.clear();
@@ -924,8 +932,18 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
 
   const bool is_use_gpu = config.device_type == std::string("cuda") || config.device_type == std::string("gpu");
   std::vector<int8_t> group_is_multi_val;
-  std::vector<std::vector<int>> diff_feature_groups = FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(sampled_indices_.get()).data(), Common::VectorSize<int>(*sampled_indices_).data(), static_cast<int>(sampled_indices_->size()), num_total_sampled_data_, num_data_, is_use_gpu, false, &group_is_multi_val);
+  std::vector<std::vector<int>> diff_feature_groups =
+    FindGroups(diff_feature_bin_mappers, used_diff_features, Common::Vector2Ptr<int>(sampled_indices_.get()).data(), Common::VectorSize<int>(*sampled_indices_).data(), static_cast<int>(sampled_indices_->size()), num_total_sampled_data_, num_data_, is_use_gpu, false, &group_is_multi_val);
 
+  if (is_validation) {
+    std::vector<std::vector<int>> flatten_feature_groups;
+    for (const auto& features_in_group : diff_feature_groups) {
+      for (const int feature_index : features_in_group) {
+        flatten_feature_groups.push_back(std::vector<int>{feature_index});
+      }
+    }
+    diff_feature_groups = flatten_feature_groups;
+  }
 
   int cur_feature_index = 0;
   for (int i = 0; i < num_groups_; ++i) {
