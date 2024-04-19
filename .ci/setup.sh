@@ -1,6 +1,9 @@
 #!/bin/bash
 
+set -e -E -o pipefail
+
 ARCH=$(uname -m)
+
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then

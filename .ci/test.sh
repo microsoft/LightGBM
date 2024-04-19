@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -o pipefail
+
 ARCH=$(uname -m)
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
