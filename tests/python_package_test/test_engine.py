@@ -938,6 +938,54 @@ def test_early_stopping_via_global_params(first_metric_only):
     assert "error" in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize("early_stopping_round", [-10, -1, 0, None, "None"])
+def test_early_stopping_is_not_enabled_for_non_positive_stopping_rounds(early_stopping_round):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": early_stopping_round,
+        "first_metric_only": True,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    valid_set_name = "valid_set"
+
+    if early_stopping_round is None:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert "early_stopping_round" not in gbm.params
+        assert gbm.num_trees() == num_trees
+    elif early_stopping_round == "None":
+        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got 'str'"):
+            gbm = lgb.train(
+                params,
+                lgb_train,
+                feval=[constant_metric],
+                valid_sets=lgb_eval,
+                valid_names=valid_set_name,
+            )
+    elif early_stopping_round <= 0:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert gbm.params["early_stopping_round"] == early_stopping_round
+        assert gbm.num_trees() == num_trees
+
+
 @pytest.mark.parametrize("first_only", [True, False])
 @pytest.mark.parametrize("single_metric", [True, False])
 @pytest.mark.parametrize("greater_is_better", [True, False])
