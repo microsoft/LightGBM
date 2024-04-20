@@ -397,6 +397,9 @@ struct Config {
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
 
+  // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to a specific metric name, if you want to use only this metric for early stopping
+  std::string chosen_metric_early_stopping;
+
   // alias = max_tree_output, max_leaf_output
   // desc = used to limit the max output of tree leaves
   // desc = ``<= 0`` means no constraint

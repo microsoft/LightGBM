@@ -815,6 +815,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"extra_seed", {}},
     {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
     {"first_metric_only", {}},
+    {"chosen_metric_early_stopping", {}},
     {"max_delta_step", {"max_tree_output", "max_leaf_output"}},
     {"lambda_l1", {"reg_alpha", "l1_regularization"}},
     {"lambda_l2", {"reg_lambda", "lambda", "l2_regularization"}},
