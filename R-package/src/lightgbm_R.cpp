@@ -150,11 +150,10 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
     ref = R_ExternalPtrAddr(reference);
   }
   const char* filename_ptr = CHAR(PROTECT(Rf_asChar(filename)));
-  const char* parameters_ptr = CHAR(PROTECT(Rf_asChar(parameters)));
+  const char* parameters_ptr = CHAR(Rf_asChar(parameters));
   CHECK_CALL(LGBM_DatasetCreateFromFile(filename_ptr, parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(2);
   return ret;
   R_API_END();
 }
