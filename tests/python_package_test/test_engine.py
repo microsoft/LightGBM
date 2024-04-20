@@ -966,7 +966,7 @@ def test_early_stopping_is_not_enabled_for_non_positive_stopping_rounds(early_st
         assert "early_stopping_round" not in gbm.params
         assert gbm.num_trees() == num_trees
     elif early_stopping_round == "None":
-        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got str"):
+        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got 'str'"):
             gbm = lgb.train(
                 params,
                 lgb_train,
