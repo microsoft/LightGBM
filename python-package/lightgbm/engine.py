@@ -236,7 +236,7 @@ def train(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
@@ -760,7 +760,7 @@ def cv(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
