@@ -280,8 +280,7 @@ class _EarlyStoppingCallback:
         verbose: bool = True,
         min_delta: Union[float, List[float]] = 0.0,
     ) -> None:
-        if not isinstance(stopping_rounds, int) or stopping_rounds <= 0:
-            raise ValueError(f"stopping_rounds should be an integer and greater than 0. got: {stopping_rounds}")
+        self.enabled = _should_enable_early_stopping(stopping_rounds)
 
         self.order = 30
         self.before_iteration = False
@@ -291,7 +290,6 @@ class _EarlyStoppingCallback:
         self.verbose = verbose
         self.min_delta = min_delta
 
-        self.enabled = True
         self._reset_storages()
 
     def _reset_storages(self) -> None:
@@ -436,6 +434,18 @@ class _EarlyStoppingCallback:
                         _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
                 raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
             self._final_iteration_check(env, eval_name_splitted, i)
+
+
+def _should_enable_early_stopping(stopping_rounds: Any) -> bool:
+    """Check if early stopping should be activated.
+
+    This function will evaluate to True if the early stopping callback should be
+    activated (i.e. stopping_rounds > 0).  It also provides an informative error if the
+    type is not int.
+    """
+    if not isinstance(stopping_rounds, int):
+        raise TypeError(f"early_stopping_round should be an integer. Got '{type(stopping_rounds).__name__}'")
+    return stopping_rounds > 0
 
 
 def early_stopping(
