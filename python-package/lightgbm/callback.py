@@ -444,7 +444,7 @@ def _should_enable_early_stopping(stopping_rounds: Any) -> bool:
     type is not int.
     """
     if not isinstance(stopping_rounds, int):
-        raise TypeError(f"early_stopping_round should be an integer. Got {type(stopping_rounds).__name__}")
+        raise TypeError(f"early_stopping_round should be an integer. Got '{type(stopping_rounds).__name__}'")
     return stopping_rounds > 0
 
 
