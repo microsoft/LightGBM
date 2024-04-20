@@ -191,7 +191,13 @@ def train(
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
-
+    chosen_metric_early_stopping = params.get("chosen_metric_early_stopping", None)
+    # Test if both parameters are used
+    if (first_metric_only + (chosen_metric_early_stopping is not None)) == 2:
+        error_message = """
+        Only one of first_metric_only and chosen_metric_early_stopping parameters should be used"""
+        raise ValueError(error_message)
+    
     predictor: Optional[_InnerPredictor] = None
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor.from_model_file(model_file=init_model, pred_parameter=params)
@@ -241,6 +247,7 @@ def train(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                chosen_metric=chosen_metric_early_stopping,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
@@ -716,6 +723,12 @@ def cv(
     if params["early_stopping_round"] is None:
         params.pop("early_stopping_round")
     first_metric_only = params.get("first_metric_only", False)
+    chosen_metric_early_stopping = params.get("chosen_metric_early_stopping", None)
+    # Test if both parameters are used
+    if (first_metric_only + (chosen_metric_early_stopping is not None)) == 2:
+        error_message = """
+        Only one of first_metric_only and chosen_metric_early_stopping parameters should be used"""
+        raise ValueError(error_message)
 
     if isinstance(init_model, (str, Path)):
         predictor = _InnerPredictor.from_model_file(
@@ -765,6 +778,7 @@ def cv(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                chosen_metric=chosen_metric_early_stopping,
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
