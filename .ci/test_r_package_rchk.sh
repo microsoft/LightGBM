@@ -6,7 +6,7 @@ echo "Checking R package with rchk"
 sh build-cran-package.sh --no-build-vignettes
 
 mkdir -p ./packages
-LGB_VERSION=$(head -1 VERSION.txt | sed "s/rc/-/g")
+LGB_VER=$(head -1 VERSION.txt | sed "s/rc/-/g")
 PKG_TARBALL="lightgbm_${LGB_VER}.tar.gz"
 cp ./${PKG_TARBALL} ./packages/${PKG_TARBALL}
 
