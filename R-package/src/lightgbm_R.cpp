@@ -154,7 +154,7 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   CHECK_CALL(LGBM_DatasetCreateFromFile(filename_ptr, parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
-  UNPROTECT(3);
+  UNPROTECT(2);
   return ret;
   R_API_END();
 }
