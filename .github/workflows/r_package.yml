@@ -322,7 +322,7 @@ jobs:
       - name: Build package and run rchk tests
         shell: bash
         run: |
-          ./.ci/test-r-package-rchk.sh
+          ./.ci/test_r_package_rchk.sh
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
