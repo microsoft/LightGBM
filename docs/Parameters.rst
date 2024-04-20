@@ -127,7 +127,9 @@ Core Parameters
 
       -  ``custom``
 
-      -  **Note**: Not supported in CLI version; must be passed through parameters explicitly
+      -  **Note**: Not supported in CLI version
+
+      -  must be passed through parameters explicitly in the C API
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
 
