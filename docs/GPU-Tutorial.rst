@@ -59,13 +59,10 @@ Now we are ready to checkout LightGBM and compile it with GPU support:
 
     git clone --recursive https://github.com/microsoft/LightGBM
     cd LightGBM
-    mkdir build
-    cd build
-    cmake -DUSE_GPU=1 .. 
+    cmake -B build -S . -DUSE_GPU=1
     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-    # cmake -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ ..
-    make -j$(nproc)
-    cd ..
+    # cmake -B build -S . -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
+    cmake --build build -j$(nproc)
 
 You will see two binaries are generated, ``lightgbm`` and ``lib_lightgbm.so``.
 

@@ -81,13 +81,18 @@ minimum-version = "0.4.4"
 # end:build-system
 
 [tool.isort]
+include_trailing_comma = true
 line_length = 120
+# "vertical hanging indent", to match what ruff-format does
+# ref: https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html#3-vertical-hanging-indent
+multi_line_output = 3
 skip_glob = [
     "*/external_libs/*",
-    "*/lightgbm-python/*"
+    "*/lightgbm-python/*",
 ]
 
 [tool.mypy]
+disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
@@ -108,21 +113,33 @@ docstring-code-format = false
 exclude = [
     "build/*.py",
     "compile/*.py",
-    "examples/*.py",
     "external_libs/*.py",
     "lightgbm-python/*.py",
-    "python-package/*.py",
-    "tests/*.py"
 ]
 indent-style = "space"
 quote-style = "double"
+skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
 ignore = [
     # (pydocstyle) Missing docstring in magic method
     "D105",
     # (pycodestyle) Line too long
-    "E501"
+    "E501",
+    # (pylint) Too many branches
+    "PLR0912",
+    # (pylint) Too many arguments in function definition
+    "PLR0913",
+    # (pylint) Too many statements
+    "PLR0915",
+    # (pylint) Consider merging multiple comparisons
+    "PLR1714",
+    # (pylint) Magic value used in comparison
+    "PLR2004",
+    # (pylint) for loop veriable overwritten by assignment target
+    "PLW2901",
+    # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
+    "PLR5501"
 ]
 select = [
     # flake8-bugbear
@@ -135,6 +152,8 @@ select = [
     "E",
     # pyflakes
     "F",
+    # pylint
+    "PL",
     # flake8-return: unnecessary assignment before return
     "RET504",
     # flake8-simplify: use dict.get() instead of an if-else block
@@ -155,6 +174,10 @@ select = [
     "D",
     # flake8-print
     "T"
+]
+"python-package/lightgbm/basic.py" = [
+    # (pylint) Using the global statement is discouraged
+    "PLW0603"
 ]
 "tests/*" = [
     # (flake8-bugbear) Found useless expression
