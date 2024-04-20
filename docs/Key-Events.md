@@ -75,7 +75,7 @@ The list includes the commits where the major feature added is considered workin
 * 22/06/2017 [Microsoft/LightGBM@d862b3e](https://github.com/microsoft/LightGBM/pull/642): CIntegration: Travis OSX Support (Pull Request 642)
 * 20/06/2017 [Microsoft/LightGBM@80c641c](https://github.com/microsoft/LightGBM/pull/635): Release: Python pip package (Pull Request 635)
 * 18/06/2017 [Microsoft/LightGBM@4d2aa84](https://github.com/microsoft/LightGBM/pull/634): CIntegration: AppVeyor Support (Pull Request 634)
-* 06/06/2017 [Microsoft/LightGBM@2c9ce59](https://github.com/microsoft/LightGBM/pull/592): Release: R-package version 0.2 (Pull Request 592) 
+* 06/06/2017 [Microsoft/LightGBM@2c9ce59](https://github.com/microsoft/LightGBM/pull/592): Release: R-package version 0.2 (Pull Request 592)
 * 05/06/2017 [Microsoft/LightGBM@f98d75f](https://github.com/microsoft/LightGBM/pull/584): Feature: Use custom compiler for R-package (Pull Request 584)
 * 29/05/2017 [Microsoft/LightGBM@993bbd5](https://github.com/microsoft/LightGBM/pull/559): Parameter: Early Stopping for predictions (Pull Request 559)
 * 26/05/2017 [Microsoft/LightGBM@3abff37](https://github.com/microsoft/LightGBM/commit/3abff370bb353293e4a03e516111dd02785fbd97): Feature: Parameter to disable missing values (Commit)

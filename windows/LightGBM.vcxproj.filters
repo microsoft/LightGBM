@@ -284,6 +284,9 @@
     <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\treelearner\feature_histogram.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
