@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -E -u
+set -e -E -u -o pipefail
 
 # defaults
 INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}

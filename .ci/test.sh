@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -E -u -o pipefail
+set -e -E -o -u pipefail
 
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
