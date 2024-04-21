@@ -1530,19 +1530,23 @@ bst <- lightgbm(
   , verbose = .LGB_VERBOSITY
 )
 
-test_that("num_iteration and start_iteration work for lgb.dump()", {
-  # Simplified version of lgb.model.dt.tree()
-  get_trees_from_dump <- function(x) {
-    parsed <- jsonlite::fromJSON(
-      txt = x
-      , simplifyVector = TRUE
-      , simplifyDataFrame = FALSE
-      , simplifyMatrix = FALSE
-      , flatten = FALSE
-    )
-    return(lapply(parsed$tree_info, FUN = .single_tree_parse))
-  }
+# Simplified version of lgb.model.dt.tree()
+get_trees_from_dump <- function(x) {
+  parsed <- jsonlite::fromJSON(
+    txt = x
+    , simplifyVector = TRUE
+    , simplifyDataFrame = FALSE
+    , simplifyMatrix = FALSE
+    , flatten = FALSE
+  )
+  return(lapply(parsed$tree_info, FUN = .single_tree_parse))
+}
 
+get_n_trees <- function(x) {
+  return(length(get_trees_from_dump(lgb.dump(x))))
+}
+
+test_that("num_iteration and start_iteration work for lgb.dump()", {
   first2 <- get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
   last3 <- get_trees_from_dump(
     lgb.dump(bst, num_iteration = 3L, start_iteration = 2L)
@@ -1552,6 +1556,25 @@ test_that("num_iteration and start_iteration work for lgb.dump()", {
 
   expect_equal(c(first2, last3), all5)
   expect_equal(too_many, all5)
+})
+
+test_that("num_iteration and start_iteration work for lgb.save()", {
+  save_and_load <- function(bst, ...) {
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file, ...)
+    return(lgb.load(model_file))
+  }
+  n_first2 <- get_n_trees(save_and_load(bst, num_iteration = 2L))
+  n_last3 <- get_n_trees(
+    save_and_load(bst, num_iteration = 3L, start_iteration = 2L)
+  )
+  n_all5 <- get_n_trees(save_and_load(bst))
+  n_too_many <- get_n_trees(save_and_load(bst, num_iteration = 10L))
+
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
 })
 
 test_that("num_iteration and start_iteration work for save_model_to_string()", {
