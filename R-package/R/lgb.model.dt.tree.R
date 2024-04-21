@@ -90,7 +90,6 @@ lgb.model.dt.tree <- function(
   tree_dt[, split_feature := feature_names]
 
   return(tree_dt)
-
 }
 
 

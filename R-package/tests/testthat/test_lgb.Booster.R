@@ -1518,3 +1518,50 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
     expect_equal(ncols, ncol(iris) - 1L)
 })
+
+set.seed(1L)
+data(agaricus.train, package = "lightgbm")
+train <- agaricus.train
+bst <- lightgbm(
+  data = as.matrix(train$data)
+  , label = train$label
+  , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
+  , nrounds = 5L
+  , verbose = .LGB_VERBOSITY
+)
+
+test_that("num_iteration and start_iteration work for lgb.dump()", {
+  # Simplified version of lgb.model.dt.tree()
+  get_trees_from_dump <- function(x) {
+    parsed <- jsonlite::fromJSON(
+      txt = x
+      , simplifyVector = TRUE
+      , simplifyDataFrame = FALSE
+      , simplifyMatrix = FALSE
+      , flatten = FALSE
+    )
+    return(lapply(parsed$tree_info, FUN = .single_tree_parse))
+  }
+  
+  first2 <- get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
+  last3 <- get_trees_from_dump(
+    lgb.dump(bst, num_iteration = 3L, start_iteration = 2L)
+  )
+  all5 <- get_trees_from_dump(lgb.dump(bst))
+  too_many <- get_trees_from_dump(lgb.dump(bst, num_iteration = 10L))
+  
+  expect_equal(c(first2, last3), all5)
+  expect_equal(too_many, all5)
+})
+
+test_that("num_iteration and start_iteration work for save_model_to_string()", {
+  first2 <- bst$save_model_to_string(num_iteration = 2L)
+  last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 2L)
+  all5 <- bst$save_model_to_string()
+  too_many <- bst$save_model_to_string(num_iteration = 10L)
+  
+  expect_true(nchar(first2) < nchar(all5))
+  expect_true(nchar(last3) < nchar(all5))
+  expect_true(nchar(first2) + nchar(last3) >= nchar(all5))
+  expect_equal(too_many, all5)
+})
