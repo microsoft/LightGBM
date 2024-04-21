@@ -1542,14 +1542,14 @@ test_that("num_iteration and start_iteration work for lgb.dump()", {
     )
     return(lapply(parsed$tree_info, FUN = .single_tree_parse))
   }
-  
+
   first2 <- get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
   last3 <- get_trees_from_dump(
     lgb.dump(bst, num_iteration = 3L, start_iteration = 2L)
   )
   all5 <- get_trees_from_dump(lgb.dump(bst))
   too_many <- get_trees_from_dump(lgb.dump(bst, num_iteration = 10L))
-  
+
   expect_equal(c(first2, last3), all5)
   expect_equal(too_many, all5)
 })
@@ -1559,7 +1559,7 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
   last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 2L)
   all5 <- bst$save_model_to_string()
   too_many <- bst$save_model_to_string(num_iteration = 10L)
-  
+
   expect_true(nchar(first2) < nchar(all5))
   expect_true(nchar(last3) < nchar(all5))
   expect_true(nchar(first2) + nchar(last3) >= nchar(all5))

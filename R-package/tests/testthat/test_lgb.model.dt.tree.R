@@ -168,12 +168,12 @@ test_that("num_iteration and start_iteration work as expected", {
     , nrounds = 5L
     , verbose = .LGB_VERBOSITY
   )
-  
+
   first2 <- lgb.model.dt.tree(bst, num_iteration = 2L)
   last3 <- lgb.model.dt.tree(bst, num_iteration = 3L, start_iteration = 2L)
   all5 <- lgb.model.dt.tree(bst)
   too_many <- lgb.model.dt.tree(bst, num_iteration = 10L)
-  
+
   expect_equal(data.table::rbindlist(list(first2, last3)), all5)
   expect_equal(too_many, all5)
 })
