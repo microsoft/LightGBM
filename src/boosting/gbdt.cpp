@@ -344,6 +344,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     hessians = hessians_pointer_;
   } else {
     // use customized objective function
+    // the check below fails unless objective=custom is provided in the parameters on Booster creation
     CHECK(objective_function_ == nullptr);
     if (data_sample_strategy_->IsHessianChange()) {
       // need to copy customized gradients when using GOSS
