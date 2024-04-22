@@ -959,6 +959,7 @@ def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
         assert gbm.best_iteration == num_trees
     else:
         assert gbm.best_iteration == 1
+    assert f"[early_stopping_min_delta: {early_stopping_min_delta:.0f}]" in gbm.model_to_string()
 
 
 @pytest.mark.parametrize("first_only", [True, False])
