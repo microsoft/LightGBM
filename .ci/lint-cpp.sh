@@ -35,7 +35,7 @@ get_omp_pragmas_without_num_threads() {
     | grep -v ' num_threads'
 }
 
-# 'grep' returns a non-0 exit code if any lines were found.
+# 'grep' returns a non-0 exit code if 0 lines were found.
 # Turning off '-e -o pipefail' options here so that bash doesn't
 # consider this a failure and stop execution of the script.
 #
