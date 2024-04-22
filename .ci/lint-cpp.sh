@@ -34,7 +34,12 @@ get_omp_pragmas_without_num_threads() {
         'pragma omp parallel' \
     | grep -v ' num_threads'
 }
-# https://www.gnu.org/software/grep/manual/html_node/Exit-Status.html
+
+# 'grep' returns a non-0 exit code if any lines were found.
+# Turning off '-e -o pipefail' options here so that bash doesn't
+# consider this a failure and stop execution of the script.
+#
+# ref: https://www.gnu.org/software/grep/manual/html_node/Exit-Status.html
 set +e +o pipefail
 PROBLEMATIC_LINES=$(
     get_omp_pragmas_without_num_threads
