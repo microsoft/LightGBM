@@ -1,5 +1,15 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
+AZURE=${AZURE:-"false"}
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
+
+ARCH=$(uname -m)
+
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
@@ -21,7 +31,7 @@ if [[ $OS_NAME == "macos" ]]; then
     curl \
         -sL \
         -o miniforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-${ARCH}.sh
 else  # Linux
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -133,7 +143,6 @@ else  # Linux
             cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        ARCH=$(uname -m)
         curl \
             -sL \
             -o miniforge.sh \
