@@ -23,11 +23,11 @@ Examples include:
 - [simple_example.py](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py)
     - Construct Dataset
     - Basic train and predict
-    - Eval during training 
+    - Eval during training
     - Early stopping
     - Save model to file
 - [sklearn_example.py](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/sklearn_example.py)
-    - Create data for learning with sklearn interface 
+    - Create data for learning with sklearn interface
     - Basic train and predict with sklearn interface
     - Feature importances with sklearn interface
     - Self-defined eval metric with sklearn interface

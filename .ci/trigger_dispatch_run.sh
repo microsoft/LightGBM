@@ -12,16 +12,16 @@
 #
 # DISPATCH_NAME: Name of a dispatch to be triggered.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"
-  exit -1
+  exit 1
 fi
 
 if [ $# -ne 3 ]; then
   echo "Usage: $0 <PR_URL> <COMMENT_ID> <DISPATCH_NAME>"
-  exit -1
+  exit 1
 fi
 
 pr_url=$1

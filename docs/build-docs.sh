@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 rm -f ./_FIRST_RUN.flag
 
 export PATH="${CONDA}/bin:${PATH}"
@@ -16,9 +18,9 @@ conda update -q -y conda
 
 conda env create \
     --name docs-env \
-    --file env.yml || exit -1
+    --file env.yml || exit 1
 
 source activate docs-env
-make clean html || exit -1
+make clean html || exit 1
 
 echo "Done building docs. Open docs/_build/html/index.html in a web browser to view them."

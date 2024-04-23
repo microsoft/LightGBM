@@ -1,13 +1,23 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
+AZURE=${AZURE:-"false"}
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
+
+ARCH=$(uname -m)
+
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit -1
+            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
         fi
     else  # gcc
-        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit -1
+        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit 1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -21,7 +31,7 @@ if [[ $OS_NAME == "macos" ]]; then
     curl \
         -sL \
         -o miniforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
+        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-${ARCH}.sh
 else  # Linux
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -49,7 +59,7 @@ else  # Linux
             locales-all \
             netcat \
             unzip \
-            zip || exit -1
+            zip || exit 1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
@@ -82,7 +92,7 @@ else  # Linux
             sudo yum update -y
             sudo yum install -y \
                 openmpi-devel \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "gpu" ]]; then
@@ -98,7 +108,7 @@ else  # Linux
                 boost-devel \
                 ocl-icd-devel \
                 opencl-headers \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
@@ -111,7 +121,7 @@ else  # Linux
             sudo yum install -y \
                 ocl-icd-devel \
                 opencl-headers \
-            || exit -1
+            || exit 1
         fi
     fi
     if [[ $TASK == "cuda" ]]; then
@@ -133,7 +143,6 @@ else  # Linux
             cmake
     fi
     if [[ $SETUP_CONDA != "false" ]]; then
-        ARCH=$(uname -m)
         curl \
             -sL \
             -o miniforge.sh \

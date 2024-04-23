@@ -27,6 +27,9 @@ wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 # ref: https://apt.llvm.org/
 add-apt-repository -y "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
 add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain main"
+add-apt-repository -y "deb http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
+add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain-${CLANG_VERSION} main" || true
+apt-get update -y
 
 apt-get install -y --no-install-recommends \
     clang-${CLANG_VERSION} \
@@ -53,7 +56,7 @@ cp --remove-destination /usr/lib/llvm-${CLANG_VERSION}/bin/* /usr/bin/
 # per https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
 #
 # clang was built to use libc++: for a version built to default to libstdc++
-# (as shipped by Fedora/Debian/Ubuntu), add -stdlib=libc++ to CXX 
+# (as shipped by Fedora/Debian/Ubuntu), add -stdlib=libc++ to CXX
 # and install the libcxx-devel/libc++-dev package.
 mkdir -p "${HOME}/.R"
 
