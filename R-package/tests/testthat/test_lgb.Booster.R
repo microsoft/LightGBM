@@ -1588,6 +1588,6 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
 
   expect_true(nchar(first2) < nchar(all5))
   expect_true(nchar(last3) < nchar(all5))
-  expect_true(nchar(first2) + nchar(last3) >= nchar(all5))
+  expect_true(nchar(first2) + nchar(last3) > nchar(all5))
   expect_equal(too_many, all5)
 })
