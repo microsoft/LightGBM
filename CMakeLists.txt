@@ -23,10 +23,6 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-if(APPLE)
-  option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif()
-
 cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
@@ -406,14 +402,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories(${LightGBM_HEADER_DIR})
-
-if(APPLE)
-  if(APPLE_OUTPUT_DYLIB)
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
-  else()
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
-  endif()
-endif()
 
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})

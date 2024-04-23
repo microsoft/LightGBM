@@ -763,7 +763,7 @@ Only **Apple Clang** version 8.1 or higher is supported.
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON
+     cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
 
 gcc
@@ -788,7 +788,7 @@ gcc
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON
+     cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
