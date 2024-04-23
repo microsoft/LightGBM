@@ -1106,8 +1106,8 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
-  SEXP start_iteration,
-  SEXP feature_importance_type) {
+  SEXP feature_importance_type,
+  SEXP start_iteration) {
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
@@ -1132,8 +1132,8 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
 
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP start_iteration,
-  SEXP feature_importance_type) {
+  SEXP feature_importance_type,
+  SEXP start_iteration) {
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
