@@ -1,6 +1,12 @@
 #!/bin/bash
 
-set -e -E -o pipefail
+set -e -E -o -u pipefail
+
+# defaults
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+METHOD=${METHOD:-""}
+PRODUCES_ARTIFACTS=${PRODUCES_ARTIFACTS:-"false"}
+SANITIZERS=${SANITIZERS:-""}
 
 ARCH=$(uname -m)
 
@@ -83,11 +89,11 @@ if [[ $TASK == "lint" ]]; then
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit 1
     echo "Linting C++ code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
     exit 0
 fi
 
