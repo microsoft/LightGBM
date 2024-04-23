@@ -1550,6 +1550,8 @@ get_trees_from_dump <- function(x) {
 }
 
 test_that("num_iteration and start_iteration work for lgb.dump()", {
+  bst <- .get_test_model(5L)
+
   first2 <- get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
   last3 <- get_trees_from_dump(
     lgb.dump(bst, num_iteration = 3L, start_iteration = 2L)
@@ -1567,6 +1569,8 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
     lgb.save(bst, model_file, ...)
     return(lgb.load(model_file))
   }
+
+  bst <- .get_test_model(5L)
   n_first2 <- .get_n_trees(save_and_load(bst, num_iteration = 2L))
   n_last3 <- .get_n_trees(
     save_and_load(bst, num_iteration = 3L, start_iteration = 2L)
@@ -1581,6 +1585,8 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
 })
 
 test_that("num_iteration and start_iteration work for save_model_to_string()", {
+  bst <- .get_test_model(5L)
+
   first2 <- bst$save_model_to_string(num_iteration = 2L)
   last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 2L)
   all5 <- bst$save_model_to_string()
