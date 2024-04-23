@@ -1088,7 +1088,6 @@ def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
         assert gbm.best_iteration == num_trees
     else:
         assert gbm.best_iteration == 1
-    assert f"[early_stopping_min_delta: {early_stopping_min_delta:.0f}]" in gbm.model_to_string()
 
 
 def test_early_stopping_can_be_triggered_via_custom_callback():
@@ -1580,6 +1579,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[extra_trees: 0]",
         "[extra_seed: 6642]",
         "[early_stopping_round: 0]",
+        "[early_stopping_min_delta: 0]",
         "[first_metric_only: 0]",
         "[max_delta_step: 0]",
         "[lambda_l1: 0]",
