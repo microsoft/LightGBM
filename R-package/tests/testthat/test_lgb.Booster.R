@@ -1542,7 +1542,7 @@ get_trees_from_dump <- function(x) {
   return(lapply(parsed$tree_info, FUN = .single_tree_parse))
 }
 
-get_n_trees <- function(x) {
+.get_n_trees <- function(x) {
   return(length(get_trees_from_dump(lgb.dump(x))))
 }
 
@@ -1564,12 +1564,12 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
     lgb.save(bst, model_file, ...)
     return(lgb.load(model_file))
   }
-  n_first2 <- get_n_trees(save_and_load(bst, num_iteration = 2L))
-  n_last3 <- get_n_trees(
+  n_first2 <- .get_n_trees(save_and_load(bst, num_iteration = 2L))
+  n_last3 <- .get_n_trees(
     save_and_load(bst, num_iteration = 3L, start_iteration = 2L)
   )
-  n_all5 <- get_n_trees(save_and_load(bst))
-  n_too_many <- get_n_trees(save_and_load(bst, num_iteration = 10L))
+  n_all5 <- .get_n_trees(save_and_load(bst))
+  n_too_many <- .get_n_trees(save_and_load(bst, num_iteration = 10L))
 
   expect_equal(n_first2, 2L)
   expect_equal(n_last3, 3L)
