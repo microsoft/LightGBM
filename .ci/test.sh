@@ -46,6 +46,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
+# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
@@ -78,10 +79,10 @@ if [[ $TASK == "lint" ]]; then
         ${CONDA_PYTHON_REQUIREMENT} \
         'cmakelint>=1.4.2' \
         'cpplint>=1.6.0' \
-        'matplotlib>=3.8.3' \
+        'matplotlib-base>=3.8.3' \
         'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
-        'pyarrow>=14.0' \
+        'pyarrow>=6.0' \
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
@@ -127,28 +128,18 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-# older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
-#
-# ref: https://github.com/microsoft/LightGBM/issues/6030
-CONSTRAINED_DEPENDENCIES="'dask>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0' python-graphviz"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask' 'distributed' 'python-graphviz<0.20.2' 'pandas<2.0'"
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
+else
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
-# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-mamba create -q -y -n $CONDA_ENV \
-    ${CONSTRAINED_DEPENDENCIES} \
-    cffi \
-    cloudpickle \
-    joblib \
-    matplotlib \
-    numpy \
-    psutil \
-    pyarrow \
-    pytest \
+mamba create \
+    -y \
+    -n $CONDA_ENV \
+    ${CONDA_REQUIREMENT_FILES} \
     ${CONDA_PYTHON_REQUIREMENT} \
-    scikit-learn \
-    scipy || exit 1
+|| exit 1
 
 source activate $CONDA_ENV
 
@@ -310,10 +301,10 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -q -y -n $CONDA_ENV \
-        h5py \
-        ipywidgets \
-        notebook
+    mamba install -y -n $CONDA_ENV \
+        'h5py>=3.10' \
+        'ipywidgets>=8.1.2' \
+        'notebook>=7.1.2'
     for f in *.py **/*.py; do python $f || exit 1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
@@ -325,7 +316,7 @@ matplotlib.use\(\"Agg\"\)\
         dask \
         distributed \
         joblib \
-        matplotlib \
+        matplotlib-base \
         psutil \
         pyarrow \
         python-graphviz \
