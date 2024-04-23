@@ -170,7 +170,7 @@ test_that("num_iteration and start_iteration work as expected", {
   )
 
   first2 <- lgb.model.dt.tree(bst, num_iteration = 2L)
-  last3 <- lgb.model.dt.tree(bst, num_iteration = 3L, start_iteration = 2L)
+  last3 <- lgb.model.dt.tree(bst, num_iteration = 3L, start_iteration = 3L)
   all5 <- lgb.model.dt.tree(bst)
   too_many <- lgb.model.dt.tree(bst, num_iteration = 10L)
 

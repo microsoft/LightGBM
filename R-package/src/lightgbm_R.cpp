@@ -1092,9 +1092,9 @@ SEXP LGBM_BoosterPredictForMatSingleRowFast_R(SEXP handle_fastConfig,
 
 SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   SEXP num_iteration,
-  SEXP start_iteration,
   SEXP feature_importance_type,
-  SEXP filename) {
+  SEXP filename,
+  SEXP start_iteration) {
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
   const char* filename_ptr = CHAR(PROTECT(Rf_asChar(filename)));

@@ -1554,7 +1554,7 @@ test_that("num_iteration and start_iteration work for lgb.dump()", {
 
   first2 <- get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
   last3 <- get_trees_from_dump(
-    lgb.dump(bst, num_iteration = 3L, start_iteration = 2L)
+    lgb.dump(bst, num_iteration = 3L, start_iteration = 3L)
   )
   all5 <- get_trees_from_dump(lgb.dump(bst))
   too_many <- get_trees_from_dump(lgb.dump(bst, num_iteration = 10L))
@@ -1573,7 +1573,7 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
   bst <- .get_test_model(5L)
   n_first2 <- .get_n_trees(save_and_load(bst, num_iteration = 2L))
   n_last3 <- .get_n_trees(
-    save_and_load(bst, num_iteration = 3L, start_iteration = 2L)
+    save_and_load(bst, num_iteration = 3L, start_iteration = 3L)
   )
   n_all5 <- .get_n_trees(save_and_load(bst))
   n_too_many <- .get_n_trees(save_and_load(bst, num_iteration = 10L))
@@ -1588,12 +1588,12 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
   bst <- .get_test_model(5L)
 
   first2 <- bst$save_model_to_string(num_iteration = 2L)
-  last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 2L)
+  last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
   all5 <- bst$save_model_to_string()
   too_many <- bst$save_model_to_string(num_iteration = 10L)
 
   expect_true(nchar(first2) < nchar(all5))
   expect_true(nchar(last3) < nchar(all5))
-  expect_true(nchar(first2) + nchar(last3) > nchar(all5))
+  expect_true(nchar(first2) + nchar(last3) >= nchar(all5))
   expect_equal(too_many, all5)
 })

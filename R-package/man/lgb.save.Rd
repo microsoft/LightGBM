@@ -4,7 +4,7 @@
 \alias{lgb.save}
 \title{Save LightGBM model}
 \usage{
-lgb.save(booster, filename, num_iteration = NULL, start_iteration = 0L)
+lgb.save(booster, filename, num_iteration = NULL, start_iteration = 1L)
 }
 \arguments{
 \item{booster}{Object of class \code{lgb.Booster}}
@@ -13,7 +13,7 @@ lgb.save(booster, filename, num_iteration = NULL, start_iteration = 0L)
 
 \item{num_iteration}{Number of iterations to save, NULL or <= 0 means use best iteration}
 
-\item{start_iteration}{First iteration to save. Default is 0, i.e., start at first}
+\item{start_iteration}{First iteration to save. Default is 1, i.e., start at first}
 }
 \value{
 lgb.Booster

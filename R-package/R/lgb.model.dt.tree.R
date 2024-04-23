@@ -3,7 +3,7 @@
 #' @description Parse a LightGBM model json dump into a \code{data.table} structure.
 #' @param model object of class \code{lgb.Booster}.
 #' @param num_iteration Number of iterations to include. NULL or <= 0 means use best iteration.
-#' @param start_iteration Start index of the iteration (default 0).
+#' @param start_iteration Start index of the iteration (default 1).
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
 #'
@@ -52,7 +52,7 @@
 #' @importFrom jsonlite fromJSON
 #' @export
 lgb.model.dt.tree <- function(
-    model, num_iteration = NULL, start_iteration = 0L
+    model, num_iteration = NULL, start_iteration = 1L
   ) {
 
   json_model <- lgb.dump(

@@ -4,14 +4,14 @@
 \alias{lgb.model.dt.tree}
 \title{Parse a LightGBM model json dump}
 \usage{
-lgb.model.dt.tree(model, num_iteration = NULL, start_iteration = 0L)
+lgb.model.dt.tree(model, num_iteration = NULL, start_iteration = 1L)
 }
 \arguments{
 \item{model}{object of class \code{lgb.Booster}.}
 
-\item{num_iteration}{Number of iterations to be parsed. NULL or <= 0 means use best iteration.}
+\item{num_iteration}{Number of iterations to include. NULL or <= 0 means use best iteration.}
 
-\item{start_iteration}{Start index of the iteration (default 0).}
+\item{start_iteration}{Start index of the iteration (default 1).}
 }
 \value{
 A \code{data.table} with detailed information about model trees' nodes and leafs.

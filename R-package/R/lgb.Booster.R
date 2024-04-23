@@ -419,8 +419,8 @@ Booster <- R6::R6Class(
     save_model = function(
       filename
       , num_iteration = NULL
-      , start_iteration = 0L
       , feature_importance_type = 0L
+      , start_iteration = 1L
     ) {
 
       self$restore_handle()
@@ -435,9 +435,9 @@ Booster <- R6::R6Class(
         LGBM_BoosterSaveModel_R
         , private$handle
         , as.integer(num_iteration)
-        , as.integer(start_iteration)
         , as.integer(feature_importance_type)
         , filename
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(invisible(self))
@@ -445,9 +445,9 @@ Booster <- R6::R6Class(
 
     save_model_to_string = function(
       num_iteration = NULL
-      , start_iteration = 0L
       , feature_importance_type = 0L
       , as_char = TRUE
+      , start_iteration = 1L
     ) {
 
       self$restore_handle()
@@ -460,8 +460,8 @@ Booster <- R6::R6Class(
           LGBM_BoosterSaveModelToString_R
           , private$handle
           , as.integer(num_iteration)
-          , as.integer(start_iteration)
           , as.integer(feature_importance_type)
+          , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       if (as_char) {
@@ -474,7 +474,7 @@ Booster <- R6::R6Class(
 
     # Dump model in memory
     dump_model = function(
-      num_iteration = NULL, start_iteration = 0L, feature_importance_type = 0L
+      num_iteration = NULL, feature_importance_type = 0L, start_iteration = 1L
     ) {
 
       self$restore_handle()
@@ -487,8 +487,8 @@ Booster <- R6::R6Class(
         LGBM_BoosterDumpModel_R
         , private$handle
         , as.integer(num_iteration)
-        , as.integer(start_iteration)
         , as.integer(feature_importance_type)
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(model_str)
@@ -1305,7 +1305,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @param booster Object of class \code{lgb.Booster}
 #' @param filename Saved filename
 #' @param num_iteration Number of iterations to save, NULL or <= 0 means use best iteration
-#' @param start_iteration First iteration to save. Default is 0, i.e., start at first
+#' @param start_iteration First iteration to save. Default is 1, i.e., start at first
 #'
 #' @return lgb.Booster
 #'
@@ -1339,7 +1339,7 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' }
 #' @export
 lgb.save <- function(
-    booster, filename, num_iteration = NULL, start_iteration = 0L
+    booster, filename, num_iteration = NULL, start_iteration = 1L
   ) {
 
   if (!.is_Booster(x = booster)) {
@@ -1367,7 +1367,7 @@ lgb.save <- function(
 #' @description Dump LightGBM model to json
 #' @param booster Object of class \code{lgb.Booster}
 #' @param num_iteration Number of iterations to be dumped. NULL or <= 0 means use best iteration
-#' @param start_iteration Start index of iteration. Default is 0, i.e., start at the first iteration
+#' @param start_iteration Start index of iteration. Default is 1, i.e., start at the first iteration
 #'
 #' @return json format of model
 #'
@@ -1400,7 +1400,7 @@ lgb.save <- function(
 #' json_model <- lgb.dump(model)
 #' }
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 0L) {
+lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 
   if (!.is_Booster(x = booster)) {
     stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
