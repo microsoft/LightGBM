@@ -14,7 +14,7 @@
 #
 
 # python
-python=3.7.12
+python=3.7.*
 
 # direct imports
 cffi=1.15.*
@@ -51,6 +51,6 @@ setuptools=59.8.*
 snappy=1.1.*
 tomli=2.0.*
 tornado=6.1.*
-wheel=0.43.*
+wheel=0.42.*
 zict=2.2.*
 zipp=3.15.*
