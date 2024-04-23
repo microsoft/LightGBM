@@ -1409,7 +1409,7 @@ lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 0L) {
   # Return booster at requested iteration
   return(
     booster$dump_model(
-      num_iteration =  num_iteration, start_iteration = start_iteration
+      num_iteration = num_iteration, start_iteration = start_iteration
     )
   )
 
