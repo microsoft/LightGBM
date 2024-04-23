@@ -17,14 +17,35 @@ variables:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 resources:
+  # The __work/ directory, where Azure DevOps writes the source files, needs to be read-write because
+  # LightGBM's CI jobs write files in the source directory.
+  #
+  # For all the containers included here, all other directories that Azure mounts in are mounted as read-only
+  # to minimize the risk of side effects from one run affecting future runs.
+  # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container
   containers:
   - container: linux-artifact-builder
     image: lightgbm/vsts-agent:manylinux_2_28_x86_64
+    mountReadOnly:
+      work: false
+      externals: true
+      tools: true
+      tasks: true
   - container: ubuntu-latest
     image: 'ubuntu:22.04'
     options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
+    mountReadOnly:
+      work: false
+      externals: true
+      tools: true
+      tasks: true
   - container: rbase
     image: wch1/r-debug
+    mountReadOnly:
+      work: false
+      externals: true
+      tools: true
+      tasks: true
 jobs:
 ###########################################
 - job: Linux
@@ -34,7 +55,7 @@ jobs:
     SETUP_CONDA: 'false'
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
-  pool: sh-mariner
+  pool: mariner-20240410-0
   container: linux-artifact-builder
   strategy:
     matrix:
@@ -66,12 +87,21 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - script: |
       echo '$(Build.SourceVersion)' > '$(Build.ArtifactStagingDirectory)/commit.txt'
     displayName: 'Add commit hash to artifacts archive'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+  - task: Bash@3
     displayName: Setup
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      targetType: filePath
+  - task: Bash@3
     displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: filePath
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'sdist', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
@@ -87,7 +117,7 @@ jobs:
     IN_UBUNTU_BASE_CONTAINER: 'true'
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
-  pool: sh-mariner
+  pool: mariner-20240410-0
   container: ubuntu-latest
   strategy:
     matrix:
@@ -139,10 +169,21 @@ jobs:
       /tmp/docker exec -t -u 0 ci-container \
       sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
     displayName: 'Install sudo'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+  - script: |
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends git
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - task: Bash@3
     displayName: Setup
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      targetType: 'filePath'
+  - task: Bash@3
     displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: 'filePath'
 ###########################################
 - job: QEMU_multiarch
 ###########################################
@@ -170,6 +211,9 @@ jobs:
   - script: |
       docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
     displayName: 'Enable Docker multi-architecture support'
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
   - script: |
       export ROOT_DOCKER_FOLDER=/LightGBM
       cat > docker.env <<EOF
@@ -245,10 +289,19 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
       echo "##vso[task.setvariable variable=JAVA_HOME]$JAVA_HOME_8_X64"
     displayName: 'Set variables'
-  - bash: $(Build.SourcesDirectory)/.ci/setup.sh
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - task: Bash@3
     displayName: Setup
-  - bash: $(Build.SourcesDirectory)/.ci/test.sh
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+      targetType: filePath
+  - task: Bash@3
     displayName: Test
+    inputs:
+      filePath: $(Build.SourcesDirectory)/.ci/test.sh
+      targetType: filePath
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
     inputs:
@@ -279,6 +332,9 @@ jobs:
       Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: 'Set Variables'
   - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
+  - script: |
       cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install_opencl.ps1"
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
@@ -304,6 +360,9 @@ jobs:
     vmImage: 'ubuntu-22.04'
   container: rbase
   steps:
+  - script: |
+      git clean -d -f -x
+    displayName: 'Clean source directory'
   - script: |
       LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
       R_LIB_PATH=~/Rlib

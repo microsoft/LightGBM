@@ -1,5 +1,15 @@
 #!/bin/bash
 
+set -e -E -o -u pipefail
+
+# defaults
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+METHOD=${METHOD:-""}
+PRODUCES_ARTIFACTS=${PRODUCES_ARTIFACTS:-"false"}
+SANITIZERS=${SANITIZERS:-""}
+
+ARCH=$(uname -m)
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -80,11 +90,11 @@ if [[ $TASK == "lint" ]]; then
         'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit 1
     echo "Linting C++ code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
     exit 0
 fi
 
@@ -160,14 +170,19 @@ elif [[ $TASK == "bdist" ]]; then
         mv \
             ./dist/*.whl \
             ./dist/tmp.whl || exit 1
+        if [[ $ARCH == "x86_64" ]]; then
+            PLATFORM="macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64"
+        else
+            echo "ERROR: macos wheels not supported yet on architecture '${ARCH}'"
+            exit 1
+        fi
         mv \
             ./dist/tmp.whl \
-            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl || exit 1
+            dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
     else
-        ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="manylinux_2_28_x86_64"
         else
