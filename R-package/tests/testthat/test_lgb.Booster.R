@@ -1519,16 +1519,19 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     expect_equal(ncols, ncol(iris) - 1L)
 })
 
-set.seed(1L)
-data(agaricus.train, package = "lightgbm")
-train <- agaricus.train
-bst <- lightgbm(
-  data = as.matrix(train$data)
-  , label = train$label
-  , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
-  , nrounds = 5L
-  , verbose = .LGB_VERBOSITY
-)
+.get_test_model <- function(nrounds) {
+    set.seed(1L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
+        , nrounds = nrounds
+        , verbose = .LGB_VERBOSITY
+    )
+    return(bst)
+}
 
 # Simplified version of lgb.model.dt.tree()
 get_trees_from_dump <- function(x) {
