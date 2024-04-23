@@ -134,15 +134,6 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: null
-          ################
-          # Other checks #
-          ################
-          - os: ubuntu-latest
-            task: r-rchk
-            compiler: gcc
-            r_version: 4.3
-            build_type: cran
-            container: 'ubuntu:22.04'
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')

@@ -1,6 +1,10 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
 ARCH=$(uname -m)
+INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}
 
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
@@ -211,6 +215,9 @@ cat ${BUILD_LOG_FILE}
 if [[ $check_succeeded == "no" ]]; then
     exit 1
 fi
+
+# ensure 'grep --count' doesn't cause failures
+set +e
 
 used_correct_r_version=$(
     cat $LOG_FILE_NAME \
