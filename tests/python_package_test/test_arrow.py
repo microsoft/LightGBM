@@ -369,10 +369,7 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
 def test_predict_regression():
     data_float = generate_random_arrow_table(10, 10000, 42)
     data_bool = generate_random_arrow_table(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
-    data = pa.Table.from_arrays(
-        data_float.columns + data_bool.columns,
-        names=data_float.schema.names + ["col_bool"],
-    )
+    data = pa.Table.from_arrays(data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"])
 
     dataset = lgb.Dataset(
         data,
