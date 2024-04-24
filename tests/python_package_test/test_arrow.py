@@ -1,15 +1,24 @@
 # coding: utf-8
 import filecmp
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
-import pyarrow as pa
 import pytest
 
 import lightgbm as lgb
 
 from .utils import np_assert_array_equal
+
+# NOTE: In the AppVeyor CI, importing pyarrow fails due to an old Visual Studio version. Hence,
+#  we conditionally import pyarrow here (and skip tests if it cannot be imported). However, we
+#  don't want these tests to silently be skipped, hence, we only conditionally import when a
+#  specific env var is set.
+if os.getenv("ALLOW_SKIP_ARROW_TESTS") == "1":
+    pa = pytest.importorskip("pyarrow")
+else:
+    import pyarrow as pa  # type: ignore
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -132,7 +141,10 @@ def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
     ("arrow_table_fn", "dataset_params"),
     [  # Use lambda functions here to minimize memory consumption
         (lambda: generate_simple_arrow_table(), dummy_dataset_params()),
-        (lambda: generate_simple_arrow_table(empty_chunks=True), dummy_dataset_params()),
+        (
+            lambda: generate_simple_arrow_table(empty_chunks=True),
+            dummy_dataset_params(),
+        ),
         (lambda: generate_dummy_arrow_table(), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.float32()), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.int32()), dummy_dataset_params()),
@@ -360,7 +372,10 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
 def test_predict_regression():
     data_float = generate_random_arrow_table(10, 10000, 42)
     data_bool = generate_random_arrow_table(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
-    data = pa.Table.from_arrays(data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"])
+    data = pa.Table.from_arrays(
+        data_float.columns + data_bool.columns,
+        names=data_float.schema.names + ["col_bool"],
+    )
 
     dataset = lgb.Dataset(
         data,
