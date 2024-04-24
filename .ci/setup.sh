@@ -17,6 +17,8 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
         fi
     else  # gcc
+        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+        # versions of Xcode
         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
