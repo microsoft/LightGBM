@@ -141,10 +141,7 @@ def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
     ("arrow_table_fn", "dataset_params"),
     [  # Use lambda functions here to minimize memory consumption
         (lambda: generate_simple_arrow_table(), dummy_dataset_params()),
-        (
-            lambda: generate_simple_arrow_table(empty_chunks=True),
-            dummy_dataset_params(),
-        ),
+        (lambda: generate_simple_arrow_table(empty_chunks=True), dummy_dataset_params()),
         (lambda: generate_dummy_arrow_table(), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.float32()), dummy_dataset_params()),
         (lambda: generate_nullable_arrow_table(pa.int32()), dummy_dataset_params()),
