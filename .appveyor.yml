@@ -41,4 +41,4 @@ test_script:
   - conda config --set channel_priority strict
   - conda init powershell
   - set ALLOW_SKIP_ARROW_TESTS="1"
-  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
+  - powershell.exe -ExecutionPolicy Bypass -Command "$env:ALLOW_SKIP_ARROW_TESTS = '1'; & %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1"
