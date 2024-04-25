@@ -26,6 +26,7 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
+        tree /usr/local/Cellar/open-mpi
     fi
     if [[ $TASK == "swig" ]]; then
         brew install swig
