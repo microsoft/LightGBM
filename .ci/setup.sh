@@ -26,7 +26,6 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
-        brew link open-mpi
     fi
     if [[ $TASK == "swig" ]]; then
         brew install swig
