@@ -26,9 +26,7 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
-        ls /usr/local/Cellar/open-mpi
-        ls /usr/local/Cellar/open-mpi/5.0.3
-        ls /usr/local/Cellar/open-mpi/5.0.3/lib
+        export CMAKE_PREFIX_PATH="/opt/homebrew"
     fi
     if [[ $TASK == "swig" ]]; then
         brew install swig
