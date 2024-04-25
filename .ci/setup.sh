@@ -26,7 +26,7 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
-        export CMAKE_PREFIX_PATH="/usr/local/Cellar"
+        brew link open-mpi
     fi
     if [[ $TASK == "swig" ]]; then
         brew install swig
