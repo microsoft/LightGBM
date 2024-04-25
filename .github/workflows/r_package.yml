@@ -3,11 +3,11 @@ name: R-package
 on:
   push:
     branches:
-      - master
+    - master
   pull_request:
     branches:
-      - master
-      - release/*
+    - master
+    - release/*
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -44,25 +44,25 @@ jobs:
             compiler: gcc
             r_version: 3.6
             build_type: cmake
-            container: "ubuntu:18.04"
+            container: 'ubuntu:18.04'
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
             r_version: 4.3
             build_type: cmake
-            container: "ubuntu:22.04"
+            container: 'ubuntu:22.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 3.6
             build_type: cmake
-            container: "ubuntu:18.04"
+            container: 'ubuntu:18.04'
           - os: ubuntu-latest
             task: r-package
             compiler: clang
             r_version: 4.3
             build_type: cmake
-            container: "ubuntu:22.04"
+            container: 'ubuntu:22.04'
           - os: macos-13
             task: r-package
             compiler: gcc
@@ -127,7 +127,7 @@ jobs:
             compiler: gcc
             r_version: 4.3
             build_type: cran
-            container: "ubuntu:22.04"
+            container: 'ubuntu:22.04'
           - os: macos-13
             task: r-package
             compiler: clang
@@ -308,7 +308,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, test-r-sanitizers, test-r-debian-clang]
     steps:
-      - name: Note that all tests succeeded
-        uses: re-actors/alls-green@v1.2.2
-        with:
-          jobs: ${{ toJSON(needs) }}
+    - name: Note that all tests succeeded
+      uses: re-actors/alls-green@v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}
