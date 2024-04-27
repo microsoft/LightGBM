@@ -134,15 +134,6 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: null
-          ################
-          # Other checks #
-          ################
-          - os: ubuntu-latest
-            task: r-rchk
-            compiler: gcc
-            r_version: 4.3
-            build_type: cran
-            container: 'ubuntu:22.04'
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -179,6 +170,13 @@ jobs:
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
+        if: matrix.container != 'ubuntu:18.04'
+      # R 3.6 binary isn't easily available on buntu 18.04,
+      # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
+      # ref: https://github.com/microsoft/LightGBM/issues/6298
+      - name: Install pandoc
+        uses: r-lib/actions/setup-pandoc@v2.6.0
+        if: matrix.container == 'ubuntu:18.04'
       - name: install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
@@ -246,9 +244,9 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
-          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit -1
+          RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
         shell: bash
         run: |
@@ -258,10 +256,20 @@ jobs:
           cat ./tests.log
           exit ${exit_code}
   test-r-debian-clang:
-    name: r-package (debian, R-devel, clang)
+    name: r-package (debian, R-devel, clang-${{ matrix.clang-version }})
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # list of versions tested in CRAN "Additional Checks":
+        # https://cran.r-project.org/web/checks/check_issue_kinds.html
+        clang-version:
+          - 16
+          - 17
     runs-on: ubuntu-latest
     container: rhub/debian-clang-devel
+    env:
+      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Install Git before checkout
         shell: bash
@@ -276,56 +284,24 @@ jobs:
         with:
           fetch-depth: 5
           submodules: true
-      - name: update to clang 15
-        shell: bash
+      - name: install clang
         run: |
-          # remove clang stuff that comes installed in the image
-          apt-get autoremove -y --purge \
-              clang-* \
-              libclang-* \
-              libunwind-* \
-              llvm-*
-          #
-          # replace it all with clang-15
-          apt-get update -y
-          apt-get install --no-install-recommends -y \
-              gnupg \
-              lsb-release \
-              software-properties-common \
-              wget
-          #
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-          #
-          add-apt-repository "deb http://apt.llvm.org/unstable/ llvm-toolchain main"
-          apt-get install -y --no-install-recommends \
-              clang-15 \
-              clangd-15 \
-              clang-format-15 \
-              clang-tidy-15 \
-              clang-tools-15 \
-              lldb-15 \
-              lld-15 \
-              llvm-15-dev \
-              llvm-15-tools \
-              libomp-15-dev \
-              libc++-15-dev \
-              libc++abi-15-dev \
-              libclang-common-15-dev \
-              libclang-15-dev \
-              libclang-cpp15-dev \
-              libunwind-15-dev
-          # overwrite everything in /usr/bin with the new v15 versions
-          cp --remove-destination /usr/lib/llvm-15/bin/* /usr/bin/
+          ./.ci/install-clang-devel.sh ${{ matrix.clang-version }}
       - name: Install packages and run tests
         shell: bash
         run: |
           export PATH=/opt/R-devel/bin/:${PATH}
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit -1
+          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || exit 1
+          echo ""
+          echo "install logs:"
+          echo ""
+          cat lightgbm.Rcheck/00install.out
+          echo ""
           if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
               echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-              exit -1
+              exit 1
           fi
   all-r-package-jobs-successful:
     if: always()

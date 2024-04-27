@@ -91,7 +91,11 @@ if ($env:R_MAJOR_VERSION -eq "3") {
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;"+ $env:PATH
-$env:CRAN_MIRROR = "https://cran.rstudio.com"
+if ([version]$env:R_VERSION -lt [version]"4.0") {
+  $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
+} else {
+  $env:CRAN_MIRROR = "https://cran.rstudio.com"
+}
 $env:MIKTEX_EXCEPTION_PATH = "$env:TEMP\miktex"
 
 # don't fail builds for long-running examples unless they're very long.
@@ -124,7 +128,7 @@ Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'knitr', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'rmarkdown', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+$packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 Write-Output "Building R package"

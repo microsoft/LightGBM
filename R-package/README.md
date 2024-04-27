@@ -221,7 +221,7 @@ CRAN does not prepare precompiled binaries for Linux, and as of this writing nei
 
 ### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
 
-Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.so` or `lib_lightgbm.dll`) and then build an R package that wraps it.
+Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R package that wraps it.
 
 As of version 3.0.0, this is no longer supported. If building from source is difficult for you, please [open an issue](https://github.com/microsoft/LightGBM/issues).
 
@@ -428,7 +428,7 @@ docker run \
 
 # install dependencies
 RDscript${R_CUSTOMIZATION} \
-  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
 # install lightgbm
 sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
@@ -459,7 +459,7 @@ docker run \
     -it \
         wch1/r-debug
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh \
     --r-executable=RDvalgrind

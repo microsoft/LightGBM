@@ -12,16 +12,16 @@
 #
 # PR_BRANCH: Name of pull request's branch.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"
-  exit -1
+  exit 1
 fi
 
 if [ $# -ne 3 ]; then
   echo "Usage: $0 <WORKFLOW_ID> <PR_NUMBER> <PR_BRANCH>"
-  exit -1
+  exit 1
 fi
 
 workflow_id=$1

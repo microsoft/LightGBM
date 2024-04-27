@@ -23,21 +23,7 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-if(APPLE)
-  option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif()
-
-if(__INTEGRATE_OPENCL)
-  cmake_minimum_required(VERSION 3.11)
-elseif(USE_SWIG)
-  cmake_minimum_required(VERSION 3.8)
-elseif(USE_GPU OR APPLE)
-  cmake_minimum_required(VERSION 3.2)
-elseif(USE_CUDA)
-  cmake_minimum_required(VERSION 3.16)
-else()
-  cmake_minimum_required(VERSION 3.0)
-endif()
+cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
 
@@ -85,7 +71,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.1.0")
     message(FATAL_ERROR "Insufficient AppleClang version")
   endif()
-  cmake_minimum_required(VERSION 3.16)
 elseif(MSVC)
   if(MSVC_VERSION LESS 1900)
     message(
@@ -93,7 +78,6 @@ elseif(MSVC)
       "The compiler ${CMAKE_CXX_COMPILER} doesn't support required C++11 features. Please use a newer MSVC."
     )
   endif()
-  cmake_minimum_required(VERSION 3.8)
 endif()
 
 if(USE_SWIG)
@@ -227,6 +211,7 @@ if(USE_CUDA)
         list(APPEND CUDA_ARCHS "8.7")
     endif()
     if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
+        list(APPEND CUDA_ARCHS "8.9")
         list(APPEND CUDA_ARCHS "9.0")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
@@ -418,14 +403,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories(${LightGBM_HEADER_DIR})
 
-if(APPLE)
-  if(APPLE_OUTPUT_DYLIB)
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
-  else()
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
-  endif()
-endif()
-
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
@@ -440,7 +417,10 @@ file(
       src/network/*.cpp
       src/treelearner/*.cpp
       src/utils/*.cpp
-if(USE_CUDA)
+)
+file(
+    GLOB
+    LGBM_CUDA_SOURCES
       src/treelearner/*.cu
       src/boosting/cuda/*.cpp
       src/boosting/cuda/*.cu
@@ -454,8 +434,11 @@ if(USE_CUDA)
       src/io/cuda/*.cpp
       src/cuda/*.cpp
       src/cuda/*.cu
-endif()
 )
+
+if(USE_CUDA)
+  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+endif()
 
 add_library(lightgbm_objs OBJECT ${SOURCES})
 
@@ -521,7 +504,18 @@ if(USE_SWIG)
             TARGET _lightgbm_swig
             POST_BUILD
             COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND cp "${PROJECT_SOURCE_DIR}/Release/*.dll" com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
+            COMMAND
+              "${CMAKE_COMMAND}"
+              -E
+              copy_if_different
+              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
+              com/microsoft/ml/lightgbm/windows/x86_64
             COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
         )
     endif()
@@ -530,9 +524,16 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.dylib" com/microsoft/ml/lightgbm/osx/x86_64
         COMMAND
-          cp
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
+          com/microsoft/ml/lightgbm/osx/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
           "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
           com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
@@ -542,7 +543,12 @@ if(USE_SWIG)
         TARGET _lightgbm_swig
         POST_BUILD
         COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND cp "${PROJECT_SOURCE_DIR}/*.so" com/microsoft/ml/lightgbm/linux/x86_64
+        COMMAND
+          "${CMAKE_COMMAND}"
+          -E
+          copy_if_different
+          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
+          com/microsoft/ml/lightgbm/linux/x86_64
         COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
     )
   endif()

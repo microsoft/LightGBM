@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 # recreates 'configure' from 'configure.ac'
 # this script should run on Ubuntu 22.04
 AUTOCONF_VERSION=$(cat R-package/AUTOCONF_UBUNTU_VERSION)
@@ -28,7 +30,7 @@ sed -i.bak -e "s/~~VERSION~~/${LGB_VERSION}/" ${TMP_CONFIGURE_AC}
 autoconf \
     --output configure \
     ${TMP_CONFIGURE_AC} \
-    || exit -1
+    || exit 1
 
 rm ${TMP_CONFIGURE_AC}
 

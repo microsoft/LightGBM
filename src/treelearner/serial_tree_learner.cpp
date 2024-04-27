@@ -315,8 +315,8 @@ void SerialTreeLearner::BeforeTrain() {
       smaller_leaf_splits_->Init(
         0, data_partition_.get(),
         gradient_discretizer_->discretized_gradients_and_hessians(),
-        gradient_discretizer_->grad_scale(),
-        gradient_discretizer_->hess_scale());
+        static_cast<score_t>(gradient_discretizer_->grad_scale()),
+        static_cast<score_t>(gradient_discretizer_->hess_scale()));
     }
   }
 
