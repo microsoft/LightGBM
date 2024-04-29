@@ -1073,6 +1073,7 @@ def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
     num_trees = 5
     params = {
         "num_trees": num_trees,
+        "num_leaves": 5,
         "objective": "binary",
         "metric": "None",
         "verbose": -1,
@@ -1082,8 +1083,7 @@ def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     lgb_train = lgb.Dataset(X_train, y_train)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
-    valid_set_name = "valid_set"
-    gbm = lgb.train(params, lgb_train, feval=decreasing_metric, valid_sets=lgb_eval, valid_names=valid_set_name)
+    gbm = lgb.train(params, lgb_train, feval=decreasing_metric, valid_sets=lgb_eval)
     if early_stopping_min_delta == 0:
         assert gbm.best_iteration == num_trees
     else:
