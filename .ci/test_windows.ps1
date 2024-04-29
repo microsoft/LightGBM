@@ -9,6 +9,7 @@ function Check-Output {
 # unify environment variable for Azure DevOps and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
+  $env:ALLOW_SKIP_ARROW_TESTS = "1"
 }
 
 if ($env:TASK -eq "r-package") {
