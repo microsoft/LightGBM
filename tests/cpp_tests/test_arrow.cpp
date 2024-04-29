@@ -151,13 +151,7 @@ class ArrowChunkedArrayTest : public testing::Test {
 
   /* ------------------------------------- SCHEMA CREATION ------------------------------------- */
 
-  template <typename T>
-  ArrowSchema create_primitive_schema() {
-    std::logic_error("not implemented");
-  }
-
-  template <>
-  ArrowSchema create_primitive_schema<float>() {
+  ArrowSchema create_primitive_schema_float() {
     ArrowSchema schema;
     schema.format = "f";
     schema.name = nullptr;
@@ -171,8 +165,7 @@ class ArrowChunkedArrayTest : public testing::Test {
     return schema;
   }
 
-  template <>
-  ArrowSchema create_primitive_schema<bool>() {
+  ArrowSchema create_primitive_schema_bool() {
     ArrowSchema schema;
     schema.format = "b";
     schema.name = nullptr;
@@ -213,7 +206,7 @@ class ArrowChunkedArrayTest : public testing::Test {
 /* --------------------------------------------------------------------------------------------- */
 
 TEST_F(ArrowChunkedArrayTest, GetLength) {
-  auto schema = create_primitive_schema<float>();
+  auto schema = create_primitive_schema_float();
 
   std::vector<float> dat1 = {1, 2};
   auto arr1 = create_primitive_array(dat1);
@@ -241,8 +234,8 @@ TEST_F(ArrowChunkedArrayTest, GetColumns) {
   std::vector<ArrowArray*> arrs = {&arr1, &arr2};
   auto arr = created_nested_array(arrs);
 
-  auto schema1 = create_primitive_schema<float>();
-  auto schema2 = create_primitive_schema<float>();
+  auto schema1 = create_primitive_schema_float();
+  auto schema2 = create_primitive_schema_float();
   std::vector<ArrowSchema*> schemas = {&schema1, &schema2};
   auto schema = create_nested_schema(schemas);
 
@@ -266,7 +259,7 @@ TEST_F(ArrowChunkedArrayTest, IteratorArithmetic) {
   auto arr2 = create_primitive_array(dat2);
   std::vector<float> dat3 = {7};
   auto arr3 = create_primitive_array(dat3);
-  auto schema = create_primitive_schema<float>();
+  auto schema = create_primitive_schema_float();
 
   ArrowArray arrs[3] = {arr1, arr2, arr3};
   ArrowChunkedArray ca(3, arrs, &schema);
@@ -302,7 +295,7 @@ TEST_F(ArrowChunkedArrayTest, BooleanIterator) {
   auto arr1 = create_primitive_array(dat1, 0, {2});
   std::vector<bool> dat2 = {false, false, false, false, true, true, true, true, false, true};
   auto arr2 = create_primitive_array(dat2, 1);
-  auto schema = create_primitive_schema<bool>();
+  auto schema = create_primitive_schema_bool();
 
   ArrowArray arrs[2] = {arr1, arr2};
   ArrowChunkedArray ca(2, arrs, &schema);
@@ -328,7 +321,7 @@ TEST_F(ArrowChunkedArrayTest, BooleanIterator) {
 TEST_F(ArrowChunkedArrayTest, OffsetAndValidity) {
   std::vector<float> dat = {0, 1, 2, 3, 4, 5, 6};
   auto arr = create_primitive_array(dat, 2, {2, 3});
-  auto schema = create_primitive_schema<float>();
+  auto schema = create_primitive_schema_float();
   ArrowChunkedArray ca(1, &arr, &schema);
 
   auto it = ca.begin<double>();
