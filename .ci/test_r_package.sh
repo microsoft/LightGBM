@@ -1,5 +1,11 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
+ARCH=$(uname -m)
+INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}
+
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
 R_LIB_PATH=~/Rlib
@@ -22,7 +28,7 @@ if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_APT_REPO="bionic-cran35/"
 elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-x86_64/base/R-${R_MAC_VERSION}-x86_64.pkg
+    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
     export R_APT_REPO="jammy-cran40/"
 else
@@ -70,17 +76,19 @@ if [[ $OS_NAME == "linux" ]]; then
     fi
     if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
         curl -O -L \
-            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh \
+            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-${ARCH}.sh \
         || exit 1
 
         sudo mkdir /opt/cmake || exit 1
-        sudo sh cmake-3.25.1-linux-x86_64.sh --skip-license --prefix=/opt/cmake || exit 1
+        sudo sh cmake-3.25.1-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
         sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
     fi
 fi
 
 # Installing R precompiled for Mac OS 10.11 or higher
 if [[ $OS_NAME == "macos" ]]; then
+    brew update-reset --auto-update
+    brew update --auto-update
     if [[ $R_BUILD_TYPE == "cran" ]]; then
         brew install automake || exit 1
     fi
@@ -96,29 +104,6 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit 1
-
-    # Older R versions (<= 4.1.2) on newer macOS (>= 11.0.0) cannot create the necessary symlinks.
-    # See https://github.com/r-lib/actions/issues/412.
-    if [[ $(sw_vers -productVersion | head -c2) -ge "11" ]]; then
-        sudo ln \
-            -sf \
-            /Library/Frameworks/R.framework/Resources/bin/R \
-            /usr/local/bin/R
-        sudo ln \
-            -sf \
-            /Library/Frameworks/R.framework/Resources/bin/Rscript \
-            /usr/local/bin/Rscript
-    fi
-
-    # Fix "duplicate libomp versions" issue on Mac
-    # by replacing the R libomp.dylib with a symlink to the one installed with brew
-    if [[ $COMPILER == "clang" ]]; then
-        ver_arr=( ${R_MAC_VERSION//./ } )
-        R_MAJOR_MINOR="${ver_arr[0]}.${ver_arr[1]}"
-        sudo ln -sf \
-            "$(brew --cellar libomp)"/*/lib/libomp.dylib \
-            /Library/Frameworks/R.framework/Versions/${R_MAJOR_MINOR}/Resources/lib/libomp.dylib
-    fi
 fi
 
 # fix for issue where CRAN was not returning {lattice} when using R 3.6
@@ -230,6 +215,9 @@ cat ${BUILD_LOG_FILE}
 if [[ $check_succeeded == "no" ]]; then
     exit 1
 fi
+
+# ensure 'grep --count' doesn't cause failures
+set +e
 
 used_correct_r_version=$(
     cat $LOG_FILE_NAME \

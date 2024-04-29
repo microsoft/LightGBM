@@ -9,6 +9,7 @@ function Check-Output {
 # unify environment variable for Azure DevOps and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"
+  $env:ALLOW_SKIP_ARROW_TESTS = "1"
 }
 
 if ($env:TASK -eq "r-package") {
@@ -17,11 +18,9 @@ if ($env:TASK -eq "r-package") {
 }
 
 if ($env:TASK -eq "cpp-tests") {
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64 ..
-  cmake --build . --target testlightgbm --config Debug ; Check-Output $?
-  cd ../Debug
-  .\testlightgbm.exe ; Check-Output $?
+  cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64
+  cmake --build build --target testlightgbm --config Debug ; Check-Output $?
+  .\Debug\testlightgbm.exe ; Check-Output $?
   Exit 0
 }
 
@@ -32,8 +31,8 @@ if ($env:TASK -eq "swig") {
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
   $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin-4.0.2;" + $env:PATH
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -A x64 -DUSE_SWIG=ON .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON ; Check-Output $?
+  cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
     cp $env:BUILD_SOURCESDIRECTORY/build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
   }
@@ -48,31 +47,29 @@ conda config --set always_yes yes --set changeps1 no
 # ref:
 # * https://stackoverflow.com/a/62897729/3986677
 # * https://github.com/microsoft/LightGBM/issues/5899
-conda install brotlipy
+conda install "brotlipy>=0.7"
 
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV `
-  cffi `
-  cloudpickle `
-  joblib `
-  matplotlib `
-  numpy `
-  pandas `
-  psutil `
-  pyarrow `
-  pytest `
-  "python=$env:PYTHON_VERSION[build=*cpython]" `
-  python-graphviz `
-  scikit-learn `
-  scipy ; Check-Output $?
+
+if ($env:PYTHON_VERSION -eq "3.7") {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
+} else {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
+}
+
+conda create `
+  -y `
+  -n $env:CONDA_ENV `
+  --file $env:CONDA_REQUIREMENT_FILE `
+  "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
 }
 
 if ($env:TASK -eq "regular") {
-  mkdir $env:BUILD_SOURCESDIRECTORY/build; cd $env:BUILD_SOURCESDIRECTORY/build
-  cmake -A x64 .. ; cmake --build . --target ALL_BUILD --config Release ; Check-Output $?
+  cmake -B build -S . -A x64 ; Check-Output $?
+  cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   cd $env:BUILD_SOURCESDIRECTORY
   sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --precompile ; Check-Output $?
   cp $env:BUILD_SOURCESDIRECTORY/Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
@@ -126,7 +123,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
-  conda install -q -y -n $env:CONDA_ENV "h5py>3.0" ipywidgets notebook
+  conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
   foreach ($file in @(Get-ChildItem *.py)) {
     @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
     python $file ; Check-Output $?

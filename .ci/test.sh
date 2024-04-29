@@ -1,5 +1,15 @@
 #!/bin/bash
 
+set -e -E -o -u pipefail
+
+# defaults
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+METHOD=${METHOD:-""}
+PRODUCES_ARTIFACTS=${PRODUCES_ARTIFACTS:-"false"}
+SANITIZERS=${SANITIZERS:-""}
+
+ARCH=$(uname -m)
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -22,7 +32,6 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
 fi
 
 if [[ "$TASK" == "cpp-tests" ]]; then
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
     if [[ $METHOD == "with-sanitizers" ]]; then
         extra_cmake_opts="-DUSE_SANITIZER=ON"
         if [[ -n $SANITIZERS ]]; then
@@ -31,32 +40,28 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
-    cmake -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts ..
-    make testlightgbm -j4 || exit 1
-    ./../testlightgbm || exit 1
+    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake --build build --target testlightgbm -j4 || exit 1
+    ./testlightgbm || exit 1
     exit 0
 fi
 
+# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
 CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
     mamba create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
     source activate $CONDA_ENV
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build && cmake .. && make lightgbm -j4 || exit 1
+    cmake -B build -S . || exit 1
+    cmake --build build --target lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=train.conf convert_model_language=cpp convert_model=../../src/boosting/gbdt_prediction.cpp && ../../lightgbm config=predict.conf output_result=origin.pred || exit 1
-    cd $BUILD_DIRECTORY/build && make lightgbm -j4 || exit 1
     cd $BUILD_DIRECTORY/tests/cpp_tests && ../../lightgbm config=predict.conf output_result=ifelse.pred && python test.py || exit 1
     exit 0
 fi
 
 if [[ $TASK == "swig" ]]; then
-    mkdir $BUILD_DIRECTORY/build && cd $BUILD_DIRECTORY/build
-    if [[ $OS_NAME == "macos" ]]; then
-        cmake -DUSE_SWIG=ON -DAPPLE_OUTPUT_DYLIB=ON ..
-    else
-        cmake -DUSE_SWIG=ON ..
-    fi
-    make -j4 || exit 1
+    cmake -B build -S . -DUSE_SWIG=ON
+    cmake --build build -j4 || exit 1
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
         objdump -T $BUILD_DIRECTORY/lib_lightgbm_swig.so >> $BUILD_DIRECTORY/objdump.log || exit 1
@@ -72,19 +77,20 @@ if [[ $TASK == "lint" ]]; then
     cd ${BUILD_DIRECTORY}
     mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
-        cmakelint \
-        cpplint \
-        isort \
-        mypy \
-        'r-lintr>=3.1' \
-        ruff
+        'cmakelint>=1.4.2' \
+        'cpplint>=1.6.0' \
+        'matplotlib-base>=3.8.3' \
+        'mypy>=1.8.0' \
+        'pre-commit>=3.6.0' \
+        'pyarrow>=6.0' \
+        'r-lintr>=3.1'
     source activate $CONDA_ENV
     echo "Linting Python code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
     echo "Linting R code"
     Rscript ${BUILD_DIRECTORY}/.ci/lint_r_code.R ${BUILD_DIRECTORY} || exit 1
     echo "Linting C++ code"
-    sh ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
+    bash ${BUILD_DIRECTORY}/.ci/lint-cpp.sh || exit 1
     exit 0
 fi
 
@@ -97,8 +103,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -q \
         -y \
         -n $CONDA_ENV \
-            doxygen \
-            'rstcheck>=6.0.0' || exit 1
+            'doxygen>=1.10.0' \
+            'rstcheck>=6.2.0' || exit 1
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd $BUILD_DIRECTORY/python-package
@@ -122,29 +128,18 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     exit 0
 fi
 
-# older versions of Dask are incompatible with pandas>=2.0, but not all conda packages' metadata accurately reflects that
-#
-# ref: https://github.com/microsoft/LightGBM/issues/6030
-CONSTRAINED_DEPENDENCIES="'dask-core>=2023.5.0' 'distributed>=2023.5.0' 'pandas>=2.0'"
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONSTRAINED_DEPENDENCIES="'dask-core' 'distributed' 'pandas<2.0'"
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
+else
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
-# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-mamba create -q -y -n $CONDA_ENV \
-    ${CONSTRAINED_DEPENDENCIES} \
-    cffi \
-    cloudpickle \
-    joblib \
-    matplotlib \
-    numpy \
-    psutil \
-    pyarrow \
-    pytest \
+mamba create \
+    -y \
+    -n $CONDA_ENV \
+    ${CONDA_REQUIREMENT_FILES} \
     ${CONDA_PYTHON_REQUIREMENT} \
-    python-graphviz \
-    scikit-learn \
-    scipy || exit 1
+|| exit 1
 
 source activate $CONDA_ENV
 
@@ -171,14 +166,19 @@ elif [[ $TASK == "bdist" ]]; then
         mv \
             ./dist/*.whl \
             ./dist/tmp.whl || exit 1
+        if [[ $ARCH == "x86_64" ]]; then
+            PLATFORM="macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64"
+        else
+            echo "ERROR: macos wheels not supported yet on architecture '${ARCH}'"
+            exit 1
+        fi
         mv \
             ./dist/tmp.whl \
-            dist/lightgbm-$LGB_VER-py3-none-macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64.whl || exit 1
+            dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
     else
-        ARCH=$(uname -m)
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="manylinux_2_28_x86_64"
         else
@@ -224,9 +224,7 @@ if [[ $TASK == "gpu" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_GPU=ON ..
+        cmake -B build -S . -DUSE_GPU=ON
     fi
 elif [[ $TASK == "cuda" ]]; then
     sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "cuda";/' $BUILD_DIRECTORY/include/LightGBM/config.h
@@ -252,9 +250,7 @@ elif [[ $TASK == "cuda" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_CUDA=ON ..
+        cmake -B build -S . -DUSE_CUDA=ON
     fi
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
@@ -275,17 +271,13 @@ elif [[ $TASK == "mpi" ]]; then
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
-        mkdir $BUILD_DIRECTORY/build
-        cd $BUILD_DIRECTORY/build
-        cmake -DUSE_MPI=ON -DUSE_DEBUG=ON ..
+        cmake -B build -S . -DUSE_MPI=ON -DUSE_DEBUG=ON
     fi
 else
-    mkdir $BUILD_DIRECTORY/build
-    cd $BUILD_DIRECTORY/build
-    cmake ..
+    cmake -B build -S .
 fi
 
-make _lightgbm -j4 || exit 1
+cmake --build build --target _lightgbm -j4 || exit 1
 
 cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile --user || exit 1
 pytest $BUILD_DIRECTORY/tests || exit 1
@@ -293,7 +285,7 @@ pytest $BUILD_DIRECTORY/tests || exit 1
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         if [[ $OS_NAME == "macos" ]]; then
-            cp $BUILD_DIRECTORY/lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
+            cp $BUILD_DIRECTORY/lib_lightgbm.dylib $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T $BUILD_DIRECTORY/lib_lightgbm.so > $BUILD_DIRECTORY/objdump.log || exit 1
@@ -309,10 +301,10 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -q -y -n $CONDA_ENV \
-        h5py \
-        ipywidgets \
-        notebook
+    mamba install -y -n $CONDA_ENV \
+        'h5py>=3.10' \
+        'ipywidgets>=8.1.2' \
+        'notebook>=7.1.2'
     for f in *.py **/*.py; do python $f || exit 1; done  # run all examples
     cd $BUILD_DIRECTORY/examples/python-guide/notebooks
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
@@ -321,10 +313,10 @@ matplotlib.use\(\"Agg\"\)\
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall -n $CONDA_ENV --force --yes \
         cffi \
-        dask-core \
+        dask \
         distributed \
         joblib \
-        matplotlib \
+        matplotlib-base \
         psutil \
         pyarrow \
         python-graphviz \
