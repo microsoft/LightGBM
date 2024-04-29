@@ -165,23 +165,6 @@ cd "${TEMP_R_DIR}"
         -e 's/\.\..*fast_double_parser\.h/LightGBM\/fast_double_parser\.h/' \
         src/include/LightGBM/utils/common.h
 
-    # When building an R package with 'configure', it seems
-    # you're guaranteed to get a shared library called
-    #  <packagename>.so/dll/dylib. The package source code expects
-    # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
-    # this project has historically handled installation
-    echo "Changing lib_lightgbm to lightgbm"
-    for file in R/*.R; do
-        sed \
-            -i.bak \
-            -e 's/lib_lightgbm/lightgbm/' \
-            "${file}"
-    done
-    sed \
-        -i.bak \
-        -e 's/lib_lightgbm/lightgbm/' \
-        NAMESPACE
-
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
     # included in the CRAN distribution of the package
@@ -191,8 +174,7 @@ cd "${TEMP_R_DIR}"
         DESCRIPTION
 
     echo "Cleaning sed backup files"
-    rm R/*.R.bak
-    rm NAMESPACE.bak
+    rm *.bak
 
 cd "${ORIG_WD}"
 

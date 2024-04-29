@@ -82,13 +82,16 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
     if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
     }
+    # https://discourse.cmake.org/t/problem-differences-in-detected-default-windowssdk-on-two-different-machines/2585/5
     vs_cmake_args <- c(
       cmake_args
       , "-G"
       , shQuote(vs_version)
       , "-A"
       , "x64"
+      , "-DCMAKE_SYSTEM_VERSION=10.0"
     )
+    
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       message(sprintf("Successfully created build files for '%s'", vs_version))
@@ -227,9 +230,9 @@ if (!makefiles_already_generated) {
 }
 
 # build the library
-message("Building lib_lightgbm")
+message(paste0("Building lightgbm", SHLIB_EXT))
 .run_shell_command(build_cmd, build_args)
-src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
+src <- file.path(lib_folder, paste0("lightgbm", SHLIB_EXT), fsep = "/")
 
 # Packages with install.libs.R need to copy some artifacts into the
 # expected places in the package structure.
@@ -247,7 +250,7 @@ if (file.exists(src)) {
   }
 
 } else {
-  stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
+  stop(paste0("Cannot find lightgbm", SHLIB_EXT))
 }
 
 # clean up the "build" directory
