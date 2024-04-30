@@ -82,16 +82,13 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
     if (file.exists("CMakeCache.txt")) {
       file.remove("CMakeCache.txt")
     }
-    # https://discourse.cmake.org/t/problem-differences-in-detected-default-windowssdk-on-two-different-machines/2585/5
     vs_cmake_args <- c(
       cmake_args
       , "-G"
       , shQuote(vs_version)
       , "-A"
       , "x64"
-      , "-DCMAKE_SYSTEM_VERSION=10.0"
     )
-    
     exit_code <- .run_shell_command("cmake", c(vs_cmake_args, ".."), strict = FALSE)
     if (exit_code == 0L) {
       message(sprintf("Successfully created build files for '%s'", vs_version))
