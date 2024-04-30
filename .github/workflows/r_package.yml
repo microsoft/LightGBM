@@ -63,13 +63,13 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: gcc
             r_version: 4.3
             build_type: cmake
             container: null
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: clang
             r_version: 4.3
@@ -128,7 +128,7 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: 'ubuntu:22.04'
-          - os: macOS-latest
+          - os: macos-13
             task: r-package
             compiler: clang
             r_version: 4.3
@@ -184,13 +184,13 @@ jobs:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macOS-latest' || matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'macos-13' || matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
           export GITHUB_ACTIONS="true"
-          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-13" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
