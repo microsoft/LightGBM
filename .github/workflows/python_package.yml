@@ -81,6 +81,12 @@ jobs:
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+      - name: upload wheels
+        if: ${{ matrix.task == 'bdist' && matrix.os == "macOS-14" }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: macosx-arm64-wheel
+          path: dist/*.whl
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
     runs-on: ubuntu-latest
