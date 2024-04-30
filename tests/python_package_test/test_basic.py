@@ -573,6 +573,16 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
 
 
+def test_dataset_construction_with_high_cardinality_categorical_succeeds():
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame({"x1": np.random.randint(0, 5_000, 10_000)})
+    y = np.random.rand(10_000)
+    ds = lgb.Dataset(X, y, categorical_feature=["x1"])
+    ds.construct()
+    assert ds.num_data() == 10_000
+    assert ds.num_feature() == 1
+
+
 def test_choose_param_value():
     original_params = {
         "local_listen_port": 1234,

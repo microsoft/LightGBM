@@ -10,7 +10,7 @@
 #
 # BODY: Text that will be appended to the original comment body.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

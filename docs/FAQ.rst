@@ -236,6 +236,22 @@ As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_fi
 
 If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
+4. package ‘Matrix’ is not available
+
+In April 2024, ``Matrix==1.7-0`` was published to CRAN.
+That version had a floor of ``R (>=4.4.0)``.
+``{Matrix}`` is a hard runtime dependency of ``{lightgbm}``, so on any version of R older than ``4.4.0``, running ``install.packages("lightgbm")`` results in something like the following.
+
+.. code-block:: text
+
+    package ‘Matrix’ is not available for this version of R
+
+To fix that without upgrading to R 4.4.0 or greater, manually install an older version of ``{Matrix}``.
+
+.. code-block:: R
+
+    install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL)
+
 ------
 
 Python-package

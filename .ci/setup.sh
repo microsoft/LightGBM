@@ -1,8 +1,13 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
+AZURE=${AZURE:-"false"}
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
+
 ARCH=$(uname -m)
-echo "--- detected arch: ${ARCH}"
-echo ""
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
@@ -11,7 +16,9 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
         fi
     else  # gcc
-        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit 1
+        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+        # versions of Xcode
+        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
