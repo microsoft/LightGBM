@@ -227,9 +227,9 @@ if (!makefiles_already_generated) {
 }
 
 # build the library
-message("Building lib_lightgbm")
+message(paste0("Building lightgbm", SHLIB_EXT))
 .run_shell_command(build_cmd, build_args)
-src <- file.path(lib_folder, paste0("lib_lightgbm", SHLIB_EXT), fsep = "/")
+src <- file.path(lib_folder, paste0("lightgbm", SHLIB_EXT), fsep = "/")
 
 # Packages with install.libs.R need to copy some artifacts into the
 # expected places in the package structure.
@@ -247,7 +247,7 @@ if (file.exists(src)) {
   }
 
 } else {
-  stop(paste0("Cannot find lib_lightgbm", SHLIB_EXT))
+  stop(paste0("Cannot find lightgbm", SHLIB_EXT))
 }
 
 # clean up the "build" directory
