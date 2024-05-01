@@ -155,16 +155,6 @@ cd "${TEMP_R_DIR}"
     done
     find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
-    sed \
-        -i.bak \
-        -e 's/\.\..*fmt\/format\.h/LightGBM\/fmt\/format\.h/' \
-        src/include/LightGBM/utils/common.h
-
-    sed \
-        -i.bak \
-        -e 's/\.\..*fast_double_parser\.h/LightGBM\/fast_double_parser\.h/' \
-        src/include/LightGBM/utils/common.h
-
     # When building an R package with 'configure', it seems
     # you're guaranteed to get a shared library called
     #  <packagename>.so/dll/dylib. The package source code expects
