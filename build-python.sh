@@ -62,7 +62,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-set -e -u
+set -e -E -u
 
 echo "building lightgbm"
 
@@ -317,12 +317,15 @@ if test "${INSTALL}" = true; then
         echo 'requires = ["setuptools"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
-        echo "recursive-include lightgbm *.dll *.so" > ./MANIFEST.in
+        echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
+        elif test -f ../lib_lightgbm.dylib; then
+            echo "found pre-compiled lib_lightgbm.dylib"
+            cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
         elif test -f ../Release/lib_lightgbm.dll; then
             echo "found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll

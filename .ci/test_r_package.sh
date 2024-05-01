@@ -1,6 +1,10 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
 ARCH=$(uname -m)
+INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}
 
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
@@ -106,15 +110,24 @@ fi
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+else
+    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+    # This should be unnecessary on R >=4.4.0
+    # ref: https://github.com/microsoft/LightGBM/issues/6433
+    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 fi
+
+# manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
+# ref: https://github.com/microsoft/LightGBM/issues/6433
+Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
 # Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl')"
 else
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -211,6 +224,9 @@ cat ${BUILD_LOG_FILE}
 if [[ $check_succeeded == "no" ]]; then
     exit 1
 fi
+
+# ensure 'grep --count' doesn't cause failures
+set +e
 
 used_correct_r_version=$(
     cat $LOG_FILE_NAME \
