@@ -68,7 +68,11 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
-          if [[ "${{ matrix.os }}" == "macos*" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-14" ]]; then
+              # use clang when creating macOS release artifacts
+              export COMPILER="clang"
+              export OS_NAME="macos"
+          elif [[ "${{ matrix.os }}" == "macos*" ]]; then
               export COMPILER="gcc"
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu*" ]]; then
