@@ -3652,6 +3652,28 @@ test_that("lgb.cv() only prints eval metrics when expected to", {
   )
 })
 
+test_that("lgb.cv() works with an already constructed dataset with integer categoricals", {
+  data("mtcars")
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  categorical_feature <- which(names(mtcars) %in% c("cyl", "vs", "am", "gear", "carb")) - 1L
+  dtrain <- lgb.Dataset(
+    data = x
+    , label = y
+    , categorical_feature = categorical_feature
+    , free_raw_data = TRUE
+    , params = list(num_threads = .LGB_MAX_THREADS)
+  )
+  dtrain$construct()
+  params <- list(
+    objective = "regression"
+    , num_leaves = 2L
+    , verbose = .LGB_VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
+  )
+  lgb.cv(params = params, data = dtrain, nrounds = 1L)
+})
+
 test_that("lightgbm() changes objective='auto' appropriately", {
   # Regression
   data("mtcars")
