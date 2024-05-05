@@ -236,11 +236,12 @@ def train(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
@@ -760,11 +761,12 @@ def cv(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,

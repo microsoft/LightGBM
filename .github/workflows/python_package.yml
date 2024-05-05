@@ -27,30 +27,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macOS-latest
+          - os: macos-13
             task: regular
             python_version: '3.9'
-          - os: macOS-latest
+          - os: macos-13
             task: sdist
             python_version: '3.10'
-          - os: macOS-latest
+          - os: macos-13
             task: bdist
             python_version: '3.7'
-          - os: macOS-latest
+          - os: macos-13
             task: if-else
             python_version: '3.9'
-          - os: macOS-latest
-            task: mpi
-            method: source
-            python_version: '3.10'
-          - os: macOS-latest
-            task: mpi
-            method: pip
-            python_version: '3.11'
-          - os: macOS-latest
-            task: mpi
-            method: wheel
-            python_version: '3.8'
+          # We're currently skipping MPI jobs on macOS, see https://github.com/microsoft/LightGBM/pull/6425
+          # for further details.
+          # - os: macos-13
+          #   task: mpi
+          #   method: source
+          #   python_version: '3.10'
+          # - os: macos-13
+          #   task: mpi
+          #   method: pip
+          #   python_version: '3.11'
+          # - os: macos-13
+          #   task: mpi
+          #   method: wheel
+          #   python_version: '3.8'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -63,7 +65,7 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
-          if [[ "${{ matrix.os }}" == "macOS-latest" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-13" ]]; then
               export COMPILER="gcc"
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
