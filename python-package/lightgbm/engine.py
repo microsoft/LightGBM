@@ -14,6 +14,7 @@ from . import callback
 from .basic import (
     Booster,
     Dataset,
+    LGBMDeprecationWarning,
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
@@ -58,7 +59,7 @@ def _emit_dataset_kwarg_warning(calling_function: str, argname: str) -> None:
         f"a future release. Set '{argname}' when calling lightgbm.Dataset() instead. "
         "See https://github.com/microsoft/LightGBM/issues/6435."
     )
-    warnings.warn(msg, category=FutureWarning, stacklevel=2)
+    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 def train(
