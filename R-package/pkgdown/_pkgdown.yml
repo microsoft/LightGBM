@@ -63,7 +63,6 @@ reference:
     - '`dimnames.lgb.Dataset`'
     - '`get_field`'
     - '`set_field`'
-    - '`slice`'
     - '`lgb.Dataset`'
     - '`lgb.Dataset.construct`'
     - '`lgb.Dataset.create.valid`'
