@@ -121,16 +121,16 @@ lgb.cv <- function(params = list()
   # ref: https://github.com/microsoft/LightGBM/issues/6435
   args <- names(match.call())
   if ("categorical_feature" %in% args) {
-    .raise_dataset_kwarg_warning("categorical_feature", "lgb.cv")
+    .emit_dataset_kwarg_warning("categorical_feature", "lgb.cv")
   }
   if ("colnames" %in% args) {
-    .raise_dataset_kwarg_warning("colnames", "lgb.cv")
+    .emit_dataset_kwarg_warning("colnames", "lgb.cv")
   }
   if ("label" %in% args) {
-    .raise_dataset_kwarg_warning("label", "lgb.cv")
+    .emit_dataset_kwarg_warning("label", "lgb.cv")
   }
   if ("weight" %in% args) {
-    .raise_dataset_kwarg_warning("weight", "lgb.cv")
+    .emit_dataset_kwarg_warning("weight", "lgb.cv")
   }
 
   # set some parameters, resolving the way they were passed in with other parameters

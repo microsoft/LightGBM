@@ -262,7 +262,7 @@
 }
 
 # ref: https://github.com/microsoft/LightGBM/issues/6435
-.raise_dataset_kwarg_warning <- function(calling_function, argname) {
+.emit_dataset_kwarg_warning <- function(calling_function, argname) {
   msg <- sprintf(
     paste0(
       "Argument '%s' to %s() is deprecated and will be removed in a future release. "
