@@ -30,6 +30,7 @@ GBDT::GBDT()
       config_(nullptr),
       objective_function_(nullptr),
       early_stopping_round_(0),
+      early_stopping_min_delta_(0.0),
       es_first_metric_only_(false),
       max_feature_idx_(0),
       num_tree_per_iteration_(1),
@@ -65,6 +66,7 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   num_class_ = config->num_class;
   config_ = std::unique_ptr<Config>(new Config(*config));
   early_stopping_round_ = config_->early_stopping_round;
+  early_stopping_min_delta_ = config->early_stopping_min_delta;
   es_first_metric_only_ = config_->first_metric_only;
   shrinkage_rate_ = config_->learning_rate;
 
@@ -576,7 +578,7 @@ std::string GBDT::OutputMetric(int iter) {
         if (es_first_metric_only_ && j > 0) { continue; }
         if (ret.empty() && early_stopping_round_ > 0) {
           auto cur_score = valid_metrics_[i][j]->factor_to_bigger_better() * test_scores.back();
-          if (cur_score > best_score_[i][j]) {
+          if (cur_score - best_score_[i][j] > early_stopping_min_delta_) {
             best_score_[i][j] = cur_score;
             best_iter_[i][j] = iter;
             meet_early_stopping_pairs.emplace_back(i, j);

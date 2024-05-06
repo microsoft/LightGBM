@@ -114,6 +114,12 @@ include_directories(${EIGEN_DIR})
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
+set(FAST_DOUBLE_PARSER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
+
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+include_directories(${FMT_INCLUDE_DIR})
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -461,11 +467,22 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif()
+
+# R expects libraries of the form <project>.{dll,dylib,so}, not lib_<project>.{dll,dylib,so}
+if(__BUILD_FOR_R)
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      PREFIX ""
+      OUTPUT_NAME "lightgbm"
+  )
+endif()
+
 # LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
-if(MSVC)
+if(MSVC AND NOT __BUILD_FOR_R)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
 endif()
 
@@ -691,5 +708,17 @@ install(
 )
 
 if(INSTALL_HEADERS)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    install(
+      DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    )
+    install(
+      FILES ${FAST_DOUBLE_PARSER_INCLUDE_DIR}/fast_double_parser.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+    )
+    install(
+      DIRECTORY ${FMT_INCLUDE_DIR}/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+      FILES_MATCHING PATTERN "*.h"
+    )
 endif()

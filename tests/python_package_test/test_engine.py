@@ -1067,6 +1067,29 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
+@pytest.mark.parametrize("early_stopping_min_delta", [1e3, 0.0])
+def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "num_leaves": 5,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": 2,
+        "early_stopping_min_delta": early_stopping_min_delta,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    gbm = lgb.train(params, lgb_train, feval=decreasing_metric, valid_sets=lgb_eval)
+    if early_stopping_min_delta == 0:
+        assert gbm.best_iteration == num_trees
+    else:
+        assert gbm.best_iteration == 1
+
+
 def test_early_stopping_can_be_triggered_via_custom_callback():
     X, y = make_synthetic_regression()
 
@@ -1556,6 +1579,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[extra_trees: 0]",
         "[extra_seed: 6642]",
         "[early_stopping_round: 0]",
+        "[early_stopping_min_delta: 0]",
         "[first_metric_only: 0]",
         "[max_delta_step: 0]",
         "[lambda_l1: 0]",
