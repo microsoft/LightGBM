@@ -286,6 +286,12 @@ if(USE_CUDA)
 endif()
 
 if(USE_HDFS)
+    message(
+      DEPRECATION
+      "HDFS support in LightGBM is deprecated, and will be removed in a future release.\
+      See https://github.com/microsoft/LightGBM/issues/6436.
+      "
+    )
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
     find_library(HDFS_LIB NAMES hdfs REQUIRED)
