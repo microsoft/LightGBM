@@ -160,7 +160,6 @@ if [[ $TASK == "sdist" ]]; then
     pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
     exit 0
 elif [[ $TASK == "bdist" ]]; then
-    ARCH=$(uname -m)
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
