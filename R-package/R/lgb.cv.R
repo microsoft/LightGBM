@@ -109,7 +109,7 @@ lgb.cv <- function(params = list()
   if (!.is_Dataset(x = data)) {
     warning(paste0(
       "Passing anything other than an lgb.Dataset object to lgb.cv() is deprecated. "
-      , "Either pass an lgb.Dataset object, use lightgbm()."
+      , "Either pass an lgb.Dataset object, or use lightgbm()."
     ))
     if (is.null(label)) {
       stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
