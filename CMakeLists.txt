@@ -29,7 +29,7 @@ cmake_minimum_required(VERSION 3.18)
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
 # outdated registry entries.
 # ref: https://cmake.org/cmake/help/latest/variable/CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION.html
-if (CMAKE_GENERATOR MATCHES "Visual Studio")
+if(CMAKE_GENERATOR MATCHES "Visual Studio")
     set(CMAKE_SYSTEM_VERSION 10.0 CACHE INTERNAL "target Windows SDK version" FORCE)
 endif()
 
