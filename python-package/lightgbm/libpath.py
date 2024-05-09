@@ -25,6 +25,8 @@ def find_lib_path() -> List[str]:
         dll_path.append(curr_path.parents[1] / "Release")
         dll_path.append(curr_path.parents[1] / "windows" / "x64" / "DLL")
         dll_path = [p / "lib_lightgbm.dll" for p in dll_path]
+    elif system() == "Darwin":
+        dll_path = [p / "lib_lightgbm.dylib" for p in dll_path]
     else:
         dll_path = [p / "lib_lightgbm.so" for p in dll_path]
     lib_path = [str(p) for p in dll_path if p.is_file()]

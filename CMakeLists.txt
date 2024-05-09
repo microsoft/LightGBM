@@ -23,10 +23,6 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-if(APPLE)
-  option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif()
-
 cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
@@ -117,6 +113,12 @@ include_directories(${EIGEN_DIR})
 # See https://gitlab.com/libeigen/eigen/-/blob/master/COPYING.README
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
+
+set(FAST_DOUBLE_PARSER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
+
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+include_directories(${FMT_INCLUDE_DIR})
 
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
@@ -284,6 +286,12 @@ if(USE_CUDA)
 endif()
 
 if(USE_HDFS)
+    message(
+      DEPRECATION
+      "HDFS support in LightGBM is deprecated, and will be removed in a future release.\
+      See https://github.com/microsoft/LightGBM/issues/6436.
+      "
+    )
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
     find_library(HDFS_LIB NAMES hdfs REQUIRED)
@@ -407,14 +415,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories(${LightGBM_HEADER_DIR})
 
-if(APPLE)
-  if(APPLE_OUTPUT_DYLIB)
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
-  else()
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
-  endif()
-endif()
-
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
@@ -473,11 +473,22 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif()
+
+# R expects libraries of the form <project>.{dll,dylib,so}, not lib_<project>.{dll,dylib,so}
+if(__BUILD_FOR_R)
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      PREFIX ""
+      OUTPUT_NAME "lightgbm"
+  )
+endif()
+
 # LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
-if(MSVC)
+if(MSVC AND NOT __BUILD_FOR_R)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
 endif()
 
@@ -703,5 +714,17 @@ install(
 )
 
 if(INSTALL_HEADERS)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    install(
+      DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    )
+    install(
+      FILES ${FAST_DOUBLE_PARSER_INCLUDE_DIR}/fast_double_parser.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+    )
+    install(
+      DIRECTORY ${FMT_INCLUDE_DIR}/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+      FILES_MATCHING PATTERN "*.h"
+    )
 endif()
