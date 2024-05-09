@@ -850,6 +850,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         , "[extra_trees: 0]"
         , "[extra_seed: 6642]"
         , "[early_stopping_round: 0]"
+        , "[early_stopping_min_delta: 0]"
         , "[first_metric_only: 0]"
         , "[max_delta_step: 0]"
         , "[lambda_l1: 0]"

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com')" || exit 1
 sh build-cran-package.sh \
   --r-executable=RDvalgrind \
