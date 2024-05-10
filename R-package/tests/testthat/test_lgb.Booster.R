@@ -1589,6 +1589,13 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
 })
 
 test_that("num_iteration and start_iteration work for save_model_to_string()", {
+  # Extract all numbers x, y, ... from string like "Tree=x Tree=y..."
+  extract_indices_from_string <- function(x) {
+    tree_indices <- gregexpr("Tree=([0-9]+)", x)
+    tree_numbers <- regmatches(x, tree_indices)
+    as.numeric(gsub("Tree=", "", tree_numbers[[1L]]))
+  }
+
   bst <- .get_test_model(5L)
 
   first2 <- bst$save_model_to_string(num_iteration = 2L)
@@ -1600,4 +1607,9 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
   expect_true(nchar(last3) < nchar(all5))
   expect_true(nchar(first2) + nchar(last3) >= nchar(all5))
   expect_equal(too_many, all5)
+
+  # Explicitly check the tree indices
+  expect_equal(extract_indices_from_string(first2), 0:1)
+  expect_equal(extract_indices_from_string(last3), 2:4)
+  expect_equal(extract_indices_from_string(all5), 0:4)
 })
