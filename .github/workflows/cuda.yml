@@ -70,7 +70,7 @@ jobs:
       - name: Remove old folder with repository
         run: sudo rm -rf $GITHUB_WORKSPACE
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
