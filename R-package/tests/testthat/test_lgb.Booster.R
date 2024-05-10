@@ -1593,7 +1593,7 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
   extract_indices_from_string <- function(x) {
     tree_indices <- gregexpr("Tree=([0-9]+)", x)
     tree_numbers <- regmatches(x, tree_indices)
-    as.numeric(gsub("Tree=", "", tree_numbers[[1L]]))
+    as.numeric(gsub("Tree=", "", tree_numbers[[1L]], fixed = TRUE))
   }
 
   bst <- .get_test_model(5L)
@@ -1609,7 +1609,7 @@ test_that("num_iteration and start_iteration work for save_model_to_string()", {
   expect_equal(too_many, all5)
 
   # Explicitly check the tree indices
-  expect_equal(extract_indices_from_string(first2), 0:1)
-  expect_equal(extract_indices_from_string(last3), 2:4)
-  expect_equal(extract_indices_from_string(all5), 0:4)
+  expect_equal(extract_indices_from_string(first2), 0L:1L)
+  expect_equal(extract_indices_from_string(last3), 2L:4L)
+  expect_equal(extract_indices_from_string(all5), 0L:4L)
 })

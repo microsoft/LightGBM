@@ -178,7 +178,7 @@ test_that("num_iteration and start_iteration work as expected", {
   expect_equal(too_many, all5)
 
   # Check tree indices
-  expect_equal(unique(first2[["tree_index"]]), 0:1)
-  expect_equal(unique(last3[["tree_index"]]), 2:4)
-  expect_equal(unique(all5[["tree_index"]]), 0:4)
+  expect_equal(unique(first2[["tree_index"]]), 0L:1L)
+  expect_equal(unique(last3[["tree_index"]]), 2L:4L)
+  expect_equal(unique(all5[["tree_index"]]), 0L:4L)
 })
