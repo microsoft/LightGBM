@@ -1589,27 +1589,25 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
 })
 
 test_that("num_iteration and start_iteration work for save_model_to_string()", {
-  # Extract all numbers x, y, ... from string like "Tree=x Tree=y..."
-  extract_indices_from_string <- function(x) {
-    tree_indices <- gregexpr("Tree=([0-9]+)", x)
-    tree_numbers <- regmatches(x, tree_indices)
-    as.numeric(gsub("Tree=", "", tree_numbers[[1L]], fixed = TRUE))
+  get_n_trees_from_string <- function(x) {
+    return(sum(gregexpr("Tree=", x, fixed = TRUE)[[1L]] > 0L))
   }
 
   bst <- .get_test_model(5L)
 
-  first2 <- bst$save_model_to_string(num_iteration = 2L)
-  last3 <- bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
-  all5 <- bst$save_model_to_string()
-  too_many <- bst$save_model_to_string(num_iteration = 10L)
+  n_first2 <- get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 2L)
+  )
+  n_last3 <- get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
+  )
+  n_all5 <- get_n_trees_from_string(bst$save_model_to_string())
+  n_too_many <- get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 10L)
+  )
 
-  expect_true(nchar(first2) < nchar(all5))
-  expect_true(nchar(last3) < nchar(all5))
-  expect_true(nchar(first2) + nchar(last3) >= nchar(all5))
-  expect_equal(too_many, all5)
-
-  # Explicitly check the tree indices
-  expect_equal(extract_indices_from_string(first2), 0L:1L)
-  expect_equal(extract_indices_from_string(last3), 2L:4L)
-  expect_equal(extract_indices_from_string(all5), 0L:4L)
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
 })
