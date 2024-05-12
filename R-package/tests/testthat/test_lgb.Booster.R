@@ -1564,23 +1564,23 @@ test_that("num_iteration and start_iteration work for lgb.dump()", {
 })
 
 test_that("num_iteration and start_iteration work for lgb.save()", {
-  get_n_trees <- function(x) {
+  .get_n_trees <- function(x) {
     return(length(.get_trees_from_dump(lgb.dump(x))))
   }
 
-  save_and_load <- function(bst, ...) {
+  .save_and_load <- function(bst, ...) {
     model_file <- tempfile(fileext = ".model")
     lgb.save(bst, model_file, ...)
     return(lgb.load(model_file))
   }
 
   bst <- .get_test_model(5L)
-  n_first2 <- get_n_trees(save_and_load(bst, num_iteration = 2L))
-  n_last3 <- get_n_trees(
-    save_and_load(bst, num_iteration = 3L, start_iteration = 3L)
+  n_first2 <- .get_n_trees(.save_and_load(bst, num_iteration = 2L))
+  n_last3 <- .get_n_trees(
+    .save_and_load(bst, num_iteration = 3L, start_iteration = 3L)
   )
-  n_all5 <- get_n_trees(save_and_load(bst))
-  n_too_many <- get_n_trees(save_and_load(bst, num_iteration = 10L))
+  n_all5 <- .get_n_trees(.save_and_load(bst))
+  n_too_many <- .get_n_trees(.save_and_load(bst, num_iteration = 10L))
 
   expect_equal(n_first2, 2L)
   expect_equal(n_last3, 3L)
@@ -1589,20 +1589,20 @@ test_that("num_iteration and start_iteration work for lgb.save()", {
 })
 
 test_that("num_iteration and start_iteration work for save_model_to_string()", {
-  get_n_trees_from_string <- function(x) {
+  .get_n_trees_from_string <- function(x) {
     return(sum(gregexpr("Tree=", x, fixed = TRUE)[[1L]] > 0L))
   }
 
   bst <- .get_test_model(5L)
 
-  n_first2 <- get_n_trees_from_string(
+  n_first2 <- .get_n_trees_from_string(
     bst$save_model_to_string(num_iteration = 2L)
   )
-  n_last3 <- get_n_trees_from_string(
+  n_last3 <- .get_n_trees_from_string(
     bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
   )
-  n_all5 <- get_n_trees_from_string(bst$save_model_to_string())
-  n_too_many <- get_n_trees_from_string(
+  n_all5 <- .get_n_trees_from_string(bst$save_model_to_string())
+  n_too_many <- .get_n_trees_from_string(
     bst$save_model_to_string(num_iteration = 10L)
   )
 
