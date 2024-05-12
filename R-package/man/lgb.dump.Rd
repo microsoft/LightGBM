@@ -11,7 +11,9 @@ lgb.dump(booster, num_iteration = NULL, start_iteration = 1L)
 
 \item{num_iteration}{Number of iterations to be dumped. NULL or <= 0 means use best iteration}
 
-\item{start_iteration}{Start index of iteration. Default is 1, i.e., start at the first iteration}
+\item{start_iteration}{Index (1-based) of the first boosting round to dump.
+For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+means "dump the fifth, sixth, and seventh tree"}
 }
 \value{
 json format of model

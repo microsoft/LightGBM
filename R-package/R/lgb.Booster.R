@@ -1305,7 +1305,9 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @param booster Object of class \code{lgb.Booster}
 #' @param filename Saved filename
 #' @param num_iteration Number of iterations to save, NULL or <= 0 means use best iteration
-#' @param start_iteration First iteration to save. Default is 1, i.e., start at first
+#' @param start_iteration Index (1-based) of the first boosting round to save.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "save the fifth, sixth, and seventh tree"
 #'
 #' @return lgb.Booster
 #'
@@ -1367,7 +1369,9 @@ lgb.save <- function(
 #' @description Dump LightGBM model to json
 #' @param booster Object of class \code{lgb.Booster}
 #' @param num_iteration Number of iterations to be dumped. NULL or <= 0 means use best iteration
-#' @param start_iteration Start index of iteration. Default is 1, i.e., start at the first iteration
+#' @param start_iteration Index (1-based) of the first boosting round to dump.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "dump the fifth, sixth, and seventh tree"
 #'
 #' @return json format of model
 #'
