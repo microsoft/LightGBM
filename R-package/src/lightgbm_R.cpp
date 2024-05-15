@@ -69,7 +69,7 @@ SEXP make_r_raw_vec(void *void_ptr) {
   std::unique_ptr<std::vector<char>> *ptr_to_cpp_vec = static_cast<std::unique_ptr<std::vector<char>>*>(void_ptr);
   R_xlen_t len = ptr_to_cpp_vec->get()->size();
   SEXP out = PROTECT(Rf_allocVector(RAWSXP, len));
-  std::copy(ptr_to_cpp_vec->get()->begin(), ptr_to_cpp_vec->get()->end(), RAW(out));
+  std::copy(ptr_to_cpp_vec->get()->begin(), ptr_to_cpp_vec->get()->end(), reinterpret_cast<char*>(RAW(out)));
   UNPROTECT(1);
   return out;
 }
@@ -1257,6 +1257,10 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   R_API_END();
 }
 
+// Note: for some reason, MSVC crashes when an error is thrown here
+// if the buffer variable is defined as 'std::unique_ptr<std::vector<char>>',
+// but not if it is defined as '<std::vector<char>'.
+#ifndef _MSC_VER
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type) {
@@ -1278,6 +1282,31 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   return out;
   R_API_END();
 }
+#else
+SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
+  SEXP num_iteration,
+  SEXP feature_importance_type) {
+  SEXP cont_token = PROTECT(R_MakeUnwindCont());
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int64_t out_len = 0;
+  int64_t buf_len = 1024 * 1024;
+  int num_iter = Rf_asInteger(num_iteration);
+  int importance_type = Rf_asInteger(feature_importance_type);
+  std::vector<char> inner_char_buf(buf_len);
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf.data()));
+  SEXP model_str = PROTECT(safe_R_raw(out_len, &cont_token));
+  // if the model string was larger than the initial buffer, call the function again, writing directly to the R object
+  if (out_len > buf_len) {
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, reinterpret_cast<char*>(RAW(model_str))));
+  } else {
+    std::copy(inner_char_buf.begin(), inner_char_buf.begin() + out_len, reinterpret_cast<char*>(RAW(model_str)));
+  }
+  UNPROTECT(2);
+  return model_str;
+  R_API_END();
+}
+#endif
 
 SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   SEXP num_iteration,
