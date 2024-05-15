@@ -57,26 +57,30 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.4.4"]
+requires = ["scikit-build-core>=0.9.3"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.minimum-version = "3.18"
-ninja.minimum-version = "1.11"
+cmake.version = ">=3.18"
+ninja.version = ">=1.11"
 ninja.make-fallback = true
 cmake.args = [
     "-D__BUILD_FOR_PYTHON:BOOL=ON"
 ]
 cmake.verbose = false
 cmake.build-type = "Release"
+cmake.targets = ["_lightgbm"]
+# stripping binaries should be turned back on once this is fixed:
+# https://github.com/jameslamb/pydistcheck/issues/235
+install.strip = false
 logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
 strict-config = true
-minimum-version = "0.4.4"
+minimum-version = "0.9.3"
 
 # end:build-system
 

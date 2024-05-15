@@ -6,10 +6,8 @@
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
-#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
+#' @param colnames Deprecated. See "Deprecated Arguments" section below.
+#' @param categorical_feature Deprecated. See "Deprecated Arguments" section below.
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
@@ -43,6 +41,13 @@
 #'   , early_stopping_rounds = 3L
 #' )
 #' }
+#'
+#' @section Deprecated Arguments:
+#'
+#' A future release of \code{lightgbm} will remove support for passing arguments
+#' \code{'categorical_feature'} and \code{'colnames'}. Pass those things to
+#' \code{lgb.Dataset} instead.
+#'
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -76,6 +81,16 @@ lgb.train <- function(params = list(),
     if (is.null(evnames) || !all(nzchar(evnames))) {
       stop("lgb.train: each element of valids must have a name")
     }
+  }
+
+  # raise deprecation warnings if necessary
+  # ref: https://github.com/microsoft/LightGBM/issues/6435
+  args <- names(match.call())
+  if ("categorical_feature" %in% args) {
+    .emit_dataset_kwarg_warning("categorical_feature", "lgb.train")
+  }
+  if ("colnames" %in% args) {
+    .emit_dataset_kwarg_warning("colnames", "lgb.train")
   }
 
   # set some parameters, resolving the way they were passed in with other parameters
