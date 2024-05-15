@@ -44,6 +44,13 @@ void delete_cpp_char_vec(SEXP R_ptr) {
   R_ClearExternalPtr(R_ptr);
 }
 
+// Note: MSVC has issues with Altrep classes, so they are disabled for it.
+// See: https://github.com/microsoft/LightGBM/pull/6213#issuecomment-2111025768
+#ifdef _MSC_VER
+#  define LGB_NO_ALTREP
+#endif
+
+#ifndef LGB_NO_ALTREP
 SEXP make_altrepped_raw_vec(void *void_ptr) {
   std::unique_ptr<std::vector<char>> *ptr_to_cpp_vec = static_cast<std::unique_ptr<std::vector<char>>*>(void_ptr);
   SEXP R_ptr = PROTECT(R_MakeExternalPtr(nullptr, R_NilValue, R_NilValue));
@@ -57,6 +64,17 @@ SEXP make_altrepped_raw_vec(void *void_ptr) {
   UNPROTECT(2);
   return R_raw;
 }
+#else
+SEXP make_r_raw_vec(void *void_ptr) {
+  std::unique_ptr<std::vector<char>> *ptr_to_cpp_vec = static_cast<std::unique_ptr<std::vector<char>>*>(void_ptr);
+  R_xlen_t len = ptr_to_cpp_vec->get()->size();
+  SEXP out = PROTECT(Rf_allocVector(RAWSXP, len));
+  std::copy(ptr_to_cpp_vec->get()->begin(), ptr_to_cpp_vec->get()->end(), RAW(out));
+  UNPROTECT(1);
+  return out;
+}
+#define make_altrepped_raw_vec make_r_raw_vec
+#endif
 
 std::vector<char>* get_ptr_from_altrepped_raw(SEXP R_raw) {
   return static_cast<std::vector<char>*>(R_ExternalPtrAddr(R_altrep_data1(R_raw)));
@@ -74,6 +92,7 @@ void* get_altrepped_raw_dataptr(SEXP R_raw, Rboolean writeable) {
   return get_ptr_from_altrepped_raw(R_raw)->data();
 }
 
+#ifndef LGB_NO_ALTREP
 template <class T>
 R_altrep_class_t get_altrep_class_for_type() {
   if (std::is_same<T, double>::value) {
@@ -82,6 +101,25 @@ R_altrep_class_t get_altrep_class_for_type() {
     return lgb_altrepped_int_arr;
   }
 }
+#else
+template <class T>
+SEXPTYPE get_sexptype_class_for_type() {
+  if (std::is_same<T, double>::value) {
+    return REALSXP;
+  } else {
+    return INTSXP;
+  }
+}
+
+template <class T>
+T* get_r_vec_ptr(SEXP x) {
+  if (std::is_same<T, double>::value) {
+    return static_cast<T*>(static_cast<void*>(REAL(x)));
+  } else {
+    return static_cast<T*>(static_cast<void*>(INTEGER(x)));
+  }
+}
+#endif
 
 template <class T>
 struct arr_and_len {
@@ -89,6 +127,7 @@ struct arr_and_len {
   int64_t len;
 };
 
+#ifndef LGB_NO_ALTREP
 template <class T>
 SEXP make_altrepped_vec_from_arr(void *void_ptr) {
   T *arr = static_cast<arr_and_len<T>*>(void_ptr)->arr;
@@ -106,6 +145,18 @@ SEXP make_altrepped_vec_from_arr(void *void_ptr) {
   UNPROTECT(3);
   return R_vec;
 }
+#else
+template <class T>
+SEXP make_R_vec_from_arr(void *void_ptr) {
+  T *arr = static_cast<arr_and_len<T>*>(void_ptr)->arr;
+  uint64_t len = static_cast<arr_and_len<T>*>(void_ptr)->len;
+  SEXP out = PROTECT(Rf_allocVector(get_sexptype_class_for_type<T>(), len));
+  std::copy(arr, arr + len, get_r_vec_ptr<T>(out));
+  UNPROTECT(1);
+  return out;
+}
+#define make_altrepped_vec_from_arr make_R_vec_from_arr
+#endif
 
 R_xlen_t get_altrepped_vec_len(SEXP R_vec) {
   return static_cast<R_xlen_t>(Rf_asReal(R_altrep_data2(R_vec)));
@@ -1378,6 +1429,7 @@ void R_init_lightgbm(DllInfo *dll) {
   R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
 
+#ifndef LGB_NO_ALTREP
   lgb_altrepped_char_vec = R_make_altraw_class("lgb_altrepped_char_vec", "lightgbm", dll);
   R_set_altrep_Length_method(lgb_altrepped_char_vec, get_altrepped_raw_len);
   R_set_altvec_Dataptr_method(lgb_altrepped_char_vec, get_altrepped_raw_dataptr);
@@ -1392,4 +1444,5 @@ void R_init_lightgbm(DllInfo *dll) {
   R_set_altrep_Length_method(lgb_altrepped_dbl_arr, get_altrepped_vec_len);
   R_set_altvec_Dataptr_method(lgb_altrepped_dbl_arr, get_altrepped_vec_dataptr);
   R_set_altvec_Dataptr_or_null_method(lgb_altrepped_dbl_arr, get_altrepped_vec_dataptr_or_null);
+#endif
 }
