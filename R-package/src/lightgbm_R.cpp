@@ -1264,19 +1264,21 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
 #ifndef _MSC_VER
 SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   SEXP num_iteration,
-  SEXP feature_importance_type) {
+  SEXP feature_importance_type,
+  SEXP start_iteration) {
   SEXP cont_token = PROTECT(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
   int64_t out_len = 0;
   int64_t buf_len = 1024 * 1024;
   int num_iter = Rf_asInteger(num_iteration);
+  int start_iter = Rf_asInteger(start_iteration);
   int importance_type = Rf_asInteger(feature_importance_type);
   std::unique_ptr<std::vector<char>> inner_char_buf(new std::vector<char>(buf_len));
-  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, buf_len, &out_len, inner_char_buf->data()));
+  CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, buf_len, &out_len, inner_char_buf->data()));
   inner_char_buf->resize(out_len);
   if (out_len > buf_len) {
-    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), 0, num_iter, importance_type, out_len, &out_len, inner_char_buf->data()));
+    CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, out_len, &out_len, inner_char_buf->data()));
   }
   SEXP out = R_UnwindProtect(make_altrepped_raw_vec, &inner_char_buf, throw_R_memerr, &cont_token, cont_token);
   UNPROTECT(1);
