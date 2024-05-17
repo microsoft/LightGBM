@@ -53,7 +53,7 @@ jobs:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     container:
-      name: ${{ matrix.image }}
+      image: ${{ matrix.image }}
       env:
         BUILD_DIRECTORY: ${GITHUB_WORKSPACE}
         COMPILER: ${{ matrix.compiler }}
@@ -63,7 +63,7 @@ jobs:
         PYTHON_VERSION: ${{ matrix.python_version }}
         TASK: ${{ matrix.task }}
       options: --gpus all
-    timeout-minutes: 60
+    timeout-minutes: 30
     needs: [setup-docker]
     strategy:
       fail-fast: false
