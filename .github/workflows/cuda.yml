@@ -70,6 +70,7 @@ jobs:
             sudo systemctl restart docker
       - name: Remove old checkout of the repository
         run: |
+          sudo rm -rf /home/guoke/actions-runner/_work/LightGBM/LightGBM/.pytest_cache
           # this needs to be run as the same user that created the files
           docker run \
             --rm \
