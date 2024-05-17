@@ -76,15 +76,13 @@ jobs:
             sudo systemctl restart docker
       - name: Remove old checkout of the repository
         run: |
-          sudo rm -rf /home/guoke/actions-runner/_work/LightGBM/LightGBM/.pytest_cache
           # this needs to be run as the same user that created the files
           docker run \
             --rm \
             -v "$GITHUB_WORKSPACE":/opt/repo \
             -w /opt \
             ${{ matrix.image }} \
-            rm -rf /opt/repo/* || true
-          sudo rm -rf "$GITHUB_WORKSPACE"/*
+            rm -rf /opt/repo/*
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -105,7 +103,7 @@ jobs:
               --env BUILD_DIRECTORY=${{ env.root_docker_folder }} \
               --env COMPILER=${{ matrix.compiler }} \
               --env CONDA_ENV='test-env' \
-              --env METHOD=${{ matrix.method }}
+              --env METHOD=${{ matrix.method }} \
               --env OS_NAME=linux \
               --env PYTHON_VERSION=${{ matrix.python_version }} \
               --env TASK=${{ matrix.task }} \
