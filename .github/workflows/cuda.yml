@@ -97,7 +97,6 @@ jobs:
               --env BUILD_DIRECTORY=${{ env.root_docker_folder }} \
               --env COMPILER=${{ matrix.compiler }} \
               --env CONDA_ENV='test-env' \
-              --env GITHUB_ACTIONS=${{ env.github_actions }} \
               --env METHOD=${{ matrix.method }}
               --env OS_NAME=linux \
               --env PYTHON_VERSION=${{ matrix.python_version }} \

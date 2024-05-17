@@ -16,7 +16,6 @@ concurrency:
 
 env:
   CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
 
 jobs:
   test:

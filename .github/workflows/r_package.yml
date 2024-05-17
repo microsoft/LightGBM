@@ -189,7 +189,6 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
-          export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macos-13" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -216,7 +215,6 @@ jobs:
           $env:R_VERSION = "${{ matrix.r_version }}"
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
-          $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
