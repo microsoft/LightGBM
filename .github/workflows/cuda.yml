@@ -75,7 +75,7 @@ jobs:
             --rm \
             -v "$GITHUB_WORKSPACE":/opt/repo \
             -w /opt \
-            nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel \
+            ${{ matrix.image }} \
             rm -rf /opt/repo/*
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -103,7 +103,7 @@ jobs:
               --env PYTHON_VERSION=${{ matrix.python_version }} \
               --env TASK=${{ matrix.task }} \
               -v "$GITHUB_WORKSPACE":"${{ env.root_docker_folder }}" \
-              "$docker_img" \
+              ${{ matrix.image }} \
               /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
   all-cuda-jobs-successful:
     if: always()
