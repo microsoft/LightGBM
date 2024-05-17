@@ -111,7 +111,7 @@ jobs:
               --env TASK=${{ matrix.task }} \
               -v "$GITHUB_WORKSPACE":"${{ env.root_docker_folder }}" \
               ${{ matrix.image }} \
-              /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+              /bin/bash ${{ env.root_docker_folder }}/docker-script.sh
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
