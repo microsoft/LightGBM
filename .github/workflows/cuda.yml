@@ -87,6 +87,16 @@ jobs:
             image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
             task: cuda
     steps:
+      - name: Install latest git
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              ca-certificates \
+              software-properties-common
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              git
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -96,17 +106,6 @@ jobs:
         run: |
           export CONDA=\$HOME/miniforge
           export PATH=\$CONDA/bin:\$PATH
-          # install latest git
-          apt-get update
-          apt-get install --no-install-recommends -y \
-              ca-certificates \
-              gnupg-agent \
-              software-properties-common
-
-          add-apt-repository ppa:git-core/ppa -y
-          apt-get update
-          apt-get install --no-install-recommends -y \
-              git
 
           # check GPU usage
           nvidia-smi
