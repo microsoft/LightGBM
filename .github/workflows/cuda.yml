@@ -15,9 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  github_actions: 'true'
-  os_name: linux
-  conda_env: test-env
+  root_docker_folder: /LightGBM
 
 jobs:
   test:
@@ -32,16 +30,19 @@ jobs:
             compiler: gcc
             python_version: "3.11"
             cuda_version: "11.8.0"
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
             task: cuda
           - method: source
             compiler: gcc
             python_version: "3.9"
             cuda_version: "12.2.0"
+            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu20.04
             task: cuda
           - method: pip
             compiler: clang
             python_version: "3.10"
             cuda_version: "11.8.0"
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
             task: cuda
     steps:
       - name: Setup or update software on host machine
@@ -68,7 +69,14 @@ jobs:
             sudo chmod a+rw /var/run/docker.sock
             sudo systemctl restart docker
       - name: Remove old checkout of the repository
-        run: sudo rm -rf $GITHUB_WORKSPACE/*
+        run: |
+          # this needs to be run as the same user that created the files
+          docker run \
+            --rm \
+            -v "$GITHUB_WORKSPACE":/opt/repo \
+            -w /opt \
+            nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel \
+            rm -rf /opt/repo/*
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -76,34 +84,27 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
-            export ROOT_DOCKER_FOLDER=/LightGBM
-            cat > docker.env <<EOF
-            GITHUB_ACTIONS=${{ env.github_actions }}
-            OS_NAME=${{ env.os_name }}
-            COMPILER=${{ matrix.compiler }}
-            TASK=${{ matrix.task }}
-            METHOD=${{ matrix.method }}
-            CONDA_ENV=${{ env.conda_env }}
-            PYTHON_VERSION=${{ matrix.python_version }}
-            BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
-            LGB_VER=$(head -n 1 VERSION.txt)
-            EOF
             cat > docker-script.sh <<EOF
             export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
-            $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
-            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
+            ${{ env.root_docker_folder }}/.ci/setup.sh || exit 1
+            ${{ env.root_docker_folder }}/.ci/test.sh || exit 1
             EOF
-            cuda_version="${{ matrix.cuda_version }}"
-            cuda_major=${cuda_version%%.*}
-            docker_img="nvcr.io/nvidia/cuda:${cuda_version}-devel"
-            if [[ ${cuda_major} -eq 11 ]]; then
-                docker_img="${docker_img}-ubuntu18.04"
-            elif [[ ${cuda_major} -ge 12 ]]; then
-                docker_img="${docker_img}-ubuntu20.04"
-            fi
-            docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "$docker_img" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+            docker run \
+              --rm \
+              --gpus all \
+              --env BUILD_DIRECTORY=${{ env.root_docker_folder }} \
+              --env COMPILER=${{ matrix.compiler }} \
+              --env CONDA_ENV='test-env' \
+              --env GITHUB_ACTIONS=${{ env.github_actions }} \
+              --env METHOD=${{ matrix.method }}
+              --env OS_NAME=linux \
+              --env PYTHON_VERSION=${{ matrix.python_version }} \
+              --env TASK=${{ matrix.task }} \
+              -v "$GITHUB_WORKSPACE":"${{ env.root_docker_folder }}" \
+              "$docker_img" \
+              /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
