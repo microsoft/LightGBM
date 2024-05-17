@@ -64,7 +64,6 @@ jobs:
         TASK: ${{ matrix.task }}
       options: --gpus all
     timeout-minutes: 30
-    needs: [setup-docker]
     strategy:
       fail-fast: false
       matrix:
