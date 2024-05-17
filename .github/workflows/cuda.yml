@@ -14,14 +14,57 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  root_docker_folder: /LightGBM
-
 jobs:
+  # # this works because all these jobs run on a single runner
+  # setup-docker:
+  #   name: setup-docker
+  #   timeout-minutes: 10
+  #   steps:
+  #     - name: Setup or update software on host machine
+  #       run: |
+  #           # install core packages
+  #           sudo apt-get update
+  #           sudo apt-get install --no-install-recommends -y \
+  #               apt-transport-https \
+  #               ca-certificates \
+  #               curl \
+  #               gnupg-agent \
+  #               lsb-release \
+  #               software-properties-common
+  #           # install latest git
+  #           sudo add-apt-repository ppa:git-core/ppa -y
+  #           sudo apt-get update
+  #           sudo apt-get install --no-install-recommends -y \
+  #               git
+  #           # set up nvidia-docker
+  #           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  #           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
+  #           curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+  #           curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+  #           sudo apt-get update
+  #           sudo apt-get install --no-install-recommends -y \
+  #               containerd.io \
+  #               docker-ce \
+  #               docker-ce-cli \
+  #               nvidia-docker2
+  #           sudo chmod a+rw /var/run/docker.sock
+  #           sudo systemctl restart docker
   test:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
+    container:
+      name: ${{ matrix.image }}
+      env:
+        BUILD_DIRECTORY: ${GITHUB_WORKSPACE}
+        COMPILER: ${{ matrix.compiler }}
+        CONDA_ENV: test-env
+        METHOD: ${{ matrix.method }}
+        OS_NAME: linux
+        PYTHON_VERSION: ${{ matrix.python_version }}
+        TASK: ${{ matrix.task }}
+      options: --gpus all
     timeout-minutes: 60
+    needs: [setup-docker]
     strategy:
       fail-fast: false
       matrix:
@@ -45,46 +88,6 @@ jobs:
             image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
             task: cuda
     steps:
-      - name: Setup or update software on host machine
-        run: |
-            # install core packages
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                apt-transport-https \
-                ca-certificates \
-                curl \
-                gnupg-agent \
-                lsb-release \
-                software-properties-common
-            # install latest git
-            sudo add-apt-repository ppa:git-core/ppa -y
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                git
-            # set up nvidia-docker
-            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
-            curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-            curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                containerd.io \
-                docker-ce \
-                docker-ce-cli \
-                nvidia-docker2
-            sudo chmod a+rw /var/run/docker.sock
-            sudo systemctl restart docker
-      - name: Remove old checkout of the repository
-        run: |
-          # this needs to be run as the same user that created the files
-          docker run \
-            --rm \
-            -v "$GITHUB_WORKSPACE":/opt/repo \
-            -w /opt \
-            ${{ matrix.image }} \
-            rm -rf /opt/repo/*
-          # but it won't get everything
-          sudo rm -rf "${GITHUB_WORKSPACE}/*"
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -92,26 +95,11 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
-            cat > docker-script.sh <<EOF
             export CONDA=\$HOME/miniforge
             export PATH=\$CONDA/bin:\$PATH
             nvidia-smi
-            ${{ env.root_docker_folder }}/.ci/setup.sh || exit 1
-            ${{ env.root_docker_folder }}/.ci/test.sh || exit 1
-            EOF
-            docker run \
-              --rm \
-              --gpus all \
-              --env BUILD_DIRECTORY=${{ env.root_docker_folder }} \
-              --env COMPILER=${{ matrix.compiler }} \
-              --env CONDA_ENV='test-env' \
-              --env METHOD=${{ matrix.method }} \
-              --env OS_NAME=linux \
-              --env PYTHON_VERSION=${{ matrix.python_version }} \
-              --env TASK=${{ matrix.task }} \
-              -v "$GITHUB_WORKSPACE":"${{ env.root_docker_folder }}" \
-              ${{ matrix.image }} \
-              /bin/bash ${{ env.root_docker_folder }}/docker-script.sh
+            $GITHUB_WORKSPACE/.ci/setup.sh
+            $GITHUB_WORKSPACE/.ci/test.sh
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
