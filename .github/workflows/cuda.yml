@@ -104,8 +104,8 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
-          export CONDA=\$HOME/miniforge
-          export PATH=\$CONDA/bin:\$PATH
+          export CONDA=$HOME/miniforge
+          export PATH=$CONDA/bin:$PATH
 
           # check GPU usage
           nvidia-smi
