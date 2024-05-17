@@ -94,11 +94,26 @@ jobs:
           submodules: true
       - name: Setup and run tests
         run: |
-            export CONDA=\$HOME/miniforge
-            export PATH=\$CONDA/bin:\$PATH
-            nvidia-smi
-            $GITHUB_WORKSPACE/.ci/setup.sh
-            $GITHUB_WORKSPACE/.ci/test.sh
+          export CONDA=\$HOME/miniforge
+          export PATH=\$CONDA/bin:\$PATH
+          # install latest git
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              ca-certificates \
+              gnupg-agent \
+              software-properties-common
+
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              git
+
+          # check GPU usage
+          nvidia-smi
+
+          # build and test
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
