@@ -76,7 +76,7 @@ jobs:
             -v "$GITHUB_WORKSPACE":/opt/repo \
             -w /opt \
             ${{ matrix.image }} \
-            rm -rf /opt/repo/*
+            rm -rf /opt/repo/* || true
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
