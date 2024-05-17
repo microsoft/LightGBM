@@ -47,6 +47,9 @@ jobs:
     steps:
       - name: Setup or update software on host machine
         run: |
+            # ensure latest git is pulled
+            add-apt-repository ppa:git-core/ppa -y
+            # install core packages
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 apt-transport-https \
@@ -56,6 +59,7 @@ jobs:
                 gnupg-agent \
                 lsb-release \
                 software-properties-common
+            # set up nvidia-docker
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
             curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
