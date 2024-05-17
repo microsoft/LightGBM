@@ -83,6 +83,8 @@ jobs:
             -w /opt \
             ${{ matrix.image }} \
             rm -rf /opt/repo/*
+          # but it won't get everything
+          sudo rm -rf "${GITHUB_WORKSPACE}/*"
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
