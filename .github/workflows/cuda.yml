@@ -100,6 +100,10 @@ jobs:
       - name: clean up previous build directory
         run: |
           rm -rf $GITHUB_WORKSPACE/*
+          echo "--- ghw ---"
+          ls -alF $GITHUB_WORKSPACE
+          echo "--- home ---"
+          ls -alF /home
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
