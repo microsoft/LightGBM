@@ -16,6 +16,7 @@ on:
         required: true
         type: boolean
         default: false
+
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,7 +26,7 @@ jobs:
   # Optionally reinstall + restart docker on the runner before building.
   # This is safe as long as only 1 of these jobs runs at a time.
   restart-docker:
-    name: setup-docker
+    name: set up docker
     runs-on: [self-hosted, linux]
     timeout-minutes: 30
     steps:
@@ -87,19 +88,19 @@ jobs:
             compiler: gcc
             python_version: "3.11"
             cuda_version: "11.8.0"
-            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
             task: cuda
           - method: source
             compiler: gcc
             python_version: "3.9"
             cuda_version: "12.2.0"
-            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu20.04
+            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
             task: cuda
           - method: pip
             compiler: clang
             python_version: "3.10"
             cuda_version: "11.8.0"
-            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu18.04
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
             task: cuda
     steps:
       - name: Install latest git
@@ -113,7 +114,7 @@ jobs:
           apt-get install --no-install-recommends -y \
               git
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true

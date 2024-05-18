@@ -15,8 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # for CMake-based builds, compile 4 objects at a time
-  # (equivalent to make -j4)
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   CONDA_ENV: test-env
 
