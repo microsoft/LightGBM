@@ -97,17 +97,17 @@ jobs:
           apt-get update
           apt-get install --no-install-recommends -y \
               git
-      - name: clean up previous build directory
-        run: |
-          rm -rf $GITHUB_WORKSPACE/
-          rm -rf /github/home/miniforge/
-          mkdir -p $GITHUB_WORKSPACE/
-          echo "--- ghw ---"
-          ls -alF $GITHUB_WORKSPACE
-          echo "--- home ---"
-          ls -alF /home
-          echo "--- /github/home ---"
-          ls -alF /github/home
+      # - name: clean up previous build directory
+      #   run: |
+      #     rm -rf $GITHUB_WORKSPACE/
+      #     rm -rf /github/home/miniforge/
+      #     mkdir -p $GITHUB_WORKSPACE/
+      #     echo "--- ghw ---"
+      #     ls -alF $GITHUB_WORKSPACE
+      #     echo "--- home ---"
+      #     ls -alF /home
+      #     echo "--- /github/home ---"
+      #     ls -alF /github/home
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
