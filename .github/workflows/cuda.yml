@@ -105,6 +105,8 @@ jobs:
           ls -alF $GITHUB_WORKSPACE
           echo "--- home ---"
           ls -alF /home
+          echo "--- /github/home ---"
+          ls -alF /github/home
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
