@@ -55,7 +55,7 @@ jobs:
     container:
       image: ${{ matrix.image }}
       env:
-        BUILD_DIRECTORY: ${GITHUB_WORKSPACE}
+        BUILD_DIRECTORY: ${{ github.workspace }}
         COMPILER: ${{ matrix.compiler }}
         CONDA_ENV: test-env
         METHOD: ${{ matrix.method }}
