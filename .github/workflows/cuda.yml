@@ -69,7 +69,9 @@ jobs:
     container:
       image: ${{ matrix.image }}
       env:
+        CMAKE_BUILD_PARALLEL_LEVEL: 4
         COMPILER: ${{ matrix.compiler }}
+        CONDA: /tmp/miniforge
         CONDA_ENV: test-env
         METHOD: ${{ matrix.method }}
         OS_NAME: linux
@@ -118,7 +120,6 @@ jobs:
       - name: Setup and run tests
         run: |
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=/tmp/miniforge
           export PATH=$CONDA/bin:$PATH
 
           # check GPU usage
