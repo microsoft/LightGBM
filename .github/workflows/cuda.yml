@@ -42,11 +42,6 @@ jobs:
                 gnupg-agent \
                 lsb-release \
                 software-properties-common
-            # install latest git
-            sudo add-apt-repository ppa:git-core/ppa -y
-            sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
-                git
             # set up nvidia-docker
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
@@ -74,6 +69,7 @@ jobs:
         COMPILER: ${{ matrix.compiler }}
         CONDA: /tmp/miniforge
         CONDA_ENV: test-env
+        DEBIAN_FRONTEND: noninteractive
         METHOD: ${{ matrix.method }}
         OS_NAME: linux
         PYTHON_VERSION: ${{ matrix.python_version }}
