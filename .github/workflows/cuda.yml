@@ -55,7 +55,6 @@ jobs:
     container:
       image: ${{ matrix.image }}
       env:
-        BUILD_DIRECTORY: ${{ github.workspace }}
         COMPILER: ${{ matrix.compiler }}
         CONDA_ENV: test-env
         METHOD: ${{ matrix.method }}
@@ -97,17 +96,17 @@ jobs:
           apt-get update
           apt-get install --no-install-recommends -y \
               git
-      - name: clean up previous build directory
-        run: |
-          rm -rf $GITHUB_WORKSPACE/
-          rm -rf /github/home/miniforge/
-          mkdir -p $GITHUB_WORKSPACE/
-          echo "--- ghw ---"
-          ls -alF $GITHUB_WORKSPACE
-          echo "--- home ---"
-          ls -alF /home
-          echo "--- /github/home ---"
-          ls -alF /github/home
+      # - name: clean up previous build directory
+      #   run: |
+      #     rm -rf $GITHUB_WORKSPACE/
+      #     rm -rf /github/home/miniforge/
+      #     mkdir -p $GITHUB_WORKSPACE/
+      #     echo "--- ghw ---"
+      #     ls -alF $GITHUB_WORKSPACE
+      #     echo "--- home ---"
+      #     ls -alF /home
+      #     echo "--- /github/home ---"
+      #     ls -alF /github/home
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -116,6 +115,7 @@ jobs:
       - name: Setup and run tests
         run: |
           export CONDA=/tmp/miniforge
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export PATH=$CONDA/bin:$PATH
 
           # check GPU usage
