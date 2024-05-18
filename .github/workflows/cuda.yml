@@ -99,7 +99,8 @@ jobs:
               git
       - name: clean up previous build directory
         run: |
-          rm -rf $GITHUB_WORKSPACE/*
+          rm -rf $GITHUB_WORKSPACE/
+          mkdir -p $GITHUB_WORKSPACE/
           echo "--- ghw ---"
           ls -alF $GITHUB_WORKSPACE
           echo "--- home ---"
