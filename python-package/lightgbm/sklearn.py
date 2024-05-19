@@ -862,6 +862,7 @@ class LGBMModel(_LGBMModelBase):
             group=group,
             init_score=init_score,
             categorical_feature=categorical_feature,
+            feature_name=feature_name,
             params=params,
         )
 
@@ -928,7 +929,6 @@ class LGBMModel(_LGBMModelBase):
             valid_names=eval_names,
             feval=eval_metrics_callable,  # type: ignore[arg-type]
             init_model=init_model,
-            feature_name=feature_name,
             callbacks=callbacks,
         )
 

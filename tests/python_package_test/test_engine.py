@@ -1421,13 +1421,14 @@ def test_cvbooster_picklable(serializer):
 def test_feature_name():
     X_train, y_train = make_synthetic_regression()
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
     feature_names = [f"f_{i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
     # test feature_names with whitespaces
     feature_names_with_space = [f"f {i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
+    lgb_train.set_feature_name(feature_names_with_space)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
 
 
@@ -1437,9 +1438,9 @@ def test_feature_name_with_non_ascii():
     # This has non-ascii strings.
     feature_names = ["F_零", "F_一", "F_二", "F_三"]
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
 
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
     gbm.save_model("lgb.model")
 

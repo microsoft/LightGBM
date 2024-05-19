@@ -260,3 +260,19 @@
     return(a == b)
   }
 }
+
+# ref: https://github.com/microsoft/LightGBM/issues/6435
+.emit_dataset_kwarg_warning <- function(calling_function, argname) {
+  msg <- sprintf(
+    paste0(
+      "Argument '%s' to %s() is deprecated and will be removed in a future release. "
+      , "Set '%s' with lgb.Dataset() instead. "
+      , "See https://github.com/microsoft/LightGBM/issues/6435."
+    )
+    , argname
+    , calling_function
+    , argname
+  )
+  warning(msg)
+  return(invisible(NULL))
+}
