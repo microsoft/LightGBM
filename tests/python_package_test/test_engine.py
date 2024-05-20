@@ -938,6 +938,54 @@ def test_early_stopping_via_global_params(first_metric_only):
     assert "error" in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize("early_stopping_round", [-10, -1, 0, None, "None"])
+def test_early_stopping_is_not_enabled_for_non_positive_stopping_rounds(early_stopping_round):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": early_stopping_round,
+        "first_metric_only": True,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    valid_set_name = "valid_set"
+
+    if early_stopping_round is None:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert "early_stopping_round" not in gbm.params
+        assert gbm.num_trees() == num_trees
+    elif early_stopping_round == "None":
+        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got 'str'"):
+            gbm = lgb.train(
+                params,
+                lgb_train,
+                feval=[constant_metric],
+                valid_sets=lgb_eval,
+                valid_names=valid_set_name,
+            )
+    elif early_stopping_round <= 0:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert gbm.params["early_stopping_round"] == early_stopping_round
+        assert gbm.num_trees() == num_trees
+
+
 @pytest.mark.parametrize("first_only", [True, False])
 @pytest.mark.parametrize("single_metric", [True, False])
 @pytest.mark.parametrize("greater_is_better", [True, False])
@@ -1017,6 +1065,29 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.less_equal(last_score, best_score + min_delta).any()
     else:
         assert np.greater_equal(last_score, best_score - min_delta).any()
+
+
+@pytest.mark.parametrize("early_stopping_min_delta", [1e3, 0.0])
+def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "num_leaves": 5,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": 2,
+        "early_stopping_min_delta": early_stopping_min_delta,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    gbm = lgb.train(params, lgb_train, feval=decreasing_metric, valid_sets=lgb_eval)
+    if early_stopping_min_delta == 0:
+        assert gbm.best_iteration == num_trees
+    else:
+        assert gbm.best_iteration == 1
 
 
 def test_early_stopping_can_be_triggered_via_custom_callback():
@@ -1350,13 +1421,14 @@ def test_cvbooster_picklable(serializer):
 def test_feature_name():
     X_train, y_train = make_synthetic_regression()
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
     feature_names = [f"f_{i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
     # test feature_names with whitespaces
     feature_names_with_space = [f"f {i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
+    lgb_train.set_feature_name(feature_names_with_space)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
 
 
@@ -1366,9 +1438,9 @@ def test_feature_name_with_non_ascii():
     # This has non-ascii strings.
     feature_names = ["F_零", "F_一", "F_二", "F_三"]
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
 
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
     gbm.save_model("lgb.model")
 
@@ -1508,6 +1580,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[extra_trees: 0]",
         "[extra_seed: 6642]",
         "[early_stopping_round: 0]",
+        "[early_stopping_min_delta: 0]",
         "[first_metric_only: 0]",
         "[max_delta_step: 0]",
         "[lambda_l1: 0]",

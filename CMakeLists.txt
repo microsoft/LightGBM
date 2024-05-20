@@ -23,10 +23,6 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-if(APPLE)
-  option(APPLE_OUTPUT_DYLIB "Output dylib shared library" OFF)
-endif()
-
 cmake_minimum_required(VERSION 3.18)
 
 project(lightgbm LANGUAGES C CXX)
@@ -118,6 +114,12 @@ include_directories(${EIGEN_DIR})
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
+set(FAST_DOUBLE_PARSER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
+
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+include_directories(${FMT_INCLUDE_DIR})
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -198,33 +200,29 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-    find_package(CUDA 11.0 REQUIRED)
+    find_package(CUDAToolkit 11.0 REQUIRED)
     find_package(Nccl REQUIRED)
-    include_directories(${CUDA_INCLUDE_DIRS})
+    include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
-        list(APPEND CUDA_ARCHS "8.0")
+    set(CUDA_ARCHS "60" "61" "62" "70" "75")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+        list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
-        list(APPEND CUDA_ARCHS "8.6")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+        list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.5")
-        list(APPEND CUDA_ARCHS "8.7")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+        list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
-        list(APPEND CUDA_ARCHS "8.9")
-        list(APPEND CUDA_ARCHS "9.0")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+        list(APPEND CUDA_ARCHS "89")
+        list(APPEND CUDA_ARCHS "90")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
-    cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHS})
-    string(REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
-
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -261,7 +259,7 @@ if(USE_CUDA)
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -285,6 +283,12 @@ if(USE_CUDA)
 endif()
 
 if(USE_HDFS)
+    message(
+      DEPRECATION
+      "HDFS support in LightGBM is deprecated, and will be removed in a future release.\
+      See https://github.com/microsoft/LightGBM/issues/6436.
+      "
+    )
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
     find_library(HDFS_LIB NAMES hdfs REQUIRED)
@@ -408,14 +412,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR})
 
 include_directories(${LightGBM_HEADER_DIR})
 
-if(APPLE)
-  if(APPLE_OUTPUT_DYLIB)
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".dylib")
-  else()
-    set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
-  endif()
-endif()
-
 if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
@@ -474,11 +470,22 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif()
+
+# R expects libraries of the form <project>.{dll,dylib,so}, not lib_<project>.{dll,dylib,so}
+if(__BUILD_FOR_R)
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      PREFIX ""
+      OUTPUT_NAME "lightgbm"
+  )
+endif()
+
 # LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
-if(MSVC)
+if(MSVC AND NOT __BUILD_FOR_R)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
 endif()
 
@@ -602,13 +609,10 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
-  # Custom target properties does not propagate, thus we need to specify for
-  # each target that contains or depends on cuda source.
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
   if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
   endif()
 
   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -708,5 +712,17 @@ install(
 )
 
 if(INSTALL_HEADERS)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    install(
+      DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    )
+    install(
+      FILES ${FAST_DOUBLE_PARSER_INCLUDE_DIR}/fast_double_parser.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+    )
+    install(
+      DIRECTORY ${FMT_INCLUDE_DIR}/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+      FILES_MATCHING PATTERN "*.h"
+    )
 endif()

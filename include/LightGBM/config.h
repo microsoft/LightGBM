@@ -158,6 +158,10 @@ struct Config {
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+  // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
+  // descl2 = ``custom``
+  // descl2 = **Note**: Not supported in CLI version
+  // descl2 = must be passed through parameters explicitly in the C API
   std::string objective = "regression";
 
   // [no-automatically-extract]
@@ -389,6 +393,10 @@ struct Config {
   // desc = ``<= 0`` means disable
   // desc = can be used to speed up training
   int early_stopping_round = 0;
+
+  // check = >=0.0
+  // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+  double early_stopping_min_delta = 0.0;
 
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
