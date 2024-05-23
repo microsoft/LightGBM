@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
   _R_CHECK_SYSTEM_CLOCK_: 0
@@ -189,7 +190,6 @@ jobs:
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
-          export GITHUB_ACTIONS="true"
           if [[ "${{ matrix.os }}" == "macos-13" ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -216,7 +216,6 @@ jobs:
           $env:R_VERSION = "${{ matrix.r_version }}"
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
-          $env:GITHUB_ACTIONS = "true"
           $env:TASK = "${{ matrix.task }}"
           & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
   test-r-sanitizers:
@@ -237,7 +236,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
@@ -280,7 +279,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true

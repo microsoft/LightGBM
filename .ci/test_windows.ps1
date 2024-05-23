@@ -6,6 +6,8 @@ function Check-Output {
   }
 }
 
+$env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
+
 # unify environment variable for Azure DevOps and AppVeyor
 if (Test-Path env:APPVEYOR) {
   $env:APPVEYOR = "true"

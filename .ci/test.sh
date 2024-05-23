@@ -10,6 +10,8 @@ SANITIZERS=${SANITIZERS:-""}
 
 ARCH=$(uname -m)
 
+LGB_VER=$(head -n 1 ${BUILD_DIRECTORY}/VERSION.txt)
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
