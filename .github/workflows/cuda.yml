@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
   # Run manually by clicking a button in the UI
   workflow_dispatch:
     inputs:
@@ -68,7 +67,6 @@ jobs:
         CMAKE_BUILD_PARALLEL_LEVEL: 4
         COMPILER: ${{ matrix.compiler }}
         CONDA: /tmp/miniforge
-        CONDA_ENV: test-env
         DEBIAN_FRONTEND: noninteractive
         METHOD: ${{ matrix.method }}
         OS_NAME: linux

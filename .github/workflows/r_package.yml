@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:

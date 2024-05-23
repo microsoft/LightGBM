@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - master
-      - release/*
 
 jobs:
   all-optional-checks-successful:

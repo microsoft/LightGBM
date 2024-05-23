@@ -2,15 +2,13 @@ version: 4.3.0.99.{build}
 
 image: Visual Studio 2015
 platform: x64
-configuration:  # a trick to construct a build matrix with multiple Python versions
+configuration:
   - '3.8'
 
-# only build pull requests and
-# commits to 'master' or any branch starting with 'release'
+# only build on 'master' and pull requests targeting it
 branches:
   only:
     - master
-    - /^release/
 
 environment:
   matrix:
@@ -25,8 +23,9 @@ install:
   - git submodule update --init --recursive  # get `external_libs` folder
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-  - set CONDA_ENV="test-env"
   - ps: |
+      $env:ALLOW_SKIP_ARROW_TESTS = "1"
+      $env:APPVEYOR = "true"
       $env:CMAKE_BUILD_PARALLEL_LEVEL = 4
       $env:MINICONDA = "C:\Miniconda3-x64"
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
