@@ -185,6 +185,7 @@ jobs:
 - job: QEMU_multiarch
 ###########################################
   variables:
+    BUILD_DIRECTORY: /LightGBM
     COMPILER: gcc
     PRODUCES_ARTIFACTS: 'true'
   pool:
@@ -227,17 +228,17 @@ jobs:
         --rm \
         --env AZURE=true \
         --env BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY \
-        --env BUILD_DIRECTORY=/LightGBM \
+        --env BUILD_DIRECTORY=$BUILD_DIRECTORY \
         --env COMPILER=$COMPILER \
         --env METHOD=$METHOD \
         --env OS_NAME=linux \
         --env PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS \
         --env PYTHON_VERSION=$PYTHON_VERSION \
         --env TASK=$TASK \
-        -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
+        -v "$(Build.SourcesDirectory)":"$BUILD_DIRECTORY" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
         "${IMAGE_URI}" \
-        /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+        /bin/bash $BUILD_DIRECTORY/docker-script.sh
     displayName: 'Setup and run tests'
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
