@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
   CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
 
 jobs:
   test:
@@ -73,7 +73,6 @@ jobs:
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
