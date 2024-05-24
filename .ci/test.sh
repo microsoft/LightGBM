@@ -2,6 +2,8 @@
 
 set -e -E -o -u pipefail
 
+export LD_DEBUG=libs
+
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 METHOD=${METHOD:-""}
