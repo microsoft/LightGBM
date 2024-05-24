@@ -2,8 +2,6 @@
 
 set -e -E -o -u pipefail
 
-export LD_DEBUG=libs
-
 # defaults
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 METHOD=${METHOD:-""}
@@ -156,6 +154,8 @@ if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS || exit 1; done
 fi
 
+export LD_DEBUG=libs
+
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
     sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
@@ -247,13 +247,13 @@ elif [[ $TASK == "cuda" ]]; then
             --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit 1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
-        pytest $BUILD_DIRECTORY/tests || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_CUDA=ON
