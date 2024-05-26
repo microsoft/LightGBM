@@ -257,6 +257,15 @@ elif [[ $TASK == "cuda" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
+
+        mkdir -p ./delete-me
+        unzip -d ./delete-me ./dist/*.whl
+        echo ""
+        echo "--- ldd ---"
+        ldd -v ./delete-me/lightgbm/lib/lib_lightgbm.so
+        echo ""
+        echo ""
+
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1

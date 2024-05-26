@@ -128,6 +128,9 @@ jobs:
           echo "---- existing contents (${HOME}) ---"
           ls -alF ${HOME}
 
+          echo "---- existing contents (${CONDA}) ---"
+          ls -alF ${CONDA}
+
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
