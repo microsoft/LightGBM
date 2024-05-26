@@ -129,7 +129,7 @@ jobs:
           ls -alF ${HOME}
 
           echo "---- existing contents (${CONDA}) ---"
-          ls -alF ${CONDA}
+          ls -alF ${CONDA} || true
 
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
