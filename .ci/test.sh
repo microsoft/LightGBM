@@ -145,6 +145,10 @@ mamba create \
 
 source activate $CONDA_ENV
 
+echo "--- pip freeze ---"
+pip freeze
+echo ""
+
 cd $BUILD_DIRECTORY
 
 echo "--- finding libomp.so (/usr) ..."

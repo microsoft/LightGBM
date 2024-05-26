@@ -134,10 +134,6 @@ jobs:
           ls -alF ${CONDA} || true
           echo ""
 
-          echo "--- pip freeze ---"
-          pip freeze
-          echo ""
-
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
