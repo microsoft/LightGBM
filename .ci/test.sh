@@ -148,7 +148,7 @@ source activate $CONDA_ENV
 cd $BUILD_DIRECTORY
 
 echo "--- finding libomp.so.5 ..."
-find / -type f -name 'libomp.so.5'
+find /usr -type f -name 'libomp.so.5'
 exit 123
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
