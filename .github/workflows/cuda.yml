@@ -124,12 +124,19 @@ jobs:
 
           echo "---- existing contents (${BUILD_DIRECTORY}) ---"
           ls -alF ${BUILD_DIRECTORY}
+          echo ""
 
           echo "---- existing contents (${HOME}) ---"
           ls -alF ${HOME}
+          echo ""
 
           echo "---- existing contents (${CONDA}) ---"
           ls -alF ${CONDA} || true
+          echo ""
+
+          echo "--- pip freeze ---"
+          pip freeze
+          echo ""
 
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh

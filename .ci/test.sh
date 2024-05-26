@@ -259,6 +259,7 @@ elif [[ $TASK == "cuda" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
 
         mkdir -p ./delete-me
+        apt-get install -y unzip
         unzip -d ./delete-me ./dist/*.whl
         echo ""
         echo "--- ldd ---"
