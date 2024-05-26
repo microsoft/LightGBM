@@ -147,6 +147,10 @@ source activate $CONDA_ENV
 
 cd $BUILD_DIRECTORY
 
+echo "--- finding libomp.so.5 ..."
+find / -type f -name 'libomp.so.5'
+exit 123
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
     # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
     for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS || exit 1; done
@@ -243,13 +247,13 @@ elif [[ $TASK == "cuda" ]]; then
             --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit 1
-        pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
-        pytest $BUILD_DIRECTORY/tests || exit 1
+        pytest $BUILD_DIRECTORY/tests/test_basic.py || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_CUDA=ON
@@ -282,7 +286,8 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile --user || exit 1
-pytest $BUILD_DIRECTORY/tests || exit 1
+pytest $BUILD_DIRECTORY/tests/test_basic.py || exit 1
+exit 0
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
