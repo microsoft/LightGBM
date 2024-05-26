@@ -65,7 +65,8 @@ jobs:
     steps:
       - name: clean up build dir on host
         run: |
-          rm -rf ${HOME}/actions-runner/_work/LightGBM
+          rm -rf "${HOME}/actions-runner/_work/LightGBM"
+          rm -rf "${HOME}/conda"
   test:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
@@ -110,6 +111,7 @@ jobs:
       - name: (pre-build) Clean up build dir
         run: |
           rm -rf "${BUILD_DIRECTORY}"
+          rm -rf "${HOME}/conda"
       - name: Install latest git
         run: |
           apt-get update
