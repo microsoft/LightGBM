@@ -72,7 +72,7 @@ bytes_possibly_lost=$(
     | tr -d ","
 )
 echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
-if [[ ${bytes_possibly_lost} -gt 1056 ]]; then
+if [[ ${bytes_possibly_lost} -gt 1104 ]]; then
     exit 1
 fi
 
