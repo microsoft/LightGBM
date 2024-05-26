@@ -259,7 +259,7 @@ elif [[ $TASK == "cuda" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
-        pytest $BUILD_DIRECTORY/tests/test_basic.py || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_CUDA=ON
@@ -292,7 +292,7 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile --user || exit 1
-pytest $BUILD_DIRECTORY/tests/test_basic.py || exit 1
+pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
 exit 0
 
 if [[ $TASK == "regular" ]]; then

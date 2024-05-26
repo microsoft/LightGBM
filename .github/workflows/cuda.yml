@@ -86,12 +86,12 @@ jobs:
             cuda_version: "11.8.0"
             image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
             task: cuda
-          # - method: source
-          #   compiler: gcc
-          #   python_version: "3.9"
-          #   cuda_version: "12.2.0"
-          #   image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
-          #   task: cuda
+          - method: source
+            compiler: gcc
+            python_version: "3.9"
+            cuda_version: "12.2.0"
+            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
+            task: cuda
           - method: pip
             compiler: clang
             python_version: "3.10"
@@ -121,6 +121,12 @@ jobs:
 
           # check GPU usage
           nvidia-smi
+
+          echo "---- existing contents (${BUILD_DIRECTORY}) ---"
+          ls -alF ${BUILD_DIRECTORY}
+
+          echo "---- existing contents (${HOME}) ---"
+          ls -alF ${HOME}
 
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
