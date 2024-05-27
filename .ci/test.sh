@@ -12,6 +12,24 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 ${BUILD_DIRECTORY}/VERSION.txt)
 
+echo "--- ls /__w ---"
+ls -alF /__w
+
+echo "--- ls /__e ---"
+ls -alF /__e
+
+echo "--- ls /__t ---"
+ls -alF /__t
+
+echo "--- ls /github/home ---"
+ls -alF /github/home
+
+echo "--- ls /github/workflow ---"
+ls -alF /github/workflow
+
+echo "--- pwd ---"
+echo $(pwd)
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -247,7 +265,7 @@ if [[ $TASK == "gpu" ]]; then
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install \
             --user \
-            -v \
+            -vvv \
             --config-settings=cmake.define.USE_GPU=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit 1
@@ -256,7 +274,7 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -vvv || exit 1
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
