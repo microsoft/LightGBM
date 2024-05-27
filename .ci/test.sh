@@ -132,6 +132,8 @@ fi
 
 if [[ $PYTHON_VERSION == "3.7" ]]; then
     CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
+elif [[ $PYTHON_VERSION == "3.8" ]]; then
+    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py38.txt"
 else
     CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
