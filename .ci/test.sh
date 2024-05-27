@@ -241,7 +241,7 @@ elif [[ $TASK == "cuda" ]]; then
             --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit 1
-        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
