@@ -12,24 +12,6 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 ${BUILD_DIRECTORY}/VERSION.txt)
 
-echo "--- ls /__w ---"
-ls -alF /__w
-
-echo "--- ls /__e ---"
-ls -alF /__e
-
-echo "--- ls /__t ---"
-ls -alF /__t
-
-echo "--- ls /github/home ---"
-ls -alF /github/home
-
-echo "--- ls /github/workflow ---"
-ls -alF /github/workflow
-
-echo "--- pwd ---"
-echo $(pwd)
-
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-11
     export CC=gcc-11
@@ -154,10 +136,6 @@ else
     CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
-echo "--- which pip (before) ---"
-which pip || true
-echo ""
-
 mamba create \
     -y \
     -n $CONDA_ENV \
@@ -166,29 +144,6 @@ mamba create \
 || exit 1
 
 source activate $CONDA_ENV
-
-echo "--- pip freeze ---"
-pip freeze
-echo ""
-
-echo "--- which conda ---"
-which conda
-echo ""
-
-echo "--- which pip ---"
-which pip
-echo ""
-
-echo "--- which mamba ---"
-which mamba
-echo ""
-
-echo "--- ls /home ---"
-ls /home || true
-echo ""
-
-pip uninstall --yes \
-    lightgbm
 
 cd $BUILD_DIRECTORY
 
@@ -200,7 +155,7 @@ fi
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
     sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-    pip install $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit 1
+    pip install -v $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
     fi
@@ -282,7 +237,7 @@ elif [[ $TASK == "cuda" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install \
-            -vv \
+            -v \
             --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
         || exit 1
@@ -290,19 +245,9 @@ elif [[ $TASK == "cuda" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
-
-        mkdir -p ./delete-me
-        apt-get install -y unzip
-        unzip -d ./delete-me ./dist/*.whl
-        echo ""
-        echo "--- ldd ---"
-        ldd -v ./delete-me/lightgbm/lib/lib_lightgbm.so
-        echo ""
-        echo ""
-
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        pip install -vv $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl || exit 1
-        pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
+        pip install -v $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl || exit 1
+        pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
         cmake -B build -S . -DUSE_CUDA=ON
@@ -334,8 +279,7 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile || exit 1
-pytest $BUILD_DIRECTORY/tests/python_package_test/test_basic.py || exit 1
-exit 0
+pytest $BUILD_DIRECTORY/tests/python_package_test || exit 1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
