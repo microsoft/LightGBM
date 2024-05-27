@@ -117,7 +117,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     make html || exit 1
     if [[ $TASK == "check-links" ]]; then
         # check docs for broken links
-        pip install --user linkchecker
+        pip install linkchecker
         linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit 1
         exit 0
     fi
@@ -155,7 +155,7 @@ fi
 if [[ $TASK == "sdist" ]]; then
     cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
     sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-    pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit 1
+    pip install $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz -v || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
     fi
@@ -200,7 +200,7 @@ elif [[ $TASK == "bdist" ]]; then
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
     fi
-    pip install --user $BUILD_DIRECTORY/dist/*.whl || exit 1
+    pip install -v $BUILD_DIRECTORY/dist/*.whl || exit 1
     pytest $BUILD_DIRECTORY/tests || exit 1
     exit 0
 fi
@@ -212,7 +212,6 @@ if [[ $TASK == "gpu" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install \
-            --user \
             -v \
             --config-settings=cmake.define.USE_GPU=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
@@ -222,7 +221,7 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -238,7 +237,6 @@ elif [[ $TASK == "cuda" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install \
-            --user \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
@@ -248,7 +246,7 @@ elif [[ $TASK == "cuda" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -259,7 +257,6 @@ elif [[ $TASK == "mpi" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh sdist || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
         pip install \
-            --user \
             -v \
             --config-settings=cmake.define.USE_MPI=ON \
             $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER.tar.gz \
@@ -269,7 +266,7 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        pip install --user $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install $BUILD_DIRECTORY/dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest $BUILD_DIRECTORY/tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -281,7 +278,7 @@ fi
 
 cmake --build build --target _lightgbm -j4 || exit 1
 
-cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile --user || exit 1
+cd $BUILD_DIRECTORY && sh ./build-python.sh install --precompile || exit 1
 pytest $BUILD_DIRECTORY/tests || exit 1
 
 if [[ $TASK == "regular" ]]; then
