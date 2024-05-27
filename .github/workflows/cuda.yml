@@ -58,21 +58,10 @@ jobs:
       - name: mark job successful
         run: |
           exit 0
-  cleanup:
-    name: cleaning up build dir
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: clean up build dir on host
-        run: |
-          rm -rf "${HOME}/actions-runner/_work/LightGBM"
-          rm -rf "${HOME}/conda"
-          echo "--- processes on the host ---"
-          ps aux || true
   test:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
-    needs: [cleanup, restart-docker]
+    needs: [restart-docker]
     container:
       image: ${{ matrix.image }}
       env:
@@ -110,9 +99,6 @@ jobs:
             image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
             task: cuda
     steps:
-      - name: (pre-build) Clean up build dir
-        run: |
-          rm -rf "${GITHUB_WORKSPACE}/*"
       - name: Install latest git
         run: |
           apt-get update
@@ -139,9 +125,6 @@ jobs:
           # build and test
           $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/test.sh
-      - name: (post-build) Clean up build dir
-        run: |
-          rm -rf "${GITHUB_WORKSPACE}/*"
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
