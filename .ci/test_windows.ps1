@@ -99,14 +99,14 @@ elseif ($env:TASK -eq "bdist") {
   cd $env:BUILD_SOURCESDIRECTORY
   sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
   sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
-  cd dist; pip install --user @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
+  cd dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
   cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user --mingw ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
   } else {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install; Check-Output $?
   }
 }
 

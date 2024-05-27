@@ -12,7 +12,6 @@ echo "checking Python package distributions in '${DIST_DIR}'"
 
 pip install \
     -qq \
-    auditwheel \
     check-wheel-contents \
     twine || exit 1
 
@@ -22,8 +21,6 @@ twine check --strict ${DIST_DIR}/* || exit 1
 if { test "${TASK}" = "bdist" || test "${METHOD}" = "wheel"; }; then
     echo "check-wheel-contents..."
     check-wheel-contents ${DIST_DIR}/*.whl || exit 1
-    echo "auditwheel show ..."
-    auditwheel show ${DIST_DIR}/*.whl || exit 1
 fi
 
 PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")

@@ -69,7 +69,7 @@ ninja.make-fallback = true
 cmake.args = [
     "-D__BUILD_FOR_PYTHON:BOOL=ON"
 ]
-cmake.verbose = true
+cmake.verbose = false
 cmake.build-type = "Release"
 cmake.targets = ["_lightgbm"]
 # stripping binaries should be turned back on once this is fixed:
