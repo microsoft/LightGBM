@@ -67,6 +67,8 @@ jobs:
         run: |
           rm -rf "${HOME}/actions-runner/_work/LightGBM"
           rm -rf "${HOME}/conda"
+          echo "--- processes on the host ---"
+          ps aux || true
   test:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
@@ -95,12 +97,12 @@ jobs:
             cuda_version: "11.8.0"
             image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
             task: cuda
-          - method: source
-            compiler: gcc
-            python_version: "3.9"
-            cuda_version: "12.2.0"
-            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
-            task: cuda
+          # - method: source
+          #   compiler: gcc
+          #   python_version: "3.9"
+          #   cuda_version: "12.2.0"
+          #   image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
+          #   task: cuda
           - method: pip
             compiler: clang
             python_version: "3.10"

@@ -136,6 +136,10 @@ else
     CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
+echo "--- which pip (before) ---"
+which pip || true
+echo ""
+
 mamba create \
     -y \
     -n $CONDA_ENV \
@@ -155,6 +159,10 @@ echo ""
 
 echo "--- which pip ---"
 which pip
+echo ""
+
+echo "--- which mamba ---"
+which mamba
 echo ""
 
 echo "--- ls /home ---"
