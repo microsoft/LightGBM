@@ -15,8 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  CMAKE_BUILD_PARALLEL_LEVEL: 4
   CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
 
 jobs:
   test:
@@ -55,7 +55,7 @@ jobs:
           #   python_version: '3.8'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
@@ -73,7 +73,6 @@ jobs:
               export OS_NAME="linux"
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export LGB_VER=$(head -n 1 VERSION.txt)
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
@@ -84,7 +83,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true

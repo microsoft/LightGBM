@@ -4,12 +4,16 @@
 \alias{lgb.dump}
 \title{Dump LightGBM model to json}
 \usage{
-lgb.dump(booster, num_iteration = NULL)
+lgb.dump(booster, num_iteration = NULL, start_iteration = 1L)
 }
 \arguments{
 \item{booster}{Object of class \code{lgb.Booster}}
 
-\item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
+\item{num_iteration}{Number of iterations to be dumped. NULL or <= 0 means use best iteration}
+
+\item{start_iteration}{Index (1-based) of the first boosting round to dump.
+For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+means "dump the fifth, sixth, and seventh tree"}
 }
 \value{
 json format of model

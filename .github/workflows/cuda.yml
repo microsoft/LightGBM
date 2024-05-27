@@ -8,53 +8,41 @@ on:
     branches:
     - master
     - release/*
+  # Run manually by clicking a button in the UI
+  workflow_dispatch:
+    inputs:
+      restart_docker:
+        description: 'Restart nvidia-docker on the runner before building?'
+        required: true
+        type: boolean
+        default: false
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  github_actions: 'true'
-  os_name: linux
-  conda_env: test-env
-
 jobs:
-  test:
-    name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+  # Optionally reinstall + restart docker on the runner before building.
+  # This is safe as long as only 1 of these jobs runs at a time.
+  restart-docker:
+    name: set up docker
     runs-on: [self-hosted, linux]
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - method: wheel
-            compiler: gcc
-            python_version: "3.11"
-            cuda_version: "11.8.0"
-            task: cuda
-          - method: source
-            compiler: gcc
-            python_version: "3.9"
-            cuda_version: "12.2.0"
-            task: cuda
-          - method: pip
-            compiler: clang
-            python_version: "3.10"
-            cuda_version: "11.8.0"
-            task: cuda
+    timeout-minutes: 30
     steps:
       - name: Setup or update software on host machine
+        if: ${{ inputs.restart_docker }}
         run: |
+            # install core packages
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 apt-transport-https \
                 ca-certificates \
                 curl \
-                git \
                 gnupg-agent \
                 lsb-release \
                 software-properties-common
+            # set up nvidia-docker
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
             sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
             curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
@@ -67,43 +55,76 @@ jobs:
                 nvidia-docker2
             sudo chmod a+rw /var/run/docker.sock
             sudo systemctl restart docker
-      - name: Remove old folder with repository
-        run: sudo rm -rf $GITHUB_WORKSPACE
+      - name: mark job successful
+        run: |
+          exit 0
+  test:
+    name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    runs-on: [self-hosted, linux]
+    needs: [restart-docker]
+    container:
+      image: ${{ matrix.image }}
+      env:
+        CMAKE_BUILD_PARALLEL_LEVEL: 4
+        COMPILER: ${{ matrix.compiler }}
+        CONDA: /tmp/miniforge
+        CONDA_ENV: test-env
+        DEBIAN_FRONTEND: noninteractive
+        METHOD: ${{ matrix.method }}
+        OS_NAME: linux
+        PYTHON_VERSION: ${{ matrix.python_version }}
+        TASK: ${{ matrix.task }}
+      options: --gpus all
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - method: wheel
+            compiler: gcc
+            python_version: "3.11"
+            cuda_version: "11.8.0"
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+            task: cuda
+          - method: source
+            compiler: gcc
+            python_version: "3.9"
+            cuda_version: "12.2.0"
+            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
+            task: cuda
+          - method: pip
+            compiler: clang
+            python_version: "3.10"
+            cuda_version: "11.8.0"
+            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+            task: cuda
+    steps:
+      - name: Install latest git
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              ca-certificates \
+              software-properties-common
+          add-apt-repository ppa:git-core/ppa -y
+          apt-get update
+          apt-get install --no-install-recommends -y \
+              git
       - name: Checkout repository
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
       - name: Setup and run tests
         run: |
-            export ROOT_DOCKER_FOLDER=/LightGBM
-            cat > docker.env <<EOF
-            GITHUB_ACTIONS=${{ env.github_actions }}
-            OS_NAME=${{ env.os_name }}
-            COMPILER=${{ matrix.compiler }}
-            TASK=${{ matrix.task }}
-            METHOD=${{ matrix.method }}
-            CONDA_ENV=${{ env.conda_env }}
-            PYTHON_VERSION=${{ matrix.python_version }}
-            BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
-            LGB_VER=$(head -n 1 VERSION.txt)
-            EOF
-            cat > docker-script.sh <<EOF
-            export CONDA=\$HOME/miniforge
-            export PATH=\$CONDA/bin:\$PATH
-            nvidia-smi
-            $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
-            $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
-            EOF
-            cuda_version="${{ matrix.cuda_version }}"
-            cuda_major=${cuda_version%%.*}
-            docker_img="nvcr.io/nvidia/cuda:${cuda_version}-devel"
-            if [[ ${cuda_major} -eq 11 ]]; then
-                docker_img="${docker_img}-ubuntu18.04"
-            elif [[ ${cuda_major} -ge 12 ]]; then
-                docker_img="${docker_img}-ubuntu20.04"
-            fi
-            docker run --env-file docker.env -v "$GITHUB_WORKSPACE":"$ROOT_DOCKER_FOLDER" --rm --gpus all "$docker_img" /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export PATH=$CONDA/bin:$PATH
+
+          # check GPU usage
+          nvidia-smi
+
+          # build and test
+          $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/test.sh
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
