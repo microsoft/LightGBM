@@ -112,8 +112,7 @@ jobs:
     steps:
       - name: (pre-build) Clean up build dir
         run: |
-          rm -rf "${BUILD_DIRECTORY}"
-          rm -rf "${HOME}/conda"
+          rm -rf "${$GITHUB_WORKSPACE}/*"
       - name: Install latest git
         run: |
           apt-get update
@@ -154,7 +153,7 @@ jobs:
           $GITHUB_WORKSPACE/.ci/test.sh
       - name: (post-build) Clean up build dir
         run: |
-          rm -rf "${BUILD_DIRECTORY}"
+          rm -rf "${$GITHUB_WORKSPACE}/*"
   all-cuda-jobs-successful:
     if: always()
     runs-on: ubuntu-latest

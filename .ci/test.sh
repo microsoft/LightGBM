@@ -187,6 +187,9 @@ echo "--- ls /home ---"
 ls /home || true
 echo ""
 
+pip uninstall --yes \
+    lightgbm
+
 cd $BUILD_DIRECTORY
 
 echo "--- finding libomp.so (/usr) ..."
