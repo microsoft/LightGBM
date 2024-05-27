@@ -149,6 +149,18 @@ echo "--- pip freeze ---"
 pip freeze
 echo ""
 
+echo "--- which conda ---"
+which conda
+echo ""
+
+echo "--- which pip ---"
+which pip
+echo ""
+
+echo "--- ls /home ---"
+ls /home || true
+echo ""
+
 cd $BUILD_DIRECTORY
 
 echo "--- finding libomp.so (/usr) ..."
