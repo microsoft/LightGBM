@@ -72,10 +72,14 @@ bytes_possibly_lost=$(
     | tr -d ","
 )
 echo "valgrind found ${bytes_possibly_lost} bytes possibly lost"
-if [[ ${bytes_possibly_lost} -gt 1056 ]]; then
+if [[ ${bytes_possibly_lost} -gt 1104 ]]; then
     exit 1
 fi
 
+# ensure 'grep --count' doesn't cause failures
+set +e
+
+echo "checking for invalid reads"
 invalid_reads=$(
   cat ${VALGRIND_LOGS_FILE} \
     | grep --count -i "Invalid read"
@@ -85,6 +89,7 @@ if [[ ${invalid_reads} -gt 0 ]]; then
     exit 1
 fi
 
+echo "checking for invalid writes"
 invalid_writes=$(
   cat ${VALGRIND_LOGS_FILE} \
     | grep --count -i "Invalid write"

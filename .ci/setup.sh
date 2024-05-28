@@ -30,10 +30,6 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    curl \
-        -sL \
-        -o miniforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-${ARCH}.sh
 else  # Linux
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -144,16 +140,14 @@ else  # Linux
         apt-get install --no-install-recommends -y \
             cmake
     fi
-    if [[ $SETUP_CONDA != "false" ]]; then
-        curl \
-            -sL \
-            -o miniforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
-    fi
 fi
 
 if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
+        curl \
+            -sL \
+            -o miniforge.sh \
+            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh
         sh miniforge.sh -b -p $CONDA
     fi
     conda config --set always_yes yes --set changeps1 no
