@@ -50,6 +50,8 @@ conda update -q -y conda
 
 if ($env:PYTHON_VERSION -eq "3.7") {
   $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
+} elseif ($env:PYTHON_VERSION -eq "3.8") {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py38.txt"
 } else {
   $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
