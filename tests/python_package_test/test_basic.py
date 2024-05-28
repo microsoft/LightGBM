@@ -175,7 +175,7 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
 
     # Test for validation set.
     # Select some random rows as valid data.
-    rng = np.random.default_rng()  # Pass integer to set seed when needed.
+    rng = np.random.default_rng()
     valid_idx = (rng.random(10) * nrow).astype(np.int32)
     valid_data = data[valid_idx, :]
     valid_X = valid_data[:, :-1]
@@ -212,7 +212,7 @@ def test_sequence_get_data(num_seq):
     seq_ds = lgb.Dataset(seqs, label=Y, params=None, free_raw_data=False).construct()
     assert seq_ds.get_data() == seqs
 
-    used_indices = np.random.choice(np.arange(nrow), nrow // 3, replace=False)
+    used_indices = np.default_rng().choice(a=np.arange(nrow), size=nrow // 3, replace=False)
     subset_data = seq_ds.subset(used_indices).construct()
     np.testing.assert_array_equal(subset_data.get_data(), X[sorted(used_indices)])
 
@@ -247,7 +247,7 @@ def test_chunked_dataset_linear():
 
 
 def test_save_dataset_subset_and_load_from_file(tmp_path):
-    data = np.random.rand(100, 2)
+    data = np.random.default_rng().standard_normal(size=(100,2))
     params = {"max_bin": 50, "min_data_in_bin": 10}
     ds = lgb.Dataset(data, params=params)
     ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / "subset.bin")

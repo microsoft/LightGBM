@@ -156,6 +156,8 @@ select = [
     "E",
     # pyflakes
     "F",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PL",
     # flake8-return: unnecessary assignment before return
