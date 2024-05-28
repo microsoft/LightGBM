@@ -9,7 +9,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -18,7 +17,6 @@ concurrency:
 
 env:
   COMPILER: 'gcc'
-  CONDA_ENV: test-env
   OS_NAME: 'linux'
   PYTHON_VERSION: '3.12'
 

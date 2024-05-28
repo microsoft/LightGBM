@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
   # Run manually by clicking a button in the UI
   workflow_dispatch:
     inputs:
@@ -59,16 +58,15 @@ jobs:
         run: |
           exit 0
   test:
-    name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (linux, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
+    name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (${{ matrix.linux_version }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     needs: [restart-docker]
     container:
-      image: ${{ matrix.image }}
+      image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel-${{ matrix.linux_version }}
       env:
         CMAKE_BUILD_PARALLEL_LEVEL: 4
         COMPILER: ${{ matrix.compiler }}
         CONDA: /tmp/miniforge
-        CONDA_ENV: test-env
         DEBIAN_FRONTEND: noninteractive
         METHOD: ${{ matrix.method }}
         OS_NAME: linux
@@ -84,19 +82,19 @@ jobs:
             compiler: gcc
             python_version: "3.10"
             cuda_version: "11.8.0"
-            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+            linux_version: "ubuntu20.04"
             task: cuda
           - method: source
             compiler: gcc
             python_version: "3.12"
             cuda_version: "12.2.0"
-            image: nvcr.io/nvidia/cuda:12.2.0-devel-ubuntu22.04
+            linux_version: "ubuntu22.04"
             task: cuda
           - method: pip
             compiler: clang
             python_version: "3.11"
             cuda_version: "11.8.0"
-            image: nvcr.io/nvidia/cuda:11.8.0-devel-ubuntu20.04
+            linux_version: "ubuntu20.04"
             task: cuda
     steps:
       - name: Install latest git
