@@ -4,14 +4,18 @@
 \alias{lgb.save}
 \title{Save LightGBM model}
 \usage{
-lgb.save(booster, filename, num_iteration = NULL)
+lgb.save(booster, filename, num_iteration = NULL, start_iteration = 1L)
 }
 \arguments{
 \item{booster}{Object of class \code{lgb.Booster}}
 
-\item{filename}{saved filename}
+\item{filename}{Saved filename}
 
-\item{num_iteration}{number of iteration want to predict with, NULL or <= 0 means use best iteration}
+\item{num_iteration}{Number of iterations to save, NULL or <= 0 means use best iteration}
+
+\item{start_iteration}{Index (1-based) of the first boosting round to save.
+For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+means "save the fifth, sixth, and seventh tree"}
 }
 \value{
 lgb.Booster
