@@ -62,7 +62,7 @@ jobs:
     runs-on: [self-hosted, linux]
     needs: [restart-docker]
     container:
-      image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version}-devel-${{ matrix.linux_version }}
+      image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel-${{ matrix.linux_version }}
       env:
         CMAKE_BUILD_PARALLEL_LEVEL: 4
         COMPILER: ${{ matrix.compiler }}
