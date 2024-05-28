@@ -3,6 +3,7 @@
 set -e -E -o -u pipefail
 
 # defaults
+CONDA_ENV="test-env"
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 METHOD=${METHOD:-""}
 PRODUCES_ARTIFACTS=${PRODUCES_ARTIFACTS:-"false"}
