@@ -416,7 +416,12 @@ Booster <- R6::R6Class(
     },
 
     # Save model
-    save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
+    save_model = function(
+      filename
+      , num_iteration = NULL
+      , feature_importance_type = 0L
+      , start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -432,12 +437,18 @@ Booster <- R6::R6Class(
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
         , filename
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
+    save_model_to_string = function(
+      num_iteration = NULL
+      , feature_importance_type = 0L
+      , as_char = TRUE
+      , start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -450,6 +461,7 @@ Booster <- R6::R6Class(
           , private$handle
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
+          , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       if (as_char) {
@@ -461,7 +473,9 @@ Booster <- R6::R6Class(
     },
 
     # Dump model in memory
-    dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
+    dump_model = function(
+      num_iteration = NULL, feature_importance_type = 0L, start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -474,6 +488,7 @@ Booster <- R6::R6Class(
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(model_str)
@@ -1288,8 +1303,11 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @title Save LightGBM model
 #' @description Save LightGBM model
 #' @param booster Object of class \code{lgb.Booster}
-#' @param filename saved filename
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param filename Saved filename
+#' @param num_iteration Number of iterations to save, NULL or <= 0 means use best iteration
+#' @param start_iteration Index (1-based) of the first boosting round to save.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "save the fifth, sixth, and seventh tree"
 #'
 #' @return lgb.Booster
 #'
@@ -1322,7 +1340,9 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' lgb.save(model, tempfile(fileext = ".txt"))
 #' }
 #' @export
-lgb.save <- function(booster, filename, num_iteration = NULL) {
+lgb.save <- function(
+    booster, filename, num_iteration = NULL, start_iteration = 1L
+  ) {
 
   if (!.is_Booster(x = booster)) {
     stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
@@ -1338,6 +1358,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
     invisible(booster$save_model(
       filename = filename
       , num_iteration = num_iteration
+      , start_iteration = start_iteration
     ))
   )
 
@@ -1347,7 +1368,10 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @title Dump LightGBM model to json
 #' @description Dump LightGBM model to json
 #' @param booster Object of class \code{lgb.Booster}
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param num_iteration Number of iterations to be dumped. NULL or <= 0 means use best iteration
+#' @param start_iteration Index (1-based) of the first boosting round to dump.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "dump the fifth, sixth, and seventh tree"
 #'
 #' @return json format of model
 #'
@@ -1380,14 +1404,18 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' json_model <- lgb.dump(model)
 #' }
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL) {
+lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 
   if (!.is_Booster(x = booster)) {
     stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
   }
 
   # Return booster at requested iteration
-  return(booster$dump_model(num_iteration =  num_iteration))
+  return(
+    booster$dump_model(
+      num_iteration = num_iteration, start_iteration = start_iteration
+    )
+  )
 
 }
 

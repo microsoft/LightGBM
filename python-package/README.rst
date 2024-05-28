@@ -160,6 +160,10 @@ To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively 
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
+.. warning::
+   HDFS support in LightGBM is deprecated, and will be removed in a future release.
+   See https://github.com/microsoft/LightGBM/issues/6436.
+
 .. code:: sh
 
     pip install lightgbm --config-settings=cmake.define.USE_HDFS=ON

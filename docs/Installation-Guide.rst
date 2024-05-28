@@ -631,6 +631,10 @@ Use the GPU version (``device_type=gpu``) for GPU acceleration on Windows.
 Build HDFS Version
 ~~~~~~~~~~~~~~~~~~
 
+.. warning::
+   HDFS support in LightGBM is deprecated, and will be removed in a future release.
+   See https://github.com/microsoft/LightGBM/issues/6436.
+
 The HDFS version of LightGBM was tested on CDH-5.14.4 cluster.
 
 Linux
