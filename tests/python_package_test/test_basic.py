@@ -247,7 +247,7 @@ def test_chunked_dataset_linear():
 
 
 def test_save_dataset_subset_and_load_from_file(tmp_path):
-    data = np.random.default_rng().standard_normal(size=(100,2))
+    data = np.random.default_rng().standard_normal(size=(100, 2))
     params = {"max_bin": 50, "min_data_in_bin": 10}
     ds = lgb.Dataset(data, params=params)
     ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / "subset.bin")

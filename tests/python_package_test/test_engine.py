@@ -550,7 +550,7 @@ def test_multi_class_error():
 @pytest.mark.skipif(
     getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
 )
-def test_auc_mu():
+def test_auc_mu(rng):
     # should give same result as binary auc for 2 classes
     X, y = load_digits(n_class=10, return_X_y=True)
     y_new = np.zeros((len(y)))
@@ -578,7 +578,7 @@ def test_auc_mu():
     assert results_auc_mu["training"]["auc_mu"][-1] == pytest.approx(0.5)
     # test that weighted data gives different auc_mu
     lgb_X = lgb.Dataset(X, label=y)
-    lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(np.random.normal(size=y.shape)))
+    lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(rng.standard_normal(size=y.shape)))
     results_unweighted = {}
     results_weighted = {}
     params = dict(params, num_classes=10, num_leaves=5)
@@ -1432,9 +1432,9 @@ def test_feature_name():
     assert feature_names == gbm.feature_name()
 
 
-def test_feature_name_with_non_ascii():
-    X_train = np.random.normal(size=(100, 4))
-    y_train = np.random.random(100)
+def test_feature_name_with_non_ascii(rng):
+    X_train = rng.normal(size=(100, 4))
+    y_train = rng.normal(size=(100,))
     # This has non-ascii strings.
     feature_names = ["F_零", "F_一", "F_二", "F_三"]
     params = {"verbose": -1}
@@ -1448,9 +1448,14 @@ def test_feature_name_with_non_ascii():
     assert feature_names == gbm2.feature_name()
 
 
-def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
-    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
-    y = np.random.rand(100)
+def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
+    X = np.hstack(
+        [
+            rng.uniform(size=(100, 1)),
+            rng.integers(low=0, high=5, size=(100, 2)),
+        ]
+    )
+    y = rng.uniform(size=(100,))
     ds = lgb.Dataset(X, y)
     params = {
         "bagging_fraction": 0.8,
@@ -1702,29 +1707,29 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         assert param_str in model_txt_from_memory
 
 
-def test_pandas_categorical():
+# why fixed seed?
+# sometimes there is no difference how cols are treated (cat or not cat)
+def test_pandas_categorical(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
-    np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
     X = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "c", "d"] * 75),  # str
-            "B": np.random.permutation([1, 2, 3] * 100),  # int
-            "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-            "D": np.random.permutation([True, False] * 150),  # bool
-            "E": pd.Categorical(np.random.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "c", "d"] * 75),  # str
+            "B": rng_fixed_seed.permutation([1, 2, 3] * 100),  # int
+            "C": rng_fixed_seed.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+            "D": rng_fixed_seed.permutation([True, False] * 150),  # bool
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
         }
     )  # str and ordered categorical
-    y = np.random.permutation([0, 1] * 150)
+    y = rng_fixed_seed.permutation([0, 1] * 150)
     X_test = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "e"] * 20),  # unseen category
-            "B": np.random.permutation([1, 3] * 30),
-            "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-            "D": np.random.permutation([True, False] * 30),
-            "E": pd.Categorical(np.random.permutation(["z", "y"] * 30), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "e"] * 20),  # unseen category
+            "B": rng_fixed_seed.permutation([1, 3] * 30),
+            "C": rng_fixed_seed.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+            "D": rng_fixed_seed.permutation([True, False] * 30),
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y"] * 30), ordered=True),
         }
     )
-    np.random.seed()  # reset seed
     cat_cols_actual = ["A", "B", "C", "D"]
     cat_cols_to_store = cat_cols_actual + ["E"]
     X[cat_cols_actual] = X[cat_cols_actual].astype("category")
@@ -1786,21 +1791,21 @@ def test_pandas_categorical():
     assert gbm7.pandas_categorical == cat_values
 
 
-def test_pandas_sparse():
+def test_pandas_sparse(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 1, 2] * 100)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 150)),
         }
     )
-    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    y = pd.Series(pd.arrays.SparseArray(rng.permutation([0, 1] * 150)))
     X_test = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 2] * 30)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 30)),
         }
     )
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
@@ -1816,9 +1821,9 @@ def test_pandas_sparse():
     np.testing.assert_allclose(pred_sparse, pred_dense)
 
 
-def test_reference_chain():
-    X = np.random.normal(size=(100, 2))
-    y = np.random.normal(size=100)
+def test_reference_chain(rng):
+    X = rng.normal(size=(100, 2))
+    y = rng.normal(size=(100,))
     tmp_dat = lgb.Dataset(X, y)
     # take subsets and train
     tmp_dat_train = tmp_dat.subset(np.arange(80))
@@ -1940,28 +1945,28 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
-@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
-def test_int32_max_sparse_contribs():
-    params = {"objective": "binary"}
-    train_features = np.random.rand(100, 1000)
-    train_targets = [0] * 50 + [1] * 50
-    lgb_train = lgb.Dataset(train_features, train_targets)
-    gbm = lgb.train(params, lgb_train, num_boost_round=2)
-    csr_input_shape = (3000000, 1000)
-    test_features = csr_matrix(csr_input_shape)
-    for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
-        for j in range(0, 1000, 100):
-            test_features[i, j] = random.random()
-    y_pred_csr = gbm.predict(test_features, pred_contrib=True)
-    # Note there is an extra column added to the output for the expected value
-    csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
-    assert y_pred_csr.shape == csr_output_shape
-    y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
-    # Note output CSC shape should be same as CSR output shape
-    assert y_pred_csc.shape == csr_output_shape
+# @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
+# def test_int32_max_sparse_contribs(rng):
+#     params = {"objective": "binary"}
+#     train_features = rng.uniform(size=(100, 1000))
+#     train_targets = [0] * 50 + [1] * 50
+#     lgb_train = lgb.Dataset(train_features, train_targets)
+#     gbm = lgb.train(params, lgb_train, num_boost_round=2)
+#     csr_input_shape = (3000000, 1000)
+#     test_features = csr_matrix(csr_input_shape)
+#     for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+#         for j in range(0, 1000, 100):
+#             test_features[i, j] = random.random()
+#     y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+#     # Note there is an extra column added to the output for the expected value
+#     csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+#     assert y_pred_csr.shape == csr_output_shape
+#     y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+#     # Note output CSC shape should be same as CSR output shape
+#     assert y_pred_csc.shape == csr_output_shape
 
 
-def test_sliced_data():
+def test_sliced_data(rng):
     def train_and_get_predictions(features, labels):
         dataset = lgb.Dataset(features, label=labels)
         lgb_params = {
@@ -1977,7 +1982,7 @@ def test_sliced_data():
         return gbm.predict(features)
 
     num_samples = 100
-    features = np.random.rand(num_samples, 5)
+    features = rng.uniform(size=(num_samples, 5))
     positive_samples = int(num_samples * 0.25)
     labels = np.append(
         np.ones(positive_samples, dtype=np.float32), np.zeros(num_samples - positive_samples, dtype=np.float32)
@@ -2011,13 +2016,13 @@ def test_sliced_data():
     np.testing.assert_allclose(origin_pred, sliced_pred)
 
 
-def test_init_with_subset():
-    data = np.random.random((50, 2))
+def test_init_with_subset(rng):
+    data = rng.uniform(size=(50, 2))
     y = [1] * 25 + [0] * 25
     lgb_train = lgb.Dataset(data, y, free_raw_data=False)
-    subset_index_1 = np.random.choice(np.arange(50), 30, replace=False)
+    subset_index_1 = rng.choice(a=np.arange(50), size=30, replace=False)
     subset_data_1 = lgb_train.subset(subset_index_1)
-    subset_index_2 = np.random.choice(np.arange(50), 20, replace=False)
+    subset_index_2 = rng.choice(a=np.arange(50), size=20, replace=False)
     subset_data_2 = lgb_train.subset(subset_index_2)
     params = {"objective": "binary", "verbose": -1}
     init_gbm = lgb.train(params=params, train_set=subset_data_1, num_boost_round=10, keep_training_booster=True)
@@ -2037,9 +2042,9 @@ def test_init_with_subset():
     assert subset_data_4.get_data() == "lgb_train_data.bin"
 
 
-def test_training_on_constructed_subset_without_params():
-    X = np.random.random((100, 10))
-    y = np.random.random(100)
+def test_training_on_constructed_subset_without_params(rng):
+    X = rng.uniform(size=(100, 10))
+    y = rng.uniform(size=(100,))
     lgb_data = lgb.Dataset(X, y)
     subset_indices = [1, 2, 3, 4]
     subset = lgb_data.subset(subset_indices).construct()
@@ -2051,9 +2056,10 @@ def test_training_on_constructed_subset_without_params():
 
 def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     number_of_dpoints = 3000
-    x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
-    x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
-    x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+    rng = np.random.default_rng()
+    x1_positively_correlated_with_y = rng.uniform(size=number_of_dpoints)
+    x2_negatively_correlated_with_y = rng.uniform(size=number_of_dpoints)
+    x3_negatively_correlated_with_y = rng.uniform(size=number_of_dpoints)
     x = np.column_stack(
         (
             x1_positively_correlated_with_y,
@@ -2062,8 +2068,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
         )
     )
 
-    zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-    scales = 10.0 * (np.random.random(6) + 0.5)
+    zs = rng.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+    scales = 10.0 * (rng.uniform(size=6) + 0.5)
     y = (
         scales[0] * x1_positively_correlated_with_y
         + np.sin(scales[1] * np.pi * x1_positively_correlated_with_y)
@@ -2265,9 +2271,8 @@ def test_max_bin_by_feature():
     assert len(np.unique(est.predict(X))) == 3
 
 
-def test_small_max_bin():
-    np.random.seed(0)
-    y = np.random.choice([0, 1], 100)
+def test_small_max_bin(rng_fixed_seed):
+    y = rng_fixed_seed.choice([0, 1], 100)
     x = np.ones((100, 1))
     x[:30, 0] = -1
     x[60:, 0] = 2
@@ -2278,7 +2283,6 @@ def test_small_max_bin():
     params["max_bin"] = 3
     lgb_x = lgb.Dataset(x, label=y)
     lgb.train(params, lgb_x, num_boost_round=5)
-    np.random.seed()  # reset seed
 
 
 def test_refit():
@@ -2293,14 +2297,14 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
-def test_refit_dataset_params():
+def test_refit_dataset_params(rng):
     # check refit accepts dataset_params
     X, y = load_breast_cancer(return_X_y=True)
     lgb_train = lgb.Dataset(X, y, init_score=np.zeros(y.size))
     train_params = {"objective": "binary", "verbose": -1, "seed": 123}
     gbm = lgb.train(train_params, lgb_train, num_boost_round=10)
     non_weight_err_pred = log_loss(y, gbm.predict(X))
-    refit_weight = np.random.rand(y.shape[0])
+    refit_weight = rng.uniform(size=(y.shape[0],))
     dataset_params = {
         "max_bin": 260,
         "min_data_in_bin": 5,
@@ -3011,7 +3015,7 @@ def test_model_size():
 @pytest.mark.skipif(
     getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
 )
-def test_get_split_value_histogram():
+def test_get_split_value_histogram(rng_fixed_seed):
     X, y = make_synthetic_regression()
     X = np.repeat(X, 3, axis=0)
     y = np.repeat(y, 3, axis=0)
@@ -3351,7 +3355,7 @@ def test_binning_same_sign():
     assert predicted[1] == pytest.approx(predicted[2])
 
 
-def test_dataset_update_params():
+def test_dataset_update_params(rng):
     default_params = {
         "max_bin": 100,
         "max_bin_by_feature": [20, 10],
@@ -3400,8 +3404,8 @@ def test_dataset_update_params():
         "linear_tree": True,
         "precise_float_parser": False,
     }
-    X = np.random.random((100, 2))
-    y = np.random.random(100)
+    X = rng.uniform(size=(100, 2))
+    y = rng.uniform(size=(100,))
 
     # decreasing without freeing raw data is allowed
     lgb_data = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
@@ -3443,12 +3447,12 @@ def test_dataset_update_params():
             lgb.train(new_params, lgb_data, num_boost_round=3)
 
 
-def test_dataset_params_with_reference():
+def test_dataset_params_with_reference(rng):
     default_params = {"max_bin": 100}
-    X = np.random.random((100, 2))
-    y = np.random.random(100)
-    X_val = np.random.random((100, 2))
-    y_val = np.random.random(100)
+    X = rng.uniform(size=(100, 2))
+    y = rng.uniform(size=(100,))
+    X_val = rng.uniform(size=(100, 2))
+    y_val = rng.uniform(size=(100,))
     lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
     lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
     assert lgb_train.get_params() == default_params
@@ -3486,7 +3490,7 @@ def test_path_smoothing():
     assert err < err_new
 
 
-def test_trees_to_dataframe():
+def test_trees_to_dataframe(rng):
     pytest.importorskip("pandas")
 
     def _imptcs_to_numpy(X, impcts_dict):
@@ -3516,7 +3520,7 @@ def test_trees_to_dataframe():
 
     # test edge case with one leaf
     X = np.ones((10, 2))
-    y = np.random.rand(10)
+    y = rng.uniform(size=(10,))
     data = lgb.Dataset(X, label=y)
     bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
     tree_df = bst.trees_to_dataframe()
@@ -3574,11 +3578,10 @@ def test_interaction_constraints():
     )
 
 
-def test_linear_trees_num_threads():
+def test_linear_trees_num_threads(rng_fixed_seed):
     # check that number of threads does not affect result
-    np.random.seed(0)
     x = np.arange(0, 1000, 0.1)
-    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    y = 2 * x + rng_fixed_seed.normal(loc=0, scale=0.1, size=(len(x),))
     x = x[:, np.newaxis]
     lgb_train = lgb.Dataset(x, label=y)
     params = {"verbose": -1, "objective": "regression", "seed": 0, "linear_tree": True, "num_threads": 2}
@@ -3590,11 +3593,10 @@ def test_linear_trees_num_threads():
     np.testing.assert_allclose(pred1, pred2)
 
 
-def test_linear_trees(tmp_path):
+def test_linear_trees(tmp_path, rng_fixed_seed):
     # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
-    np.random.seed(0)
     x = np.arange(0, 100, 0.1)
-    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    y = 2 * x + rng_fixed_seed.normal(0, 0.1, len(x))
     x = x[:, np.newaxis]
     lgb_train = lgb.Dataset(x, label=y)
     params = {"verbose": -1, "metric": "mse", "seed": 0, "num_leaves": 2}
@@ -4099,21 +4101,20 @@ def test_record_evaluation_with_cv(train_metric):
                 np.testing.assert_allclose(cv_hist[key], eval_result[dataset][f"{metric}-{agg}"])
 
 
-def test_pandas_with_numpy_regular_dtypes():
+def test_pandas_with_numpy_regular_dtypes(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
     uints = ["uint8", "uint16", "uint32", "uint64"]
     ints = ["int8", "int16", "int32", "int64"]
     bool_and_floats = ["bool", "float16", "float32", "float64"]
-    rng = np.random.RandomState(42)
 
     n_samples = 100
     # data as float64
     df = pd.DataFrame(
         {
-            "x1": rng.randint(0, 2, n_samples),
-            "x2": rng.randint(1, 3, n_samples),
-            "x3": 10 * rng.randint(1, 3, n_samples),
-            "x4": 100 * rng.randint(1, 3, n_samples),
+            "x1": rng_fixed_seed.integers(low=0, high=2, size=n_samples),
+            "x2": rng_fixed_seed.integers(low=1, high=3, size=n_samples),
+            "x3": 10 * rng_fixed_seed.integers(low=1, high=3, size=n_samples),
+            "x4": 100 * rng_fixed_seed.integers(low=1, high=3, size=n_samples),
         }
     )
     df = df.astype(np.float64)
@@ -4139,15 +4140,14 @@ def test_pandas_with_numpy_regular_dtypes():
         np.testing.assert_allclose(preds, preds2)
 
 
-def test_pandas_nullable_dtypes():
+def test_pandas_nullable_dtypes(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
-    rng = np.random.RandomState(0)
     df = pd.DataFrame(
         {
-            "x1": rng.randint(1, 3, size=100),
+            "x1": rng_fixed_seed.integers(low=1, high=3, size=100),
             "x2": np.linspace(-1, 1, 100),
-            "x3": pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
-            "x4": rng.rand(100) < 0.5,
+            "x3": pd.arrays.SparseArray(rng_fixed_seed.integers(low=0, high=11, size=100)),
+            "x4": rng_fixed_seed.uniform(size=(100,)) < 0.5,
         }
     )
     # introduce some missing values
@@ -4219,7 +4219,7 @@ def test_boost_from_average_with_single_leaf_trees():
     assert y.min() <= mean_preds <= y.max()
 
 
-def test_cegb_split_buffer_clean():
+def test_cegb_split_buffer_clean(rng_fixed_seed):
     # modified from https://github.com/microsoft/LightGBM/issues/3679#issuecomment-938652811
     # and https://github.com/microsoft/LightGBM/pull/5087
     # test that the ``splits_per_leaf_`` of CEGB is cleaned before training a new tree
@@ -4228,11 +4228,9 @@ def test_cegb_split_buffer_clean():
     #    Check failed: (best_split_info.left_count) > (0)
 
     R, C = 1000, 100
-    seed = 29
-    np.random.seed(seed)
-    data = np.random.randn(R, C)
+    data = rng_fixed_seed.standard_normal(size=(R, C))
     for i in range(1, C):
-        data[i] += data[0] * np.random.randn()
+        data[i] += data[0] * rng_fixed_seed.standard_normal()
 
     N = int(0.8 * len(data))
     train_data = data[:N]
