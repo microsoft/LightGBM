@@ -47,6 +47,5 @@ pip freeze
 
 echo ""
 echo "running tests"
-pytest tests/python_package_test/test_basic.py
-pytest tests/python_package_test/test_engine.py
-pytest tests/python_package_test/test_sklearn.py
+pytest tests/c_api_test/
+pytest tests/python_package_test/

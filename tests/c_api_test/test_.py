@@ -125,7 +125,7 @@ def load_from_mat(filename, reference):
     mat = np.loadtxt(str(filename), dtype=np.float64)
     label = mat[:, 0].astype(np.float32)
     mat = mat[:, 1:]
-    data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
+    data = np.asarray(mat.reshape(mat.size), dtype=np.float64)
     handle = ctypes.c_void_p()
     ref = None
     if reference is not None:
@@ -203,7 +203,7 @@ def test_booster():
     mat = data[:, 1:]
     preb = np.empty(mat.shape[0], dtype=np.float64)
     num_preb = ctypes.c_int64(0)
-    data = np.array(mat.reshape(mat.size), dtype=np.float64, copy=False)
+    data = np.asarray(mat.reshape(mat.size), dtype=np.float64)
     LIB.LGBM_BoosterPredictForMat(
         booster2,
         data.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
