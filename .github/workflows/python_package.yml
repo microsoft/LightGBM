@@ -89,6 +89,7 @@ jobs:
         run: |
           docker run \
             --rm \
+            --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
@@ -115,6 +116,7 @@ jobs:
         run: |
           docker run \
             --rm \
+            --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
             lightgbm/vsts-agent:manylinux_2_28_x86_64 \
