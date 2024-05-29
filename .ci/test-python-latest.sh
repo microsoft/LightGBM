@@ -24,16 +24,17 @@ python -m pip install \
     --pre \
     --upgrade \
         numpy \
-        scipy \
         matplotlib \
-        pandas
+        pandas \
+        scikit-learn \
+        scipy
 
 python -m pip install \
     --extra-index-url https://pypi.fury.io/arrow-nightlies/ \
     --prefer-binary \
     --pre \
     --upgrade \
-    pyarrow
+        pyarrow
 
 echo "done installing lightgbm's dependencies"
 
