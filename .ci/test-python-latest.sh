@@ -39,7 +39,7 @@ python -m pip install \
 echo "done installing lightgbm's dependencies"
 
 echo "installing lightgbm"
-pip install --no-deps dist/*.whl || exit 1
+pip install --no-deps dist/*.whl
 echo "done installing lightgbm"
 
 echo "installed package versions:"
