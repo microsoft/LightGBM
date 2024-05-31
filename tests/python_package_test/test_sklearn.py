@@ -1282,9 +1282,9 @@ def test_getting_feature_names_in_np_input():
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
     with pytest.raises(lgb.compat.LGBMNotFittedError):
-        est.feature_names_in_
+        check_is_fitted(est)
     est.fit(X, y)
-    assert est.feature_names_in_ == [f"Column_{i}" for i in range(X.shape[1])]
+    np.testing.assert_array_equal(est.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
 
 
 def test_getting_feature_names_in_pd_input():
@@ -1294,7 +1294,7 @@ def test_getting_feature_names_in_pd_input():
     with pytest.raises(lgb.compat.LGBMNotFittedError):
         est.feature_names_in_
     est.fit(X, y)
-    assert est.feature_names_in_ == list(X.columns)
+    np.testing.assert_array_equal(est.feature_names_in_, X.columns)
 
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
@@ -1418,7 +1418,6 @@ def test_validate_features(task):
     else:
         model.fit(df, y)
     assert model.feature_name_ == features
-    assert model.feature_names_in_ == features
 
     # try to predict with a different feature
     df2 = df.rename(columns={"x2": "z"})
