@@ -1281,20 +1281,40 @@ def test_getting_feature_names_in_np_input():
     # feature names to the fitted model, which is inconsistent with sklearn's behavior
     X, y = load_digits(n_class=2, return_X_y=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
-        check_is_fitted(est)
-    est.fit(X, y)
-    np.testing.assert_array_equal(est.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
+    clf = lgb.LGBMClassifier(n_estimators=5)
+    reg = lgb.LGBMRegressor(n_estimators=5)
+    rnk = lgb.LGBMRanker(n_estimators=5)
+    models = (est, clf, reg, rnk)
+    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
+
+    for model in models:
+        with pytest.raises(lgb.compat.LGBMNotFittedError):
+            check_is_fitted(model)
+        if isinstance(model, lgb.LGBMRanker):
+            model.fit(X, y, group=group)
+        else:
+            model.fit(X, y)
+        np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
 
 
 def test_getting_feature_names_in_pd_input():
     # as_frame=True means input has column names and these should propagate to fitted model
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
-        est.feature_names_in_
-    est.fit(X, y)
-    np.testing.assert_array_equal(est.feature_names_in_, X.columns)
+    clf = lgb.LGBMClassifier(n_estimators=5)
+    reg = lgb.LGBMRegressor(n_estimators=5)
+    rnk = lgb.LGBMRanker(n_estimators=5)
+    models = (est, clf, reg, rnk)
+    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
+
+    for model in models:
+        with pytest.raises(lgb.compat.LGBMNotFittedError):
+            check_is_fitted(model)
+        if isinstance(model, lgb.LGBMRanker):
+            model.fit(X, y, group=group)
+        else:
+            model.fit(X, y)
+        np.testing.assert_array_equal(est.feature_names_in_, X.columns)
 
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
