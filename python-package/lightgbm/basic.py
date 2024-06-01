@@ -1,5 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+
 import abc
 import ctypes
 import inspect
