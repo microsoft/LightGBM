@@ -1014,6 +1014,12 @@ class LGBMModel(_LGBMModelBase):
             **predict_params,
         )
 
+    def get_feature_names_out(self) -> np.ndarray:
+        """:obj:`array` of shape = [n_features]: Get output features of fitted model."""
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError("Output features cannot be determined. Need to call fit beforehand.")
+        return self.feature_names_in_
+
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
         X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",

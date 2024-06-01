@@ -1317,6 +1317,49 @@ def test_getting_feature_names_in_pd_input():
         np.testing.assert_array_equal(est.feature_names_in_, X.columns)
 
 
+def test_get_feature_names_out_np_input():
+    # input is a numpy array, which doesn't have feature names. LightGBM adds
+    # feature names to the fitted model, which is inconsistent with sklearn's behavior
+    X, y = load_digits(n_class=2, return_X_y=True)
+    est = lgb.LGBMModel(n_estimators=5, objective="binary")
+    clf = lgb.LGBMClassifier(n_estimators=5)
+    reg = lgb.LGBMRegressor(n_estimators=5)
+    rnk = lgb.LGBMRanker(n_estimators=5)
+    models = (est, clf, reg, rnk)
+    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
+
+    for model in models:
+        with pytest.raises(lgb.compat.LGBMNotFittedError):
+            check_is_fitted(model)
+        if isinstance(model, lgb.LGBMRanker):
+            model.fit(X, y, group=group)
+        else:
+            model.fit(X, y)
+        np.testing.assert_array_equal(
+            model.get_feature_names_out(), np.array([f"Column_{i}" for i in range(X.shape[1])])
+        )
+
+
+def test_get_feature_names_out_pd_input():
+    # as_frame=True means input has column names and these should propagate to fitted model
+    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
+    est = lgb.LGBMModel(n_estimators=5, objective="binary")
+    clf = lgb.LGBMClassifier(n_estimators=5)
+    reg = lgb.LGBMRegressor(n_estimators=5)
+    rnk = lgb.LGBMRanker(n_estimators=5)
+    models = (est, clf, reg, rnk)
+    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
+
+    for model in models:
+        with pytest.raises(lgb.compat.LGBMNotFittedError):
+            check_is_fitted(model)
+        if isinstance(model, lgb.LGBMRanker):
+            model.fit(X, y, group=group)
+        else:
+            model.fit(X, y)
+        np.testing.assert_array_equal(model.get_feature_names_out(), X.columns)
+
+
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
