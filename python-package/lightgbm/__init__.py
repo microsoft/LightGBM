@@ -3,6 +3,7 @@
 
 Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 """
+
 from pathlib import Path
 
 from .basic import Booster, Dataset, Sequence, register_logger

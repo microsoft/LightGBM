@@ -1,5 +1,6 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
+
 import copy
 from inspect import signature
 from pathlib import Path
