@@ -454,7 +454,7 @@ _lgbmmodel_doc_predict = """
     """
 
 
-def _get_meta_data(
+def _extract_evaluation_meta_data(
     *,
     collection: Optional[Union[Dict[Any, Any], List[Any]]],
     name: str,
@@ -899,12 +899,12 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = _get_meta_data(
+                    valid_weight = _extract_evaluation_meta_data(
                         collection=eval_sample_weight,
                         name="eval_sample_weight",
                         i=i,
                     )
-                    valid_class_weight = _get_meta_data(
+                    valid_class_weight = _extract_evaluation_meta_data(
                         collection=eval_class_weight,
                         name="eval_class_weight",
                         i=i,
@@ -917,12 +917,12 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(
+                    valid_init_score = _extract_evaluation_meta_data(
                         collection=eval_init_score,
                         name="eval_init_score",
                         i=i,
                     )
-                    valid_group = _get_meta_data(
+                    valid_group = _extract_evaluation_meta_data(
                         collection=eval_group,
                         name="eval_group",
                         i=i,
