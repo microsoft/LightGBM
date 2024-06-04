@@ -23,21 +23,21 @@ python -m pip install \
     --prefer-binary \
     --pre \
     --upgrade \
-        numpy \
-        matplotlib \
-        pandas \
-        scikit-learn \
-        scipy
+        'numpy>=2.0.0.dev0' \
+        'matplotlib>=3.10.0.dev0' \
+        'pandas>=3.0.0.dev0' \
+        'scikit-learn>=1.6.dev0' \
+        'scipy>=1.15.0.dev0'
 
 python -m pip install \
     --extra-index-url https://pypi.fury.io/arrow-nightlies/ \
     --prefer-binary \
     --pre \
     --upgrade \
-        pyarrow
+        'pyarrow>=17.0.0.dev0'
 
 python -m pip install \
-    cffi
+    'cffi>=1.15.1'
 
 echo "done installing lightgbm's dependencies"
 
