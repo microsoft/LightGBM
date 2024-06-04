@@ -1,5 +1,6 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
+
 import copy
 import json
 import warnings

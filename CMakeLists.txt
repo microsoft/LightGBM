@@ -25,6 +25,14 @@ option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Lo
 
 cmake_minimum_required(VERSION 3.18)
 
+# If using Visual Studio generators, always target v10.x of the Windows SDK.
+# Doing this avoids lookups that could fall back to very old versions, e.g. by finding
+# outdated registry entries.
+# ref: https://cmake.org/cmake/help/latest/variable/CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION.html
+if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE INTERNAL "target Windows SDK version" FORCE)
+endif()
+
 project(lightgbm LANGUAGES C CXX)
 
 if(BUILD_CPP_TEST)
