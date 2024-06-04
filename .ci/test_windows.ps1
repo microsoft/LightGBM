@@ -6,13 +6,8 @@ function Check-Output {
   }
 }
 
+$env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
-
-# unify environment variable for Azure DevOps and AppVeyor
-if (Test-Path env:APPVEYOR) {
-  $env:APPVEYOR = "true"
-  $env:ALLOW_SKIP_ARROW_TESTS = "1"
-}
 
 if ($env:TASK -eq "r-package") {
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?

@@ -7,12 +7,10 @@ trigger:
     - v*
 pr:
 - master
-- release/*
 variables:
   AZURE: 'true'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   PYTHON_VERSION: '3.12'
-  CONDA_ENV: test-env
   runCodesignValidationInjection: false
   skipComponentGovernanceDetection: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -187,8 +185,8 @@ jobs:
 - job: QEMU_multiarch
 ###########################################
   variables:
+    BUILD_DIRECTORY: /LightGBM
     COMPILER: gcc
-    OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool:
     vmImage: ubuntu-22.04
@@ -214,25 +212,12 @@ jobs:
       git clean -d -f -x
     displayName: 'Clean source directory'
   - script: |
-      export ROOT_DOCKER_FOLDER=/LightGBM
-      cat > docker.env <<EOF
-      AZURE=$AZURE
-      OS_NAME=$OS_NAME
-      COMPILER=$COMPILER
-      TASK=$TASK
-      METHOD=$METHOD
-      CONDA_ENV=$CONDA_ENV
-      PYTHON_VERSION=$PYTHON_VERSION
-      BUILD_DIRECTORY=$ROOT_DOCKER_FOLDER
-      PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS
-      BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY
-      EOF
       cat > docker-script.sh <<EOF
       export CONDA=\$HOME/miniforge
       export PATH=\$CONDA/bin:/opt/rh/llvm-toolset-7.0/root/usr/bin:\$PATH
       export LD_LIBRARY_PATH=/opt/rh/llvm-toolset-7.0/root/usr/lib64:\$LD_LIBRARY_PATH
-      $ROOT_DOCKER_FOLDER/.ci/setup.sh || exit 1
-      $ROOT_DOCKER_FOLDER/.ci/test.sh || exit 1
+      \$BUILD_DIRECTORY/.ci/setup.sh || exit 1
+      \$BUILD_DIRECTORY/.ci/test.sh || exit 1
       EOF
       IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
       docker pull "${IMAGE_URI}" || exit 1
@@ -241,11 +226,19 @@ jobs:
       docker run \
         --platform "${PLATFORM}" \
         --rm \
-        --env-file docker.env \
-        -v "$(Build.SourcesDirectory)":"$ROOT_DOCKER_FOLDER" \
+        --env AZURE=true \
+        --env BUILD_ARTIFACTSTAGINGDIRECTORY=$BUILD_ARTIFACTSTAGINGDIRECTORY \
+        --env BUILD_DIRECTORY=$BUILD_DIRECTORY \
+        --env COMPILER=$COMPILER \
+        --env METHOD=$METHOD \
+        --env OS_NAME=linux \
+        --env PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS \
+        --env PYTHON_VERSION=$PYTHON_VERSION \
+        --env TASK=$TASK \
+        -v "$(Build.SourcesDirectory)":"$BUILD_DIRECTORY" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
         "${IMAGE_URI}" \
-        /bin/bash $ROOT_DOCKER_FOLDER/docker-script.sh
+        /bin/bash $BUILD_DIRECTORY/docker-script.sh
     displayName: 'Setup and run tests'
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'bdist'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))

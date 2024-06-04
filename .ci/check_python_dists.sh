@@ -26,11 +26,12 @@ fi
 PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ $PY_MINOR_VER -gt 7 ]; then
     echo "pydistcheck..."
-    pip install pydistcheck
+    pip install 'pydistcheck>=0.7.0'
     if { test "${TASK}" = "cuda" || test "${METHOD}" = "wheel"; }; then
         pydistcheck \
             --inspect \
-            --ignore 'compiled-objects-have-debug-symbols,distro-too-large-compressed' \
+            --ignore 'compiled-objects-have-debug-symbols'\
+            --ignore 'distro-too-large-compressed' \
             --max-allowed-size-uncompressed '100M' \
             --max-allowed-files 800 \
             ${DIST_DIR}/* || exit 1

@@ -3,6 +3,7 @@
 set -e -E -o -u pipefail
 
 # defaults
+CONDA_ENV="test-env"
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 METHOD=${METHOD:-""}
 PRODUCES_ARTIFACTS=${PRODUCES_ARTIFACTS:-"false"}
@@ -85,7 +86,7 @@ if [[ $TASK == "lint" ]]; then
         'mypy>=1.8.0' \
         'pre-commit>=3.6.0' \
         'pyarrow>=6.0' \
-        'r-lintr>=3.1'
+        'r-lintr>=3.1.2'
     source activate $CONDA_ENV
     echo "Linting Python code"
     bash ${BUILD_DIRECTORY}/.ci/lint-python.sh || exit 1
