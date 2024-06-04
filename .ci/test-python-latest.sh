@@ -36,6 +36,9 @@ python -m pip install \
     --upgrade \
         pyarrow
 
+python -m pip install \
+    cffi
+
 echo "done installing lightgbm's dependencies"
 
 echo "installing lightgbm"
