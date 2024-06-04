@@ -6,6 +6,7 @@
 
 TRIGGER_PHRASE: Code phrase that triggers workflow.
 """
+
 import json
 from os import environ
 from sys import argv, exit
