@@ -2,13 +2,10 @@
 
 set -e -E -u -o pipefail
 
-# oldest versions of dependencies published after
-# minimum supported Python version's first release,
-# for which there are wheels compatible with the
-# python:{version} image
+# latest versions of lightgbm's dependencies,
+# including pre-releases and nightlies
 #
-# see https://devguide.python.org/versions/
-#
+# ref: https://github.com/pydata/xarray/blob/31111b3afe44fd6f7dac363264e94186cc5168d2/.github/workflows/upstream-dev-ci.yaml
 echo "installing testing dependencies"
 python -m pip install \
     cloudpickle \
@@ -16,7 +13,6 @@ python -m pip install \
     pytest
 echo "done installing testing dependencies"
 
-# ref: https://github.com/pydata/xarray/blob/31111b3afe44fd6f7dac363264e94186cc5168d2/.github/workflows/upstream-dev-ci.yaml
 echo "installing lightgbm's dependencies"
 python -m pip install \
     --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple \
