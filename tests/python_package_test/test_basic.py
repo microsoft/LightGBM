@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from scipy import sparse
-from sklearn.datasets import dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
@@ -890,3 +890,57 @@ def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Datas
         data=rng.standard_normal(size=(100, 3)),
     )
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
+
+
+# NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
+@pytest.mark.parametrize(("max_depth", "num_leaves"), [(-1, 3), (-1, 50), (5, 3), (5, 31), (5, 32), (8, 3), (8, 31)])
+def test_max_depth_warning_is_not_raised_if_num_leaves_is_also_provided(capsys, num_leaves, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_leaves": num_leaves,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+# NOTE: max_depth < 5 is significant here because the default for num_leaves=31. With max_depth=5,
+#       a full depth-wise tree would have 2^5 = 32 leaves.
+@pytest.mark.parametrize("max_depth", [1, 2, 3, 4])
+def test_max_depth_warning_is_not_raised_if_max_depth_gt_1_and_lt_5_and_num_leaves_omitted(capsys, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("max_depth", [5, 6, 7, 8, 9])
+def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(capsys, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    expected_warning = (
+        f"[LightGBM] [Warning] Provided parameters constrain tree depth (max_depth={max_depth}) without explicitly "
+        f"setting 'num_leaves'. This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<={2**max_depth}) "
+        "in params. Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity."
+    )
+    assert expected_warning in capsys.readouterr().out
