@@ -1142,7 +1142,7 @@ struct Config {
   static const std::string DumpAliases();
 
  private:
-  void CheckParamConflict();
+  void CheckParamConflict(const std::unordered_map<std::string, std::string>& params);
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();

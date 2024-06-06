@@ -289,14 +289,14 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
   }
 
   // check for conflicts
-  CheckParamConflict();
+  CheckParamConflict(params);
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
   return (objective == std::string("multiclass") || objective == std::string("multiclassova"));
 }
 
-void Config::CheckParamConflict() {
+void Config::CheckParamConflict(const std::unordered_map<std::string, std::string>& params) {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
   bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective == std::string("custom") && num_class_check > 1);
@@ -356,14 +356,24 @@ void Config::CheckParamConflict() {
                  tree_learner.c_str());
     }
   }
-  // Check max_depth and num_leaves
-  if (max_depth > 0) {
+
+  // max_depth defaults to -1, so max_depth>0 implies "you explicitly overrode the default"
+  //
+  // Changing max_depth while leaving num_leaves at its default (31) can lead to 2 undesirable situations:
+  //
+  //   * (0 <= max_depth <= 4) it's not possible to produce a tree with 31 leaves
+  //     - this block reduces num_leaves to 2^max_depth
+  //   * (max_depth > 4) 31 leaves is less than a full depth-wise tree, which might lead to underfitting
+  //     - this block warns about that
+  // ref: https://github.com/microsoft/LightGBM/issues/2898#issuecomment-1002860601
+  if (max_depth > 0 && (params.count("num_leaves") == 0 || params.at("num_leaves").empty())) {
     double full_num_leaves = std::pow(2, max_depth);
-    if (full_num_leaves > num_leaves
-        && num_leaves == kDefaultNumLeaves) {
-      Log::Warning("Accuracy may be bad since you didn't explicitly set num_leaves OR 2^max_depth > num_leaves."
-                   " (num_leaves=%d).",
-                   num_leaves);
+    if (full_num_leaves > num_leaves) {
+      Log::Warning("Provided parameters constrain tree depth (max_depth=%d) without explicitly setting 'num_leaves'. "
+                   "This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<=%.0f) in params. "
+                   "Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity.",
+                   max_depth,
+                   full_num_leaves);
     }
 
     if (full_num_leaves < num_leaves) {

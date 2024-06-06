@@ -22,7 +22,12 @@ X_train = df_train.drop(0, axis=1)
 X_test = df_test.drop(0, axis=1)
 
 # create dataset for lightgbm
-lgb_train = lgb.Dataset(X_train, y_train)
+lgb_train = lgb.Dataset(
+    X_train,
+    y_train,
+    feature_name=[f"f{i + 1}" for i in range(X_train.shape[-1])],
+    categorical_feature=[21],
+)
 lgb_test = lgb.Dataset(X_test, y_test, reference=lgb_train)
 
 # specify your configurations as a dict
@@ -37,8 +42,6 @@ gbm = lgb.train(
     lgb_train,
     num_boost_round=100,
     valid_sets=[lgb_train, lgb_test],
-    feature_name=[f"f{i + 1}" for i in range(X_train.shape[-1])],
-    categorical_feature=[21],
     callbacks=[lgb.log_evaluation(10), lgb.record_evaluation(evals_result)],
 )
 

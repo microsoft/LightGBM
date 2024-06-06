@@ -9,7 +9,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -18,10 +17,8 @@ concurrency:
 
 env:
   COMPILER: 'gcc'
-  CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
   OS_NAME: 'linux'
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.12'
 
 jobs:
   test:
@@ -36,7 +33,7 @@ jobs:
           - task: check-docs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: false
@@ -59,7 +56,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
