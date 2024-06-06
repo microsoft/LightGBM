@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "numpy",
+    "numpy>=1.17.0",
     "scipy"
 ]
 description = "LightGBM Python Package"
@@ -156,6 +156,8 @@ select = [
     "E",
     # pyflakes
     "F",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PL",
     # flake8-return: unnecessary assignment before return
