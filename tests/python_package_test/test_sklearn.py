@@ -1276,6 +1276,20 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("max_depth", [3, 4, 5, 8])
+def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    params = {"n_estimators": 1, "max_depth": max_depth, "verbose": 0}
+    if estimator_class is lgb.LGBMModel:
+        estimator_class(**{**params, "objective": "binary"}).fit(X, y)
+    elif estimator_class is lgb.LGBMRanker:
+        estimator_class(**params).fit(X, y, group=np.ones(X.shape[0]))
+    else:
+        estimator_class(**params).fit(X, y)
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
