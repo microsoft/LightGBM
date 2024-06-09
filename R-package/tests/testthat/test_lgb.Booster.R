@@ -1519,3 +1519,95 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
     expect_equal(ncols, ncol(iris) - 1L)
 })
+
+# Helper function that creates a fitted model with nrounds boosting rounds
+.get_test_model <- function(nrounds) {
+    set.seed(1L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
+        , nrounds = nrounds
+        , verbose = .LGB_VERBOSITY
+    )
+    return(bst)
+}
+
+# Simplified version of lgb.model.dt.tree()
+.get_trees_from_dump <- function(x) {
+  parsed <- jsonlite::fromJSON(
+    txt = x
+    , simplifyVector = TRUE
+    , simplifyDataFrame = FALSE
+    , simplifyMatrix = FALSE
+    , flatten = FALSE
+  )
+  return(lapply(parsed$tree_info, FUN = .single_tree_parse))
+}
+
+test_that("num_iteration and start_iteration work for lgb.dump()", {
+  bst <- .get_test_model(5L)
+
+  first2 <- .get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
+  last3 <- .get_trees_from_dump(
+    lgb.dump(bst, num_iteration = 3L, start_iteration = 3L)
+  )
+  all5 <- .get_trees_from_dump(lgb.dump(bst))
+  too_many <- .get_trees_from_dump(lgb.dump(bst, num_iteration = 10L))
+
+  expect_equal(
+    data.table::rbindlist(c(first2, last3)), data.table::rbindlist(all5)
+  )
+  expect_equal(too_many, all5)
+})
+
+test_that("num_iteration and start_iteration work for lgb.save()", {
+  .get_n_trees <- function(x) {
+    return(length(.get_trees_from_dump(lgb.dump(x))))
+  }
+
+  .save_and_load <- function(bst, ...) {
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file, ...)
+    return(lgb.load(model_file))
+  }
+
+  bst <- .get_test_model(5L)
+  n_first2 <- .get_n_trees(.save_and_load(bst, num_iteration = 2L))
+  n_last3 <- .get_n_trees(
+    .save_and_load(bst, num_iteration = 3L, start_iteration = 3L)
+  )
+  n_all5 <- .get_n_trees(.save_and_load(bst))
+  n_too_many <- .get_n_trees(.save_and_load(bst, num_iteration = 10L))
+
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
+})
+
+test_that("num_iteration and start_iteration work for save_model_to_string()", {
+  .get_n_trees_from_string <- function(x) {
+    return(sum(gregexpr("Tree=", x, fixed = TRUE)[[1L]] > 0L))
+  }
+
+  bst <- .get_test_model(5L)
+
+  n_first2 <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 2L)
+  )
+  n_last3 <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
+  )
+  n_all5 <- .get_n_trees_from_string(bst$save_model_to_string())
+  n_too_many <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 10L)
+  )
+
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
+})

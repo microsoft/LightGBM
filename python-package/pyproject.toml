@@ -15,11 +15,11 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "dataclasses ; python_version < '3.7'",
-    "numpy",
+    "numpy>=1.17.0",
     "scipy"
 ]
 description = "LightGBM Python Package"
@@ -29,7 +29,7 @@ maintainers = [
 ]
 name = "lightgbm"
 readme = "README.rst"
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 version = "4.3.0.99"
 
 [project.optional-dependencies]
@@ -156,6 +156,8 @@ select = [
     "E",
     # pyflakes
     "F",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PL",
     # flake8-return: unnecessary assignment before return

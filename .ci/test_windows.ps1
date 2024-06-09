@@ -6,11 +6,8 @@ function Check-Output {
   }
 }
 
-# unify environment variable for Azure DevOps and AppVeyor
-if (Test-Path env:APPVEYOR) {
-  $env:APPVEYOR = "true"
-  $env:ALLOW_SKIP_ARROW_TESTS = "1"
-}
+$env:CONDA_ENV = "test-env"
+$env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 
 if ($env:TASK -eq "r-package") {
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
@@ -53,6 +50,8 @@ conda update -q -y conda
 
 if ($env:PYTHON_VERSION -eq "3.7") {
   $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
+} elseif ($env:PYTHON_VERSION -eq "3.8") {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py38.txt"
 } else {
   $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
@@ -95,14 +94,14 @@ elseif ($env:TASK -eq "bdist") {
   cd $env:BUILD_SOURCESDIRECTORY
   sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
   sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
-  cd dist; pip install --user @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
+  cd dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
   cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user --mingw ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
   } else {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install; Check-Output $?
   }
 }
 
