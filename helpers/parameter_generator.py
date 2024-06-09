@@ -6,6 +6,7 @@ with list of all parameters, aliases table and other routines
 along with parameters description in LightGBM/docs/Parameters.rst file
 from the information in LightGBM/include/LightGBM/config.h file.
 """
+
 import re
 from collections import defaultdict
 from pathlib import Path

@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from scipy import sparse
-from sklearn.datasets import dump_svmlight_file, load_svmlight_file
+from sklearn.datasets import dump_svmlight_file, load_svmlight_file, make_blobs
 from sklearn.model_selection import train_test_split
 
 import lightgbm as lgb
@@ -136,7 +136,7 @@ def _create_sequence_from_ndarray(data, num_seq, batch_size):
 @pytest.mark.parametrize("batch_size", [3, None])
 @pytest.mark.parametrize("include_0_and_nan", [False, True])
 @pytest.mark.parametrize("num_seq", [1, 3])
-def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
+def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq, rng):
     params = {"bin_construct_sample_cnt": sample_count}
 
     nrow = 50
@@ -175,7 +175,6 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
 
     # Test for validation set.
     # Select some random rows as valid data.
-    rng = np.random.default_rng()  # Pass integer to set seed when needed.
     valid_idx = (rng.random(10) * nrow).astype(np.int32)
     valid_data = data[valid_idx, :]
     valid_X = valid_data[:, :-1]
@@ -201,7 +200,7 @@ def test_sequence(tmpdir, sample_count, batch_size, include_0_and_nan, num_seq):
 
 
 @pytest.mark.parametrize("num_seq", [1, 2])
-def test_sequence_get_data(num_seq):
+def test_sequence_get_data(num_seq, rng):
     nrow = 20
     ncol = 11
     data = np.arange(nrow * ncol, dtype=np.float64).reshape((nrow, ncol))
@@ -212,7 +211,7 @@ def test_sequence_get_data(num_seq):
     seq_ds = lgb.Dataset(seqs, label=Y, params=None, free_raw_data=False).construct()
     assert seq_ds.get_data() == seqs
 
-    used_indices = np.random.choice(np.arange(nrow), nrow // 3, replace=False)
+    used_indices = rng.choice(a=np.arange(nrow), size=nrow // 3, replace=False)
     subset_data = seq_ds.subset(used_indices).construct()
     np.testing.assert_array_equal(subset_data.get_data(), X[sorted(used_indices)])
 
@@ -246,8 +245,8 @@ def test_chunked_dataset_linear():
     valid_data.construct()
 
 
-def test_save_dataset_subset_and_load_from_file(tmp_path):
-    data = np.random.rand(100, 2)
+def test_save_dataset_subset_and_load_from_file(tmp_path, rng):
+    data = rng.standard_normal(size=(100, 2))
     params = {"max_bin": 50, "min_data_in_bin": 10}
     ds = lgb.Dataset(data, params=params)
     ds.subset([1, 2, 3, 5, 8]).save_binary(tmp_path / "subset.bin")
@@ -267,18 +266,18 @@ def test_subset_group():
     assert subset_group[1] == 9
 
 
-def test_add_features_throws_if_num_data_unequal():
-    X1 = np.random.random((100, 1))
-    X2 = np.random.random((10, 1))
+def test_add_features_throws_if_num_data_unequal(rng):
+    X1 = rng.uniform(size=(100, 1))
+    X2 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
     d2 = lgb.Dataset(X2).construct()
     with pytest.raises(lgb.basic.LightGBMError):
         d1.add_features_from(d2)
 
 
-def test_add_features_throws_if_datasets_unconstructed():
-    X1 = np.random.random((100, 1))
-    X2 = np.random.random((100, 1))
+def test_add_features_throws_if_datasets_unconstructed(rng):
+    X1 = rng.uniform(size=(100, 1))
+    X2 = rng.uniform(size=(100, 1))
     with pytest.raises(ValueError):
         d1 = lgb.Dataset(X1)
         d2 = lgb.Dataset(X2)
@@ -293,8 +292,8 @@ def test_add_features_throws_if_datasets_unconstructed():
         d1.add_features_from(d2)
 
 
-def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
-    X = np.random.random((100, 5))
+def test_add_features_equal_data_on_alternating_used_unused(tmp_path, rng):
+    X = rng.uniform(size=(100, 5))
     X[:, [1, 3]] = 0
     names = [f"col_{i}" for i in range(5)]
     for j in range(1, 5):
@@ -313,8 +312,8 @@ def test_add_features_equal_data_on_alternating_used_unused(tmp_path):
         assert dtxt == d1txt
 
 
-def test_add_features_same_booster_behaviour(tmp_path):
-    X = np.random.random((100, 5))
+def test_add_features_same_booster_behaviour(tmp_path, rng):
+    X = rng.uniform(size=(100, 5))
     X[:, [1, 3]] = 0
     names = [f"col_{i}" for i in range(5)]
     for j in range(1, 5):
@@ -322,7 +321,7 @@ def test_add_features_same_booster_behaviour(tmp_path):
         d2 = lgb.Dataset(X[:, j:], feature_name=names[j:]).construct()
         d1.add_features_from(d2)
         d = lgb.Dataset(X, feature_name=names).construct()
-        y = np.random.random(100)
+        y = rng.uniform(size=(100,))
         d1.set_label(y)
         d.set_label(y)
         b1 = lgb.Booster(train_set=d1)
@@ -341,11 +340,11 @@ def test_add_features_same_booster_behaviour(tmp_path):
         assert dtxt == d1txt
 
 
-def test_add_features_from_different_sources():
+def test_add_features_from_different_sources(rng):
     pd = pytest.importorskip("pandas")
     n_row = 100
     n_col = 5
-    X = np.random.random((n_row, n_col))
+    X = rng.uniform(size=(n_row, n_col))
     xxs = [X, sparse.csr_matrix(X), pd.DataFrame(X)]
     names = [f"col_{i}" for i in range(n_col)]
     seq = _create_sequence_from_ndarray(X, 1, 30)
@@ -380,9 +379,9 @@ def test_add_features_from_different_sources():
             assert d1.feature_name == res_feature_names
 
 
-def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys):
+def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_features(capsys, rng):
     arr_a = np.zeros((100, 1), dtype=np.float32)
-    arr_b = np.random.normal(size=(100, 5))
+    arr_b = rng.uniform(size=(100, 5))
 
     dataset_a = lgb.Dataset(arr_a).construct()
     expected_msg = (
@@ -402,10 +401,10 @@ def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_feat
     assert dataset_a._handle.value == original_handle
 
 
-def test_cegb_affects_behavior(tmp_path):
-    X = np.random.random((100, 5))
+def test_cegb_affects_behavior(tmp_path, rng):
+    X = rng.uniform(size=(100, 5))
     X[:, [1, 3]] = 0
-    y = np.random.random(100)
+    y = rng.uniform(size=(100,))
     names = [f"col_{i}" for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
@@ -433,10 +432,10 @@ def test_cegb_affects_behavior(tmp_path):
         assert basetxt != casetxt
 
 
-def test_cegb_scaling_equalities(tmp_path):
-    X = np.random.random((100, 5))
+def test_cegb_scaling_equalities(tmp_path, rng):
+    X = rng.uniform(size=(100, 5))
     X[:, [1, 3]] = 0
-    y = np.random.random(100)
+    y = rng.uniform(size=(100,))
     names = [f"col_{i}" for i in range(5)]
     ds = lgb.Dataset(X, feature_name=names).construct()
     ds.set_label(y)
@@ -573,10 +572,10 @@ def test_dataset_construction_overwrites_user_provided_metadata_fields():
     np_assert_array_equal(dtrain.get_field("weight"), expected_weight, strict=True)
 
 
-def test_dataset_construction_with_high_cardinality_categorical_succeeds():
+def test_dataset_construction_with_high_cardinality_categorical_succeeds(rng):
     pd = pytest.importorskip("pandas")
-    X = pd.DataFrame({"x1": np.random.randint(0, 5_000, 10_000)})
-    y = np.random.rand(10_000)
+    X = pd.DataFrame({"x1": rng.integers(low=0, high=5_000, size=(10_000,))})
+    y = rng.uniform(size=(10_000,))
     ds = lgb.Dataset(X, y, categorical_feature=["x1"])
     ds.construct()
     assert ds.num_data() == 10_000
@@ -663,11 +662,11 @@ def test_choose_param_value_objective(objective_alias):
 
 @pytest.mark.parametrize("collection", ["1d_np", "2d_np", "pd_float", "pd_str", "1d_list", "2d_list"])
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_list_to_1d_numpy(collection, dtype):
+def test_list_to_1d_numpy(collection, dtype, rng):
     collection2y = {
-        "1d_np": np.random.rand(10),
-        "2d_np": np.random.rand(10, 1),
-        "pd_float": np.random.rand(10),
+        "1d_np": rng.uniform(size=(10,)),
+        "2d_np": rng.uniform(size=(10, 1)),
+        "pd_float": rng.uniform(size=(10,)),
         "pd_str": ["a", "b"],
         "1d_list": [1] * 10,
         "2d_list": [[1], [2]],
@@ -696,7 +695,7 @@ def test_list_to_1d_numpy(collection, dtype):
 
 
 @pytest.mark.parametrize("init_score_type", ["array", "dataframe", "list"])
-def test_init_score_for_multiclass_classification(init_score_type):
+def test_init_score_for_multiclass_classification(init_score_type, rng):
     init_score = [[i * 10 + j for j in range(3)] for i in range(10)]
     if init_score_type == "array":
         init_score = np.array(init_score)
@@ -704,7 +703,7 @@ def test_init_score_for_multiclass_classification(init_score_type):
         if not PANDAS_INSTALLED:
             pytest.skip("Pandas is not installed.")
         init_score = pd_DataFrame(init_score)
-    data = np.random.rand(10, 2)
+    data = rng.uniform(size=(10, 2))
     ds = lgb.Dataset(data, init_score=init_score).construct()
     np.testing.assert_equal(ds.get_field("init_score"), init_score)
     np.testing.assert_equal(ds.init_score, init_score)
@@ -741,16 +740,20 @@ def test_param_aliases():
 
 
 def _bad_gradients(preds, _):
-    return np.random.randn(len(preds) + 1), np.random.rand(len(preds) + 1)
+    rng = np.random.default_rng()
+    # "bad" = 1 element too many
+    size = (len(preds) + 1,)
+    return rng.standard_normal(size=size), rng.uniform(size=size)
 
 
 def _good_gradients(preds, _):
-    return np.random.randn(*preds.shape), np.random.rand(*preds.shape)
+    rng = np.random.default_rng()
+    return rng.standard_normal(size=preds.shape), rng.uniform(size=preds.shape)
 
 
-def test_custom_objective_safety():
+def test_custom_objective_safety(rng):
     nrows = 100
-    X = np.random.randn(nrows, 5)
+    X = rng.standard_normal(size=(nrows, 5))
     y_binary = np.arange(nrows) % 2
     classes = [0, 1, 2]
     nclass = len(classes)
@@ -771,9 +774,9 @@ def test_custom_objective_safety():
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize("feature_name", [["x1", "x2"], "auto"])
-def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name, rng):
     pd = pytest.importorskip("pandas")
-    X = np.random.rand(10, 2).astype(dtype)
+    X = rng.uniform(size=(10, 2)).astype(dtype)
     df = pd.DataFrame(X)
     built_data = lgb.basic._data_from_pandas(
         data=df, feature_name=feature_name, categorical_feature="auto", pandas_categorical=None
@@ -784,9 +787,9 @@ def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name):
 
 @pytest.mark.parametrize("feature_name", [["x1"], [42], "auto"])
 @pytest.mark.parametrize("categories", ["seen", "unseen"])
-def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories):
+def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, categories, rng):
     pd = pytest.importorskip("pandas")
-    X = np.random.choice(["a", "b"], 100).reshape(-1, 1)
+    X = rng.choice(a=["a", "b"], size=(100, 1))
     column_name = "a" if feature_name == "auto" else feature_name[0]
     df = pd.DataFrame(X.copy(), columns=[column_name], dtype="category")
     if categories == "seen":
@@ -814,15 +817,15 @@ def test_categorical_code_conversion_doesnt_modify_original_data(feature_name, c
 
 
 @pytest.mark.parametrize("min_data_in_bin", [2, 10])
-def test_feature_num_bin(min_data_in_bin):
+def test_feature_num_bin(min_data_in_bin, rng):
     X = np.vstack(
         [
-            np.random.rand(100),
+            rng.uniform(size=(100,)),
             np.array([1, 2] * 50),
             np.array([0, 1, 2] * 33 + [0]),
             np.array([1, 2] * 49 + 2 * [np.nan]),
             np.zeros(100),
-            np.random.choice([0, 1], 100),
+            rng.choice(a=[0, 1], size=(100,)),
         ]
     ).T
     n_continuous = X.shape[1] - 1
@@ -862,9 +865,9 @@ def test_feature_num_bin(min_data_in_bin):
         ds.feature_num_bin(num_features)
 
 
-def test_feature_num_bin_with_max_bin_by_feature():
-    X = np.random.rand(100, 3)
-    max_bin_by_feature = np.random.randint(3, 30, size=X.shape[1])
+def test_feature_num_bin_with_max_bin_by_feature(rng):
+    X = rng.uniform(size=(100, 3))
+    max_bin_by_feature = rng.integers(low=3, high=30, size=X.shape[1])
     ds = lgb.Dataset(X, params={"max_bin_by_feature": max_bin_by_feature}).construct()
     actual_num_bins = [ds.feature_num_bin(i) for i in range(X.shape[1])]
     np.testing.assert_equal(actual_num_bins, max_bin_by_feature)
@@ -882,8 +885,62 @@ def test_set_leaf_output():
     np.testing.assert_allclose(bst.predict(X), y_pred + 1)
 
 
-def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Dataset():
+def test_feature_names_are_set_correctly_when_no_feature_names_passed_into_Dataset(rng):
     ds = lgb.Dataset(
-        data=np.random.randn(100, 3),
+        data=rng.standard_normal(size=(100, 3)),
     )
     assert ds.construct().feature_name == ["Column_0", "Column_1", "Column_2"]
+
+
+# NOTE: this intentionally contains values where num_leaves <, ==, and > (max_depth^2)
+@pytest.mark.parametrize(("max_depth", "num_leaves"), [(-1, 3), (-1, 50), (5, 3), (5, 31), (5, 32), (8, 3), (8, 31)])
+def test_max_depth_warning_is_not_raised_if_num_leaves_is_also_provided(capsys, num_leaves, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_leaves": num_leaves,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+# NOTE: max_depth < 5 is significant here because the default for num_leaves=31. With max_depth=5,
+#       a full depth-wise tree would have 2^5 = 32 leaves.
+@pytest.mark.parametrize("max_depth", [1, 2, 3, 4])
+def test_max_depth_warning_is_not_raised_if_max_depth_gt_1_and_lt_5_and_num_leaves_omitted(capsys, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("max_depth", [5, 6, 7, 8, 9])
+def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(capsys, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    lgb.Booster(
+        params={
+            "objective": "binary",
+            "max_depth": max_depth,
+            "num_iterations": 1,
+            "verbose": 0,
+        },
+        train_set=lgb.Dataset(X, label=y),
+    )
+    expected_warning = (
+        f"[LightGBM] [Warning] Provided parameters constrain tree depth (max_depth={max_depth}) without explicitly "
+        f"setting 'num_leaves'. This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<={2**max_depth}) "
+        "in params. Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity."
+    )
+    assert expected_warning in capsys.readouterr().out

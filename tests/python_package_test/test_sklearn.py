@@ -340,7 +340,7 @@ def test_grid_search():
     assert evals_result == grid.best_estimator_.evals_result_
 
 
-def test_random_search():
+def test_random_search(rng):
     X, y = load_iris(return_X_y=True)
     y = y.astype(str)  # utilize label encoder at it's max power
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -349,8 +349,8 @@ def test_random_search():
     params = {"subsample": 0.8, "subsample_freq": 1}
     param_dist = {
         "boosting_type": ["rf", "gbdt"],
-        "n_estimators": [np.random.randint(low=3, high=10) for i in range(n_iter)],
-        "reg_alpha": [np.random.uniform(low=0.01, high=0.06) for i in range(n_iter)],
+        "n_estimators": rng.integers(low=3, high=10, size=(n_iter,)).tolist(),
+        "reg_alpha": rng.uniform(low=0.01, high=0.06, size=(n_iter,)).tolist(),
     }
     fit_params = {"eval_set": [(X_val, y_val)], "eval_metric": constant_metric, "callbacks": [lgb.early_stopping(2)]}
     rand = RandomizedSearchCV(
@@ -556,29 +556,29 @@ def test_feature_importances_type():
     assert importance_split_top1 != importance_gain_top1
 
 
-def test_pandas_categorical():
+# why fixed seed?
+# sometimes there is no difference how cols are treated (cat or not cat)
+def test_pandas_categorical(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
-    np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
     X = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "c", "d"] * 75),  # str
-            "B": np.random.permutation([1, 2, 3] * 100),  # int
-            "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-            "D": np.random.permutation([True, False] * 150),  # bool
-            "E": pd.Categorical(np.random.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "c", "d"] * 75),  # str
+            "B": rng_fixed_seed.permutation([1, 2, 3] * 100),  # int
+            "C": rng_fixed_seed.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+            "D": rng_fixed_seed.permutation([True, False] * 150),  # bool
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
         }
     )  # str and ordered categorical
-    y = np.random.permutation([0, 1] * 150)
+    y = rng_fixed_seed.permutation([0, 1] * 150)
     X_test = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "e"] * 20),  # unseen category
-            "B": np.random.permutation([1, 3] * 30),
-            "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-            "D": np.random.permutation([True, False] * 30),
-            "E": pd.Categorical(np.random.permutation(["z", "y"] * 30), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "e"] * 20),  # unseen category
+            "B": rng_fixed_seed.permutation([1, 3] * 30),
+            "C": rng_fixed_seed.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+            "D": rng_fixed_seed.permutation([True, False] * 30),
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y"] * 30), ordered=True),
         }
     )
-    np.random.seed()  # reset seed
     cat_cols_actual = ["A", "B", "C", "D"]
     cat_cols_to_store = cat_cols_actual + ["E"]
     X[cat_cols_actual] = X[cat_cols_actual].astype("category")
@@ -620,21 +620,21 @@ def test_pandas_categorical():
     assert gbm6.booster_.pandas_categorical == cat_values
 
 
-def test_pandas_sparse():
+def test_pandas_sparse(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 1, 2] * 100)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 150)),
         }
     )
-    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    y = pd.Series(pd.arrays.SparseArray(rng.permutation([0, 1] * 150)))
     X_test = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 2] * 30)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 30)),
         }
     )
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
@@ -1073,11 +1073,11 @@ def test_multiple_eval_metrics():
     assert "binary_logloss" in gbm.evals_result_["training"]
 
 
-def test_nan_handle():
+def test_nan_handle(rng):
     nrows = 100
     ncols = 10
-    X = np.random.randn(nrows, ncols)
-    y = np.random.randn(nrows) + np.full(nrows, 1e30)
+    X = rng.standard_normal(size=(nrows, ncols))
+    y = rng.standard_normal(size=(nrows,)) + np.full(nrows, 1e30)
     weight = np.zeros(nrows)
     params = {"n_estimators": 20, "verbose": -1}
     params_fit = {"X": X, "y": y, "sample_weight": weight, "eval_set": (X, y), "callbacks": [lgb.early_stopping(5)]}
@@ -1276,6 +1276,20 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("max_depth", [3, 4, 5, 8])
+def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
+    X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    params = {"n_estimators": 1, "max_depth": max_depth, "verbose": 0}
+    if estimator_class is lgb.LGBMModel:
+        estimator_class(**{**params, "objective": "binary"}).fit(X, y)
+    elif estimator_class is lgb.LGBMRanker:
+        estimator_class(**params).fit(X, y, group=np.ones(X.shape[0]))
+    else:
+        estimator_class(**params).fit(X, y)
+    assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
@@ -1410,13 +1424,13 @@ def test_validate_features(task):
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame"])
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
-def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task):
+def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
     if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
         pytest.skip("datatable is not installed")
     X, y, g = _create_data(task, n_samples=2_000)
-    weights = np.abs(np.random.randn(y.shape[0]))
+    weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
     if task == "binary-classification" or task == "regression":
         init_score = np.full_like(y, np.mean(y))
@@ -1487,13 +1501,13 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_DataFrame", "pd_Series"])
 @pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series"])
-def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type):
+def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
     if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
         pytest.skip("datatable is not installed")
     X, y, g = _create_data(task="ranking", n_samples=1_000)
-    weights = np.abs(np.random.randn(y.shape[0]))
+    weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
     init_score = np.full_like(y, np.mean(y))
     X_valid = X * 2
 
