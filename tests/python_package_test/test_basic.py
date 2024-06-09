@@ -772,14 +772,15 @@ def test_custom_objective_safety(rng):
         bad_bst_multi.update(fobj=_bad_gradients)
 
 
-# why is skip_on_pandas3 used in this test?
-# ref: https://github.com/pandas-dev/pandas/issues/58913
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 @pytest.mark.parametrize("feature_name", [["x1", "x2"], "auto"])
-def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name, rng, skip_on_pandas3):
+def test_no_copy_when_single_float_dtype_dataframe(dtype, feature_name, rng):
     pd = pytest.importorskip("pandas")
     X = rng.uniform(size=(10, 2)).astype(dtype)
-    df = pd.DataFrame(X)
+    # copy=False is necessary because starting with pandas 3.0, pd.DataFrame() creates
+    # a copy of the input numpy array by default
+    # ref: https://github.com/pandas-dev/pandas/issues/58913
+    df = pd.DataFrame(X, copy=False)
     built_data = lgb.basic._data_from_pandas(
         data=df, feature_name=feature_name, categorical_feature="auto", pandas_categorical=None
     )[0]

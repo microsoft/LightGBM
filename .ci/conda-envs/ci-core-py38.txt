@@ -31,7 +31,6 @@ scipy=1.10.*
 
 # testing-only dependencies
 cloudpickle=3.0.*
-packaging=24.0.*
 pluggy=1.5.*
 psutil=5.9.8
 pytest=8.2.*
