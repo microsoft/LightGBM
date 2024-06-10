@@ -659,3 +659,4 @@ test_that("lgb.Dataset.slice fails when providing a categorical feature index gr
     subset$construct()
   }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
 })
+
