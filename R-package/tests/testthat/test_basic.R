@@ -2874,6 +2874,37 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
 
 })
 
+test_that("Interaction constraints add missing features correctly as new group", {
+  dtrain <- lgb.Dataset(
+    train$data[, 1L:6L]  # Pick only some columns
+    , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
+  )
+
+  list_of_constraints <- list(
+    list(3L, 1L:2L)
+    , list("cap-shape=convex", c("cap-shape=bell", "cap-shape=conical"))
+  )
+
+  for (constraints in list_of_constraints) {
+    params <- list(
+      objective = "regression"
+      , interaction_constraints = constraints
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    bst <- lightgbm(data = dtrain, params = params, nrounds = 10L)
+
+    expected_list <- list("[2]", "[0,1]", "[3,4,5]")
+    expect_equal(bst$params$interaction_constraints, expected_list)
+
+    expected_string <- "[interaction_constraints: [2],[0,1],[3,4,5]]"
+    expect_true(
+      grepl(expected_string, bst$save_model_to_string(), fixed = TRUE)
+    )
+  }
+})
+
 .generate_trainset_for_monotone_constraints_tests <- function(x3_to_categorical) {
   n_samples <- 3000L
   x1_positively_correlated_with_y <- runif(n = n_samples, min = 0.0, max = 1.0)
