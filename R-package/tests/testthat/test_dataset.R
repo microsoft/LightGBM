@@ -652,9 +652,9 @@ test_that("lgb.Dataset can be constructed with categorical features and without 
 })
 
 test_that("lgb.Dataset.slice fails when providing a categorical feature index greater than the number of features", {
-  data <- matrix(runif(100), nrow = 50L, ncol = 2L)
+  data <- matrix(runif(100L), nrow = 50L, ncol = 2L)
   ds <- lgb.Dataset(data = data, categorical_feature = 3L)
-  subset <- ds$slice(1:20)
+  subset <- ds$slice(1L:20L)
   expect_error({
     subset$construct()
   }, regexp = "supplied a too large value in categorical_feature: 3 but only 2 features")
