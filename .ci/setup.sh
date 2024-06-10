@@ -1,5 +1,15 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
+# defaults
+AZURE=${AZURE:-"false"}
+IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
+SETUP_CONDA=${SETUP_CONDA:-"true"}
+
+ARCH=$(uname -m)
+
+
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
@@ -7,7 +17,9 @@ if [[ $OS_NAME == "macos" ]]; then
             sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
         fi
     else  # gcc
-        sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer || exit 1
+        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+        # versions of Xcode
+        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
         if [[ $TASK != "mpi" ]]; then
             brew install gcc
         fi
@@ -18,10 +30,6 @@ if [[ $OS_NAME == "macos" ]]; then
     if [[ $TASK == "swig" ]]; then
         brew install swig
     fi
-    curl \
-        -sL \
-        -o miniforge.sh \
-        https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-x86_64.sh
 else  # Linux
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
@@ -132,17 +140,14 @@ else  # Linux
         apt-get install --no-install-recommends -y \
             cmake
     fi
-    if [[ $SETUP_CONDA != "false" ]]; then
-        ARCH=$(uname -m)
-        curl \
-            -sL \
-            -o miniforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${ARCH}.sh
-    fi
 fi
 
 if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
+        curl \
+            -sL \
+            -o miniforge.sh \
+            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh
         sh miniforge.sh -b -p $CONDA
     fi
     conda config --set always_yes yes --set changeps1 no

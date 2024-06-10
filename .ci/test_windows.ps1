@@ -6,10 +6,8 @@ function Check-Output {
   }
 }
 
-# unify environment variable for Azure DevOps and AppVeyor
-if (Test-Path env:APPVEYOR) {
-  $env:APPVEYOR = "true"
-}
+$env:CONDA_ENV = "test-env"
+$env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 
 if ($env:TASK -eq "r-package") {
   & $env:BUILD_SOURCESDIRECTORY\.ci\test_r_package_windows.ps1 ; Check-Output $?
@@ -46,23 +44,23 @@ conda config --set always_yes yes --set changeps1 no
 # ref:
 # * https://stackoverflow.com/a/62897729/3986677
 # * https://github.com/microsoft/LightGBM/issues/5899
-conda install brotlipy
+conda install "brotlipy>=0.7"
 
 conda update -q -y conda
-conda create -q -y -n $env:CONDA_ENV `
-  cffi `
-  cloudpickle `
-  joblib `
-  matplotlib `
-  numpy `
-  pandas `
-  psutil `
-  pyarrow `
-  pytest `
-  "python=$env:PYTHON_VERSION[build=*cpython]" `
-  python-graphviz `
-  scikit-learn `
-  scipy ; Check-Output $?
+
+if ($env:PYTHON_VERSION -eq "3.7") {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
+} elseif ($env:PYTHON_VERSION -eq "3.8") {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py38.txt"
+} else {
+  $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
+}
+
+conda create `
+  -y `
+  -n $env:CONDA_ENV `
+  --file $env:CONDA_REQUIREMENT_FILE `
+  "python=$env:PYTHON_VERSION[build=*cpython]" ; Check-Output $?
 
 if ($env:TASK -ne "bdist") {
   conda activate $env:CONDA_ENV
@@ -96,14 +94,14 @@ elseif ($env:TASK -eq "bdist") {
   cd $env:BUILD_SOURCESDIRECTORY
   sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
   sh $env:BUILD_SOURCESDIRECTORY/.ci/check_python_dists.sh $env:BUILD_SOURCESDIRECTORY/dist ; Check-Output $?
-  cd dist; pip install --user @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
+  cd dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
   cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
   cd $env:BUILD_SOURCESDIRECTORY
   if ($env:COMPILER -eq "MINGW") {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user --mingw ; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --mingw ; Check-Output $?
   } else {
-    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install --user; Check-Output $?
+    sh $env:BUILD_SOURCESDIRECTORY/build-python.sh install; Check-Output $?
   }
 }
 
@@ -124,7 +122,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
   cd $env:BUILD_SOURCESDIRECTORY/examples/python-guide
   @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
   (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
-  conda install -q -y -n $env:CONDA_ENV "h5py>3.0" ipywidgets notebook
+  conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
   foreach ($file in @(Get-ChildItem *.py)) {
     @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
     python $file ; Check-Output $?

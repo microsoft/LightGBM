@@ -1,5 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+
 import abc
 import ctypes
 import inspect
@@ -556,7 +557,8 @@ class LightGBMError(Exception):
 
 
 # DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
+# ref: https://peps.python.org/pep-0565/#additional-use-case-for-futurewarning
+class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass

@@ -433,7 +433,7 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   }
 })
 
-test_that("lgb.cv() throws an informative error is 'data' is not an lgb.Dataset and labels are not given", {
+test_that("lgb.cv() throws an informative error if 'data' is not an lgb.Dataset and labels are not given", {
   bad_values <- list(
     4L
     , "hello"
@@ -1788,11 +1788,6 @@ test_that("lgb.train() works with early stopping for regression with a metric th
 
 
 test_that("lgb.train() supports non-ASCII feature names", {
-  dtrain <- lgb.Dataset(
-    data = matrix(rnorm(400L), ncol =  4L)
-    , label = rnorm(100L)
-    , params = list(num_threads = .LGB_MAX_THREADS)
-  )
   # content below is equivalent to
   #
   #  feature_names <- c("F_零", "F_一", "F_二", "F_三")
@@ -1805,6 +1800,12 @@ test_that("lgb.train() supports non-ASCII feature names", {
     , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xba, 0x8c)))
     , rawToChar(as.raw(c(0x46, 0x5f, 0xe4, 0xb8, 0x89)))
   )
+  dtrain <- lgb.Dataset(
+    data = matrix(rnorm(400L), ncol =  4L)
+    , label = rnorm(100L)
+    , params = list(num_threads = .LGB_MAX_THREADS)
+    , colnames = feature_names
+  )
   bst <- lgb.train(
     data = dtrain
     , nrounds = 5L
@@ -1814,7 +1815,6 @@ test_that("lgb.train() supports non-ASCII feature names", {
       , verbose = .LGB_VERBOSITY
       , num_threads = .LGB_MAX_THREADS
     )
-    , colnames = feature_names
   )
   expect_true(.is_Booster(bst))
   dumped_model <- jsonlite::fromJSON(bst$dump_model())
@@ -2838,7 +2838,11 @@ test_that(paste0("lgb.train() gives same result when interaction_constraints is 
 
 test_that(paste0("lgb.train() gives same results when using interaction_constraints and specifying colnames"), {
   set.seed(1L)
-  dtrain <- lgb.Dataset(train$data, label = train$label, params = list(num_threads = .LGB_MAX_THREADS))
+  dtrain <- lgb.Dataset(
+    train$data
+    , label = train$label
+    , params = list(num_threads = .LGB_MAX_THREADS)
+  )
 
   params <- list(
     objective = "regression"
@@ -2854,6 +2858,7 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
   pred1 <- bst$predict(test$data)
 
   new_colnames <- paste0(colnames(train$data), "_x")
+  dtrain$set_colnames(new_colnames)
   params <- list(
     objective = "regression"
     , interaction_constraints = list(c(new_colnames[1L], new_colnames[2L]), new_colnames[3L])
@@ -2864,7 +2869,6 @@ test_that(paste0("lgb.train() gives same results when using interaction_constrai
     data = dtrain
     , params = params
     , nrounds = 2L
-    , colnames = new_colnames
   )
   pred2 <- bst$predict(test$data)
 
