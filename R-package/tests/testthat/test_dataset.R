@@ -440,7 +440,7 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
   expect_true(methods::is(bst, "lgb.CVBooster"))
 })
 
-test_that("lgb.Dataset: should be able to be used in lgb.cv() after being constructed with categorical feature indices", {
+test_that("lgb.Dataset: should be able to be used in lgb.cv() when constructed with categorical feature indices", {
   data("mtcars")
   y <- mtcars$mpg
   x <- as.matrix(mtcars[, -1L])
@@ -651,7 +651,7 @@ test_that("lgb.Dataset can be constructed with categorical features and without 
   }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
 })
 
-test_that("lgb.Dataset.slice fails when providing a categorical feature index greater than the number of features", {
+test_that("lgb.Dataset.slice fails with a categorical feature index greater than the number of features", {
   data <- matrix(runif(100L), nrow = 50L, ncol = 2L)
   ds <- lgb.Dataset(data = data, categorical_feature = 3L)
   subset <- ds$slice(1L:20L)
