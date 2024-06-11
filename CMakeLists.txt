@@ -35,6 +35,12 @@ endif()
 
 project(lightgbm LANGUAGES C CXX)
 
+# if(APPLE)
+#   set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+#   set(MACOSX_RPATH TRUE)
+#   set(CMAKE_INSTALL_RPATH "")
+# endif()
+
 if(BUILD_CPP_TEST)
   set(CMAKE_CXX_STANDARD 14)
 else()
@@ -179,6 +185,54 @@ if(USE_OPENMP)
     endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+
+# Get all properties that cmake supports
+execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+
+# Convert command output into a CMake list
+STRING(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+STRING(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+# Fix https://stackoverflow.com/questions/32197663/how-can-i-remove-the-the-location-property-may-not-be-read-from-target-error-i
+list(FILTER CMAKE_PROPERTY_LIST EXCLUDE REGEX "^LOCATION$|^LOCATION_|_LOCATION$")
+# For some reason, "TYPE" shows up twice - others might too?
+list(REMOVE_DUPLICATES CMAKE_PROPERTY_LIST)
+
+# build whitelist by filtering down from CMAKE_PROPERTY_LIST in case cmake is
+# a different version, and one of our hardcoded whitelisted properties
+# doesn't exist!
+unset(CMAKE_WHITELISTED_PROPERTY_LIST)
+
+foreach(prop ${CMAKE_PROPERTY_LIST})
+    if(prop MATCHES "^(INTERFACE|[_a-z]|IMPORTED_LIBNAME_|MAP_IMPORTED_CONFIG_)|^(COMPATIBLE_INTERFACE_(BOOL|NUMBER_MAX|NUMBER_MIN|STRING)|EXPORT_NAME|IMPORTED(_GLOBAL|_CONFIGURATIONS|_LIBNAME)?|NAME|TYPE|NO_SYSTEM_FROM_IMPORTED)$")
+        list(APPEND CMAKE_WHITELISTED_PROPERTY_LIST ${prop})
+    endif()
+endforeach(prop)
+
+function(print_target_properties tgt)
+    if(NOT TARGET ${tgt})
+        message("There is no target named '${tgt}'")
+        return()
+    endif()
+
+    get_target_property(target_type ${tgt} TYPE)
+    if(target_type STREQUAL "INTERFACE_LIBRARY")
+        set(PROP_LIST ${CMAKE_WHITELISTED_PROPERTY_LIST})
+    else()
+        set(PROP_LIST ${CMAKE_PROPERTY_LIST})
+    endif()
+
+    foreach (prop ${PROP_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" prop ${prop})
+        # message ("Checking ${prop}")
+        get_property(propval TARGET ${tgt} PROPERTY ${prop} SET)
+        if (propval)
+            get_target_property(propval ${tgt} ${prop})
+            message ("${tgt} ${prop} = ${propval}")
+        endif()
+    endforeach(prop)
+endfunction(print_target_properties)
+
+print_target_properties(OpenMP::OpenMP_CXX)
 
 if(USE_GPU)
     set(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
@@ -705,6 +759,48 @@ endif()
 
 if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
+
+    if(APPLE AND USE_OPENMP)
+      get_target_property(
+        OpenMP_LIBRARY_LOCATION
+        OpenMP::OpenMP_CXX
+        INTERFACE_LINK_LIBRARIES
+      )
+    endif()
+endif()
+
+
+# on macOS
+if(APPLE AND USE_OPENMP)
+  # store path to libomp in a variable
+  get_target_property(
+    OpenMP_LIBRARY_LOCATION
+    OpenMP::OpenMP_CXX
+    INTERFACE_LINK_LIBRARIES
+  )
+  # get just the filename of that path
+  # (to deal with the possibility that it might be 'libomp.dylib' or 'libgomp.dylib' or 'libiomp.dylib')
+  get_filename_component(
+    OpenMP_LIBRARY_NAME
+    ${OpenMP_LIBRARY_LOCATION}
+    NAME
+  )
+  message(STATUS "hello: ${OpenMP_LIBRARY_LOCATION}")
+  message(STATUS "yo: ${OpenMP_LIBRARY_NAME}")
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      BUILD_WITH_INSTALL_RPATH TRUE
+      INSTALL_RPATH "@rpath/${OpenMP_LIBRARY_NAME};${OpenMP_LIBRARY_LOCATION}"
+      INSTALL_RPATH_USE_LINK_PATH FALSE
+  )
+  add_custom_command(
+    TARGET _lightgbm
+    POST_BUILD
+      COMMAND install_name_tool -change ${OpenMP_LIBRARY_LOCATION} "@rpath/${OpenMP_LIBRARY_NAME}" "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+  )
 endif()
 
 install(
