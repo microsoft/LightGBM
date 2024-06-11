@@ -1290,88 +1290,44 @@ def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
 
 
-def test_getting_feature_names_in_np_input():
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_np_input(estimator_class):
     # input is a numpy array, which doesn't have feature names. LightGBM adds
     # feature names to the fitted model, which is inconsistent with sklearn's behavior
     X, y = load_digits(n_class=2, return_X_y=True)
-    est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    clf = lgb.LGBMClassifier(n_estimators=5)
-    reg = lgb.LGBMRegressor(n_estimators=5)
-    rnk = lgb.LGBMRanker(n_estimators=5)
-    models = (est, clf, reg, rnk)
-    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
-
-    for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
-            check_is_fitted(model)
-        if isinstance(model, lgb.LGBMRanker):
-            model.fit(X, y, group=group)
-        else:
-            model.fit(X, y)
-        np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
 
 
-def test_getting_feature_names_in_pd_input():
-    # as_frame=True means input has column names and these should propagate to fitted model
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
-    est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    clf = lgb.LGBMClassifier(n_estimators=5)
-    reg = lgb.LGBMRegressor(n_estimators=5)
-    rnk = lgb.LGBMRanker(n_estimators=5)
-    models = (est, clf, reg, rnk)
-    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
-
-    for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
-            check_is_fitted(model)
-        if isinstance(model, lgb.LGBMRanker):
-            model.fit(X, y, group=group)
-        else:
-            model.fit(X, y)
-        np.testing.assert_array_equal(est.feature_names_in_, X.columns)
-
-
-def test_get_feature_names_out_np_input():
-    # input is a numpy array, which doesn't have feature names. LightGBM adds
-    # feature names to the fitted model, which is inconsistent with sklearn's behavior
-    X, y = load_digits(n_class=2, return_X_y=True)
-    est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    clf = lgb.LGBMClassifier(n_estimators=5)
-    reg = lgb.LGBMRegressor(n_estimators=5)
-    rnk = lgb.LGBMRanker(n_estimators=5)
-    models = (est, clf, reg, rnk)
-    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
-
-    for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
-            check_is_fitted(model)
-        if isinstance(model, lgb.LGBMRanker):
-            model.fit(X, y, group=group)
-        else:
-            model.fit(X, y)
-        np.testing.assert_array_equal(
-            model.get_feature_names_out(), np.array([f"Column_{i}" for i in range(X.shape[1])])
-        )
-
-
-def test_get_feature_names_out_pd_input():
-    # as_frame=True means input has column names and these should propagate to fitted model
-    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
-    est = lgb.LGBMModel(n_estimators=5, objective="binary")
-    clf = lgb.LGBMClassifier(n_estimators=5)
-    reg = lgb.LGBMRegressor(n_estimators=5)
-    rnk = lgb.LGBMRanker(n_estimators=5)
-    models = (est, clf, reg, rnk)
-    group = np.full(shape=(X.shape[0] // 2,), fill_value=2)  # Just an example group
-
-    for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
-            check_is_fitted(model)
-        if isinstance(model, lgb.LGBMRanker):
-            model.fit(X, y, group=group)
-        else:
-            model.fit(X, y)
-        np.testing.assert_array_equal(model.get_feature_names_out(), X.columns)
+    col_names = X.columns.to_list()
+    assert isinstance(col_names, list) and all(
+        isinstance(c, str) for c in col_names
+    ), "input data must have feature names for this test to cover the expected functionality"
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, X.columns)
 
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
