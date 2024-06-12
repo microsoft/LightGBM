@@ -197,7 +197,7 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Rscript build_r.R --no-build-vignettes 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "commandArgs <- function(...){c('--no-build-vignettes')}; source('build_r.R')"; Check-Output $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
