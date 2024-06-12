@@ -226,10 +226,13 @@ void Application::Predict() {
                       config_.precise_float_parser);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
-    std::vector<std::vector<int>> pred_leaf(result_reader.Lines().size());
+
+    std::vector<int> pred_leaf;
+    auto nrow = static_cast<int>(result_reader.Lines().size());
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
-      pred_leaf[i] = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
+      auto line_vec = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
+      pred_leaf.insert(pred_leaf.end(), line_vec.begin(), line_vec.end());
       // Free memory
       result_reader.Lines()[i].clear();
     }
@@ -242,7 +245,9 @@ void Application::Predict() {
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
-    boosting_->RefitTree(pred_leaf);
+
+
+    boosting_->RefitTree(&pred_leaf.front(), nrow, pred_leaf.size() / nrow);
     boosting_->SaveModelToFile(0, -1, config_.saved_feature_importance_type,
                                config_.output_model.c_str());
     Log::Info("Finished RefitTree");
