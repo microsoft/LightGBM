@@ -200,10 +200,12 @@ if ($env:COMPILER -ne "MSVC") {
   cmake -B build -S . -G "Visual Studio 17 2022" -A "x64"
   cmake --build build --target _lightgbm
   # skipping return-status checking
-  Run-R-Code-Redirect-Stderr "commandArgs <- function(...){c('--no-build-vignettes')}; source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME
+  #Run-R-Code-Redirect-Stderr "commandArgs <- function(...){c('--no-build-vignettes')}; source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME
+  Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
+  Check-Output $install_succeeded
   # some errors are not raised above, but can be found in the logs
   if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
       echo "ERRORs have been found installing lightgbm"
