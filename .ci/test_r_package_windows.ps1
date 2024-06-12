@@ -197,6 +197,8 @@ if ($env:COMPILER -ne "MSVC") {
 } else {
   $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
+  cmake -B build -S . -G "Visual Studio 17 2022" -A "x64"
+  cmake --build build --target _lightgbm
   # skipping return-status checking
   Run-R-Code-Redirect-Stderr "commandArgs <- function(...){c('--no-build-vignettes')}; source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME
   Write-Output "----- build and install logs -----"
