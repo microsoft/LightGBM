@@ -35,12 +35,6 @@ endif()
 
 project(lightgbm LANGUAGES C CXX)
 
-# if(APPLE)
-#   set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
-#   set(MACOSX_RPATH TRUE)
-#   set(CMAKE_INSTALL_RPATH "")
-# endif()
-
 if(BUILD_CPP_TEST)
   set(CMAKE_CXX_STANDARD 14)
 else()
@@ -185,54 +179,6 @@ if(USE_OPENMP)
     endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
-
-# Get all properties that cmake supports
-execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
-
-# Convert command output into a CMake list
-STRING(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
-STRING(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
-# Fix https://stackoverflow.com/questions/32197663/how-can-i-remove-the-the-location-property-may-not-be-read-from-target-error-i
-list(FILTER CMAKE_PROPERTY_LIST EXCLUDE REGEX "^LOCATION$|^LOCATION_|_LOCATION$")
-# For some reason, "TYPE" shows up twice - others might too?
-list(REMOVE_DUPLICATES CMAKE_PROPERTY_LIST)
-
-# build whitelist by filtering down from CMAKE_PROPERTY_LIST in case cmake is
-# a different version, and one of our hardcoded whitelisted properties
-# doesn't exist!
-unset(CMAKE_WHITELISTED_PROPERTY_LIST)
-
-foreach(prop ${CMAKE_PROPERTY_LIST})
-    if(prop MATCHES "^(INTERFACE|[_a-z]|IMPORTED_LIBNAME_|MAP_IMPORTED_CONFIG_)|^(COMPATIBLE_INTERFACE_(BOOL|NUMBER_MAX|NUMBER_MIN|STRING)|EXPORT_NAME|IMPORTED(_GLOBAL|_CONFIGURATIONS|_LIBNAME)?|NAME|TYPE|NO_SYSTEM_FROM_IMPORTED)$")
-        list(APPEND CMAKE_WHITELISTED_PROPERTY_LIST ${prop})
-    endif()
-endforeach(prop)
-
-function(print_target_properties tgt)
-    if(NOT TARGET ${tgt})
-        message("There is no target named '${tgt}'")
-        return()
-    endif()
-
-    get_target_property(target_type ${tgt} TYPE)
-    if(target_type STREQUAL "INTERFACE_LIBRARY")
-        set(PROP_LIST ${CMAKE_WHITELISTED_PROPERTY_LIST})
-    else()
-        set(PROP_LIST ${CMAKE_PROPERTY_LIST})
-    endif()
-
-    foreach (prop ${PROP_LIST})
-        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" prop ${prop})
-        # message ("Checking ${prop}")
-        get_property(propval TARGET ${tgt} PROPERTY ${prop} SET)
-        if (propval)
-            get_target_property(propval ${tgt} ${prop})
-            message ("${tgt} ${prop} = ${propval}")
-        endif()
-    endforeach(prop)
-endfunction(print_target_properties)
-
-print_target_properties(OpenMP::OpenMP_CXX)
 
 if(USE_GPU)
     set(BOOST_COMPUTE_HEADER_DIR ${PROJECT_SOURCE_DIR}/external_libs/compute/include)
@@ -759,18 +705,24 @@ endif()
 
 if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
-
-    if(APPLE AND USE_OPENMP)
-      get_target_property(
-        OpenMP_LIBRARY_LOCATION
-        OpenMP::OpenMP_CXX
-        INTERFACE_LINK_LIBRARIES
-      )
-    endif()
 endif()
 
-
-# on macOS
+# The macOS linker puts an absolute path to linked libraries in lib_lightgb.dylib.
+# That can cause problems at runtime... for example, using the Python package in a
+# conda environment (but not compiling with conda's compilers), can result in segfaults
+# because lib_lightgbm uses a hard-coded llvm-openmp frmo Homebrew like
+# '/opt/homebrew/Cellar/libomp/17.0.6/lib/libomp.dylib' and that's loaded alongside
+# the libomp.dylib vendored with sklearn, or the one from the llvm-openmp conda package.
+#
+# This block modifies lib_lightgbm.dylib, such that it has the following properties for OpenMP
+#
+#   - install name: '@rpath/libomp.dylib'
+#
+#   RPATHs (in this order):
+#
+#     - '@rpath/libomp.dylib' (look for libomp.dylib right next to where lib_lightgbm.dylib is)
+#     - '/opt/homebrew/Cellar/libomp/{version}/lib/libomp.dylib' (libomp.dylib from Homebrew)
+#
 if(APPLE AND USE_OPENMP)
   # store path to libomp in a variable
   get_target_property(
@@ -785,15 +737,18 @@ if(APPLE AND USE_OPENMP)
     ${OpenMP_LIBRARY_LOCATION}
     NAME
   )
-  message(STATUS "hello: ${OpenMP_LIBRARY_LOCATION}")
-  message(STATUS "yo: ${OpenMP_LIBRARY_NAME}")
+  # add RPATH entries too ensure the loader looks in the following, in the following order:
+  #
+  #   - @rpath/{openmp}.dylib (whatever runpaths the linker is configured to look in)
+  #   - 
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      INSTALL_RPATH "@rpath/${OpenMP_LIBRARY_NAME};${OpenMP_LIBRARY_LOCATION}"
+      INSTALL_RPATH "@loader_path/;${OpenMP_LIBRARY_LOCATION}"
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
+  # override the absolute path to libomp.dylib with a relative one using @rpath
   add_custom_command(
     TARGET _lightgbm
     POST_BUILD
