@@ -64,6 +64,12 @@ Remove-Item C:\rtools40 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools42 -Force -Recurse -ErrorAction Ignore
 Remove-Item C:\rtools43 -Force -Recurse -ErrorAction Ignore
 
+Write-Output "list of files"
+Get-ChildItem -Path $env:BUILD_SOURCESDIRECTORY
+Write-Output ""
+Write-Output ""
+Write-Output ""
+
 # Get details needed for installing R components
 #
 # NOTES:
