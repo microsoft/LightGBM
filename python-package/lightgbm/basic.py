@@ -356,10 +356,10 @@ def _list_to_1d_numpy(
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
     elif _is_1d_list(data):
-        return np.array(data, dtype=dtype, copy=False)
+        return np.asarray(data, dtype=dtype)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+        return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
             f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
@@ -728,7 +728,7 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
 def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -749,7 +749,7 @@ def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray
 def _c_int_array(data: np.ndarray) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -1270,7 +1270,7 @@ class _InnerPredictor:
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
@@ -2285,9 +2285,9 @@ class Dataset:
 
         self._handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+            data = np.asarray(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
@@ -2332,7 +2332,7 @@ class Dataset:
             nrow[i] = mat.shape[0]
 
             if mat.dtype == np.float32 or mat.dtype == np.float64:
-                mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+                mats[i] = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
             else:  # change non-float data to float data, need to copy
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
