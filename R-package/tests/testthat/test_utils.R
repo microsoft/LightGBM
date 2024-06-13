@@ -147,3 +147,21 @@ test_that(".equal_or_both_null produces expected results", {
     expect_false(.equal_or_both_null(10.0, 1L))
     expect_true(.equal_or_both_null(0L, 0L))
 })
+
+test_that(".check_interaction_constraints() adds skipped features", {
+  ref <- letters[1L:5L]
+  ic_num <- list(1L, c(2L, 3L))
+  ic_char <- list("a", c("b", "c"))
+  expected <- list("[0]", "[1,2]", "[3,4]")
+
+  ic_checked_num <- .check_interaction_constraints(
+    interaction_constraints = ic_num, column_names = ref
+  )
+
+  ic_checked_char <- .check_interaction_constraints(
+    interaction_constraints = ic_char, column_names = ref
+  )
+
+  expect_equal(ic_checked_num, expected)
+  expect_equal(ic_checked_char, expected)
+})
