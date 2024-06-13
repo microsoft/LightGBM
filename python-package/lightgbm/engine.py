@@ -512,7 +512,7 @@ def _make_n_folds(
         if hasattr(folds, "split"):
             group_info = full_data.get_group()
             if group_info is not None:
-                group_info = np.array(group_info, dtype=np.int32, copy=False)
+                group_info = np.asarray(group_info, dtype=np.int32)
                 flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
@@ -526,7 +526,7 @@ def _make_n_folds(
             if not SKLEARN_INSTALLED:
                 raise LightGBMError("scikit-learn is required for ranking cv")
             # ranking task, split according to groups
-            group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
+            group_info = np.asarray(full_data.get_group(), dtype=np.int32)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.empty(num_data), groups=flatted_group)
