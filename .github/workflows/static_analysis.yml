@@ -44,6 +44,8 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
+          # temporary fix for https://github.com/tox-dev/filelock/issues/337
+          rm -rf ${HOME}/.cache/pre-commit
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
   r-check-docs:
