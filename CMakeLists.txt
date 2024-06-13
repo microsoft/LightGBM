@@ -768,7 +768,7 @@ if(APPLE AND USE_OPENMP)
         "@rpath/${OpenMP_LIBRARY_NAME}"
         "${__LIB_LIGHTGBM_FILENAME}"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      COMMENT "Replacing hard-coded OpenMP install_name in '${__LIB_LIGHTGBM_FILENAME}' with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
