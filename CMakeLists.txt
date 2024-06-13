@@ -733,6 +733,12 @@ if(APPLE AND USE_OPENMP)
     ${OpenMP_LIBRARY_LOCATION}
     DIRECTORY
   )
+  # get exact name of the library in a variable
+  get_target_property(
+    __LIB_LIGHTGBM_OUTPUT_NAME
+    _lightgbm
+    OUTPUT_NAME
+  )
   # Override the absolute path to OpenMP with a relative one using @rpath.
   #
   # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
@@ -744,7 +750,7 @@ if(APPLE AND USE_OPENMP)
         -change
         ${OpenMP_LIBRARY_LOCATION}
         "@rpath/${OpenMP_LIBRARY_NAME}"
-        "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
+        "${PROJECT_SOURCE_DIR}/${__LIB_LIGHTGBM_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX_CXX}"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
       COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
   )
