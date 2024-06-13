@@ -106,10 +106,10 @@ if [[ $OS_NAME == "macos" ]]; then
         -target / || exit 1
 fi
 
-# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+    Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
 else
     # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
     # This should be unnecessary on R >=4.4.0
