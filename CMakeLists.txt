@@ -739,6 +739,22 @@ if(APPLE AND USE_OPENMP)
     _lightgbm
     OUTPUT_NAME
   )
+  if(NOT __LIB_LIGHTGBM_OUTPUT_NAME)
+    set(__LIB_LIGHTGBM_OUTPUT_NAME "lib_lightgbm")
+  endif()
+
+  if(CMAKE_SHARED_LIBRARY_SUFFIX_CXX)
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX_CXX}"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  else()
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}.dylib"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  endif()
+
   # Override the absolute path to OpenMP with a relative one using @rpath.
   #
   # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
@@ -750,9 +766,9 @@ if(APPLE AND USE_OPENMP)
         -change
         ${OpenMP_LIBRARY_LOCATION}
         "@rpath/${OpenMP_LIBRARY_NAME}"
-        "${PROJECT_SOURCE_DIR}/${__LIB_LIGHTGBM_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX_CXX}"
+        "${__LIB_LIGHTGBM_FILENAME}"
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+      COMMENT "Replacing hard-coded OpenMP install_name in '${__LIB_LIGHTGBM_FILENAME}' with '@rpath/${OpenMP_LIBRARY_NAME}'..."
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
