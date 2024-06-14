@@ -410,11 +410,11 @@ Learning Control Parameters
 
    -  can be used to speed up training
 
-   -  *New in 4.4.0*
-
 -  ``early_stopping_min_delta`` :raw-html:`<a id="early_stopping_min_delta" title="Permalink to this parameter" href="#early_stopping_min_delta">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``early_stopping_min_delta >= 0.0``
 
    -  when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+
+   -  *New in 4.4.0*
 
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
