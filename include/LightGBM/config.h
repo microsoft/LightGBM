@@ -392,6 +392,7 @@ struct Config {
   // desc = will stop training if one metric of one validation data doesn't improve in last ``early_stopping_round`` rounds
   // desc = ``<= 0`` means disable
   // desc = can be used to speed up training
+  // desc = *New in 4.4.0*
   int early_stopping_round = 0;
 
   // check = >=0.0

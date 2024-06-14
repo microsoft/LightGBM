@@ -1054,6 +1054,9 @@ dimnames.lgb.Dataset <- function(x) {
 #' @title Slice a dataset
 #' @description Get a new \code{lgb.Dataset} containing the specified rows of
 #'              original \code{lgb.Dataset} object
+#'
+#'              \emph{Renamed from} \code{slice()} \emph{in 4.4.0}
+#'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
 #' @return constructed sub dataset
