@@ -707,6 +707,83 @@ if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
+# The macOS linker puts an absolute path to linked libraries in lib_lightgb.dylib.
+# This block overrides that information for LightGBM's OpenMP dependency, to allow
+# finding that library in more places.
+#
+# This reduces the risk of runtime issues resulting from multiple libomp.dylib being loaded.
+#
+if(APPLE AND USE_OPENMP)
+  # store path to libomp found at build time in a variable
+  get_target_property(
+    OpenMP_LIBRARY_LOCATION
+    OpenMP::OpenMP_CXX
+    INTERFACE_LINK_LIBRARIES
+  )
+  # get just the filename of that path
+  # (to deal with the possibility that it might be 'libomp.dylib' or 'libgomp.dylib' or 'libiomp.dylib')
+  get_filename_component(
+    OpenMP_LIBRARY_NAME
+    ${OpenMP_LIBRARY_LOCATION}
+    NAME
+  )
+  # get directory of that path
+  get_filename_component(
+    OpenMP_LIBRARY_DIR
+    ${OpenMP_LIBRARY_LOCATION}
+    DIRECTORY
+  )
+  # get exact name of the library in a variable
+  get_target_property(
+    __LIB_LIGHTGBM_OUTPUT_NAME
+    _lightgbm
+    OUTPUT_NAME
+  )
+  if(NOT __LIB_LIGHTGBM_OUTPUT_NAME)
+    set(__LIB_LIGHTGBM_OUTPUT_NAME "lib_lightgbm")
+  endif()
+
+  if(CMAKE_SHARED_LIBRARY_SUFFIX_CXX)
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX_CXX}"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  else()
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}.dylib"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  endif()
+
+  # Override the absolute path to OpenMP with a relative one using @rpath.
+  #
+  # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
+  add_custom_command(
+    TARGET _lightgbm
+    POST_BUILD
+      COMMAND
+        install_name_tool
+        -change
+        ${OpenMP_LIBRARY_LOCATION}
+        "@rpath/${OpenMP_LIBRARY_NAME}"
+        "${__LIB_LIGHTGBM_FILENAME}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+  )
+  # add RPATH entries to ensure the loader looks in the following, in the following order:
+  #
+  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
+  #
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      BUILD_WITH_INSTALL_RPATH TRUE
+      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;${OpenMP_LIBRARY_DIR}"
+      INSTALL_RPATH_USE_LINK_PATH FALSE
+  )
+endif()
+
 install(
   TARGETS _lightgbm
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
