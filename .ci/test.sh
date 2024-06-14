@@ -174,8 +174,7 @@ elif [[ $TASK == "bdist" ]]; then
         if [[ $ARCH == "x86_64" ]]; then
             PLATFORM="macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64"
         else
-            echo "ERROR: macos wheels not supported yet on architecture '${ARCH}'"
-            exit 1
+            PLATFORM="macosx_14_0_arm64"
         fi
         mv \
             ./dist/tmp.whl \
