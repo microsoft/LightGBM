@@ -230,7 +230,7 @@ void Application::Predict() {
     std::vector<int> pred_leaf;
     auto nrow = static_cast<int>(result_reader.Lines().size());
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int i = 0; i < static_cast<int>(result_reader.Lines().size()); ++i) {
+    for (int i = 0; i < nrow); ++i) {
       auto line_vec = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
       pred_leaf.insert(pred_leaf.end(), line_vec.begin(), line_vec.end());
       // Free memory

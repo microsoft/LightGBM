@@ -250,6 +250,7 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
 }
 
 void GBDT::RefitTree(const int* tree_leaf_prediction, const int nrow, const int ncol) {
+  CHECK_GT(nrow * ncol, 0);
   CHECK_EQ(num_data_, nrow);
   CHECK_EQ(static_cast<int>(models_.size()), ncol);
   int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
