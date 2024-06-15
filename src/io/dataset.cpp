@@ -539,7 +539,7 @@ void PushDataToMultiValBin(
   }
 }
 
-MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const {
+MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromSparseFeatures",
                                  global_timer);
   int multi_group_id = -1;
@@ -577,13 +577,13 @@ MultiValBin* Dataset::GetMultiBinFromSparseFeatures(const std::vector<uint32_t>&
              sum_sparse_rate);
   std::unique_ptr<MultiValBin> ret;
   ret.reset(MultiValBin::CreateMultiValBin(num_data_, offsets.back(),
-                                           num_feature, sum_sparse_rate, offsets));
+                                           num_feature, sum_sparse_rate, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
 }
 
-MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const {
+MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const {
   Common::FunctionTimer fun_time("Dataset::GetMultiBinFromAllFeatures",
                                  global_timer);
   int num_threads = OMP_NUM_THREADS();
@@ -628,7 +628,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
              1.0 - sum_dense_ratio);
   ret.reset(MultiValBin::CreateMultiValBin(
       num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
-      1.0 - sum_dense_ratio, offsets));
+      1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
   PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
   ret->FinishLoad();
   return ret.release();
@@ -639,7 +639,8 @@ TrainingShareStates* Dataset::GetShareStates(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
-    const int num_grad_quant_bins) const {
+    const int num_grad_quant_bins,
+    const bool use_pairwise_ranking) const {
   Common::FunctionTimer fun_timer("Dataset::TestMultiThreadingMethod",
                                   global_timer);
   if (force_col_wise && force_row_wise) {
@@ -658,7 +659,7 @@ TrainingShareStates* Dataset::GetShareStates(
     std::vector<uint32_t> offsets;
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, true);
-    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets),
+    share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets, use_pairwise_ranking),
       num_data_, feature_groups_, false, true, num_grad_quant_bins);
     share_state->is_col_wise = true;
     share_state->is_constant_hessian = is_constant_hessian;
@@ -668,7 +669,7 @@ TrainingShareStates* Dataset::GetShareStates(
     std::vector<uint32_t> offsets;
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, false);
-    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets), num_data_,
+    share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets, use_pairwise_ranking), num_data_,
       feature_groups_, false, false, num_grad_quant_bins);
     share_state->is_col_wise = false;
     share_state->is_constant_hessian = is_constant_hessian;
@@ -685,14 +686,14 @@ TrainingShareStates* Dataset::GetShareStates(
     auto start_time = std::chrono::steady_clock::now();
     std::vector<uint32_t> col_wise_offsets;
     col_wise_state->CalcBinOffsets(feature_groups_, &col_wise_offsets, true);
-    col_wise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets), num_data_,
+    col_wise_state->SetMultiValBin(GetMultiBinFromSparseFeatures(col_wise_offsets, use_pairwise_ranking), num_data_,
       feature_groups_, false, true, num_grad_quant_bins);
     col_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
     start_time = std::chrono::steady_clock::now();
     std::vector<uint32_t> row_wise_offsets;
     row_wise_state->CalcBinOffsets(feature_groups_, &row_wise_offsets, false);
-    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets), num_data_,
+    row_wise_state->SetMultiValBin(GetMultiBinFromAllFeatures(row_wise_offsets, use_pairwise_ranking), num_data_,
       feature_groups_, false, false, num_grad_quant_bins);
     row_wise_init_time = std::chrono::steady_clock::now() - start_time;
 
@@ -753,19 +754,22 @@ template TrainingShareStates* Dataset::GetShareStates<false, 0>(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
-    const int num_grad_quant_bins) const;
+    const int num_grad_quant_bins,
+    const bool use_pairwise_ranking) const;
 
 template TrainingShareStates* Dataset::GetShareStates<true, 16>(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
-    const int num_grad_quant_bins) const;
+    const int num_grad_quant_bins,
+    const bool use_pairwise_ranking) const;
 
 template TrainingShareStates* Dataset::GetShareStates<true, 32>(
     score_t* gradients, score_t* hessians,
     const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
     bool force_col_wise, bool force_row_wise,
-    const int num_grad_quant_bins) const;
+    const int num_grad_quant_bins,
+    const bool use_pairwise_ranking) const;
 
 void Dataset::CopyFeatureMapperFrom(const Dataset* dataset) {
   feature_groups_.clear();

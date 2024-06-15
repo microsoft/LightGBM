@@ -724,7 +724,8 @@ class Dataset {
   TrainingShareStates* GetShareStates(
       score_t* gradients, score_t* hessians,
       const std::vector<int8_t>& is_feature_used, bool is_constant_hessian,
-      bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins) const;
+      bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins,
+      const bool use_pairwise_ranking) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
 
