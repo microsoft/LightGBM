@@ -259,7 +259,7 @@ void GBDT::RefitTree(const int* tree_leaf_prediction, const size_t nrow, const s
   if (linear_tree_) {
     std::vector<int> max_leaves_by_thread = std::vector<int>(OMP_NUM_THREADS(), 0);
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (size_t i = 0; i < nrow; ++i) {
+    for (int i = 0; i < static_cast<int>(nrow); ++i) {
       int tid = omp_get_thread_num();
       for (size_t j = 0; j < ncol; ++j) {
         max_leaves_by_thread[tid] = std::max(max_leaves_by_thread[tid], tree_leaf_prediction[i * ncol + j]);
