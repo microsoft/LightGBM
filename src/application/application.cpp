@@ -227,7 +227,7 @@ void Application::Predict() {
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
 
-    auto nrow = static_cast<int>(result_reader.Lines().size());
+    auto nrow = result_reader.Lines().size();
     auto ncol = 0;
     if (nrow > 0) {
       ncol = result_reader.Lines()[0].size();
@@ -236,7 +236,7 @@ void Application::Predict() {
     pred_leaf.reserve(nrow * ncol);
 
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int irow = 0; irow < nrow; ++irow) {
+    for (size_t irow = 0; irow < nrow; ++irow) {
       auto line_vec = Common::StringToArray<int>(result_reader.Lines()[irow], '\t');
       for (int i_row_item = 0; i_row_item < ncol; ++i_row_item) {
 	pred_leaf[i_row_item] = line_vec[i_row_item];
