@@ -29,6 +29,19 @@ if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
     export LC_ALL="en_US.UTF-8"
 fi
 
+# Setting MACOSX_DEPLOYMENT_TARGET prevents CMake from building against too-new
+# macOS features, and helps tools like Python build tools determine the appropriate
+# wheel compatibility tags.
+#
+# ref:
+#   * https://cmake.org/cmake/help/latest/envvar/MACOSX_DEPLOYMENT_TARGET.html
+#   * https://github.com/scikit-build/scikit-build-core/blob/acb7d0346e4a05bcb47a4ea3939c705ab71e3145/src/scikit_build_core/builder/macos.py#L36
+if [[ $ARCH == "x86_64" ]]; then
+    export MACOSX_DEPLOYMENT_TARGET=10.15
+else
+    export MACOSX_DEPLOYMENT_TARGET=12.0
+fi
+
 if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     bash ${BUILD_DIRECTORY}/.ci/test_r_package.sh || exit 1
     exit 0
