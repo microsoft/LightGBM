@@ -60,7 +60,7 @@ else  # Linux
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-get update
-            sudo apt-get install --no-install-recommends -y \
+            sudo apt-get install -y \
                 clang-17 \
                 libomp-17-dev
         fi
