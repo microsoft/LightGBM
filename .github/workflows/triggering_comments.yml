@@ -16,11 +16,6 @@ jobs:
       with:
         fetch-depth: 5
         submodules: false
-    - name: Install software
-      run: |
-        apt-get update
-        apt-get install -y --no-install-recommends \
-          jq
     - name: Trigger R valgrind tests
       if: github.event.comment.body == '/gha run r-valgrind'
       run: |
