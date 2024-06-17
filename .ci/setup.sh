@@ -14,7 +14,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            ls /Applications/Xcode-*
+            ls /Applications/ || true
             sudo xcode-select -s /Applications/Xcode_12.5.1.app/Contents/Developer || exit 1
         fi
     else  # gcc
