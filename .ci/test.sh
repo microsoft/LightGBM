@@ -172,7 +172,7 @@ elif [[ $TASK == "bdist" ]]; then
             ./dist/*.whl \
             ./dist/tmp.whl || exit 1
         if [[ $ARCH == "x86_64" ]]; then
-            PLATFORM="macosx_10_15_x86_64.macosx_11_6_x86_64.macosx_12_5_x86_64"
+            PLATFORM="macosx_11_0_x86_64.macosx_12_0_x86_64.macosx_13_0_x86_64"
         else
             PLATFORM="macosx_14_0_arm64"
         fi
