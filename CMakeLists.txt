@@ -773,13 +773,14 @@ if(APPLE AND USE_OPENMP)
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
   #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - /opt/local/lib/libomp        (where 'port install' puts libomp.dylib)
   #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
   #
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;${OpenMP_LIBRARY_DIR}"
+      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;/opt/local/lib/libomp;${OpenMP_LIBRARY_DIR}"
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
 endif()
