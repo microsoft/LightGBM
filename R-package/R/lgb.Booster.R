@@ -1309,6 +1309,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
 #'        means "save the fifth, sixth, and seventh tree"
 #'
+#'        \emph{New in version 4.4.0}
+#'
 #' @return lgb.Booster
 #'
 #' @examples
@@ -1372,6 +1374,8 @@ lgb.save <- function(
 #' @param start_iteration Index (1-based) of the first boosting round to dump.
 #'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
 #'        means "dump the fifth, sixth, and seventh tree"
+#'
+#'        \emph{New in version 4.4.0}
 #'
 #' @return json format of model
 #'
