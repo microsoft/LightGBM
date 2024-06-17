@@ -20,9 +20,7 @@ if [[ $OS_NAME == "macos" ]]; then
         # Check https://github.com/actions/runner-images/tree/main/images/macos for available
         # versions of Xcode
         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-        if [[ $TASK != "mpi" ]]; then
-            brew install gcc
-        fi
+        brew install gcc
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
@@ -41,23 +39,15 @@ else  # Linux
             software-properties-common
 
         sudo apt-get install --no-install-recommends -y \
-            apt-utils \
             build-essential \
             ca-certificates \
             cmake \
             curl \
             git \
-            iputils-ping \
-            jq \
             libcurl4 \
             libicu-dev \
             libssl-dev \
-            libunwind8 \
-            locales \
-            locales-all \
-            netcat \
-            unzip \
-            zip || exit 1
+            locales-all || exit 1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
