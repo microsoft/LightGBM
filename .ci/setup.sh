@@ -47,6 +47,7 @@ else  # Linux
             libcurl4 \
             libicu-dev \
             libssl-dev \
+            locales \
             locales-all || exit 1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
