@@ -207,11 +207,6 @@ if(__INTEGRATE_OPENCL)
     endif()
 endif()
 
-if(BUILD_CPP_TEST AND MSVC)
-  # Use /MT flag to statically link the C runtime
-  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
-
 if(USE_CUDA)
     find_package(CUDAToolkit 11.0 REQUIRED)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
@@ -684,6 +679,8 @@ if(BUILD_CPP_TEST)
   file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
+    # Use /MT flag to statically link the C runtime
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
   endif()
   add_executable(testlightgbm ${CPP_TEST_SOURCES})
   target_link_libraries(testlightgbm PRIVATE lightgbm_objs lightgbm_capi_objs GTest::GTest)
