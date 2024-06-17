@@ -168,17 +168,6 @@ elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         cd $BUILD_DIRECTORY && sh ./build-python.sh bdist_wheel || exit 1
         sh $BUILD_DIRECTORY/.ci/check_python_dists.sh $BUILD_DIRECTORY/dist || exit 1
-        mv \
-            ./dist/*.whl \
-            ./dist/tmp.whl || exit 1
-        if [[ $ARCH == "x86_64" ]]; then
-            PLATFORM="macosx_11_0_x86_64.macosx_12_0_x86_64.macosx_13_0_x86_64"
-        else
-            PLATFORM="macosx_14_0_arm64"
-        fi
-        mv \
-            ./dist/tmp.whl \
-            dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
