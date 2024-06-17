@@ -227,14 +227,22 @@ void Application::Predict() {
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
 
-    std::vector<int> pred_leaf;
     auto nrow = static_cast<int>(result_reader.Lines().size());
+    auto ncol = 0;
+    if (nrow > 0) {
+      ncol = result_reader.Lines()[0].size();
+    }
+    std::vector<int> pred_leaf;
+    pred_leaf.reserve(nrow * ncol);
+
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int i = 0; i < nrow); ++i) {
-      auto line_vec = Common::StringToArray<int>(result_reader.Lines()[i], '\t');
-      pred_leaf.insert(pred_leaf.end(), line_vec.begin(), line_vec.end());
+    for (int irow = 0; irow < nrow; ++irow) {
+      auto line_vec = Common::StringToArray<int>(result_reader.Lines()[irow], '\t');
+      for (int i_row_item = 0; i_row_item < ncol; ++i_row_item) {
+	pred_leaf[i_row_item] = line_vec[i_row_item];
+      }
       // Free memory
-      result_reader.Lines()[i].clear();
+      result_reader.Lines()[irow].clear();
     }
     DatasetLoader dataset_loader(config_, nullptr,
                                  config_.num_class, config_.data.c_str());
