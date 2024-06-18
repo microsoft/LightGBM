@@ -11,8 +11,6 @@ Preparation
 
 32-bit Python is not supported. Please install 64-bit version. If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
 
-`setuptools <https://pypi.org/project/setuptools>`_ is needed.
-
 Install from `PyPI <https://pypi.org/project/lightgbm>`_
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -298,10 +296,6 @@ Refer to the walk through examples in `Python guide folder <https://github.com/m
 
 Development Guide
 -----------------
-
-The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_.
-
-The package's documentation strings (docstrings) are written in the `numpydoc style <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
 
 To check that a contribution to the package matches its style expectations, run the following from the root of the repo.
 

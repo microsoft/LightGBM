@@ -40,13 +40,7 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-
-# ref:
-# * https://stackoverflow.com/a/62897729/3986677
-# * https://github.com/microsoft/LightGBM/issues/5899
-conda install "brotlipy>=0.7"
-
-conda update -q -y conda
+conda update -q -y conda "python=$env:PYTHON_VERSION[build=*cpython]"
 
 if ($env:PYTHON_VERSION -eq "3.7") {
   $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
