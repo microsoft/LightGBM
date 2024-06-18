@@ -240,7 +240,7 @@ void Application::Predict() {
       auto line_vec = Common::StringToArray<int>(result_reader.Lines()[irow], '\t');
       CHECK_EQ(line_vec.size(), ncol);
       for (int i_row_item = 0; i_row_item < static_cast<int>(ncol); ++i_row_item) {
-	pred_leaf[irow * ncol + i_row_item] = line_vec[i_row_item];
+        pred_leaf[irow * ncol + i_row_item] = line_vec[i_row_item];
       }
       // Free memory
       result_reader.Lines()[irow].clear();
