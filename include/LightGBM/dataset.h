@@ -716,9 +716,9 @@ class Dataset {
 
   void CopySubrow(const Dataset* fullset, const data_size_t* used_indices, data_size_t num_used_indices, bool need_meta_data);
 
-  MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets) const;
+  MultiValBin* GetMultiBinFromSparseFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const;
 
-  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets) const;
+  MultiValBin* GetMultiBinFromAllFeatures(const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) const;
 
   template <bool USE_QUANT_GRAD, int HIST_BITS>
   TrainingShareStates* GetShareStates(

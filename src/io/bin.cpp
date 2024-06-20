@@ -701,16 +701,16 @@ namespace LightGBM {
   }
 
   MultiValBin* MultiValBin::CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
-    double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking) {
+    double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       if (use_pairwise_ranking) {
-        Log::Fatal("Pairwise ranking with sparse row-wse bins is not supported yet.")''
+        Log::Fatal("Pairwise ranking with sparse row-wse bins is not supported yet.");
       }
       return CreateMultiValSparseBin(num_data, num_bin,
-                                    average_element_per_row, use_pairwise_ranking);
+                                    average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
     } else {
-      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking);
+      return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
     }
   }
 
@@ -719,7 +719,7 @@ namespace LightGBM {
                                                    int num_feature,
                                                    const std::vector<uint32_t>& offsets,
                                                    const bool use_pairwise_ranking,
-                                                   const data_size_t* paired_ranking_item_global_index_map) {
+                                                   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map) {
     // calculate max bin of all features to select the int type in MultiValDenseBin
     int max_bin = 0;
     for (int i = 0; i < static_cast<int>(offsets.size()) - 1; ++i) {
@@ -753,7 +753,7 @@ namespace LightGBM {
                                                     int num_bin,
                                                     double estimate_element_per_row,
                                                     const bool /*use_pairwise_ranking*/,
-                                                    const data_size_t* /*paired_ranking_item_global_index_map*/) {
+                                                    const std::pair<data_size_t, data_size_t>* /*paired_ranking_item_global_index_map*/) {
     size_t estimate_total_entries =
         static_cast<size_t>(estimate_element_per_row * 1.1 * num_data);
     if (estimate_total_entries <= std::numeric_limits<uint16_t>::max()) {

@@ -647,12 +647,14 @@ class MultiValBin {
   virtual bool IsSparse() = 0;
 
   static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
-                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking);
+                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking,
+                                        const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
   static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin,
-                                             int num_feature, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking);
+                                             int num_feature, const std::vector<uint32_t>& offsets, const bool use_pairwise_ranking,
+                                             const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
-  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row, const bool use_pairwise_ranking);
+  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row, const bool use_pairwise_ranking, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map);
 
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 
