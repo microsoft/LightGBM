@@ -10,10 +10,18 @@
   #include "network/linkers.h"
 #endif
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
   bool success = false;
   try {
-    LightGBM::Application app(argc, argv);
+
+    std::string config_str = std::string("config=train.conf");
+    char* argv = new char[config_str.size() + 1];
+    for (size_t i = 0; i < config_str.size(); ++i) {
+      argv[i] = config_str[i];
+    }
+    argv[config_str.size()] = '\0';
+
+    LightGBM::Application app(2, &argv - 1);
     app.Run();
 
 #ifdef USE_MPI

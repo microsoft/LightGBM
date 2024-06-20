@@ -705,7 +705,8 @@ namespace LightGBM {
     if (sparse_rate >= multi_val_bin_sparse_threshold) {
       const double average_element_per_row = (1.0 - sparse_rate) * num_feature;
       if (use_pairwise_ranking) {
-        Log::Fatal("Pairwise ranking with sparse row-wse bins is not supported yet.");
+        Log::Warning("Pairwise ranking with sparse row-wse bins is not supported yet.");
+        return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
       }
       return CreateMultiValSparseBin(num_data, num_bin,
                                     average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);

@@ -496,6 +496,7 @@ void PushDataToMultiValBin(
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
   if (ret->IsSparse()) {
+    Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data;
@@ -524,16 +525,17 @@ void PushDataToMultiValBin(
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
-          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-            (*iters)[tid][j]->Reset(start);
-          }
+          // for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+          //   Log::Warning("(*iters)[%d].size() = %d, j = %d, start = %d", tid, (*iters)[tid].size(), j, start);
+          //   (*iters)[tid][j]->Reset(start);
+          // }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
               // for dense multi value bin, the feature bin values without offsets are used
-              auto cur_bin = (*iters)[tid][j]->Get(i);
-              cur_data[j] = cur_bin;
+              // auto cur_bin = (*iters)[tid][j]->Get(i);
+              // cur_data[j] = cur_bin;
             }
-            ret->PushOneRow(tid, i, cur_data);
+            // ret->PushOneRow(tid, i, cur_data);
           }
         });
   }
@@ -626,10 +628,33 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
   CHECK(static_cast<int>(most_freq_bins.size()) == ncol);
   Log::Debug("Dataset::GetMultiBinFromAllFeatures: sparse rate %f",
              1.0 - sum_dense_ratio);
-  ret.reset(MultiValBin::CreateMultiValBin(
-      num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
-      1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
-  PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+  if (use_pairwise_ranking) {
+
+    for (size_t i = 0; i < iters.size(); ++i) {
+      for (size_t j = 0; j < iters[i].size(); ++j) {
+        Log::Warning("i = %d, j = %d, iters[i][j] = %d", static_cast<int>(iters[i][j] == nullptr));
+      }
+    }
+
+    const int num_original_features = static_cast<int>(most_freq_bins.size()) / 2;
+    std::vector<uint32_t> original_most_freq_bins;
+    std::vector<uint32_t> original_offsets;
+    for (int i = 0; i < num_original_features; ++i) {
+      original_most_freq_bins.push_back(most_freq_bins[i]);
+      original_offsets.push_back(offsets[i]);
+    }
+    original_offsets.push_back(offsets[num_original_features]);
+    const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
+    ret.reset(MultiValBin::CreateMultiValBin(
+        num_original_data, original_offsets.back(), num_original_features,
+        1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
+    PushDataToMultiValBin(num_original_features, original_most_freq_bins, original_offsets, &iters, ret.get());
+  } else {
+    ret.reset(MultiValBin::CreateMultiValBin(
+        num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
+        1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
+    PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+  }
   ret->FinishLoad();
   return ret.release();
 }

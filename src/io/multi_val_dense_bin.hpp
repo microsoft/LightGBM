@@ -336,7 +336,7 @@ class MultiValDenseBin : public MultiValBin {
     uint8_t* data_ptr_bit_type) const override;
   #endif  // USE_CUDA
 
- private:
+ protected:
   data_size_t num_data_;
   int num_bin_;
   int num_feature_;
