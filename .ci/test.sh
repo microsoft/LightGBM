@@ -168,11 +168,6 @@ source activate $CONDA_ENV
 
 cd "${BUILD_DIRECTORY}"
 
-if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "clang" ]]; then
-    # fix "OMP: Error #15: Initializing libiomp5.dylib, but found libomp.dylib already initialized." (OpenMP library conflict due to conda's MKL)
-    for LIBOMP_ALIAS in libgomp.dylib libiomp5.dylib libomp.dylib; do sudo ln -sf "$(brew --cellar libomp)"/*/lib/libomp.dylib $CONDA_PREFIX/lib/$LIBOMP_ALIAS || exit 1; done
-fi
-
 if [[ $TASK == "sdist" ]]; then
     sh ./build-python.sh sdist || exit 1
     sh .ci/check_python_dists.sh ./dist || exit 1
