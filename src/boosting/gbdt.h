@@ -143,7 +143,7 @@ class GBDT : public GBDTBase {
   */
   void Train(int snapshot_freq, const std::string& model_output_path) override;
 
-  void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) override;
+  void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) override;
 
   /*!
   * \brief Training logic
