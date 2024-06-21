@@ -1,10 +1,14 @@
 # CRAN Submission History
 
-## v4.4.0 - Submission 1 - (TBD)
+## v4.4.0 - Submission 1 - (June 14, 2024)
 
 ### CRAN response
 
+Accepted to CRAN
+
 ### Maintainer Notes
+
+This was a standard release of `{lightgbm}`, not intended to fix any particular R-specific issues.
 
 ## v4.3.0 - Submission 1 - (January 18, 2024)
 
