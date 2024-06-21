@@ -102,7 +102,7 @@ if [[ $OS_NAME == "macos" ]]; then
 
     curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
     sudo installer \
-        -pkg "$(pwd)"/R.pkg \
+        -pkg "$(pwd)/R.pkg" \
         -target / || exit 1
 fi
 
