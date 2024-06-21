@@ -14,15 +14,13 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
         if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_11.7.app/Contents/Developer || exit 1
+            sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
         fi
     else  # gcc
         # Check https://github.com/actions/runner-images/tree/main/images/macos for available
         # versions of Xcode
         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-        if [[ $TASK != "mpi" ]]; then
-            brew install gcc
-        fi
+        brew install gcc
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
@@ -41,35 +39,30 @@ else  # Linux
             software-properties-common
 
         sudo apt-get install --no-install-recommends -y \
-            apt-utils \
             build-essential \
             ca-certificates \
             cmake \
             curl \
             git \
-            iputils-ping \
-            jq \
             libcurl4 \
             libicu-dev \
             libssl-dev \
-            libunwind8 \
             locales \
-            locales-all \
-            netcat \
-            unzip \
-            zip || exit 1
+            locales-all || exit 1
         if [[ $COMPILER == "clang" ]]; then
             sudo apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         elif [[ $COMPILER == "clang-17" ]]; then
-            sudo apt-get install wget
+            sudo apt-get install --no-install-recommends -y \
+                wget
             wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
             sudo apt-add-repository deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-add-repository deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main
             sudo apt-get update
-            sudo apt-get install -y clang-17
-            sudo apt-get install --no-install-recommends -y libomp-17-dev
+            sudo apt-get install -y \
+                clang-17 \
+                libomp-17-dev
         fi
 
         export LANG="en_US.UTF-8"
