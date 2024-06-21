@@ -236,7 +236,7 @@ if [[ $used_correct_r_version -ne 1 ]]; then
     exit 1
 fi
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-     passed_correct_r_version_to_cmake=$(
+    passed_correct_r_version_to_cmake=$(
         cat $BUILD_LOG_FILE \
         | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
     )
