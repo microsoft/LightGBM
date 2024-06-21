@@ -170,7 +170,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         cp "${PKG_TARBALL}" packages
         RCHK_LOG_FILE="rchk-logs.txt"
         docker run \
-            -v "$(pwd)"/packages:/rchk/packages \
+            -v "$(pwd)/packages":/rchk/packages \
             kalibera/rchk:latest \
             "/rchk/packages/${PKG_TARBALL}" \
          > ${RCHK_LOG_FILE} 2>&1 \
