@@ -136,7 +136,7 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
-cd ${BUILD_DIRECTORY}
+cd "${BUILD_DIRECTORY}"
 
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -147,7 +147,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
+        ./R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
