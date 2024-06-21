@@ -290,7 +290,7 @@ fi
 #
 # _mm_prefetch will not work on arm64 architecture
 # ref: https://github.com/microsoft/LightGBM/issues/4124
-if [[ $R_BUILD_TYPE == "cran" ]] && [[ $ARCH != "arm64 "]]; then
+if [[ $R_BUILD_TYPE == "cran" ]] && [[ $ARCH != "arm64" ]]; then
     mm_prefetch_working=$(
         cat $BUILD_LOG_FILE \
         | grep --count -E "checking whether MM_PREFETCH work.*yes"
