@@ -1,4 +1,4 @@
-FROM nvidia/cuda:8.0-cudnn5-devel
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
 
 #################################################################################################################
 #           Global
@@ -53,11 +53,12 @@ libboost-dev \
 libboost-system-dev \
 libboost-filesystem-dev \
 gcc \
-g++
+g++ \
+nvidia-driver-550
 
-# Add OpenCL ICD files for LightGBM
+# Add OpenCL ICD files for LightGBM (or you can use `find / -name libnvidia-opencl.so.1` command to get the actual path to the file)
 RUN mkdir -p /etc/OpenCL/vendors && \
-    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+    echo "/usr/lib/x86_64-linux-gnu/libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
 
 #################################################################################################################
 #           CONDA
@@ -88,7 +89,7 @@ RUN cd /usr/local/src && mkdir lightgbm && cd lightgbm && \
 
 ENV PATH /usr/local/src/lightgbm/LightGBM:${PATH}
 
-RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM && sh ./build-python.sh install --precompile && source deactivate"
+RUN /bin/bash -c "source activate py3 && cd /usr/local/src/lightgbm/LightGBM && sh ./build-python.sh install --gpu && source deactivate"
 
 #################################################################################################################
 #           System CleanUp
