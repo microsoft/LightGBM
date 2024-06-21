@@ -240,7 +240,7 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     passed_correct_r_version_to_cmake=" "
     count=$(cat $BUILD_LOG_FILE | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}")
     export passed_correct_r_version_to_cmake="$count"
-    if [[ $used_correct_r_version -ne 1 ]]; then
+    if [[ $passed_correct_r_version_to_cmake -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
         exit 1
     fi
