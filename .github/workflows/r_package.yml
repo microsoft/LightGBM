@@ -54,12 +54,6 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 3.6
-            build_type: cmake
-            container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
@@ -129,6 +123,13 @@ jobs:
             build_type: cran
             container: 'ubuntu:22.04'
           - os: macos-13
+            task: r-package
+            compiler: clang
+            r_version: 4.3
+            build_type: cran
+            container: null
+          # macos-14 = arm64
+          - os: macos-14
             task: r-package
             compiler: clang
             r_version: 4.3
