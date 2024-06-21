@@ -104,6 +104,18 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit 1
+
+    # install tidy v5.8.0
+    # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
+    TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
+    curl -sL ${TIDY_URL} -o tidy.pkg
+    sudo installer \
+        -pkg $(pwd)/tidy.pkg \
+        -target /
+
+    # ensure that this newer version of 'tidy' is used by 'R CMD check'
+    # ref: https://cran.r-project.org/doc/manuals/R-exts.html#Checking-packages
+    export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
 # fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
