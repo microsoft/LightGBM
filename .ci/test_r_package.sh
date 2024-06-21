@@ -199,11 +199,13 @@ fi
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
-if R CMD check "${PKG_TARBALL}" --as-cran --run-donttest; then
-    export check_r_package="yes"
-else
-    export check_r_package="no"
-fi
+check_succeeded="yes"
+(
+    R CMD check ${PKG_TARBALL} \
+        --as-cran \
+        --run-donttest \
+    || check_succeeded="no"
+) &
 
 # R CMD check suppresses output, some CIs kill builds after
 # a few minutes with no output. This trick gives R CMD check more time
