@@ -79,7 +79,7 @@ logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
-strict-config = true
+strict-config = false
 minimum-version = "0.9.3"
 
 # end:build-system
