@@ -76,7 +76,7 @@ if [[ $OS_NAME == "linux" ]]; then
     fi
     if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
         curl -O -L \
-            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-"${ARCH}".sh \
+            "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-${ARCH}.sh" \
         || exit 1
 
         sudo mkdir /opt/cmake || exit 1
