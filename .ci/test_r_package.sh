@@ -20,13 +20,13 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION=( ${R_VERSION//./ } )
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+read -r -a R_MAJOR_VERSION <<< "${R_VERSION//./ }"
+if [[ "${R_MAJOR_VERSION[0]}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
-elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+elif [[ "${R_MAJOR_VERSION[0]}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
@@ -70,17 +70,17 @@ if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
-                autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
+                autoconf="$(cat R-package/AUTOCONF_UBUNTU_VERSION)" \
                 automake \
                 || exit 1
     fi
     if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
         curl -O -L \
-            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-${ARCH}.sh \
+            "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-${ARCH}.sh" \
         || exit 1
 
         sudo mkdir /opt/cmake || exit 1
-        sudo sh cmake-3.25.1-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
+        sudo sh "cmake-3.25.1-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
         sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
     fi
 fi
@@ -100,15 +100,15 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self || exit 1
     sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
 
-    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit 1
+    curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
     sudo installer \
-        -pkg $(pwd)/R.pkg \
+        -pkg "$(pwd)/R.pkg" \
         -target / || exit 1
 fi
 
 # fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
+if [[ "${R_MAJOR_VERSION[0]}" == "3" ]]; then
     Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
 else
     # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
@@ -138,10 +138,10 @@ Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_
 
 cd "${BUILD_DIRECTORY}"
 
-PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
+    PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if
@@ -163,22 +163,24 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 
     ./build-cran-package.sh || exit 1
+    PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 
     if [[ "${TASK}" == "r-rchk" ]]; then
         echo "Checking R package with rchk"
         mkdir -p packages
-        cp ${PKG_TARBALL} packages
+        cp "${PKG_TARBALL}" packages
         RCHK_LOG_FILE="rchk-logs.txt"
         docker run \
-            -v $(pwd)/packages:/rchk/packages \
+            -v "$(pwd)/packages":/rchk/packages \
             kalibera/rchk:latest \
             "/rchk/packages/${PKG_TARBALL}" \
-        2>&1 > ${RCHK_LOG_FILE} \
+         > ${RCHK_LOG_FILE} 2>&1 \
         || (cat ${RCHK_LOG_FILE} && exit 1)
         cat ${RCHK_LOG_FILE}
 
         # the exceptions below are from R itself and not LightGBM:
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+        # shellcheck disable=SC2046
         exit $(
             cat ${RCHK_LOG_FILE} \
             | grep -v "in function strptime_internal" \
@@ -192,16 +194,16 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repo
     R_CMD_CHECK_DIR="${HOME}/tmp-r-cmd-check/"
-    mkdir -p ${R_CMD_CHECK_DIR}
-    mv ${PKG_TARBALL} ${R_CMD_CHECK_DIR}
-    cd ${R_CMD_CHECK_DIR}
+    mkdir -p "${R_CMD_CHECK_DIR}"
+    mv "${PKG_TARBALL}" "${R_CMD_CHECK_DIR}"
+    cd "${R_CMD_CHECK_DIR}"
 fi
 
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
 (
-    R CMD check ${PKG_TARBALL} \
+    R CMD check "${PKG_TARBALL}" \
         --as-cran \
         --run-donttest \
     || check_succeeded="no"
@@ -219,7 +221,7 @@ done
 
 echo "R CMD check build logs:"
 BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
-cat ${BUILD_LOG_FILE}
+cat "${BUILD_LOG_FILE}"
 
 if [[ $check_succeeded == "no" ]]; then
     exit 1
@@ -242,7 +244,7 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
         cat $BUILD_LOG_FILE \
         | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
     )
-    if [[ $used_correct_r_version -ne 1 ]]; then
+    if [[ $passed_correct_r_version_to_cmake -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
         exit 1
     fi
