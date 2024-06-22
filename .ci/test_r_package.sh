@@ -236,6 +236,7 @@ if [[ $used_correct_r_version -ne 1 ]]; then
     echo "Unexpected R version was used. Expected '${R_VERSION}'."
     exit 1
 fi
+
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     passed_correct_r_version_to_cmake=$(
         cat $BUILD_LOG_FILE \
@@ -246,7 +247,6 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
         exit 1
     fi
 fi
-
 
 if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
