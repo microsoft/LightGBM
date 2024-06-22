@@ -138,10 +138,10 @@ Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_
 
 cd "${BUILD_DIRECTORY}"
 
-PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
+    PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if
@@ -163,6 +163,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 
     ./build-cran-package.sh || exit 1
+    PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 
     if [[ "${TASK}" == "r-rchk" ]]; then
         echo "Checking R package with rchk"
