@@ -104,6 +104,18 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit 1
+
+    # install tidy v5.8.0
+    # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
+    TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
+    curl -sL ${TIDY_URL} -o tidy.pkg
+    sudo installer \
+        -pkg $(pwd)/tidy.pkg \
+        -target /
+
+    # ensure that this newer version of 'tidy' is used by 'R CMD check'
+    # ref: https://cran.r-project.org/doc/manuals/R-exts.html#Checking-packages
+    export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
 # fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
@@ -275,7 +287,10 @@ fi
 
 # this check makes sure that CI builds of the package
 # actually use MM_PREFETCH preprocessor definition
-if [[ $R_BUILD_TYPE == "cran" ]]; then
+#
+# _mm_prefetch will not work on arm64 architecture
+# ref: https://github.com/microsoft/LightGBM/issues/4124
+if [[ $R_BUILD_TYPE == "cran" ]] && [[ $ARCH != "arm64" ]]; then
     mm_prefetch_working=$(
         cat $BUILD_LOG_FILE \
         | grep --count -E "checking whether MM_PREFETCH work.*yes"
