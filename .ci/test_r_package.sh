@@ -222,8 +222,6 @@ echo "R CMD check build logs:"
 BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
 cat "${BUILD_LOG_FILE}"
 
-check_succeeded=$check_r_package
-
 if [[ $check_succeeded == "no" ]]; then
     exit 1
 fi
