@@ -20,7 +20,7 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION=( ${R_VERSION//./ } )
+R_MAJOR_VERSION=( "${R_VERSION//./ }" )
 if [[ "${R_MAJOR_VERSION[0]}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
@@ -138,7 +138,7 @@ Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_
 
 cd "${BUILD_DIRECTORY}"
 
-PKG_TARBALL="lightgbm_*.tar.gz"
+PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
