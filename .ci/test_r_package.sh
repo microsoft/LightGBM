@@ -248,6 +248,7 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
     fi
 fi
 
+
 if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
     echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
     exit 1
