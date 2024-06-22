@@ -123,6 +123,14 @@ Core Parameters
 
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
+   -  custom objective function (gradients and hessians not computed directly by LightGBM)
+
+      -  ``custom``
+
+      -  **Note**: Not supported in CLI version
+
+      -  must be passed through parameters explicitly in the C API
+
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
 
    -  ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
@@ -401,6 +409,12 @@ Learning Control Parameters
    -  ``<= 0`` means disable
 
    -  can be used to speed up training
+
+-  ``early_stopping_min_delta`` :raw-html:`<a id="early_stopping_min_delta" title="Permalink to this parameter" href="#early_stopping_min_delta">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``early_stopping_min_delta >= 0.0``
+
+   -  when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+
+   -  *New in 4.4.0*
 
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 

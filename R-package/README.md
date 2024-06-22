@@ -221,7 +221,7 @@ CRAN does not prepare precompiled binaries for Linux, and as of this writing nei
 
 ### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
 
-Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.so` or `lib_lightgbm.dll`) and then build an R package that wraps it.
+Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R package that wraps it.
 
 As of version 3.0.0, this is no longer supported. If building from source is difficult for you, please [open an issue](https://github.com/microsoft/LightGBM/issues).
 

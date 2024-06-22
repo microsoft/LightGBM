@@ -1,7 +1,9 @@
 # coding: utf-8
 """Library with training routines of LightGBM."""
+
 import copy
 import json
+import warnings
 from collections import OrderedDict, defaultdict
 from operator import attrgetter
 from pathlib import Path
@@ -13,6 +15,7 @@ from . import callback
 from .basic import (
     Booster,
     Dataset,
+    LGBMDeprecationWarning,
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
@@ -49,6 +52,15 @@ _LGBM_PreprocFunction = Callable[
     [Dataset, Dataset, Dict[str, Any]],
     Tuple[Dataset, Dataset, Dict[str, Any]],
 ]
+
+
+def _emit_dataset_kwarg_warning(calling_function: str, argname: str) -> None:
+    msg = (
+        f"Argument '{argname}' to {calling_function}() is deprecated and will be removed in "
+        f"a future release. Set '{argname}' when calling lightgbm.Dataset() instead. "
+        "See https://github.com/microsoft/LightGBM/issues/6435."
+    )
+    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 def train(
@@ -103,9 +115,11 @@ def train(
     init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of str, or 'auto', optional (default="auto")
+        **Deprecated.** Set ``feature_name`` on ``train_set`` instead.
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
     categorical_feature : list of str or int, or 'auto', optional (default="auto")
+        **Deprecated.** Set ``categorical_feature`` on ``train_set`` instead.
         Categorical features.
         If list of int, interpreted as indices.
         If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
@@ -165,6 +179,13 @@ def train(
                     "Every item in valid_sets must be a Dataset object. "
                     f"Item {i} has type '{type(valid_item).__name__}'."
                 )
+
+    # raise deprecation warnings if necessary
+    # ref: https://github.com/microsoft/LightGBM/issues/6435
+    if categorical_feature != "auto":
+        _emit_dataset_kwarg_warning("train", "categorical_feature")
+    if feature_name != "auto":
+        _emit_dataset_kwarg_warning("train", "feature_name")
 
     # create predictor first
     params = copy.deepcopy(params)
@@ -236,11 +257,12 @@ def train(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
@@ -490,7 +512,7 @@ def _make_n_folds(
         if hasattr(folds, "split"):
             group_info = full_data.get_group()
             if group_info is not None:
-                group_info = np.array(group_info, dtype=np.int32, copy=False)
+                group_info = np.asarray(group_info, dtype=np.int32)
                 flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             else:
                 flatted_group = np.zeros(num_data, dtype=np.int32)
@@ -504,7 +526,7 @@ def _make_n_folds(
             if not SKLEARN_INSTALLED:
                 raise LightGBMError("scikit-learn is required for ranking cv")
             # ranking task, split according to groups
-            group_info = np.array(full_data.get_group(), dtype=np.int32, copy=False)
+            group_info = np.asarray(full_data.get_group(), dtype=np.int32)
             flatted_group = np.repeat(range(len(group_info)), repeats=group_info)
             group_kfold = _LGBMGroupKFold(n_splits=nfold)
             folds = group_kfold.split(X=np.empty(num_data), groups=flatted_group)
@@ -624,9 +646,11 @@ def cv(
     init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
     feature_name : list of str, or 'auto', optional (default="auto")
+        **Deprecated.** Set ``feature_name`` on ``train_set`` instead.
         Feature names.
         If 'auto' and data is pandas DataFrame, data columns names are used.
     categorical_feature : list of str or int, or 'auto', optional (default="auto")
+        **Deprecated.** Set ``categorical_feature`` on ``train_set`` instead.
         Categorical features.
         If list of int, interpreted as indices.
         If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
@@ -691,6 +715,13 @@ def cv(
 
     if num_boost_round <= 0:
         raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
+
+    # raise deprecation warnings if necessary
+    # ref: https://github.com/microsoft/LightGBM/issues/6435
+    if categorical_feature != "auto":
+        _emit_dataset_kwarg_warning("cv", "categorical_feature")
+    if feature_name != "auto":
+        _emit_dataset_kwarg_warning("cv", "feature_name")
 
     params = copy.deepcopy(params)
     params = _choose_param_value(
@@ -760,11 +791,12 @@ def cv(
             cb.__dict__.setdefault("order", i - len(callbacks))
         callbacks_set = set(callbacks)
 
-    if "early_stopping_round" in params:
+    if callback._should_enable_early_stopping(params.get("early_stopping_round", 0)):
         callbacks_set.add(
             callback.early_stopping(
                 stopping_rounds=params["early_stopping_round"],  # type: ignore[arg-type]
                 first_metric_only=first_metric_only,
+                min_delta=params.get("early_stopping_min_delta", 0.0),
                 verbose=_choose_param_value(
                     main_param_name="verbosity",
                     params=params,
