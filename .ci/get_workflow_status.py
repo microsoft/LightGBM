@@ -6,15 +6,12 @@
 
 TRIGGER_PHRASE: Code phrase that triggers workflow.
 """
+
 import json
 from os import environ
 from sys import argv, exit
 from time import sleep
-
-try:
-    from urllib import request
-except ImportError:
-    import urllib2 as request
+from urllib import request
 
 
 def get_runs(trigger_phrase):

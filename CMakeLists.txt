@@ -25,6 +25,14 @@ option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Lo
 
 cmake_minimum_required(VERSION 3.18)
 
+# If using Visual Studio generators, always target v10.x of the Windows SDK.
+# Doing this avoids lookups that could fall back to very old versions, e.g. by finding
+# outdated registry entries.
+# ref: https://cmake.org/cmake/help/latest/variable/CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION.html
+if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    set(CMAKE_SYSTEM_VERSION 10.0 CACHE INTERNAL "target Windows SDK version" FORCE)
+endif()
+
 project(lightgbm LANGUAGES C CXX)
 
 if(BUILD_CPP_TEST)
@@ -114,6 +122,12 @@ include_directories(${EIGEN_DIR})
 add_definitions(-DEIGEN_MPL2_ONLY)
 add_definitions(-DEIGEN_DONT_PARALLELIZE)
 
+set(FAST_DOUBLE_PARSER_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fast_double_parser/include")
+include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
+
+set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
+include_directories(${FMT_INCLUDE_DIR})
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
@@ -194,32 +208,28 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-    find_package(CUDA 11.0 REQUIRED)
-    include_directories(${CUDA_INCLUDE_DIRS})
+    find_package(CUDAToolkit 11.0 REQUIRED)
+    include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
-    set(CUDA_ARCHS "6.0" "6.1" "6.2" "7.0" "7.5")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.0")
-        list(APPEND CUDA_ARCHS "8.0")
+    set(CUDA_ARCHS "60" "61" "62" "70" "75")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+        list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.1")
-        list(APPEND CUDA_ARCHS "8.6")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+        list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.5")
-        list(APPEND CUDA_ARCHS "8.7")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+        list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "11.8")
-        list(APPEND CUDA_ARCHS "8.9")
-        list(APPEND CUDA_ARCHS "9.0")
+    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+        list(APPEND CUDA_ARCHS "89")
+        list(APPEND CUDA_ARCHS "90")
     endif()
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
-    cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCHS})
-    string(REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
-
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -256,7 +266,7 @@ if(USE_CUDA)
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
       set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES OFF)
+      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -280,6 +290,12 @@ if(USE_CUDA)
 endif()
 
 if(USE_HDFS)
+    message(
+      DEPRECATION
+      "HDFS support in LightGBM is deprecated, and will be removed in a future release.\
+      See https://github.com/microsoft/LightGBM/issues/6436.
+      "
+    )
     find_package(JNI REQUIRED)
     find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
     find_library(HDFS_LIB NAMES hdfs REQUIRED)
@@ -461,11 +477,22 @@ if(BUILD_STATIC_LIB)
 else()
   add_library(_lightgbm SHARED)
 endif()
+
+# R expects libraries of the form <project>.{dll,dylib,so}, not lib_<project>.{dll,dylib,so}
+if(__BUILD_FOR_R)
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      PREFIX ""
+      OUTPUT_NAME "lightgbm"
+  )
+endif()
+
 # LightGBM headers include openmp, cuda, R etc. headers,
 # thus PUBLIC is required for building _lightgbm_swig target.
 target_link_libraries(_lightgbm PUBLIC lightgbm_capi_objs lightgbm_objs)
 
-if(MSVC)
+if(MSVC AND NOT __BUILD_FOR_R)
   set_target_properties(_lightgbm PROPERTIES OUTPUT_NAME "lib_lightgbm")
 endif()
 
@@ -585,13 +612,10 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  # Disable cmake warning about policy CMP0104. Refer to issue #3754 and PR #4268.
-  # Custom target properties does not propagate, thus we need to specify for
-  # each target that contains or depends on cuda source.
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES OFF)
-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
   if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES OFF)
+    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
   endif()
 
   set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -683,6 +707,83 @@ if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
+# The macOS linker puts an absolute path to linked libraries in lib_lightgb.dylib.
+# This block overrides that information for LightGBM's OpenMP dependency, to allow
+# finding that library in more places.
+#
+# This reduces the risk of runtime issues resulting from multiple libomp.dylib being loaded.
+#
+if(APPLE AND USE_OPENMP)
+  # store path to libomp found at build time in a variable
+  get_target_property(
+    OpenMP_LIBRARY_LOCATION
+    OpenMP::OpenMP_CXX
+    INTERFACE_LINK_LIBRARIES
+  )
+  # get just the filename of that path
+  # (to deal with the possibility that it might be 'libomp.dylib' or 'libgomp.dylib' or 'libiomp.dylib')
+  get_filename_component(
+    OpenMP_LIBRARY_NAME
+    ${OpenMP_LIBRARY_LOCATION}
+    NAME
+  )
+  # get directory of that path
+  get_filename_component(
+    OpenMP_LIBRARY_DIR
+    ${OpenMP_LIBRARY_LOCATION}
+    DIRECTORY
+  )
+  # get exact name of the library in a variable
+  get_target_property(
+    __LIB_LIGHTGBM_OUTPUT_NAME
+    _lightgbm
+    OUTPUT_NAME
+  )
+  if(NOT __LIB_LIGHTGBM_OUTPUT_NAME)
+    set(__LIB_LIGHTGBM_OUTPUT_NAME "lib_lightgbm")
+  endif()
+
+  if(CMAKE_SHARED_LIBRARY_SUFFIX_CXX)
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX_CXX}"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  else()
+    set(
+      __LIB_LIGHTGBM_FILENAME "${__LIB_LIGHTGBM_OUTPUT_NAME}.dylib"
+      CACHE INTERNAL "lightgbm shared library filename"
+    )
+  endif()
+
+  # Override the absolute path to OpenMP with a relative one using @rpath.
+  #
+  # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
+  add_custom_command(
+    TARGET _lightgbm
+    POST_BUILD
+      COMMAND
+        install_name_tool
+        -change
+        ${OpenMP_LIBRARY_LOCATION}
+        "@rpath/${OpenMP_LIBRARY_NAME}"
+        "${__LIB_LIGHTGBM_FILENAME}"
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+  )
+  # add RPATH entries to ensure the loader looks in the following, in the following order:
+  #
+  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
+  #
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      BUILD_WITH_INSTALL_RPATH TRUE
+      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;${OpenMP_LIBRARY_DIR}"
+      INSTALL_RPATH_USE_LINK_PATH FALSE
+  )
+endif()
+
 install(
   TARGETS _lightgbm
   RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
@@ -691,5 +792,17 @@ install(
 )
 
 if(INSTALL_HEADERS)
-    install(DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+    install(
+      DIRECTORY ${LightGBM_HEADER_DIR}/LightGBM
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    )
+    install(
+      FILES ${FAST_DOUBLE_PARSER_INCLUDE_DIR}/fast_double_parser.h
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+    )
+    install(
+      DIRECTORY ${FMT_INCLUDE_DIR}/
+      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/LightGBM/utils
+      FILES_MATCHING PATTERN "*.h"
+    )
 endif()

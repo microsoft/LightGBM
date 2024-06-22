@@ -76,12 +76,12 @@ fi
 
 cp \
     external_libs/fast_double_parser/include/fast_double_parser.h \
-    "${TEMP_R_DIR}/src/include/LightGBM"
+    "${TEMP_R_DIR}/src/include/LightGBM/utils"
 
-mkdir -p "${TEMP_R_DIR}/src/include/LightGBM/fmt"
+mkdir -p "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 cp \
     external_libs/fmt/include/fmt/*.h \
-    "${TEMP_R_DIR}/src/include/LightGBM/fmt/"
+    "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 
 # including only specific files from Eigen, to keep the R package
 # small and avoid redistributing code with licenses incompatible with
@@ -155,33 +155,6 @@ cd "${TEMP_R_DIR}"
     done
     find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
 
-    sed \
-        -i.bak \
-        -e 's/\.\..*fmt\/format\.h/LightGBM\/fmt\/format\.h/' \
-        src/include/LightGBM/utils/common.h
-
-    sed \
-        -i.bak \
-        -e 's/\.\..*fast_double_parser\.h/LightGBM\/fast_double_parser\.h/' \
-        src/include/LightGBM/utils/common.h
-
-    # When building an R package with 'configure', it seems
-    # you're guaranteed to get a shared library called
-    #  <packagename>.so/dll/dylib. The package source code expects
-    # 'lib_lightgbm.so', not 'lightgbm.so', to comply with the way
-    # this project has historically handled installation
-    echo "Changing lib_lightgbm to lightgbm"
-    for file in R/*.R; do
-        sed \
-            -i.bak \
-            -e 's/lib_lightgbm/lightgbm/' \
-            "${file}"
-    done
-    sed \
-        -i.bak \
-        -e 's/lib_lightgbm/lightgbm/' \
-        NAMESPACE
-
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
     # included in the CRAN distribution of the package
@@ -191,8 +164,7 @@ cd "${TEMP_R_DIR}"
         DESCRIPTION
 
     echo "Cleaning sed backup files"
-    rm R/*.R.bak
-    rm NAMESPACE.bak
+    rm *.bak
 
 cd "${ORIG_WD}"
 
