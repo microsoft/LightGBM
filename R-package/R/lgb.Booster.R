@@ -307,43 +307,43 @@ Booster <- R6::R6Class(
 
     },
 
-    # Number of models (~trees) per iteration
-    num_models_per_iter = function() {
+    # Number of trees per iteration
+    num_trees_per_iter = function() {
 
       self$restore_handle()
 
-      models_per_iter <- 1L
+      trees_per_iter <- 1L
       .Call(
         LGBM_BoosterNumModelPerIteration_R
         , private$handle
-        , models_per_iter
+        , trees_per_iter
       )
-      return(models_per_iter)
+      return(trees_per_iter)
 
     },
 
-    # Total number of models (~trees)
-    num_total_models = function() {
+    # Total number of trees
+    num_trees = function() {
 
       self$restore_handle()
 
-      total_models <- 0L
+      ntrees <- 0L
       .Call(
         LGBM_BoosterNumberOfTotalModel_R
         , private$handle
-        , total_models
+        , ntrees
       )
-      return(total_models)
+      return(ntrees)
 
     },
 
     # Number of iterations (= rounds)
     num_iter = function() {
 
-      total_models <- self$num_total_models()
-      models_per_iter <- self$num_models_per_iter()
+      ntrees <- self$num_trees()
+      trees_per_iter <- self$num_trees_per_iter()
 
-      return(total_models / models_per_iter)
+      return(ntrees / trees_per_iter)
 
     },
 

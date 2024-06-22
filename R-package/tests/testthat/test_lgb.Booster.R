@@ -623,7 +623,7 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
 
-test_that("Booster$num_models_per_iter() works as expected", {
+test_that("Booster$num_trees_per_iter() works as expected", {
   set.seed(708L)
 
   X <- data.matrix(iris[2L:4L])
@@ -667,12 +667,12 @@ test_that("Booster$num_models_per_iter() works as expected", {
     , nrounds = nrounds
   )
 
-  expect_equal(fit_reg$num_models_per_iter(), 1L)
-  expect_equal(fit_binary$num_models_per_iter(), 1L)
-  expect_equal(fit_class$num_models_per_iter(), num_class)
+  expect_equal(fit_reg$num_trees_per_iter(), 1L)
+  expect_equal(fit_binary$num_trees_per_iter(), 1L)
+  expect_equal(fit_class$num_trees_per_iter(), num_class)
 })
 
-test_that("Booster$num_total_models() and $num_iter() works (no early stopping)", {
+test_that("Booster$num_trees() and $num_iter() works (no early stopping)", {
   set.seed(708L)
 
   X <- data.matrix(iris[2L:4L])
@@ -715,16 +715,16 @@ test_that("Booster$num_total_models() and $num_iter() works (no early stopping)"
     , nrounds = nrounds
   )
 
-  expect_equal(fit_reg$num_total_models(), nrounds)
-  expect_equal(fit_binary$num_total_models(), nrounds)
-  expect_equal(fit_class$num_total_models(), num_class * nrounds)
+  expect_equal(fit_reg$num_trees(), nrounds)
+  expect_equal(fit_binary$num_trees(), nrounds)
+  expect_equal(fit_class$num_trees(), num_class * nrounds)
 
   expect_equal(fit_reg$num_iter(), nrounds)
   expect_equal(fit_binary$num_iter(), nrounds)
   expect_equal(fit_class$num_iter(), nrounds)
 })
 
-test_that("Booster$num_total_models() and $num_iter() work (with early stopping)", {
+test_that("Booster$num_trees() and $num_iter() work (with early stopping)", {
   set.seed(708L)
 
   X <- data.matrix(iris[2L:4L])
@@ -782,9 +782,9 @@ test_that("Booster$num_total_models() and $num_iter() work (with early stopping)
   expected_trees_binary <- fit_binary$best_iter + early_stopping
   expected_trees_class <- (fit_class$best_iter + early_stopping) * num_class
 
-  expect_equal(fit_reg$num_total_models(), expected_trees_reg)
-  expect_equal(fit_binary$num_total_models(), expected_trees_binary)
-  expect_equal(fit_class$num_total_models(), expected_trees_class)
+  expect_equal(fit_reg$num_trees(), expected_trees_reg)
+  expect_equal(fit_binary$num_trees(), expected_trees_binary)
+  expect_equal(fit_class$num_trees(), expected_trees_class)
 
   expect_equal(fit_reg$num_iter(), expected_trees_reg)
   expect_equal(fit_binary$num_iter(), expected_trees_binary)

@@ -385,9 +385,9 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
 );
 
 /*!
- * \brief Get number of models (trees) per iteration
+ * \brief Get number of trees per iteration
  * \param handle Booster handle
- * \param out Number of models (trees) per iteration
+ * \param out Number of trees per iteration
  * \return R NULL value
  */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumModelPerIteration_R(
@@ -396,9 +396,9 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumModelPerIteration_R(
 );
 
 /*!
- * \brief Get total number of models (trees)
+ * \brief Get total number of trees
  * \param handle Booster handle
- * \param out Total number of models (trees) of Booster
+ * \param out Total number of trees of Booster
  * \return R NULL value
  */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumberOfTotalModel_R(
