@@ -32,26 +32,26 @@ add-apt-repository -y "deb-src http://apt.llvm.org/unstable/ llvm-toolchain-${CL
 apt-get update -y
 
 apt-get install -y --no-install-recommends \
-    clang-${CLANG_VERSION} \
-    clangd-${CLANG_VERSION} \
-    clang-format-${CLANG_VERSION} \
-    clang-tidy-${CLANG_VERSION} \
-    clang-tools-${CLANG_VERSION} \
-    lldb-${CLANG_VERSION} \
-    lld-${CLANG_VERSION} \
-    llvm-${CLANG_VERSION}-dev \
-    llvm-${CLANG_VERSION}-tools \
-    libomp-${CLANG_VERSION}-dev \
-    libc++-${CLANG_VERSION}-dev \
-    libc++abi-${CLANG_VERSION}-dev \
-    libclang-common-${CLANG_VERSION}-dev \
-    libclang-${CLANG_VERSION}-dev \
-    libclang-cpp${CLANG_VERSION}-dev \
-    libunwind-${CLANG_VERSION}-dev
+    clang-"${CLANG_VERSION}" \
+    clangd-"${CLANG_VERSION}" \
+    clang-format-"${CLANG_VERSION}" \
+    clang-tidy-"${CLANG_VERSION}" \
+    clang-tools-"${CLANG_VERSION}" \
+    lldb-"${CLANG_VERSION}" \
+    lld-"${CLANG_VERSION}" \
+    llvm-"${CLANG_VERSION}"-dev \
+    llvm-"${CLANG_VERSION}"-tools \
+    libomp-"${CLANG_VERSION}"-dev \
+    libc++-"${CLANG_VERSION}"-dev \
+    libc++abi-"${CLANG_VERSION}"-dev \
+    libclang-common-"${CLANG_VERSION}"-dev \
+    libclang-"${CLANG_VERSION}"-dev \
+    libclang-cpp"${CLANG_VERSION}"-dev \
+    libunwind-"${CLANG_VERSION}"-dev
 
 # overwriting the stuff in /usr/bin is simpler and more reliable than
 # updating PATH, LD_LIBRARY_PATH, etc.
-cp --remove-destination /usr/lib/llvm-${CLANG_VERSION}/bin/* /usr/bin/
+cp --remove-destination /usr/lib/llvm-"${CLANG_VERSION}"/bin/* /usr/bin/
 
 # per https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
 #
