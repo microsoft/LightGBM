@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e -E -u
+set -e -u
 
 DIST_DIR=${1}
 
