@@ -16,7 +16,7 @@ pip install \
     twine || exit 1
 
 echo "twine check..."
-twine check --strict "${DIST_DIR}/*" || exit 1
+twine check --strict ${DIST_DIR}/* || exit 1
 
 if { test "${TASK}" = "bdist" || test "${METHOD}" = "wheel"; }; then
     echo "check-wheel-contents..."
