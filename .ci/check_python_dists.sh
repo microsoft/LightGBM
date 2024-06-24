@@ -35,7 +35,7 @@ if [ "$PY_MINOR_VER" -gt 7 ]; then
             --max-allowed-size-uncompressed '100M' \
             --max-allowed-files 800 \
             "${DIST_DIR}/*" || exit 1
-    elif { test $(uname -m) = "aarch64"; }; then
+    elif { test "$(uname -m)" = "aarch64"; }; then
         pydistcheck \
             --inspect \
             --ignore 'compiled-objects-have-debug-symbols' \
