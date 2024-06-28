@@ -853,5 +853,96 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation) {
+  num_queries_ = metadata.num_queries();
+  label_.clear();
+  positions_.clear();
+  position_ids_.clear();
+  if (pairwise_ranking_mode_ == PairwiseRankingMode::kRelevance) {
+    const label_t* pointwise_label = metadata.label();
+    const label_t* pointwise_weights = metadata.weights();
+    paired_ranking_item_index_map_.clear();
+    paired_ranking_item_global_index_map_.clear();
+    const data_size_t* query_boundaries = metadata.query_boundaries();
+
+    if (query_boundaries == nullptr) {
+      Log::Fatal("Query boundaries must be provided for ranking.");
+    }
+
+    // backup pointwise query boundaries
+    query_boundaries_.clear();
+    query_boundaries_.resize(num_queries_ + 1);
+    const int num_threads = OMP_NUM_THREADS();
+    #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_queries_ >= 1024)
+    for (data_size_t i = 0; i < num_queries_ + 1; ++i) {
+      query_boundaries_[i] = query_boundaries[i];
+    }
+
+    // copy labels
+    const data_size_t pointwise_num_data = query_boundaries[num_queries_];
+    if (pointwise_label != nullptr) {
+      label_.resize(pointwise_num_data);
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
+      for (data_size_t i = 0; i < pointwise_num_data; ++i) {
+        label_[i] = pointwise_label[i];
+      }
+    }
+
+    // copy weights
+    if (pointwise_weights != nullptr) {
+      weights_.resize(pointwise_num_data);
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
+      for (data_size_t i = 0; i < pointwise_num_data; ++i) {
+        weights_[i] = pointwise_weights[i];
+      }
+    }
+
+    // copy position information
+    if (metadata.num_position_ids() > 0) {
+      positions_.resize(pointwise_num_data);
+      const data_size_t* pointwise_positions = metadata.positions();
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (pointwise_num_data >= 1024)
+      for (data_size_t i = 0; i < pointwise_num_data; ++i) {
+        positions_[i] = pointwise_positions[i];
+      }
+
+      const data_size_t num_position_ids = static_cast<data_size_t>(metadata.num_position_ids());
+      position_ids_.resize(num_position_ids);
+      const std::string* pointwise_position_ids = metadata.position_ids();
+      #pragma omp parallel for schedule(static) num_threads(num_threads) if (num_position_ids >= 1024)
+      for (data_size_t i = 0; i < num_position_ids; ++i) {
+        position_ids_[i] = pointwise_position_ids[i];
+      }
+    }
+
+    pairwise_query_boundaries_.clear();
+    pairwise_query_boundaries_.push_back(0);
+    num_data_ = 0;
+    for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
+      const data_size_t query_start = query_boundaries[query_index];
+      const data_size_t query_end = query_boundaries[query_index + 1];
+      for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
+        const label_t label_i = label_[item_index_i];
+        for (data_size_t item_index_j = query_start; item_index_j < query_end; ++item_index_j) {
+          if (item_index_i == item_index_j) {
+            continue;
+          }
+          const label_t label_j = label_[item_index_j];
+          if (label_i != label_j || is_validation) {
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
+            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
+            ++num_data_;
+          }
+        }
+      }
+      pairwise_query_boundaries_.push_back(num_data_);
+    }
+  } else {
+    // TODO(shiyu1994)
+    Log::Fatal("Not implemented.");
+  }
+
+  return num_data_;
+}
 
 }  // namespace LightGBM

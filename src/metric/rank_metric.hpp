@@ -9,10 +9,12 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/log.h>
 #include <LightGBM/utils/openmp_wrapper.h>
+#include <LightGBM/objective_function.h>
 
 #include <string>
 #include <sstream>
 #include <vector>
+#include <numeric>
 
 namespace LightGBM {
 
@@ -26,6 +28,9 @@ class NDCGMetric:public Metric {
     DCGCalculator::DefaultLabelGain(&label_gain);
     // initialize DCG calculator
     DCGCalculator::Init(label_gain);
+    pairwise_scores_ = config.objective == std::string("pairwise_lambdarank");
+    sigmoid_ = config.sigmoid;
+    truncation_level_ = config.lambdarank_truncation_level;   
   }
 
   ~NDCGMetric() {
@@ -34,7 +39,7 @@ class NDCGMetric:public Metric {
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("ndcg@") + std::to_string(k));
     }
-    num_data_ = num_data;
+    num_data_ = metadata.query_boundaries()[metadata.num_queries()];
     // get label
     label_ = metadata.label();
     num_queries_ = metadata.num_queries();
@@ -73,6 +78,36 @@ class NDCGMetric:public Metric {
         }
       }
     }
+    if (pairwise_scores_) {
+      paired_index_map_ = metadata.paired_ranking_item_index_map();
+      scores_pointwise_.resize(num_data_, 0.0);
+      num_data_pairwise_ = metadata.pairwise_query_boundaries()[metadata.num_queries()];
+      query_boundaries_pairwise_ = metadata.pairwise_query_boundaries();
+
+      right2left_map_byquery_.resize(num_queries_);
+      left2right_map_byquery_.resize(num_queries_);
+      left_right2pair_map_byquery_.resize(num_queries_);
+      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
+      for (data_size_t q = 0; q < num_queries_; ++q) {
+        const data_size_t start_pairwise = query_boundaries_pairwise_[q];
+        const data_size_t cnt_pairwise = query_boundaries_pairwise_[q + 1] - query_boundaries_pairwise_[q];
+        std::multimap<data_size_t, data_size_t> right2left_map_;
+        std::multimap < data_size_t, data_size_t> left2right_map_;
+        std::map<std::pair<data_size_t, data_size_t>, data_size_t> left_right2pair_map_;
+        for (data_size_t i = 0; i < cnt_pairwise; ++i) {
+          //data_size_t current_pair = selected_pairs[i];
+          int index_left = paired_index_map_[i + start_pairwise].first;
+          int index_right = paired_index_map_[i + start_pairwise].second;
+          right2left_map_.insert(std::make_pair(index_right, index_left));
+          left2right_map_.insert(std::make_pair(index_left, index_right));
+          left_right2pair_map_.insert(std::make_pair(std::make_pair(index_left, index_right), i));
+        }
+        right2left_map_byquery_[q] = right2left_map_;
+        left2right_map_byquery_[q] = left2right_map_;
+        left_right2pair_map_byquery_[q] = left_right2pair_map_;
+      }
+    }
+    sigmoid_cache_.Init(sigmoid_);
   }
 
   const std::vector<std::string>& GetName() const override {
@@ -101,9 +136,21 @@ class NDCGMetric:public Metric {
             result_buffer_[tid][j] += 1.0f;
           }
         } else {
+          if (pairwise_scores_) {
+            const data_size_t start_pointwise = query_boundaries_[i];
+            const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
+            const data_size_t start_pairwise = query_boundaries_pairwise_[i];
+            const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
+            std::vector<data_size_t> all_pairs(cnt_pairwise);
+            std::iota(all_pairs.begin(), all_pairs.end(), 0);
+            UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
+              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_,
+              sigmoid_, sigmoid_cache_);
+          }
+
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-                                score + query_boundaries_[i],
+                                (pairwise_scores_? scores_pointwise_.data(): score) + query_boundaries_[i],
                                 query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
@@ -121,9 +168,20 @@ class NDCGMetric:public Metric {
             result_buffer_[tid][j] += 1.0f;
           }
         } else {
+          if (pairwise_scores_) {
+            const data_size_t start_pointwise = query_boundaries_[i];
+            const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
+            const data_size_t start_pairwise = query_boundaries_pairwise_[i];
+            const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
+            std::vector<data_size_t> all_pairs(cnt_pairwise);
+            std::iota(all_pairs.begin(), all_pairs.end(), 0);
+            UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
+              paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_,
+              sigmoid_, sigmoid_cache_);
+          }
           // calculate DCG
           DCGCalculator::CalDCG(eval_at_, label_ + query_boundaries_[i],
-                                score + query_boundaries_[i],
+                                (pairwise_scores_ ? scores_pointwise_.data() : score) + query_boundaries_[i],
                                 query_boundaries_[i + 1] - query_boundaries_[i], &tmp_dcg);
           // calculate NDCG
           for (size_t j = 0; j < eval_at_.size(); ++j) {
@@ -162,6 +220,19 @@ class NDCGMetric:public Metric {
   std::vector<data_size_t> eval_at_;
   /*! \brief Cache the inverse max dcg for all queries */
   std::vector<std::vector<double>> inverse_max_dcgs_;
+  bool pairwise_scores_;
+  double sigmoid_;
+  CommonC::SigmoidCache sigmoid_cache_;
+  /*! \brief Truncation position for max DCG */
+  int truncation_level_;
+  mutable std::vector<double> scores_pointwise_;
+  const std::pair<data_size_t, data_size_t>* paired_index_map_;
+  std::vector<std::multimap<data_size_t, data_size_t>> right2left_map_byquery_;
+  std::vector<std::multimap < data_size_t, data_size_t>> left2right_map_byquery_;
+  std::vector<std::map<std::pair<data_size_t, data_size_t>, data_size_t>> left_right2pair_map_byquery_;
+  /*! \brief Number of data */
+  data_size_t num_data_pairwise_;
+  const data_size_t* query_boundaries_pairwise_;
 };
 
 }  // namespace LightGBM
