@@ -34,7 +34,7 @@ if [ "$PY_MINOR_VER" -gt 7 ]; then
             --ignore 'distro-too-large-compressed' \
             --max-allowed-size-uncompressed '100M' \
             --max-allowed-files 800 \
-            "${DIST_DIR}/*" || exit 1
+            "$(echo ${DIST_DIR}/*)" || exit 1
     elif { test "$(uname -m)" = "aarch64"; }; then
         pydistcheck \
             --inspect \
