@@ -149,7 +149,7 @@ and copy memory as required by creating new processes instead of forking (or, us
 
 Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a
 single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent
-<https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
+<https://aws.amazon.com/batch/faqs>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
 
 12. Why is early stopping not enabled by default in LightGBM?
 -------------------------------------------------------------
@@ -321,7 +321,7 @@ We are doing our best to provide universal wheels which have high running speed 
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
 Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary lightgbm lightgbm``.
-For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
+For the OS-specific prerequisites see https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
 

@@ -15,6 +15,7 @@ variables:
   skipComponentGovernanceDetection: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  SKBUILD_STRICT_CONFIG: true
 resources:
   # The __work/ directory, where Azure DevOps writes the source files, needs to be read-write because
   # LightGBM's CI jobs write files in the source directory.
