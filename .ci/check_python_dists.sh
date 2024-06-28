@@ -42,7 +42,7 @@ if [ "$PY_MINOR_VER" -gt 7 ]; then
             --max-allowed-size-compressed '5M' \
             --max-allowed-size-uncompressed '15M' \
             --max-allowed-files 800 \
-            "${DIST_DIR}/*" || exit 1
+            "$(echo ${DIST_DIR}/*)" || exit 1
     else
         pydistcheck \
             --inspect \
