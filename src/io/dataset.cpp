@@ -18,6 +18,8 @@
 #include <sstream>
 #include <unordered_map>
 
+#include <fstream>
+
 namespace LightGBM {
 
 const int Dataset::kSerializedReferenceVersionLength = 2;
@@ -496,7 +498,7 @@ void PushDataToMultiValBin(
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
   if (ret->IsSparse()) {
-    Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
+    // Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data;
@@ -525,17 +527,17 @@ void PushDataToMultiValBin(
     Threading::For<data_size_t>(
         0, num_data, 1024, [&](int tid, data_size_t start, data_size_t end) {
           std::vector<uint32_t> cur_data(most_freq_bins.size(), 0);
-          // for (size_t j = 0; j < most_freq_bins.size(); ++j) {
-          //   Log::Warning("(*iters)[%d].size() = %d, j = %d, start = %d", tid, (*iters)[tid].size(), j, start);
-          //   (*iters)[tid][j]->Reset(start);
-          // }
+          for (size_t j = 0; j < most_freq_bins.size(); ++j) {
+            //Log::Warning("(*iters)[%d].size() = %d, j = %d, start = %d", tid, (*iters)[tid].size(), j, start);
+            (*iters)[tid][j]->Reset(start);
+          }
           for (data_size_t i = start; i < end; ++i) {
             for (size_t j = 0; j < most_freq_bins.size(); ++j) {
               // for dense multi value bin, the feature bin values without offsets are used
-              // auto cur_bin = (*iters)[tid][j]->Get(i);
-              // cur_data[j] = cur_bin;
+              auto cur_bin = (*iters)[tid][j]->Get(i);
+              cur_data[j] = cur_bin;
             }
-            // ret->PushOneRow(tid, i, cur_data);
+            ret->PushOneRow(tid, i, cur_data);
           }
         });
   }
@@ -632,7 +634,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
 
     for (size_t i = 0; i < iters.size(); ++i) {
       for (size_t j = 0; j < iters[i].size(); ++j) {
-        Log::Warning("i = %d, j = %d, iters[i][j] = %d", static_cast<int>(iters[i][j] == nullptr));
+        Log::Warning("i = %ld, j = %ld, iters[i][j] = %d", i, j, static_cast<int>(iters[i][j] == nullptr));
       }
     }
 
@@ -644,6 +646,16 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
       original_offsets.push_back(offsets[i]);
     }
     original_offsets.push_back(offsets[num_original_features]);
+    std::ofstream fout("mutli_val_bin_meta_info_pairwise.txt");
+    fout << "original_most_freq_bins" << std::endl;
+    for (size_t i = 0; i < original_most_freq_bins.size(); ++i) {
+      fout << original_most_freq_bins[i] << std::endl;
+    }
+    fout << "original_offsets" << std::endl;
+    for (size_t i = 0; i < original_offsets.size(); ++i) {
+      fout << original_offsets[i] << std::endl;
+    }
+    fout.close();
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
         num_original_data, original_offsets.back(), num_original_features,
@@ -654,8 +666,19 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
         num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
         1.0 - sum_dense_ratio, offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
     PushDataToMultiValBin(num_data_, most_freq_bins, offsets, &iters, ret.get());
+    std::ofstream fout("mutli_val_bin_meta_info_no_pairwise.txt");
+    fout << "original_most_freq_bins" << std::endl;
+    for (size_t i = 0; i < most_freq_bins.size(); ++i) {
+      fout << most_freq_bins[i] << std::endl;
+    }
+    fout << "original_offsets" << std::endl;
+    for (size_t i = 0; i < offsets.size(); ++i) {
+      fout << offsets[i] << std::endl;
+    }
+    fout.close();
   }
   ret->FinishLoad();
+  ret->DumpContent();
   return ret.release();
 }
 

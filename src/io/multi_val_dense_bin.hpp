@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <fstream>
 
 namespace LightGBM {
 
@@ -24,6 +25,17 @@ class MultiValDenseBin : public MultiValBin {
     : num_data_(num_data), num_bin_(num_bin), num_feature_(num_feature),
       offsets_(offsets) {
     data_.resize(static_cast<size_t>(num_data_) * num_feature_, static_cast<VAL_T>(0));
+  }
+
+  void DumpContent() const override {
+    std::ofstream fout("multi_val_bin.txt");
+    for (data_size_t i = 0; i < num_data_; ++i) {
+      for (data_size_t j = 0; j < num_feature_; ++j) {
+        fout << static_cast<uint32_t>(data_[i * num_feature_ + j]) << " ";
+      }
+      fout << std::endl;
+    }
+    fout.close();
   }
 
   ~MultiValDenseBin() {

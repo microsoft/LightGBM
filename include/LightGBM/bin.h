@@ -306,6 +306,10 @@ class Bin {
   */
   virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
 
+  virtual BinIterator* GetUnpairedIterator(uint32_t /* min_bin */, uint32_t /* max_bin */, uint32_t /* most_freq_bin */) const {
+    return nullptr;
+  }
+
   /*!
   * \brief Save binary data to file
   * \param file File want to write
@@ -553,6 +557,8 @@ class MultiValBin {
   virtual void CopySubrow(const MultiValBin* full_bin,
                           const data_size_t* used_indices,
                           data_size_t num_used_indices) = 0;
+
+  virtual void DumpContent() const {}
 
   virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
                                   int num_feature,

@@ -76,8 +76,13 @@ class PairwiseRankingFeatureGroup: public FeatureGroup {
   }
 
   inline BinIterator* FeatureGroupIterator() {
-    // TODO(shiyu1994)
-    return nullptr;
+    if (is_multi_val_) {
+      return nullptr;
+    }
+    uint32_t min_bin = bin_offsets_[0];
+    uint32_t max_bin = bin_offsets_.back() - 1;
+    uint32_t most_freq_bin = 0;
+    return bin_data_->GetUnpairedIterator(min_bin, max_bin, most_freq_bin);
   }
 
     /*!

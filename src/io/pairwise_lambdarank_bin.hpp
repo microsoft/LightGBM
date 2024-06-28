@@ -222,6 +222,10 @@ class PairwiseRankingBin: public BIN_TYPE {
     return unpaired_bin_->get_data();
   }
 
+  BinIterator* GetUnpairedIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const override {
+    return unpaired_bin_->GetIterator(min_bin, max_bin, most_freq_bin);
+  }
+
   void ReSize(data_size_t num_data) override;
 
   data_size_t Split(uint32_t /*min_bin*/, uint32_t /*max_bin*/,
