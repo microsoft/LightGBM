@@ -49,7 +49,7 @@ if [ "$PY_MINOR_VER" -gt 7 ]; then
             --max-allowed-size-compressed '5M' \
             --max-allowed-size-uncompressed '15M' \
             --max-allowed-files 800 \
-            "${DIST_DIR}/*" || exit 1
+            "$(echo ${DIST_DIR}/*)" || exit 1
     fi
 else
     echo "skipping pydistcheck (does not support Python 3.${PY_MINOR_VER})"
