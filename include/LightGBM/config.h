@@ -396,6 +396,7 @@ struct Config {
 
   // check = >=0.0
   // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+  // desc = *New in 4.4.0*
   double early_stopping_min_delta = 0.0;
 
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
@@ -1146,7 +1147,7 @@ struct Config {
   static const std::string DumpAliases();
 
  private:
-  void CheckParamConflict();
+  void CheckParamConflict(const std::unordered_map<std::string, std::string>& params);
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();

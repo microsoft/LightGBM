@@ -37,18 +37,6 @@ except ImportError:
 
     concat = None
 
-"""numpy"""
-try:
-    from numpy.random import Generator as np_random_Generator
-except ImportError:
-
-    class np_random_Generator:  # type: ignore
-        """Dummy class for np.random.Generator."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-
 """matplotlib"""
 try:
     import matplotlib  # noqa: F401

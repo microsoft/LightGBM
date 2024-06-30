@@ -1,5 +1,6 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
+
 import copy
 from inspect import signature
 from pathlib import Path
@@ -40,7 +41,6 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     dt_DataTable,
-    np_random_Generator,
     pd_DataFrame,
 )
 from .engine import train
@@ -454,6 +454,30 @@ _lgbmmodel_doc_predict = """
     """
 
 
+def _extract_evaluation_meta_data(
+    *,
+    collection: Optional[Union[Dict[Any, Any], List[Any]]],
+    name: str,
+    i: int,
+) -> Optional[Any]:
+    """Try to extract the ith element of one of the ``eval_*`` inputs."""
+    if collection is None:
+        return None
+    elif isinstance(collection, list):
+        # It's possible, for example, to pass 3 eval sets through `eval_set`,
+        # but only 1 init_score through `eval_init_score`.
+        #
+        # This if-else accounts for that possiblity.
+        if len(collection) > i:
+            return collection[i]
+        else:
+            return None
+    elif isinstance(collection, dict):
+        return collection.get(i, None)
+    else:
+        raise TypeError(f"{name} should be dict or list")
+
+
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
@@ -475,7 +499,7 @@ class LGBMModel(_LGBMModelBase):
         colsample_bytree: float = 1.0,
         reg_alpha: float = 0.0,
         reg_lambda: float = 0.0,
-        random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
         **kwargs: Any,
@@ -492,6 +516,7 @@ class LGBMModel(_LGBMModelBase):
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
             Maximum tree depth for base learners, <=0 means no limit.
+            If setting this to a positive value, consider also changing ``num_leaves`` to ``<= 2^max_depth``.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -738,7 +763,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params["random_state"], np.random.RandomState):
             params["random_state"] = params["random_state"].randint(np.iinfo(np.int32).max)
-        elif isinstance(params["random_state"], np_random_Generator):
+        elif isinstance(params["random_state"], np.random.Generator):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
         if self._n_classes > 2:
             for alias in _ConfigAliases.get("num_class"):
@@ -868,17 +893,6 @@ class LGBMModel(_LGBMModelBase):
 
         valid_sets: List[Dataset] = []
         if eval_set is not None:
-
-            def _get_meta_data(collection, name, i):
-                if collection is None:
-                    return None
-                elif isinstance(collection, list):
-                    return collection[i] if len(collection) > i else None
-                elif isinstance(collection, dict):
-                    return collection.get(i, None)
-                else:
-                    raise TypeError(f"{name} should be dict or list")
-
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
@@ -886,8 +900,16 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = _get_meta_data(eval_sample_weight, "eval_sample_weight", i)
-                    valid_class_weight = _get_meta_data(eval_class_weight, "eval_class_weight", i)
+                    valid_weight = _extract_evaluation_meta_data(
+                        collection=eval_sample_weight,
+                        name="eval_sample_weight",
+                        i=i,
+                    )
+                    valid_class_weight = _extract_evaluation_meta_data(
+                        collection=eval_class_weight,
+                        name="eval_class_weight",
+                        i=i,
+                    )
                     if valid_class_weight is not None:
                         if isinstance(valid_class_weight, dict) and self._class_map is not None:
                             valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
@@ -896,8 +918,16 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(eval_init_score, "eval_init_score", i)
-                    valid_group = _get_meta_data(eval_group, "eval_group", i)
+                    valid_init_score = _extract_evaluation_meta_data(
+                        collection=eval_init_score,
+                        name="eval_init_score",
+                        i=i,
+                    )
+                    valid_group = _extract_evaluation_meta_data(
+                        collection=eval_group,
+                        name="eval_group",
+                        i=i,
+                    )
                     valid_set = Dataset(
                         data=valid_data[0],
                         label=valid_data[1],
