@@ -31,7 +31,7 @@ struct CUDALeafSplitsStruct {
   hist_t* hist_in_leaf;
 };
 
-class CUDALeafSplits {
+class CUDALeafSplits: public NCCLInfo {
  public:
   explicit CUDALeafSplits(const data_size_t num_data);
 
@@ -142,14 +142,14 @@ class CUDALeafSplits {
  private:
   void LaunchInitValuesEmptyKernel();
 
-  void LaunchInitValuesKernal(
+  void LaunchInitValuesKernel(
     const double lambda_l1, const double lambda_l2,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf,
     const data_size_t num_used_indices,
     hist_t* cuda_hist_in_leaf);
 
-  void LaunchInitValuesKernal(
+  void LaunchInitValuesKernel(
     const double lambda_l1, const double lambda_l2,
     const data_size_t* cuda_bagging_data_indices,
     const data_size_t* cuda_data_indices_in_leaf,
