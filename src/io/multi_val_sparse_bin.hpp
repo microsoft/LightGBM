@@ -430,8 +430,7 @@ class MultiValSparseBin : public MultiValBin {
   std::vector<INDEX_T> t_size_;
   std::vector<uint32_t> offsets_;
 
-  MultiValSparseBin<INDEX_T, VAL_T>(
-      const MultiValSparseBin<INDEX_T, VAL_T>& other)
+  MultiValSparseBin(const MultiValSparseBin<INDEX_T, VAL_T>& other)
       : num_data_(other.num_data_),
         num_bin_(other.num_bin_),
         estimate_element_per_row_(other.estimate_element_per_row_),
