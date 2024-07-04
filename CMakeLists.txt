@@ -576,7 +576,7 @@ if(USE_SWIG)
           copy_if_different
           "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
           com/microsoft/ml/lightgbm/linux/x86_64
-          COMMAND
+        COMMAND
           "${CMAKE_COMMAND}"
           -E
           copy_if_different
