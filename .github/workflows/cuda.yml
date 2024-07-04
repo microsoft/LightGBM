@@ -72,6 +72,7 @@ jobs:
         OS_NAME: linux
         PYTHON_VERSION: ${{ matrix.python_version }}
         TASK: ${{ matrix.task }}
+        SKBUILD_STRICT_CONFIG: true
       options: --gpus all
     timeout-minutes: 30
     strategy:

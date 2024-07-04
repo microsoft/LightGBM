@@ -385,6 +385,28 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
 );
 
 /*!
+ * \brief Get number of trees per iteration
+ * \param handle Booster handle
+ * \param out Number of trees per iteration
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumModelPerIteration_R(
+    SEXP handle,
+    SEXP out
+);
+
+/*!
+ * \brief Get total number of trees
+ * \param handle Booster handle
+ * \param out Total number of trees of Booster
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumberOfTotalModel_R(
+    SEXP handle,
+    SEXP out
+);
+
+/*!
 * \brief Get model upper bound value.
 * \param handle Handle of Booster
 * \param[out] out_results Result pointing to max value
