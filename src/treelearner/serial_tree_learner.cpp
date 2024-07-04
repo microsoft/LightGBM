@@ -126,7 +126,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
   data_partition_->ResetNumData(num_data_);
   if (reset_multi_val_bin) {
     col_sampler_.SetTrainingData(train_data_);
-    GetShareStates(train_data_, is_constant_hessian, false);
+    GetShareStates(train_data_, is_constant_hessian, config_->objective == std::string("pairwise_lambdarank"));
   }
 
   // initialize ordered gradients and hessians

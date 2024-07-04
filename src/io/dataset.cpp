@@ -366,6 +366,8 @@ void Dataset::Construct(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
     is_sparse = false;
   }
 
+  is_sparse = false;
+
   std::vector<int8_t> group_is_multi_val(used_features.size(), 0);
   if (io_config.enable_bundle && !used_features.empty()) {
     bool lgbm_is_gpu_used = io_config.device_type == std::string("gpu") || io_config.device_type == std::string("cuda");
@@ -707,6 +709,7 @@ TrainingShareStates* Dataset::GetShareStates(
     std::vector<uint32_t> offsets;
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, true);
+    Log::Warning("feature_groups_.size() = %ld, offsets.size() = %ld", feature_groups_.size(), offsets.size());
     share_state->SetMultiValBin(GetMultiBinFromSparseFeatures(offsets, use_pairwise_ranking),
       num_data_, feature_groups_, false, true, num_grad_quant_bins);
     share_state->is_col_wise = true;
@@ -717,6 +720,7 @@ TrainingShareStates* Dataset::GetShareStates(
     std::vector<uint32_t> offsets;
     share_state->CalcBinOffsets(
       feature_groups_, &offsets, false);
+    Log::Warning("feature_groups_.size() = %ld, offsets.size() = %ld", feature_groups_.size(), offsets.size());
     share_state->SetMultiValBin(GetMultiBinFromAllFeatures(offsets, use_pairwise_ranking), num_data_,
       feature_groups_, false, false, num_grad_quant_bins);
     share_state->is_col_wise = false;

@@ -14,7 +14,7 @@ int main(int /*argc*/, char** /*argv*/) {
   bool success = false;
   try {
 
-    std::string config_str = std::string("config=train.conf");
+    std::string config_str = std::string("config=train_pairwise_lambdarank.conf");
     char* argv = new char[config_str.size() + 1];
     for (size_t i = 0; i < config_str.size(); ++i) {
       argv[i] = config_str[i];

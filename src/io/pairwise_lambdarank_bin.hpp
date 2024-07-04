@@ -621,6 +621,12 @@ class SparsePairwiseRankingDiffBin: public SparsePairwiseRankingBin<VAL_T, Pairw
   const std::vector<std::unique_ptr<const BinMapper>>* ori_bin_mappers_;
 };
 
+template <typename MULTI_VAL_BIN_TYPE>
+class MultiValPairwiseBin : public MULTI_VAL_BIN_TYPE {
+ public:
+  
+};
+
 
 }  // namespace LightGBM
 
