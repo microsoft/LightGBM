@@ -623,6 +623,174 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
 
+test_that("Booster$num_trees_per_iter() works as expected", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees_per_iter(), 1L)
+  expect_equal(fit_binary$num_trees_per_iter(), 1L)
+  expect_equal(fit_class$num_trees_per_iter(), num_class)
+})
+
+test_that("Booster$num_trees() and $num_iter() works (no early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees(), nrounds)
+  expect_equal(fit_binary$num_trees(), nrounds)
+  expect_equal(fit_class$num_trees(), num_class * nrounds)
+
+  expect_equal(fit_reg$num_iter(), nrounds)
+  expect_equal(fit_binary$num_iter(), nrounds)
+  expect_equal(fit_class$num_iter(), nrounds)
+})
+
+test_that("Booster$num_trees() and $num_iter() work (with early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  train_ix <- c(1L:40L, 51L:90L, 101L:140L)
+  X_train <- X[train_ix, ]
+  X_valid <- X[-train_ix, ]
+
+  num_class <- 3L
+  nrounds <- 1000L
+  early_stopping <- 2L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_reg[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_reg[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_binary[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_binary[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X_train, label = y_class[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_class[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  expected_trees_reg <- fit_reg$best_iter + early_stopping
+  expected_trees_binary <- fit_binary$best_iter + early_stopping
+  expected_trees_class <- (fit_class$best_iter + early_stopping) * num_class
+
+  expect_equal(fit_reg$num_trees(), expected_trees_reg)
+  expect_equal(fit_binary$num_trees(), expected_trees_binary)
+  expect_equal(fit_class$num_trees(), expected_trees_class)
+
+  expect_equal(fit_reg$num_iter(), expected_trees_reg)
+  expect_equal(fit_binary$num_iter(), expected_trees_binary)
+  expect_equal(fit_class$num_iter(), expected_trees_class / num_class)
+})
+
 test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
     data(agaricus.train, package = "lightgbm")
     dtrain <- lgb.Dataset(

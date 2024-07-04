@@ -1144,10 +1144,22 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def feature_name_(self) -> List[str]:
-        """:obj:`list` of shape = [n_features]: The names of features."""
+        """:obj:`list` of shape = [n_features]: The names of features.
+
+        .. note::
+
+            If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
+        """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
+
+    @property
+    def feature_names_in_(self) -> np.ndarray:
+        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``."""
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
+        return np.array(self.feature_name_)
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):

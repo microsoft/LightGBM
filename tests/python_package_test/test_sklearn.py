@@ -1290,6 +1290,46 @@ def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_np_input(estimator_class):
+    # input is a numpy array, which doesn't have feature names. LightGBM adds
+    # feature names to the fitted model, which is inconsistent with sklearn's behavior
+    X, y = load_digits(n_class=2, return_X_y=True)
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
+
+
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_pd_input(estimator_class):
+    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
+    col_names = X.columns.to_list()
+    assert isinstance(col_names, list) and all(
+        isinstance(c, str) for c in col_names
+    ), "input data must have feature names for this test to cover the expected functionality"
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, X.columns)
+
+
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
