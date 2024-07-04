@@ -231,12 +231,13 @@ In older versions, avoid printing the ``Dataset`` after calling ``setinfo()``.
 
 As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_field()``.
 
-3. ``error in data.table::data.table()...argument 2 is NULL``
--------------------------------------------------------------
+3. ``error in data.table::data.table()...argument 2 is NULL``.
+--------------------------------------------------------------
 
 If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
-4. package ‘Matrix’ is not available
+4. ``package/dependency ‘Matrix’ is not available ...``
+-------------------------------------------------------
 
 In April 2024, ``Matrix==1.7-0`` was published to CRAN.
 That version had a floor of ``R (>=4.4.0)``.
