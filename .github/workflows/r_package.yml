@@ -19,6 +19,8 @@ env:
   # this could be removed (hopefully) when R 3.6 support is removed
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   CMAKE_BUILD_PARALLEL_LEVEL: 4
+  # parallelize compilation (extra import for Linux, where CRAN doesn't supply pre-compiled binaries)
+  MAKEFLAGS: "-j2"
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
   _R_CHECK_SYSTEM_CLOCK_: 0
@@ -258,7 +260,7 @@ jobs:
           cat ./tests.log
           exit ${exit_code}
   test-r-extra-checks:
-    name: r-package (${{ matrix.image }})
+    name: r-package (${{ matrix.image }}, R-devel)
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -275,7 +277,6 @@ jobs:
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     env:
       DEBIAN_FRONTEND: noninteractive
-      MAKEFLAGS: -j2
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -284,6 +285,30 @@ jobs:
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
+      - name: Install LaTeX
+        shell: bash
+        run: |
+          if type -f apt 2>&1 > /dev/null; then
+            apt-get update
+            apt-get install --no-install-recommends -y \
+                devscripts \
+                texinfo \
+                texlive-latex-extra \
+                texlive-latex-recommended \
+                texlive-fonts-recommended \
+                texlive-fonts-extra \
+                tidy \
+                qpdf
+          else
+            yum update -y
+            yum install -y \
+                devscripts \
+                qpdf \
+                texinfo \
+                texinfo-tex \
+                texlive-latex \
+                tidy
+          fi
       - name: Install packages and run tests
         shell: bash
         run: |
