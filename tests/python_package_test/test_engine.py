@@ -1432,7 +1432,7 @@ def test_feature_name():
     assert feature_names == gbm.feature_name()
 
 
-def test_feature_name_with_non_ascii(rng):
+def test_feature_name_with_non_ascii(rng, tmp_path):
     X_train = rng.normal(size=(100, 4))
     y_train = rng.normal(size=(100,))
     # This has non-ascii strings.
@@ -1442,9 +1442,10 @@ def test_feature_name_with_non_ascii(rng):
 
     gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
-    gbm.save_model("lgb.model")
+    model_path_txt = str(tmp_path / "lgb.model")
+    gbm.save_model(model_path_txt)
 
-    gbm2 = lgb.Booster(model_file="lgb.model")
+    gbm2 = lgb.Booster(model_file=model_path_txt)
     assert feature_names == gbm2.feature_name()
 
 
@@ -1497,7 +1498,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     np.testing.assert_allclose(preds, orig_preds)
 
 
-def test_save_load_copy_pickle():
+def test_save_load_copy_pickle(tmp_path):
     def train_and_predict(init_model=None, return_model=False):
         X, y = make_synthetic_regression()
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1509,17 +1510,19 @@ def test_save_load_copy_pickle():
     gbm = train_and_predict(return_model=True)
     ret_origin = train_and_predict(init_model=gbm)
     other_ret = []
-    gbm.save_model("lgb.model")
-    with open("lgb.model") as f:  # check all params are logged into model file correctly
+    model_path_txt = str(tmp_path / "lgb.model")
+    gbm.save_model(model_path_txt)
+    with open(model_path_txt) as f:  # check all params are logged into model file correctly
         assert f.read().find("[num_iterations: 10]") != -1
-    other_ret.append(train_and_predict(init_model="lgb.model"))
-    gbm_load = lgb.Booster(model_file="lgb.model")
+    other_ret.append(train_and_predict(init_model=model_path_txt))
+    gbm_load = lgb.Booster(model_file=model_path_txt)
     other_ret.append(train_and_predict(init_model=gbm_load))
     other_ret.append(train_and_predict(init_model=copy.copy(gbm)))
     other_ret.append(train_and_predict(init_model=copy.deepcopy(gbm)))
-    with open("lgb.pkl", "wb") as f:
+    model_path_pkl = str(tmp_path / "lgb.pkl")
+    with open(model_path_pkl, "wb") as f:
         pickle.dump(gbm, f)
-    with open("lgb.pkl", "rb") as f:
+    with open(model_path_pkl, "rb") as f:
         gbm_pickle = pickle.load(f)
     other_ret.append(train_and_predict(init_model=gbm_pickle))
     gbm_pickles = pickle.loads(pickle.dumps(gbm))
