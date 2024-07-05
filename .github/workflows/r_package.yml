@@ -18,9 +18,12 @@ env:
   #
   # this could be removed (hopefully) when R 3.6 support is removed
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  # parallelize compilation (extra import for Linux, where CRAN doesn't supply pre-compiled binaries)
-  MAKEFLAGS: "-j2"
+  # on Debian-based images, avoid interactive prompts
+  DEBIAN_FRONTEND: noninteractive
+  # parallelize compilation (extra important for Linux, where CRAN doesn't supply pre-compiled binaries)
+  MAKEFLAGS: "-j4"
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
   _R_CHECK_SYSTEM_CLOCK_: 0
@@ -63,12 +66,6 @@ jobs:
             r_version: 3.6
             build_type: cmake
             container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.3
-            build_type: cmake
-            container: 'ubuntu:22.04'
           - os: macos-13
             task: r-package
             compiler: gcc
@@ -265,18 +262,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ref: https://r-hub.github.io/containers/containers.html
+        # references:
+        #   * CRAN "additional checks": https://cran.r-project.org/web/checks/check_issue_kinds.html
+        #   * images: https://r-hub.github.io/containers/containers.html
         image:
-          - "clang16"
-          - "clang17"
-          - "clang18"
-          - "clang19"
-          - "intel"
-          - "gcc14"
+          - clang16
+          - clang17
+          - clang18
+          - clang19
+          - gcc14
+          - intel
     runs-on: ubuntu-latest
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
-    env:
-      DEBIAN_FRONTEND: noninteractive
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -320,8 +317,17 @@ jobs:
           echo ""
           cat lightgbm.Rcheck/00install.out
           echo ""
-          if grep -q -E "NOTE|WARNING|ERROR" lightgbm.Rcheck/00check.log; then
-              echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
+          # allowing NOTEs, because of this one in the clang images:
+          #
+          #   * checking compilation flags used ... NOTE
+          #       Compilation used the following non-portable flag(s):
+          #       ‘-Wp,-D_FORTIFY_SOURCE=3’
+          #
+          # even though CRAN itself sets that:
+          # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
+          #
+          if grep -q -E "WARNING|ERROR" lightgbm.Rcheck/00check.log; then
+              echo "WARNINGs, or ERRORs have been found by R CMD check"
               exit 1
           fi
   all-r-package-jobs-successful:
