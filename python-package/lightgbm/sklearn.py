@@ -467,7 +467,7 @@ def _extract_evaluation_meta_data(
         # It's possible, for example, to pass 3 eval sets through `eval_set`,
         # but only 1 init_score through `eval_init_score`.
         #
-        # This if-else accounts for that possiblity.
+        # This if-else accounts for that possibility.
         if len(collection) > i:
             return collection[i]
         else:
@@ -1011,7 +1011,7 @@ class LGBMModel(_LGBMModelBase):
                 f"match the input. Model n_features_ is {self._n_features} and "
                 f"input n_features is {n_features}"
             )
-        # retrive original params that possibly can be used in both training and prediction
+        # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
