@@ -1361,7 +1361,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 "Returning raw scores instead."
             )
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self._n_classes > 2 or len(result.shape) > 1 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1.0 - result, result)).transpose()
