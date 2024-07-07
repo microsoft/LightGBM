@@ -1251,7 +1251,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 eval_metric_list = [eval_metric]
             else:
                 eval_metric_list = []
-            if self._n_classes > 2:
+            if self.__is_multiclass:
                 for index, metric in enumerate(eval_metric_list):
                     if metric in {"logloss", "binary_logloss"}:
                         eval_metric_list[index] = "multi_logloss"
@@ -1361,7 +1361,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 "Returning raw scores instead."
             )
             return result
-        elif self._n_classes > 2 or len(result.shape) > 1 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self.__is_multiclass or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1.0 - result, result)).transpose()
@@ -1388,6 +1388,12 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No classes found. Need to call fit beforehand.")
         return self._n_classes
+
+    @property
+    def __is_multiclass(self) -> bool:
+        """:obj:`bool`:  Indicator of whether the classifier is used for multiclass."""
+        multiclass_objectives = ("multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr")
+        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in multiclass_objectives)
 
 
 class LGBMRanker(LGBMModel):
