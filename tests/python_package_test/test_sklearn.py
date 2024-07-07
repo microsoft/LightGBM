@@ -1053,6 +1053,20 @@ def test_metrics():
     assert len(gbm.evals_result_["training"]) == 1
     assert "binary_logloss" in gbm.evals_result_["training"]
 
+    # the evaluation metric changes to multiclass metric even num classes is 2 for multiclass objective
+    gbm = lgb.LGBMClassifier(objective="multiclass", num_classes=2, **params).fit(
+        eval_metric="binary_logloss", **params_fit
+    )
+    assert len(gbm._evals_result["training"]) == 1
+    assert "multi_logloss" in gbm.evals_result_["training"]
+
+    # the evaluation metric changes to multiclass metric even num classes is 2 for ovr objective
+    gbm = lgb.LGBMClassifier(objective="ovr", num_classes=2, **params).fit(eval_metric="binary_error", **params_fit)
+    assert gbm.objective_ == "ovr"
+    assert len(gbm.evals_result_["training"]) == 2
+    assert "multi_logloss" in gbm.evals_result_["training"]
+    assert "multi_error" in gbm.evals_result_["training"]
+
 
 def test_multiple_eval_metrics():
     X, y = load_breast_cancer(return_X_y=True)
