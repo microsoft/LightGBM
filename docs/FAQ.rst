@@ -149,7 +149,7 @@ and copy memory as required by creating new processes instead of forking (or, us
 
 Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a
 single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent
-<https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
+<https://aws.amazon.com/batch/faqs>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
 
 12. Why is early stopping not enabled by default in LightGBM?
 -------------------------------------------------------------
@@ -231,12 +231,13 @@ In older versions, avoid printing the ``Dataset`` after calling ``setinfo()``.
 
 As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_field()``.
 
-3. ``error in data.table::data.table()...argument 2 is NULL``
--------------------------------------------------------------
+3. ``error in data.table::data.table()...argument 2 is NULL``.
+--------------------------------------------------------------
 
 If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
 
-4. package ‘Matrix’ is not available
+4. ``package/dependency ‘Matrix’ is not available ...``
+-------------------------------------------------------
 
 In April 2024, ``Matrix==1.7-0`` was published to CRAN.
 That version had a floor of ``R (>=4.4.0)``.
@@ -321,7 +322,7 @@ We are doing our best to provide universal wheels which have high running speed 
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
 Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary lightgbm lightgbm``.
-For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
+For the OS-specific prerequisites see https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
 

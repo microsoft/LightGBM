@@ -15,6 +15,7 @@ concurrency:
 
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
+  SKBUILD_STRICT_CONFIG: true
 
 jobs:
   test:

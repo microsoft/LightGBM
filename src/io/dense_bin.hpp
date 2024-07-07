@@ -614,7 +614,7 @@ class DenseBin : public Bin {
 #endif
   std::vector<uint8_t> buf_;
 
-  DenseBin<VAL_T, IS_4BIT>(const DenseBin<VAL_T, IS_4BIT>& other)
+  DenseBin(const DenseBin<VAL_T, IS_4BIT>& other)
       : num_data_(other.num_data_), data_(other.data_) {}
 };
 

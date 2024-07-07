@@ -136,7 +136,7 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
-cd ${BUILD_DIRECTORY}
+cd "${BUILD_DIRECTORY}"
 
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -147,7 +147,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
+        ./R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
@@ -200,22 +200,10 @@ fi
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
-(
-    R CMD check ${PKG_TARBALL} \
-        --as-cran \
-        --run-donttest \
-    || check_succeeded="no"
-) &
-
-# R CMD check suppresses output, some CIs kill builds after
-# a few minutes with no output. This trick gives R CMD check more time
-#     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
-#     * https://stackoverflow.com/a/29890106/3986677
-CHECK_PID=$!
-while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
-    echo -n -e " \b"
-    sleep 5
-done
+R CMD check ${PKG_TARBALL} \
+    --as-cran \
+    --run-donttest \
+|| check_succeeded="no"
 
 echo "R CMD check build logs:"
 BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
