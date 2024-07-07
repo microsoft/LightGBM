@@ -720,19 +720,22 @@ def test_predict():
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Test multiclass binary classification
-    num_samples, num_classes = 20, 2
-    rng = np.random.Generator(np.random.PCG64())
-    X_train = rng.uniform(low=0, high=1, size=[num_samples, 3])
-    y_train = rng.choice([0, 1], size=num_samples)
+    num_samples, num_classes = 5, 2
+    X_train = np.ones((num_samples, 3))
+    y_train = np.zeros((num_samples,))
 
     gbm = lgb.train({"objective": "multiclass", "num_class": num_classes, "verbose": -1}, lgb.Dataset(X_train, y_train))
     clf = lgb.LGBMClassifier(objective="multiclass", num_classes=num_classes).fit(X_train, y_train)
 
     res_engine = gbm.predict(X_train)
     res_sklearn = clf.predict_proba(X_train)
+
     assert res_engine.shape == (num_samples, num_classes)
     assert res_sklearn.shape == (num_samples, num_classes)
     np.testing.assert_allclose(res_engine, res_sklearn)
+
+    res_class_sklearn = clf.predict(X_train)
+    np.testing.assert_allclose(res_class_sklearn, np.zeros((num_samples,)))
 
 
 def test_predict_with_params_from_init():
