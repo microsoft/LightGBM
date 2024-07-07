@@ -719,6 +719,18 @@ def test_predict():
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
+    # Test multiclass binary classification
+    rng = np.random.Generator(np.random.PCG64())
+    X_train = rng.uniform(low=0, high=1, size=[20, 3])
+    y_train = rng.choice([0, 1], size=20)
+
+    gbm = lgb.train({"objective": "multiclass", "num_class": 2, "verbose": -1}, lgb.Dataset(X_train, y_train))
+    clf = lgb.LGBMClassifier(objective="multiclass", num_classes=2).fit(X_train, y_train)
+
+    res_engine = gbm.predict(X_train)
+    res_sklearn = clf.predict_proba(X_train)
+    np.testing.assert_allclose(res_engine, res_sklearn)
+
 
 def test_predict_with_params_from_init():
     X, y = load_iris(return_X_y=True)
