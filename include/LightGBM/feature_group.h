@@ -587,26 +587,26 @@ class FeatureGroup {
       multi_bin_data_.clear();
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
-        if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(
-              num_data, bin_mappers_[i]->num_bin() + addi));
-        } else {
+        // if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
+        //   multi_bin_data_.emplace_back(Bin::CreateSparseBin(
+        //       num_data, bin_mappers_[i]->num_bin() + addi));
+        // } else {
           multi_bin_data_.emplace_back(
               Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
-        }
+        // }
       }
       is_multi_val_ = true;
     } else {
-      if (force_sparse ||
-          (!force_dense && num_feature_ == 1 &&
-           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
-        is_sparse_ = true;
-        bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
-      } else {
+      // if (force_sparse ||
+      //     (!force_dense && num_feature_ == 1 &&
+      //      bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
+      //   is_sparse_ = true;
+      //   bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
+      // } else {
         is_sparse_ = false;
         bin_data_.reset(Bin::CreateDenseBin(num_data, num_total_bin_));
-      }
-      is_multi_val_ = false;
+      // }
+      // is_multi_val_ = false;
     }
   }
 

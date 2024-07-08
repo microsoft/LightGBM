@@ -98,6 +98,9 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
     for (; i < pf_end; ++i) {
       const auto paired_idx = USE_INDICES ? data_indices[i] : i;
       const auto ti = GetBinAt(paired_idx) << 1;
+      if (this->group_index_ == 0) {
+        Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
+      }
       if (USE_HESSIAN) {
         grad[ti] += ordered_gradients[i];
         hess[ti] += ordered_hessians[i];
@@ -110,6 +113,9 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   for (; i < end; ++i) {
     const auto paired_idx = USE_INDICES ? data_indices[i] : i;
     const auto ti = GetBinAt(paired_idx) << 1;
+    if (this->group_index_ == 0) {
+      Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
+    }
     if (USE_HESSIAN) {
       grad[ti] += ordered_gradients[i];
       hess[ti] += ordered_hessians[i];

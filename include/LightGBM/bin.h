@@ -537,6 +537,8 @@ class Bin {
   virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
 
   virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
+
+  int group_index_ = -1;
 };
 
 

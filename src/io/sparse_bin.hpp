@@ -77,6 +77,7 @@ class SparseBin : public Bin {
   explicit SparseBin(data_size_t num_data) : num_data_(num_data) {
     int num_threads = OMP_NUM_THREADS();
     push_buffers_.resize(num_threads);
+    Log::Warning("sparse bin is created !!!");
   }
 
   ~SparseBin() {}

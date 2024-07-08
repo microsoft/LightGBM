@@ -13,7 +13,9 @@ namespace LightGBM {
 template <typename BIN_TYPE, template<typename> class MULTI_VAL_BIN_TYPE>
 class MultiValPairwiseLambdarankBin : public MULTI_VAL_BIN_TYPE<BIN_TYPE> {
  public:
-  MultiValPairwiseLambdarankBin(data_size_t num_data, int num_bin, int num_feature, const std::vector<uint32_t>& offsets): MULTI_VAL_BIN_TYPE<BIN_TYPE>(num_data, num_bin, num_feature, offsets) {}
+  MultiValPairwiseLambdarankBin(data_size_t num_data, int num_bin, int num_feature, const std::vector<uint32_t>& offsets): MULTI_VAL_BIN_TYPE<BIN_TYPE>(num_data, num_bin, num_feature, offsets) {
+    this->num_bin_ = num_bin * 2;
+  }
  protected:
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map_;
 };
@@ -66,6 +68,13 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
       const score_t hessian = ORDERED ? hessians[i] : hessians[idx];
       for (int j = 0; j < this->num_feature_; ++j) {
         const uint32_t bin = static_cast<uint32_t>(first_data_ptr[j]);
+        // if (bin != 0) {
+        //   Log::Warning("first bin = %d, num_feature_ = %d", bin, this->num_feature_);
+        // }
+        if (j == 0) {
+          Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", j, bin, gradient, hessian);
+        }
+
         const auto ti = (bin + this->offsets_[j]) << 1;
         grad[ti] += gradient;
         hess[ti] += hessian;
@@ -76,6 +85,9 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
       const auto base_offset = this->offsets_.back();
       for (int j = 0; j < this->num_feature_; ++j) {
         const uint32_t bin = static_cast<uint32_t>(second_data_ptr[j]);
+        // if (bin != 0) {
+        //   Log::Warning("second bin = %d, num_feature_ = %d", bin, this->num_feature_);
+        // }
         const auto ti = (bin + this->offsets_[j] + base_offset) << 1;
         grad[ti] += gradient;
         hess[ti] += hessian;

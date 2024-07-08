@@ -499,6 +499,7 @@ void PushDataToMultiValBin(
     MultiValBin* ret) {
   Common::FunctionTimer fun_time("Dataset::PushDataToMultiValBin",
                                  global_timer);
+  Log::Warning("num_data = %d", num_data);
   if (ret->IsSparse()) {
     // Log::Fatal("pairwise ranking with sparse multi val bin is not supported.");
     Threading::For<data_size_t>(
@@ -634,11 +635,11 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
              1.0 - sum_dense_ratio);
   if (use_pairwise_ranking) {
 
-    for (size_t i = 0; i < iters.size(); ++i) {
-      for (size_t j = 0; j < iters[i].size(); ++j) {
-        Log::Warning("i = %ld, j = %ld, iters[i][j] = %d", i, j, static_cast<int>(iters[i][j] == nullptr));
-      }
-    }
+    // for (size_t i = 0; i < iters.size(); ++i) {
+    //   for (size_t j = 0; j < iters[i].size(); ++j) {
+    //     Log::Warning("i = %ld, j = %ld, iters[i][j] = %d", i, j, static_cast<int>(iters[i][j] == nullptr));
+    //   }
+    // }
 
     const int num_original_features = static_cast<int>(most_freq_bins.size()) / 2;
     std::vector<uint32_t> original_most_freq_bins;
@@ -662,7 +663,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     ret.reset(MultiValBin::CreateMultiValBin(
         num_original_data, original_offsets.back(), num_original_features,
         1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
-    PushDataToMultiValBin(num_original_features, original_most_freq_bins, original_offsets, &iters, ret.get());
+    PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get());
   } else {
     ret.reset(MultiValBin::CreateMultiValBin(
         num_data_, offsets.back(), static_cast<int>(most_freq_bins.size()),
@@ -1632,6 +1633,7 @@ void Dataset::ConstructHistogramsInner(
       OMP_LOOP_EX_BEGIN();
       int group = used_dense_group[gi];
       const int num_bin = feature_groups_[group]->num_total_bin_;
+      feature_groups_[group]->bin_data_->group_index_ = gi;
       if (USE_QUANT_GRAD) {
         if (HIST_BITS == 16) {
           auto data_ptr = reinterpret_cast<hist_t*>(reinterpret_cast<int32_t*>(hist_data) + group_bin_boundaries_[group]);

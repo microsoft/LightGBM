@@ -707,9 +707,10 @@ namespace LightGBM {
       // if (use_pairwise_ranking) {
         Log::Warning("Pairwise ranking with sparse row-wse bins is not supported yet.");
         return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
+      // } else {
+      //   return CreateMultiValSparseBin(num_data, num_bin,
+      //                                  average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
       // }
-      return CreateMultiValSparseBin(num_data, num_bin,
-                                    average_element_per_row, use_pairwise_ranking, paired_ranking_item_global_index_map);
     } else {
       return CreateMultiValDenseBin(num_data, num_bin, num_feature, offsets, use_pairwise_ranking, paired_ranking_item_global_index_map);
     }
