@@ -76,7 +76,11 @@ jobs:
   build-and-test-wheels:
     name: ${{ matrix.task }} (${{ matrix.artifact-name }}, Python 3.10)
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.container }}
+    env:
+      CONDA: /tmp/miniforge
+      METHOD: bdist
+      PYTHON_VERSION: '3.10'
+      TASK: wheel
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -84,7 +88,6 @@ jobs:
         include:
           - os: macos-14
             artifact-name: macosx-arm64-wheel
-            container: null
           - os: macos-14
             artifact-name: linux-aarch64-wheel
             container: 'lightgbm/vsts-agent:manylinux2014_aarch64'
@@ -97,25 +100,35 @@ jobs:
       - name: Setup and run tests
         shell: bash
         run: |
-          export TASK="bdist"
-          export METHOD="wheel"
-          export PYTHON_VERSION="3.10"
           if [[ "${{ matrix.artifact-name }}" == "macosx-arm64-wheel" ]]; then
               # use clang when creating macOS release artifacts
               export COMPILER="clang"
               export OS_NAME="macos"
+              export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+              export PATH=${CONDA}/bin:${PATH}
+              $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+              $GITHUB_WORKSPACE/.ci/test.sh || exit 1
           elif [[ "${{ matrix.artifact-name }}" == "linux-aarch64-wheel" ]]; then
-              export COMPILER="gcc"
-              export OS_NAME="linux"
+              # 'docker' did not come preinstalled on macOS runners as of when this was added
+              # ref: https://github.com/actions/runner/issues/1456
+              brew install docker colima
+              colima start --cpu 2
+              docker run \
+                --rm \
+                -v $(pwd):/opt/LightGBM \
+                -w /opt/LightGBM \
+                --env COMPILER=gcc \
+                --env CONDA=${CONDA} \
+                --env METHOD=${METHOD} \
+                --env OS_NAME=linux \
+                --env PYTHON_VERSION="${PYTHON_VERSION}" \
+                --env TASK=${TASK} \
+                -i lightgbm/vsts-agent:manylinux2014_aarch64 \
+                bash -c 'PATH="${CONDA}/bin:${PATH}" .ci/setup.sh && PATH="${CONDA}/bin:${PATH}" .ci/test.sh'
           else
               echo "Unrecognized artifact name: '${{ matrix.artifact-name }}'"
               exit 1
           fi
-          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export CONDA=${HOME}/miniforge
-          export PATH=${CONDA}/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
       - name: upload wheels
         uses: actions/upload-artifact@v4
         with:
