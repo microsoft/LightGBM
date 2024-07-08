@@ -112,8 +112,8 @@ jobs:
               # 'docker' did not come preinstalled on macOS runners as of when this was added
               # ref: https://github.com/actions/runner/issues/1456
               brew install podman
-              podman machine start
               podman machine init
+              podman machine start
               podman run \
                 --rm \
                 -v $(pwd):/opt/LightGBM \
