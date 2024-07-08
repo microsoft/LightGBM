@@ -18,6 +18,7 @@ env:
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
+  # purpose: test different Python package variants (build options, compiler, Python version)
   test:
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
@@ -38,10 +39,6 @@ jobs:
           - os: macos-13
             task: if-else
             python_version: '3.9'
-          - os: macos-14
-            task: bdist
-            method: wheel
-            python_version: '3.10'
           # We're currently skipping MPI jobs on macOS, see https://github.com/microsoft/LightGBM/pull/6425
           # for further details.
           # - os: macos-13
@@ -68,16 +65,56 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
-          if [[ "${{ matrix.os }}" == "macos-14" ]]; then
+          export COMPILER="gcc"
+          export OS_NAME="macos"
+          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
+          export CONDA=${HOME}/miniforge
+          export PATH=${CONDA}/bin:${PATH}
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+  # purpose: build macOS wheels to release
+  build-and-test-wheels:
+    name: ${{ matrix.task }} (${{ matrix.artifact-name }}, Python ${{ matrix.python_version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            task: bdist
+            method: wheel
+            python_version: '3.10'
+            container: null
+            artifact-name: macosx-arm64-wheel
+          - os: macos-14
+            task: bdist
+            method: wheel
+            python_version: '3.10'
+            container: "lightgbm/vsts-agent:manylinux2014_aarch64"
+            artifact-name: linux-aarch64-wheel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - name: Setup and run tests
+        shell: bash
+        run: |
+          export TASK="${{ matrix.task }}"
+          export METHOD="${{ matrix.method }}"
+          export PYTHON_VERSION="${{ matrix.python_version }}"
+          if [[ "${{ matrix.artifact-name }}" == "macosx-arm64-wheel" ]]; then
               # use clang when creating macOS release artifacts
               export COMPILER="clang"
               export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "macos-13" ]]; then
+          elif [[ "${{ matrix.artifact-name }}" == "linux-aarch64-wheel" ]]; then
               export COMPILER="gcc"
-              export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-              export COMPILER="clang"
               export OS_NAME="linux"
+          else
+              echo "Unrecognized artifact name: '${{ matrix.artifact-name }}'"
+              exit 1
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
@@ -85,11 +122,12 @@ jobs:
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
           $GITHUB_WORKSPACE/.ci/test.sh || exit 1
       - name: upload wheels
-        if: ${{ matrix.method == 'wheel' && matrix.os == 'macos-14' }}
         uses: actions/upload-artifact@v4
         with:
-          name: macosx-arm64-wheel
+          name: ${{ matrix.artifact-name }}
           path: dist/*.whl
+  # purpose: test the Python package against nightlies of its dependencies,
+  #          to catch issues before users experience them
   test-latest-versions:
     name: Python - latest versions (ubuntu-latest)
     runs-on: ubuntu-latest
@@ -117,6 +155,8 @@ jobs:
             -w /opt/lgb-build \
             python:3.11 \
             /bin/bash ./.ci/test-python-latest.sh
+  # purpose: test the Python package against the oldest supported versions of its dependencies,
+  #          to prevent changes from accidentally breaking compatibility with those older versions
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
     runs-on: ubuntu-latest
@@ -147,7 +187,7 @@ jobs:
   all-python-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
-    needs: [test, test-latest-versions, test-oldest-versions]
+    needs: [test, build-and-test-wheels, test-latest-versions, test-oldest-versions]
     steps:
     - name: Note that all tests succeeded
       uses: re-actors/alls-green@v1.2.2
