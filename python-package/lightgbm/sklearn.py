@@ -10,6 +10,7 @@ import numpy as np
 import scipy.sparse
 
 from .basic import (
+    _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
     LightGBMError,
@@ -1392,8 +1393,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     @property
     def __is_multiclass(self) -> bool:
         """:obj:`bool`:  Indicator of whether the classifier is used for multiclass."""
-        multiclass_objectives = ("multiclass", "softmax", "multiclassova", "multiclass_ova", "ova", "ovr")
-        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in multiclass_objectives)
+        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in _MULTICLASS_OBJECTIVES)
 
 
 class LGBMRanker(LGBMModel):
