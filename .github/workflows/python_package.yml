@@ -78,9 +78,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       CONDA: /tmp/miniforge
-      METHOD: bdist
+      METHOD: wheel
       PYTHON_VERSION: '3.10'
-      TASK: wheel
+      TASK: bdist
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -111,12 +111,10 @@ jobs:
           elif [[ "${{ matrix.artifact-name }}" == "linux-aarch64-wheel" ]]; then
               # 'docker' did not come preinstalled on macOS runners as of when this was added
               # ref: https://github.com/actions/runner/issues/1456
-              brew install --cask docker
-              echo "starting Docker"
-              open /Applications/Docker.app &
-              echo "done starting Docker"
-              sleep 20
-              docker run \
+              brew install podman
+              podman machine start
+              podman machine init
+              podman run \
                 --rm \
                 -v $(pwd):/opt/LightGBM \
                 -w /opt/LightGBM \
