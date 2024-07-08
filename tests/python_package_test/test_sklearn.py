@@ -736,7 +736,7 @@ def test_predict():
     np.testing.assert_allclose(res_engine, res_sklearn)
 
     res_class_sklearn = clf.predict(X_train)
-    np.testing.assert_allclose(res_class_sklearn, np.concat([np.zeros(49), np.ones(51)], axis=0))
+    np.testing.assert_allclose(res_class_sklearn, np.concatenate([np.zeros(49), np.ones(51)]))
 
 
 def test_predict_with_params_from_init():
