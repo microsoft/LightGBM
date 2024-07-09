@@ -723,7 +723,7 @@ def test_predict():
     num_samples = 100
     num_classes = 2
     X_train = np.linspace(start=0, stop=10, num=num_samples * 3).reshape(num_samples, 3)
-    y_train = np.repeat([0, 1], repeats=num_samples / 2)
+    y_train = np.concatenate([np.zeros(int(num_samples / 2 - 10)), np.ones(int(num_samples / 2 + 10))])
 
     gbm = lgb.train({"objective": "multiclass", "num_class": num_classes, "verbose": -1}, lgb.Dataset(X_train, y_train))
     clf = lgb.LGBMClassifier(objective="multiclass", num_classes=num_classes).fit(X_train, y_train)
@@ -736,7 +736,7 @@ def test_predict():
     np.testing.assert_allclose(res_engine, res_sklearn)
 
     res_class_sklearn = clf.predict(X_train)
-    np.testing.assert_allclose(res_class_sklearn, np.concatenate([np.zeros(49), np.ones(51)]))
+    np.testing.assert_allclose(res_class_sklearn, y_train)
 
 
 def test_predict_with_params_from_init():
