@@ -40,7 +40,6 @@ void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::s
 }
 
 void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
-
   int verbosity = 1;
 
   // if "verbosity" was found in params, prefer that to any other aliases
