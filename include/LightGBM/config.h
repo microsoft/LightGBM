@@ -619,23 +619,24 @@ struct Config {
   // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
   // desc = with quantized training, most arithmetics in the training process will be integer operations
   // desc = gradient quantization can accelerate training, with little accuracy drop in most cases
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   int num_grad_quant_bins = 4;
 
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   bool quant_train_renew_leaf = false;
 
   // desc = whether to use stochastic rounding in gradient quantization
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   bool stochastic_rounding = true;
 
