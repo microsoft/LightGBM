@@ -462,7 +462,7 @@ def test_clone_and_property():
     assert isinstance(clf.feature_importances_, np.ndarray)
 
 
-def test_joblib():
+def test_joblib(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj, verbose=-1, importance_type="split")
@@ -473,9 +473,9 @@ def test_joblib():
         eval_metric=mse,
         callbacks=[lgb.early_stopping(5), lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))],
     )
-
-    joblib.dump(gbm, "lgb.pkl")  # test model with custom functions
-    gbm_pickle = joblib.load("lgb.pkl")
+    model_path_pkl = str(tmp_path / "lgb.pkl")
+    joblib.dump(gbm, model_path_pkl)  # test model with custom functions
+    gbm_pickle = joblib.load(model_path_pkl)
     assert isinstance(gbm_pickle.booster_, lgb.Booster)
     assert gbm.get_params() == gbm_pickle.get_params()
     np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
