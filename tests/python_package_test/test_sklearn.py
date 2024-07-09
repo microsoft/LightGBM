@@ -1290,6 +1290,19 @@ def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
 
 
+def test_verbosity_is_respected_when_using_custom_objective(capsys):
+    X, y = make_synthetic_regression()
+    params = {
+        "objective": objective_ls,
+        "nonsense": 123,
+        "num_leaves": 3,
+    }
+    lgb.LGBMRegressor(**params, verbosity=-1, n_estimators=1).fit(X, y)
+    assert capsys.readouterr().out == ""
+    lgb.LGBMRegressor(**params, verbosity=0, n_estimators=1).fit(X, y)
+    assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
 def test_getting_feature_names_in_np_input(estimator_class):
     # input is a numpy array, which doesn't have feature names. LightGBM adds
