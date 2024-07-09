@@ -410,6 +410,12 @@ Learning Control Parameters
 
    -  can be used to speed up training
 
+-  ``early_stopping_min_delta`` :raw-html:`<a id="early_stopping_min_delta" title="Permalink to this parameter" href="#early_stopping_min_delta">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``early_stopping_min_delta >= 0.0``
+
+   -  when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+
+   -  *New in 4.4.0*
+
 -  ``first_metric_only`` :raw-html:`<a id="first_metric_only" title="Permalink to this parameter" href="#first_metric_only">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
@@ -674,7 +680,7 @@ Learning Control Parameters
 
    -  gradient quantization can accelerate training, with little accuracy drop in most cases
 
-   -  **Note**: can be used only with ``device_type = cpu``
+   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
 
    -  *New in version 4.0.0*
 
@@ -684,7 +690,7 @@ Learning Control Parameters
 
    -  with more bins, the quantized training will be closer to full precision training
 
-   -  **Note**: can be used only with ``device_type = cpu``
+   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
 
    -  *New in 4.0.0*
 
@@ -694,13 +700,15 @@ Learning Control Parameters
 
    -  renewing is very helpful for good quantized training accuracy for ranking objectives
 
-   -  **Note**: can be used only with ``device_type = cpu``
+   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
 
    -  *New in 4.0.0*
 
 -  ``stochastic_rounding`` :raw-html:`<a id="stochastic_rounding" title="Permalink to this parameter" href="#stochastic_rounding">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
    -  whether to use stochastic rounding in gradient quantization
+
+   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
 
    -  *New in 4.0.0*
 

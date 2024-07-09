@@ -385,6 +385,28 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
 );
 
 /*!
+ * \brief Get number of trees per iteration
+ * \param handle Booster handle
+ * \param out Number of trees per iteration
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumModelPerIteration_R(
+    SEXP handle,
+    SEXP out
+);
+
+/*!
+ * \brief Get total number of trees
+ * \param handle Booster handle
+ * \param out Total number of trees of Booster
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumberOfTotalModel_R(
+    SEXP handle,
+    SEXP out
+);
+
+/*!
 * \brief Get model upper bound value.
 * \param handle Handle of Booster
 * \param[out] out_results Result pointing to max value
@@ -809,13 +831,15 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterPredictForMatSingleRowFast_R(
 * \param num_iteration, <= 0 means save all
 * \param feature_importance_type type of feature importance, 0: split, 1: gain
 * \param filename file name
+* \param start_iteration Starting iteration (0 based)
 * \return R NULL value
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
   SEXP handle,
   SEXP num_iteration,
   SEXP feature_importance_type,
-  SEXP filename
+  SEXP filename,
+  SEXP start_iteration
 );
 
 /*!
@@ -823,12 +847,14 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModel_R(
 * \param handle Booster handle
 * \param num_iteration, <= 0 means save all
 * \param feature_importance_type type of feature importance, 0: split, 1: gain
+* \param start_iteration Starting iteration (0 based)
 * \return R character vector (length=1) with model string
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
   SEXP handle,
   SEXP num_iteration,
-  SEXP feature_importance_type
+  SEXP feature_importance_type,
+  SEXP start_iteration
 );
 
 /*!
@@ -836,12 +862,14 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterSaveModelToString_R(
 * \param handle Booster handle
 * \param num_iteration, <= 0 means save all
 * \param feature_importance_type type of feature importance, 0: split, 1: gain
+* \param start_iteration Index of starting iteration (0 based)
 * \return R character vector (length=1) with model JSON
 */
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterDumpModel_R(
   SEXP handle,
   SEXP num_iteration,
-  SEXP feature_importance_type
+  SEXP feature_importance_type,
+  SEXP start_iteration
 );
 
 /*!

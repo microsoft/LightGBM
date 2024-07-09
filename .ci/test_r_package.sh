@@ -106,19 +106,28 @@ if [[ $OS_NAME == "macos" ]]; then
         -target / || exit 1
 fi
 
-# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+    Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
+else
+    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+    # This should be unnecessary on R >=4.4.0
+    # ref: https://github.com/microsoft/LightGBM/issues/6433
+    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 fi
+
+# manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
+# ref: https://github.com/microsoft/LightGBM/issues/6433
+Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
 # Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl')"
 else
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -127,7 +136,7 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
-cd ${BUILD_DIRECTORY}
+cd "${BUILD_DIRECTORY}"
 
 PKG_TARBALL="lightgbm_*.tar.gz"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
@@ -138,7 +147,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
+        ./R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
@@ -191,22 +200,10 @@ fi
 # fails tests if either ERRORs or WARNINGs are thrown by
 # R CMD CHECK
 check_succeeded="yes"
-(
-    R CMD check ${PKG_TARBALL} \
-        --as-cran \
-        --run-donttest \
-    || check_succeeded="no"
-) &
-
-# R CMD check suppresses output, some CIs kill builds after
-# a few minutes with no output. This trick gives R CMD check more time
-#     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
-#     * https://stackoverflow.com/a/29890106/3986677
-CHECK_PID=$!
-while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
-    echo -n -e " \b"
-    sleep 5
-done
+R CMD check ${PKG_TARBALL} \
+    --as-cran \
+    --run-donttest \
+|| check_succeeded="no"
 
 echo "R CMD check build logs:"
 BUILD_LOG_FILE=lightgbm.Rcheck/00install.out

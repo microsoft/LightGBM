@@ -214,6 +214,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "extra_trees",
   "extra_seed",
   "early_stopping_round",
+  "early_stopping_min_delta",
   "first_metric_only",
   "max_delta_step",
   "lambda_l1",
@@ -391,6 +392,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "extra_seed", &extra_seed);
 
   GetInt(params, "early_stopping_round", &early_stopping_round);
+
+  GetDouble(params, "early_stopping_min_delta", &early_stopping_min_delta);
+  CHECK_GE(early_stopping_min_delta, 0.0);
 
   GetBool(params, "first_metric_only", &first_metric_only);
 
@@ -690,6 +694,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[extra_trees: " << extra_trees << "]\n";
   str_buf << "[extra_seed: " << extra_seed << "]\n";
   str_buf << "[early_stopping_round: " << early_stopping_round << "]\n";
+  str_buf << "[early_stopping_min_delta: " << early_stopping_min_delta << "]\n";
   str_buf << "[first_metric_only: " << first_metric_only << "]\n";
   str_buf << "[max_delta_step: " << max_delta_step << "]\n";
   str_buf << "[lambda_l1: " << lambda_l1 << "]\n";
@@ -814,6 +819,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"extra_trees", {"extra_tree"}},
     {"extra_seed", {}},
     {"early_stopping_round", {"early_stopping_rounds", "early_stopping", "n_iter_no_change"}},
+    {"early_stopping_min_delta", {}},
     {"first_metric_only", {}},
     {"max_delta_step", {"max_tree_output", "max_leaf_output"}},
     {"lambda_l1", {"reg_alpha", "l1_regularization"}},
@@ -957,6 +963,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"extra_trees", "bool"},
     {"extra_seed", "int"},
     {"early_stopping_round", "int"},
+    {"early_stopping_min_delta", "double"},
     {"first_metric_only", "bool"},
     {"max_delta_step", "double"},
     {"lambda_l1", "double"},

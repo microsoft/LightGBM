@@ -25,8 +25,8 @@ def test_register_logger(tmp_path):
 
     X = np.array([[1, 2, 3], [1, 2, 4], [1, 2, 4], [1, 2, 3]], dtype=np.float32)
     y = np.array([0, 1, 1, 0])
-    lgb_train = lgb.Dataset(X, y)
-    lgb_valid = lgb.Dataset(X, y)  # different object for early-stopping
+    lgb_train = lgb.Dataset(X, y, categorical_feature=[1])
+    lgb_valid = lgb.Dataset(X, y, categorical_feature=[1])  # different object for early-stopping
 
     eval_records = {}
     callbacks = [lgb.record_evaluation(eval_records), lgb.log_evaluation(2), lgb.early_stopping(10)]
@@ -36,7 +36,6 @@ def test_register_logger(tmp_path):
         num_boost_round=10,
         feval=dummy_metric,
         valid_sets=[lgb_valid],
-        categorical_feature=[1],
         callbacks=callbacks,
     )
 
@@ -151,12 +150,11 @@ def test_register_custom_logger():
     logged_messages = []
     X = np.array([[1, 2, 3], [1, 2, 4], [1, 2, 4], [1, 2, 3]], dtype=np.float32)
     y = np.array([0, 1, 1, 0])
-    lgb_data = lgb.Dataset(X, y)
+    lgb_data = lgb.Dataset(X, y, categorical_feature=[1])
     lgb.train(
         {"objective": "binary", "metric": "auc"},
         lgb_data,
         num_boost_round=10,
         valid_sets=[lgb_data],
-        categorical_feature=[1],
     )
     assert logged_messages, "custom logger was not called"

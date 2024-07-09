@@ -394,6 +394,11 @@ struct Config {
   // desc = can be used to speed up training
   int early_stopping_round = 0;
 
+  // check = >=0.0
+  // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+  // desc = *New in 4.4.0*
+  double early_stopping_min_delta = 0.0;
+
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
 
@@ -614,23 +619,24 @@ struct Config {
   // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
   // desc = with quantized training, most arithmetics in the training process will be integer operations
   // desc = gradient quantization can accelerate training, with little accuracy drop in most cases
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   int num_grad_quant_bins = 4;
 
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   bool quant_train_renew_leaf = false;
 
   // desc = whether to use stochastic rounding in gradient quantization
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in 4.0.0*
   bool stochastic_rounding = true;
 
@@ -1138,7 +1144,7 @@ struct Config {
   static const std::string DumpAliases();
 
  private:
-  void CheckParamConflict();
+  void CheckParamConflict(const std::unordered_map<std::string, std::string>& params);
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
