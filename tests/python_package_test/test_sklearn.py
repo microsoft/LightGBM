@@ -462,7 +462,7 @@ def test_clone_and_property():
     assert isinstance(clf.feature_importances_, np.ndarray)
 
 
-def test_joblib():
+def test_joblib(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     gbm = lgb.LGBMRegressor(n_estimators=10, objective=custom_asymmetric_obj, verbose=-1, importance_type="split")
@@ -473,9 +473,9 @@ def test_joblib():
         eval_metric=mse,
         callbacks=[lgb.early_stopping(5), lgb.reset_parameter(learning_rate=list(np.arange(1, 0, -0.1)))],
     )
-
-    joblib.dump(gbm, "lgb.pkl")  # test model with custom functions
-    gbm_pickle = joblib.load("lgb.pkl")
+    model_path_pkl = str(tmp_path / "lgb.pkl")
+    joblib.dump(gbm, model_path_pkl)  # test model with custom functions
+    gbm_pickle = joblib.load(model_path_pkl)
     assert isinstance(gbm_pickle.booster_, lgb.Booster)
     assert gbm.get_params() == gbm_pickle.get_params()
     np.testing.assert_array_equal(gbm.feature_importances_, gbm_pickle.feature_importances_)
@@ -1288,6 +1288,46 @@ def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     else:
         estimator_class(**params).fit(X, y)
     assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_np_input(estimator_class):
+    # input is a numpy array, which doesn't have feature names. LightGBM adds
+    # feature names to the fitted model, which is inconsistent with sklearn's behavior
+    X, y = load_digits(n_class=2, return_X_y=True)
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
+
+
+@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+def test_getting_feature_names_in_pd_input(estimator_class):
+    X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
+    col_names = X.columns.to_list()
+    assert isinstance(col_names, list) and all(
+        isinstance(c, str) for c in col_names
+    ), "input data must have feature names for this test to cover the expected functionality"
+    params = {"n_estimators": 2, "num_leaves": 7}
+    if estimator_class is lgb.LGBMModel:
+        model = estimator_class(**{**params, "objective": "binary"})
+    else:
+        model = estimator_class(**params)
+    with pytest.raises(lgb.compat.LGBMNotFittedError):
+        check_is_fitted(model)
+    if isinstance(model, lgb.LGBMRanker):
+        model.fit(X, y, group=[X.shape[0]])
+    else:
+        model.fit(X, y)
+    np.testing.assert_array_equal(model.feature_names_in_, X.columns)
 
 
 @parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])

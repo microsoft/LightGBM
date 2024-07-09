@@ -14,6 +14,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # https://github.com/actions/checkout/issues/1590#issuecomment-2207052044
+  #
+  # this could be removed (hopefully) when R 3.6 support is removed
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # hack to get around this:
   # https://stat.ethz.ch/pipermail/r-package-devel/2020q3/005930.html
