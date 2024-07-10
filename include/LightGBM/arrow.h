@@ -122,7 +122,7 @@ class ArrowChunkedArray {
                            const struct ArrowSchema* schema)
       : releases_arrow_(true) {
     chunks_.reserve(n_chunks);
-    for (auto k = 0; k < n_chunks; ++k) {
+    for (int64_t k = 0; k < n_chunks; ++k) {
       if (chunks[k].length == 0) continue;
       chunks_.push_back(&chunks[k]);
     }
