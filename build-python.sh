@@ -364,13 +364,12 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
-    # remove existing installation
-    # (useful when building the dev version multiple times, where the version number doesn't change)
-    pip uninstall --yes lightgbm
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
+        --ignore-installed \
         --no-cache-dir \
+        --no-deps \
         --find-links=. \
         lightgbm
     cd ../
