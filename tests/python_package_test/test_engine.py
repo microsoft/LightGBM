@@ -4156,9 +4156,9 @@ def test_pandas_nullable_dtypes(rng_fixed_seed):
     # introduce some missing values
     df.loc[1, "x1"] = np.nan
     df.loc[2, "x2"] = np.nan
-    df.loc[3, "x4"] = np.nan
-    # the previous line turns x3 into object dtype in recent versions of pandas
+    # in recent versions of pandas, type 'bool' is incompatible with nan values in x4
     df["x4"] = df["x4"].astype(np.float64)
+    df.loc[3, "x4"] = np.nan
     y = df["x1"] * df["x2"] + df["x3"] * (1 + df["x4"])
     y = y.fillna(0)
 
