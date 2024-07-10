@@ -74,7 +74,7 @@ class LIGHTGBM_EXPORT Boosting {
   /*!
   * \brief Update the tree output by new training data
   */
-  virtual void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) = 0;
+  virtual void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) = 0;
 
   /*!
   * \brief Training logic

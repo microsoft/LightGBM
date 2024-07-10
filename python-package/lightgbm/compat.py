@@ -3,75 +3,8 @@
 
 from typing import Any, List
 
-"""pandas"""
-try:
-    from pandas import DataFrame as pd_DataFrame
-    from pandas import Series as pd_Series
-    from pandas import concat
-
-    try:
-        from pandas import CategoricalDtype as pd_CategoricalDtype
-    except ImportError:
-        from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
-    PANDAS_INSTALLED = True
-except ImportError:
-    PANDAS_INSTALLED = False
-
-    class pd_Series:  # type: ignore
-        """Dummy class for pandas.Series."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class pd_DataFrame:  # type: ignore
-        """Dummy class for pandas.DataFrame."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    class pd_CategoricalDtype:  # type: ignore
-        """Dummy class for pandas.CategoricalDtype."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-    concat = None
-
-"""matplotlib"""
-try:
-    import matplotlib  # noqa: F401
-
-    MATPLOTLIB_INSTALLED = True
-except ImportError:
-    MATPLOTLIB_INSTALLED = False
-
-"""graphviz"""
-try:
-    import graphviz  # noqa: F401
-
-    GRAPHVIZ_INSTALLED = True
-except ImportError:
-    GRAPHVIZ_INSTALLED = False
-
-"""datatable"""
-try:
-    import datatable
-
-    if hasattr(datatable, "Frame"):
-        dt_DataTable = datatable.Frame
-    else:
-        dt_DataTable = datatable.DataTable
-    DATATABLE_INSTALLED = True
-except ImportError:
-    DATATABLE_INSTALLED = False
-
-    class dt_DataTable:  # type: ignore
-        """Dummy class for datatable.DataTable."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-
+# scikit-learn is intentionally imported first here,
+# see https://github.com/microsoft/LightGBM/issues/6509
 """sklearn"""
 try:
     from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
@@ -140,6 +73,75 @@ except ImportError:
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
+
+"""pandas"""
+try:
+    from pandas import DataFrame as pd_DataFrame
+    from pandas import Series as pd_Series
+    from pandas import concat
+
+    try:
+        from pandas import CategoricalDtype as pd_CategoricalDtype
+    except ImportError:
+        from pandas.api.types import CategoricalDtype as pd_CategoricalDtype
+    PANDAS_INSTALLED = True
+except ImportError:
+    PANDAS_INSTALLED = False
+
+    class pd_Series:  # type: ignore
+        """Dummy class for pandas.Series."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    class pd_DataFrame:  # type: ignore
+        """Dummy class for pandas.DataFrame."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    class pd_CategoricalDtype:  # type: ignore
+        """Dummy class for pandas.CategoricalDtype."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
+    concat = None
+
+"""matplotlib"""
+try:
+    import matplotlib  # noqa: F401
+
+    MATPLOTLIB_INSTALLED = True
+except ImportError:
+    MATPLOTLIB_INSTALLED = False
+
+"""graphviz"""
+try:
+    import graphviz  # noqa: F401
+
+    GRAPHVIZ_INSTALLED = True
+except ImportError:
+    GRAPHVIZ_INSTALLED = False
+
+"""datatable"""
+try:
+    import datatable
+
+    if hasattr(datatable, "Frame"):
+        dt_DataTable = datatable.Frame
+    else:
+        dt_DataTable = datatable.DataTable
+    DATATABLE_INSTALLED = True
+except ImportError:
+    DATATABLE_INSTALLED = False
+
+    class dt_DataTable:  # type: ignore
+        """Dummy class for datatable.DataTable."""
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
 
 """dask"""
 try:
