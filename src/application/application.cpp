@@ -233,7 +233,7 @@ void Application::Predict() {
       ncol = Common::StringToArray<int>(result_reader.Lines()[0], '\t').size();
     }
     std::vector<int> pred_leaf;
-    pred_leaf.reserve(nrow * ncol);
+    pred_leaf.resize(nrow * ncol);
 
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int irow = 0; irow < static_cast<int>(nrow); ++irow) {
