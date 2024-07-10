@@ -1812,7 +1812,7 @@ def test_pandas_sparse(rng):
         }
     )
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-        assert pd.api.types.is_sparse(dtype)
+        assert isinstance(dtype, pd.SparseDtype)
     params = {"objective": "binary", "verbose": -1}
     lgb_train = lgb.Dataset(X, y)
     gbm = lgb.train(params, lgb_train, num_boost_round=10)
