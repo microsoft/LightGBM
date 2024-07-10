@@ -376,7 +376,7 @@ jobs:
   dependsOn:
   - Linux
   - Linux_latest
-  # - QEMU_multiarch
+  - QEMU_multiarch
   - macOS
   - Windows
   - R_artifact
