@@ -4147,7 +4147,7 @@ def test_pandas_nullable_dtypes(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
     df = pd.DataFrame(
         {
-            "x1": rng_fixed_seed.integers(low=1, high=3, size=100),
+            "x1": rng_fixed_seed.integers(low=1, high=4, size=100),
             "x2": np.linspace(-1, 1, 100),
             "x3": pd.arrays.SparseArray(rng_fixed_seed.integers(low=0, high=11, size=100)),
             "x4": rng_fixed_seed.uniform(size=(100,)) < 0.5,
@@ -4157,7 +4157,7 @@ def test_pandas_nullable_dtypes(rng_fixed_seed):
     df.loc[1, "x1"] = np.nan
     df.loc[2, "x2"] = np.nan
     df.loc[3, "x4"] = np.nan
-    # the previous line turns x3 into object dtype in recent versions of pandas
+    # the previous line turns x4 into object dtype in recent versions of pandas
     df["x4"] = df["x4"].astype(np.float64)
     y = df["x1"] * df["x2"] + df["x3"] * (1 + df["x4"])
     y = y.fillna(0)
