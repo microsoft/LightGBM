@@ -1604,7 +1604,7 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
   }
   OMP_INIT_EX();
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-  for (int i = 0; i < ncol_ptr - 1; ++i) {
+  for (int i = 0; i < static_cast<int>(ncol_ptr - 1); ++i) {
     OMP_LOOP_EX_BEGIN();
     const int tid = omp_get_thread_num();
     int feature_idx = ret->InnerFeatureIndex(i);
