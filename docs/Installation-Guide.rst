@@ -121,8 +121,6 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
      cmake -B build -S .
      cmake --build build -j4
 
-**Note**: glibc >= 2.28 is required.
-
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
@@ -301,8 +299,6 @@ On Linux a version of LightGBM without OpenMP support can be built using **CMake
      cmake -B build -S . -DUSE_OPENMP=OFF
      cmake --build build -j4
 
-**Note**: glibc >= 2.14 is required.
-
 macOS
 ^^^^^
 
@@ -425,8 +421,6 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
      cmake -B build -S . -DUSE_MPI=ON
      cmake --build build -j4
 
-**Note**: glibc >= 2.14 is required.
-
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
@@ -530,8 +524,6 @@ To build LightGBM GPU version, run the following commands:
   # cmake -B build -S . -DUSE_GPU=1 -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
   cmake --build build
 
-**Note**: glibc >= 2.14 is required.
-
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 Windows
@@ -613,8 +605,6 @@ To build LightGBM CUDA version, run the following commands:
   cmake -B build -S . -DUSE_CUDA=1
   cmake --build build -j4
 
-**Note**: glibc >= 2.14 is required.
-
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 macOS
@@ -658,8 +648,6 @@ On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
      #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
      #   ..
      cmake --build build -j4
-
-**Note**: glibc >= 2.14 is required.
 
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
@@ -731,8 +719,6 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
      cd LightGBM
      cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
-
-**Note**: glibc >= 2.14 is required.
 
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
@@ -833,8 +819,6 @@ On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** o
      cd LightGBM
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
-
-**Note**: glibc >= 2.14 is required.
 
 macOS
 ^^^^^
