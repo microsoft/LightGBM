@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -E -u +x -o pipefail
+set -e -E -u -o pipefail
 
 # defaults
 ARCH=$(uname -m)

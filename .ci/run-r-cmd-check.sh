@@ -3,7 +3,7 @@
 # [description]
 #
 
-set -e -u +x -o pipefail
+set -e -u -o pipefail
 
 PKG_TARBALL="${1}"
 declare -i ALLOWED_CHECK_NOTES=${2}
@@ -38,8 +38,9 @@ fi
 
 # Allow a configurable number of NOTEs.
 # Sometimes NOTEs are raised in CI that wouldn't show up on an actual CRAN submission.
+set +e
 NUM_CHECK_NOTES=$(
-    grep -o -E '[0-9]+ NOTE' < "${CHECK_LOG_FILE}" \
+    grep -o -E '[0-9]+ NOTE' "${CHECK_LOG_FILE}" \
     | sed 's/[^0-9]*//g'
 )
 if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
