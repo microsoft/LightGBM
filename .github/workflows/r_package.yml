@@ -311,16 +311,6 @@ jobs:
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
-          R CMD check --as-cran --run-donttest lightgbm_*.tar.gz || true
-          echo ""
-          echo "install logs:"
-          echo ""
-          cat lightgbm.Rcheck/00install.out
-          echo ""
-          if grep -q -E "WARNING|ERROR" lightgbm.Rcheck/00check.log; then
-              echo "WARNINGs, or ERRORs have been found by R CMD check"
-              exit 1
-          fi
           # allowing the following NOTEs (produced by default in the clang images):
           #
           #   * checking compilation flags used ... NOTE
@@ -330,16 +320,10 @@ jobs:
           # even though CRAN itself sets that:
           # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
           #
-          ALLOWED_CHECK_NOTES=1
-          NUM_CHECK_NOTES=$(
-              cat lightgbm.Rcheck/00install.out \
-              | grep -e '^Status: .* NOTE.*' \
-              | sed 's/[^0-9]*//g'
-          )
-          if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
-              echo "Found ${NUM_CHECK_NOTES} NOTEs from R CMD check. Only ${ALLOWED_CHECK_NOTES} are allowed"
-              exit 1
-          fi
+          declare -i allowed_notes=1
+          bash .ci/run-r-cmd-check \
+            "$(echo lightgbm_*.tar.gz)" \
+            "${allowed_notes}"
   all-r-package-jobs-successful:
     if: always()
     runs-on: ubuntu-latest

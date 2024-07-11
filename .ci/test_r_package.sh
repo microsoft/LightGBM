@@ -138,7 +138,8 @@ Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_
 
 cd "${BUILD_DIRECTORY}"
 
-PKG_TARBALL="lightgbm_*.tar.gz"
+PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
+BUILD_LOG_FILE="lightgbm.Rcheck/00install.log"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
@@ -197,21 +198,10 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd ${R_CMD_CHECK_DIR}
 fi
 
-# fails tests if either ERRORs or WARNINGs are thrown by
-# R CMD CHECK
-check_succeeded="yes"
-R CMD check ${PKG_TARBALL} \
-    --as-cran \
-    --run-donttest \
-|| check_succeeded="no"
-
-echo "R CMD check build logs:"
-BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
-cat ${BUILD_LOG_FILE}
-
-if [[ $check_succeeded == "no" ]]; then
-    exit 1
-fi
+declare -i allowed_notes=0
+bash ./.ci/run-r-cmd-check.sh \
+    "${PKG_TARBALL}" \
+    "${allowed_notes}"
 
 # ensure 'grep --count' doesn't cause failures
 set +e
@@ -230,16 +220,10 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
         cat $BUILD_LOG_FILE \
         | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
     )
-    if [[ $used_correct_r_version -ne 1 ]]; then
+    if [[ $passed_correct_r_version_to_cmake -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
         exit 1
     fi
-fi
-
-
-if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
-    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-    exit 1
 fi
 
 # this check makes sure that CI builds of the package actually use OpenMP
