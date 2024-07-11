@@ -3,7 +3,7 @@
 # [description]
 #
 
-set -e -u -o pipefail
+set -e -u +x -o pipefail
 
 PKG_TARBALL="${1}"
 declare -i ALLOWED_CHECK_NOTES=${2}
@@ -19,7 +19,7 @@ R CMD check "${PKG_TARBALL}" \
     --run-donttest \
 || check_succeeded="no"
 
-CHECK_LOG_FILE="lightgbm.Rcheck/00check.log"
+CHECK_LOG_FILE=lightgbm.Rcheck/00check.log
 BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
 
 echo "R CMD check build logs:"
