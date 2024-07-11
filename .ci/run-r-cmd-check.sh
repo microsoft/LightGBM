@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# [description]
-#
-
 set -e -u -o pipefail
 
 PKG_TARBALL="${1}"
