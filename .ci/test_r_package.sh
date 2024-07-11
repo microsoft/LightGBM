@@ -138,7 +138,7 @@ Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_
 
 cd "${BUILD_DIRECTORY}"
 PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
-BUILD_LOG_FILE="lightgbm.Rcheck/00install.log"
+BUILD_LOG_FILE="lightgbm.Rcheck/00install.out"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
