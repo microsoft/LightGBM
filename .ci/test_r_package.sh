@@ -198,7 +198,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
 fi
 
 declare -i allowed_notes=0
-bash ./.ci/run-r-cmd-check.sh \
+bash "${BUILD_DIRECTORY}/.ci/run-r-cmd-check.sh" \
     "${PKG_TARBALL}" \
     "${allowed_notes}"
 

@@ -321,7 +321,7 @@ jobs:
           # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
           #
           declare -i allowed_notes=1
-          bash .ci/run-r-cmd-check \
+          bash .ci/run-r-cmd-check.sh \
             "$(echo lightgbm_*.tar.gz)" \
             "${allowed_notes}"
   all-r-package-jobs-successful:
