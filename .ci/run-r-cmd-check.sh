@@ -6,7 +6,7 @@
 set -e -u -o pipefail
 
 PKG_TARBALL="${1}"
-ALLOWED_CHECK_NOTES="${2}"
+declare -i ALLOWED_CHECK_NOTES=${2}
 
 # 'R CMD check' redirects installation logs to a file, and returns
 # a non-0 exit code if ERRORs are raised.
@@ -36,12 +36,10 @@ if grep -q -E "WARNING|ERROR" "${CHECK_LOG_FILE}"; then
     exit 1
 fi
 
-ALLOWED_CHECK_NOTES=2
-
 # Allow a configurable number of NOTEs.
 # Sometimes NOTEs are raised in CI that wouldn't show up on an actual CRAN submission.
 NUM_CHECK_NOTES=$(
-    grep -o -E '[0-9]+ NOTE' < "${CHECK_FILE_NAME}" \
+    grep -o -E '[0-9]+ NOTE' < "${CHECK_LOG_FILE}" \
     | sed 's/[^0-9]*//g'
 )
 if [[ ${NUM_CHECK_NOTES} -gt ${ALLOWED_CHECK_NOTES} ]]; then
