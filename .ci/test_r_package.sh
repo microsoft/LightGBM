@@ -137,8 +137,7 @@ fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
 cd "${BUILD_DIRECTORY}"
-
-PKG_TARBALL="$(echo lightgbm_*.tar.gz)"
+PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
 BUILD_LOG_FILE="lightgbm.Rcheck/00install.log"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
