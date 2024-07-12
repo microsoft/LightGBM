@@ -628,41 +628,6 @@ Windows
 The CUDA version is not supported on Windows.
 Use the GPU version (``device_type=gpu``) for GPU acceleration on Windows.
 
-Build HDFS Version
-~~~~~~~~~~~~~~~~~~
-
-.. warning::
-   HDFS support in LightGBM is deprecated, and will be removed in a future release.
-   See https://github.com/microsoft/LightGBM/issues/6436.
-
-The HDFS version of LightGBM was tested on CDH-5.14.4 cluster.
-
-Linux
-^^^^^
-
-On Linux a HDFS version of LightGBM can be built using **CMake** and **gcc**.
-
-1. Install `CMake`_.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_HDFS=ON
-     # if you have installed HDFS to a customized location, you should specify paths to HDFS headers (hdfs.h) and library (libhdfs.so) like the following:
-     # cmake \
-     #   -DUSE_HDFS=ON \
-     #   -DHDFS_LIB="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/lib64/libhdfs.so" \
-     #   -DHDFS_INCLUDE_DIR="/opt/cloudera/parcels/CDH-5.14.4-1.cdh5.14.4.p0.3/include/" \
-     #   ..
-     cmake --build build -j4
-
-**Note**: glibc >= 2.14 is required.
-
-**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
-
 Build Java Wrapper
 ~~~~~~~~~~~~~~~~~~
 

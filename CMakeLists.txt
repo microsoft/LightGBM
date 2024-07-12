@@ -2,7 +2,6 @@ option(USE_MPI "Enable MPI-based distributed learning" OFF)
 option(USE_OPENMP "Enable OpenMP" ON)
 option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
-option(USE_HDFS "Enable HDFS support (EXPERIMENTAL)" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
@@ -292,21 +291,6 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
-endif()
-
-if(USE_HDFS)
-    message(
-      DEPRECATION
-      "HDFS support in LightGBM is deprecated, and will be removed in a future release.\
-      See https://github.com/microsoft/LightGBM/issues/6436.
-      "
-    )
-    find_package(JNI REQUIRED)
-    find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
-    find_library(HDFS_LIB NAMES hdfs REQUIRED)
-    include_directories(${HDFS_INCLUDE_DIR})
-    add_definitions(-DUSE_HDFS)
-    set(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -645,10 +629,6 @@ if(USE_CUDA)
     target_link_libraries(lightgbm PRIVATE ${histograms})
   endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
-endif()
-
-if(USE_HDFS)
-  target_link_libraries(lightgbm_objs PUBLIC ${HDFS_CXX_LIBRARIES})
 endif()
 
 if(WIN32)
