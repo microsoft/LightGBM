@@ -12,7 +12,7 @@ This release was a response to a request from CRAN.
 On July 4, 2024, CRAN notified us that the following compiler warnings raised by `gcc` 14 needed to be fixed by August 3, 2024.
 
 ```text
-Result: WARN 
+Result: WARN
   Found the following significant warnings:
     io/dense_bin.hpp:617:27: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
     io/multi_val_dense_bin.hpp:346:26: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
