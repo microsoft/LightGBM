@@ -155,23 +155,6 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
-Build HDFS Version
-~~~~~~~~~~~~~~~~~~
-
-.. warning::
-   HDFS support in LightGBM is deprecated, and will be removed in a future release.
-   See https://github.com/microsoft/LightGBM/issues/6436.
-
-.. code:: sh
-
-    pip install lightgbm --config-settings=cmake.define.USE_HDFS=ON
-
-All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
-
-**HDFS** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-hdfs-version>`__.
-
-Note that the installation process of HDFS version was tested only on **Linux**.
-
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -246,8 +229,6 @@ Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** o
 Run ``sh ./build-python.sh install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
 Run ``sh ./build-python.sh install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
-
-Run ``sh ./build-python.sh install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
 
 Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 

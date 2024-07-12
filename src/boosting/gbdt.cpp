@@ -249,32 +249,34 @@ void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
   }
 }
 
-void GBDT::RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) {
-  CHECK_GT(tree_leaf_prediction.size(), 0);
-  CHECK_EQ(static_cast<size_t>(num_data_), tree_leaf_prediction.size());
-  CHECK_EQ(static_cast<size_t>(models_.size()), tree_leaf_prediction[0].size());
+void GBDT::RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) {
+  CHECK_GT(nrow * ncol, 0);
+  CHECK_EQ(static_cast<size_t>(num_data_), nrow);
+  CHECK_EQ(models_.size(), ncol);
+
   int num_iterations = static_cast<int>(models_.size() / num_tree_per_iteration_);
   std::vector<int> leaf_pred(num_data_);
   if (linear_tree_) {
     std::vector<int> max_leaves_by_thread = std::vector<int>(OMP_NUM_THREADS(), 0);
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
-    for (int i = 0; i < static_cast<int>(tree_leaf_prediction.size()); ++i) {
+    for (int i = 0; i < static_cast<int>(nrow); ++i) {
       int tid = omp_get_thread_num();
-      for (size_t j = 0; j < tree_leaf_prediction[i].size(); ++j) {
-        max_leaves_by_thread[tid] = std::max(max_leaves_by_thread[tid], tree_leaf_prediction[i][j]);
+      for (size_t j = 0; j < ncol; ++j) {
+        max_leaves_by_thread[tid] = std::max(max_leaves_by_thread[tid], tree_leaf_prediction[i * ncol + j]);
       }
     }
     int max_leaves = *std::max_element(max_leaves_by_thread.begin(), max_leaves_by_thread.end());
     max_leaves += 1;
     tree_learner_->InitLinear(train_data_, max_leaves);
   }
+
   for (int iter = 0; iter < num_iterations; ++iter) {
     Boosting();
     for (int tree_id = 0; tree_id < num_tree_per_iteration_; ++tree_id) {
       int model_index = iter * num_tree_per_iteration_ + tree_id;
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (int i = 0; i < num_data_; ++i) {
-        leaf_pred[i] = tree_leaf_prediction[i][model_index];
+        leaf_pred[i] = tree_leaf_prediction[i * ncol + model_index];
         CHECK_LT(leaf_pred[i], models_[model_index]->num_leaves());
       }
       size_t offset = static_cast<size_t>(tree_id) * num_data_;

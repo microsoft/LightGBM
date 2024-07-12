@@ -638,7 +638,7 @@ def test_pandas_sparse(rng):
         }
     )
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-        assert pd.api.types.is_sparse(dtype)
+        assert isinstance(dtype, pd.SparseDtype)
     gbm = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y)
     pred_sparse = gbm.predict(X_test, raw_score=True)
     if hasattr(X_test, "sparse"):
@@ -1321,6 +1321,19 @@ def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     else:
         estimator_class(**params).fit(X, y)
     assert "Provided parameters constrain tree depth" not in capsys.readouterr().out
+
+
+def test_verbosity_is_respected_when_using_custom_objective(capsys):
+    X, y = make_synthetic_regression()
+    params = {
+        "objective": objective_ls,
+        "nonsense": 123,
+        "num_leaves": 3,
+    }
+    lgb.LGBMRegressor(**params, verbosity=-1, n_estimators=1).fit(X, y)
+    assert capsys.readouterr().out == ""
+    lgb.LGBMRegressor(**params, verbosity=0, n_estimators=1).fit(X, y)
+    assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
