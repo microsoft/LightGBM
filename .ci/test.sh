@@ -191,6 +191,8 @@ elif [[ $TASK == "bdist" ]]; then
             PLATFORM="manylinux2014_$ARCH"
         fi
         sh ./build-python.sh bdist_wheel --integrated-opencl || exit 1
+        # rename wheel, to fix scikit-build-core choosing the platform 'linux_aarch64' instead of
+        # a manylinux tag
         mv \
             ./dist/*.whl \
             ./dist/tmp.whl || exit 1
