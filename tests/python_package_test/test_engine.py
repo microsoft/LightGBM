@@ -1469,6 +1469,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
         "metric": ["l2", "rmse"],
         "num_leaves": 5,
         "num_threads": 1,
+        "verbosity": 0,
     }
     model_file = tmp_path / "model.txt"
     orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
@@ -4274,9 +4275,23 @@ def test_verbosity_and_verbose(capsys):
         "verbosity": 0,
     }
     lgb.train(params, ds, num_boost_round=1)
-    expected_msg = "[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. " "Current value: verbosity=0"
+    expected_msg = "[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. Current value: verbosity=0"
     stdout = capsys.readouterr().out
     assert expected_msg in stdout
+
+
+def test_verbosity_is_respected_when_using_custom_objective(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        "objective": mse_obj,
+        "nonsense": 123,
+        "num_leaves": 3,
+    }
+    lgb.train({**params, "verbosity": -1}, ds, num_boost_round=1)
+    assert capsys.readouterr().out == ""
+    lgb.train({**params, "verbosity": 0}, ds, num_boost_round=1)
+    assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("verbosity_param", lgb.basic._ConfigAliases.get("verbosity"))

@@ -383,7 +383,7 @@ def test_add_features_does_not_fail_if_initial_dataset_has_zero_informative_feat
     arr_a = np.zeros((100, 1), dtype=np.float32)
     arr_b = rng.uniform(size=(100, 5))
 
-    dataset_a = lgb.Dataset(arr_a).construct()
+    dataset_a = lgb.Dataset(arr_a, params={"verbose": 0}).construct()
     expected_msg = (
         "[LightGBM] [Warning] There are no meaningful features which satisfy "
         "the provided configuration. Decreasing Dataset parameters min_data_in_bin "
