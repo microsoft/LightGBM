@@ -40,9 +40,24 @@ void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::s
 }
 
 void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
-  int verbosity = Config().verbosity;
-  GetFirstValueAsInt(params, "verbose", &verbosity);
-  GetFirstValueAsInt(params, "verbosity", &verbosity);
+  int verbosity = 1;
+
+  // if "verbosity" was found in params, prefer that to any other aliases
+  const auto verbosity_iter = params.find("verbosity");
+  if (verbosity_iter != params.end()) {
+    GetFirstValueAsInt(params, "verbosity", &verbosity);
+  } else {
+    // if "verbose" was found in params and "verbosity" was not, use that value
+    const auto verbose_iter = params.find("verbose");
+    if (verbose_iter != params.end()) {
+      GetFirstValueAsInt(params, "verbose", &verbosity);
+    } else {
+      // if "verbosity" and "verbose" were both missing from params, don't modify LightGBM's log level
+      return;
+    }
+  }
+
+  // otherwise, update LightGBM's log level based on the passed-in value
   if (verbosity < 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   } else if (verbosity == 0) {

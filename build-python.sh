@@ -40,8 +40,6 @@
 #                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
-#     --hdfs
-#                                   Compile HDFS version.
 #     --integrated-opencl
 #                                   Compile integrated OpenCL version.
 #     --mingw
@@ -147,9 +145,6 @@ while [ $# -gt 0 ]; do
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
-        ;;
-    --hdfs)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HDFS=ON"
         ;;
     --integrated-opencl)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
