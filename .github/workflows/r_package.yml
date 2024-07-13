@@ -318,18 +318,23 @@ jobs:
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
-          # allowing the following NOTEs (produced by default in the clang images):
-          #
-          #   * checking compilation flags used ... NOTE
-          #       Compilation used the following non-portable flag(s):
-          #       ‘-Wp,-D_FORTIFY_SOURCE=3’
-          #
-          # even though CRAN itself sets that:
-          # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
-          #
-          declare -i allowed_notes=1
+          if [[ "${{ matrix.image }}" =~ "clang" ]]; then
+            # allowing the following NOTEs (produced by default in the clang images):
+            #
+            #   * checking compilation flags used ... NOTE
+            #       Compilation used the following non-portable flag(s):
+            #       ‘-Wp,-D_FORTIFY_SOURCE=3’
+            #
+            # even though CRAN itself sets that:
+            # https://www.stats.ox.ac.uk/pub/bdr/Rconfig/r-devel-linux-x86_64-fedora-clang
+            #
+            declare -i allowed_notes=1
+          else
+            declare -i allowed_notes=0
+          fi
+
           bash .ci/run-r-cmd-check.sh \
-            "$(echo lightgbm_*.tar.gz)" \
+            "$(echo lightgbm_$(head -1 VERSION.txt).tar.gz)" \
             "${allowed_notes}"
   all-r-package-jobs-successful:
     if: always()
