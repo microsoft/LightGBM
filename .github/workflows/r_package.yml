@@ -58,12 +58,6 @@ jobs:
           - os: ubuntu-latest
             task: r-package
             compiler: clang
-            r_version: 3.6
-            build_type: cmake
-            container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
             r_version: 4.3
             build_type: cmake
             container: 'ubuntu:22.04'
@@ -138,6 +132,13 @@ jobs:
             r_version: 4.3
             build_type: cran
             container: null
+          # macos-14 = arm64
+          - os: macos-14
+            task: r-package
+            compiler: clang
+            r_version: 4.3
+            build_type: cran
+            container: null
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
@@ -188,12 +189,12 @@ jobs:
           CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
           TINYTEX_INSTALLER: TinyTeX
       - name: Setup and run tests on Linux and macOS
-        if: matrix.os == 'macos-13' || matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'ubuntu')
         shell: bash
         run: |
           export TASK="${{ matrix.task }}"
           export COMPILER="${{ matrix.compiler }}"
-          if [[ "${{ matrix.os }}" == "macos-13" ]]; then
+          if [[ "${{ matrix.os }}" =~ ^macos ]]; then
               export OS_NAME="macos"
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
