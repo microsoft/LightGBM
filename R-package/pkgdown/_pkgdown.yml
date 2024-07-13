@@ -14,7 +14,7 @@ repo:
     user: https://github.com/
 
 development:
-  mode: released
+  mode: release
 
 authors:
   Yu Shi:
