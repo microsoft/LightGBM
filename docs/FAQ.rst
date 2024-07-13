@@ -329,7 +329,7 @@ Also, feel free to post a new issue in our GitHub repository. We always look at 
 4. I would like to install LightGBM from conda. What channel should I choose?
 -----------------------------------------------------------------------------
 
-We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due.
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one.
 
 For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
 

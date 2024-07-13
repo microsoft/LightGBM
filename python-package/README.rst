@@ -197,7 +197,7 @@ Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 
     conda install -c conda-forge lightgbm
 
-The are precompiled packages that are fast to install.
+These are precompiled packages that are fast to install.
 Use them instead of ``pip install`` if any of the following are true:
 
 * you prefer to use ``conda`` to manage software environments
