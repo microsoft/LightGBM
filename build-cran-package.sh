@@ -202,8 +202,12 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/utils/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
+        # --no-xattrs is the default in GNU tar but not some distributions of BSD tar.
+        # Enable it here to avoid errors on macOS.
+        # ref: https://stackoverflow.com/a/74373784/3986677
         tar \
             -cz \
+            --no-xattrs \
             -f "${TARBALL_NAME}" \
             lightgbm \
         > /dev/null 2>&1
