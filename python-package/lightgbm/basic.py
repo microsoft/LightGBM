@@ -1193,7 +1193,10 @@ class _InnerPredictor:
             )
         elif isinstance(data, list):
             if isinstance(data[0], Sequence):
-                data = np.concatenate([i[:] for i in data])
+                try:
+                    data = np.concatenate([i[:] for i in data])
+                except BaseException as err:
+                    raise ValueError('Cannot convert Sequence list to numpy array.') from err
             else:
                 try:
                     data = np.array(data)
