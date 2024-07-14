@@ -329,6 +329,8 @@ Also, feel free to post a new issue in our GitHub repository. We always look at 
 4. I would like to install LightGBM from conda. What channel should I choose?
 -----------------------------------------------------------------------------
 
-We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons.
-The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM.
-More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one.
+
+For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+
+In addition, as of ``lightgbm==4.4.0``, the ``conda-forge`` package automatically supports CUDA-based GPU acceleration.
