@@ -405,7 +405,7 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
 }
 
 SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
-  SEXP cont_token = Rf_protect(R_MakeUnwindCont());
+  SEXP cont_token = R_MakeUnwindCont();
   R_API_BEGIN();
   _AssertDatasetHandleNotNull(handle);
   SEXP feature_names;
@@ -443,7 +443,7 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
         ptr_names.data()));
   }
   CHECK_EQ(len, out_len);
-  feature_names = Rf_protect(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
+  feature_names = safe_R_string(static_cast<R_xlen_t>(len), &cont_token);
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
@@ -455,7 +455,7 @@ SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
   SEXP filename) {
   R_API_BEGIN();
   _AssertDatasetHandleNotNull(handle);
-  const char* filename_ptr = CHAR(Rf_protect(Rf_asChar(filename)));
+  const char* filename_ptr = CHAR(Rf_asChar(filename));
   CHECK_CALL(LGBM_DatasetSaveBinary(R_ExternalPtrAddr(handle),
     filename_ptr));
   return R_NilValue;
