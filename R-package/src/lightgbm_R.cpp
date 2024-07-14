@@ -456,7 +456,6 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
-  Rf_unprotect(2);
   return feature_names;
   R_API_END();
 }
