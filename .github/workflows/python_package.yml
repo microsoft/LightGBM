@@ -107,7 +107,7 @@ jobs:
             --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
-            lightgbm/vsts-agent:manylinux_2_28_x86_64-swig \
+            lightgbm/vsts-agent:manylinux_2_28_x86_64 \
             /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
       - name: Test compatibility
         run: |
@@ -134,7 +134,7 @@ jobs:
             --env CMAKE_BUILD_PARALLEL_LEVEL=${{ env.CMAKE_BUILD_PARALLEL_LEVEL }} \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
-            lightgbm/vsts-agent:manylinux_2_28_x86_64-swig \
+            lightgbm/vsts-agent:manylinux_2_28_x86_64 \
             /bin/bash -c 'PATH=/opt/miniforge/bin:$PATH sh ./build-python.sh bdist_wheel --nomp'
       - name: Test compatibility
         run: |
