@@ -1206,7 +1206,7 @@ class _InnerPredictor:
                 mat=data,
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
-                predict_type=predict_type
+                predict_type=predict_type,
             )
         elif isinstance(data, dt_DataTable):
             preds, nrow = self.__pred_for_np2d(
