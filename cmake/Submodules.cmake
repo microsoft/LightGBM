@@ -1,6 +1,6 @@
 function(assert_submodules_initialized use_gpu)
     set(submodules eigen fast_double_parser fmt)
-    if (use_gpu)
+    if(use_gpu)
         list(APPEND submodules compute)
     endif()
     foreach(submodule ${submodules})
