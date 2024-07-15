@@ -223,6 +223,10 @@ def test_retrain_list_of_sequence():
 
     seq_ds = lgb.Dataset(seqs, label=y, free_raw_data=False)
 
+    assert sum([len(s) for s in seq_ds.get_data()]) == X.shape[0]
+    assert len(seq_ds.get_feature_name()) == X.shape[1]
+    assert seq_ds.get_data() == seqs
+
     params = {
         "objective": "binary",
         "num_boost_round": 20,
@@ -249,7 +253,6 @@ def test_retrain_list_of_sequence():
     assert model2.current_iteration() == 20 
     assert model2.num_trees() == 20
 
-    assert seq_ds.get_data() == seqs
 
 def test_chunked_dataset():
     X_train, X_test, y_train, y_test = train_test_split(
