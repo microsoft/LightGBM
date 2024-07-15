@@ -26,7 +26,7 @@ option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Lo
 cmake_minimum_required(VERSION 3.18)
 
 include(cmake/Submodules.cmake)
-assert_submodules_initialized()
+assert_submodules_initialized(${USE_GPU})
 
 # If using Visual Studio generators, always target v10.x of the Windows SDK.
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
