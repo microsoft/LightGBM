@@ -297,6 +297,6 @@ To check that a contribution to the package matches its style expectations, run 
 .. |PyPI Downloads| image:: https://img.shields.io/pepy/dt/lightgbm?logo=pypi&logoColor=white&label=pypi%20downloads
    :target: https://pepy.tech/project/lightgbm
 .. |conda Downloads| image:: https://img.shields.io/conda/d/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda%20downloads
-   :target: https://anaconda.org/conda-forge/lightgbm
+   :target: https://anaconda.org/conda-forge/lightgbm/files
 .. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest
    :target: https://lightgbm.readthedocs.io/en/latest/Python-API.html
