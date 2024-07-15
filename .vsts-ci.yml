@@ -25,7 +25,7 @@ resources:
   # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container
   containers:
   - container: linux-artifact-builder
-    image: lightgbm/vsts-agent:manylinux_2_28_x86_64-swig
+    image: lightgbm/vsts-agent:manylinux_2_28_x86_64
     mountReadOnly:
       work: false
       externals: true
@@ -220,7 +220,7 @@ jobs:
       \$BUILD_DIRECTORY/.ci/setup.sh || exit 1
       \$BUILD_DIRECTORY/.ci/test.sh || exit 1
       EOF
-      IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64-swig"
+      IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
       docker pull "${IMAGE_URI}" || exit 1
       PLATFORM=$(docker inspect --format='{{.Os}}/{{.Architecture}}' "${IMAGE_URI}") || exit 1
       echo "detected image platform: ${PLATFORM}"
