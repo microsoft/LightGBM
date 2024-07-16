@@ -31,7 +31,9 @@ if(USE_GPU)
     list(APPEND required_submodules compute)
 endif()
 foreach(submodule ${required_submodules})
-  if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external_libs/${submodule}/CMakeLists.txt")
+  file(GLOB SUBMODULE_CONTENTS "${CMAKE_SOURCE_DIR}/external_libs/${submodule}/*")
+  list(LENGTH SUBMODULE_CONTENTS FILES_IN_SUBMODULE)
+  if(FILES_IN_SUBMODULE EQUAL 0)
       message(
         FATAL_ERROR
         "Required source directory 'external_libs/${submodule}' is empty. "
