@@ -114,6 +114,7 @@ list(
     "libs/any"
     "libs/array"
     "libs/assert"
+    "libs/atomic"
     "libs/bind"
     "libs/chrono"
     "libs/compute"
@@ -181,6 +182,7 @@ ExternalProject_Add(
     -a
     -q
     -j ${J}
+    --with-atomic
     --with-headers
     --with-chrono
     --with-filesystem
