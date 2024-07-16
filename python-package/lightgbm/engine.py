@@ -198,10 +198,10 @@ def train(
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = "none"
-    for alias in _ConfigAliases.get("num_iterations"):
-        if alias in params:
-            num_boost_round = params.pop(alias)
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
+    num_boost_round_aliases = [alias for alias in _ConfigAliases.get("num_iterations") if alias in params]
+    num_boost_round = params.pop(num_boost_round_aliases[-1])
+    if num_boost_round_aliases[:-1]:
+        _log_warning(f"Found `{num_boost_round_aliases[-1]}` in params. Will use it instead of `{num_boost_round_aliases[:-1]}`")
     params["num_iterations"] = num_boost_round
     # setting early stopping via global params should be possible
     params = _choose_param_value(
