@@ -29,8 +29,8 @@ if ($env:TASK -eq "swig") {
   [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig") ; Check-Output $?
   $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
   $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
-  $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build_log.txt"
-  cmake -B build -S . -A x64 -DUSE_SWIG=ON *>&1 > $BuildLogFileName ; $build_succeeded = $?
+  $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON *> $BuildLogFileName ; $build_succeeded = $?
   Write-Output "CMake build logs:"
   Get-Content -Path "$BuildLogFileName"
   Check-Output $build_succeeded
