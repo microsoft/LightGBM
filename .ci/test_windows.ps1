@@ -24,9 +24,9 @@ if ($env:TASK -eq "cpp-tests") {
 if ($env:TASK -eq "swig") {
   $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-  Invoke-WebRequest -Uri "https://sourceforge.net/projects/swig/files/latest/download" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "NativeHost"
+  Invoke-WebRequest -Uri "https://sourceforge.net/projects/swig/files/latest/download" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "curl"
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
+  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig") ; Check-Output $?
   $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
   $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
   cmake -B build -S . -A x64 -DUSE_SWIG=ON ; Check-Output $?
