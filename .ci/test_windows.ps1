@@ -30,11 +30,11 @@ if ($env:TASK -eq "swig") {
   $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
   $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
   $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
-  cmake -B build -S . -A x64 -DUSE_SWIG=ON *> $BuildLogFileName ; $build_succeeded = $?
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
   Write-Output "CMake build logs:"
   Get-Content -Path "$BuildLogFileName"
   Check-Output $build_succeeded
-  $checks = Select-String -Path "${BuildLogFileName}" -Pattern "-- Found SWIG:* ${SwigFolder}/swig.exe*"
+  $checks = Select-String -Path "${BuildLogFileName}" -Pattern "-- Found SWIG.*${SwigFolder}/swig.exe"
   $checks_cnt = $checks.Matches.length
   if ($checks_cnt -eq 0) {
     Write-Output "Wrong SWIG version was found (expected '${SwigFolder}'). Check the build logs."
