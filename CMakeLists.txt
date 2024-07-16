@@ -25,8 +25,20 @@ option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Lo
 
 cmake_minimum_required(VERSION 3.18)
 
-include(cmake/Submodules.cmake)
-assert_submodules_initialized(${USE_GPU})
+# Ensure submodules have been correctly initialized
+set(required_submodules eigen fast_double_parser fmt)
+if(USE_GPU)
+    list(APPEND required_submodules compute)
+endif()
+foreach(submodule ${required_submodules})
+  if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external_libs/${submodule}/CMakeLists.txt")
+      message(
+        FATAL_ERROR
+        "Required source directory 'external_libs/${submodule}' is empty. "
+        "Please run: 'git submodule update --init --recursive' from the root of the repo and re-run cmake"
+      )
+  endif()
+endforeach()
 
 # If using Visual Studio generators, always target v10.x of the Windows SDK.
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
