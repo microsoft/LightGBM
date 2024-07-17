@@ -34,7 +34,7 @@ else  # Linux
     || exit 1
     sudo mkdir /opt/cmake || exit 1
     sudo sh cmake-3.30.0-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
-    sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
+    sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
 
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
