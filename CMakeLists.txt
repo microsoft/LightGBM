@@ -24,6 +24,9 @@ option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R pack
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
 cmake_minimum_required(VERSION 3.18)
+if(__INTEGRATE_OPENCL)
+  cmake_minimum_required(VERSION 3.28)
+endif()
 
 # If using Visual Studio generators, always target v10.x of the Windows SDK.
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
