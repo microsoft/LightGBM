@@ -30,12 +30,12 @@ if [[ $OS_NAME == "macos" ]]; then
     fi
 else  # Linux
     if type -f apt 2>&1 > /dev/null; then
-        apt-get update
-        apt-get install --no-install-recommends -y \
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y \
             curl
     else
-        yum update -y
-        yum install -y \
+        sudo yum update -y
+        sudo yum install -y \
             curl
     fi
     curl -O -L \
