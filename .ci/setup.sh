@@ -29,6 +29,13 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
+    curl -O -L \
+        https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-${ARCH}.sh \
+    || exit 1
+    sudo mkdir /opt/cmake || exit 1
+    sudo sh cmake-3.30.0-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
+    sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
+
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
@@ -41,7 +48,6 @@ else  # Linux
         sudo apt-get install --no-install-recommends -y \
             build-essential \
             ca-certificates \
-            cmake \
             curl \
             git \
             libcurl4 \
@@ -117,21 +123,12 @@ else  # Linux
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-        apt-get update
-        apt-get install --no-install-recommends -y \
-            curl \
-            lsb-release \
-            software-properties-common
         if [[ $COMPILER == "clang" ]]; then
+            apt-get update
             apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         fi
-        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
-        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
-        apt-get update
-        apt-get install --no-install-recommends -y \
-            cmake
     fi
 fi
 
