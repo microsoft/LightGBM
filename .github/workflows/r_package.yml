@@ -181,7 +181,7 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
         if: matrix.container != 'ubuntu:18.04'
-      # R 3.6 binary isn't easily available on buntu 18.04,
+      # R 3.6 binary isn't easily available on Ubuntu 18.04,
       # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
       # ref: https://github.com/microsoft/LightGBM/issues/6298
       - name: Install pandoc
