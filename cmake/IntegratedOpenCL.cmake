@@ -1,5 +1,5 @@
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(BOOST_VERSION_DOT "1.85")
+set(BOOST_VERSION_DOT "1.74")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
 set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
@@ -68,10 +68,8 @@ set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
 set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 if(WIN32)
   if(MSVC)
-    if(${MSVC_VERSION} GREATER 1949)
+    if(${MSVC_VERSION} GREATER 1929)
       message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
-    elseif(${MSVC_VERSION} GREATER 1929)
-      set(MSVC_TOOLCHAIN_ID "v143")
     elseif(${MSVC_VERSION} GREATER 1919)
       set(MSVC_TOOLCHAIN_ID "142")
     elseif(${MSVC_VERSION} GREATER 1909)
@@ -114,7 +112,6 @@ list(
     "libs/any"
     "libs/array"
     "libs/assert"
-    "libs/atomic"
     "libs/bind"
     "libs/chrono"
     "libs/compute"
@@ -182,7 +179,6 @@ ExternalProject_Add(
     -a
     -q
     -j ${J}
-    --with-atomic
     --with-headers
     --with-chrono
     --with-filesystem
