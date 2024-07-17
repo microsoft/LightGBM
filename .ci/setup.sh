@@ -29,6 +29,15 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
+    if type -f apt 2>&1 > /dev/null; then
+        apt-get update
+        apt-get install --no-install-recommends -y \
+            curl
+    else
+        yum update -y
+        yum install -y \
+            curl
+    fi
     curl -O -L \
         https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-${ARCH}.sh \
     || exit 1
