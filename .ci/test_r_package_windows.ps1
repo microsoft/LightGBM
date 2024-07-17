@@ -35,8 +35,6 @@ function Remove-From-Path {
   )
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
-Write-Output "Finding CMake"
-where cmake
 
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
@@ -95,7 +93,7 @@ $env:CMAKE_VERSION = "3.30.0"
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
+$env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation" -replace '[\\]', '/'
 $env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH
 if ([version]$env:R_VERSION -lt [version]"4.0") {
   $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
@@ -137,8 +135,12 @@ Write-Output "Done installing Rtools"
 
 Write-Output "Installing CMake"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMake_PATH/cmake.zip", "$env:CMake_PATH") ; Check-Output $?
+[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMAKE_PATH/cmake.zip", "$env:CMAKE_PATH") ; Check-Output $?
 Write-Output "Done installing CMake"
+
+Write-Output "Finding CMake"
+cmake --version
+(Get-Command cmake).Path
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"

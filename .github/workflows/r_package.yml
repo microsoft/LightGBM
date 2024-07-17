@@ -187,7 +187,7 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2.6.0
         if: matrix.container == 'ubuntu:18.04'
-      - name: install tinytex
+      - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
         env:
