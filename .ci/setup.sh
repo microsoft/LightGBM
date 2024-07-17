@@ -32,10 +32,12 @@ else  # Linux
     if type -f apt 2>&1 > /dev/null; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
+            ca-certificates \
             curl
     else
         sudo yum update -y
         sudo yum install -y \
+            ca-certificates \
             curl
     fi
     curl -O -L \
