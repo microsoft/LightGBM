@@ -35,6 +35,8 @@ function Remove-From-Path {
   )
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
+Write-Output "Finding CMake"
+where cmake
 
 # remove some details that exist in the GitHub Actions images which might
 # cause conflicts with R and other components installed by this script
@@ -135,7 +137,7 @@ Write-Output "Done installing Rtools"
 
 Write-Output "Installing CMake"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMake_PATH/cmake.zip", "$env:CMake_PATH")
+[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMake_PATH/cmake.zip", "$env:CMake_PATH") ; Check-Output $?
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
