@@ -55,8 +55,6 @@ News
 
 Please refer to changelogs at [GitHub releases](https://github.com/microsoft/LightGBM/releases) page.
 
-Some old update logs are available at [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md) page.
-
 External (Unofficial) Repositories
 ----------------------------------
 
