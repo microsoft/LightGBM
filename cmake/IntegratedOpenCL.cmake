@@ -22,7 +22,14 @@ endif()
 set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for OpenCL ICD Loader
 set(OpenCL_INCLUDE_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for Boost::Compute
 
-FetchContent_Declare(OpenCL-ICD-Loader GIT_REPOSITORY ${OPENCL_LOADER_REPOSITORY} GIT_TAG ${OPENCL_LOADER_TAG} EXCLUDE_FROM_ALL)
+FetchContent_Declare(
+  OpenCL-ICD-Loader
+  GIT_REPOSITORY
+  ${OPENCL_LOADER_REPOSITORY}
+  GIT_TAG
+  ${OPENCL_LOADER_TAG}
+  EXCLUDE_FROM_ALL
+)
 FetchContent_GetProperties(OpenCL-ICD-Loader)
 if(NOT OpenCL-ICD-Loader_POPULATED)
   FetchContent_MakeAvailable(OpenCL-ICD-Loader)
