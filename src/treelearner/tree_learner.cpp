@@ -5,6 +5,7 @@
 #include <LightGBM/tree_learner.h>
 
 #include "gpu_tree_learner.h"
+#include "gpu_linear_tree_learner.h"
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
 #include "serial_tree_learner.h"
@@ -30,7 +31,11 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("gpu")) {
     if (learner_type == std::string("serial")) {
-      return new GPUTreeLearner(config);
+      if (config->linear_tree) {
+        return new GPULinearTreeLearner(config);
+      } else {
+        return new GPUTreeLearner(config);
+      }
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<GPUTreeLearner>(config);
     } else if (learner_type == std::string("data")) {
