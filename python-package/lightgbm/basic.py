@@ -1745,7 +1745,13 @@ class _InnerPredictor:
 
 
 class Dataset:
-    """Dataset in LightGBM."""
+    """
+    Dataset in LightGBM.
+
+    LightGBM does not train on raw data. It discretizes continuous features into histogram bins, tries to opportunistically combine categorical features, and automatically handles missing and infinite values.
+
+    The ``Dataset`` class handles that preprocessing, and holds that alternative representation of the input data.
+    """
 
     def __init__(
         self,
