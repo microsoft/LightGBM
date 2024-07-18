@@ -316,6 +316,11 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
+          # patch around library-loading issues in clang18 image
+          # ref: https://github.com/microsoft/LightGBM/issues/6553
+          if [[ "${{ matrix.image }}" == "clang18" ]]; then
+            export LD_LIBRARY_PATH="/usr/lib/llvm-18/lib:${LD_LIBRARY_PATH}"
+          fi
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
           if [[ "${{ matrix.image }}" =~ "clang" ]]; then
