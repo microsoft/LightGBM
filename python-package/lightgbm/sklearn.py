@@ -10,6 +10,7 @@ import numpy as np
 import scipy.sparse
 
 from .basic import (
+    _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
     LightGBMError,
@@ -467,7 +468,7 @@ def _extract_evaluation_meta_data(
         # It's possible, for example, to pass 3 eval sets through `eval_set`,
         # but only 1 init_score through `eval_init_score`.
         #
-        # This if-else accounts for that possiblity.
+        # This if-else accounts for that possibility.
         if len(collection) > i:
             return collection[i]
         else:
@@ -1011,7 +1012,7 @@ class LGBMModel(_LGBMModelBase):
                 f"match the input. Model n_features_ is {self._n_features} and "
                 f"input n_features is {n_features}"
             )
-        # retrive original params that possibly can be used in both training and prediction
+        # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
@@ -1251,7 +1252,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 eval_metric_list = [eval_metric]
             else:
                 eval_metric_list = []
-            if self._n_classes > 2:
+            if self.__is_multiclass:
                 for index, metric in enumerate(eval_metric_list):
                     if metric in {"logloss", "binary_logloss"}:
                         eval_metric_list[index] = "multi_logloss"
@@ -1361,7 +1362,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 "Returning raw scores instead."
             )
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self.__is_multiclass or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1.0 - result, result)).transpose()
@@ -1388,6 +1389,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No classes found. Need to call fit beforehand.")
         return self._n_classes
+
+    @property
+    def __is_multiclass(self) -> bool:
+        """:obj:`bool`:  Indicator of whether the classifier is used for multiclass."""
+        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in _MULTICLASS_OBJECTIVES)
 
 
 class LGBMRanker(LGBMModel):
