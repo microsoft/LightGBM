@@ -104,21 +104,42 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo installer \
         -pkg $(pwd)/R.pkg \
         -target / || exit 1
+
+    # install tidy v5.8.0
+    # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
+    TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
+    curl -sL ${TIDY_URL} -o tidy.pkg
+    sudo installer \
+        -pkg $(pwd)/tidy.pkg \
+        -target /
+
+    # ensure that this newer version of 'tidy' is used by 'R CMD check'
+    # ref: https://cran.r-project.org/doc/manuals/R-exts.html#Checking-packages
+    export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
-# fix for issue where CRAN was not returning {lattice} when using R 3.6
+# fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
+    Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
+else
+    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+    # This should be unnecessary on R >=4.4.0
+    # ref: https://github.com/microsoft/LightGBM/issues/6433
+    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 fi
+
+# manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
+# ref: https://github.com/microsoft/LightGBM/issues/6433
+Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
 # Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
 # NOTE: testthat is not required when running rchk
 if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl')"
 else
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'R6', 'RhpcBLASctl', 'testthat')"
+    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
 fi
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
@@ -127,9 +148,9 @@ if [[ $OS_NAME == "macos" ]]; then
 fi
 Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
 
-cd ${BUILD_DIRECTORY}
-
-PKG_TARBALL="lightgbm_*.tar.gz"
+cd "${BUILD_DIRECTORY}"
+PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
+BUILD_LOG_FILE="lightgbm.Rcheck/00install.out"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
     Rscript build_r.R -j4 --skip-install || exit 1
@@ -138,7 +159,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # on Linux, we recreate configure in CI to test if
     # a change in a PR has changed configure.ac
     if [[ $OS_NAME == "linux" ]]; then
-        ${BUILD_DIRECTORY}/R-package/recreate-configure.sh
+        ./R-package/recreate-configure.sh
 
         num_files_changed=$(
             git diff --name-only | wc -l
@@ -188,33 +209,10 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     cd ${R_CMD_CHECK_DIR}
 fi
 
-# fails tests if either ERRORs or WARNINGs are thrown by
-# R CMD CHECK
-check_succeeded="yes"
-(
-    R CMD check ${PKG_TARBALL} \
-        --as-cran \
-        --run-donttest \
-    || check_succeeded="no"
-) &
-
-# R CMD check suppresses output, some CIs kill builds after
-# a few minutes with no output. This trick gives R CMD check more time
-#     * https://github.com/travis-ci/travis-ci/issues/4190#issuecomment-169987525
-#     * https://stackoverflow.com/a/29890106/3986677
-CHECK_PID=$!
-while kill -0 ${CHECK_PID} >/dev/null 2>&1; do
-    echo -n -e " \b"
-    sleep 5
-done
-
-echo "R CMD check build logs:"
-BUILD_LOG_FILE=lightgbm.Rcheck/00install.out
-cat ${BUILD_LOG_FILE}
-
-if [[ $check_succeeded == "no" ]]; then
-    exit 1
-fi
+declare -i allowed_notes=0
+bash "${BUILD_DIRECTORY}/.ci/run-r-cmd-check.sh" \
+    "${PKG_TARBALL}" \
+    "${allowed_notes}"
 
 # ensure 'grep --count' doesn't cause failures
 set +e
@@ -233,16 +231,10 @@ if [[ $R_BUILD_TYPE == "cmake" ]]; then
         cat $BUILD_LOG_FILE \
         | grep --count "R version passed into FindLibR.cmake: ${R_VERSION}"
     )
-    if [[ $used_correct_r_version -ne 1 ]]; then
+    if [[ $passed_correct_r_version_to_cmake -ne 1 ]]; then
         echo "Unexpected R version was passed into cmake. Expected '${R_VERSION}'."
         exit 1
     fi
-fi
-
-
-if grep -q -E "NOTE|WARNING|ERROR" "$LOG_FILE_NAME"; then
-    echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-    exit 1
 fi
 
 # this check makes sure that CI builds of the package actually use OpenMP
@@ -266,20 +258,25 @@ fi
 
 # this check makes sure that CI builds of the package
 # actually use MM_PREFETCH preprocessor definition
-if [[ $R_BUILD_TYPE == "cran" ]]; then
-    mm_prefetch_working=$(
-        cat $BUILD_LOG_FILE \
-        | grep --count -E "checking whether MM_PREFETCH work.*yes"
-    )
-else
-    mm_prefetch_working=$(
-        cat $BUILD_LOG_FILE \
-        | grep --count -E ".*Performing Test MM_PREFETCH - Success"
-    )
-fi
-if [[ $mm_prefetch_working -ne 1 ]]; then
-    echo "MM_PREFETCH test was not passed"
-    exit 1
+#
+# _mm_prefetch will not work on arm64 architecture
+# ref: https://github.com/microsoft/LightGBM/issues/4124
+if [[ $ARCH != "arm64" ]]; then
+    if [[ $R_BUILD_TYPE == "cran" ]]; then
+        mm_prefetch_working=$(
+            cat $BUILD_LOG_FILE \
+            | grep --count -E "checking whether MM_PREFETCH work.*yes"
+        )
+    else
+        mm_prefetch_working=$(
+            cat $BUILD_LOG_FILE \
+            | grep --count -E ".*Performing Test MM_PREFETCH - Success"
+        )
+    fi
+    if [[ $mm_prefetch_working -ne 1 ]]; then
+        echo "MM_PREFETCH test was not passed"
+        exit 1
+    fi
 fi
 
 # this check makes sure that CI builds of the package

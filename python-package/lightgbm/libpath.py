@@ -1,5 +1,6 @@
 # coding: utf-8
 """Find the path to LightGBM dynamic library files."""
+
 from pathlib import Path
 from platform import system
 from typing import List

@@ -149,7 +149,7 @@ and copy memory as required by creating new processes instead of forking (or, us
 
 Cloud platform container services may cause LightGBM to hang, if they use Linux fork to run multiple containers on a
 single instance. For example, LightGBM hangs in AWS Batch array jobs, which `use the ECS agent
-<https://aws.amazon.com/batch/faqs/#Features>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
+<https://aws.amazon.com/batch/faqs>`__ to manage multiple running jobs. Setting ``nthreads=1`` mitigates the issue.
 
 12. Why is early stopping not enabled by default in LightGBM?
 -------------------------------------------------------------
@@ -202,7 +202,7 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 Detailed description of conflicts between multiple OpenMP instances is provided in the `following document <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__.
 
-**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#user-content-workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
+**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__ under the "Workarounds for Intel OpenMP and LLVM OpenMP case" section.
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
 
@@ -231,10 +231,27 @@ In older versions, avoid printing the ``Dataset`` after calling ``setinfo()``.
 
 As of LightGBM v4.0.0, ``setinfo()`` has been replaced by a new method, ``set_field()``.
 
-3. ``error in data.table::data.table()...argument 2 is NULL``
--------------------------------------------------------------
+3. ``error in data.table::data.table()...argument 2 is NULL``.
+--------------------------------------------------------------
 
 If you are experiencing this error when running ``lightgbm``, you may be facing the same issue reported in `#2715 <https://github.com/microsoft/LightGBM/issues/2715>`_ and later in `#2989 <https://github.com/microsoft/LightGBM/pull/2989#issuecomment-614374151>`_. We have seen that in some situations, using ``data.table`` 1.11.x results in this error. To get around this, you can upgrade your version of ``data.table`` to at least version 1.12.0.
+
+4. ``package/dependency ‘Matrix’ is not available ...``
+-------------------------------------------------------
+
+In April 2024, ``Matrix==1.7-0`` was published to CRAN.
+That version had a floor of ``R (>=4.4.0)``.
+``{Matrix}`` is a hard runtime dependency of ``{lightgbm}``, so on any version of R older than ``4.4.0``, running ``install.packages("lightgbm")`` results in something like the following.
+
+.. code-block:: text
+
+    package ‘Matrix’ is not available for this version of R
+
+To fix that without upgrading to R 4.4.0 or greater, manually install an older version of ``{Matrix}``.
+
+.. code-block:: R
+
+    install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL)
 
 ------
 
@@ -305,13 +322,15 @@ We are doing our best to provide universal wheels which have high running speed 
 However, sometimes it's just impossible to guarantee the possibility of usage of LightGBM in any specific environment (see `Microsoft/LightGBM#1743 <https://github.com/microsoft/LightGBM/issues/1743>`__).
 
 Therefore, the first thing you should try in case of segfaults is **compiling from the source** using ``pip install --no-binary lightgbm lightgbm``.
-For the OS-specific prerequisites see `this guide <https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst#user-content-build-from-sources>`__.
+For the OS-specific prerequisites see https://github.com/microsoft/LightGBM/blob/master/python-package/README.rst.
 
 Also, feel free to post a new issue in our GitHub repository. We always look at each case individually and try to find a root cause.
 
 4. I would like to install LightGBM from conda. What channel should I choose?
 -----------------------------------------------------------------------------
 
-We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons.
-The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM.
-More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one.
+
+For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+
+In addition, as of ``lightgbm==4.4.0``, the ``conda-forge`` package automatically supports CUDA-based GPU acceleration.

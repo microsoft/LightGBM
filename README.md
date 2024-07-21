@@ -15,6 +15,7 @@ Light Gradient Boosting Machine
 [![Python Versions](https://img.shields.io/pypi/pyversions/lightgbm.svg?logo=python&logoColor=white)](https://pypi.org/project/lightgbm)
 [![PyPI Version](https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white)](https://pypi.org/project/lightgbm)
 [![CRAN Version](https://www.r-pkg.org/badges/version/lightgbm)](https://cran.r-project.org/package=lightgbm)
+[![NuGet Version](https://img.shields.io/nuget/v/lightgbm?logo=nuget&logoColor=white)](https://www.nuget.org/packages/LightGBM)
 
 LightGBM is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
@@ -54,8 +55,6 @@ News
 ----
 
 Please refer to changelogs at [GitHub releases](https://github.com/microsoft/LightGBM/releases) page.
-
-Some old update logs are available at [Key Events](https://github.com/microsoft/LightGBM/blob/master/docs/Key-Events.md) page.
 
 External (Unofficial) Repositories
 ----------------------------------
@@ -133,7 +132,7 @@ Support
 -------
 
 - Ask a question [on Stack Overflow with the `lightgbm` tag](https://stackoverflow.com/questions/ask?tags=lightgbm), we monitor this for new questions.
-- Open **bug reports** and **feature requests** (not questions) on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
+- Open **bug reports** and **feature requests** on [GitHub issues](https://github.com/microsoft/LightGBM/issues).
 
 How to Contribute
 -----------------
@@ -155,8 +154,6 @@ Guolin Ke, Qi Meng, Thomas Finley, Taifeng Wang, Wei Chen, Weidong Ma, Qiwei Ye,
 Qi Meng, Guolin Ke, Taifeng Wang, Wei Chen, Qiwei Ye, Zhi-Ming Ma, Tie-Yan Liu. "[A Communication-Efficient Parallel Algorithm for Decision Tree](http://papers.nips.cc/paper/6380-a-communication-efficient-parallel-algorithm-for-decision-tree)". Advances in Neural Information Processing Systems 29 (NIPS 2016), pp. 1279-1287.
 
 Huan Zhang, Si Si and Cho-Jui Hsieh. "[GPU Acceleration for Large-scale Tree Boosting](https://arxiv.org/abs/1706.08359)". SysML Conference, 2018.
-
-**Note**: If you use LightGBM in your GitHub projects, please add `lightgbm` in the `requirements.txt`.
 
 License
 -------

@@ -343,7 +343,7 @@ class MultiValDenseBin : public MultiValBin {
   std::vector<uint32_t> offsets_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
 
-  MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
+  MultiValDenseBin(const MultiValDenseBin<VAL_T>& other)
     : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_),
       offsets_(other.offsets_), data_(other.data_) {
   }

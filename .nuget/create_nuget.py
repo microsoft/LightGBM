@@ -1,5 +1,6 @@
 # coding: utf-8
 """Script for generating files with NuGet package metadata."""
+
 import datetime
 import sys
 from pathlib import Path

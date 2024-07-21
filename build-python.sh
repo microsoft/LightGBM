@@ -40,8 +40,6 @@
 #                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
-#     --hdfs
-#                                   Compile HDFS version.
 #     --integrated-opencl
 #                                   Compile integrated OpenCL version.
 #     --mingw
@@ -147,9 +145,6 @@ while [ $# -gt 0 ]; do
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
-        ;;
-    --hdfs)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HDFS=ON"
         ;;
     --integrated-opencl)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
@@ -364,13 +359,12 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
-    # remove existing installation
-    # (useful when building the dev version multiple times, where the version number doesn't change)
-    pip uninstall --yes lightgbm
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
+        --ignore-installed \
         --no-cache-dir \
+        --no-deps \
         --find-links=. \
         lightgbm
     cd ../
