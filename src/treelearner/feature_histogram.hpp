@@ -668,15 +668,15 @@ class FeatureHistogram {
   /*!
    * \brief Binary size of this histogram
    */
-  int SizeOfHistgram() const {
+  int SizeOfHistogram() const {
     return (meta_->num_bin - meta_->offset) * kHistEntrySize;
   }
 
-  int SizeOfInt32Histgram() const {
+  int SizeOfInt32Histogram() const {
     return (meta_->num_bin - meta_->offset) * kInt32HistEntrySize;
   }
 
-  int SizeOfInt16Histgram() const {
+  int SizeOfInt16Histogram() const {
     return (meta_->num_bin - meta_->offset) * kInt16HistEntrySize;
   }
 

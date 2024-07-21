@@ -30,7 +30,7 @@ The list includes the commits where the major feature added is considered workin
 | 06/04/2017 | [bfb0217](https://github.com/microsoft/LightGBM/pull/383) | Feature | Objective Transformations to the Objective (Pull Request 383) |
 | 05/04/2017 | [d4c4d9a](https://github.com/microsoft/LightGBM/pull/381) | Feature | Regression Speed Improvements (Pull Request 381) |
 | 03/04/2017 | [b6c973a](https://github.com/microsoft/LightGBM/pull/378) | Feature | Unloading Memory Fix support for R-package (Pull Request 378) |
-| 17/03/2017 | [06a915a](https://github.com/microsoft/LightGBM/pull/347) | Feature | RDS support for R pacakge (Pull Request 347) |
+| 17/03/2017 | [06a915a](https://github.com/microsoft/LightGBM/pull/347) | Feature | RDS support for R package (Pull Request 347) |
 | 10/03/2017 | [b7e5f07](https://github.com/microsoft/LightGBM/pull/340) | Feature | Support Self-Contained R-package (Pull Request 340) |
 | 02/03/2017 | [4d6ff28](https://github.com/microsoft/LightGBM/pull/330) | Feature | Feature Contribution Plot for R-package (Pull Request 330) |
 | 01/03/2017 | [166421e](https://github.com/microsoft/LightGBM/pull/328) | Feature | Feature Importance Plot for R-package (Pull Request 328) |
@@ -90,7 +90,7 @@ The list includes the commits where the major feature added is considered workin
 * 06/04/2017 ([Microsoft/LightGBM@bfb0217](https://github.com/microsoft/LightGBM/pull/383)): Feature: Objective Transformations to the Objective (Pull Request 383)
 * 05/04/2017 ([Microsoft/LightGBM@d4c4d9a](https://github.com/microsoft/LightGBM/pull/381)): Feature: Regression Speed Improvements (Pull Request 381)
 * 03/04/2017 ([Microsoft/LightGBM@b6c973a](https://github.com/microsoft/LightGBM/pull/378)): Feature: Unloading Memory Fix support for R-package (Pull Request 378)
-* 17/03/2017 ([Microsoft/LightGBM@06a915a](https://github.com/microsoft/LightGBM/pull/347)): Feature: RDS support for R pacakge (Pull Request 347)
+* 17/03/2017 ([Microsoft/LightGBM@06a915a](https://github.com/microsoft/LightGBM/pull/347)): Feature: RDS support for R package (Pull Request 347)
 * 10/03/2017 ([Microsoft/LightGBM@b7e5f07](https://github.com/microsoft/LightGBM/pull/340)): Feature: Support Self-Contained R-package (Pull Request 340)
 * 02/03/2017 ([Microsoft/LightGBM@4d6ff28](https://github.com/microsoft/LightGBM/pull/330)): Feature: Feature Contribution Plot for R-package (Pull Request 330)
 * 01/03/2017 ([Microsoft/LightGBM@166421e](https://github.com/microsoft/LightGBM/pull/328)): Feature: Feature Importance Plot for R-package (Pull Request 328)

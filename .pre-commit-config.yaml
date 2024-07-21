@@ -35,3 +35,9 @@ repos:
       - id: ruff-format
         args: ["--config", "python-package/pyproject.toml"]
         types_or: [python, jupyter]
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.23.2
+    hooks:
+      - id: typos
+        args: ["--force-exclude"]
+        exclude: (\.gitignore$)|(^\.editorconfig$)

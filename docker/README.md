@@ -8,9 +8,9 @@ These builds of LightGBM all train on the CPU. For GPU-enabled builds, see [the 
 
 Follow the general installation instructions [on the Docker site](https://docs.docker.com/install/):
 
-* [macOS](https://docs.docker.com/docker-for-mac/install/)
-* [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-* [Windows](https://docs.docker.com/docker-for-windows/install/)
+- [macOS](https://docs.docker.com/docker-for-mac/install/)
+- [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+- [Windows](https://docs.docker.com/docker-for-windows/install/)
 
 ## Using CLI Version of LightGBM via Docker
 
@@ -55,7 +55,7 @@ After this runs, a LightGBM model can be found at `LightGBM-CLI-model.txt`.
 
 For more details on how to configure and use the LightGBM CLI, see https://lightgbm.readthedocs.io/en/latest/Quick-Start.html.
 
-## Running the Python-package Сontainer
+## Running the Python-package Container
 
 Build an image with the LightGBM Python package installed.
 
@@ -114,7 +114,7 @@ docker run \
     python
 ```
 
-## Running the R-package Сontainer
+## Running the R-package Container
 
 Build an image with the LightGBM R package installed.
 

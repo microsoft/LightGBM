@@ -207,9 +207,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::CopyLocalHistogram(const std::vec
           smaller_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, this->smaller_leaf_histogram_array_[inner_feature_index].RawData(), this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
-        cur_size += this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
-        reduce_scatter_size_ += this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, this->smaller_leaf_histogram_array_[inner_feature_index].RawData(), this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistogram());
+        cur_size += this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistogram();
+        reduce_scatter_size_ += this->smaller_leaf_histogram_array_[inner_feature_index].SizeOfHistogram();
         ++smaller_idx;
       }
       if (cur_used_features >= cur_total_feature) {
@@ -225,9 +225,9 @@ void VotingParallelTreeLearner<TREELEARNER_T>::CopyLocalHistogram(const std::vec
           larger_buffer_read_start_pos_[inner_feature_index] = static_cast<int>(cur_size);
         }
         // copy
-        std::memcpy(input_buffer_.data() + reduce_scatter_size_, this->larger_leaf_histogram_array_[inner_feature_index].RawData(), this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram());
-        cur_size += this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
-        reduce_scatter_size_ += this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistgram();
+        std::memcpy(input_buffer_.data() + reduce_scatter_size_, this->larger_leaf_histogram_array_[inner_feature_index].RawData(), this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistogram());
+        cur_size += this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistogram();
+        reduce_scatter_size_ += this->larger_leaf_histogram_array_[inner_feature_index].SizeOfHistogram();
         ++larger_idx;
       }
     }

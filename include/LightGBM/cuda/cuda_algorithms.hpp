@@ -115,7 +115,7 @@ __device__ __forceinline__ T ShuffleReduceSumWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceSum(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -145,7 +145,7 @@ __device__ __forceinline__ T ShuffleReduceMaxWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMax(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;
@@ -196,7 +196,7 @@ __device__ __forceinline__ T ShuffleReduceMinWarp(T value, const data_size_t len
   return value;
 }
 
-// reduce values from an 1-dimensional block (block size must be no greather than 1024)
+// reduce values from an 1-dimensional block (block size must be no greater than 1024)
 template <typename T>
 __device__ __forceinline__ T ShuffleReduceMin(T value, T* shared_mem_buffer, const size_t len) {
   const uint32_t warpLane = threadIdx.x % warpSize;

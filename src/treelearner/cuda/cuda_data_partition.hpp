@@ -174,7 +174,7 @@ class CUDADataPartition {
     const int left_leaf_index,
     const int right_leaf_index);
 
-#define GenDataToLeftBitVectorKernel_PARMS \
+#define GenDataToLeftBitVectorKernel_PARAMS \
   const BIN_TYPE* column_data, \
   const data_size_t num_data_in_leaf, \
   const data_size_t* data_indices_in_leaf, \
@@ -187,7 +187,7 @@ class CUDADataPartition {
 
   template <typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool missing_is_zero,
     const bool missing_is_na,
     const bool mfb_is_zero,
@@ -197,7 +197,7 @@ class CUDADataPartition {
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner0(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool missing_is_na,
     const bool mfb_is_zero,
     const bool mfb_is_na,
@@ -206,7 +206,7 @@ class CUDADataPartition {
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner1(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool mfb_is_zero,
     const bool mfb_is_na,
     const bool max_bin_to_left,
@@ -214,23 +214,23 @@ class CUDADataPartition {
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner2(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool mfb_is_na,
     const bool max_bin_to_left,
     const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner3(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool max_bin_to_left,
     const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
   void LaunchGenDataToLeftBitVectorKernelInner4(
-    GenDataToLeftBitVectorKernel_PARMS,
+    GenDataToLeftBitVectorKernel_PARAMS,
     const bool is_single_feature_in_column);
 
-#undef GenDataToLeftBitVectorKernel_PARMS
+#undef GenDataToLeftBitVectorKernel_PARAMS
 
 #define UpdateDataIndexToLeafIndexKernel_PARAMS \
   const BIN_TYPE* column_data, \
@@ -379,7 +379,7 @@ class CUDADataPartition {
   int* cuda_split_info_buffer_;
 
   // dataset information
-  /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
+  /*! \brief number of data in training set, for initialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
 
 

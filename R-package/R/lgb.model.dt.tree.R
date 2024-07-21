@@ -5,7 +5,7 @@
 #' @param num_iteration number of iterations you want to predict with. NULL or
 #'                      <= 0 means use best iteration
 #' @return
-#' A \code{data.table} with detailed information about model trees' nodes and leafs.
+#' A \code{data.table} with detailed information about model trees' nodes and leaves.
 #'
 #' The columns of the \code{data.table} are:
 #'

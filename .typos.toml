@@ -1,0 +1,15 @@
+default.extend-ignore-re = ["posix-seh-rt", "/Ot"]
+
+[default.extend-words]
+MAPE = "MAPE"
+datas = "datas"
+mape = "mape"
+splitted = "splitted"
+
+[default.extend-identifiers]
+ERRORs = "ERRORs"
+GAM = "GAM"
+ND24s = "ND24s"
+WARNINGs = "WARNINGs"
+fullset = "fullset"
+thess = "thess"

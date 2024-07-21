@@ -259,7 +259,7 @@ Build Wheel File
 You can use ``sh ./build-python.sh install bdist_wheel`` to build a wheel file but not install it.
 
 That script requires some dependencies like ``build``, ``scikit-build-core``, and ``wheel``.
-In environments with restricted or no internt access, install those tools and then pass ``--no-isolation``.
+In environments with restricted or no internet access, install those tools and then pass ``--no-isolation``.
 
 .. code:: sh
 

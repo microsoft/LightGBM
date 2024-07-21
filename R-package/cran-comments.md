@@ -508,7 +508,7 @@ Please fix and resubmit.
 
 Ok, these are the notes from the UBSAN tests. Was able to reproduce them with https://github.com/microsoft/LightGBM/pull/3338#issuecomment-700399862, and they were fixed in https://github.com/microsoft/LightGBM/pull/3415.
 
-Struggling to replicate the valgrind result (running `R CMD check --use-valgrind` returns no issues), so trying submission again. Hoping that the fixes for mis-alignment fix the other errors too.
+Struggling to replicate the valgrind result (running `R CMD check --use-valgrind` returns no issues), so trying submission again. Hoping that the fixes for misalignment fix the other errors too.
 
 ## v3.0.0 - Submission 6 - (September 24, 2020)
 
@@ -664,7 +664,7 @@ Failing pre-checks.
 
     New submission
 
-    Possibly mis-spelled words in DESCRIPTION:
+    Possibly misspelled words in DESCRIPTION:
       Guolin (13:52)
       Ke (13:48)
       LightGBM (14:20)
@@ -684,7 +684,7 @@ Failing pre-checks.
 
     New submission
 
-    Possibly mis-spelled words in DESCRIPTION:
+    Possibly misspelled words in DESCRIPTION:
       Guolin (13:52)
       Ke (13:48)
       LightGBM (14:20)
@@ -874,14 +874,14 @@ Failing pre-checks.
 * Debian: 1 NOTE
 
     ```text
-    Possibly mis-spelled words in DESCRIPTION:
+    Possibly misspelled words in DESCRIPTION:
       LightGBM (12:88, 19:41, 20:60, 20:264)
     ```
 
 * Windows: 1 ERROR, 1 NOTE
 
     ```text
-    Possibly mis-spelled words in DESCRIPTION:
+    Possibly misspelled words in DESCRIPTION:
       LightGBM (12:88, 19:41, 20:60, 20:264)
 
     ** checking whether the package can be loaded ... ERROR

@@ -24,7 +24,7 @@ $(function() {
     /* Collapse specified sections in the installation guide */
     if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
         $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>').appendTo('body');
-        var collapsable = [
+        var collapsible = [
             '#build-threadless-version-not-recommended',
             '#build-mpi-version',
             '#build-gpu-version',
@@ -33,7 +33,7 @@ $(function() {
             '#build-java-wrapper',
             '#build-c-unit-tests'
         ];
-        $.each(collapsable, function(_, val) {
+        $.each(collapsible, function(_, val) {
             var header = val + ' > :header:first';
             var content = val + ' :not(:header:first)';
             $(header).addClass('closed');

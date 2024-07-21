@@ -90,6 +90,6 @@ reference:
     contents:
     - '`lgb.get.eval.result`'
     - '`lgb.importance`'
-    - '`lgb.interprete`'
+    - '`lgb.interpret`'
     - '`lgb.plot.importance`'
     - '`lgb.plot.interpretation`'

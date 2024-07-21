@@ -777,7 +777,7 @@ void GPUTreeLearner::ResetIsConstantHessian(bool is_constant_hessian) {
 
 void GPUTreeLearner::BeforeTrain() {
   #if GPU_DEBUG >= 2
-  printf("Copying intial full gradients and hessians to device\n");
+  printf("Copying initial full gradients and hessians to device\n");
   #endif
   // Copy initial full hessians and gradients to GPU.
   // We start copying as early as possible, instead of at ConstructHistogram().

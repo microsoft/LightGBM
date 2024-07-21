@@ -148,12 +148,12 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
   * \brief Perform global voting
   * \param leaf_idx index of leaf
   * \param splits All splits from local voting
-  * \param out Result of gobal voting, only store feature indices
+  * \param out Result of global voting, only store feature indices
   */
   void GlobalVoting(int leaf_idx, const std::vector<LightSplitInfo>& splits,
     std::vector<int>* out);
   /*!
-  * \brief Copy local histgram to buffer
+  * \brief Copy local histogram to buffer
   * \param smaller_top_features Selected features for smaller leaf
   * \param larger_top_features Selected features for larger leaf
   */
@@ -183,9 +183,9 @@ class VotingParallelTreeLearner: public TREELEARNER_T {
   std::vector<comm_size_t> block_start_;
   /*! \brief Block size for reduce scatter */
   std::vector<comm_size_t> block_len_;
-  /*! \brief Read positions for feature histgrams at smaller leaf */
+  /*! \brief Read positions for feature histograms at smaller leaf */
   std::vector<comm_size_t> smaller_buffer_read_start_pos_;
-  /*! \brief Read positions for feature histgrams at larger leaf */
+  /*! \brief Read positions for feature histograms at larger leaf */
   std::vector<comm_size_t> larger_buffer_read_start_pos_;
   /*! \brief Size for reduce scatter */
   comm_size_t reduce_scatter_size_;

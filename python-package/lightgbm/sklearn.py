@@ -981,7 +981,7 @@ class LGBMModel(_LGBMModelBase):
                 f"match the input. Model n_features_ is {self._n_features} and "
                 f"input n_features is {n_features}"
             )
-        # retrive original params that possibly can be used in both training and prediction
+        # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
