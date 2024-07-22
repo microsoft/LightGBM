@@ -2,9 +2,10 @@
 % Please edit documentation in R/lgb.interpret.R
 \name{lgb.interpret}
 \alias{lgb.interpret}
+\alias{lgb.interprete}
 \title{Compute feature contribution of prediction}
 \usage{
-lgb.interpret(model, data, idxset, num_iteration = NULL)
+lgb.interprete(model, data, idxset, num_iteration = NULL)
 }
 \arguments{
 \item{model}{object of class \code{lgb.Booster}.}
@@ -58,6 +59,6 @@ model <- lgb.train(
     , nrounds = 3L
 )
 
-tree_interpretation <- lgb.interpret(model, test$data, 1L:5L)
+tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
 }
 }
