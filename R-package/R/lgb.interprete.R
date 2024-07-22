@@ -1,4 +1,4 @@
-#' @name lgb.interpret
+#' @name lgb.interprete
 #' @title Compute feature contribution of prediction
 #' @description Computes feature contribution components of rawscore prediction.
 #' @param model object of class \code{lgb.Booster}.
