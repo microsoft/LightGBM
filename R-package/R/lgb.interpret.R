@@ -45,11 +45,11 @@
 #'     , nrounds = 3L
 #' )
 #'
-#' tree_interpretation <- lgb.interpret(model, test$data, 1L:5L)
+#' tree_interpretation <- lgb.interprete(model, test$data, 1L:5L)
 #' }
 #' @importFrom data.table as.data.table
 #' @export
-lgb.interpret <- function(model,
+lgb.interprete <- function(model,
                            data,
                            idxset,
                            num_iteration = NULL) {
@@ -88,7 +88,7 @@ lgb.interpret <- function(model,
   )
 
   for (i in seq_along(idxset)) {
-    tree_interpretation_dt_list[[i]] <- .single_row_interpret(
+    tree_interpretation_dt_list[[i]] <- .single_row_interprete(
       tree_dt = tree_dt
       , num_class = num_class
       , tree_index_mat = tree_index_mat_list[[i]]
@@ -101,7 +101,7 @@ lgb.interpret <- function(model,
 }
 
 #' @importFrom data.table data.table
-single.tree.interpret <- function(tree_dt,
+single.tree.interprete <- function(tree_dt,
                                    tree_id,
                                    leaf_id) {
 
@@ -153,13 +153,13 @@ single.tree.interpret <- function(tree_dt,
 }
 
 #' @importFrom data.table := rbindlist setorder
-.multiple_tree_interpret <- function(tree_dt,
+.multiple_tree_interprete <- function(tree_dt,
                                      tree_index,
                                      leaf_index) {
 
   interp_dt <- data.table::rbindlist(
     l = mapply(
-      FUN = single.tree.interpret
+      FUN = single.tree.interprete
       , tree_id = tree_index
       , leaf_id = leaf_index
       , MoreArgs = list(
@@ -188,7 +188,7 @@ single.tree.interpret <- function(tree_dt,
 }
 
 #' @importFrom data.table set setnames
-.single_row_interpret <- function(tree_dt, num_class, tree_index_mat, leaf_index_mat) {
+.single_row_interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index_mat) {
 
   # Prepare vector list
   tree_interpretation <- vector(mode = "list", length = num_class)
@@ -196,7 +196,7 @@ single.tree.interpret <- function(tree_dt,
   # Loop throughout each class
   for (i in seq_len(num_class)) {
 
-    next_interp_dt <- .multiple_tree_interpret(
+    next_interp_dt <- .multiple_tree_interprete(
       tree_dt = tree_dt
       , tree_index = tree_index_mat[, i]
       , leaf_index = leaf_index_mat[, i]

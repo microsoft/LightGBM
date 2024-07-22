@@ -94,7 +94,7 @@ reference:
     contents:
     - '`lgb.get.eval.result`'
     - '`lgb.importance`'
-    - '`lgb.interpret`'
+    - '`lgb.interprete`'
     - '`lgb.plot.importance`'
     - '`lgb.plot.interpretation`'
     - '`print.lgb.Booster`'
