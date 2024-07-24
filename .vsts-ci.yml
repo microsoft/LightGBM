@@ -13,6 +13,8 @@ variables:
   PYTHON_VERSION: '3.12'
   runCodesignValidationInjection: false
   skipComponentGovernanceDetection: true
+  Codeql.Enabled: false
+  Codeql.SkipTaskAutoInjection: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   SKBUILD_STRICT_CONFIG: true

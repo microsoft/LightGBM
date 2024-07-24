@@ -6,6 +6,7 @@ option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
+option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
 set(
   ENABLED_SANITIZERS
   "address" "leak" "undefined"
@@ -161,16 +162,18 @@ if(USE_OPENMP)
     if(APPLE)
         find_package(OpenMP)
         if(NOT OpenMP_FOUND)
-            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
-            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
-            execute_process(COMMAND brew --prefix libomp
+            if(USE_HOMEBREW_FALLBACK)
+                # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+                # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+                execute_process(COMMAND brew --prefix libomp
                             OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
                             OUTPUT_STRIP_TRAILING_WHITESPACE)
-            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
-            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
-            set(OpenMP_C_LIB_NAMES omp)
-            set(OpenMP_CXX_LIB_NAMES omp)
-            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+                set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+                set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+                set(OpenMP_C_LIB_NAMES omp)
+                set(OpenMP_CXX_LIB_NAMES omp)
+                set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            endif()
             find_package(OpenMP REQUIRED)
         endif()
     else()
@@ -581,7 +584,7 @@ if(USE_MPI)
 endif()
 
 if(USE_OPENMP)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
     # c_api headers also includes OpenMP headers, thus compiling
     # lightgbm_capi_objs needs include directory for OpenMP.
@@ -686,14 +689,14 @@ if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
-# The macOS linker puts an absolute path to linked libraries in lib_lightgb.dylib.
+# The macOS linker puts an absolute path to linked libraries in lib_lightgbm.dylib.
 # This block overrides that information for LightGBM's OpenMP dependency, to allow
 # finding that library in more places.
 #
-# This reduces the risk of runtime issues resulting from multiple libomp.dylib being loaded.
+# This reduces the risk of runtime issues resulting from multiple {libgomp,libiomp,libomp}.dylib being loaded.
 #
 if(APPLE AND USE_OPENMP)
-  # store path to libomp found at build time in a variable
+  # store path to {libgomp,libiomp,libomp}.dylib found at build time in a variable
   get_target_property(
     OpenMP_LIBRARY_LOCATION
     OpenMP::OpenMP_CXX
@@ -736,7 +739,7 @@ if(APPLE AND USE_OPENMP)
 
   # Override the absolute path to OpenMP with a relative one using @rpath.
   #
-  # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
+  # This also ensures that if a {libgomp,libiomp,libomp}.dylib has already been loaded, it'll just use that.
   add_custom_command(
     TARGET _lightgbm
     POST_BUILD
@@ -751,14 +754,21 @@ if(APPLE AND USE_OPENMP)
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
-  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
   #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
+  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - /opt/local/lib/libomp        (where 'port install' puts libomp.dylib)
   #
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;${OpenMP_LIBRARY_DIR}"
+      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+          # with clang, libomp doesn't ship with the compiler and might be supplied separately
+          INSTALL_RPATH "${OpenMP_LIBRARY_DIR};/opt/homebrew/opt/libomp/lib;/opt/local/lib/libomp;"
+      else()
+          # with other compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
+          INSTALL_RPATH "${OpenMP_LIBRARY_DIR}"
+      endif()
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
 endif()
