@@ -758,8 +758,13 @@ Dataset <- R6::R6Class(
 )
 
 #' @title Construct \code{lgb.Dataset} object
-#' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
-#'              or local file (that was created previously by saving an \code{lgb.Dataset}).
+#' @description LightGBM does not train on raw data.
+#'              It discretizes continuous features into histogram bins, tries to
+#'              combine categorical features, and automatically handles missing and
+#               infinite values.
+#'
+#'              The \code{Dataset} class handles that preprocessing, and holds that
+#'              alternative representation of the input data.
 #' @inheritParams lgb_shared_dataset_params
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object,
 #'             a character representing a path to a text file (CSV, TSV, or LibSVM),
