@@ -60,8 +60,12 @@ second group, etc.}
 constructed dataset
 }
 \description{
-Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
-             or local file (that was created previously by saving an \code{lgb.Dataset}).
+LightGBM does not train on raw data.
+             It discretizes continuous features into histogram bins, tries to
+             combine categorical features, and automatically handles missing and
+
+             The \code{Dataset} class handles that preprocessing, and holds that
+             alternative representation of the input data.
 }
 \examples{
 \donttest{
