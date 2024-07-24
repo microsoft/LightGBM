@@ -58,8 +58,6 @@ else  # Linux
 
         sudo apt-get install --no-install-recommends -y \
             build-essential \
-            ca-certificates \
-            curl \
             git \
             libcurl4 \
             libicu-dev \
