@@ -103,8 +103,6 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 It is recommended that you use **Visual Studio** since it has better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
-Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
-
 Linux
 ~~~~~
 
@@ -122,8 +120,6 @@ On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
      cmake --build build -j4
 
 **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
-
-Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Using ``Ninja``
 ^^^^^^^^^^^^^^^
@@ -202,8 +198,6 @@ gcc
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S .
      cmake --build build -j4
-
-Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Docker
 ~~~~~~
@@ -531,7 +525,7 @@ Windows
 
 On Windows a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **VS Build Tools** or **MinGW**.
 
-If you use **MinGW**, the build procedure is similar to the build on Linux. Refer to `GPU Windows Compilation <./GPU-Windows.rst>`__ to get more details.
+If you use **MinGW**, the build procedure is similar to the build on Linux.
 
 Following procedure is for the **MSVC** (Microsoft Visual C++) build.
 
@@ -669,8 +663,6 @@ The ``.jar`` file will be in ``LightGBM/build`` folder and the ``.dll`` files wi
 It is recommended to use **VS Build Tools (Visual Studio)** since it has better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
-Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
-
 Linux
 ^^^^^
 
@@ -747,8 +739,6 @@ gcc
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
-
-Also, you may want to read `gcc Tips <./gcc-Tips.rst>`__.
 
 Build C++ Unit Tests
 ~~~~~~~~~~~~~~~~~~~~
