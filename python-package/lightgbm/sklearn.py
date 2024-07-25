@@ -1157,7 +1157,10 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def feature_names_in_(self) -> np.ndarray:
-        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``."""
+        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
+
+        .. versionadded:: 4.5.0
+        """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
         return np.array(self.feature_name_)
