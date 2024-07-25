@@ -419,7 +419,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
   if (linear_tree) {
     if (device_type != std::string("cpu") && device_type != std::string("gpu")) {
       device_type = "cpu";
-      Log::Warning("Linear tree learner only works with CPU and GPU.");
+      Log::Warning("Linear tree learner only works with CPU and GPU. Falling back to CPU now.");
     }
     if (tree_learner != std::string("serial")) {
       tree_learner = "serial";
