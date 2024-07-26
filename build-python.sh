@@ -365,6 +365,7 @@ if test "${INSTALL}" = true; then
         --ignore-installed \
         --no-cache-dir \
         --no-deps \
+        --no-index \
         --find-links=. \
         lightgbm
     cd ../
