@@ -359,6 +359,11 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
+    if test "${BUILD_WHEEL}" = true; then
+        PACKAGE_NAME="lightgbm*.whl"
+    else
+        PACKAGE_NAME="lightgbm*.tar.gz"
+    fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
@@ -366,7 +371,7 @@ if test "${INSTALL}" = true; then
         --no-cache-dir \
         --no-deps \
         --find-links=. \
-        lightgbm*.tar.gz
+        "${PACKAGE_NAME}"
     cd ../
 fi
 
