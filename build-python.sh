@@ -361,7 +361,6 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
-    pip download .
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
