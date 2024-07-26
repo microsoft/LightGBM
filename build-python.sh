@@ -362,7 +362,7 @@ if test "${INSTALL}" = true; then
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
-        --force-reinstall \
+        # --force-reinstall \
         --no-cache-dir \
         --no-deps \
         --no-index \
