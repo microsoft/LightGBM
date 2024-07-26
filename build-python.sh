@@ -359,15 +359,12 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
-    pip install --prefer-binary setuptools
-    pip list
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
-        --ignore-installed \
+        --force-reinstall \
         --no-cache-dir \
         --no-deps \
-        --no-build-isolation \
         --no-index \
         --find-links=. \
         lightgbm
