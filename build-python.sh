@@ -181,9 +181,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-pip install --prefer-binary \
-    'build>=0.10.0' \
-    setuptools
+pip install --prefer-binary 'build>=0.10.0'
 
 # create a new directory that just contains the files needed
 # to build the Python package
@@ -361,6 +359,7 @@ fi
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
+    pip install --prefer-binary setuptools
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
