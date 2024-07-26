@@ -8,6 +8,11 @@ function Check-Output {
 
 $env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
+# Use home directory as temp directory
+# to avoid
+# > warning MSB8029: The Intermediate directory or Output directory cannot reside under the Temporary directory
+# > as it could lead to issues with incremental build.
+$env:TMPDIR = $env:USERPROFILE
 
 if ($env:TASK -eq "r-package") {
   & .\.ci\test_r_package_windows.ps1 ; Check-Output $?
