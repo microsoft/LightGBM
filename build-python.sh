@@ -371,7 +371,7 @@ if test "${INSTALL}" = true; then
         --no-cache-dir \
         --no-deps \
         --find-links=. \
-        "${PACKAGE_NAME}"
+        ${PACKAGE_NAME}
     cd ../
 fi
 
