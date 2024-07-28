@@ -12,7 +12,7 @@ $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
 # > warning MSB8029: The Intermediate directory or Output directory cannot reside under the Temporary directory
 # > as it could lead to issues with incremental build.
 # And make sure this directory is always clean
-$env:TMPDIR = $env:USERPROFILE\tmp
+$env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
