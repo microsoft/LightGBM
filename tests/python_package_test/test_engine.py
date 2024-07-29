@@ -24,6 +24,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_all_trees_valid,
     dummy_obj,
     load_breast_cancer,
     load_digits,
@@ -3857,16 +3858,26 @@ def test_dump_model():
     train_data = lgb.Dataset(X, label=y)
     params = {"objective": "binary", "verbose": -1}
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    assert_all_trees_valid(dumped_model)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
-    params["linear_tree"] = True
+    for tree in dumped_model["tree_info"]:
+        assert not np.allclose(tree["tree_structure"]["internal_value"], 0)
+
+
+def test_dump_model_linear():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {"objective": "binary", "verbose": -1, "linear_tree": True}
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    assert_all_trees_valid(dumped_model)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str
