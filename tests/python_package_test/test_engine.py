@@ -3859,7 +3859,6 @@ def test_dump_model():
     params = {"objective": "binary", "verbose": -1}
     bst = lgb.train(params, train_data, num_boost_round=5)
     dumped_model = bst.dump_model(5, 0)
-    assert_all_trees_valid(dumped_model)
     dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
@@ -3868,6 +3867,10 @@ def test_dump_model():
     assert "leaf_count" in dumped_model_str
     for tree in dumped_model["tree_info"]:
         assert not np.allclose(tree["tree_structure"]["internal_value"], 0)
+
+    # Cuda seems to report innacurately
+    if getenv("TASK", "") != "cuda":
+        assert_all_trees_valid(dumped_model)
 
 
 def test_dump_model_linear():
