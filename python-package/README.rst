@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version| |PyPI Downloads| |conda Downloads| |API Docs|
+|License| |Python Versions| |PyPI Version| |PyPI Downloads| |conda Version| |conda Downloads| |API Docs|
 
 Installation
 ------------
@@ -296,6 +296,8 @@ To check that a contribution to the package matches its style expectations, run 
    :target: https://pypi.org/project/lightgbm
 .. |PyPI Downloads| image:: https://img.shields.io/pepy/dt/lightgbm?logo=pypi&logoColor=white&label=pypi%20downloads
    :target: https://pepy.tech/project/lightgbm
+.. |conda Version| image:: https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda
+   :target: https://anaconda.org/conda-forge/lightgbm
 .. |conda Downloads| image:: https://img.shields.io/conda/d/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda%20downloads
    :target: https://anaconda.org/conda-forge/lightgbm/files
 .. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest

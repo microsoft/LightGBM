@@ -1,5 +1,28 @@
 # CRAN Submission History
 
+## v4.5.0 - Submission 1 - (July 25, 2024)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This release was a response to a request from CRAN.
+On July 4, 2024, CRAN notified us that the following compiler warnings raised by `gcc` 14 needed to be fixed by August 3, 2024.
+
+```text
+Result: WARN
+  Found the following significant warnings:
+    io/dense_bin.hpp:617:27: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/multi_val_dense_bin.hpp:346:26: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/multi_val_sparse_bin.hpp:433:36: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/sparse_bin.hpp:785:19: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+  See ‘/data/gannet/ripley/R/packages/tests-devel/lightgbm.Rcheck/00install.out’ for details.
+```
+
+This release contains fixes for those issues.
+
 ## v4.4.0 - Submission 1 - (June 14, 2024)
 
 ### CRAN response
