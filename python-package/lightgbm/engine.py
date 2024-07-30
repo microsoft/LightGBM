@@ -91,30 +91,25 @@ def _choose_num_iterations(num_boost_round_kwarg: int, params: Dict[str, Any]) -
         alias: params[alias] for alias in _ConfigAliases.get("num_iterations") if alias in params
     }
 
-    # if there were not multiple boosting rounds configurations provided in params,
-    # then by definition they cannot have conflicting values... no need to warn
-    if len(num_iteration_configs_provided) <= 1:
-        return _choose_param_value(
-            main_param_name="num_iterations",
-            params=params,
-            default_value=num_boost_round_kwarg,
-        )
-
-    # if all the aliases have the same value, no need to warn
-    if len(set(num_iteration_configs_provided.values())) <= 1:
-        return _choose_param_value(
-            main_param_name="num_iterations",
-            params=params,
-            default_value=num_boost_round_kwarg,
-        )
-
-    # if this line is reached, lightgbm should warn
-    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided)
+    # now that the relevant information has been pulled out of params, it's safe to overwrite it
+    # with the content that should be used for training (i.e. with aliases resolved)
     params = _choose_param_value(
         main_param_name="num_iterations",
         params=params,
         default_value=num_boost_round_kwarg,
     )
+
+    # if there were not multiple boosting rounds configurations provided in params,
+    # then by definition they cannot have conflicting values... no need to warn
+    if len(num_iteration_configs_provided) <= 1:
+        return params
+
+    # if all the aliases have the same value, no need to warn
+    if len(set(num_iteration_configs_provided.values())) <= 1:
+        return params
+
+    # if this line is reached, lightgbm should warn
+    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided)
     _log_warning(
         f"Found conflicting values for num_iterations provided via 'params': {value_string}."
         f"LightGBM will perform up to {params['num_iterations']} boosting rounds."
