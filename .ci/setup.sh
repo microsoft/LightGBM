@@ -103,6 +103,7 @@ else  # Linux
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
+            sudo add-apt-repository ppa:mhier/libboost-latest -y
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 libboost1.83-dev \

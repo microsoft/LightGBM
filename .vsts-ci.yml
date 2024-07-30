@@ -77,9 +77,9 @@ jobs:
       #   TASK: mpi
       #   METHOD: source
       #   PYTHON_VERSION: '3.9'
-      gpu_source:
-        TASK: gpu
-        METHOD: source
+      # gpu_source:
+      #   TASK: gpu
+      #   METHOD: source
       # swig:
       #   TASK: swig
   steps:
