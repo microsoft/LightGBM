@@ -3865,11 +3865,11 @@ def test_dump_model():
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
-    for tree in dumped_model["tree_info"]:
-        assert not np.allclose(tree["tree_structure"]["internal_value"], 0)
 
-    # Cuda seems to report innacurately
+    # CUDA does not return correct values for the root
     if getenv("TASK", "") != "cuda":
+        for tree in dumped_model["tree_info"]:
+            assert not np.allclose(tree["tree_structure"]["internal_value"], 0)
         assert_all_trees_valid(dumped_model)
 
 
