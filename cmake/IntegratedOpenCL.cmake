@@ -109,6 +109,7 @@ list(
     "libs/align"
     "libs/any"
     "libs/array"
+    "libs/assert"
     "libs/atomic"
     "libs/bind"
     "libs/chrono"
