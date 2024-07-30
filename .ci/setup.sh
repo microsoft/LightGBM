@@ -105,8 +105,8 @@ else  # Linux
         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
-                libboost1.74-dev \
-                libboost-filesystem1.74-dev \
+                libboost1.83-dev \
+                libboost-filesystem1.83-dev \
                 ocl-icd-opencl-dev
         else  # in manylinux image
             sudo yum update -y
