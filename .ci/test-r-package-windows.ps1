@@ -152,7 +152,7 @@ if ($env:COMPILER -ne "MSVC") {
       Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
       Check-Output $false
     }
-    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
+    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build-r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
     # some flavors of tar.exe can fail in some settings on Windows.
@@ -196,7 +196,7 @@ if ($env:COMPILER -ne "MSVC") {
 
 } else {
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Run-R-Code-Redirect-Stderr "source('build-r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"

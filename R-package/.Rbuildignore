@@ -2,7 +2,7 @@
 AUTOCONF_UBUNTU_VERSION
 ^autom4te.cache/.*$
 ^.*\.bin
-^build_r.R$
+^build-r.R$
 \.clang-format
 ^cran-comments\.md$
 ^docs$
