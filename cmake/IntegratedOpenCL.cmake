@@ -143,6 +143,7 @@ list(
     "libs/ratio"
     "libs/serialization"
     "libs/smart_ptr"
+    "libs/static_assert"
     "libs/system"
     "libs/throw_exception"
     "libs/tuple"
