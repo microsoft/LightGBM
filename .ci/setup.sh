@@ -33,7 +33,8 @@ else  # Linux
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
             ca-certificates \
-            curl
+            curl \
+            gpg-agent
     else
         sudo yum update -y
         sudo yum install -y \
