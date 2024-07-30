@@ -117,6 +117,7 @@ list(
     "libs/config"
     "libs/container"
     "libs/container_hash"
+    "libs/core"
     "libs/describe"
     "libs/filesystem"
     "libs/foreach"
