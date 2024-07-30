@@ -33,8 +33,7 @@ else  # Linux
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
             ca-certificates \
-            curl \
-            gpg-agent
+            curl
     else
         sudo yum update -y
         sudo yum install -y \
@@ -104,6 +103,8 @@ else  # Linux
     fi
     if [[ $TASK == "gpu" ]]; then
         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
+            sudo apt-get install --no-install-recommends -y \
+                gpg-agent
             sudo add-apt-repository ppa:mhier/libboost-latest -y
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
