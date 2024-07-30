@@ -134,6 +134,7 @@ list(
     "libs/lexical_cast"
     "libs/math"
     "libs/move"
+    "libs/mp11"
     "libs/mpl"
     "libs/multi_index"
     "libs/numeric/conversion"
