@@ -127,9 +127,9 @@ jobs:
       #   TASK: regular
       # sdist:
       #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: '3.10'
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: '3.10'
       # inference:
       #   TASK: if-else
       # mpi_source:
