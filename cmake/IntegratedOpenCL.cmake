@@ -120,6 +120,7 @@ list(
     "libs/container_hash"
     "libs/core"
     "libs/describe"
+    "libs/detail"
     "libs/filesystem"
     "libs/foreach"
     "libs/format"
