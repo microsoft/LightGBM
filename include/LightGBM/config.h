@@ -181,7 +181,7 @@ struct Config {
   // desc = ``bagging``, Randomly Bagging Sampling
   // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
   // desc = ``goss``, Gradient-based One-Side Sampling
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -396,7 +396,7 @@ struct Config {
 
   // check = >=0.0
   // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
-  // desc = *New in 4.4.0*
+  // desc = *New in version 4.4.0*
   double early_stopping_min_delta = 0.0;
 
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
@@ -626,18 +626,18 @@ struct Config {
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
   // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   int num_grad_quant_bins = 4;
 
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
   // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   bool quant_train_renew_leaf = false;
 
   // desc = whether to use stochastic rounding in gradient quantization
   // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   bool stochastic_rounding = true;
 
   #ifndef __NVCC__
@@ -801,7 +801,7 @@ struct Config {
   // desc = path to a ``.json`` file that specifies customized parser initialized configuration
   // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
   // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   std::string parser_config_file = "";
 
   #ifndef __NVCC__
