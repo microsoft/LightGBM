@@ -126,6 +126,7 @@ list(
     "libs/function_types"
     "libs/fusion"
     "libs/headers"
+    "libs/integer"
     "libs/io"
     "libs/iterator"
     "libs/lexical_cast"
