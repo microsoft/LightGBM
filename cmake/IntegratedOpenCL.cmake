@@ -1,5 +1,5 @@
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(BOOST_VERSION_DOT "1.74")
+set(BOOST_VERSION_DOT "1.83")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
 set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
@@ -16,20 +16,26 @@ include(FetchContent)
 FetchContent_Declare(OpenCL-Headers GIT_REPOSITORY ${OPENCL_HEADER_REPOSITORY} GIT_TAG ${OPENCL_HEADER_TAG})
 FetchContent_GetProperties(OpenCL-Headers)
 if(NOT OpenCL-Headers_POPULATED)
-  FetchContent_Populate(OpenCL-Headers)
+  FetchContent_MakeAvailable(OpenCL-Headers)
   message(STATUS "Populated OpenCL Headers")
 endif()
 set(OPENCL_ICD_LOADER_HEADERS_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for OpenCL ICD Loader
 set(OpenCL_INCLUDE_DIR ${opencl-headers_SOURCE_DIR} CACHE PATH "") # for Boost::Compute
 
-FetchContent_Declare(OpenCL-ICD-Loader GIT_REPOSITORY ${OPENCL_LOADER_REPOSITORY} GIT_TAG ${OPENCL_LOADER_TAG})
+FetchContent_Declare(
+  OpenCL-ICD-Loader
+  GIT_REPOSITORY
+  ${OPENCL_LOADER_REPOSITORY}
+  GIT_TAG
+  ${OPENCL_LOADER_TAG}
+  EXCLUDE_FROM_ALL
+)
 FetchContent_GetProperties(OpenCL-ICD-Loader)
 if(NOT OpenCL-ICD-Loader_POPULATED)
-  FetchContent_Populate(OpenCL-ICD-Loader)
+  FetchContent_MakeAvailable(OpenCL-ICD-Loader)
   if(WIN32)
     set(USE_DYNAMIC_VCXX_RUNTIME ON)
   endif()
-  add_subdirectory(${opencl-icd-loader_SOURCE_DIR} ${opencl-icd-loader_BINARY_DIR} EXCLUDE_FROM_ALL)
   message(STATUS "Populated OpenCL ICD Loader")
 endif()
 list(APPEND INTEGRATED_OPENCL_INCLUDES ${OPENCL_ICD_LOADER_HEADERS_DIR})
@@ -104,6 +110,7 @@ list(
     "libs/any"
     "libs/array"
     "libs/assert"
+    "libs/atomic"
     "libs/bind"
     "libs/chrono"
     "libs/compute"
@@ -112,6 +119,7 @@ list(
     "libs/container"
     "libs/container_hash"
     "libs/core"
+    "libs/describe"
     "libs/detail"
     "libs/filesystem"
     "libs/foreach"
@@ -126,6 +134,7 @@ list(
     "libs/lexical_cast"
     "libs/math"
     "libs/move"
+    "libs/mp11"
     "libs/mpl"
     "libs/multi_index"
     "libs/numeric/conversion"
