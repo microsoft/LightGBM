@@ -143,10 +143,10 @@ jobs:
       #   TASK: mpi
       #   METHOD: wheel
       #   PYTHON_VERSION: '3.9'
-      gpu_source:
-        TASK: gpu
-        METHOD: source
-        PYTHON_VERSION: '3.11'
+      # gpu_source:
+      #   TASK: gpu
+      #   METHOD: source
+      #   PYTHON_VERSION: '3.11'
       # gpu_pip:
       #   TASK: gpu
       #   METHOD: pip
