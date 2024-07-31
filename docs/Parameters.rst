@@ -17,17 +17,60 @@ This page contains descriptions of all parameters in LightGBM.
 Parameters Format
 -----------------
 
+Parameters are merged together in the following order (later items overwrite earlier ones):
+
+1. LightGBM's default values
+2. (CLI only) configuration in a file passed like ``config=train.conf``
+3. (CLI only) configuration passed via the command line
+4. (Python, R) ``params`` function argument
+5. (C API) ``parameters`` or ``params`` function argument
+
+Many parameters have "aliases", alternative names which refer to the same configuration.
+
+Where a mix of the primary parameter name and aliases are given, the primary parameter name is always preferred to any aliases.
+
+For example, in Python:
+
+.. code-block:: python
+
+   # use learning rate of 0.07, becase 'learning_rate'
+   # is the primary parameter name
+   lgb.train(
+      params={
+         "learning_rate": 0.07,
+         "shrinkage_rate": 0.12
+      },
+      ...
+   )
+
+Where multiple aliases are given, and the primary parameter name is not, the first alias
+appearing in the lists returned by ``Config::parameter2aliases()`` in the C++ library is used.
+Those lists are hard-coded in a fairly arbitrary way... wherever possible, avoid relying on this behavior.
+
+For example, in Python:
+
+.. code-block:: python
+
+   # use learning rate of 0.12, LightGBM has a hard-coded preference for 'shrinkage_rate'
+   # over any other aliases, and 'learning_rate' is not provided
+   lgb.train(
+      params={
+         "eta": 0.19,
+         "shrinkage_rate": 0.12
+      },
+      ...
+   )
+
+**CLI**
+
 The parameters format is ``key1=value1 key2=value2 ...``.
 Parameters can be set both in config file and command line.
 By using command line, parameters should not have spaces before and after ``=``.
 By using config files, one line can only contain one parameter. You can use ``#`` to comment.
 
-If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
-
-For the Python and R packages, any parameters that accept a list of values (usually they have ``multi-xxx`` type, e.g. ``multi-int`` or ``multi-double``) can be specified in those languages' default array types.
-For example, ``monotone_constraints`` can be specified as follows.
-
 **Python**
+
+Any parameters that accept multiple values should be passed as a Python list.
 
 .. code-block:: python
 
@@ -37,6 +80,8 @@ For example, ``monotone_constraints`` can be specified as follows.
 
 
 **R**
+
+Any parameters that accept multiple values should be passed as an R list.
 
 .. code-block:: r
 
