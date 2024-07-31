@@ -4,7 +4,7 @@
 #     Trigger manual workflow run by a dispatch event.
 #
 # [usage]
-#     trigger_dispatch_run.sh <PR_URL> <COMMENT_ID> <DISPATCH_NAME>
+#     trigger-dispatch-run.sh <PR_URL> <COMMENT_ID> <DISPATCH_NAME>
 #
 # PR_URL: URL of pull request from which dispatch is triggering.
 #

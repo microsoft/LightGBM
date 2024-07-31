@@ -17,7 +17,7 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
 if ($env:TASK -eq "r-package") {
-  & .\.ci\test_r_package_windows.ps1 ; Check-Output $?
+  & .\.ci\test-r-package-windows.ps1 ; Check-Output $?
   Exit 0
 }
 
@@ -77,7 +77,7 @@ if ($env:TASK -eq "regular") {
 }
 elseif ($env:TASK -eq "sdist") {
   sh ./build-python.sh sdist ; Check-Output $?
-  sh ./.ci/check_python_dists.sh ./dist ; Check-Output $?
+  sh ./.ci/check-python-dists.sh ./dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -92,7 +92,7 @@ elseif ($env:TASK -eq "bdist") {
 
   conda activate $env:CONDA_ENV
   sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
-  sh ./.ci/check_python_dists.sh ./dist ; Check-Output $?
+  sh ./.ci/check-python-dists.sh ./dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
   cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {

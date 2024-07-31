@@ -226,7 +226,7 @@ jobs:
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:TASK = "${{ matrix.task }}"
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
