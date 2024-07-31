@@ -1578,6 +1578,13 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
 
 /*!
  */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
+                                                 const double* score,
+                                                 float* grad,
+                                                 float* hess);
+
+/*!
+ */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle);
 
 /*!

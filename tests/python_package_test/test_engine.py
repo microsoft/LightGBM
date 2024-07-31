@@ -24,7 +24,6 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
-    assert_all_trees_valid,
     builtin_objective,
     dummy_obj,
     load_breast_cancer,
