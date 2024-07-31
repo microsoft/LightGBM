@@ -1,5 +1,5 @@
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(BOOST_VERSION_DOT "1.76")
+set(BOOST_VERSION_DOT "1.83")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
 set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
@@ -113,7 +113,7 @@ list(
     "libs/container"
     "libs/container_hash"
     "libs/core"
-    #"libs/describe"
+    "libs/describe"
     "libs/detail"
     "libs/filesystem"
     "libs/foreach"
@@ -182,7 +182,7 @@ ExternalProject_Add(
     runtime-link=shared
     variant=release
     threading=multi
-    address-model=64
+    address-model=32
     cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
