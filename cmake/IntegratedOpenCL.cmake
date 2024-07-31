@@ -1,5 +1,5 @@
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(BOOST_VERSION_DOT "1.86")
+set(BOOST_VERSION_DOT "1.74")
 string(REPLACE "." "_" BOOST_VERSION_UNDERSCORE ${BOOST_VERSION_DOT})
 
 set(OPENCL_HEADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-Headers.git")
@@ -9,7 +9,7 @@ set(OPENCL_LOADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-ICD-Loader.
 set(OPENCL_LOADER_TAG "98ca71fb9f8484f1cd1999f55224bf9e8d18693b")
 
 set(BOOST_REPOSITORY "https://github.com/boostorg/boost.git")
-set(BOOST_TAG "boost-1.86.0.beta1")
+set(BOOST_TAG "boost-${BOOST_VERSION_DOT}")
 
 # Build Independent OpenCL library
 include(FetchContent)
@@ -181,8 +181,8 @@ ExternalProject_Add(
     link=static
     runtime-link=shared
     variant=release
+    threading=multi
     cxxflags="${BOOST_FLAGS}"
-    --abbreviate-paths
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
   # ref:
