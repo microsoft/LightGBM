@@ -130,6 +130,9 @@ def mse_obj(y_pred, dtrain):
     y_true = dtrain.get_label()
     grad = y_pred - y_true
     hess = np.ones(len(grad))
+    if dtrain.get_weight() is not None:
+        grad *= dtrain.get_weight()
+        hess *= dtrain.get_weight()
     return grad, hess
 
 
@@ -189,6 +192,14 @@ def pickle_and_unpickle_object(obj, serializer):
         pickle_obj(obj=obj, filepath=tmp_file.name, serializer=serializer)
         obj_from_disk = unpickle_obj(filepath=tmp_file.name, serializer=serializer)
     return obj_from_disk  # noqa: RET504
+
+
+def builtin_objective(name, params):
+    def wrapper(y_pred, dtrain):
+        fobj = lgb.ObjectiveFunction(name, params)
+        fobj.init(dtrain)
+        return fobj(y_pred)
+    return wrapper
 
 
 # doing this here, at import time, to ensure it only runs once_per import

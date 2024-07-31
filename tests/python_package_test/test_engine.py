@@ -24,6 +24,8 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_all_trees_valid,
+    builtin_objective,
     dummy_obj,
     load_breast_cancer,
     load_digits,
@@ -4397,3 +4399,49 @@ def test_quantized_training():
     quant_bst = lgb.train(bst_params, ds, num_boost_round=10)
     quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
     assert quant_rmse < rmse + 6.0
+
+@pytest.mark.parametrize("use_weight", [False, True])
+def test_objective_function_regression(use_weight):
+    X, y = make_synthetic_regression()
+    weight = np.random.choice([1, 2], len(X)) if use_weight else None
+    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros(len(X)))
+
+    params = {"verbose": -1, "objective": "regression"}
+    builtin_loss = builtin_objective("multiclass", copy.deepcopy(params))
+
+    booster = lgb.train(params, lgb_train, num_boost_round=20)
+    params["objective"] = mse_obj
+    booster_custom = lgb.train(params, lgb_train, num_boost_round=20)
+    params["objective"] = builtin_loss
+    booster_exposed = lgb.train(params, lgb_train, num_boost_round=20)
+    np.testing.assert_allclose(booster_exposed.predict(X), booster.predict(X))
+    np.testing.assert_allclose(booster_exposed.predict(X), booster_custom.predict(X))
+
+    y_pred = booster.predict(X)
+    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), mse_obj(y_pred, lgb_train))
+
+@pytest.mark.parametrize("use_weight", [False, True])
+def test_objective_function_multiclass(use_weight):
+    def custom_obj(y_pred, ds):
+        y_true = ds.get_label()
+        weight = ds.get_weight()
+        grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
+        return grad, hess
+
+    X, y = make_blobs(n_samples=1_000, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42)
+    weight = np.random.choice([1, 2], y.shape) if use_weight else None
+    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), 3)))
+
+    params = {"verbose": -1, "objective": "multiclass", "num_class": 3}
+    builtin_loss = builtin_objective("multiclass", copy.deepcopy(params))
+    booster = lgb.train(params, lgb_train, num_boost_round=20)
+    params["objective"] = custom_obj
+    booster_custom = lgb.train(params, lgb_train, num_boost_round=20)
+    params["objective"] = builtin_loss
+    booster_exposed = lgb.train(params, lgb_train, num_boost_round=20)
+
+    np.testing.assert_allclose(booster_exposed.predict(X), booster.predict(X, raw_score=True))
+    np.testing.assert_allclose(booster_exposed.predict(X), booster_custom.predict(X))
+
+    y_pred = booster.predict(X, raw_score=True)
+    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), mse_obj(y_pred, lgb_train))

@@ -111,6 +111,7 @@ class RegressionL2loss: public ObjectiveFunction {
   }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
+    Log::Debug("We are here");
     num_data_ = num_data;
     label_ = metadata.label();
     if (sqrt_) {

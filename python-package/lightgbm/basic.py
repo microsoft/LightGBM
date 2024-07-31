@@ -5281,3 +5281,79 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(("auc", "ndcg@", "map@", "average_precision")) for name in self.__name_inner_eval
                 ]
+
+
+class ObjectiveFunction:
+    def __init__(self, name: str, params: Dict[str, Any]):
+        self.name = name
+        self.params = params
+        self.num_data = None
+        self.num_class = params.get("num_class", 1)
+
+        self.__create()
+
+    def init(self, dataset: Dataset) -> "ObjectiveFunction":
+        return self.__init_from_dataset(dataset)
+
+    def __create(self):
+        self._handle = ctypes.c_void_p()
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionCreate(
+                _c_str(self.name),
+                _c_str(_param_dict_to_str(self.params)),
+                ctypes.byref(self._handle),
+            )
+        )
+
+    def __init_from_dataset(self, dataset: Dataset) -> "ObjectiveFunction":
+        if dataset._handle is None:
+            raise ValueError("Cannot create ObjectiveFunction from uninitialised Dataset")
+
+        if self._handle is None:
+            raise ValueError("Dealocated ObjectiveFunction cannot be initialized")
+
+        ref_dataset = dataset._handle
+        tmp_num_data = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionInit(
+                self._handle,
+                ctypes.byref(tmp_num_data),
+                dataset._handle,
+            )
+        )
+        self.num_data = tmp_num_data.value
+        return self
+
+    def __del__(self) -> None:
+        try:
+            self._free_handle()
+        except AttributeError:
+            pass
+
+    def _free_handle(self) -> "ObjectiveFunction":
+        if self._handle is not None:
+            _safe_call(_LIB.LGBM_ObjectiveFunctionFree(self._handle))
+            self._handle = None
+        return self
+
+    def __call__(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        if self._handle is None:
+            raise ValueError("Objective function seems uninitialized")
+
+        if self.num_data is None or self.num_class is None:
+            # TODO: Be more descriptive
+            raise ValueError("ObjectiveFunction was not created properly")
+
+        grad = np.zeros(dtype=np.float32, shape=self.num_data * self.num_class)
+        hess = np.zeros(dtype=np.float32, shape=self.num_data * self.num_class)
+
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionEval(
+                self._handle,
+                y_pred.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            )
+        )
+
+        return (grad, hess)

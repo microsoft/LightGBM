@@ -31,6 +31,7 @@ typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
 typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
+typedef void* ObjectiveFunctionHandle; /*!< \brief Handle of ObjectiveFunction. */
 
 #define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
@@ -1562,6 +1563,22 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
                                                      double* out_results);
+
+/*!
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
+                                                   const char *parameter,
+                                                   ObjectiveFunctionHandle *out);
+
+/*!
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
+                                                 int *num_data,
+                                                 DatasetHandle dataset);
+
+/*!
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle);
 
 /*!
  * \brief Initialize the network.

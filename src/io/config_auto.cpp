@@ -326,7 +326,6 @@ const std::unordered_set<std::string>& Config::parameter_set() {
 }
 
 void Config::GetMembersFromString(const std::unordered_map<std::string, std::string>& params) {
-  std::string tmp_str = "";
   GetString(params, "data", &data);
 
   if (GetString(params, "valid", &tmp_str)) {
@@ -588,6 +587,7 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "objective_seed", &objective_seed);
 
   GetInt(params, "num_class", &num_class);
+  std::cout << "What is this: " << num_class << std::endl;
   CHECK_GT(num_class, 0);
 
   GetBool(params, "is_unbalance", &is_unbalance);
