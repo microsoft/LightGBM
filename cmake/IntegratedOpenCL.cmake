@@ -9,7 +9,7 @@ set(OPENCL_LOADER_REPOSITORY "https://github.com/KhronosGroup/OpenCL-ICD-Loader.
 set(OPENCL_LOADER_TAG "98ca71fb9f8484f1cd1999f55224bf9e8d18693b")
 
 set(BOOST_REPOSITORY "https://github.com/boostorg/boost.git")
-set(BOOST_TAG "boost-${BOOST_VERSION_DOT}")
+set(BOOST_TAG "boost-${BOOST_VERSION_DOT}.0")
 
 # Build Independent OpenCL library
 include(FetchContent)
