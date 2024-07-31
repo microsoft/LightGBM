@@ -178,7 +178,6 @@ ExternalProject_Add(
     --with-chrono
     --with-filesystem
     --with-system
-    link=static
     runtime-link=shared
     variant=release
     threading=multi
