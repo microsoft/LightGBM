@@ -183,6 +183,7 @@ ExternalProject_Add(
     variant=release
     threading=multi
     cxxflags="${BOOST_FLAGS}"
+    architecture=x86
     address-model=64
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
