@@ -181,6 +181,7 @@ ExternalProject_Add(
     runtime-link=shared
     variant=release
     threading=multi
+    toolset=msvc-14.2
     address-model=32
     cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
