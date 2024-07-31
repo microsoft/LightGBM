@@ -4317,6 +4317,47 @@ def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosit
     else:
         assert re.search(r"\[LightGBM\]", stdout) is None
 
+def test_num_rounds_warning_is_only_raised_when_expected(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    base_params = {
+        "num_leaves": 7,
+        "objective": "regression",
+        "verbosity": -1
+    }
+
+    # no warning: no aliases, all defaults
+    bst = lgb.train({**base_params}, ds)
+    assert bst.num_trees() == 100
+
+    # no warning: no aliases, just num_boost_round
+    bst = lgb.train({**base_params}, ds, num_boost_round=2)
+    assert bst.num_trees() == 2
+
+    # no warning: 1 alias + num_boost_round (both same value)
+    bst = lgb.train({**base_params, "n_iter": 3}, ds, num_boost_round=3)
+    assert bst.num_trees() == 3
+
+    # no warning: 1 alias + num_boost_round (different values... value from params should win)
+    bst = lgb.train({**base_params, "n_iter": 4}, ds, num_boost_round=3)
+    assert bst.num_trees() == 4
+
+    # no warning: 2 aliases (both same value)
+    bst = lgb.train({**base_params, "n_iter": 3, "num_iterations": 3}, ds)
+    assert bst.num_trees() == 3
+
+    # no warning: 4 aliases (all same value)
+    bst = lgb.train({**base_params, "n_iter": 3, "num_trees": 3, "nrounds": 3, "max_iter": 3}, ds)
+    assert bst.num_trees() == 3
+
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    bst = lgb.train({**base_params, "n_iter": 6, "num_iterations": 5}, ds)
+    assert bst.num_trees() == 5
+
+    # warning: 2 aliases (different values... alphabetically first one wins)
+    bst = lgb.train({**base_params, "n_iter": 4, "max_iter": 5}, ds)
+    assert bst.num_trees() == 4
+
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
 def test_validate_features():
