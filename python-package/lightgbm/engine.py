@@ -109,10 +109,10 @@ def _choose_num_iterations(num_boost_round_kwarg: int, params: Dict[str, Any]) -
         return params
 
     # if this line is reached, lightgbm should warn
-    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided)
+    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided.items())
     _log_warning(
-        f"Found conflicting values for num_iterations provided via 'params': {value_string}."
-        f"LightGBM will perform up to {params['num_iterations']} boosting rounds."
+        f"Found conflicting values for num_iterations provided via 'params': {value_string}. "
+        f"LightGBM will perform up to {params['num_iterations']} boosting rounds. "
         "To be confident in the maximum number of boosting rounds LightGBM will perform and to "
         "suppress this warning, modify 'params' so that only one of those is present."
     )
