@@ -182,8 +182,6 @@ ExternalProject_Add(
     runtime-link=shared
     variant=release
     cxxflags="${BOOST_FLAGS}"
-    architecture=x86
-    address-model=64
     --abbreviate-paths
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
