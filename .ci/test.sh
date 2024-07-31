@@ -43,7 +43,7 @@ else
 fi
 
 if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
-    bash "${BUILD_DIRECTORY}/.ci/test_r_package.sh" || exit 1
+    bash "${BUILD_DIRECTORY}/.ci/test-r-package.sh" || exit 1
     exit 0
 fi
 
@@ -86,7 +86,7 @@ if [[ $TASK == "swig" ]]; then
     if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "gcc" ]]; then
         objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
         objdump -T ./lib_lightgbm_swig.so >> ./objdump.log || exit 1
-        python ./helpers/check_dynamic_dependencies.py ./objdump.log || exit 1
+        python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
     fi
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp ./build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
@@ -108,7 +108,7 @@ if [[ $TASK == "lint" ]]; then
     echo "Linting Python code"
     bash ./.ci/lint-python.sh || exit 1
     echo "Linting R code"
-    Rscript ./.ci/lint_r_code.R "${BUILD_DIRECTORY}" || exit 1
+    Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
     echo "Linting C++ code"
     bash ./.ci/lint-cpp.sh || exit 1
     exit 0
@@ -143,7 +143,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     cd "${BUILD_DIRECTORY}"
     cp ./docs/Parameters.rst ./docs/Parameters-backup.rst
     cp ./src/io/config_auto.cpp ./src/io/config_auto-backup.cpp
-    python ./helpers/parameter_generator.py || exit 1
+    python ./.ci/parameter-generator.py || exit 1
     diff ./docs/Parameters-backup.rst ./docs/Parameters.rst || exit 1
     diff ./src/io/config_auto-backup.cpp ./src/io/config_auto.cpp || exit 1
     exit 0
@@ -170,7 +170,7 @@ cd "${BUILD_DIRECTORY}"
 
 if [[ $TASK == "sdist" ]]; then
     sh ./build-python.sh sdist || exit 1
-    sh .ci/check_python_dists.sh ./dist || exit 1
+    sh .ci/check-python-dists.sh ./dist || exit 1
     pip install ./dist/lightgbm-$LGB_VER.tar.gz -v || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         cp ./dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
@@ -180,7 +180,7 @@ if [[ $TASK == "sdist" ]]; then
 elif [[ $TASK == "bdist" ]]; then
     if [[ $OS_NAME == "macos" ]]; then
         sh ./build-python.sh bdist_wheel || exit 1
-        sh .ci/check_python_dists.sh ./dist || exit 1
+        sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
@@ -199,7 +199,7 @@ elif [[ $TASK == "bdist" ]]; then
         mv \
             ./dist/tmp.whl \
             ./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
-        sh .ci/check_python_dists.sh ./dist || exit 1
+        sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
             cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
         fi
@@ -216,7 +216,7 @@ if [[ $TASK == "gpu" ]]; then
     grep -q 'std::string device_type = "gpu"' ./include/LightGBM/config.h || exit 1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         sh ./build-python.sh sdist || exit 1
-        sh .ci/check_python_dists.sh ./dist || exit 1
+        sh .ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
             --config-settings=cmake.define.USE_GPU=ON \
@@ -226,7 +226,7 @@ if [[ $TASK == "gpu" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
-        sh ./.ci/check_python_dists.sh ./dist || exit 1
+        sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
@@ -241,7 +241,7 @@ elif [[ $TASK == "cuda" ]]; then
     grep -q 'gpu_use_dp = true' ./include/LightGBM/config.h || exit 1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         sh ./build-python.sh sdist || exit 1
-        sh ./.ci/check_python_dists.sh ./dist || exit 1
+        sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
@@ -251,7 +251,7 @@ elif [[ $TASK == "cuda" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
-        sh ./.ci/check_python_dists.sh ./dist || exit 1
+        sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
@@ -261,7 +261,7 @@ elif [[ $TASK == "cuda" ]]; then
 elif [[ $TASK == "mpi" ]]; then
     if [[ $METHOD == "pip" ]]; then
         sh ./build-python.sh sdist || exit 1
-        sh ./.ci/check_python_dists.sh ./dist || exit 1
+        sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install \
             -v \
             --config-settings=cmake.define.USE_MPI=ON \
@@ -271,7 +271,7 @@ elif [[ $TASK == "mpi" ]]; then
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
-        sh ./.ci/check_python_dists.sh ./dist || exit 1
+        sh ./.ci/check-python-dists.sh ./dist || exit 1
         pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
@@ -294,7 +294,7 @@ if [[ $TASK == "regular" ]]; then
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
-                python ./helpers/check_dynamic_dependencies.py ./objdump.log || exit 1
+                python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
             fi
             cp ./lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.so
         fi
