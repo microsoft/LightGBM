@@ -127,7 +127,7 @@ If you are using R 3.x and installation fails with Visual Studio, `LightGBM` wil
 If you want to force `LightGBM` to use MinGW (for any R version), pass `--use-mingw` to the installation script.
 
 ```shell
-Rscript build-r.R --use-mingw
+Rscript build_r.R --use-mingw
 ```
 
 **MSYS2 (R 4.x)**
@@ -137,7 +137,7 @@ If you are using R 4.x and installation fails with Visual Studio, `LightGBM` wil
 If you want to force `LightGBM` to use MSYS2 (for any R version), pass `--use-msys2` to the installation script.
 
 ```shell
-Rscript build-r.R --use-msys2
+Rscript build_r.R --use-msys2
 ```
 
 #### Mac OS Preparation
@@ -156,10 +156,10 @@ After following the "preparation" steps above for your operating system, build a
 ```sh
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-Rscript build-r.R
+Rscript build_r.R
 ```
 
-The `build-r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
+The `build_r.R` script builds the package in a temporary directory called `lightgbm_r`. It will destroy and recreate that directory each time you run the script. That script supports the following command-line options:
 
 - `--no-build-vignettes`: Skip building vignettes.
 - `-j[jobs]`: Number of threads to use when compiling LightGBM. E.g., `-j4` will try to compile 4 objects at a time.
@@ -176,16 +176,16 @@ Note: for the build with Visual Studio/VS Build Tools in Windows, you should use
 
 You will need to install Boost and OpenCL first: details for installation can be found in [Installation-Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version).
 
-After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install). When you reach the step that mentions `build-r.R`, pass the flag `--use-gpu`.
+After installing these other libraries, follow the steps in ["Installing from Source with CMake"](#install). When you reach the step that mentions `build_r.R`, pass the flag `--use-gpu`.
 
 ```shell
-Rscript build-r.R --use-gpu
+Rscript build_r.R --use-gpu
 ```
 
 You may also need or want to provide additional configuration, depending on your setup. For example, you may need to provide locations for Boost and OpenCL.
 
 ```shell
-Rscript build-r.R \
+Rscript build_r.R \
     --use-gpu \
     --opencl-library=/usr/lib/x86_64-linux-gnu/libOpenCL.so \
     --boost-librarydir=/usr/lib/x86_64-linux-gnu

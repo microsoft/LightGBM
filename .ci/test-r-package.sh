@@ -153,7 +153,7 @@ PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
 BUILD_LOG_FILE="lightgbm.Rcheck/00install.out"
 LOG_FILE_NAME="lightgbm.Rcheck/00check.log"
 if [[ $R_BUILD_TYPE == "cmake" ]]; then
-    Rscript build-r.R -j4 --skip-install || exit 1
+    Rscript build_r.R -j4 --skip-install || exit 1
 elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
     # on Linux, we recreate configure in CI to test if
