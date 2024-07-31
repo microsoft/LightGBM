@@ -182,6 +182,7 @@ ExternalProject_Add(
     runtime-link=shared
     variant=release
     threading=multi
+    address-model=64
     cxxflags="${BOOST_FLAGS}"
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
