@@ -181,7 +181,6 @@ ExternalProject_Add(
     link=static
     runtime-link=shared
     variant=release
-    threading=multi
     cxxflags="${BOOST_FLAGS}"
     architecture=x86
     address-model=64
