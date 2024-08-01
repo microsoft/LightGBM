@@ -6,7 +6,7 @@ Contributors: https://github.com/microsoft/LightGBM/graphs/contributors.
 
 from pathlib import Path
 
-from .basic import Booster, Dataset, Sequence, ObjectiveFunction, register_logger
+from .basic import Booster, Dataset, ObjectiveFunction, Sequence, register_logger
 from .callback import EarlyStopException, early_stopping, log_evaluation, record_evaluation, reset_parameter
 from .engine import CVBooster, cv, train
 

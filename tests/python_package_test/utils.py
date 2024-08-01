@@ -169,8 +169,8 @@ def multiclass_custom_objective(y_pred, ds):
 
 
 def builtin_objective(name, params):
-    """Mimics the builtin objective functions to mock training.
-    """
+    """Mimics the builtin objective functions to mock training."""
+
     def wrapper(y_pred, dtrain):
         fobj = lgb.ObjectiveFunction(name, params)
         fobj.init(dtrain)
@@ -181,6 +181,7 @@ def builtin_objective(name, params):
             hess = hess.reshape((fobj.num_class, -1)).transpose()
         print(grad, hess)
         return (grad, hess)
+
     return wrapper
 
 

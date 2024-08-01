@@ -5311,7 +5311,7 @@ class ObjectiveFunction:
         self.num_class = params.get("num_class", 1)
 
         if "objective" in params and params["objective"] != self.name:
-            raise ValueError("The name should be consistent with the params[\"objective\"] field.")
+            raise ValueError('The name should be consistent with the params["objective"] field.')
 
         self.__create()
 
@@ -5383,7 +5383,6 @@ class ObjectiveFunction:
         if self._handle is None:
             raise ValueError("Dealocated ObjectiveFunction cannot be initialized")
 
-        ref_dataset = dataset._handle
         tmp_num_data = ctypes.c_int(0)
         _safe_call(
             _LIB.LGBM_ObjectiveFunctionInit(

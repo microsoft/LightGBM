@@ -32,8 +32,8 @@ from .utils import (
     logistic_sigmoid,
     make_synthetic_regression,
     mse_obj,
-    pickle_and_unpickle_object,
     multiclass_custom_objective,
+    pickle_and_unpickle_object,
     softmax,
 )
 
@@ -4393,25 +4393,30 @@ def test_quantized_training():
     quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
     assert quant_rmse < rmse + 6.0
 
+
 @pytest.mark.parametrize("use_weight", [False, True])
-@pytest.mark.parametrize("test_data", [
-    {
-        "custom_objective": mse_obj,
-        "objective_name": "regression",
-        "df": make_synthetic_regression(),
-        "num_class": 1
-    },
-    {
-        "custom_objective": multiclass_custom_objective,
-        "objective_name": "multiclass",
-        "df": make_blobs(n_samples=100, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42),
-        "num_class": 3
-    },
-])
+@pytest.mark.parametrize(
+    "test_data",
+    [
+        {
+            "custom_objective": mse_obj,
+            "objective_name": "regression",
+            "df": make_synthetic_regression(),
+            "num_class": 1,
+        },
+        {
+            "custom_objective": multiclass_custom_objective,
+            "objective_name": "multiclass",
+            "df": make_blobs(n_samples=100, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42),
+            "num_class": 3,
+        },
+    ],
+)
 @pytest.mark.parametrize("num_boost_round", [5, 15])
 def test_objective_function_class(use_weight, test_data, num_boost_round):
     X, y = test_data["df"]
-    weight = np.random.choice([1, 2], y.shape) if use_weight else None
+    rng = np.random.default_rng()
+    weight = rng.choice([1, 2], y.shape) if use_weight else None
     lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), test_data["num_class"])))
 
     params = {"verbose": -1, "objective": test_data["objective_name"], "num_class": test_data["num_class"]}
