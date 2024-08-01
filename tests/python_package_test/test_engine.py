@@ -4413,22 +4413,24 @@ def test_quantized_training():
     ],
 )
 @pytest.mark.parametrize("num_boost_round", [5, 15])
+@pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Skip due to ObjectiveFunction not exposed for cuda devices.")
 def test_objective_function_class(use_weight, test_data, num_boost_round):
     X, y = test_data["df"]
     rng = np.random.default_rng()
     weight = rng.choice([1, 2], y.shape) if use_weight else None
     lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), test_data["num_class"])))
 
-    params = {"verbose": -1, "objective": test_data["objective_name"], "num_class": test_data["num_class"]}
+    params = {
+        "verbose": -1,
+        "objective": test_data["objective_name"],
+        "num_class": test_data["num_class"],
+        "device": "cpu",
+    }
     builtin_loss = builtin_objective(test_data["objective_name"], copy.deepcopy(params))
 
     params["objective"] = builtin_loss
     booster_exposed = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
-    if getenv("TASK", "") != "cpu":
-        with pytest.raises(lgb.basic.LightGBMError):
-            builtin_loss(y, lgb_train)
-        return
     params["objective"] = test_data["objective_name"]
     booster = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
