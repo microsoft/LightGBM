@@ -2937,7 +2937,7 @@ def test_multiclass_custom_objective(use_weight):
     builtin_obj_bst = lgb.train(params, ds, num_boost_round=10)
     builtin_obj_preds = builtin_obj_bst.predict(X)
 
-    params["objective"] = custom_obj
+    params["objective"] = multiclass_custom_objective
     custom_obj_bst = lgb.train(params, ds, num_boost_round=10)
     custom_obj_preds = softmax(custom_obj_bst.predict(X))
 

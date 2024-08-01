@@ -27,7 +27,6 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
-#include <fstream>
 
 #include "application/predictor.hpp"
 #include <LightGBM/utils/yamc/alternate_shared_mutex.hpp>
@@ -44,8 +43,7 @@ inline int LGBM_APIHandleException(const std::string& ex) {
   return -1;
 }
 
-#define API_BEGIN() std::ofstream outf("logs.txt", std::ios_base::app); \
-  try {
+#define API_BEGIN() try {
 #define API_END() } \
 catch(std::exception& ex) { return LGBM_APIHandleException(ex); } \
 catch(std::string& ex) { return LGBM_APIHandleException(ex); } \
@@ -2590,7 +2588,6 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
                                int64_t* out_len,
                                double* out_result) {
   API_BEGIN();
-  outf << parameter << std::endl;
   auto param = Config::Str2Map(parameter);
   Config config;
   config.Set(param);
@@ -2758,7 +2755,6 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
   auto param = Config::Str2Map(parameter);
   Config config(param);
   *out = ObjectiveFunction::CreateObjectiveFunction(std::string(typ), config);
-  outf << parameter << std::endl;
   API_END();
 }
 
