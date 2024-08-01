@@ -4424,8 +4424,14 @@ def test_objective_function_class(use_weight, test_data, num_boost_round):
 
     params["objective"] = builtin_loss
     booster_exposed = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
+
+    if getenv("TASK", "") != "cpu":
+        with pytest.raises(lgb.basic.LightGBMError):
+            builtin_loss(y, lgb_train)
+        return
     params["objective"] = test_data["objective_name"]
     booster = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
+
     params["objective"] = test_data["custom_objective"]
     booster_custom = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 

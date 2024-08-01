@@ -2754,7 +2754,11 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
   API_BEGIN();
   auto param = Config::Str2Map(parameter);
   Config config(param);
-  *out = ObjectiveFunction::CreateObjectiveFunction(std::string(typ), config);
+  if (config.device_type != std::string("cpu")) {
+    Log::Fatal("Currently the ObjectiveFunction class is only exposed for CPU devices.");
+  } else {
+    *out = ObjectiveFunction::CreateObjectiveFunction(std::string(typ), config);
+  }
   API_END();
 }
 
