@@ -25,7 +25,6 @@ class MulticlassSoftmax: public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
-    std::cout << "We have set " << num_class_ << std::endl;
     // This factor is to rescale the redundant form of K-classification, to the non-redundant form.
     // In the traditional settings of K-classification, there is one redundant class, whose output is set to 0 (like the class 0 in binary classification).
     // This is from the Friedman GBDT paper.

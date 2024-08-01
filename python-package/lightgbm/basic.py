@@ -5341,11 +5341,11 @@ class ObjectiveFunction:
             raise ValueError("Objective function seems uninitialized")
 
         if self.num_data is None or self.num_class is None:
-            # TODO: Be more descriptive
             raise ValueError("ObjectiveFunction was not created properly")
 
-        grad = np.zeros(dtype=np.float32, shape=self.num_data * self.num_class)
-        hess = np.zeros(dtype=np.float32, shape=self.num_data * self.num_class)
+        data_shape = self.num_data * self.num_class
+        grad = np.zeros(dtype=np.float32, shape=data_shape)
+        hess = np.zeros(dtype=np.float32, shape=data_shape)
 
         _safe_call(
             _LIB.LGBM_ObjectiveFunctionEval(

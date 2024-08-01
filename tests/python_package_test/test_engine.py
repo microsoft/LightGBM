@@ -33,7 +33,7 @@ from .utils import (
     make_synthetic_regression,
     mse_obj,
     pickle_and_unpickle_object,
-    sklearn_multiclass_custom_objective,
+    multiclass_custom_objective,
     softmax,
 )
 
@@ -2927,12 +2927,6 @@ def test_default_objective_and_metric():
 
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_multiclass_custom_objective(use_weight):
-    def custom_obj(y_pred, ds):
-        y_true = ds.get_label()
-        weight = ds.get_weight()
-        grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
-        return grad, hess
-
     centers = [[-4, -4], [4, 4], [-4, 4]]
     X, y = make_blobs(n_samples=1_000, centers=centers, random_state=42)
     weight = np.full_like(y, 2)
@@ -4400,47 +4394,38 @@ def test_quantized_training():
     assert quant_rmse < rmse + 6.0
 
 @pytest.mark.parametrize("use_weight", [False, True])
-def test_objective_function_regression(use_weight):
-    X, y = make_synthetic_regression()
-    weight = np.random.choice([1, 2], len(X)) if use_weight else None
-    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros(len(X)))
-
-    params = {"verbose": -1, "objective": "regression"}
-    builtin_loss = builtin_objective("multiclass", copy.deepcopy(params))
-
-    booster = lgb.train(params, lgb_train, num_boost_round=20)
-    params["objective"] = mse_obj
-    booster_custom = lgb.train(params, lgb_train, num_boost_round=20)
-    params["objective"] = builtin_loss
-    booster_exposed = lgb.train(params, lgb_train, num_boost_round=20)
-    np.testing.assert_allclose(booster_exposed.predict(X), booster.predict(X))
-    np.testing.assert_allclose(booster_exposed.predict(X), booster_custom.predict(X))
-
-    y_pred = booster.predict(X)
-    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), mse_obj(y_pred, lgb_train))
-
-@pytest.mark.parametrize("use_weight", [False, True])
-def test_objective_function_multiclass(use_weight):
-    def custom_obj(y_pred, ds):
-        y_true = ds.get_label()
-        weight = ds.get_weight()
-        grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
-        return grad, hess
-
-    X, y = make_blobs(n_samples=1_000, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42)
+@pytest.mark.parametrize("test_data", [
+    {
+        "custom_objective": mse_obj,
+        "objective_name": "regression",
+        "df": make_synthetic_regression(),
+        "num_class": 1
+    },
+    {
+        "custom_objective": multiclass_custom_objective,
+        "objective_name": "multiclass",
+        "df": make_blobs(n_samples=100, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42),
+        "num_class": 3
+    },
+])
+@pytest.mark.parametrize("num_boost_round", [5, 15])
+def test_objective_function_multiclass(use_weight, test_data, num_boost_round):
+    X, y = test_data["df"]
     weight = np.random.choice([1, 2], y.shape) if use_weight else None
-    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), 3)))
+    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), test_data["num_class"])))
 
-    params = {"verbose": -1, "objective": "multiclass", "num_class": 3}
-    builtin_loss = builtin_objective("multiclass", copy.deepcopy(params))
-    booster = lgb.train(params, lgb_train, num_boost_round=20)
-    params["objective"] = custom_obj
-    booster_custom = lgb.train(params, lgb_train, num_boost_round=20)
+    params = {"verbose": -1, "objective": test_data["objective_name"], "num_class": test_data["num_class"]}
+    builtin_loss = builtin_objective(test_data["objective_name"], copy.deepcopy(params))
+
     params["objective"] = builtin_loss
-    booster_exposed = lgb.train(params, lgb_train, num_boost_round=20)
+    booster_exposed = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
+    params["objective"] = test_data["objective_name"]
+    booster = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
+    params["objective"] = test_data["custom_objective"]
+    booster_custom = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
     np.testing.assert_allclose(booster_exposed.predict(X), booster.predict(X, raw_score=True))
     np.testing.assert_allclose(booster_exposed.predict(X), booster_custom.predict(X))
 
-    y_pred = booster.predict(X, raw_score=True)
-    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), mse_obj(y_pred, lgb_train))
+    y_pred = np.zeros_like(booster.predict(X, raw_score=True))
+    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), test_data["custom_objective"](y_pred, lgb_train))

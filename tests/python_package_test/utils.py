@@ -161,6 +161,29 @@ def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
     return grad, hess
 
 
+def multiclass_custom_objective(y_pred, ds):
+    y_true = ds.get_label()
+    weight = ds.get_weight()
+    grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
+    return grad, hess
+
+
+def builtin_objective(name, params):
+    """Mimics the builtin objective functions to mock training.
+    """
+    def wrapper(y_pred, dtrain):
+        fobj = lgb.ObjectiveFunction(name, params)
+        fobj.init(dtrain)
+        (grad, hess) = fobj(y_pred)
+        print(grad, hess)
+        if fobj.num_class != 1:
+            grad = grad.reshape((fobj.num_class, -1)).transpose()
+            hess = hess.reshape((fobj.num_class, -1)).transpose()
+        print(grad, hess)
+        return (grad, hess)
+    return wrapper
+
+
 def pickle_obj(obj, filepath, serializer):
     if serializer == "pickle":
         with open(filepath, "wb") as f:
@@ -192,14 +215,6 @@ def pickle_and_unpickle_object(obj, serializer):
         pickle_obj(obj=obj, filepath=tmp_file.name, serializer=serializer)
         obj_from_disk = unpickle_obj(filepath=tmp_file.name, serializer=serializer)
     return obj_from_disk  # noqa: RET504
-
-
-def builtin_objective(name, params):
-    def wrapper(y_pred, dtrain):
-        fobj = lgb.ObjectiveFunction(name, params)
-        fobj.init(dtrain)
-        return fobj(y_pred)
-    return wrapper
 
 
 # doing this here, at import time, to ensure it only runs once_per import
