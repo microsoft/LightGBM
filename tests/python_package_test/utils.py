@@ -175,11 +175,9 @@ def builtin_objective(name, params):
         fobj = lgb.ObjectiveFunction(name, params)
         fobj.init(dtrain)
         (grad, hess) = fobj(y_pred)
-        print(grad, hess)
         if fobj.num_class != 1:
             grad = grad.reshape((fobj.num_class, -1)).transpose()
             hess = hess.reshape((fobj.num_class, -1)).transpose()
-        print(grad, hess)
         return (grad, hess)
 
     return wrapper
