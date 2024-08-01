@@ -2763,8 +2763,8 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
 }
 
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
-                                                 int *num_data,
-                                                 DatasetHandle dataset) {
+                                                 DatasetHandle dataset,
+                                                 int *num_data) {
   API_BEGIN();
   ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
   Dataset* ref_dataset = reinterpret_cast<Dataset*>(dataset);

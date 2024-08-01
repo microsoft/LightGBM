@@ -1565,18 +1565,34 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
                                                      double* out_results);
 
 /*!
+ * \brief Create an objective function.
+ * \param typ Type of the objective function
+ * \param parameter Parameters for the objective function
+ * \param[out] out Handle pointing to the created objective function
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
                                                    const char *parameter,
                                                    ObjectiveFunctionHandle *out);
 
 /*!
+ * \brief Initialize an objective function with the dataset.
+ * \param handle Handle of the objective function
+ * \param dataset Handle of the dataset used for initialization
+ * \param[out] num_data Number of data points; this may be modified within the function
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
-                                                 int *num_data,
-                                                 DatasetHandle dataset);
+                                                 DatasetHandle dataset,
+                                                 int *num_data);
 
 /*!
+ * \brief Evaluate the objective function given model scores.
+ * \param handle Handle of the objective function
+ * \param score Array of scores predicted by the model
+ * \param[out] grad Gradient result array
+ * \param[out] hess Hessian result array
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
                                                  const double* score,
@@ -1584,6 +1600,9 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
                                                  float* hess);
 
 /*!
+ * \brief Free the memory allocated for an objective function.
+ * \param handle Handle of the objective function
+ * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle);
 

@@ -5284,16 +5284,87 @@ class Booster:
 
 
 class ObjectiveFunction:
+    """
+    ObjectiveFunction in LightGBM.
+
+    This class exposes the builtin objective functions for evaluating gradients and hessians
+    on external datasets. LightGBM does not use this wrapper during its training as it is
+    using the underlying C++ class.
+    """
+
     def __init__(self, name: str, params: Dict[str, Any]):
+        """
+        Initialize the ObjectiveFunction.
+
+        Parameters
+        ----------
+        name : str
+            The name of the objective function.
+        params : dict
+            Dictionary of parameters for the objective function.
+            These are the parameters that would have been passed to ``booster.train``.
+            The ``name`` should be consistent with the ``params["objective"]`` field.
+        """
         self.name = name
         self.params = params
         self.num_data = None
         self.num_class = params.get("num_class", 1)
 
+        if "objective" in params and params["objective"] != self.name:
+            raise ValueError("The name should be consistent with the params[\"objective\"] field.")
+
         self.__create()
 
     def init(self, dataset: Dataset) -> "ObjectiveFunction":
+        """
+        Initialize the objective function using the provided dataset.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object used for initialization.
+
+        Returns
+        -------
+        self : ObjectiveFunction
+            Initialized objective function object.
+        """
         return self.__init_from_dataset(dataset)
+
+    def __call__(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Evaluate the objective function given model predictions.
+
+        Parameters
+        ----------
+        y_pred : numpy.ndarray
+            Predicted scores from the model.
+
+        Returns
+        -------
+        (grad, hess) : Tuple[np.ndarray, np.ndarray]
+            A tuple containing gradients and Hessians.
+        """
+        if self._handle is None:
+            raise ValueError("Objective function seems uninitialized")
+
+        if self.num_data is None or self.num_class is None:
+            raise ValueError("ObjectiveFunction was not created properly")
+
+        data_shape = self.num_data * self.num_class
+        grad = np.zeros(dtype=np.float32, shape=data_shape)
+        hess = np.zeros(dtype=np.float32, shape=data_shape)
+
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionEval(
+                self._handle,
+                y_pred.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            )
+        )
+
+        return (grad, hess)
 
     def __create(self):
         self._handle = ctypes.c_void_p()
@@ -5317,8 +5388,8 @@ class ObjectiveFunction:
         _safe_call(
             _LIB.LGBM_ObjectiveFunctionInit(
                 self._handle,
-                ctypes.byref(tmp_num_data),
                 dataset._handle,
+                ctypes.byref(tmp_num_data),
             )
         )
         self.num_data = tmp_num_data.value
@@ -5335,25 +5406,3 @@ class ObjectiveFunction:
             _safe_call(_LIB.LGBM_ObjectiveFunctionFree(self._handle))
             self._handle = None
         return self
-
-    def __call__(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        if self._handle is None:
-            raise ValueError("Objective function seems uninitialized")
-
-        if self.num_data is None or self.num_class is None:
-            raise ValueError("ObjectiveFunction was not created properly")
-
-        data_shape = self.num_data * self.num_class
-        grad = np.zeros(dtype=np.float32, shape=data_shape)
-        hess = np.zeros(dtype=np.float32, shape=data_shape)
-
-        _safe_call(
-            _LIB.LGBM_ObjectiveFunctionEval(
-                self._handle,
-                y_pred.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-            )
-        )
-
-        return (grad, hess)

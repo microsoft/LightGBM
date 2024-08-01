@@ -4409,7 +4409,7 @@ def test_quantized_training():
     },
 ])
 @pytest.mark.parametrize("num_boost_round", [5, 15])
-def test_objective_function_multiclass(use_weight, test_data, num_boost_round):
+def test_objective_function_class(use_weight, test_data, num_boost_round):
     X, y = test_data["df"]
     weight = np.random.choice([1, 2], y.shape) if use_weight else None
     lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), test_data["num_class"])))
