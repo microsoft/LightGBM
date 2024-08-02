@@ -40,11 +40,12 @@ else  # Linux
             ca-certificates \
             curl
     fi
+    CMAKE_VERSION="3.30.0"
     curl -O -L \
-        https://github.com/Kitware/CMake/releases/download/v3.30.0/cmake-3.30.0-linux-${ARCH}.sh \
+        https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh \
     || exit 1
     sudo mkdir /opt/cmake || exit 1
-    sudo sh cmake-3.30.0-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
+    sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
     sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
 
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
