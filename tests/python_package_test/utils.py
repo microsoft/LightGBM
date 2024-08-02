@@ -197,7 +197,7 @@ def assert_silent(capsys) -> None:
     read the recently-captured data into a variable and assert that nothing was written
     to stdout or stderr.
 
-    This is just hear to turn 3 lines of boilerplate into 1.
+    This is just here to turn 3 lines of repetitive code into 1.
 
     Note that this does have a side effect... ``capsys.readouterr()`` copies
     from a buffer then frees it. So it will only store into ``.out`` and ``.err`` the
