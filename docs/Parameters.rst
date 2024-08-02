@@ -40,7 +40,7 @@ For example, in Python:
          "learning_rate": 0.07,
          "shrinkage_rate": 0.12
       },
-      ...
+      train_set=dtrain
    )
 
 Where multiple aliases are given, and the primary parameter name is not, the first alias
@@ -58,7 +58,7 @@ For example, in Python:
          "eta": 0.19,
          "shrinkage_rate": 0.12
       },
-      ...
+      train_set=dtrain
    )
 
 **CLI**
