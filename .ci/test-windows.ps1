@@ -31,11 +31,22 @@ if ($env:TASK -eq "cpp-tests") {
 if ($env:TASK -eq "swig") {
   $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-  Invoke-WebRequest -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/swigwin-4.0.2.zip" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "NativeHost"
+  Invoke-WebRequest -Uri "https://sourceforge.net/projects/swig/files/latest/download" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "curl"
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
-  $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin-4.0.2;" + $env:PATH
-  cmake -B build -S . -A x64 -DUSE_SWIG=ON ; Check-Output $?
+  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig") ; Check-Output $?
+  $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
+  $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
+  $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
+  Write-Output "CMake build logs:"
+  Get-Content -Path "$BuildLogFileName"
+  Check-Output $build_succeeded
+  $checks = Select-String -Path "${BuildLogFileName}" -Pattern "-- Found SWIG.*${SwigFolder}/swig.exe"
+  $checks_cnt = $checks.Matches.length
+  if ($checks_cnt -eq 0) {
+    Write-Output "Wrong SWIG version was found (expected '${SwigFolder}'). Check the build logs."
+    Check-Output $False
+  }
   cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
     cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
