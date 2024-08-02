@@ -4,7 +4,7 @@
 
 ### CRAN response
 
-TBD
+Accepted to CRAN
 
 ### Maintainer Notes
 
