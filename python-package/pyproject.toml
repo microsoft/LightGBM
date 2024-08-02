@@ -63,7 +63,7 @@ build-backend = "scikit_build_core.build"
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.version = ">=3.18"
+cmake.version = ">=3.28"
 ninja.version = ">=1.11"
 ninja.make-fallback = true
 cmake.args = [
