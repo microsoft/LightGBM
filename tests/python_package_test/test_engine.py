@@ -3874,11 +3874,14 @@ def test_dump_model_stump():
 
 
 def test_dump_model():
-    X, y = load_breast_cancer(return_X_y=True)
-    train_data = lgb.Dataset(X, label=y)
+    offset = 100
+    X, y = make_synthetic_regression()
+    train_data = lgb.Dataset(X, label=y+offset)
+
     params = {
-        "objective": "binary",
+        "objective": "regression",
         "verbose": -1,
+        "boost_from_average": True,
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
     dumped_model = bst.dump_model(5, 0)
@@ -3892,7 +3895,12 @@ def test_dump_model():
     # CUDA does not return correct values for the root
     if getenv("TASK", "") != "cuda":
         for tree in dumped_model["tree_info"]:
-            assert not np.allclose(tree["tree_structure"]["internal_value"], 0)
+            assert not np.all(tree["tree_structure"]["internal_value"] == 0)
+        np.testing.assert_allclose(
+            dumped_model["tree_info"][0]["tree_structure"]["internal_value"],
+            offset,
+            atol=1
+        )
         assert_all_trees_valid(dumped_model)
 
 
