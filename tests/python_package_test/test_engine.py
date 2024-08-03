@@ -3858,10 +3858,8 @@ def test_dump_model_stump():
     # intentionally create a stump (tree with only a root-node)
     # using restricted # samples
     subidx = random.sample(range(len(y)), 30)
-    X = X[subidx]
-    y = y[subidx]
 
-    train_data = lgb.Dataset(X, label=y)
+    train_data = lgb.Dataset(X[subidx], label=y[subidx])
     params = {
         "objective": "binary",
         "verbose": -1,
@@ -3869,11 +3867,9 @@ def test_dump_model_stump():
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
     dumped_model = bst.dump_model(5, 0)
-    print(dumped_model)
-    assert len(dumped_model["tree_info"]) == 1
     tree_structure = dumped_model["tree_info"][0]["tree_structure"]
+    assert len(dumped_model["tree_info"]) == 1
     assert "leaf_value" in tree_structure
-    assert "leaf_count" in tree_structure
     assert tree_structure["leaf_count"] == 30
 
 
@@ -3902,7 +3898,11 @@ def test_dump_model():
 
 def test_dump_model_linear():
     X, y = load_breast_cancer(return_X_y=True)
-    params = {"objective": "binary", "verbose": -1, "linear_tree": True}
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+        "linear_tree": True,
+    }
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
     dumped_model = bst.dump_model(5, 0)

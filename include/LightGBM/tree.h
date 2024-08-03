@@ -228,13 +228,14 @@ class Tree {
     shrinkage_ = 1.0f;
   }
 
-  virtual inline void AsConstantTree(double val) {
+  virtual inline void AsConstantTree(double val, int count = 0) {
     num_leaves_ = 1;
     shrinkage_ = 1.0f;
     leaf_value_[0] = val;
     if (is_linear_) {
       leaf_const_[0] = val;
     }
+    leaf_count_[0] = count;
   }
 
   /*! \brief Serialize this object to string*/
