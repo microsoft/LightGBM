@@ -30,7 +30,7 @@ maintainers = [
 name = "lightgbm"
 readme = "README.rst"
 requires-python = ">=3.7"
-version = "4.5.0"
+version = "4.5.0.99"
 
 [project.optional-dependencies]
 arrow = [
@@ -63,7 +63,7 @@ build-backend = "scikit_build_core.build"
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.version = ">=3.18"
+cmake.version = ">=3.28"
 ninja.version = ">=1.11"
 ninja.make-fallback = true
 cmake.args = [

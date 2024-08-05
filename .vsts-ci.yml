@@ -328,7 +328,7 @@ jobs:
       git clean -d -f -x
     displayName: 'Clean source directory'
   - script: |
-      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install_opencl.ps1"
+      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/install-opencl.ps1"
     condition: eq(variables['TASK'], 'bdist')
     displayName: 'Install OpenCL'
   - script: |
@@ -337,7 +337,7 @@ jobs:
       cmd /c "conda config --add channels conda-forge"
       cmd /c "conda config --set channel_priority strict"
       cmd /c "conda init powershell"
-      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test_windows.ps1"
+      cmd /c "powershell -ExecutionPolicy Bypass -File %BUILD_SOURCESDIRECTORY%/.ci/test-windows.ps1"
     displayName: Test
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), in(variables['TASK'], 'regular', 'bdist', 'swig'), not(startsWith(variables['Build.SourceBranch'], 'refs/pull/')))
@@ -419,7 +419,7 @@ jobs:
       artifactName: R-package
       downloadPath: $(Build.SourcesDirectory)/R
   - script: |
-      python "$(Build.SourcesDirectory)/.nuget/create_nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
+      python "$(Build.SourcesDirectory)/.ci/create-nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
     displayName: 'Create NuGet configuration files'
   - task: NuGetCommand@2
     inputs:
