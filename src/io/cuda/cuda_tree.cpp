@@ -331,9 +331,9 @@ void CUDATree::SyncLeafOutputFromCUDAToHost() {
 }
 
 void CUDATree::AsConstantTree(double val, int count) {
-  Tree::AsConstantTree(val, int count);
+  Tree::AsConstantTree(val, count);
   CopyFromHostToCUDADevice<double>(cuda_leaf_value_, &val, 1, __FILE__, __LINE__);
-  CopyFromHostToCUDADevice<double>(cuda_leaf_count_, &count, 1, __FILE__, __LINE__);
+  CopyFromHostToCUDADevice<int>(cuda_leaf_count_, &count, 1, __FILE__, __LINE__);
 }
 
 }  // namespace LightGBM
