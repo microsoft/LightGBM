@@ -77,7 +77,7 @@ class CUDATree : public Tree {
                             const data_size_t* used_data_indices,
                             data_size_t num_data, double* score) const override;
 
-  inline void AsConstantTree(double val) override;
+  inline void AsConstantTree(double val, int count) override;
 
   const int* cuda_leaf_parent() const { return cuda_leaf_parent_; }
 

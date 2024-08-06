@@ -206,3 +206,38 @@ def np_assert_array_equal(*args, **kwargs):
     if not _numpy_testing_supports_strict_kwarg:
         kwargs.pop("strict")
     np.testing.assert_array_equal(*args, **kwargs)
+
+
+def assert_subtree_valid(root):
+    """Recursively checks the validity of a subtree rooted at `root`.
+
+    Currently it only checks whether weights and counts are consistent between
+    all parent nodes and their children.
+
+    Parameters
+    ----------
+    root : dict
+        A dictionary representing the root of the subtree.
+        It should be produced by dump_model()
+
+    Returns
+    -------
+    tuple
+        A tuple containing the weight and count of the subtree rooted at `root`.
+    """
+    if "leaf_count" in root:
+        return (root["leaf_weight"], root["leaf_count"])
+
+    left_child = root["left_child"]
+    right_child = root["right_child"]
+    (l_w, l_c) = assert_subtree_valid(left_child)
+    (r_w, r_c) = assert_subtree_valid(right_child)
+    assert np.allclose(root["internal_weight"], l_w + r_w)
+    assert np.allclose(root["internal_count"], l_c + r_c)
+    return (root["internal_weight"], root["internal_count"])
+
+
+def assert_all_trees_valid(model_dump):
+    for idx, tree in enumerate(model_dump["tree_info"]):
+        assert tree["tree_index"] == idx
+        assert_subtree_valid(tree["tree_structure"])

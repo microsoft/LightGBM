@@ -24,6 +24,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_all_trees_valid,
     dummy_obj,
     load_breast_cancer,
     load_digits,
@@ -3853,21 +3854,70 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     assert new_bst.params == expected_params
 
 
-def test_dump_model():
+@pytest.mark.parametrize("linear_tree", [False, True])
+def test_dump_model_stump(linear_tree):
     X, y = load_breast_cancer(return_X_y=True)
-    train_data = lgb.Dataset(X, label=y)
-    params = {"objective": "binary", "verbose": -1}
+    # intentionally create a stump (tree with only a root-node)
+    # using restricted # samples
+    subidx = random.sample(range(len(y)), 30)
+
+    train_data = lgb.Dataset(X[subidx], label=y[subidx])
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+        "n_jobs": 1,
+        "linear_tree": linear_tree,
+    }
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    tree_structure = dumped_model["tree_info"][0]["tree_structure"]
+    assert len(dumped_model["tree_info"]) == 1
+    assert "leaf_value" in tree_structure
+    assert tree_structure["leaf_count"] == 30
+
+
+def test_dump_model():
+    offset = 100
+    X, y = make_synthetic_regression()
+    train_data = lgb.Dataset(X, label=y + offset)
+
+    params = {
+        "objective": "regression",
+        "verbose": -1,
+        "boost_from_average": True,
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model = bst.dump_model(5, 0)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
-    params["linear_tree"] = True
+
+    # CUDA does not return correct values for the root
+    if getenv("TASK", "") == "cuda":
+        return
+
+    for tree in dumped_model["tree_info"]:
+        assert not np.all(tree["tree_structure"]["internal_value"] == 0)
+
+    np.testing.assert_allclose(dumped_model["tree_info"][0]["tree_structure"]["internal_value"], offset, atol=1)
+    assert_all_trees_valid(dumped_model)
+
+
+def test_dump_model_linear():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+        "linear_tree": True,
+    }
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(5, 0)
+    assert_all_trees_valid(dumped_model)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str
