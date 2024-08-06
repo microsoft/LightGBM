@@ -424,7 +424,7 @@ jobs:
   - task: NuGetCommand@2
     inputs:
       command: pack
-      packagesToPack: '$(Build.SourcesDirectory)/.nuget/*.nuspec'
+      packagesToPack: '$(Build.SourcesDirectory)/.ci/nuget/*.nuspec'
       packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
   - task: PublishBuildArtifacts@1
     inputs:
