@@ -13,10 +13,7 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
-if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-11
-    export CC=gcc-11
-elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
+if [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang-17" ]]; then

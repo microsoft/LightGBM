@@ -42,20 +42,18 @@ jobs:
             task: bdist
             method: wheel
             python_version: '3.10'
-          # We're currently skipping MPI jobs on macOS, see https://github.com/microsoft/LightGBM/pull/6425
-          # for further details.
-          # - os: macos-13
-          #   task: mpi
-          #   method: source
-          #   python_version: '3.11'
-          # - os: macos-13
-          #   task: mpi
-          #   method: pip
-          #   python_version: '3.12'
-          # - os: macos-13
-          #   task: mpi
-          #   method: wheel
-          #   python_version: '3.9'
+          - os: macos-13
+            task: mpi
+            method: source
+            python_version: '3.11'
+          - os: macos-13
+            task: mpi
+            method: pip
+            python_version: '3.12'
+          - os: macos-13
+            task: mpi
+            method: wheel
+            python_version: '3.9'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,17 +66,8 @@ jobs:
           export TASK="${{ matrix.task }}"
           export METHOD="${{ matrix.method }}"
           export PYTHON_VERSION="${{ matrix.python_version }}"
-          if [[ "${{ matrix.os }}" == "macos-14" ]]; then
-              # use clang when creating macOS release artifacts
-              export COMPILER="clang"
-              export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "macos-13" ]]; then
-              export COMPILER="gcc"
-              export OS_NAME="macos"
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-              export COMPILER="clang"
-              export OS_NAME="linux"
-          fi
+          export COMPILER="clang"
+          export OS_NAME="macos"
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
