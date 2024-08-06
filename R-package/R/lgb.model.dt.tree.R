@@ -10,7 +10,7 @@
 #'        \emph{New in version 4.4.0}
 #'
 #' @return
-#' A \code{data.table} with detailed information about model trees' nodes and leafs.
+#' A \code{data.table} with detailed information about model trees' nodes and leaves.
 #'
 #' The columns of the \code{data.table} are:
 #'

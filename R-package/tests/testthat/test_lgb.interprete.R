@@ -5,7 +5,7 @@
     log(x / (1.0 - x))
 }
 
-test_that("lgb.intereprete works as expected for binary classification", {
+test_that("lgb.interprete works as expected for binary classification", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)

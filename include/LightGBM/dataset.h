@@ -376,7 +376,7 @@ class Metadata {
   std::vector<data_size_t> query_boundaries_;
   /*! \brief Query weights */
   std::vector<label_t> query_weights_;
-  /*! \brief Number of querys */
+  /*! \brief Number of queries */
   data_size_t num_queries_;
   /*! \brief Number of Initial score, used to check correct weight file */
   int64_t num_init_score_;
