@@ -12,3 +12,11 @@ updates:
       prefix: "[ci]"
     labels:
       - maintenance
+  - package-ecosystem: gitsubmodule
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "[c++]"
+    labels:
+      - maintenance
