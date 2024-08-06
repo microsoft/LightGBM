@@ -2,7 +2,6 @@ trigger:
   branches:
     include:
     - master
-    - ci/nuget
   tags:
     include:
     - v*
