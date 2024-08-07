@@ -36,6 +36,11 @@ enum TaskType {
 };
 const int kDefaultNumLeaves = 31;
 
+/*! \brief Types of pairwise ranking mode */
+enum PairwiseRankingMode {
+  kNone, kFull, kRelevance, kManual
+};
+
 struct Config {
  public:
   Config() {}
@@ -157,6 +162,7 @@ struct Config {
   // descl2 = ``lambdarank``, `lambdarank <https://proceedings.neurips.cc/paper_files/paper/2006/file/af44c4c56f385c43f2529f9b1b018f6a-Paper.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
+  // descl2 = ``pairwise_lambdarank``, pairwise lambdarank algorithm
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
   // descl2 = ``custom``
@@ -988,6 +994,10 @@ struct Config {
   // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
   // desc = *New in version 4.1.0*
   double lambdarank_position_bias_regularization = 0.0;
+
+  // desc = whether to use differential features in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool use_differential_feature_in_pairwise_ranking = false;
 
   #ifndef __NVCC__
   #pragma endregion
