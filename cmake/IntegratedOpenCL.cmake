@@ -58,6 +58,7 @@ ProcessorCount(J)
 set(BOOST_BASE "${PROJECT_BINARY_DIR}/Boost")
 set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
 set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
+set(BOOST_ADDRESS_MODEL 64)
 if(WIN32)
   if(MSVC)
     if(${MSVC_VERSION} GREATER 1929)
@@ -70,6 +71,9 @@ if(WIN32)
       set(MSVC_TOOLCHAIN_ID "140")
     else()
       message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+    endif()
+    if("${CMAKE_GENERATOR_PLATFORM}" MATCHES "Win32")
+      set(BOOST_ADDRESS_MODEL 32)
     endif()
     list(
       APPEND
@@ -181,8 +185,9 @@ ExternalProject_Add(
     link=static
     runtime-link=shared
     variant=release
+    threading=multi
+    address-model=${BOOST_ADDRESS_MODEL}
     cxxflags="${BOOST_FLAGS}"
-    --abbreviate-paths
   INSTALL_COMMAND ""
   # BUILD_BYPRODUCTS is necessary to support 'Ninja' builds.
   # ref:
