@@ -272,8 +272,12 @@ if(USE_CUDA)
 
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+      set_target_properties(
+        histo${hsize}${hname}
+        PROPERTIES
+          CUDA_SEPARABLE_COMPILATION ON
+          CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      )
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -539,10 +543,14 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
-  # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
-  set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
-  # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
-  set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
+  set_target_properties(
+    _lightgbm_swig
+    PROPERTIES
+      # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
+      PREFIX ""
+      # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
+      OUTPUT_NAME "lib_lightgbm_swig"
+  )
   if(WIN32)
     if(MINGW OR CYGWIN)
         add_custom_command(
@@ -655,20 +663,22 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  endif()
 
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(
+    lightgbm_objs _lightgbm
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_SEPARABLE_COMPILATION ON
+  )
 
-  # Device linking is not supported for object libraries.
-  # Thus we have to specify them on final targets.
   if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    set_target_properties(
+      lightgbm
+      PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
   endif()
-  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
