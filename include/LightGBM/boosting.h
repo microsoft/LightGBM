@@ -77,6 +77,11 @@ class LIGHTGBM_EXPORT Boosting {
   virtual void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) = 0;
 
   /*!
+  * \brief Change the leaf values of a tree and update the scores
+  */
+  virtual void RefitTreeManual(int tree_idx, const double *vals) = 0;
+
+  /*!
   * \brief Training logic
   * \param gradients nullptr for using default objective, otherwise use self-defined boosting
   * \param hessians nullptr for using default objective, otherwise use self-defined boosting
