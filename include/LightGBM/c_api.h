@@ -31,6 +31,7 @@ typedef void* DatasetHandle;  /*!< \brief Handle of dataset. */
 typedef void* BoosterHandle;  /*!< \brief Handle of booster. */
 typedef void* FastConfigHandle; /*!< \brief Handle of FastConfig. */
 typedef void* ByteBufferHandle; /*!< \brief Handle of ByteBuffer. */
+typedef void* ObjectiveFunctionHandle; /*!< \brief Handle of ObjectiveFunction. */
 
 #define C_API_DTYPE_FLOAT32 (0)  /*!< \brief float32 (single precision float). */
 #define C_API_DTYPE_FLOAT64 (1)  /*!< \brief float64 (double precision float). */
@@ -1562,6 +1563,60 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetUpperBoundValue(BoosterHandle handle,
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
                                                      double* out_results);
+
+/*!
+ * \brief Create an objective function.
+ * \param typ Type of the objective function
+ * \param parameter Parameters for the objective function
+ * \param[out] out Handle pointing to the created objective function
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
+                                                   const char *parameter,
+                                                   ObjectiveFunctionHandle *out);
+
+/*!
+ * \brief Initialize an objective function with the dataset.
+ * \param handle Handle of the objective function
+ * \param dataset Handle of the dataset used for initialization
+ * \param[out] num_data Number of data points; this may be modified within the function
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
+                                                 DatasetHandle dataset,
+                                                 int *num_data);
+
+/*!
+ * \brief Evaluate the objective function given model scores.
+ * \param handle Handle of the objective function
+ * \param score Array of scores predicted by the model
+ * \param[out] grad Gradient result array
+ * \param[out] hess Hessian result array
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionGetGradients(ObjectiveFunctionHandle handle,
+                                                         const double* score,
+                                                         float* grad,
+                                                         float* hess);
+
+/*!
+ * \brief Free the memory allocated for an objective function.
+ * \param handle Handle of the objective function
+ * \return 0 when succeed, -1 when failure happens
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle);
+
+/*!
+ * \brief Convert raw scores to outputs.
+ * \param handle Handle of the objective function
+ * \param num_data Number of data points
+ * \param inputs Array of raw scores
+ * \param[out] outputs Array of outputs
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionConvertOutputs(ObjectiveFunctionHandle handle,
+                                                           const int num_data,
+                                                           const double* inputs,
+                                                           double* outputs);
 
 /*!
  * \brief Initialize the network.

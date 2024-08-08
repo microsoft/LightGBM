@@ -130,6 +130,9 @@ def mse_obj(y_pred, dtrain):
     y_true = dtrain.get_label()
     grad = y_pred - y_true
     hess = np.ones(len(grad))
+    if dtrain.get_weight() is not None:
+        grad *= dtrain.get_weight()
+        hess *= dtrain.get_weight()
     return grad, hess
 
 
@@ -156,6 +159,28 @@ def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
         grad *= weight2d
         hess *= weight2d
     return grad, hess
+
+
+def multiclass_custom_objective(y_pred, ds):
+    y_true = ds.get_label()
+    weight = ds.get_weight()
+    grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
+    return grad, hess
+
+
+def builtin_objective(name, params):
+    """Mimics the builtin objective functions to mock training."""
+
+    def wrapper(y_pred, dtrain):
+        fobj = lgb.ObjectiveFunction(name, params)
+        fobj.init(dtrain)
+        (grad, hess) = fobj.get_gradients(y_pred)
+        if fobj.num_class != 1:
+            grad = grad.reshape((fobj.num_class, -1)).transpose()
+            hess = hess.reshape((fobj.num_class, -1)).transpose()
+        return (grad, hess)
+
+    return wrapper
 
 
 def pickle_obj(obj, filepath, serializer):
