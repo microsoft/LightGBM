@@ -1594,10 +1594,10 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
  * \param[out] hess Hessian result array
  * \return 0 when succeed, -1 when failure happens
  */
-LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
-                                                 const double* score,
-                                                 float* grad,
-                                                 float* hess);
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionGetGradients(ObjectiveFunctionHandle handle,
+                                                         const double* score,
+                                                         float* grad,
+                                                         float* hess);
 
 /*!
  * \brief Free the memory allocated for an objective function.
@@ -1605,6 +1605,18 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle);
+
+/*!
+ * \brief Convert raw scores to outputs.
+ * \param handle Handle of the objective function
+ * \param num_data Number of data points
+ * \param inputs Array of raw scores
+ * \param[out] outputs Array of outputs
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionConvertOutputs(ObjectiveFunctionHandle handle,
+                                                           const int num_data,
+                                                           const double* inputs,
+                                                           double* outputs);
 
 /*!
  * \brief Initialize the network.

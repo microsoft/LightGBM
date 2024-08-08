@@ -2773,10 +2773,10 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
   API_END();
 }
 
-LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
-                                                 const double* score,
-                                                 float* grad,
-                                                 float* hess) {
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionGetGradients(ObjectiveFunctionHandle handle,
+                                                         const double* score,
+                                                         float* grad,
+                                                         float* hess) {
   API_BEGIN();
   #ifdef SCORE_T_USE_DOUBLE
   (void) handle;       // UNUSED VARIABLE
@@ -2786,6 +2786,24 @@ LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionEval(ObjectiveFunctionHandle handle,
   #else
   ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
   ref_fobj->GetGradients(score, grad, hess);
+  #endif
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionConvertOutputs(ObjectiveFunctionHandle handle,
+                                                           const int num_data,
+                                                           const double* inputs,
+                                                           double* outputs) {
+  API_BEGIN();
+  #ifdef SCORE_T_USE_DOUBLE
+  (void) handle;       // UNUSED VARIABLE
+  (void) num_data;     // UNUSED VARIABLE
+  (void) inputs;       // UNUSED VARIABLE
+  (void) outputs;      // UNUSED VARIABLE
+  Log::Fatal("Don't support evaluating objective function when SCORE_T_USE_DOUBLE is enabled");
+  #else
+  ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
+  ref_fobj->ConvertOutputs(num_data, inputs, outputs);
   #endif
   API_END();
 }

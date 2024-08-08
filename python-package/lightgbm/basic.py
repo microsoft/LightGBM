@@ -5331,7 +5331,42 @@ class ObjectiveFunction:
         """
         return self.__init_from_dataset(dataset)
 
-    def __call__(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def convert_outputs(self, scores: np.ndarray) -> np.ndarray:
+        """
+        Convert the raw scores to the final predictions.
+
+        Parameters
+        ----------
+        scores : numpy.ndarray
+            Raw scores from the model.
+
+        Returns
+        -------
+        result : numpy.ndarray
+        """
+        if self._handle is None:
+            raise ValueError("Objective function seems uninitialized")
+
+        if self.num_class == 1:
+            scores = _list_to_1d_numpy(scores, dtype=np.float64, name="scores")
+        else:
+            scores = _data_to_2d_numpy(scores, dtype=np.float64, name="scores")
+
+        num_data = scores.size
+        out_preds = np.zeros_like(scores, dtype=np.float64)
+
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionConvertOutputs(
+                self._handle,
+                ctypes.c_int(num_data),
+                scores.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                out_preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
+
+        return out_preds
+
+    def get_gradients(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Evaluate the objective function given model predictions.
 
@@ -5356,7 +5391,7 @@ class ObjectiveFunction:
         hess = np.zeros(dtype=np.float32, shape=data_shape)
 
         _safe_call(
-            _LIB.LGBM_ObjectiveFunctionEval(
+            _LIB.LGBM_ObjectiveFunctionGetGradients(
                 self._handle,
                 y_pred.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
                 grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),

@@ -67,6 +67,12 @@ class ObjectiveFunction {
   /*! \brief Return the number of positive samples. Return 0 if no binary classification tasks.*/
   virtual data_size_t NumPositiveData() const { return 0; }
 
+  virtual void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const {
+    for (int i = 0; i < num_data; i ++) {
+      ConvertOutput(inputs + i, outputs + i);
+    }
+  }
+
   virtual void ConvertOutput(const double* input, double* output) const {
     output[0] = input[0];
   }

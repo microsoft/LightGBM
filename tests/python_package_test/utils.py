@@ -174,7 +174,7 @@ def builtin_objective(name, params):
     def wrapper(y_pred, dtrain):
         fobj = lgb.ObjectiveFunction(name, params)
         fobj.init(dtrain)
-        (grad, hess) = fobj(y_pred)
+        (grad, hess) = fobj.get_gradients(y_pred)
         if fobj.num_class != 1:
             grad = grad.reshape((fobj.num_class, -1)).transpose()
             hess = hess.reshape((fobj.num_class, -1)).transpose()

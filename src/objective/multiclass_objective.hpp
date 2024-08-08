@@ -129,6 +129,12 @@ class MulticlassSoftmax: public ObjectiveFunction {
     }
   }
 
+  void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const override {
+    for (int i = 0; i < num_data; i += num_class_) {
+      ConvertOutput(inputs + i, outputs + i);
+    }
+  }
+
   void ConvertOutput(const double* input, double* output) const override {
     Common::Softmax(input, output, num_class_);
   }
@@ -234,6 +240,12 @@ class MulticlassOVA: public ObjectiveFunction {
 
   const char* GetName() const override {
     return "multiclassova";
+  }
+
+  void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const override {
+    for (int i = 0; i < num_data; i += num_class_) {
+      ConvertOutput(inputs + i, outputs + i);
+    }
   }
 
   void ConvertOutput(const double* input, double* output) const override {
