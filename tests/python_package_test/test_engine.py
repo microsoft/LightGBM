@@ -4445,7 +4445,4 @@ def test_objective_function_class(use_weight, test_data, num_boost_round):
     y_pred = np.zeros_like(booster.predict(X, raw_score=True))
     np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), test_data["custom_objective"](y_pred, lgb_train))
 
-    np.testing.assert_allclose(
-        builtin_convert_outputs(booster_exposed.predict(X)),
-        booster.predict(X)
-    )
+    np.testing.assert_allclose(builtin_convert_outputs(booster_exposed.predict(X)), booster.predict(X))
