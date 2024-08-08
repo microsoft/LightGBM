@@ -2,7 +2,7 @@
 """Get the most recent status of workflow for the current PR.
 
 [usage]
-    python get_workflow_status.py TRIGGER_PHRASE
+    python get-workflow-status.py TRIGGER_PHRASE
 
 TRIGGER_PHRASE: Code phrase that triggers workflow.
 """

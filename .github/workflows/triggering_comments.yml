@@ -20,7 +20,7 @@ jobs:
     - name: Trigger R valgrind tests
       if: github.event.comment.body == '/gha run r-valgrind'
       run: |
-        $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
+        $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
           "${{ github.event.issue.pull_request.url }}" \
           "${{ github.event.comment.id }}" \
           "gha_run_r_valgrind"
@@ -28,7 +28,7 @@ jobs:
     - name: Trigger update R configure
       if: github.event.comment.body == '/gha run r-configure'
       run: |
-        $GITHUB_WORKSPACE/.ci/trigger_dispatch_run.sh \
+        $GITHUB_WORKSPACE/.ci/trigger-dispatch-run.sh \
           "${{ github.event.issue.pull_request.url }}" \
           "${{ github.event.comment.id }}" \
           "gha_run_r_configure"
