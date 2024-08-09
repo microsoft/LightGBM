@@ -98,7 +98,7 @@ if [[ $TASK == "lint" ]]; then
     mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
         'cmakelint>=1.4.3' \
-        'cpplint>=1.6.1' \
+        'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
         'mypy>=1.11.1' \
         'pre-commit>=3.8.0' \
