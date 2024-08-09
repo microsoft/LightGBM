@@ -4936,14 +4936,12 @@ class Booster:
         """
         values = _list_to_1d_numpy(values, dtype=np.float64, name="leaf_values")
 
-        if len(values) != self.num_leaves(tree_id):
-            raise ValueError("Length of values should be equal to the number of leaves in the tree")
-
         _safe_call(
             _LIB.LGBM_BoosterRefitTreeManual(
                 self._handle,
                 ctypes.c_int(tree_id),
-                values.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+                values.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                ctypes.c_int(len(values)),
             )
         )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]

@@ -782,7 +782,8 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterRefitTreeManual(BoosterHandle handle,
                                                   int32_t tree_idx,
-                                                  const double *values);
+                                                  const double *vals,
+                                                  const int vals_size);
 
 /*!
  * \brief Update the model by specifying gradient and Hessian directly

@@ -79,7 +79,7 @@ class LIGHTGBM_EXPORT Boosting {
   /*!
   * \brief Change the leaf values of a tree and update the scores
   */
-  virtual void RefitTreeManual(int tree_idx, const double *vals) = 0;
+  virtual void RefitTreeManual(int tree_idx, const double *vals, const int vals_size) = 0;
 
   /*!
   * \brief Training logic

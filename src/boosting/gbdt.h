@@ -145,7 +145,7 @@ class GBDT : public GBDTBase {
 
   void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) override;
 
-  void RefitTreeManual(int tree_idx, const double *vals) override;
+  void RefitTreeManual(int tree_idx, const double *vals, const int vals_size) override;
 
   /*!
   * \brief Training logic
