@@ -154,6 +154,8 @@ endif()
 
 if(USE_CUDA)
     set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
+    set(CMAKE_CUDA_COMPILER "/usr/local/cuda-12.6/bin/nvcc")
+    set(CMAKE_CUDA_ARCHITECTURES "native")
     enable_language(CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
