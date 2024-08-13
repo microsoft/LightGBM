@@ -241,6 +241,9 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "feature_contri",
   "forcedsplits_filename",
   "refit_decay_rate",
+  "tinygbdt_penalty_feature",
+  "tinygbdt_penalty_split",
+  "tinygbdt_forestsize",
   "cegb_tradeoff",
   "cegb_penalty_split",
   "cegb_penalty_feature_lazy",
@@ -472,6 +475,15 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "refit_decay_rate", &refit_decay_rate);
   CHECK_GE(refit_decay_rate, 0.0);
   CHECK_LE(refit_decay_rate, 1.0);
+
+  GetDouble(params, "tinygbdt_penalty_feature", &tinygbdt_penalty_feature);
+  CHECK_GE(tinygbdt_penalty_feature, 0.0);
+
+  GetDouble(params, "tinygbdt_penalty_split", &tinygbdt_penalty_split);
+  CHECK_GE(tinygbdt_penalty_split, 0.0);
+
+  GetDouble(params, "tinygbdt_forestsize", &tinygbdt_forestsize);
+  CHECK_GE(tinygbdt_forestsize, 0.0);
 
   GetDouble(params, "cegb_tradeoff", &cegb_tradeoff);
   CHECK_GE(cegb_tradeoff, 0.0);
@@ -721,6 +733,9 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[feature_contri: " << Common::Join(feature_contri, ",") << "]\n";
   str_buf << "[forcedsplits_filename: " << forcedsplits_filename << "]\n";
   str_buf << "[refit_decay_rate: " << refit_decay_rate << "]\n";
+  str_buf << "[tinygbdt_penalty_feature: " << tinygbdt_penalty_feature << "]\n";
+  str_buf << "[tinygbdt_penalty_split: " << tinygbdt_penalty_split << "]\n";
+  str_buf << "[tinygbdt_forestsize: " << tinygbdt_forestsize << "]\n";
   str_buf << "[cegb_tradeoff: " << cegb_tradeoff << "]\n";
   str_buf << "[cegb_penalty_split: " << cegb_penalty_split << "]\n";
   str_buf << "[cegb_penalty_feature_lazy: " << Common::Join(cegb_penalty_feature_lazy, ",") << "]\n";
@@ -846,6 +861,9 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"feature_contri", {"feature_contrib", "fc", "fp", "feature_penalty"}},
     {"forcedsplits_filename", {"fs", "forced_splits_filename", "forced_splits_file", "forced_splits"}},
     {"refit_decay_rate", {}},
+    {"tinygbdt_penalty_feature", {}},
+    {"tinygbdt_penalty_split", {}},
+    {"tinygbdt_forestsize", {}},
     {"cegb_tradeoff", {}},
     {"cegb_penalty_split", {}},
     {"cegb_penalty_feature_lazy", {}},
@@ -990,6 +1008,9 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"feature_contri", "vector<double>"},
     {"forcedsplits_filename", "string"},
     {"refit_decay_rate", "double"},
+    {"tinygbdt_penalty_feature", "double"},
+    {"tinygbdt_penalty_split", "double"},
+    {"tinygbdt_forestsize", "double"},
     {"cegb_tradeoff", "double"},
     {"cegb_penalty_split", "double"},
     {"cegb_penalty_feature_lazy", "vector<double>"},
