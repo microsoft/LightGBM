@@ -14,6 +14,7 @@
 #include <set>
 #include <unordered_map>
 #include <utility>
+#include <numeric> 
 
 #include "cost_effective_gradient_boosting.hpp"
 
@@ -76,6 +77,13 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
+
+  /*[tinygbdt] BEGIN: Initializing global variables */
+  features_used_global_.clear();
+  features_used_global_.resize(train_data->num_features());
+  splits_used_global_.clear();
+  /*[tinygbdt] END */
+
 }
 
 void SerialTreeLearner::GetShareStates(const Dataset* dataset,
@@ -235,6 +243,20 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
 
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
+
+  std::stringstream ss_f;
+  for(size_t i = 0; i < features_used_global_.size(); ++i)
+  {
+    if(i != 0)
+      ss_f << " ";
+    ss_f << features_used_global_[i];
+  }
+  std::string s_f = ss_f.str();
+  // std::cout << s_f << std::endl;
+  Log::Debug("Times a feature was used: %s", s_f.c_str());  
+  Log::Debug("Total split points: %u", std::accumulate(splits_used_global_.begin(), splits_used_global_.end(), 0)); 
+  Log::Debug("#Split values used: %u", splits_used_global_.size());
+
   return tree.release();
 }
 
@@ -759,6 +781,16 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index =
       train_data_->InnerFeatureIndex(best_split_info.feature);
+
+  /*[tinygbdt] BEGIN: update feature and split usage*/
+  // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
+  features_used_global_[best_split_info.feature] += 1;
+  splits_used_global_.insert(best_split_info.threshold);
+  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
+              best_split_info.feature, best_split_info.threshold, best_split_info.gain);
+  /*[tinygbdt] END*/
+
+
   if (cegb_ != nullptr) {
     cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info,
                                 &best_split_per_leaf_);
@@ -835,6 +867,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
         static_cast<float>(best_split_info.gain + config_->min_gain_to_split),
         train_data_->FeatureBinMapper(inner_feature_index)->missing_type());
   }
+
+  Log::Debug("Gain: %f", best_split_info.gain);
 
 #ifdef DEBUG
   CHECK(*right_leaf == next_leaf_id);
@@ -979,6 +1013,25 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         constraints_->GetFeatureConstraint(leaf_splits->leaf_index(), feature_index), parent_output, &new_split);
   }
   new_split.feature = real_fidx;
+
+  
+
+  /*[tinygbdt] BEGIN: if feature/split is not already used, the model should pay a price*/
+  // TODO: better save penalties in variables and only use condition if penalties are not 0
+  if (features_used_global_[feature_index] == 0){
+      Log::Debug("Gain no penalty: %f", new_split.gain);
+      new_split.gain -= config_->tinygbdt_penalty_feature;
+      Log::Debug("Gain with penalty: %f", new_split.gain);
+  }
+
+  if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
+    Log::Debug("Gain no penalty: %f", new_split.gain);
+    new_split.gain -= config_->tinygbdt_penalty_split;
+    Log::Debug("Gain with penalty: %f", new_split.gain);
+  }
+  /*[tinygbdt] END */
+
+
   if (cegb_ != nullptr) {
     new_split.gain -=
         cegb_->DeltaGain(feature_index, real_fidx, leaf_splits->leaf_index(),
@@ -1036,9 +1089,9 @@ void SerialTreeLearner::RecomputeBestSplitForLeaf(Tree* tree, int leaf, SplitInf
   }
 
   OMP_INIT_EX();
-// find splits
-std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
-#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
+  // find splits
+  std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
+  #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!col_sampler_.is_feature_used_bytree()[feature_index] ||

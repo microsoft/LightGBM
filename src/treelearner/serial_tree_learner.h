@@ -175,6 +175,13 @@ class SerialTreeLearner: public TreeLearner {
   void CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index);
   #endif
 
+  /*[tinygbdt] BEGIN: Declaring global variables */
+  /*! \brief count feature use */
+  std::vector<uint32_t> features_used_global_;
+  /*! \brief record thresholds used for split */
+  std::set<uint32_t> splits_used_global_;
+  /*[tinygbdt] END */
+
   /*!
   * \brief Get the number of data in a leaf
   * \param leaf_idx The index of leaf
