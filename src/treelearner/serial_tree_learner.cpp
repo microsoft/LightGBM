@@ -245,15 +245,21 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
 
   std::stringstream ss_f;
+  int total_features = 0;
   for(size_t i = 0; i < features_used_global_.size(); ++i)
   {
-    if(i != 0)
+    if(i != 0) {
       ss_f << " ";
+    }
     ss_f << features_used_global_[i];
+    if (features_used_global_[i] != 0) {
+      total_features++;
+    }    
   }
   std::string s_f = ss_f.str();
   // std::cout << s_f << std::endl;
   Log::Debug("Times a feature was used: %s", s_f.c_str());  
+  Log::Debug("No. of features used: %d", total_features); 
   Log::Debug("Total split points: %u", std::accumulate(splits_used_global_.begin(), splits_used_global_.end(), 0)); 
   Log::Debug("#Split values used: %u", splits_used_global_.size());
 
@@ -786,6 +792,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
   features_used_global_[best_split_info.feature] += 1;
   splits_used_global_.insert(best_split_info.threshold);
+  // TODO: check why gain is +inf for this log; probably an indicator that this is the wrong place to update the variables
   Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
               best_split_info.feature, best_split_info.threshold, best_split_info.gain);
   /*[tinygbdt] END*/
@@ -1014,16 +1021,18 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   }
   new_split.feature = real_fidx;
 
-  
-
-  /*[tinygbdt] BEGIN: if feature/split is not already used, the model should pay a price*/
-  // TODO: better save penalties in variables and only use condition if penalties are not 0
+  /*[tinygbdt] BEGIN: if feature/split is not already used, the model should pay a price
+  * TODO: better save penalties in variables and only use condition if penalties are not 0
+  */
+  // !!! The feature penalty is already implemented by cegb_penalty_feature_coupled parameter (different costs for each feature can be set)
   if (features_used_global_[feature_index] == 0){
       Log::Debug("Gain no penalty: %f", new_split.gain);
       new_split.gain -= config_->tinygbdt_penalty_feature;
       Log::Debug("Gain with penalty: %f", new_split.gain);
   }
 
+  // TODO: this (probably?) leads to a split not being made, but the idea is to reuse a threshold. 
+  // elaborate this
   if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
     Log::Debug("Gain no penalty: %f", new_split.gain);
     new_split.gain -= config_->tinygbdt_penalty_split;
