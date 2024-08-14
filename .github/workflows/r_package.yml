@@ -268,7 +268,9 @@ jobs:
         #   * CRAN "additional checks": https://cran.r-project.org/web/checks/check_issue_kinds.html
         #   * images: https://r-hub.github.io/containers/containers.html
         image:
-          - clang16
+          # clang16 should be re-enabled once it's fixed upstream
+          # ref: https://github.com/microsoft/LightGBM/issues/6607
+          #- clang16
           - clang17
           - clang18
           - clang19
