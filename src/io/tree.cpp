@@ -417,12 +417,11 @@ std::string Tree::ToJSON() const {
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
     str_buf << "\"tree_structure\":{";
+    str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';
     if (is_linear_) {
-      str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';
       str_buf << "\"leaf_count\":" << leaf_count_[0] << ", " << '\n';
       str_buf << LinearModelToJSON(0);
     } else {
-      str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';
       str_buf << "\"leaf_count\":" << leaf_count_[0];
     }
     str_buf << "}" << '\n';

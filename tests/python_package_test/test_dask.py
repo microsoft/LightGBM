@@ -1464,7 +1464,8 @@ def test_init_score(task, output, cluster):
             init_scores = dy.map_blocks(lambda x: np.full((x.size, size_factor), init_score))
         model = model_factory(client=client, **params)
         model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
-        assert model.fitted_
+        # value of the root node is 0 when init_score is set
+        assert model.booster_.trees_to_dataframe()["value"][0] == 0
 
 
 def sklearn_checks_to_run():
