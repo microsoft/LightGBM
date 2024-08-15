@@ -752,7 +752,7 @@ endif()
 #
 # This reduces the risk of runtime issues resulting from multiple {libgomp,libiomp,libomp}.dylib being loaded.
 #
-if(APPLE AND USE_OPENMP)
+if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
   # store path to {libgomp,libiomp,libomp}.dylib found at build time in a variable
   get_target_property(
     OpenMP_LIBRARY_LOCATION
