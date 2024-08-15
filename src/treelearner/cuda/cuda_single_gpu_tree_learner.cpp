@@ -301,8 +301,6 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                        best_split_info);
     }
 
-    double sum_left_gradients = 0.0f;
-    double sum_right_gradients = 0.0f;
     cuda_data_partition_->Split(best_split_info,
                                 best_leaf_index_,
                                 right_leaf_index,
