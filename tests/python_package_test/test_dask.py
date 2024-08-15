@@ -1445,7 +1445,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 @pytest.mark.parametrize("output", data_output)
 def test_init_score(task, output, cluster):
     if task == "ranking":
-        pytest.skip("LGBMRanker is not currently tested")
+        pytest.skip("LGBMRanker is not currently tested for init_score")
 
     with Client(cluster) as client:
         _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output=output, group=None)
