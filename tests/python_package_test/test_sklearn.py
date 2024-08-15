@@ -53,7 +53,7 @@ def _create_data(task, n_samples=100, n_features=4):
         elif task == "multiclass-classification":
             centers = 3
         else:
-            ValueError(f"Unknown classification task '{task}'")
+            raise ValueError(f"Unknown classification task '{task}'")
         X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
         g = None
     elif task == "regression":
