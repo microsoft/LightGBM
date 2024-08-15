@@ -14,8 +14,8 @@ ARCH=$(uname -m)
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
-    export CXX=g++-11
-    export CC=gcc-11
+    export CXX=g++-12
+    export CC=gcc-12
 elif [[ $OS_NAME == "linux" ]] && [[ $COMPILER == "clang" ]]; then
     export CXX=clang++
     export CC=clang
@@ -97,12 +97,12 @@ fi
 if [[ $TASK == "lint" ]]; then
     mamba create -q -y -n $CONDA_ENV \
         ${CONDA_PYTHON_REQUIREMENT} \
-        'cmakelint>=1.4.2' \
+        'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
-        'matplotlib-base>=3.8.3' \
-        'mypy>=1.8.0' \
-        'pre-commit>=3.6.0' \
-        'pyarrow>=6.0' \
+        'matplotlib-base>=3.9.1' \
+        'mypy>=1.11.1' \
+        'pre-commit>=3.8.0' \
+        'pyarrow-core>=17.0' \
         'r-lintr>=3.1.2'
     source activate $CONDA_ENV
     echo "Linting Python code"
@@ -124,7 +124,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -y \
         -n $CONDA_ENV \
             'doxygen>=1.10.0' \
-            'rstcheck>=6.2.0' || exit 1
+            'rstcheck>=6.2.4' || exit 1
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd "${BUILD_DIRECTORY}/python-package"
