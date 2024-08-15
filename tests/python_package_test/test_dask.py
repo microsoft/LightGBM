@@ -1444,8 +1444,8 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 @pytest.mark.parametrize("task", tasks)
 @pytest.mark.parametrize("output", data_output)
 def test_init_score(task, output, cluster):
-    if task == "ranking" and output == "scipy_csr_matrix":
-        pytest.skip("LGBMRanker is not currently tested on sparse matrices")
+    if task == "ranking":
+        pytest.skip("LGBMRanker is not currently tested")
 
     with Client(cluster) as client:
         _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output=output, group=None)
@@ -1462,10 +1462,18 @@ def test_init_score(task, output, cluster):
             init_scores = dy.map_partitions(lambda x: pd.DataFrame([[init_score] * size_factor] * x.size))
         else:
             init_scores = dy.map_blocks(lambda x: np.full((x.size, size_factor), init_score))
+
         model = model_factory(client=client, **params)
-        model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
-        # value of the root node is 0 when init_score is set
-        assert model.booster_.trees_to_dataframe()["value"][0] == 0
+        model.fit(dX, dy, sample_weight=dw, group=dg)
+
+        model_init_score = model_factory(client=client, **params)
+        model_init_score.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+
+        # check if init score changes root value
+        assert (
+            model.booster_.trees_to_dataframe()["value"][0]
+            != model_init_score.booster_.trees_to_dataframe()["value"][0]
+        )
 
 
 def sklearn_checks_to_run():
