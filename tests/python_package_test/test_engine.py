@@ -3865,7 +3865,6 @@ def test_dump_model_stump(linear_tree):
     params = {
         "objective": "binary",
         "verbose": -1,
-        "n_jobs": 1,
         "linear_tree": linear_tree,
     }
     bst = lgb.train(params, train_data, num_boost_round=5)
