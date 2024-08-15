@@ -3895,10 +3895,6 @@ def test_dump_model():
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
 
-    # CUDA does not return correct values for the root
-    if getenv("TASK", "") == "cuda":
-        return
-
     for tree in dumped_model["tree_info"]:
         assert not np.all(tree["tree_structure"]["internal_value"] == 0)
 
