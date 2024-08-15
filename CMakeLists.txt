@@ -665,10 +665,17 @@ endif()
 if(USE_CUDA)
 
   set_target_properties(
-    lightgbm_objs _lightgbm
+    lightgbm_objs
     PROPERTIES
       CUDA_ARCHITECTURES ${CUDA_ARCHS}
       CUDA_SEPARABLE_COMPILATION ON
+  )
+
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_RESOLVE_DEVICE_SYMBOLS ON
   )
 
   if(BUILD_CLI)
