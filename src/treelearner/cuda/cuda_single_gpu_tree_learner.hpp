@@ -71,8 +71,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   #ifdef DEBUG
   void CheckSplitValid(
-    const int left_leaf, const int right_leaf,
-    const double sum_left_gradients, const double sum_right_gradients);
+    const int left_leaf, const int right_leaf);
   #endif  // DEBUG
 
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);

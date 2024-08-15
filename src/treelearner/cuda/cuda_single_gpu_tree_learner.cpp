@@ -321,10 +321,10 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_data_start_[right_leaf_index],
                                 &leaf_sum_hessians_[best_leaf_index_],
                                 &leaf_sum_hessians_[right_leaf_index],
-                                &sum_left_gradients,
-                                &sum_right_gradients);
+                                &leaf_sum_gradients_[best_leaf_index_],
+                                &leaf_sum_gradients_[right_leaf_index]);
     #ifdef DEBUG
-    CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
+    CheckSplitValid(best_leaf_index_, right_leaf_index);
     #endif  // DEBUG
     smaller_leaf_index_ = (leaf_num_data_[best_leaf_index_] < leaf_num_data_[right_leaf_index] ? best_leaf_index_ : right_leaf_index);
     larger_leaf_index_ = (smaller_leaf_index_ == best_leaf_index_ ? right_leaf_index : best_leaf_index_);
@@ -382,6 +382,7 @@ void CUDASingleGPUTreeLearner::ResetConfig(const Config* config) {
     leaf_best_split_default_left_.resize(config_->num_leaves, 0);
     leaf_num_data_.resize(config_->num_leaves, 0);
     leaf_data_start_.resize(config_->num_leaves, 0);
+    leaf_sum_gradients_.resize(config_->num_leaves, 0.0f);
     leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
   }
   cuda_histogram_constructor_->ResetConfig(config);
@@ -570,9 +571,7 @@ void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
 #ifdef DEBUG
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int left_leaf,
-  const int right_leaf,
-  const double split_sum_left_gradients,
-  const double split_sum_right_gradients) {
+  const int right_leaf) {
   std::vector<data_size_t> left_data_indices(leaf_num_data_[left_leaf]);
   std::vector<data_size_t> right_data_indices(leaf_num_data_[right_leaf]);
   CopyFromCUDADeviceToHost<data_size_t>(left_data_indices.data(),
@@ -593,9 +592,9 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
     sum_right_gradients += host_gradients_[index];
     sum_right_hessians += host_hessians_[index];
   }
-  CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_left_gradients - leaf_sum_gradients_[left_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);
-  CHECK_LE(std::fabs(sum_right_gradients - split_sum_right_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_right_gradients - leaf_sum_gradients_[right_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_right_hessians - leaf_sum_hessians_[right_leaf]), 1e-6f);
 }
 #endif  // DEBUG
