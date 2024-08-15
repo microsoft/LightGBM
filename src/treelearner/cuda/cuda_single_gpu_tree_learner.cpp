@@ -170,6 +170,7 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
     leaf_sum_gradients_[smaller_leaf_index_], leaf_sum_hessians_[smaller_leaf_index_],
     config_->lambda_l1, config_->lambda_l2,  config_->path_smooth,
     static_cast<data_size_t>(num_data_), 0));
+  cuda_tree->SyncLeafOutputFromHostToCUDA();
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     const data_size_t num_data_in_smaller_leaf = leaf_num_data_[smaller_leaf_index_];
