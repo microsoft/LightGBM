@@ -66,6 +66,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   leaf_best_split_default_left_.resize(config_->num_leaves, 0);
   leaf_num_data_.resize(config_->num_leaves, 0);
   leaf_data_start_.resize(config_->num_leaves, 0);
+  leaf_sum_gradients_.resize(config_->num_leaves, 0.0f);
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
   if (!boosting_on_cuda_) {
@@ -122,6 +123,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
       cuda_data_partition_->cuda_data_indices(),
       root_num_data,
       cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_gradients_[0],
       &leaf_sum_hessians_[0],
       cuda_gradient_discretizer_->grad_scale_ptr(),
       cuda_gradient_discretizer_->hess_scale_ptr());
@@ -137,6 +139,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
       cuda_data_partition_->cuda_data_indices(),
       root_num_data,
       cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_gradients_[0],
       &leaf_sum_hessians_[0]);
   }
   leaf_num_data_[0] = root_num_data;
@@ -162,6 +165,11 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
   const bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features,
     config_->linear_tree, config_->gpu_device_id, has_categorical_feature_));
+  // set the root value by hand, as it is not handled by splits
+  tree->SetLeafOutput(0, CUDALeafSplits::CalculateSplittedLeafOutput<true, false>(
+    leaf_sum_gradients_[smaller_leaf_index_], leaf_sum_hessians_[smaller_leaf_index_],
+    config_->lambda_l1, config_->lambda_l2,  config_->path_smooth,
+    static_cast<data_size_t>(num_data_), 0));
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     const data_size_t num_data_in_smaller_leaf = leaf_num_data_[smaller_leaf_index_];
