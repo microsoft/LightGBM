@@ -115,7 +115,7 @@ Ruby gem: https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
-lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
+lightgbm3 (Rust binding): https://github.com/Mottl/lightgbm3-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 
