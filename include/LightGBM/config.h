@@ -617,11 +617,11 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
-  // desc = used only with ``cpu`` and ``cuda`` device type
   // desc = whether to use gradient quantization when training
   // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
   // desc = with quantized training, most arithmetics in the training process will be integer operations
   // desc = gradient quantization can accelerate training, with little accuracy drop in most cases
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
@@ -629,19 +629,20 @@ struct Config {
   // desc = used only if ``use_quantized_grad=true``
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
   // desc = *New in version 4.0.0*
   int num_grad_quant_bins = 4;
 
-  // desc = used only with ``cpu`` and ``cuda`` device type
   // desc = used only if ``use_quantized_grad=true``
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
   // desc = *New in version 4.0.0*
   bool quant_train_renew_leaf = false;
 
-  // desc = used only with ``cpu`` and ``cuda`` device type
   // desc = used only if ``use_quantized_grad=true``
   // desc = whether to use stochastic rounding in gradient quantization
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
   // desc = *New in version 4.0.0*
   bool stochastic_rounding = true;
 
@@ -655,16 +656,16 @@ struct Config {
 
   // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
-  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
-  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
-  // descl2 = the first tree has constant leaf values
-  // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
-  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
-  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+  // desc = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // desc = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // desc = the first tree has constant leaf values
+  // desc = categorical features are used for splits as normal but are not used in the linear models
+  // desc = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+  // desc = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // desc = **Note**: works only with ``cpu`` device type and ``serial`` tree learner
+  // desc = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // desc = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  // desc = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
   bool linear_tree = false;
 
   // alias = max_bins
