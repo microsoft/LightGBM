@@ -4,7 +4,7 @@
 #     Update comment appending a given body to the specified original comment.
 #
 # [usage]
-#     append_comment.sh <COMMENT_ID> <BODY>
+#     append-comment.sh <COMMENT_ID> <BODY>
 #
 # COMMENT_ID: ID of comment that should be modified.
 #

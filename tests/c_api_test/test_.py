@@ -160,7 +160,7 @@ def free_dataset(handle):
     LIB.LGBM_DatasetFree(handle)
 
 
-def test_dataset():
+def test_dataset(tmp_path):
     binary_example_dir = Path(__file__).absolute().parents[2] / "examples" / "binary_classification"
     train = load_from_file(binary_example_dir / "binary.train", None)
     test = load_from_mat(binary_example_dir / "binary.test", train)
@@ -169,9 +169,10 @@ def test_dataset():
     free_dataset(test)
     test = load_from_csc(binary_example_dir / "binary.test", train)
     free_dataset(test)
-    save_to_binary(train, "train.binary.bin")
+    train_binary = str(tmp_path / "train.binary.bin")
+    save_to_binary(train, train_binary)
     free_dataset(train)
-    train = load_from_file("train.binary.bin", None)
+    train = load_from_file(train_binary, None)
     free_dataset(train)
 
 

@@ -8,20 +8,20 @@ from shutil import copyfile
 
 if __name__ == "__main__":
     source = Path(sys.argv[1])
-    current_dir = Path(__file__).absolute().parent
-    linux_folder_path = current_dir / "runtimes" / "linux-x64" / "native"
+    nuget_dir = Path(__file__).absolute().parent / "nuget"
+    linux_folder_path = nuget_dir / "runtimes" / "linux-x64" / "native"
     linux_folder_path.mkdir(parents=True, exist_ok=True)
-    osx_folder_path = current_dir / "runtimes" / "osx-x64" / "native"
+    osx_folder_path = nuget_dir / "runtimes" / "osx-x64" / "native"
     osx_folder_path.mkdir(parents=True, exist_ok=True)
-    windows_folder_path = current_dir / "runtimes" / "win-x64" / "native"
+    windows_folder_path = nuget_dir / "runtimes" / "win-x64" / "native"
     windows_folder_path.mkdir(parents=True, exist_ok=True)
-    build_folder_path = current_dir / "build"
+    build_folder_path = nuget_dir / "build"
     build_folder_path.mkdir(parents=True, exist_ok=True)
     copyfile(source / "lib_lightgbm.so", linux_folder_path / "lib_lightgbm.so")
     copyfile(source / "lib_lightgbm.dylib", osx_folder_path / "lib_lightgbm.dylib")
     copyfile(source / "lib_lightgbm.dll", windows_folder_path / "lib_lightgbm.dll")
     copyfile(source / "lightgbm.exe", windows_folder_path / "lightgbm.exe")
-    version = (current_dir.parent / "VERSION.txt").read_text(encoding="utf-8").strip().replace("rc", "-rc")
+    version = (nuget_dir.parents[1] / "VERSION.txt").read_text(encoding="utf-8").strip().replace("rc", "-rc")
     nuget_str = rf"""<?xml version="1.0"?>
     <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
     <metadata>
@@ -76,6 +76,6 @@ if __name__ == "__main__":
     </Target>
     </Project>
     """
-    (current_dir / "LightGBM.nuspec").write_text(nuget_str, encoding="utf-8")
-    (current_dir / "build" / "LightGBM.props").write_text(prop_str, encoding="utf-8")
-    (current_dir / "build" / "LightGBM.targets").write_text(target_str, encoding="utf-8")
+    (nuget_dir / "LightGBM.nuspec").write_text(nuget_str, encoding="utf-8")
+    (nuget_dir / "build" / "LightGBM.props").write_text(prop_str, encoding="utf-8")
+    (nuget_dir / "build" / "LightGBM.targets").write_text(target_str, encoding="utf-8")
