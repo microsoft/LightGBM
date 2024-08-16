@@ -868,12 +868,13 @@ struct Config {
   bool pred_early_stop = false;
 
   // [no-save]
-  // desc = used only in ``prediction`` task
+  // desc = used only in ``prediction`` task and if ``pred_early_stop=true``
   // desc = the frequency of checking early-stopping prediction
   int pred_early_stop_freq = 10;
 
   // [no-save]
-  // desc = used only in ``prediction`` task
+  // desc = used only in ``prediction`` task and if ``pred_early_stop=true``
+  // desc = used only if ``pred_early_stop=true``
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
