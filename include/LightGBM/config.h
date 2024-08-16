@@ -160,8 +160,8 @@ struct Config {
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
   // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
   // descl2 = ``custom``
-  // descl2 = **Note**: Not supported in CLI version
   // descl2 = must be passed through parameters explicitly in the C API
+  // descl2 = **Note**: cannot be used in CLI version
   std::string objective = "regression";
 
   // [no-automatically-extract]
@@ -249,7 +249,7 @@ struct Config {
   // desc = ``gpu`` can be faster than ``cpu`` and works on a wider range of GPUs than CUDA
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
-  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
   std::string device_type = "cpu";
 
   // [no-automatically-extract]
