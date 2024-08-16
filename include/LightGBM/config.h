@@ -447,7 +447,7 @@ struct Config {
   double skip_drop = 0.5;
 
   // desc = used only in ``dart``
-  // desc = set this to ``true``, if you want to use XGBoost dart mode
+  // desc = set this to ``true``, if you want to use XGBoost DART mode
   bool xgboost_dart_mode = false;
 
   // desc = used only in ``dart``
@@ -625,7 +625,6 @@ struct Config {
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
-  // desc = used only with ``cpu`` and ``cuda`` device type
   // desc = used only if ``use_quantized_grad=true``
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
@@ -874,7 +873,6 @@ struct Config {
 
   // [no-save]
   // desc = used only in ``prediction`` task and if ``pred_early_stop=true``
-  // desc = used only if ``pred_early_stop=true``
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
