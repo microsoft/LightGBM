@@ -1465,15 +1465,14 @@ def test_init_score(task, output, cluster):
 
         model = model_factory(client=client, **params)
         model.fit(dX, dy, sample_weight=dw, group=dg)
+        pred = model.predict(dX, raw_score=True)
 
         model_init_score = model_factory(client=client, **params)
         model_init_score.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+        pred_init_score = model_init_score.predict(dX, raw_score=True)
 
-        # check if init score changes root value
-        assert (
-            model.booster_.trees_to_dataframe()["value"][0]
-            != model_init_score.booster_.trees_to_dataframe()["value"][0]
-        )
+        # check if init score changes predictions
+        assert not np.allclose(pred, pred_init_score)
 
 
 def sklearn_checks_to_run():
