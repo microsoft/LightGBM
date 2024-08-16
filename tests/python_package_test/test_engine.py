@@ -2332,6 +2332,45 @@ def test_refit_dataset_params(rng):
     np.testing.assert_allclose(stored_weights, refit_weight)
 
 
+def test_refit_tree_manual():
+    def retrieve_leaves_from_tree(tree):
+        if "leaf_index" in tree:
+            return {tree["leaf_index"]: tree["leaf_value"]}
+
+        left_child = retrieve_leaves_from_tree(tree["left_child"])
+        right_child = retrieve_leaves_from_tree(tree["right_child"])
+
+        return left_child | right_child
+
+    def retrieve_leaves_from_booster(booster, iteration):
+        tree = booster.dump_model(0, iteration)["tree_info"][0]["tree_structure"]
+        return retrieve_leaves_from_tree(tree)
+
+    def debias_callback(env):
+        booster = env.model
+        curr_values = retrieve_leaves_from_booster(booster, env.iteration)
+        eval_pred = booster.predict(df)
+        delta = np.log(np.mean(y) / np.mean(eval_pred))
+        refitted_values = [curr_values[ix] + delta for ix in range(len(curr_values))]
+        booster.refit_tree_manual(env.iteration, refitted_values)
+
+    X, y = make_synthetic_regression()
+    y = np.abs(y)
+    df = pd_DataFrame(X, columns=["x1", "x2", "x3", "x4"])
+    ds = lgb.Dataset(df, y)
+
+    params = {
+        "verbose": -1,
+        "n_estimators": 5,
+        "num_leaves": 5,
+        "objective": "gamma",
+    }
+    bst = lgb.train(params, ds, callbacks=[debias_callback])
+
+    # Check if debiasing worked
+    np.testing.assert_allclose(bst.predict(df).mean(), y.mean())
+
+
 @pytest.mark.parametrize("boosting_type", ["rf", "dart"])
 def test_mape_for_specific_boosting_types(boosting_type):
     X, y = make_synthetic_regression()

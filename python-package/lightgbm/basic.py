@@ -4912,11 +4912,7 @@ class Booster:
         new_booster._network = self._network
         return new_booster
 
-    def refit_tree_manual(
-        self,
-        tree_id: int,
-        values: np.ndarray
-    ) -> None:
+    def refit_tree_manual(self, tree_id: int, values: np.ndarray) -> "Booster":
         """Set all the outputs of a tree and recalculate the dataset scores.
 
         .. versionadded:: 4.6.0
@@ -4946,7 +4942,6 @@ class Booster:
         )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
         return self
-
 
     def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
         """Get the output of a leaf.
