@@ -23,7 +23,7 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.28)
 
 # If using Visual Studio generators, always target v10.x of the Windows SDK.
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
@@ -415,40 +415,85 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
 
-file(
-    GLOB
-    SOURCES
-      src/boosting/*.cpp
-      src/io/*.cpp
-      src/metric/*.cpp
-      src/objective/*.cpp
-      src/network/*.cpp
-      src/treelearner/*.cpp
-      src/utils/*.cpp
+set(
+    LGBM_SOURCES
+      src/boosting/boosting.cpp
+      src/boosting/gbdt_model_text.cpp
+      src/boosting/gbdt_prediction.cpp
+      src/boosting/gbdt.cpp
+      src/boosting/prediction_early_stop.cpp
+      src/boosting/sample_strategy.cpp
+      src/io/bin.cpp
+      src/io/config_auto.cpp
+      src/io/config.cpp
+      src/io/dataset_loader.cpp
+      src/io/dataset.cpp
+      src/io/file_io.cpp
+      src/io/json11.cpp
+      src/io/metadata.cpp
+      src/io/parser.cpp
+      src/io/train_share_states.cpp
+      src/io/tree.cpp
+      src/metric/dcg_calculator.cpp
+      src/metric/metric.cpp
+      src/network/linker_topo.cpp
+      src/network/linkers_mpi.cpp
+      src/network/linkers_socket.cpp
+      src/network/network.cpp
+      src/objective/objective_function.cpp
+      src/treelearner/data_parallel_tree_learner.cpp
+      src/treelearner/feature_histogram.cpp
+      src/treelearner/feature_parallel_tree_learner.cpp
+      src/treelearner/gpu_tree_learner.cpp
+      src/treelearner/gradient_discretizer.cpp
+      src/treelearner/linear_tree_learner.cpp
+      src/treelearner/serial_tree_learner.cpp
+      src/treelearner/tree_learner.cpp
+      src/treelearner/voting_parallel_tree_learner.cpp
+      src/utils/openmp_wrapper.cpp
 )
-file(
-    GLOB
+set(
     LGBM_CUDA_SOURCES
-      src/treelearner/*.cu
-      src/boosting/cuda/*.cpp
-      src/boosting/cuda/*.cu
-      src/metric/cuda/*.cpp
-      src/metric/cuda/*.cu
-      src/objective/cuda/*.cpp
-      src/objective/cuda/*.cu
-      src/treelearner/cuda/*.cpp
-      src/treelearner/cuda/*.cu
-      src/io/cuda/*.cu
-      src/io/cuda/*.cpp
-      src/cuda/*.cpp
-      src/cuda/*.cu
+      src/boosting/cuda/cuda_score_updater.cpp
+      src/boosting/cuda/cuda_score_updater.cu
+      src/metric/cuda/cuda_binary_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cpp
+      src/metric/cuda/cuda_regression_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cu
+      src/objective/cuda/cuda_binary_objective.cpp
+      src/objective/cuda/cuda_multiclass_objective.cpp
+      src/objective/cuda/cuda_rank_objective.cpp
+      src/objective/cuda/cuda_regression_objective.cpp
+      src/objective/cuda/cuda_binary_objective.cu
+      src/objective/cuda/cuda_multiclass_objective.cu
+      src/objective/cuda/cuda_rank_objective.cu
+      src/objective/cuda/cuda_regression_objective.cu
+      src/treelearner/cuda/cuda_best_split_finder.cpp
+      src/treelearner/cuda/cuda_data_partition.cpp
+      src/treelearner/cuda/cuda_histogram_constructor.cpp
+      src/treelearner/cuda/cuda_leaf_splits.cpp
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cpp
+      src/treelearner/cuda/cuda_best_split_finder.cu
+      src/treelearner/cuda/cuda_data_partition.cu
+      src/treelearner/cuda/cuda_gradient_discretizer.cu
+      src/treelearner/cuda/cuda_histogram_constructor.cu
+      src/treelearner/cuda/cuda_leaf_splits.cu
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cu
+      src/io/cuda/cuda_column_data.cu
+      src/io/cuda/cuda_tree.cu
+      src/io/cuda/cuda_column_data.cpp
+      src/io/cuda/cuda_metadata.cpp
+      src/io/cuda/cuda_row_data.cpp
+      src/io/cuda/cuda_tree.cpp
+      src/cuda/cuda_utils.cpp
+      src/cuda/cuda_algorithms.cu
 )
 
 if(USE_CUDA)
-  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+  list(APPEND LGBM_SOURCES ${LGBM_CUDA_SOURCES})
 endif()
 
-add_library(lightgbm_objs OBJECT ${SOURCES})
+add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
 
 if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
@@ -670,7 +715,19 @@ if(BUILD_CPP_TEST)
   set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
   include_directories(${LightGBM_TEST_HEADER_DIR})
 
-  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  set(
+    CPP_TEST_SOURCES
+      tests/cpp_tests/test_array_args.cpp
+      tests/cpp_tests/test_arrow.cpp
+      tests/cpp_tests/test_byte_buffer.cpp
+      tests/cpp_tests/test_chunked_array.cpp
+      tests/cpp_tests/test_common.cpp
+      tests/cpp_tests/test_main.cpp
+      tests/cpp_tests/test_serialize.cpp
+      tests/cpp_tests/test_single_row.cpp
+      tests/cpp_tests/test_stream.cpp
+      tests/cpp_tests/testutils.cpp
+    )
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
   endif()
@@ -695,7 +752,7 @@ endif()
 #
 # This reduces the risk of runtime issues resulting from multiple {libgomp,libiomp,libomp}.dylib being loaded.
 #
-if(APPLE AND USE_OPENMP)
+if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
   # store path to {libgomp,libiomp,libomp}.dylib found at build time in a variable
   get_target_property(
     OpenMP_LIBRARY_LOCATION
