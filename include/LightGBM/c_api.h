@@ -779,6 +779,14 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
                                         int32_t ncol);
 
 /*!
+ * \brief Refit a single tree by specifying a new set of leaf scores for each data point
+ * \note
+ * The length of the array referenced by ``vals`` must be equal to the number of leaves.
+ * \param handle Handle of the Booster model
+ * \param tree_idx Index of the tree to refit
+ * \param vals The new set of leaf scores for each data point
+ * \param vals_size Number of data points for which leaf scores are provided
+ * \return 0 when successful, -1 when failure occurs
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterRefitTreeManual(BoosterHandle handle,
                                                   int32_t tree_idx,
