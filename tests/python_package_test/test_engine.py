@@ -2341,7 +2341,7 @@ def test_refit_tree_manual():
         left_child = retrieve_leaves_from_tree(tree["left_child"])
         right_child = retrieve_leaves_from_tree(tree["right_child"])
 
-        return left_child | right_child
+        return {**left_child, **right_child}
 
     def retrieve_leaves_from_booster(booster, iteration):
         tree = booster.dump_model(0, iteration)["tree_info"][0]["tree_structure"]
