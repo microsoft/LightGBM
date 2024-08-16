@@ -992,7 +992,8 @@ struct Config {
   std::vector<double> label_gain;
 
   // check = >=0.0
-  // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
+  // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled
+  // desc = larger values reduce the inferred position bias factors
   // desc = *New in version 4.1.0*
   double lambdarank_position_bias_regularization = 0.0;
 
@@ -1082,7 +1083,7 @@ struct Config {
   // check = >0
   // alias = num_machine
   // desc = the number of machines for distributed learning application
-  // desc = this parameter is needed to be set in both **socket** and **mpi** versions
+  // desc = this parameter is needed to be set in both **socket** and **MPI** versions
   int num_machines = 1;
 
   // check = >0
@@ -1112,21 +1113,24 @@ struct Config {
   #pragma region GPU Parameters
   #endif  // __NVCC__
 
+  // desc = used only with ``gpu`` device type
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_platform_id = -1;
 
-  // desc = OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
+  // desc = OpenCL device ID in the specified platform or CUDA device ID. Each GPU in the selected platform has a unique device ID
   // desc = ``-1`` means the default device in the selected platform
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
+  // desc = used only with ``gpu`` device type
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0
+  // desc = used only with ``cuda`` device type
   // desc = number of GPUs
   // desc = **Note**: can be used only in CUDA implementation
   int num_gpu = 1;
