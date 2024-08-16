@@ -4396,53 +4396,48 @@ def test_quantized_training():
 
 
 @pytest.mark.parametrize("use_weight", [False, True])
+@pytest.mark.parametrize("num_boost_round", [5, 15])
 @pytest.mark.parametrize(
-    "test_data",
+    "custom_objective, objective_name, df, num_class",
     [
-        {
-            "custom_objective": mse_obj,
-            "objective_name": "regression",
-            "df": make_synthetic_regression(),
-            "num_class": 1,
-        },
-        {
-            "custom_objective": multiclass_custom_objective,
-            "objective_name": "multiclass",
-            "df": make_blobs(n_samples=100, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42),
-            "num_class": 3,
-        },
+        (mse_obj, "regression", make_synthetic_regression(), 1),
+        (
+            multiclass_custom_objective,
+            "multiclass",
+            make_blobs(n_samples=100, centers=[[-4, -4], [4, 4], [-4, 4]], random_state=42),
+            3,
+        ),
     ],
 )
-@pytest.mark.parametrize("num_boost_round", [5, 15])
 @pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Skip due to ObjectiveFunction not exposed for cuda devices.")
-def test_objective_function_class(use_weight, test_data, num_boost_round):
-    X, y = test_data["df"]
+def test_objective_function_class(use_weight, num_boost_round, custom_objective, objective_name, df, num_class):
+    X, y = df
     rng = np.random.default_rng()
     weight = rng.choice([1, 2], y.shape) if use_weight else None
-    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), test_data["num_class"])))
+    lgb_train = lgb.Dataset(X, y, weight=weight, init_score=np.zeros((len(y), num_class)))
 
     params = {
         "verbose": -1,
-        "objective": test_data["objective_name"],
-        "num_class": test_data["num_class"],
+        "objective": objective_name,
+        "num_class": num_class,
         "device": "cpu",
     }
-    builtin_loss = builtin_objective(test_data["objective_name"], copy.deepcopy(params))
-    builtin_convert_outputs = lgb.ObjectiveFunction(test_data["objective_name"], copy.deepcopy(params)).convert_outputs
+    builtin_loss = builtin_objective(objective_name, copy.deepcopy(params))
+    builtin_convert_outputs = lgb.ObjectiveFunction(objective_name, copy.deepcopy(params)).convert_outputs
 
     params["objective"] = builtin_loss
     booster_exposed = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
-    params["objective"] = test_data["objective_name"]
+    params["objective"] = objective_name
     booster = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
-    params["objective"] = test_data["custom_objective"]
+    params["objective"] = custom_objective
     booster_custom = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
 
     np.testing.assert_allclose(booster_exposed.predict(X), booster.predict(X, raw_score=True))
     np.testing.assert_allclose(booster_exposed.predict(X), booster_custom.predict(X))
 
     y_pred = np.zeros_like(booster.predict(X, raw_score=True))
-    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), test_data["custom_objective"](y_pred, lgb_train))
+    np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), custom_objective(y_pred, lgb_train))
 
     np.testing.assert_allclose(builtin_convert_outputs(booster_exposed.predict(X)), booster.predict(X))
