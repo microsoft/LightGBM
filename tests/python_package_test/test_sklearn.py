@@ -1375,6 +1375,15 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
     assert reg.n_estimators_ == 3
     assert_silent(capsys)
 
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    # with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+    #     reg = lgb.LGBMRegressor(**base_kwargs, num_iterations=-8, n_iter=6).fit(X, y)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+        reg = lgb.LGBMRegressor(**base_kwargs, num_iterations=5, n_iter=6).fit(X, y)
+    assert reg.n_estimators_ == 5
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
     # warning: 2 aliases (different values... first one in the order from Config::parameter2aliases() wins)
     with pytest.warns(UserWarning, match="LightGBM will perform up to 4 boosting rounds"):
         reg = lgb.LGBMRegressor(**base_kwargs, n_iter=4, max_iter=5).fit(X, y)

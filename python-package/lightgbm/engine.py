@@ -225,9 +225,6 @@ def train(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"train() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
     if isinstance(valid_sets, list):
         for i, valid_item in enumerate(valid_sets):
             if not isinstance(valid_item, Dataset):
@@ -257,6 +254,8 @@ def train(
 
     params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
     num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
 
     # setting early stopping via global params should be possible
     params = _choose_param_value(
@@ -768,9 +767,6 @@ def cv(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
     # raise deprecation warnings if necessary
     # ref: https://github.com/microsoft/LightGBM/issues/6435
     if categorical_feature != "auto":
@@ -791,6 +787,8 @@ def cv(
 
     params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
     num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
 
     # setting early stopping via global params should be possible
     params = _choose_param_value(
