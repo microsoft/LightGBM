@@ -206,8 +206,8 @@ def assert_silent(capsys) -> None:
     ref: https://docs.pytest.org/en/stable/how-to/capture-stdout-stderr.html
     """
     captured = capsys.readouterr()
-    assert captured.out == ""
-    assert captured.err == ""
+    assert captured.out == "", captured.out
+    assert captured.err == "", captured.err
 
 
 # doing this here, at import time, to ensure it only runs once_per import
