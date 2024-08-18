@@ -8,6 +8,7 @@ AUTOCONF_UBUNTU_VERSION
 ^docs$
 ^.*\.dll
 \.drone\.yml
+^.*\.dylib
 \.git
 \.gitkeep$
 ^.*\.history

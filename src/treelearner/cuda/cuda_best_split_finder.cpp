@@ -40,6 +40,9 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   select_features_by_node_(select_features_by_node),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
+  if (has_categorical_feature_ && config->use_quantized_grad) {
+    Log::Fatal("Quantized training on GPU with categorical features is not supported yet.");
+  }
   cuda_leaf_best_split_info_ = nullptr;
   cuda_best_split_info_ = nullptr;
   cuda_best_split_info_buffer_ = nullptr;
@@ -326,13 +329,23 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(
   const data_size_t num_data_in_smaller_leaf,
   const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf,
-  const double sum_hessians_in_larger_leaf) {
+  const double sum_hessians_in_larger_leaf,
+  const score_t* grad_scale,
+  const score_t* hess_scale,
+  const uint8_t smaller_num_bits_in_histogram_bins,
+  const uint8_t larger_num_bits_in_histogram_bins) {
   const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ &&
     sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_);
   const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ &&
     sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_ && larger_leaf_index >= 0);
-  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
-    smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
+  if (grad_scale != nullptr && hess_scale != nullptr) {
+    LaunchFindBestSplitsDiscretizedForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
+      smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid,
+      grad_scale, hess_scale, smaller_num_bits_in_histogram_bins, larger_num_bits_in_histogram_bins);
+  } else {
+    LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
+      smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
+  }
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice(__FILE__, __LINE__);

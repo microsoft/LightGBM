@@ -40,8 +40,6 @@
 #                                   Compile CUDA version.
 #     --gpu
 #                                   Compile GPU version.
-#     --hdfs
-#                                   Compile HDFS version.
 #     --integrated-opencl
 #                                   Compile integrated OpenCL version.
 #     --mingw
@@ -62,7 +60,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-set -e -u
+set -e -E -u
 
 echo "building lightgbm"
 
@@ -148,9 +146,6 @@ while [ $# -gt 0 ]; do
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
         ;;
-    --hdfs)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HDFS=ON"
-        ;;
     --integrated-opencl)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
@@ -180,7 +175,7 @@ while [ $# -gt 0 ]; do
         ;;
     *)
         echo "invalid argument '${1}'"
-        exit -1
+        exit 1
         ;;
   esac
   shift
@@ -317,12 +312,15 @@ if test "${INSTALL}" = true; then
         echo 'requires = ["setuptools"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
-        echo "recursive-include lightgbm *.dll *.so" > ./MANIFEST.in
+        echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
+        elif test -f ../lib_lightgbm.dylib; then
+            echo "found pre-compiled lib_lightgbm.dylib"
+            cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
         elif test -f ../Release/lib_lightgbm.dll; then
             echo "found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
@@ -360,14 +358,20 @@ fi
 
 if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
-    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     cd ../dist
+    if test "${BUILD_WHEEL}" = true; then
+        PACKAGE_NAME="lightgbm*.whl"
+    else
+        PACKAGE_NAME="lightgbm*.tar.gz"
+    fi
+    # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
         ${PIP_INSTALL_ARGS} \
         --force-reinstall \
         --no-cache-dir \
+        --no-deps \
         --find-links=. \
-        lightgbm
+        ${PACKAGE_NAME}
     cd ../
 fi
 

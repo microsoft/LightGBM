@@ -6,6 +6,8 @@
 #ifndef LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_HPP_
 #define LIGHTGBM_TREELEARNER_MONOTONE_CONSTRAINTS_HPP_
 
+#include <LightGBM/tree.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <limits>

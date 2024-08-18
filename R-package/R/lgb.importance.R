@@ -14,6 +14,8 @@
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -39,7 +41,7 @@
 #' @export
 lgb.importance <- function(model, percentage = TRUE) {
 
-  if (!lgb.is.Booster(x = model)) {
+  if (!.is_Booster(x = model)) {
     stop("'model' has to be an object of class lgb.Booster")
   }
 

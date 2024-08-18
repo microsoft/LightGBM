@@ -271,7 +271,7 @@ class MultiValDenseBin : public MultiValBin {
     data_size_t block_size = num_data_;
     Threading::BlockInfo<data_size_t>(num_data_, 1024, &n_block,
                                       &block_size);
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1)
     for (int tid = 0; tid < n_block; ++tid) {
       data_size_t start = tid * block_size;
       data_size_t end = std::min(num_data_, start + block_size);
@@ -343,7 +343,7 @@ class MultiValDenseBin : public MultiValBin {
   std::vector<uint32_t> offsets_;
   std::vector<VAL_T, Common::AlignmentAllocator<VAL_T, 32>> data_;
 
-  MultiValDenseBin<VAL_T>(const MultiValDenseBin<VAL_T>& other)
+  MultiValDenseBin(const MultiValDenseBin<VAL_T>& other)
     : num_data_(other.num_data_), num_bin_(other.num_bin_), num_feature_(other.num_feature_),
       offsets_(other.offsets_), data_(other.data_) {
   }

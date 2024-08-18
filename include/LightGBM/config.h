@@ -38,6 +38,10 @@ const int kDefaultNumLeaves = 31;
 
 struct Config {
  public:
+  Config() {}
+  explicit Config(std::unordered_map<std::string, std::string> parameters_map) {
+    Set(parameters_map);
+  }
   std::string ToString() const;
   /*!
   * \brief Get string value by specific name of key
@@ -150,10 +154,14 @@ struct Config {
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
-  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``lambdarank``, `lambdarank <https://proceedings.neurips.cc/paper_files/paper/2006/file/af44c4c56f385c43f2529f9b1b018f6a-Paper.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+  // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
+  // descl2 = ``custom``
+  // descl2 = **Note**: Not supported in CLI version
+  // descl2 = must be passed through parameters explicitly in the C API
   std::string objective = "regression";
 
   // [no-automatically-extract]
@@ -173,7 +181,7 @@ struct Config {
   // desc = ``bagging``, Randomly Bagging Sampling
   // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
   // desc = ``goss``, Gradient-based One-Side Sampling
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
@@ -386,6 +394,11 @@ struct Config {
   // desc = can be used to speed up training
   int early_stopping_round = 0;
 
+  // check = >=0.0
+  // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+  // desc = *New in version 4.4.0*
+  double early_stopping_min_delta = 0.0;
+
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
 
@@ -501,14 +514,14 @@ struct Config {
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
   // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
-  // descl2 = ``intermediate``, a `more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
-  // descl2 = ``advanced``, an `even more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+  // descl2 = ``intermediate``, a `more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  // descl2 = ``advanced``, an `even more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
   std::string monotone_constraints_method = "basic";
 
   // alias = monotone_splits_penalty, ms_penalty, mc_penalty
   // check = >=0.0
   // desc = used only if ``monotone_constraints`` is set
-  // desc = `monotone penalty <https://hal.archives-ouvertes.fr/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = `monotone penalty <https://hal.science/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
   // desc = if ``0.0`` (the default), no penalization is applied
   double monotone_penalty = 0.0;
 
@@ -524,7 +537,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -606,24 +619,25 @@ struct Config {
   // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
   // desc = with quantized training, most arithmetics in the training process will be integer operations
   // desc = gradient quantization can accelerate training, with little accuracy drop in most cases
-  // desc = **Note**: can be used only with ``device_type = cpu``
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
   // desc = *New in version 4.0.0*
   bool use_quantized_grad = false;
 
   // desc = number of bins to quantization gradients and hessians
   // desc = with more bins, the quantized training will be closer to full precision training
-  // desc = **Note**: can be used only with ``device_type = cpu``
-  // desc = *New in 4.0.0*
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+  // desc = *New in version 4.0.0*
   int num_grad_quant_bins = 4;
 
   // desc = whether to renew the leaf values with original gradients when quantized training
   // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
-  // desc = **Note**: can be used only with ``device_type = cpu``
-  // desc = *New in 4.0.0*
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+  // desc = *New in version 4.0.0*
   bool quant_train_renew_leaf = false;
 
   // desc = whether to use stochastic rounding in gradient quantization
-  // desc = *New in 4.0.0*
+  // desc = **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+  // desc = *New in version 4.0.0*
   bool stochastic_rounding = true;
 
   #ifndef __NVCC__
@@ -683,7 +697,7 @@ struct Config {
   bool is_enable_sparse = true;
 
   // alias = is_enable_bundle, bundle
-  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
+  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html>`__
   // desc = **Note**: disabling this may cause the slow training speed for sparse datasets
   bool enable_bundle = true;
 
@@ -770,7 +784,7 @@ struct Config {
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
   // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
   // [no-save]
@@ -787,7 +801,7 @@ struct Config {
   // desc = path to a ``.json`` file that specifies customized parser initialized configuration
   // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
   // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
-  // desc = *New in 4.0.0*
+  // desc = *New in version 4.0.0*
   std::string parser_config_file = "";
 
   #ifndef __NVCC__
@@ -826,7 +840,7 @@ struct Config {
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
-  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/shap>`__
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   // desc = **Note**: this feature is not implemented for linear trees
   bool predict_contrib = false;
@@ -1130,7 +1144,7 @@ struct Config {
   static const std::string DumpAliases();
 
  private:
-  void CheckParamConflict();
+  void CheckParamConflict(const std::unordered_map<std::string, std::string>& params);
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();

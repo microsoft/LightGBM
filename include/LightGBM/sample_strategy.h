@@ -6,7 +6,7 @@
 #ifndef LIGHTGBM_SAMPLE_STRATEGY_H_
 #define LIGHTGBM_SAMPLE_STRATEGY_H_
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/threading.h>

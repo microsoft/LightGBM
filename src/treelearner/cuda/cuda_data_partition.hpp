@@ -78,6 +78,10 @@ class CUDADataPartition {
 
   void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves);
 
+  void ReduceLeafGradStat(
+    const score_t* gradients, const score_t* hessians,
+    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
+
   data_size_t root_num_data() const {
     if (use_bagging_) {
       return num_used_indices_;
@@ -291,6 +295,10 @@ class CUDADataPartition {
   void LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores);
 
   void LaunchFillDataIndexToLeafIndex();
+
+  void LaunchReduceLeafGradStat(
+    const score_t* gradients, const score_t* hessians,
+    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
 
   // Host memory
 

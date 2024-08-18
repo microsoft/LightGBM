@@ -6,7 +6,7 @@
  */
 /**
  * This wraps the StringArray.hpp class for SWIG usage,
- * adding the basic C-style wrappers needed to make it 
+ * adding the basic C-style wrappers needed to make it
  * usable for the users of the low-level lightgbmJNI API.
  */
 
@@ -23,7 +23,7 @@
 
     /**
      * @brief Creates a new StringArray and returns its handle.
-     * 
+     *
      * @param num_strings number of strings to store.
      * @param string_size the maximum number of characters that can be stored in each string.
      * @return StringArrayHandle or nullptr in case of allocation failure.
@@ -38,7 +38,7 @@
 
     /**
      * @brief Free the StringArray object.
-     * 
+     *
      * @param handle StringArray handle.
      */
     void StringArrayHandle_free(StringArrayHandle handle)
@@ -49,7 +49,7 @@
     /**
      * @brief Return the raw pointer to the array of strings.
      * Wrapped in Java into String[] automatically.
-     * 
+     *
      * @param handle StringArray handle.
      * @return Raw pointer to the string array which `various.i` maps to String[].
      */
@@ -60,7 +60,7 @@
 
     /**
      * For the end user to extract a specific string from the StringArray object.
-     * 
+     *
      * @param handle StringArray handle.
      * @param index index of the string to retrieve from the array.
      * @return raw pointer to string at index, or nullptr if out of bounds.
@@ -72,7 +72,7 @@
 
     /**
      * @brief Replaces one string of the array at index with the new content.
-     * 
+     *
      * @param handle StringArray handle.
      * @param index Index of the string to replace
      * @param new_content The content to replace
@@ -85,7 +85,7 @@
 
     /**
      * @brief Retrieve the number of strings in the StringArray.
-     * 
+     *
      * @param handle StringArray handle.
      * @return number of strings that the array stores.
      */

@@ -17,16 +17,16 @@ test_that("Predictor$finalize() should not fail", {
     bst$save_model(filename = model_file)
     predictor <- Predictor$new(modelfile = model_file)
 
-    expect_true(lgb.is.Predictor(predictor))
+    expect_true(.is_Predictor(predictor))
 
-    expect_false(lgb.is.null.handle(predictor$.__enclos_env__$private$handle))
+    expect_false(.is_null_handle(predictor$.__enclos_env__$private$handle))
 
     predictor$finalize()
-    expect_true(lgb.is.null.handle(predictor$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(predictor$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
     predictor$finalize()
-    expect_true(lgb.is.null.handle(predictor$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(predictor$.__enclos_env__$private$handle))
 })
 
 test_that("predictions do not fail for integer input", {
@@ -79,7 +79,7 @@ test_that("start_iteration works correctly", {
         , valids = list("test" = dtest)
         , early_stopping_rounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     pred1 <- predict(bst, newdata = test$data, type = "raw")
     pred_contrib1 <- predict(bst, test$data, type = "contrib")
     pred2 <- rep(0.0, length(pred1))

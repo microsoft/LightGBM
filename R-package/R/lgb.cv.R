@@ -25,8 +25,8 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
-#' @param weight vector of response values. If not NULL, will set to dataset
+#' @param label Deprecated. See "Deprecated Arguments" section below.
+#' @param weight Deprecated. See "Deprecated Arguments" section below.
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
@@ -36,10 +36,8 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param colnames feature names, if not null, will use this to overwrite the names in dataset
-#' @param categorical_feature categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g.
-#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
+#' @param colnames Deprecated. See "Deprecated Arguments" section below.
+#' @param categorical_feature Deprecated. See "Deprecated Arguments" section below.
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
@@ -51,6 +49,8 @@ CVBooster <- R6::R6Class(
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -68,6 +68,13 @@ CVBooster <- R6::R6Class(
 #'   , nfold = 3L
 #' )
 #' }
+#'
+#' @section Deprecated Arguments:
+#'
+#' A future release of \code{lightgbm} will require passing an \code{lgb.Dataset}
+#' to argument \code{'data'}. It will also remove support for passing arguments
+#' \code{'categorical_feature'}, \code{'colnames'}, \code{'label'}, and \code{'weight'}.
+#'
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
@@ -99,38 +106,58 @@ lgb.cv <- function(params = list()
   }
 
   # If 'data' is not an lgb.Dataset, try to construct one using 'label'
-  if (!lgb.is.Dataset(x = data)) {
+  if (!.is_Dataset(x = data)) {
+    warning(paste0(
+      "Passing anything other than an lgb.Dataset object to lgb.cv() is deprecated. "
+      , "Either pass an lgb.Dataset object, or use lightgbm()."
+    ))
     if (is.null(label)) {
       stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
     }
     data <- lgb.Dataset(data = data, label = label)
   }
 
+  # raise deprecation warnings if necessary
+  # ref: https://github.com/microsoft/LightGBM/issues/6435
+  args <- names(match.call())
+  if ("categorical_feature" %in% args) {
+    .emit_dataset_kwarg_warning("categorical_feature", "lgb.cv")
+  }
+  if ("colnames" %in% args) {
+    .emit_dataset_kwarg_warning("colnames", "lgb.cv")
+  }
+  if ("label" %in% args) {
+    .emit_dataset_kwarg_warning("label", "lgb.cv")
+  }
+  if ("weight" %in% args) {
+    .emit_dataset_kwarg_warning("weight", "lgb.cv")
+  }
+
   # set some parameters, resolving the way they were passed in with other parameters
   # in `params`.
   # this ensures that the model stored with Booster$save() correctly represents
   # what was passed in
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "verbosity"
     , params = params
     , alternative_kwarg_value = verbose
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "num_iterations"
     , params = params
     , alternative_kwarg_value = nrounds
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "metric"
     , params = params
     , alternative_kwarg_value = NULL
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "objective"
     , params = params
     , alternative_kwarg_value = obj
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "early_stopping_round"
     , params = params
     , alternative_kwarg_value = early_stopping_rounds
@@ -148,7 +175,7 @@ lgb.cv <- function(params = list()
   # (for backwards compatibility). If it is a list of functions, store
   # all of them. This makes it possible to pass any mix of strings like "auc"
   # and custom functions to eval
-  params <- lgb.check.eval(params = params, eval = eval)
+  params <- .check_eval(params = params, eval = eval)
   eval_functions <- list(NULL)
   if (is.function(eval)) {
     eval_functions <- list(eval)
@@ -166,7 +193,7 @@ lgb.cv <- function(params = list()
   # Check for boosting from a trained model
   if (is.character(init_model)) {
     predictor <- Predictor$new(modelfile = init_model)
-  } else if (lgb.is.Booster(x = init_model)) {
+  } else if (.is_Booster(x = init_model)) {
     predictor <- init_model$to_predictor()
   }
 
@@ -193,7 +220,7 @@ lgb.cv <- function(params = list()
   } else if (!is.null(data$get_colnames())) {
     cnames <- data$get_colnames()
   }
-  params[["interaction_constraints"]] <- lgb.check_interaction_constraints(
+  params[["interaction_constraints"]] <- .check_interaction_constraints(
     interaction_constraints = interaction_constraints
     , column_names = cnames
   )
@@ -232,7 +259,7 @@ lgb.cv <- function(params = list()
     }
 
     # Create folds
-    folds <- generate.cv.folds(
+    folds <- .generate_cv_folds(
       nfold = nfold
       , nrows = nrow(data)
       , stratified = stratified
@@ -245,12 +272,12 @@ lgb.cv <- function(params = list()
 
   # Add printing log callback
   if (params[["verbosity"]] > 0L && eval_freq > 0L) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
+    callbacks <- .add_cb(cb_list = callbacks, cb = cb_print_evaluation(period = eval_freq))
   }
 
   # Add evaluation log callback
   if (record) {
-    callbacks <- add.cb(cb_list = callbacks, cb = cb_record_evaluation())
+    callbacks <- .add_cb(cb_list = callbacks, cb = cb_record_evaluation())
   }
 
   # Did user pass parameters that indicate they want to use early stopping?
@@ -282,7 +309,7 @@ lgb.cv <- function(params = list()
 
   # If user supplied early_stopping_rounds, add the early stopping callback
   if (using_early_stopping) {
-    callbacks <- add.cb(
+    callbacks <- .add_cb(
       cb_list = callbacks
       , cb = cb_early_stop(
         stopping_rounds = early_stopping_rounds
@@ -292,7 +319,7 @@ lgb.cv <- function(params = list()
     )
   }
 
-  cb <- categorize.callbacks(cb_list = callbacks)
+  cb <- .categorize_callbacks(cb_list = callbacks)
 
   # Construct booster for each fold. The data.table() code below is used to
   # guarantee that indices are sorted while keeping init_score and weight together
@@ -325,7 +352,7 @@ lgb.cv <- function(params = list()
         , init_score = get_field(dataset = data, field_name = "init_score")[test_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
-      dtest <- slice(data, indexDT$indices)
+      dtest <- lgb.slice.Dataset(data, indexDT$indices)
       set_field(dataset = dtest, field_name = "weight", data = indexDT$weight)
       set_field(dataset = dtest, field_name = "init_score", data = indexDT$init_score)
 
@@ -336,7 +363,7 @@ lgb.cv <- function(params = list()
         , init_score = get_field(dataset = data, field_name = "init_score")[train_indices]
       )
       data.table::setorderv(x = indexDT, cols = "indices", order = 1L)
-      dtrain <- slice(data, indexDT$indices)
+      dtrain <- lgb.slice.Dataset(data, indexDT$indices)
       set_field(dataset = dtrain, field_name = "weight", data = indexDT$weight)
       set_field(dataset = dtrain, field_name = "init_score", data = indexDT$init_score)
 
@@ -387,7 +414,7 @@ lgb.cv <- function(params = list()
     })
 
     # Prepare collection of evaluation results
-    merged_msg <- lgb.merge.cv.result(
+    merged_msg <- .merge_cv_result(
       msg = msg
       , showsd = showsd
     )
@@ -463,7 +490,7 @@ lgb.cv <- function(params = list()
 }
 
 # Generates random (stratified if needed) CV folds
-generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
+.generate_cv_folds <- function(nfold, nrows, stratified, label, group, params) {
 
   # Check for group existence
   if (is.null(group)) {
@@ -476,7 +503,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 
       y <- label[rnd_idx]
       y <- as.factor(y)
-      folds <- lgb.stratified.folds(y = y, k = nfold)
+      folds <- .stratified_folds(y = y, k = nfold)
 
     } else {
 
@@ -528,7 +555,7 @@ generate.cv.folds <- function(nfold, nrows, stratified, label, group, params) {
 # It was borrowed from caret::createFolds and simplified
 # by always returning an unnamed list of fold indices.
 #' @importFrom stats quantile
-lgb.stratified.folds <- function(y, k) {
+.stratified_folds <- function(y, k) {
 
   # Group the numeric data based on their magnitudes
   # and sample within those groups.
@@ -594,7 +621,7 @@ lgb.stratified.folds <- function(y, k) {
   return(out)
 }
 
-lgb.merge.cv.result <- function(msg, showsd) {
+.merge_cv_result <- function(msg, showsd) {
 
   if (length(msg) == 0L) {
     stop("lgb.cv: size of cv result error")

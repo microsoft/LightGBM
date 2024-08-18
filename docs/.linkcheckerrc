@@ -11,7 +11,7 @@ ignore=
   http.*amd.com/.*
   https.*dl.acm.org/doi/.*
   https.*tandfonline.com/.*
-ignorewarnings=http-robots-denied,https-certificate-error
+ignorewarnings=http-redirected,http-robots-denied,https-certificate-error
 checkextern=1
 
 [output]

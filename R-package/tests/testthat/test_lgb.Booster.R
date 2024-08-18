@@ -11,16 +11,16 @@ test_that("Booster$finalize() should not fail", {
         , verbose = .LGB_VERBOSITY
         , nrounds = 3L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
-    expect_false(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_false(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
     bst$finalize()
-    expect_true(lgb.is.null.handle(bst$.__enclos_env__$private$handle))
+    expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 })
 
 test_that("lgb.get.eval.result() should throw an informative error if booster is not an lgb.Booster", {
@@ -174,7 +174,7 @@ test_that("Loading a Booster from a text file works", {
         , bagging_freq = 1L
         , boost_from_average = FALSE
         , categorical_feature = c(1L, 2L)
-        , interaction_constraints = list(c(1L, 2L), 1L)
+        , interaction_constraints = list(1L:2L, 3L, 4L:ncol(train$data))
         , feature_contri = rep(0.5, ncol(train$data))
         , metric = c("mape", "average_precision")
         , learning_rate = 1.0
@@ -188,7 +188,7 @@ test_that("Loading a Booster from a text file works", {
         , params = params
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -232,7 +232,7 @@ test_that("boosters with linear models at leaves can be written to text file and
         , params = params
         , verbose = .LGB_VERBOSITY
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -269,7 +269,7 @@ test_that("Loading a Booster from a string works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_string <- bst$save_model_to_string()
@@ -376,7 +376,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     pred <- predict(bst, test$data)
     model_file <- tempfile(fileext = ".model")
@@ -411,7 +411,7 @@ test_that("Creating a Booster from a Dataset should work", {
         ),
         train_set = dtrain
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), 0L)
     expect_true(is.na(bst$best_score))
     expect_true(all(bst$predict(agaricus.train$data) == 0.5))
@@ -446,10 +446,10 @@ test_that("Creating a Booster from a Dataset with an existing predictor should w
             , num_threads = .LGB_MAX_THREADS
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     expect_equal(bst$eval_train()[[1L]][["value"]], 0.1115352)
-    expect_true(lgb.is.Booster(bst_from_ds))
+    expect_true(.is_Booster(bst_from_ds))
     expect_equal(bst_from_ds$current_iter(), nrounds)
     expect_equal(bst_from_ds$eval_train()[[1L]][["value"]], 5.65704892)
     dumped_model <- jsonlite::fromJSON(bst$dump_model())
@@ -531,7 +531,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
         , nrounds = nrounds
     )
     expect_equal(bst$current_iter(), nrounds)
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     logloss <- bst$eval_train()[[1L]][["value"]]
     expect_equal(logloss, 0.01904786)
 
@@ -539,7 +539,7 @@ test_that("Booster$rollback_one_iter() should work as expected", {
 
     # rollback_one_iter() should return a booster and modify the original
     # booster in place
-    expect_true(lgb.is.Booster(x))
+    expect_true(.is_Booster(x))
     expect_equal(bst$current_iter(), nrounds - 1L)
 
     # score should now come from the model as of 4 iterations
@@ -565,7 +565,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds)
     bst$update(
         train_set = Dataset$new(
@@ -574,7 +574,7 @@ test_that("Booster$update() passing a train_set works as expected", {
             , params = list(verbose = .LGB_VERBOSITY)
         )
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
     expect_equal(bst$current_iter(), nrounds + 1L)
 
     # train with 3 rounds directly
@@ -590,7 +590,7 @@ test_that("Booster$update() passing a train_set works as expected", {
         )
         , nrounds = nrounds +  1L
     )
-    expect_true(lgb.is.Booster(bst2))
+    expect_true(.is_Booster(bst2))
     expect_equal(bst2$current_iter(), nrounds +  1L)
 
     # model with 2 rounds + 1 update should be identical to 3 rounds
@@ -621,6 +621,174 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
             train_set = data.frame(x = rnorm(10L))
         )
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
+})
+
+test_that("Booster$num_trees_per_iter() works as expected", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees_per_iter(), 1L)
+  expect_equal(fit_binary$num_trees_per_iter(), 1L)
+  expect_equal(fit_class$num_trees_per_iter(), num_class)
+})
+
+test_that("Booster$num_trees() and $num_iter() works (no early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees(), nrounds)
+  expect_equal(fit_binary$num_trees(), nrounds)
+  expect_equal(fit_class$num_trees(), num_class * nrounds)
+
+  expect_equal(fit_reg$num_iter(), nrounds)
+  expect_equal(fit_binary$num_iter(), nrounds)
+  expect_equal(fit_class$num_iter(), nrounds)
+})
+
+test_that("Booster$num_trees() and $num_iter() work (with early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  train_ix <- c(1L:40L, 51L:90L, 101L:140L)
+  X_train <- X[train_ix, ]
+  X_valid <- X[-train_ix, ]
+
+  num_class <- 3L
+  nrounds <- 1000L
+  early_stopping <- 2L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_reg[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_reg[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_binary[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_binary[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X_train, label = y_class[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_class[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  expected_trees_reg <- fit_reg$best_iter + early_stopping
+  expected_trees_binary <- fit_binary$best_iter + early_stopping
+  expected_trees_class <- (fit_class$best_iter + early_stopping) * num_class
+
+  expect_equal(fit_reg$num_trees(), expected_trees_reg)
+  expect_equal(fit_binary$num_trees(), expected_trees_binary)
+  expect_equal(fit_class$num_trees(), expected_trees_class)
+
+  expect_equal(fit_reg$num_iter(), expected_trees_reg)
+  expect_equal(fit_binary$num_iter(), expected_trees_binary)
+  expect_equal(fit_class$num_iter(), expected_trees_class / num_class)
 })
 
 test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
@@ -716,7 +884,7 @@ test_that("Saving a model with different feature importance types works", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
@@ -772,7 +940,7 @@ test_that("Saving a model with unknown importance type fails", {
         )
         , nrounds = 2L
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     UNSUPPORTED_IMPORTANCE <- 2L
     expect_error({
@@ -850,6 +1018,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         , "[extra_trees: 0]"
         , "[extra_seed: 6642]"
         , "[early_stopping_round: 0]"
+        , "[early_stopping_min_delta: 0]"
         , "[first_metric_only: 0]"
         , "[max_delta_step: 0]"
         , "[lambda_l1: 0]"
@@ -1273,43 +1442,6 @@ test_that("params (including dataset params) should be stored in .rds file for B
         , train_set = dtrain
     )
     bst_file <- tempfile(fileext = ".rds")
-    expect_warning(saveRDS.lgb.Booster(bst, file = bst_file))
-
-    expect_warning(bst_from_file <- readRDS.lgb.Booster(file = bst_file))
-    expect_identical(
-        bst_from_file$params
-        , list(
-            objective = "binary"
-            , max_depth = 4L
-            , bagging_fraction = 0.8
-            , verbose = .LGB_VERBOSITY
-            , num_threads = .LGB_MAX_THREADS
-            , max_bin = 17L
-        )
-    )
-})
-
-test_that("params (including dataset params) should be stored in .rds file for Booster", {
-    data(agaricus.train, package = "lightgbm")
-    dtrain <- lgb.Dataset(
-        agaricus.train$data
-        , label = agaricus.train$label
-        , params = list(
-            max_bin = 17L
-        )
-    )
-    params <- list(
-        objective = "binary"
-        , max_depth = 4L
-        , bagging_fraction = 0.8
-        , verbose = .LGB_VERBOSITY
-        , num_threads = .LGB_MAX_THREADS
-    )
-    bst <- Booster$new(
-        params = params
-        , train_set = dtrain
-    )
-    bst_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = bst_file)
 
     bst_from_file <- readRDS(file = bst_file)
@@ -1348,46 +1480,6 @@ test_that("Handle is automatically restored when calling predict", {
     expect_equal(pred_before, pred_after)
 })
 
-test_that("boosters with linear models at leaves work with saveRDS.lgb.Booster and readRDS.lgb.Booster", {
-    X <- matrix(rnorm(100L), ncol = 1L)
-    labels <- 2L * X + runif(nrow(X), 0L, 0.1)
-    dtrain <- lgb.Dataset(
-        data = X
-        , label = labels
-    )
-
-    params <- list(
-        objective = "regression"
-        , verbose = .LGB_VERBOSITY
-        , metric = "mse"
-        , seed = 0L
-        , num_leaves = 2L
-        , num_threads = .LGB_MAX_THREADS
-    )
-
-    bst <- lgb.train(
-        data = dtrain
-        , nrounds = 10L
-        , params = params
-    )
-    expect_true(lgb.is.Booster(bst))
-
-    # save predictions, then write the model to a file and destroy it in R
-    preds <- predict(bst, X)
-    model_file <- tempfile(fileext = ".rds")
-    expect_warning(saveRDS.lgb.Booster(bst, file = model_file))
-    bst$finalize()
-    expect_null(bst$.__enclos_env__$private$handle)
-    rm(bst)
-
-    # load the booster and make predictions...should be the same
-    expect_warning({
-        bst2 <- readRDS.lgb.Booster(file = model_file)
-    })
-    preds2 <- predict(bst2, X)
-    expect_identical(preds, preds2)
-})
-
 test_that("boosters with linear models at leaves can be written to RDS and re-loaded successfully", {
     X <- matrix(rnorm(100L), ncol = 1L)
     labels <- 2L * X + runif(nrow(X), 0L, 0.1)
@@ -1410,7 +1502,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
         , nrounds = 10L
         , params = params
     )
-    expect_true(lgb.is.Booster(bst))
+    expect_true(.is_Booster(bst))
 
     # save predictions, then write the model to a file and destroy it in R
     preds <- predict(bst, X)
@@ -1594,4 +1686,96 @@ test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
     )
     ncols <- .Call(LGBM_BoosterGetNumFeature_R, model$.__enclos_env__$private$handle)
     expect_equal(ncols, ncol(iris) - 1L)
+})
+
+# Helper function that creates a fitted model with nrounds boosting rounds
+.get_test_model <- function(nrounds) {
+    set.seed(1L)
+    data(agaricus.train, package = "lightgbm")
+    train <- agaricus.train
+    bst <- lightgbm(
+        data = as.matrix(train$data)
+        , label = train$label
+        , params = list(objective = "binary", num_threads = .LGB_MAX_THREADS)
+        , nrounds = nrounds
+        , verbose = .LGB_VERBOSITY
+    )
+    return(bst)
+}
+
+# Simplified version of lgb.model.dt.tree()
+.get_trees_from_dump <- function(x) {
+  parsed <- jsonlite::fromJSON(
+    txt = x
+    , simplifyVector = TRUE
+    , simplifyDataFrame = FALSE
+    , simplifyMatrix = FALSE
+    , flatten = FALSE
+  )
+  return(lapply(parsed$tree_info, FUN = .single_tree_parse))
+}
+
+test_that("num_iteration and start_iteration work for lgb.dump()", {
+  bst <- .get_test_model(5L)
+
+  first2 <- .get_trees_from_dump(lgb.dump(bst, num_iteration = 2L))
+  last3 <- .get_trees_from_dump(
+    lgb.dump(bst, num_iteration = 3L, start_iteration = 3L)
+  )
+  all5 <- .get_trees_from_dump(lgb.dump(bst))
+  too_many <- .get_trees_from_dump(lgb.dump(bst, num_iteration = 10L))
+
+  expect_equal(
+    data.table::rbindlist(c(first2, last3)), data.table::rbindlist(all5)
+  )
+  expect_equal(too_many, all5)
+})
+
+test_that("num_iteration and start_iteration work for lgb.save()", {
+  .get_n_trees <- function(x) {
+    return(length(.get_trees_from_dump(lgb.dump(x))))
+  }
+
+  .save_and_load <- function(bst, ...) {
+    model_file <- tempfile(fileext = ".model")
+    lgb.save(bst, model_file, ...)
+    return(lgb.load(model_file))
+  }
+
+  bst <- .get_test_model(5L)
+  n_first2 <- .get_n_trees(.save_and_load(bst, num_iteration = 2L))
+  n_last3 <- .get_n_trees(
+    .save_and_load(bst, num_iteration = 3L, start_iteration = 3L)
+  )
+  n_all5 <- .get_n_trees(.save_and_load(bst))
+  n_too_many <- .get_n_trees(.save_and_load(bst, num_iteration = 10L))
+
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
+})
+
+test_that("num_iteration and start_iteration work for save_model_to_string()", {
+  .get_n_trees_from_string <- function(x) {
+    return(sum(gregexpr("Tree=", x, fixed = TRUE)[[1L]] > 0L))
+  }
+
+  bst <- .get_test_model(5L)
+
+  n_first2 <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 2L)
+  )
+  n_last3 <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 3L, start_iteration = 3L)
+  )
+  n_all5 <- .get_n_trees_from_string(bst$save_model_to_string())
+  n_too_many <- .get_n_trees_from_string(
+    bst$save_model_to_string(num_iteration = 10L)
+  )
+
+  expect_equal(n_first2, 2L)
+  expect_equal(n_last3, 3L)
+  expect_equal(n_all5, 5L)
+  expect_equal(n_too_many, 5L)
 })

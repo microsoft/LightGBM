@@ -24,12 +24,14 @@ class CUDASplitInfo {
 
   double left_sum_gradients;
   double left_sum_hessians;
+  int64_t left_sum_of_gradients_hessians;
   data_size_t left_count;
   double left_gain;
   double left_value;
 
   double right_sum_gradients;
   double right_sum_hessians;
+  int64_t right_sum_of_gradients_hessians;
   data_size_t right_count;
   double right_gain;
   double right_value;

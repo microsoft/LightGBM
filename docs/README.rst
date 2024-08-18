@@ -6,7 +6,7 @@ and `Breathe <https://breathe.readthedocs.io/>`__, which works on top of `Doxyge
 
 List of parameters and their descriptions in `Parameters.rst <./Parameters.rst>`__
 is generated automatically from comments in `config file <https://github.com/microsoft/LightGBM/blob/master/include/LightGBM/config.h>`__
-by `this script <https://github.com/microsoft/LightGBM/blob/master/helpers/parameter_generator.py>`__.
+by `this script <https://github.com/microsoft/LightGBM/blob/master/.ci/parameter-generator.py>`__.
 
 After each commit on ``master``, documentation is updated and published to `Read the Docs <https://lightgbm.readthedocs.io/>`__.
 

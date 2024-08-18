@@ -114,6 +114,8 @@ Calling this function multiple times with different parameters might not overrid
 }
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 library(lightgbm)
 data(mtcars)
 X <- as.matrix(mtcars[, -1L])

@@ -52,7 +52,7 @@ class DataPartition {
     if (used_data_indices_ == nullptr) {
       // if using all data
       leaf_count_[0] = num_data_;
-#pragma omp parallel for schedule(static, 512) if (num_data_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
       for (data_size_t i = 0; i < num_data_; ++i) {
         indices_[i] = i;
       }

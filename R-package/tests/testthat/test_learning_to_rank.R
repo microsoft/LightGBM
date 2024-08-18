@@ -25,7 +25,7 @@ test_that("learning-to-rank with lgb.train() works as expected", {
         , data = dtrain
         , nrounds = 10L
     )
-    expect_true(lgb.is.Booster(model))
+    expect_true(.is_Booster(model))
 
     dumped_model <- jsonlite::fromJSON(
         model$dump_model()
@@ -37,7 +37,8 @@ test_that("learning-to-rank with lgb.train() works as expected", {
     eval_results <- model$eval_train()
     expect_equal(length(eval_results), length(eval_names))
     for (result in eval_results) {
-        expect_true(result[["value"]] > 0.0 && result[["value"]] < 1.0)
+        expect_true(result[["value"]] > 0.0)
+        expect_true(result[["value"]] < 1.0)
         expect_true(result[["higher_better"]])
         expect_identical(result[["data_name"]], "training")
     }
@@ -104,8 +105,10 @@ test_that("learning-to-rank with lgb.cv() works as expected", {
     # check that best score and iter make sense (0.0 < nDCG < 1.0)
     best_iter <- cv_bst$best_iter
     best_score <- cv_bst$best_score
-    expect_true(best_iter > 0L && best_iter <= nrounds)
-    expect_true(best_score > 0.0 && best_score < 1.0)
+    expect_true(best_iter > 0L)
+    expect_true(best_iter <= nrounds)
+    expect_true(best_score > 0.0)
+    expect_true(best_score < 1.0)
     expect_true(abs(best_score - 0.75) < .LGB_NUMERIC_TOLERANCE)
 
     # best_score should be set for the first metric

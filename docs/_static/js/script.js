@@ -28,8 +28,7 @@ $(function() {
             '#build-threadless-version-not-recommended',
             '#build-mpi-version',
             '#build-gpu-version',
-            '#build-cuda-version-experimental',
-            '#build-hdfs-version',
+            '#build-cuda-version',
             '#build-java-wrapper',
             '#build-c-unit-tests'
         ];

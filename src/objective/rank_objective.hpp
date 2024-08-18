@@ -58,7 +58,7 @@ class RankingObjective : public ObjectiveFunction {
 
   void GetGradients(const double* score, score_t* gradients,
                     score_t* hessians) const override {
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       const data_size_t start = query_boundaries_[i];
       const data_size_t cnt = query_boundaries_[i + 1] - query_boundaries_[i];
@@ -157,7 +157,7 @@ class LambdarankNDCG : public RankingObjective {
     DCGCalculator::CheckMetadata(metadata, num_queries_);
     DCGCalculator::CheckLabel(label_, num_data_);
     inverse_max_dcgs_.resize(num_queries_);
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i] = DCGCalculator::CalMaxDCGAtK(
           truncation_level_, label_ + query_boundaries_[i],
@@ -289,17 +289,12 @@ class LambdarankNDCG : public RankingObjective {
 
   void UpdatePositionBiasFactors(const score_t* lambdas, const score_t* hessians) const override {
     /// get number of threads
-    int num_threads = 1;
-    #pragma omp parallel
-    #pragma omp master
-    {
-      num_threads = omp_get_num_threads();
-    }
+    int num_threads = OMP_NUM_THREADS();
     // create per-thread buffers for first and second derivatives of utility w.r.t. position bias factors
     std::vector<double> bias_first_derivatives(num_position_ids_ * num_threads, 0.0);
     std::vector<double> bias_second_derivatives(num_position_ids_ * num_threads, 0.0);
     std::vector<int> instance_counts(num_position_ids_ * num_threads, 0);
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(guided) num_threads(num_threads)
     for (data_size_t i = 0; i < num_data_; i++) {
       // get thread ID
       const int tid = omp_get_thread_num();
@@ -310,7 +305,7 @@ class LambdarankNDCG : public RankingObjective {
       bias_second_derivatives[offset] -= hessians[i];
       instance_counts[offset]++;
     }
-    #pragma omp parallel for schedule(guided)
+    #pragma omp parallel for schedule(guided) num_threads(num_threads)
     for (data_size_t i = 0; i < num_position_ids_; i++) {
       double bias_first_derivative = 0.0;
       double bias_second_derivative = 0.0;

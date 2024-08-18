@@ -5,6 +5,7 @@
 #ifndef LIGHTGBM_DATASET_H_
 #define LIGHTGBM_DATASET_H_
 
+#include <LightGBM/arrow.h>
 #include <LightGBM/config.h>
 #include <LightGBM/feature_group.h>
 #include <LightGBM/meta.h>
@@ -109,10 +110,13 @@ class Metadata {
                         const std::vector<data_size_t>& used_data_indices);
 
   void SetLabel(const label_t* label, data_size_t len);
+  void SetLabel(const ArrowChunkedArray& array);
 
   void SetWeights(const label_t* weights, data_size_t len);
+  void SetWeights(const ArrowChunkedArray& array);
 
   void SetQuery(const data_size_t* query, data_size_t len);
+  void SetQuery(const ArrowChunkedArray& array);
 
   void SetPosition(const data_size_t* position, data_size_t len);
 
@@ -121,6 +125,7 @@ class Metadata {
   * \param init_score Initial scores, this class will manage memory for init_score.
   */
   void SetInitScore(const double* init_score, data_size_t len);
+  void SetInitScore(const ArrowChunkedArray& array);
 
 
   /*!
@@ -333,12 +338,24 @@ class Metadata {
   void CalculateQueryBoundaries();
   /*! \brief Insert labels at the given index */
   void InsertLabels(const label_t* labels, data_size_t start_index, data_size_t len);
+  /*! \brief Set labels from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetLabelsFromIterator(It first, It last);
   /*! \brief Insert weights at the given index */
   void InsertWeights(const label_t* weights, data_size_t start_index, data_size_t len);
+  /*! \brief Set weights from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetWeightsFromIterator(It first, It last);
   /*! \brief Insert initial scores at the given index */
   void InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size);
+  /*! \brief Set init scores from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetInitScoresFromIterator(It first, It last);
   /*! \brief Insert queries at the given index */
   void InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len);
+  /*! \brief Set queries from pointers to the first element and the end of an iterator. */
+  template <typename It>
+  void SetQueriesFromIterator(It first, It last);
   /*! \brief Filename of current data */
   std::string data_filename_;
   /*! \brief Number of data */
@@ -545,21 +562,26 @@ class Dataset {
     }
   }
 
-  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
-    if (is_finish_load_) { return; }
-    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
-      int feature_idx = used_feature_map_[i];
-      if (feature_idx >= 0) {
-        const int group = feature2group_[feature_idx];
-        const int sub_feature = feature2subfeature_[feature_idx];
-        feature_groups_[group]->PushData(tid, sub_feature, row_idx, feature_values[i]);
-        if (has_raw_) {
-          int feat_ind = numeric_feature_map_[feature_idx];
-          if (feat_ind >= 0) {
-            raw_data_[feat_ind][row_idx] = static_cast<float>(feature_values[i]);
-          }
+  inline void PushOneValue(int tid, data_size_t row_idx, size_t col_idx, double value) {
+    if (this->is_finish_load_)
+      return;
+    auto feature_idx = this->used_feature_map_[col_idx];
+    if (feature_idx >= 0) {
+      auto group = this->feature2group_[feature_idx];
+      auto sub_feature = this->feature2subfeature_[feature_idx];
+      this->feature_groups_[group]->PushData(tid, sub_feature, row_idx, value);
+      if (this->has_raw_) {
+        auto feat_ind = numeric_feature_map_[feature_idx];
+        if (feat_ind >= 0) {
+          raw_data_[feat_ind][row_idx] = static_cast<float>(value);
         }
       }
+    }
+  }
+
+  inline void PushOneRow(int tid, data_size_t row_idx, const std::vector<double>& feature_values) {
+    for (size_t i = 0; i < feature_values.size() && i < static_cast<size_t>(num_total_features_); ++i) {
+      this->PushOneValue(tid, row_idx, i, feature_values[i]);
     }
   }
 
@@ -648,6 +670,8 @@ class Dataset {
       bool force_col_wise, bool force_row_wise, const int num_grad_quant_bins) const;
 
   LIGHTGBM_EXPORT void FinishLoad();
+
+  bool SetFieldFromArrow(const char* field_name, const ArrowChunkedArray& ca);
 
   LIGHTGBM_EXPORT bool SetFloatField(const char* field_name, const float* field_data, data_size_t num_element);
 

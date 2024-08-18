@@ -9,7 +9,7 @@
 
 #ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/objective_function.h>
 #include <LightGBM/meta.h>
 

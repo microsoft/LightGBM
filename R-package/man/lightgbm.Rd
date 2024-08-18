@@ -19,6 +19,8 @@ lightgbm(
   objective = "auto",
   init_score = NULL,
   num_threads = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
   ...
 )
 }
@@ -96,6 +98,13 @@ set to the iteration number of the best iteration.}
 
                    \emph{New in version 4.0.0}}
 
+\item{colnames}{Character vector of features. Only used if \code{data} is not an \code{\link{lgb.Dataset}}.}
+
+\item{categorical_feature}{categorical features. This can either be a character vector of feature
+names or an integer vector with the indices of the features (e.g.
+\code{c(1L, 10L)} to say "the first and tenth columns").
+Only used if \code{data} is not an \code{\link{lgb.Dataset}}.}
+
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
    \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -104,10 +113,6 @@ set to the iteration number of the best iteration.}
                \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
    \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
    \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-   \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
-   \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
-                       names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-                       say "the first and tenth columns").}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
 }}

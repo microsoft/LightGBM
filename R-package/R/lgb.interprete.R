@@ -17,6 +17,8 @@
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' Logit <- function(x) log(x / (1.0 - x))
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -86,7 +88,7 @@ lgb.interprete <- function(model,
   )
 
   for (i in seq_along(idxset)) {
-    tree_interpretation_dt_list[[i]] <- single.row.interprete(
+    tree_interpretation_dt_list[[i]] <- .single_row_interprete(
       tree_dt = tree_dt
       , num_class = num_class
       , tree_index_mat = tree_index_mat_list[[i]]
@@ -151,7 +153,7 @@ single.tree.interprete <- function(tree_dt,
 }
 
 #' @importFrom data.table := rbindlist setorder
-multiple.tree.interprete <- function(tree_dt,
+.multiple_tree_interprete <- function(tree_dt,
                                      tree_index,
                                      leaf_index) {
 
@@ -186,7 +188,7 @@ multiple.tree.interprete <- function(tree_dt,
 }
 
 #' @importFrom data.table set setnames
-single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index_mat) {
+.single_row_interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index_mat) {
 
   # Prepare vector list
   tree_interpretation <- vector(mode = "list", length = num_class)
@@ -194,7 +196,7 @@ single.row.interprete <- function(tree_dt, num_class, tree_index_mat, leaf_index
   # Loop throughout each class
   for (i in seq_len(num_class)) {
 
-    next_interp_dt <- multiple.tree.interprete(
+    next_interp_dt <- .multiple_tree_interprete(
       tree_dt = tree_dt
       , tree_index = tree_index_mat[, i]
       , leaf_index = leaf_index_mat[, i]

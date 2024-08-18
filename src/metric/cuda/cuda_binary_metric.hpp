@@ -10,7 +10,7 @@
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_metric.hpp>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 
 #include <vector>
 

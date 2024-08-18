@@ -63,8 +63,7 @@ inline static void Int32HistogramSumReducer(const char* src, char* dst, int type
   const int64_t* src_ptr = reinterpret_cast<const int64_t*>(src);
   int64_t* dst_ptr = reinterpret_cast<int64_t*>(dst);
   const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
-  const int num_threads = OMP_NUM_THREADS();
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (comm_size_t i = 0; i < steps; ++i) {
     dst_ptr[i] += src_ptr[i];
   }
@@ -74,8 +73,7 @@ inline static void Int16HistogramSumReducer(const char* src, char* dst, int type
   const int32_t* src_ptr = reinterpret_cast<const int32_t*>(src);
   int32_t* dst_ptr = reinterpret_cast<int32_t*>(dst);
   const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
-  const int num_threads = OMP_NUM_THREADS();
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (comm_size_t i = 0; i < steps; ++i) {
     dst_ptr[i] += src_ptr[i];
   }
@@ -146,7 +144,7 @@ class BinMapper {
 
   /*!
   * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  * \return Maximum categorical value for categorical features, 0 for numerical features
   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {

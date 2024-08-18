@@ -31,12 +31,12 @@ Booster <- R6::R6Class(
 
       if (!is.null(train_set)) {
 
-        if (!lgb.is.Dataset(train_set)) {
+        if (!.is_Dataset(train_set)) {
           stop("lgb.Booster: Can only use lgb.Dataset as training data")
         }
         train_set_handle <- train_set$.__enclos_env__$private$get_handle()
         params <- utils::modifyList(params, train_set$get_params())
-        params_str <- lgb.params2str(params = params)
+        params_str <- .params2str(params = params)
         # Store booster handle
         handle <- .Call(
           LGBM_BoosterCreate_R
@@ -130,7 +130,7 @@ Booster <- R6::R6Class(
     # Add validation data
     add_valid = function(data, name) {
 
-      if (!lgb.is.Dataset(data)) {
+      if (!.is_Dataset(data)) {
         stop("lgb.Booster.add_valid: Can only use lgb.Dataset as validation data")
       }
 
@@ -167,7 +167,7 @@ Booster <- R6::R6Class(
         params <- utils::modifyList(self$params, params)
       }
 
-      params_str <- lgb.params2str(params = params)
+      params_str <- .params2str(params = params)
 
       self$restore_handle()
 
@@ -193,7 +193,7 @@ Booster <- R6::R6Class(
 
       if (!is.null(train_set)) {
 
-        if (!lgb.is.Dataset(train_set)) {
+        if (!.is_Dataset(train_set)) {
           stop("lgb.Booster.update: Only can use lgb.Dataset as training data")
         }
 
@@ -307,6 +307,46 @@ Booster <- R6::R6Class(
 
     },
 
+    # Number of trees per iteration
+    num_trees_per_iter = function() {
+
+      self$restore_handle()
+
+      trees_per_iter <- 1L
+      .Call(
+        LGBM_BoosterNumModelPerIteration_R
+        , private$handle
+        , trees_per_iter
+      )
+      return(trees_per_iter)
+
+    },
+
+    # Total number of trees
+    num_trees = function() {
+
+      self$restore_handle()
+
+      ntrees <- 0L
+      .Call(
+        LGBM_BoosterNumberOfTotalModel_R
+        , private$handle
+        , ntrees
+      )
+      return(ntrees)
+
+    },
+
+    # Number of iterations (= rounds)
+    num_iter = function() {
+
+      ntrees <- self$num_trees()
+      trees_per_iter <- self$num_trees_per_iter()
+
+      return(ntrees / trees_per_iter)
+
+    },
+
     # Get upper bound
     upper_bound = function() {
 
@@ -340,7 +380,7 @@ Booster <- R6::R6Class(
     # Evaluate data on metrics
     eval = function(data, name, feval = NULL) {
 
-      if (!lgb.is.Dataset(data)) {
+      if (!.is_Dataset(data)) {
         stop("lgb.Booster.eval: Can only use lgb.Dataset to eval")
       }
 
@@ -416,7 +456,12 @@ Booster <- R6::R6Class(
     },
 
     # Save model
-    save_model = function(filename, num_iteration = NULL, feature_importance_type = 0L) {
+    save_model = function(
+      filename
+      , num_iteration = NULL
+      , feature_importance_type = 0L
+      , start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -432,12 +477,18 @@ Booster <- R6::R6Class(
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
         , filename
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(invisible(self))
     },
 
-    save_model_to_string = function(num_iteration = NULL, feature_importance_type = 0L, as_char = TRUE) {
+    save_model_to_string = function(
+      num_iteration = NULL
+      , feature_importance_type = 0L
+      , as_char = TRUE
+      , start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -450,6 +501,7 @@ Booster <- R6::R6Class(
           , private$handle
           , as.integer(num_iteration)
           , as.integer(feature_importance_type)
+          , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       if (as_char) {
@@ -461,7 +513,9 @@ Booster <- R6::R6Class(
     },
 
     # Dump model in memory
-    dump_model = function(num_iteration = NULL, feature_importance_type = 0L) {
+    dump_model = function(
+      num_iteration = NULL, feature_importance_type = 0L, start_iteration = 1L
+    ) {
 
       self$restore_handle()
 
@@ -474,6 +528,7 @@ Booster <- R6::R6Class(
         , private$handle
         , as.integer(num_iteration)
         , as.integer(feature_importance_type)
+        , as.integer(start_iteration) - 1L  # Turn to 0-based
       )
 
       return(model_str)
@@ -508,17 +563,17 @@ Booster <- R6::R6Class(
       # NOTE: doing this here instead of in Predictor$predict() to keep
       #       Predictor$predict() as fast as possible
       if (length(params) > 0L) {
-        params <- lgb.check.wrapper_param(
+        params <- .check_wrapper_param(
           main_param_name = "predict_raw_score"
           , params = params
           , alternative_kwarg_value = rawscore
         )
-        params <- lgb.check.wrapper_param(
+        params <- .check_wrapper_param(
           main_param_name = "predict_leaf_index"
           , params = params
           , alternative_kwarg_value = predleaf
         )
-        params <- lgb.check.wrapper_param(
+        params <- .check_wrapper_param(
           main_param_name = "predict_contrib"
           , params = params
           , alternative_kwarg_value = predcontrib
@@ -586,7 +641,7 @@ Booster <- R6::R6Class(
         , predcontrib
         , start_iteration
         , num_iteration
-        , lgb.params2str(params = params)
+        , .params2str(params = params)
       )
 
       private$fast_predict_config <- list(
@@ -622,7 +677,7 @@ Booster <- R6::R6Class(
     },
 
     check_null_handle = function() {
-      return(lgb.is.null.handle(private$handle))
+      return(.is_null_handle(private$handle))
     },
 
     restore_handle = function() {
@@ -917,6 +972,8 @@ NULL
 #'         the factor levels not being present in the output.
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -959,7 +1016,7 @@ predict.lgb.Booster <- function(object,
                                 params = list(),
                                 ...) {
 
-  if (!lgb.is.Booster(x = object)) {
+  if (!.is_Booster(x = object)) {
     stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
   }
 
@@ -1082,6 +1139,8 @@ predict.lgb.Booster <- function(object,
 #'         \link{predict.lgb.Booster}.
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' library(lightgbm)
 #' data(mtcars)
 #' X <- as.matrix(mtcars[, -1L])
@@ -1114,7 +1173,7 @@ lgb.configure_fast_predict <- function(model,
                                        num_iteration = NULL,
                                        type = "response",
                                        params = list()) {
-  if (!lgb.is.Booster(x = model)) {
+  if (!.is_Booster(x = model)) {
     stop("lgb.configure_fast_predict: model should be an ", sQuote("lgb.Booster"))
   }
   if (type == "class") {
@@ -1160,7 +1219,7 @@ lgb.configure_fast_predict <- function(model,
 print.lgb.Booster <- function(x, ...) {
   # nolint start
   handle <- x$.__enclos_env__$private$handle
-  handle_is_null <- lgb.is.null.handle(handle)
+  handle_is_null <- .is_null_handle(handle)
 
   if (!handle_is_null) {
     ntrees <- x$current_iter()
@@ -1224,6 +1283,8 @@ summary.lgb.Booster <- function(object, ...) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1282,13 +1343,20 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' @title Save LightGBM model
 #' @description Save LightGBM model
 #' @param booster Object of class \code{lgb.Booster}
-#' @param filename saved filename
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param filename Saved filename
+#' @param num_iteration Number of iterations to save, NULL or <= 0 means use best iteration
+#' @param start_iteration Index (1-based) of the first boosting round to save.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "save the fifth, sixth, and seventh tree"
+#'
+#'        \emph{New in version 4.4.0}
 #'
 #' @return lgb.Booster
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' library(lightgbm)
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -1314,9 +1382,11 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #' lgb.save(model, tempfile(fileext = ".txt"))
 #' }
 #' @export
-lgb.save <- function(booster, filename, num_iteration = NULL) {
+lgb.save <- function(
+    booster, filename, num_iteration = NULL, start_iteration = 1L
+  ) {
 
-  if (!lgb.is.Booster(x = booster)) {
+  if (!.is_Booster(x = booster)) {
     stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
   }
 
@@ -1330,6 +1400,7 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
     invisible(booster$save_model(
       filename = filename
       , num_iteration = num_iteration
+      , start_iteration = start_iteration
     ))
   )
 
@@ -1339,13 +1410,20 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' @title Dump LightGBM model to json
 #' @description Dump LightGBM model to json
 #' @param booster Object of class \code{lgb.Booster}
-#' @param num_iteration number of iteration want to predict with, NULL or <= 0 means use best iteration
+#' @param num_iteration Number of iterations to be dumped. NULL or <= 0 means use best iteration
+#' @param start_iteration Index (1-based) of the first boosting round to dump.
+#'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+#'        means "dump the fifth, sixth, and seventh tree"
+#'
+#'        \emph{New in version 4.4.0}
 #'
 #' @return json format of model
 #'
 #' @examples
 #' \donttest{
 #' library(lightgbm)
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -1370,14 +1448,18 @@ lgb.save <- function(booster, filename, num_iteration = NULL) {
 #' json_model <- lgb.dump(model)
 #' }
 #' @export
-lgb.dump <- function(booster, num_iteration = NULL) {
+lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 
-  if (!lgb.is.Booster(x = booster)) {
+  if (!.is_Booster(x = booster)) {
     stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
   }
 
   # Return booster at requested iteration
-  return(booster$dump_model(num_iteration =  num_iteration))
+  return(
+    booster$dump_model(
+      num_iteration = num_iteration, start_iteration = start_iteration
+    )
+  )
 
 }
 
@@ -1396,6 +1478,8 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' # train a regression model
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
@@ -1430,7 +1514,7 @@ lgb.dump <- function(booster, num_iteration = NULL) {
 #' @export
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
 
-  if (!lgb.is.Booster(x = booster)) {
+  if (!.is_Booster(x = booster)) {
     stop("lgb.get.eval.result: Can only use ", sQuote("lgb.Booster"), " to get eval result")
   }
 
@@ -1462,7 +1546,6 @@ lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_
       , toString(eval_names)
       , "]"
     ))
-    stop("lgb.get.eval.result: wrong eval name")
   }
 
   result <- booster$record_evals[[data_name]][[eval_name]][[.EVAL_KEY()]]

@@ -185,7 +185,7 @@ class Tree {
   * \param rate The factor of shrinkage
   */
   virtual inline void Shrinkage(double rate) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] * rate);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] * rate);
@@ -210,7 +210,7 @@ class Tree {
   inline double shrinkage() const { return shrinkage_; }
 
   virtual inline void AddBias(double val) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] + val);
@@ -218,7 +218,7 @@ class Tree {
     leaf_value_[num_leaves_ - 1] =
         MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
     if (is_linear_) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
       for (int i = 0; i < num_leaves_ - 1; ++i) {
         leaf_const_[i] = MaybeRoundToZero(leaf_const_[i] + val);
       }
