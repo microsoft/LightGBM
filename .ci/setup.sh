@@ -20,7 +20,7 @@ if [[ $OS_NAME == "macos" ]]; then
         # Check https://github.com/actions/runner-images/tree/main/images/macos for available
         # versions of Xcode
         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-        brew install gcc
+        brew install 'gcc@12'
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
