@@ -4465,7 +4465,7 @@ def test_train_and_cv_raise_informative_error_for_train_set_of_wrong_type():
 @pytest.mark.parametrize("num_boost_round", [-7, -1, 0])
 def test_train_and_cv_raise_informative_error_for_impossible_num_boost_round(num_boost_round):
     X, y = make_synthetic_regression(n_samples=100)
-    error_msg = rf"num_boost_round must be greater than 0\. Got {num_boost_round}\."
+    error_msg = rf"Number of boosting rounds must be greater than 0\. Got {num_boost_round}\."
     with pytest.raises(ValueError, match=error_msg):
         lgb.train({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
     with pytest.raises(ValueError, match=error_msg):
