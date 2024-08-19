@@ -115,7 +115,7 @@ test_that("training should warn if you use 'dart' boosting and requesting early 
     }, regexp = "Early stopping is not available in 'dart' mode")
 
     # no warning: early stopping not requested
-    expect_no_warning({
+    expect_silent({
       result <- lightgbm(
         data = train$data
         , label = train$label
@@ -124,14 +124,12 @@ test_that("training should warn if you use 'dart' boosting and requesting early 
         , verbose = -1L
         , early_stopping_rounds = NULL
       )
-    }
-    )
+    })
   }
 })
 
 test_that(
-  desc = "lgb.cv() should only warn if you use 'dart' boosting, specified with 'boosting' or aliases",
-  code = {
+  "lgb.cv() should only warn if you use 'dart' boosting, specified with 'boosting' or aliases",{
     for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
       params <- list(
         num_leaves = 5L
@@ -151,23 +149,21 @@ test_that(
           , params = params
           , nrounds = 5L
           , verbose = -1L
-          , early_stopping_rounds = 1L
-        )
-      }, regexp = "Early stopping is not available in 'dart' mode")
+          , early_stopping_rounds = 1L)
+        }, regexp = "Early stopping is not available in 'dart' mode")
 
       # no warning: early stopping not requested
-      expect_no_warning({
+      expect_silent({
         result <- lgb.cv(
           data = lgb.Dataset(
             data  = train$data
             , label = train$label
           )
           , params = params
-          , nrounds = 5L,
+          , nrounds = 5L
           , verbose = -1L
           , early_stopping_rounds = NULL
         )
       })
     }
-  }
-)
+  })
