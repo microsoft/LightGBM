@@ -91,7 +91,7 @@ test_that(".PARAMETER_ALIASES() uses the internal session cache", {
   expect_false(exists(cache_key, where = .lgb_session_cache_env))
 })
 
-test_that("training should warn if you use 'dart' boosting and requesting early stopping, specified with 'boosting' or aliases", {
+test_that("lightgbm should warn if you use 'dart' boosting with early stopping, specified with 'boosting' or aliases", {
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     params <- list(
         num_leaves = 5L
@@ -129,7 +129,7 @@ test_that("training should warn if you use 'dart' boosting and requesting early 
 })
 
 test_that(
-  "lgb.cv() should only warn if you use 'dart' boosting, specified with 'boosting' or aliases",{
+  "lgb.cv should warn if you use 'dart' boosting with early stopping, specified with 'boosting' or aliases", {
     for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
       params <- list(
         num_leaves = 5L

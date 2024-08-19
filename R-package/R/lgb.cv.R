@@ -295,7 +295,7 @@ lgb.cv <- function(params = list()
 
   # Cannot use early stopping with 'dart' boosting
   if (using_dart) {
-    if (using_early_stopping){
+    if (using_early_stopping) {
       warning("Early stopping is not available in 'dart' mode.")
     }
     using_early_stopping <- FALSE
