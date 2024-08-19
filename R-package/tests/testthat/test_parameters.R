@@ -91,7 +91,7 @@ test_that(".PARAMETER_ALIASES() uses the internal session cache", {
   expect_false(exists(cache_key, where = .lgb_session_cache_env))
 })
 
-test_that("training should only warn if you use 'dart' boosting, specified with 'boosting' or aliases", {
+test_that("training should warn if you use 'dart' boosting and requesting early stopping, specified with 'boosting' or aliases", {
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     params <- list(
         num_leaves = 5L
@@ -102,8 +102,7 @@ test_that("training should only warn if you use 'dart' boosting, specified with 
     )
     params[[boosting_param]] <- "dart"
 
-    # expect warning
-    # if early_stopping_rounds is specified
+    # warning: early stopping requested
     expect_warning({
       result <- lightgbm(
         data = train$data
@@ -115,10 +114,7 @@ test_that("training should only warn if you use 'dart' boosting, specified with 
       )
     }, regexp = "Early stopping is not available in 'dart' mode")
 
-    # expect no warning
-    # if early_stopping_rounds is not
-    # specified see:
-    # https://github.com/microsoft/LightGBM/issues/6612
+    # no warning: early stopping not requested
     expect_no_warning({
       result <- lightgbm(
         data = train$data
@@ -139,20 +135,18 @@ test_that(
     for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
       params <- list(
         num_leaves = 5L
-        , learning_rate = 0.05
         , objective = "binary"
         , metric = "binary_error"
         , num_threads = .LGB_MAX_THREADS
       )
       params[[boosting_param]] <- "dart"
 
-      # expect warning
-      # if early_stopping_rounds is specified
+      # warning: early stopping requested
       expect_warning({
         result <- lgb.cv(
           data = lgb.Dataset(
-            data  = train$data,
-            label = train$label
+            data  = train$data
+            , label = train$label
           )
           , params = params
           , nrounds = 5L
@@ -161,23 +155,19 @@ test_that(
         )
       }, regexp = "Early stopping is not available in 'dart' mode")
 
-      # expect no warning
-      # if early_stopping_rounds is not
-      # specified see:
-      # https://github.com/microsoft/LightGBM/issues/6612
+      # no warning: early stopping not requested
       expect_no_warning({
         result <- lgb.cv(
           data = lgb.Dataset(
-            data  = train$data,
-            label = train$label
+            data  = train$data
+            , label = train$label
           )
           , params = params
           , nrounds = 5L,
           , verbose = -1L
           , early_stopping_rounds = NULL
         )
-      }
-      )
+      })
     }
   }
 )
