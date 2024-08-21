@@ -91,7 +91,7 @@ test_that(".PARAMETER_ALIASES() uses the internal session cache", {
   expect_false(exists(cache_key, where = .lgb_session_cache_env))
 })
 
-test_that("lightgbm should warn if you use 'dart' boosting with early stopping, specified with 'boosting' or aliases", {
+test_that("training should warn if you use 'dart' boosting with early stopping", {
   for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
     params <- list(
         num_leaves = 5L
@@ -108,8 +108,8 @@ test_that("lightgbm should warn if you use 'dart' boosting with early stopping, 
         data = train$data
         , label = train$label
         , params = params
-        , nrounds = 5L
-        , verbose = -1L
+        , nrounds = 2L
+        , verbose = .LGB_VERBOSITY
         , early_stopping_rounds = 1L
       )
     }, regexp = "Early stopping is not available in 'dart' mode")
@@ -120,50 +120,50 @@ test_that("lightgbm should warn if you use 'dart' boosting with early stopping, 
         data = train$data
         , label = train$label
         , params = params
-        , nrounds = 5L
-        , verbose = -1L
+        , nrounds = 2L
+        , verbose = .LGB_VERBOSITY
         , early_stopping_rounds = NULL
       )
     })
   }
 })
 
-test_that(
-  "lgb.cv should warn if you use 'dart' boosting with early stopping, specified with 'boosting' or aliases", {
-    for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
-      params <- list(
-        num_leaves = 5L
-        , objective = "binary"
-        , metric = "binary_error"
-        , num_threads = .LGB_MAX_THREADS
-      )
-      params[[boosting_param]] <- "dart"
+test_that("lgb.cv() should warn if you use 'dart' boosting with early stopping", {
+  for (boosting_param in .PARAMETER_ALIASES()[["boosting"]]) {
+    params <- list(
+      num_leaves = 5L
+      , objective = "binary"
+      , metric = "binary_error"
+      , num_threads = .LGB_MAX_THREADS
+    )
+    params[[boosting_param]] <- "dart"
 
-      # warning: early stopping requested
-      expect_warning({
-        result <- lgb.cv(
-          data = lgb.Dataset(
-            data  = train$data
-            , label = train$label
-          )
-          , params = params
-          , nrounds = 5L
-          , verbose = -1L
-          , early_stopping_rounds = 1L)
-        }, regexp = "Early stopping is not available in 'dart' mode")
-
-      # no warning: early stopping not requested
-      expect_silent({
-        result <- lgb.cv(
-          data = lgb.Dataset(
-            data  = train$data
-            , label = train$label
-          )
-          , params = params
-          , nrounds = 5L
-          , verbose = -1L
-          , early_stopping_rounds = NULL
+    # warning: early stopping requested
+    expect_warning({
+      result <- lgb.cv(
+        data = lgb.Dataset(
+          data  = train$data
+          , label = train$label
         )
-      })
-    }
-  })
+        , params = params
+        , nrounds = 2L
+        , verbose = .LGB_VERBOSITY
+        , early_stopping_rounds = 1L
+      )
+    }, regexp = "Early stopping is not available in 'dart' mode")
+
+    # no warning: early stopping not requested
+    expect_silent({
+      result <- lgb.cv(
+        data = lgb.Dataset(
+          data  = train$data
+          , label = train$label
+        )
+        , params = params
+        , nrounds = 2L
+        , verbose = .LGB_VERBOSITY
+        , early_stopping_rounds = NULL
+      )
+    })
+  }
+})
