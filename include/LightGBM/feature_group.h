@@ -286,7 +286,10 @@ class FeatureGroup {
   }
 
   inline void CopySubrowByCol(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices, int fidx) {
+    Log::Warning("in CopySubrowByCol");
     if (!is_multi_val_) {
+      Log::Warning("is not multi val");
+      Log::Warning("full_feature->bin_data_.get() = %ld", full_feature->bin_data_.get());
       bin_data_->CopySubrow(full_feature->bin_data_.get(), used_indices, num_used_indices);
     } else {
       multi_bin_data_[fidx]->CopySubrow(full_feature->multi_bin_data_[fidx].get(), used_indices, num_used_indices);

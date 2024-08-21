@@ -60,6 +60,7 @@ class BaggingSampleStrategy : public SampleStrategy {
       } else {
         // get subset
         tmp_subset_->ReSize(bag_data_cnt_);
+        Log::Warning("bag_data_indices_.size() = %ld, bag_data_cnt_ = %d", bag_data_indices_.size(), bag_data_cnt_);
         tmp_subset_->CopySubrow(train_data_, bag_data_indices_.data(),
                                 bag_data_cnt_, false);
         #ifdef USE_CUDA
@@ -119,8 +120,10 @@ class BaggingSampleStrategy : public SampleStrategy {
           (static_cast<double>(bag_data_cnt_) / num_data_) / config_->bagging_freq;
       is_use_subset_ = false;
       if (config_->device_type != std::string("cuda")) {
-        const int group_threshold_usesubset = 100;
+        const int group_threshold_usesubset = 200;
         const double average_bag_rate_threshold = 0.5;
+        Log::Warning("train_data_->num_feature_groups() = %d", train_data_->num_feature_groups());
+        Log::Warning("average_bag_rate = %f", average_bag_rate);
         if (average_bag_rate <= average_bag_rate_threshold
             && (train_data_->num_feature_groups() < group_threshold_usesubset)) {
           if (tmp_subset_ == nullptr || is_change_dataset) {

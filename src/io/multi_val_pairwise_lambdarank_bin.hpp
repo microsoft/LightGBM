@@ -71,9 +71,9 @@ class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<B
         // if (bin != 0) {
         //   Log::Warning("first bin = %d, num_feature_ = %d", bin, this->num_feature_);
         // }
-        if (j == 0) {
-          Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", j, bin, gradient, hessian);
-        }
+        // if (j == 0) {
+        //   Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", j, bin, gradient, hessian);
+        // }
 
         const auto ti = (bin + this->offsets_[j]) << 1;
         grad[ti] += gradient;

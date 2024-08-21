@@ -52,6 +52,7 @@ void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::Push(int tid, data_size_t idx,
 
 template <typename BIN_TYPE, template<typename> class ITERATOR_TYPE>
 void PairwiseRankingBin<BIN_TYPE, ITERATOR_TYPE>::CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) {
+  Log::Warning("copy subrow in pairwie ranking bin");
   unpaired_bin_->CopySubrow(full_bin, used_indices, num_used_indices);
 }
 
@@ -98,9 +99,9 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
     for (; i < pf_end; ++i) {
       const auto paired_idx = USE_INDICES ? data_indices[i] : i;
       const auto ti = GetBinAt(paired_idx) << 1;
-      if (this->group_index_ == 0) {
-        Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
-      }
+      // if (this->group_index_ == 0) {
+      //   Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
+      // }
       if (USE_HESSIAN) {
         grad[ti] += ordered_gradients[i];
         hess[ti] += ordered_hessians[i];
@@ -113,9 +114,9 @@ void DensePairwiseRankingBin<VAL_T, IS_4BIT, ITERATOR_TYPE>::ConstructHistogramI
   for (; i < end; ++i) {
     const auto paired_idx = USE_INDICES ? data_indices[i] : i;
     const auto ti = GetBinAt(paired_idx) << 1;
-    if (this->group_index_ == 0) {
-      Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
-    }
+    // if (this->group_index_ == 0) {
+    //   Log::Warning("group index = %d bin = %d gradient = %f hessian = %f", this->group_index_, ti / 2, ordered_gradients[i], ordered_hessians[i]);
+    // }
     if (USE_HESSIAN) {
       grad[ti] += ordered_gradients[i];
       hess[ti] += ordered_hessians[i];

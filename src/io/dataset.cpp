@@ -1140,6 +1140,7 @@ void Dataset::CopySubrow(const Dataset* fullset,
                          data_size_t num_used_indices, bool need_meta_data) {
   CHECK_EQ(num_used_indices, num_data_);
 
+  Log::Warning("copy subrow here !!!!");
   std::vector<int> group_ids, subfeature_ids;
   group_ids.reserve(num_features_);
   subfeature_ids.reserve(num_features_);
@@ -1155,20 +1156,24 @@ void Dataset::CopySubrow(const Dataset* fullset,
       subfeature_ids.emplace_back(-1);
     }
   }
+  Log::Warning("copy subrow step 0 !!!!");
   int num_copy_tasks = static_cast<int>(group_ids.size());
-
-  OMP_INIT_EX();
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
+  // OMP_INIT_EX();
+  // #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(dynamic)
   for (int task_id = 0; task_id < num_copy_tasks; ++task_id) {
-    OMP_LOOP_EX_BEGIN();
+    // OMP_LOOP_EX_BEGIN();
+    Log::Warning("before copy sub row by col 0");
     int group = group_ids[task_id];
     int subfeature = subfeature_ids[task_id];
+    Log::Warning("before copy sub row by col 1");
     feature_groups_[group]->CopySubrowByCol(fullset->feature_groups_[group].get(),
                                             used_indices, num_used_indices, subfeature);
-    OMP_LOOP_EX_END();
+    Log::Warning("after copy sub row by col");
+    // OMP_LOOP_EX_END();
   }
-  OMP_THROW_EX();
+  // OMP_THROW_EX();
 
+  Log::Warning("copy subrow step 1 !!!!");
   if (need_meta_data) {
     metadata_.Init(fullset->metadata_, used_indices, num_used_indices);
   }
@@ -1187,6 +1192,8 @@ void Dataset::CopySubrow(const Dataset* fullset,
   // update CUDA storage for column data and metadata
   device_type_ = fullset->device_type_;
   gpu_device_id_ = fullset->gpu_device_id_;
+
+  Log::Warning("copy subrow step 2 !!!!");
 
   #ifdef USE_CUDA
   if (device_type_ == std::string("cuda")) {

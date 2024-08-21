@@ -108,6 +108,11 @@ class ObjectiveFunction {
   virtual bool NeedConvertOutputCUDA () const { return false; }
 
   #endif  // USE_CUDA
+
+  virtual void SetDataIndices(const data_size_t* used_data_indices) const { used_data_indices_ = used_data_indices; }
+
+ private:
+  mutable const data_size_t* used_data_indices_ = nullptr;
 };
 
 void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,

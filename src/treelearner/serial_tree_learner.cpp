@@ -757,7 +757,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                    int* right_leaf, bool update_cnt) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::SplitInner", global_timer);
 
-  histogram_pool_.DumpContent();
+  // histogram_pool_.DumpContent();
 
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index =
@@ -900,7 +900,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   }
 
   // #ifdef DEBUG
-  CheckSplit(best_split_info, *left_leaf, *right_leaf);
+  // CheckSplit(best_split_info, *left_leaf, *right_leaf);
   // #endif
 
   auto leaves_need_update = constraints_->Update(
