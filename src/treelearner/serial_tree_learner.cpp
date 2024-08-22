@@ -82,6 +82,14 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   features_used_global_.clear();
   features_used_global_.resize(train_data->num_features());
   splits_used_global_.clear();
+  /*! \brief storing fully grown tree
+  *  naive approach using a simple array, probably better use vector (combined with structs)  
+  *  TODO: catch the case that num_iterations and max_depth are not set (e.g. only init if certain param is set that defaults them to non-zero values)
+  */
+  // number of nodes for a fully grown tree 
+  int nodes = pow(2.0, (1.0+(config_->max_depth)))-1;
+  // tree with num_iterations trees, nodes corresponding to max_depth and 2 variables (feature, split value)
+  int full_tree[config_->num_iterations][nodes][2];
   /*[tinygbdt] END */
 
 }
@@ -233,6 +241,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       break;
     }
     // split tree with best leaf
+    Log::Debug("best leaf: %d, left leaf: %i, right leaf: %u", best_leaf, left_leaf, right_leaf);
     Split(tree_ptr, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
@@ -1031,7 +1040,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       Log::Debug("Gain with penalty: %f", new_split.gain);
   }
 
-  // TODO: this (probably?) leads to a split not being made, but the idea is to reuse a threshold. 
+  // TODO: this (probably?) leads to a split not being made because of the decreased gain, but the idea is to reuse a threshold (i.e. make a split but with an existing threshold). 
   // elaborate this
   if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
     Log::Debug("Gain no penalty: %f", new_split.gain);
