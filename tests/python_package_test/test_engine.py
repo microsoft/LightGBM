@@ -1112,15 +1112,15 @@ def test_early_stopping_can_be_triggered_via_custom_callback():
     assert bst.current_iteration() == 7
 
 
-def test_continue_train():
+def test_continue_train(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {"objective": "regression", "metric": "l1", "verbose": -1}
     lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
     init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
-    model_name = "model.txt"
-    init_gbm.save_model(model_name)
+    model_path = tmp_path / "model.txt"
+    init_gbm.save_model(model_path)
     evals_result = {}
     gbm = lgb.train(
         params,
@@ -1130,7 +1130,7 @@ def test_continue_train():
         # test custom eval metrics
         feval=(lambda p, d: ("custom_mae", mean_absolute_error(p, d.get_label()), False)),
         callbacks=[lgb.record_evaluation(evals_result)],
-        init_model="model.txt",
+        init_model=model_path,
     )
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 13.6
@@ -1713,7 +1713,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
 
 # why fixed seed?
 # sometimes there is no difference how cols are treated (cat or not cat)
-def test_pandas_categorical(rng_fixed_seed):
+def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
@@ -1756,8 +1756,9 @@ def test_pandas_categorical(rng_fixed_seed):
     gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D"])
     pred3 = gbm3.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D"]
-    gbm3.save_model("categorical.model")
-    gbm4 = lgb.Booster(model_file="categorical.model")
+    categorical_model_path = tmp_path / "categorical.model"
+    gbm3.save_model(categorical_model_path)
+    gbm4 = lgb.Booster(model_file=categorical_model_path)
     pred4 = gbm4.predict(X_test)
     model_str = gbm4.model_to_string()
     gbm4.model_from_string(model_str)
@@ -2020,7 +2021,7 @@ def test_sliced_data(rng):
     np.testing.assert_allclose(origin_pred, sliced_pred)
 
 
-def test_init_with_subset(rng):
+def test_init_with_subset(tmp_path, rng):
     data = rng.uniform(size=(50, 2))
     y = [1] * 25 + [0] * 25
     lgb_train = lgb.Dataset(data, y, free_raw_data=False)
@@ -2034,16 +2035,17 @@ def test_init_with_subset(rng):
     assert lgb_train.get_data().shape[0] == 50
     assert subset_data_1.get_data().shape[0] == 30
     assert subset_data_2.get_data().shape[0] == 20
-    lgb_train.save_binary("lgb_train_data.bin")
-    lgb_train_from_file = lgb.Dataset("lgb_train_data.bin", free_raw_data=False)
+    lgb_train_data = str(tmp_path / "lgb_train_data.bin")
+    lgb_train.save_binary(lgb_train_data)
+    lgb_train_from_file = lgb.Dataset(lgb_train_data, free_raw_data=False)
     subset_data_3 = lgb_train_from_file.subset(subset_index_1)
     subset_data_4 = lgb_train_from_file.subset(subset_index_2)
     init_gbm_2 = lgb.train(params=params, train_set=subset_data_3, num_boost_round=10, keep_training_booster=True)
     with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Unknown format of training data"):
         lgb.train(params=params, train_set=subset_data_4, num_boost_round=10, init_model=init_gbm_2)
-    assert lgb_train_from_file.get_data() == "lgb_train_data.bin"
-    assert subset_data_3.get_data() == "lgb_train_data.bin"
-    assert subset_data_4.get_data() == "lgb_train_data.bin"
+    assert lgb_train_from_file.get_data() == lgb_train_data
+    assert subset_data_3.get_data() == lgb_train_data
+    assert subset_data_4.get_data() == lgb_train_data
 
 
 def test_training_on_constructed_subset_without_params(rng):

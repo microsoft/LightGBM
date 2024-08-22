@@ -53,7 +53,7 @@ def _create_data(task, n_samples=100, n_features=4):
         elif task == "multiclass-classification":
             centers = 3
         else:
-            ValueError(f"Unknown classification task '{task}'")
+            raise ValueError(f"Unknown classification task '{task}'")
         X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
         g = None
     elif task == "regression":
@@ -558,7 +558,7 @@ def test_feature_importances_type():
 
 # why fixed seed?
 # sometimes there is no difference how cols are treated (cat or not cat)
-def test_pandas_categorical(rng_fixed_seed):
+def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
@@ -593,8 +593,9 @@ def test_pandas_categorical(rng_fixed_seed):
     pred2 = gbm2.predict(X_test, raw_score=True)
     gbm3 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=["A", "B", "C", "D"])
     pred3 = gbm3.predict(X_test, raw_score=True)
-    gbm3.booster_.save_model("categorical.model")
-    gbm4 = lgb.Booster(model_file="categorical.model")
+    categorical_model_path = tmp_path / "categorical.model"
+    gbm3.booster_.save_model(categorical_model_path)
+    gbm4 = lgb.Booster(model_file=categorical_model_path)
     pred4 = gbm4.predict(X_test)
     gbm5 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=["A", "B", "C", "D", "E"])
     pred5 = gbm5.predict(X_test, raw_score=True)

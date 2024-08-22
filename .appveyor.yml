@@ -1,4 +1,4 @@
-version: 4.4.0.99.{build}
+version: 4.5.0.99.{build}
 
 image: Visual Studio 2015
 platform: x64
@@ -39,4 +39,4 @@ test_script:
   - conda config --add channels conda-forge
   - conda config --set channel_priority strict
   - conda init powershell
-  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test_windows.ps1
+  - powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test-windows.ps1
