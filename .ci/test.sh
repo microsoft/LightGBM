@@ -47,7 +47,7 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
     exit 0
 fi
 
-if [[ "$TASK" == "cpp-tests" ]]; then
+if [[ "${TASK}" == "cpp-tests" ]]; then
     if [[ $METHOD == "with-sanitizers" ]]; then
         extra_cmake_opts="-DUSE_SANITIZER=ON"
         if [[ -n $SANITIZERS ]]; then
@@ -56,17 +56,18 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
-    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON "${extra_cmake_opts}"
     cmake --build build --target testlightgbm -j4 || exit 1
     ./testlightgbm || exit 1
     exit 0
 fi
 
 # including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-CONDA_PYTHON_REQUIREMENT="python=$PYTHON_VERSION[build=*cpython]"
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
-    mamba create -q -y -n $CONDA_ENV ${CONDA_PYTHON_REQUIREMENT} numpy
+    mamba create -q -y -n $CONDA_ENV "${CONDA_PYTHON_REQUIREMENT}" numpy
+    # shellcheck source=/dev/null
     source activate $CONDA_ENV
     cmake -B build -S . || exit 1
     cmake --build build --target lightgbm -j4 || exit 1
@@ -89,14 +90,14 @@ if [[ $TASK == "swig" ]]; then
         python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
     fi
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp ./build/lightgbmlib.jar $BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_$OS_NAME.jar
+        cp ./build/lightgbmlib.jar "${BUILD_ARTIFACTSTAGINGDIRECTORY}"/lightgbmlib_"${OS_NAME}".jar
     fi
     exit 0
 fi
 
 if [[ $TASK == "lint" ]]; then
     mamba create -q -y -n $CONDA_ENV \
-        ${CONDA_PYTHON_REQUIREMENT} \
+        "${CONDA_PYTHON_REQUIREMENT}" \
         'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
@@ -104,6 +105,7 @@ if [[ $TASK == "lint" ]]; then
         'pre-commit>=3.8.0' \
         'pyarrow-core>=17.0' \
         'r-lintr>=3.1.2'
+    # shellcheck source=/dev/null
     source activate $CONDA_ENV
     echo "Linting Python code"
     bash ./.ci/lint-python.sh || exit 1
@@ -125,12 +127,13 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -n $CONDA_ENV \
             'doxygen>=1.10.0' \
             'rstcheck>=6.2.4' || exit 1
+    # shellcheck source=/dev/null
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd "${BUILD_DIRECTORY}/python-package"
-    rstcheck --report-level warning $(find . -type f -name "*.rst") || exit 1
+    rstcheck --report-level warning "$(find . -type f -name "*.rst")" || exit 1
     cd "${BUILD_DIRECTORY}/docs"
-    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile $(find . -type f -name "*.rst") || exit 1
+    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile "$(find . -type f -name "*.rst")" || exit 1
     # build docs
     make html || exit 1
     if [[ $TASK == "check-links" ]]; then
@@ -150,20 +153,21 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
 fi
 
 if [[ $PYTHON_VERSION == "3.7" ]]; then
-    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
+    CONDA_REQUIREMENT_FILES="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py37.txt"
 elif [[ $PYTHON_VERSION == "3.8" ]]; then
-    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py38.txt"
+    CONDA_REQUIREMENT_FILES="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core-py38.txt"
 else
-    CONDA_REQUIREMENT_FILES="--file ${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
+    CONDA_REQUIREMENT_FILES="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
 mamba create \
     -y \
     -n $CONDA_ENV \
-    ${CONDA_REQUIREMENT_FILES} \
-    ${CONDA_PYTHON_REQUIREMENT} \
+    --file "$CONDA_REQUIREMENT_FILES" \
+    "$CONDA_PYTHON_REQUIREMENT" \
 || exit 1
 
+# shellcheck source=/dev/null
 source activate $CONDA_ENV
 
 cd "${BUILD_DIRECTORY}"
@@ -171,9 +175,9 @@ cd "${BUILD_DIRECTORY}"
 if [[ $TASK == "sdist" ]]; then
     sh ./build-python.sh sdist || exit 1
     sh .ci/check-python-dists.sh ./dist || exit 1
-    pip install ./dist/lightgbm-$LGB_VER.tar.gz -v || exit 1
+    pip install ./dist/lightgbm-"${LGB_VER}".tar.gz -v || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp ./dist/lightgbm-$LGB_VER.tar.gz $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
+        cp ./dist/lightgbm-"$LGB_VER".tar.gz "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
     fi
     pytest ./tests/python_package_test || exit 1
     exit 0
@@ -182,7 +186,7 @@ elif [[ $TASK == "bdist" ]]; then
         sh ./build-python.sh bdist_wheel || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py3-none-macosx*.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
+            cp dist/lightgbm-"${LGB_VER}"-py3-none-macosx*.whl "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
     else
         if [[ $ARCH == "x86_64" ]]; then
@@ -198,10 +202,10 @@ elif [[ $TASK == "bdist" ]]; then
             ./dist/tmp.whl || exit 1
         mv \
             ./dist/tmp.whl \
-            ./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl || exit 1
+            ./dist/lightgbm-"${LGB_VER}"-py3-none-"${PLATFORM}".whl || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl $BUILD_ARTIFACTSTAGINGDIRECTORY || exit 1
+            cp dist/lightgbm-"${LGB_VER}"-py3-none-"${PLATFORM}".whl "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
@@ -220,14 +224,14 @@ if [[ $TASK == "gpu" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_GPU=ON \
-            ./dist/lightgbm-$LGB_VER.tar.gz \
+            ./dist/lightgbm-"${LGB_VER}".tar.gz \
         || exit 1
         pytest ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install ./dist/lightgbm-"${LGB_VER}"*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -245,14 +249,14 @@ elif [[ $TASK == "cuda" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
-            ./dist/lightgbm-$LGB_VER.tar.gz \
+            ./dist/lightgbm-"${LGB_VER}".tar.gz \
         || exit 1
         pytest ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install ./dist/lightgbm-"${LGB_VER}"*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -265,14 +269,14 @@ elif [[ $TASK == "mpi" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_MPI=ON \
-            ./dist/lightgbm-$LGB_VER.tar.gz \
+            ./dist/lightgbm-"${LGB_VER}".tar.gz \
         || exit 1
         pytest ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-$LGB_VER*.whl -v || exit 1
+        pip install ./dist/lightgbm-"${LGB_VER}"*.whl -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -290,16 +294,16 @@ pytest ./tests || exit 1
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         if [[ $OS_NAME == "macos" ]]; then
-            cp ./lib_lightgbm.dylib $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib
+            cp ./lib_lightgbm.dylib "${BUILD_ARTIFACTSTAGINGDIRECTORY}"/lib_lightgbm.dylib
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
                 python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
             fi
-            cp ./lib_lightgbm.so $BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.so
+            cp ./lib_lightgbm.so "${BUILD_ARTIFACTSTAGINGDIRECTORY}"/lib_lightgbm.so
         fi
     fi
-    cd "$BUILD_DIRECTORY/examples/python-guide"
+    cd "${BUILD_DIRECTORY}/examples/python-guide"
     sed -i'.bak' '/import lightgbm as lgb/a\
 import matplotlib\
 matplotlib.use\(\"Agg\"\)\
@@ -310,10 +314,10 @@ matplotlib.use\(\"Agg\"\)\
         'h5py>=3.10' \
         'ipywidgets>=8.1.2' \
         'notebook>=7.1.2'
-    for f in *.py **/*.py; do python $f || exit 1; done  # run all examples
-    cd "$BUILD_DIRECTORY/examples/python-guide/notebooks"
+    for f in *.py **/*.py; do python "$f" || exit 1; done  # run all examples
+    cd "${BUILD_DIRECTORY}/examples/python-guide/notebooks"
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
-    jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb || exit 1  # run all notebooks
+    jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace ./*.ipynb || exit 1  # run all notebooks
 
     # importing the library should succeed even if all optional dependencies are not present
     conda uninstall -n $CONDA_ENV --force --yes \

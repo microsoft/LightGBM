@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # [description]
 #
@@ -254,14 +254,14 @@ create_isolated_source_dir() {
     modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
     for eigen_module in ${modules}; do
         cp \
-            external_libs/eigen/Eigen/${eigen_module} \
-            ./lightgbm-python/external_libs/eigen/Eigen/${eigen_module}
-        if [ ${eigen_module} != "Dense" ]; then
-            mkdir -p ./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/
+            external_libs/eigen/Eigen/"${eigen_module}" \
+            ./lightgbm-python/external_libs/eigen/Eigen/"${eigen_module}"
+        if [ "${eigen_module}" != "Dense" ]; then
+            mkdir -p ./lightgbm-python/external_libs/eigen/Eigen/src/"${eigen_module}"/
             cp \
                 -R \
-                external_libs/eigen/Eigen/src/${eigen_module}/* \
-                ./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/
+                external_libs/eigen/Eigen/src/"${eigen_module}"/* \
+                ./lightgbm-python/external_libs/eigen/Eigen/src/"${eigen_module}"/
         fi
     done
 
@@ -308,10 +308,12 @@ if test "${INSTALL}" = true; then
         # use regular-old setuptools for these builds, to avoid
         # trying to recompile the shared library
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
-        echo '[build-system]' >> ./pyproject.toml
-        echo 'requires = ["setuptools"]' >> ./pyproject.toml
-        echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
-        echo "" >> ./pyproject.toml
+	{ 
+		echo '[build-system]' 
+		echo 'requires = ["setuptools"]' 
+		echo 'build-backend = "setuptools.build_meta"' 
+		echo ""
+	}	>> ./pyproject.toml
         echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
@@ -342,7 +344,7 @@ if test "${BUILD_SDIST}" = true; then
     python -m build \
         --sdist \
         --outdir ../dist \
-        ${BUILD_ARGS} \
+        $BUILD_ARGS \
         .
 fi
 
@@ -352,7 +354,7 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
-        ${BUILD_ARGS} \
+        $BUILD_ARGS \
         .
 fi
 
@@ -366,12 +368,12 @@ if test "${INSTALL}" = true; then
     fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
-        ${PIP_INSTALL_ARGS} \
+        $PIP_INSTALL_ARGS \
         --force-reinstall \
         --no-cache-dir \
         --no-deps \
         --find-links=. \
-        ${PACKAGE_NAME}
+        $PACKAGE_NAME
     cd ../
 fi
 

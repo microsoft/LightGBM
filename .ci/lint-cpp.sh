@@ -17,7 +17,7 @@ cmake_files=$(
 cmakelint \
     --linelength=120 \
     --filter=-convention/filename,-package/stdargs,-readability/wonkycase \
-    ${cmake_files} \
+    "${cmake_files}" \
 || exit 1
 echo "done running cmakelint"
 
