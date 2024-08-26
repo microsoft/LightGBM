@@ -1122,15 +1122,13 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
-  // desc = used only with ``gpu`` device type
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
-  // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
+  // desc = **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0
-  // desc = used only with ``cuda`` device type
   // desc = number of GPUs
-  // desc = **Note**: can be used only in CUDA implementation
+  // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
   int num_gpu = 1;
 
   #ifndef __NVCC__

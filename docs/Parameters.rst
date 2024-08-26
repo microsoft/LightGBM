@@ -1322,19 +1322,15 @@ GPU Parameters
 
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
-   -  used only with ``gpu`` device type
-
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
-   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
+   -  **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 
-   -  used only with ``cuda`` device type
-
    -  number of GPUs
 
-   -  **Note**: can be used only in CUDA implementation
+   -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
 
 .. end params list
 
