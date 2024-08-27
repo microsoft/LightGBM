@@ -358,6 +358,9 @@ struct Config {
   // desc = random seed for bagging
   int bagging_seed = 3;
 
+  // desc = whether to do bagging sample by query
+  bool bagging_by_query = false;
+
   // alias = sub_feature, colsample_bytree
   // check = >0.0
   // check = <=1.0
