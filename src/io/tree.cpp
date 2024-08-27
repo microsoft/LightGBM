@@ -336,6 +336,70 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
+std::vector<std::vector<int>> Tree::ToArrayPointer(int tt_leaf_id) const {
+  
+  /**
+   * The following code is just the first draft.
+   * Next step: make use of vector of ids from ToFullArray and with this fill the three arrays (tinytree, tt_features, tt_thresholds)
+   */
+  
+  std::vector<std::vector<int>> tinytree;
+  std::vector<int> tt_features;
+  std::vector<double> tt_thresholds;
+
+  int tt_nodes = pow(2.0, (1.0+max_depth_))-1;
+  int init_value = -1;
+  tinytree.resize(2, std::vector<int>(tt_nodes, init_value));
+  std::vector<double>::iterator threshold_it;
+  std::vector<int>::iterator feature_it;
+
+  threshold_it = std::find(tt_thresholds.begin(), tt_thresholds.end(), threshold_[0]);
+	if (threshold_it == tt_thresholds.end() ) {  
+		// did not find element
+    // TODO: think about inserting in ordered way; downside is that the indizes change
+    tt_thresholds.insert(threshold_it, threshold_[0]);
+  }
+
+  int threshold_id = std::distance(tt_thresholds.begin(), threshold_it);
+
+  feature_it = std::find(tt_features.begin(), tt_features.end(), split_feature_[0]);
+	if (feature_it == tt_features.end() ) {  
+		// did not find element
+    // TODO: think about inserting in ordered way; downside is that the indizes change
+    tt_features.insert(feature_it, split_feature_[0]);
+  }
+
+  int feature_id = std::distance(tt_features.begin(), feature_it);
+  tinytree[0] = {feature_id, threshold_id} ;
+  
+}
+
+std::vector<int> Tree::ToFullArray() const {
+  std::vector<int> fulltree;
+
+  int tt_nodes = pow(2.0, (1.0+max_depth_))-1;
+  // TODO: is it possible to initialize empty? int value not possible as lightgbm uses positive and negative values
+  int init_value = {};
+  fulltree.resize(tt_nodes, init_value);
+
+  for (int i = 0; i < fulltree.size(); i++)
+  {
+    int lgbm_id = fulltree[i];
+    if (i == 0)
+    {
+      lgbm_id = 0;
+    }
+    // leaf id is < 0, so only fill child nodes for > 0 
+    if (lgbm_id >= 0)
+    {
+      fulltree[2*i+1] = left_child_[lgbm_id];
+      fulltree[2*i+2] = right_child_[lgbm_id];
+    }     
+  }
+  return fulltree;
+}
+
+
 std::string Tree::ToString() const {
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
@@ -616,9 +680,11 @@ std::string Tree::ToIfElse(int index, bool predict_leaf_index) const {
 }
 
 std::string Tree::NodeToIfElse(int index, bool predict_leaf_index) const {
+  std::stringstream str_buf_array;
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+  str_buf_array << "std::vector<std::vector<double>> fullTree {";
   if (index >= 0) {
     // non-leaf
     str_buf << "fval = arr[" << split_feature_[index] << "];";

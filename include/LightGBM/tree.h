@@ -249,6 +249,13 @@ class Tree {
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
+  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
+  std::vector<std::vector<int>> Tree::ToArrayPointer(int tinytree_id) const;
+
+  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
+  std::vector<int> Tree::ToFullArray() const;
+
+
   inline static bool IsZero(double fval) {
     return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
   }
@@ -499,6 +506,10 @@ class Tree {
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<float> split_gain_;
+  // /*! \brief [tinygbdt] tiny tree features */
+  // std::vector<int> tt_features_;
+  // /*! \brief [tinygbdt] tiny tree threshold split values */
+  // std::vector<double> tt_thresholds_;
   // used for leaf node
   /*! \brief The parent of leaf */
   std::vector<int> leaf_parent_;
