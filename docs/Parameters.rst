@@ -20,8 +20,8 @@ Parameters Format
 Parameters are merged together in the following order (later items overwrite earlier ones):
 
 1. LightGBM's default values
-2. (CLI only) configuration in a file passed like ``config=train.conf``
-3. special files for ``weight``, ``init_score``, ``query``, and ``positions`` (see `Others <#others>`__)
+2. special files for ``weight``, ``init_score``, ``query``, and ``positions`` (see `Others <#others>`__)
+3. (CLI only) configuration in a file passed like ``config=train.conf``
 4. (CLI only) configuration passed via the command line
 5. (Python, R) special keyword arguments to some functions (e.g. ``num_boost_round`` in ``train()``)
 6. (Python, R) ``params`` function argument (including ``**kwargs`` in Python and ``...`` in R)
