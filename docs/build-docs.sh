@@ -20,7 +20,7 @@ conda env create \
     --name docs-env \
     --file env.yml || exit 1
 
-# shellcheck source=/dev/null
+# shellcheck disable=SC1091
 source activate docs-env
 make clean html || exit 1
 
