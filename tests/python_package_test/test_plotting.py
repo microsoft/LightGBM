@@ -217,7 +217,7 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_tree_with_categories_below_max_category_values(tmp_path: Path):
+def test_tree_with_categories_below_max_category_values(tmp_path):
     X_train, y_train = _categorical_data(2, 10)
     params = {
         "n_estimators": 10,
