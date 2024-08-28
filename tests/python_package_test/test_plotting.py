@@ -262,7 +262,7 @@ def test_tree_with_categories_below_max_category_values(tmp_path: Path):
 
 
 @pytest.mark.skipif(not GRAPHVIZ_INSTALLED, reason="graphviz is not installed")
-def test_tree_with_categories_above_max_category_values(tmp_path: Path):
+def test_tree_with_categories_above_max_category_values(tmp_path):
     X_train, y_train = _categorical_data(20, 30)
     params = {
         "n_estimators": 10,
