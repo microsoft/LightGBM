@@ -1531,7 +1531,7 @@ def test_distributed_quantized_training(tmp_path, cluster):
     with Client(cluster) as client:
         X, y, w, _, dX, dy, dw, _ = _create_data(objective="regression", output="array")
 
-        np.savetxt(tmp_path / "data_dask.csv", np.hstack([y[:, None], X]), fmt="%f,%f,%f,%f,%f")
+        np.savetxt(tmp_path / "data_dask.csv", np.hstack([np.array([y]).T, X]), fmt="%f,%f,%f,%f,%f")
 
         params = {
             "boosting_type": "gbdt",
