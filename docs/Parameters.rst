@@ -174,9 +174,9 @@ Core Parameters
 
       -  ``custom``
 
-      -  **Note**: Not supported in CLI version
-
       -  must be passed through parameters explicitly in the C API
+
+      -  **Note**: cannot be used in CLI version
 
 -  ``boosting`` :raw-html:`<a id="boosting" title="Permalink to this parameter" href="#boosting">&#x1F517;&#xFE0E;</a>`, default = ``gbdt``, type = enum, options: ``gbdt``, ``rf``, ``dart``, aliases: ``boosting_type``, ``boost``
 
@@ -272,7 +272,7 @@ Core Parameters
 
    -  **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
 
-   -  **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
+   -  **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
 
 -  ``seed`` :raw-html:`<a id="seed" title="Permalink to this parameter" href="#seed">&#x1F517;&#xFE0E;</a>`, default = ``None``, type = int, aliases: ``random_seed``, ``random_state``
 
@@ -405,7 +405,7 @@ Learning Control Parameters
 
    -  frequency for bagging
 
-   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
+   -  ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100%`` of the data to use for the next ``k`` iterations
 
    -  **Note**: bagging is only effective when ``0.0 < bagging_fraction < 1.0``
 
@@ -517,7 +517,7 @@ Learning Control Parameters
 
    -  used only in ``dart``
 
-   -  set this to ``true``, if you want to use xgboost dart mode
+   -  set this to ``true``, if you want to use XGBoost DART mode
 
 -  ``uniform_drop`` :raw-html:`<a id="uniform_drop" title="Permalink to this parameter" href="#uniform_drop">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
@@ -545,6 +545,8 @@ Learning Control Parameters
 
 -  ``min_data_per_group`` :raw-html:`<a id="min_data_per_group" title="Permalink to this parameter" href="#min_data_per_group">&#x1F517;&#xFE0E;</a>`, default = ``100``, type = int, constraints: ``min_data_per_group > 0``
 
+   -  used for the categorical features
+
    -  minimal number of data per categorical group
 
 -  ``max_cat_threshold`` :raw-html:`<a id="max_cat_threshold" title="Permalink to this parameter" href="#max_cat_threshold">&#x1F517;&#xFE0E;</a>`, default = ``32``, type = int, constraints: ``max_cat_threshold > 0``
@@ -569,6 +571,8 @@ Learning Control Parameters
 
 -  ``max_cat_to_onehot`` :raw-html:`<a id="max_cat_to_onehot" title="Permalink to this parameter" href="#max_cat_to_onehot">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int, constraints: ``max_cat_to_onehot > 0``
 
+   -  used for the categorical features
+
    -  when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
 
 -  ``top_k`` :raw-html:`<a id="top_k" title="Permalink to this parameter" href="#top_k">&#x1F517;&#xFE0E;</a>`, default = ``20``, type = int, aliases: ``topk``, constraints: ``top_k > 0``
@@ -583,7 +587,7 @@ Learning Control Parameters
 
    -  ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
 
-   -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+   -  you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for the 1st feature, non-constraint for the 2nd feature and increasing for the 3rd feature
 
 -  ``monotone_constraints_method`` :raw-html:`<a id="monotone_constraints_method" title="Permalink to this parameter" href="#monotone_constraints_method">&#x1F517;&#xFE0E;</a>`, default = ``basic``, type = enum, options: ``basic``, ``intermediate``, ``advanced``, aliases: ``monotone_constraining_method``, ``mc_method``
 
@@ -591,11 +595,11 @@ Learning Control Parameters
 
    -  monotone constraints method
 
-      -  ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
+      -  ``basic``, the most basic monotone constraints method. It does not slow down the training speed at all, but over-constrains the predictions
 
-      -  ``intermediate``, a `more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+      -  ``intermediate``, a `more advanced method <https://hal.science/hal-02862802/document>`__, which may slow down the training speed very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
 
-      -  ``advanced``, an `even more advanced method <https://hal.science/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+      -  ``advanced``, an `even more advanced method <https://hal.science/hal-02862802/document>`__, which may slow down the training speed. However, this method is even less constraining than the intermediate method and should again significantly improve the results
 
 -  ``monotone_penalty`` :raw-html:`<a id="monotone_penalty" title="Permalink to this parameter" href="#monotone_penalty">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, aliases: ``monotone_splits_penalty``, ``ms_penalty``, ``mc_penalty``, constraints: ``monotone_penalty >= 0.0``
 
@@ -655,7 +659,7 @@ Learning Control Parameters
 
    -  helps prevent overfitting on leaves with few samples
 
-   -  if set to zero, no smoothing is applied
+   -  if ``0.0`` (the default), no smoothing is applied
 
    -  if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
 
@@ -675,7 +679,7 @@ Learning Control Parameters
 
       -  for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
 
-      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+      -  for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc.
 
    -  any two features can only appear in the same branch only if there exists a constraint containing both features
 
@@ -727,35 +731,41 @@ Learning Control Parameters
 
    -  gradient quantization can accelerate training, with little accuracy drop in most cases
 
-   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+   -  **Note**: works only with ``cpu`` and ``cuda`` device type
 
    -  *New in version 4.0.0*
 
 -  ``num_grad_quant_bins`` :raw-html:`<a id="num_grad_quant_bins" title="Permalink to this parameter" href="#num_grad_quant_bins">&#x1F517;&#xFE0E;</a>`, default = ``4``, type = int
 
+   -  used only if ``use_quantized_grad=true``
+
    -  number of bins to quantization gradients and hessians
 
    -  with more bins, the quantized training will be closer to full precision training
 
-   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+   -  **Note**: works only with ``cpu`` and ``cuda`` device type
 
    -  *New in version 4.0.0*
 
 -  ``quant_train_renew_leaf`` :raw-html:`<a id="quant_train_renew_leaf" title="Permalink to this parameter" href="#quant_train_renew_leaf">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
+   -  used only if ``use_quantized_grad=true``
+
    -  whether to renew the leaf values with original gradients when quantized training
 
    -  renewing is very helpful for good quantized training accuracy for ranking objectives
 
-   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+   -  **Note**: works only with ``cpu`` and ``cuda`` device type
 
    -  *New in version 4.0.0*
 
 -  ``stochastic_rounding`` :raw-html:`<a id="stochastic_rounding" title="Permalink to this parameter" href="#stochastic_rounding">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
 
+   -  used only if ``use_quantized_grad=true``
+
    -  whether to use stochastic rounding in gradient quantization
 
-   -  **Note**: can be used only with ``device_type = cpu`` and ``device_type=cuda``
+   -  **Note**: works only with ``cpu`` and ``cuda`` device type
 
    -  *New in version 4.0.0*
 
@@ -769,25 +779,25 @@ Dataset Parameters
 
    -  fit piecewise linear gradient boosting tree
 
-      -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+   -  tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
 
-      -  the linear model at each leaf includes all the numerical features in that leaf's branch
+   -  the linear model at each leaf includes all the numerical features in that leaf's branch
 
-      -  the first tree has constant leaf values
+   -  the first tree has constant leaf values
 
-      -  categorical features are used for splits as normal but are not used in the linear models
+   -  categorical features are used for splits as normal but are not used in the linear models
 
-      -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+   -  missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
 
-      -  it is recommended to rescale data before training so that features have similar mean and standard deviation
+   -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
-      -  **Note**: only works with CPU and ``serial`` tree learner
+   -  **Note**: works only with ``cpu`` device type and ``serial`` tree learner
 
-      -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+   -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 
-      -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+   -  **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
 
-      -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+   -  **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
 
 -  ``max_bin`` :raw-html:`<a id="max_bin" title="Permalink to this parameter" href="#max_bin">&#x1F517;&#xFE0E;</a>`, default = ``255``, type = int, aliases: ``max_bins``, constraints: ``max_bin > 1``
 
@@ -1052,13 +1062,13 @@ Predict Parameters
 
 -  ``pred_early_stop_freq`` :raw-html:`<a id="pred_early_stop_freq" title="Permalink to this parameter" href="#pred_early_stop_freq">&#x1F517;&#xFE0E;</a>`, default = ``10``, type = int
 
-   -  used only in ``prediction`` task
+   -  used only in ``prediction`` task and if ``pred_early_stop=true``
 
    -  the frequency of checking early-stopping prediction
 
 -  ``pred_early_stop_margin`` :raw-html:`<a id="pred_early_stop_margin" title="Permalink to this parameter" href="#pred_early_stop_margin">&#x1F517;&#xFE0E;</a>`, default = ``10.0``, type = double
 
-   -  used only in ``prediction`` task
+   -  used only in ``prediction`` task and if ``pred_early_stop=true``
 
    -  the threshold of margin in early-stopping prediction
 
@@ -1198,7 +1208,9 @@ Objective Parameters
 
 -  ``lambdarank_position_bias_regularization`` :raw-html:`<a id="lambdarank_position_bias_regularization" title="Permalink to this parameter" href="#lambdarank_position_bias_regularization">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``lambdarank_position_bias_regularization >= 0.0``
 
-   -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled. Larger values reduce the inferred position bias factors.
+   -  used only in ``lambdarank`` application when positional information is provided and position bias is modeled
+
+   -  larger values reduce the inferred position bias factors
 
    -  *New in version 4.1.0*
 
@@ -1310,7 +1322,7 @@ Network Parameters
 
    -  the number of machines for distributed learning application
 
-   -  this parameter is needed to be set in both **socket** and **mpi** versions
+   -  this parameter is needed to be set in both **socket** and **MPI** versions
 
 -  ``local_listen_port`` :raw-html:`<a id="local_listen_port" title="Permalink to this parameter" href="#local_listen_port">&#x1F517;&#xFE0E;</a>`, default = ``12400 (random for Dask-package)``, type = int, aliases: ``local_port``, ``port``, constraints: ``local_listen_port > 0``
 
@@ -1339,6 +1351,8 @@ GPU Parameters
 
 -  ``gpu_platform_id`` :raw-html:`<a id="gpu_platform_id" title="Permalink to this parameter" href="#gpu_platform_id">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
+   -  used only with ``gpu`` device type
+
    -  OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
 
    -  ``-1`` means the system-wide default platform
@@ -1347,7 +1361,7 @@ GPU Parameters
 
 -  ``gpu_device_id`` :raw-html:`<a id="gpu_device_id" title="Permalink to this parameter" href="#gpu_device_id">&#x1F517;&#xFE0E;</a>`, default = ``-1``, type = int
 
-   -  OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
+   -  OpenCL device ID in the specified platform or CUDA device ID. Each GPU in the selected platform has a unique device ID
 
    -  ``-1`` means the default device in the selected platform
 
@@ -1357,13 +1371,13 @@ GPU Parameters
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)
 
-   -  **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
+   -  **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
 
 -  ``num_gpu`` :raw-html:`<a id="num_gpu" title="Permalink to this parameter" href="#num_gpu">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int, constraints: ``num_gpu > 0``
 
    -  number of GPUs
 
-   -  **Note**: can be used only in CUDA implementation
+   -  **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
 
 .. end params list
 
