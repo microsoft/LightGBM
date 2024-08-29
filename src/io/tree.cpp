@@ -337,7 +337,6 @@ double Tree::GetLowerBoundValue() const {
 }
 
 std::vector<std::vector<int>> Tree::ToArrayPointer(int tt_leaf_id) const {
-  
   /**
    * The following code is just the first draft.
    * Next step: make use of vector of ids from ToFullArray and with this fill the three arrays (tinytree, tt_features, tt_thresholds)
@@ -377,24 +376,52 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(int tt_leaf_id) const {
 std::vector<int> Tree::ToFullArray() const {
   std::vector<int> fulltree;
 
-  int tt_nodes = pow(2.0, (1.0+max_depth_))-1;
-  // TODO: is it possible to initialize empty? int value not possible as lightgbm uses positive and negative values
-  int init_value = {};
-  fulltree.resize(tt_nodes, init_value);
+  int depth = 0;
+  if (num_leaves_ == 1) {
+    depth = 0;
+  } else {
+    // TODO: what is this for?
+    // if (leaf_depth_.size() == 0) {
+    //   RecomputeLeafDepths(0, 0);
+    // }
+    depth = leaf_depth_[0];
+    for (int i = 1; i < num_leaves(); ++i) {
+      if (depth < leaf_depth_[i]) depth = leaf_depth_[i];
+    }
+  }
 
-  for (int i = 0; i < fulltree.size(); i++)
+  Log::Debug("max depth after recompute: %d", depth);
+  Log::Debug("leaf depth size: %d", leaf_depth_.size());
+
+  int tt_nodes = pow(2.0, (1.0+depth))-1;
+  Log::Debug("Full tree #nodes: %d", tt_nodes);
+  // TODO: not possible to init empty; to use 0 the tree elements need to be shifted by 1; not possible to use negative as lightgbm assigns leaf with negative index
+  int init_value = {INT_MIN};
+  fulltree.resize(tt_nodes, init_value);
+  int treesize = fulltree.size();
+  Log::Debug("Tree size: %d", treesize);
+
+  // TODO: think about if it is better to solve this with iterator
+  for (int i = 0; i < tt_nodes; i++)
   {
-    int lgbm_id = fulltree[i];
+    Log::Debug("for loop, iteration: %d", i);
+    // std::cout << lgbm_id << "\n";
     if (i == 0)
     {
-      lgbm_id = 0;
+      fulltree[0] = 0;
     }
+    int lgbm_id = fulltree[i];
     // leaf id is < 0, so only fill child nodes for > 0 
     if (lgbm_id >= 0)
     {
-      fulltree[2*i+1] = left_child_[lgbm_id];
-      fulltree[2*i+2] = right_child_[lgbm_id];
+      Log::Debug("positive lgbm id: %d", lgbm_id);
+      fulltree[2 * i + 1] = left_child_[lgbm_id];
+      std::cout << (2 * i + 1) << "\n";
+      fulltree[2 * i + 2] = right_child_[lgbm_id];
     }     
+    else {
+      Log::Debug("else lgbm id: %d", lgbm_id);
+    }
   }
   return fulltree;
 }
@@ -406,8 +433,13 @@ std::string Tree::ToString() const {
 
   using CommonC::ArrayToString;
 
+  // str_buf << "max depth: " << max_depth_ << "\n";
+  std::vector<int> fulltree = ToFullArray();
+
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
+  str_buf << "full_tree_array=" 
+    << ArrayToString(fulltree, fulltree.size()) << '\n';
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="

@@ -250,10 +250,10 @@ class Tree {
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
-  std::vector<std::vector<int>> Tree::ToArrayPointer(int tinytree_id) const;
+  std::vector<std::vector<int>> ToArrayPointer(int tinytree_id) const;
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
-  std::vector<int> Tree::ToFullArray() const;
+  std::vector<int> ToFullArray() const;
 
 
   inline static bool IsZero(double fval) {
