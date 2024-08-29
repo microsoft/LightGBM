@@ -132,6 +132,7 @@ if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+    message(STATUS "LIBR_LIBS_DIR: ${LIBR_LIBS_DIR}")
     message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
     include_directories(${LIBR_INCLUDE_DIRS})
     add_definitions(-DLGB_R_BUILD)
@@ -828,21 +829,55 @@ if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
+  #   - (R-only) ${LIBR_LIBS_DIR}    (wherever R for macOS stores vendored third-party libraries)
   #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
   #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
   #   - /opt/local/lib/libomp        (where 'port install' puts libomp.dylib)
   #
+
+  # with some compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
+  list(APPEND __omp_install_rpaths "${OpenMP_LIBRARY_DIR}")
+
+  # with clang, libomp doesn't ship with the compiler and might be supplied separately
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      list(
+        APPEND __omp_install_rpaths
+          "/opt/homebrew/opt/libomp/lib"
+          "/opt/local/lib/libomp"
+      )
+      # It appears that CRAN's macOS binaries compiled with -fopenmp have install names
+      # of the form:
+      #
+      #   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libomp.dylib
+      #
+      # That corresponds to the libomp.dylib that ships with the R framework for macOS, available
+      # from https://cran.r-project.org/bin/macosx/.
+      #
+      # That absolute-path install name leads to that library being loaded unconditionally.
+      #
+      # That can result in e.g. 'library(data.table)' loading R's libomp.dylib and 'library(lightgbm)' loading
+      # Homebrew's. Having 2 loaded in the same process can lead to segfaults and unpredictable behavior.
+      #
+      # This can't be easily avoided by forcing R-package builds in LightGBM to use R's libomp.dylib
+      # at build time... LightGBM's CMake uses find_package(OpenMP), and R for macOS only provides the
+      # library, not CMake config files for it.
+      #
+      # Best we can do, to allow CMake-based builds of the R package here to continue to work
+      # alongside CRAN-prepared binaries of other packages with OpenMP dependencies, is to
+      # ensure that R's library directory is the first place the loader searches for
+      # libomp.dylib when clang is used.
+      #
+      # ref: https://github.com/microsoft/LightGBM/issues/6628
+      #
+      if(__BUILD_FOR_R)
+        list(PREPEND __omp_install_rpaths "${LIBR_LIBS_DIR}")
+      endif()
+  endif()
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-          # with clang, libomp doesn't ship with the compiler and might be supplied separately
-          INSTALL_RPATH "${OpenMP_LIBRARY_DIR};/opt/homebrew/opt/libomp/lib;/opt/local/lib/libomp;"
-      else()
-          # with other compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
-          INSTALL_RPATH "${OpenMP_LIBRARY_DIR}"
-      endif()
+      INSTALL_RPATH "${__omp_install_rpaths}"
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
 endif()
