@@ -193,7 +193,7 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
         show_info=["split_gain", "internal_value", "internal_weight"],
         name="Tree4",
         node_attr={"color": "red"},
-        directory=tmp_path
+        directory=tmp_path,
     )
     graph.render(view=False)
     assert isinstance(graph, graphviz.Digraph)
