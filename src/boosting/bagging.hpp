@@ -7,6 +7,7 @@
 #define LIGHTGBM_BOOSTING_BAGGING_HPP_
 
 #include <string>
+#include <vector>
 
 namespace LightGBM {
 
