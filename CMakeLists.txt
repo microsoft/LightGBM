@@ -862,7 +862,7 @@ if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
       # at build time... LightGBM's CMake uses find_package(OpenMP), and R for macOS only provides the
       # library, not CMake config files for it.
       #
-      # Best we can do, to allow CMake-based builds of the R package here to continue to work
+      # Best we can do, to allow CMake-based builds of the R-package here to continue to work
       # alongside CRAN-prepared binaries of other packages with OpenMP dependencies, is to
       # ensure that R's library directory is the first place the loader searches for
       # libomp.dylib when clang is used.
