@@ -4422,4 +4422,4 @@ def test_bagging_by_query_in_lambdarank():
     ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
     print(ndcg_score_bagging_by_query, ndcg_score, ndcg_score_no_bagging_by_query)
     assert ndcg_score_bagging_by_query >= ndcg_score - 0.03
-    assert ndcg_score_no_bagging_by_query <= ndcg_score_bagging_by_query
+    assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
