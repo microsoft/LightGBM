@@ -53,6 +53,8 @@ jobs:
 ###########################################
 - job: Maintenance
 ###########################################
+  pool: mariner-20240410-0
+  container: linux-artifact-builder
   steps:
   - displayName: routine cleanup
     script: |
@@ -74,28 +76,6 @@ jobs:
         --volumes
       # check again
       print-diagnostics
-  - script: |
-      echo "---- df ----"
-      df
-      echo ""
-      echo "---- docker images ----"
-      /tmp/docker images
-      echo ""
-      echo "---- docker container ls --all ----"
-      /tmp/docker container ls --all
-      echo ""
-      echo "---- docker system df ----"
-      /tmp/docker system df
-      echo "---- ls /__t ----"
-      ls -alF /__t
-      echo ""
-      echo "---- ls -alF /agent/_work ----"
-      ls -alF /agent/_work
-      echo ""
-      echo "---- ls -alF /__w ----"
-      ls -alF /__w
-      exit 123
-    displayName: 'get diagnostic information'
 
 ###########################################
 - job: Linux
