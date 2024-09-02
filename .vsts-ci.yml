@@ -28,7 +28,6 @@ resources:
   containers:
   - container: linux-artifact-builder
     image: lightgbm/vsts-agent:manylinux_2_28_x86_64
-    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
     mountReadOnly:
       work: false
       externals: true
@@ -65,6 +64,7 @@ jobs:
         echo "---- docker images ----"
         /tmp/docker images
       }
+      # check disk usage
       print-diagnostics
       # remove old containers, container images, volumes
       # ref: https://stackoverflow.com/a/32723127/3986677)
@@ -72,10 +72,9 @@ jobs:
         --all \
         --force \
         --filter until=720h
-      # check again
+      # check disk usage again
       print-diagnostics
     displayName: clean
-
 ###########################################
 - job: Linux
 ###########################################
@@ -192,10 +191,10 @@ jobs:
       echo "##vso[task.prependpath]$CONDA/bin"
     displayName: 'Set variables'
   # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
-  # - script: |
-  #     /tmp/docker exec -t -u 0 ci-container \
-  #     sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
-  #   displayName: 'Install sudo'
+  - script: |
+      /tmp/docker exec -t -u 0 ci-container \
+      sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
+    displayName: 'Install sudo'
   - script: |
       sudo apt-get update
       sudo apt-get install -y --no-install-recommends git
