@@ -95,7 +95,7 @@ jobs:
       echo "---- docker system df ----"
       /tmp/docker system df
       exit 123
-  displayName: 'get diagnostic information'
+    displayName: 'get diagnostic information'
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
@@ -185,7 +185,7 @@ jobs:
       echo "---- docker system df ----"
       /tmp/docker system df
       exit 123
-  displayName: 'get diagnostic information'
+    displayName: 'get diagnostic information'
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       CONDA=$HOME/miniforge
