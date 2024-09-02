@@ -5331,7 +5331,7 @@ class ObjectiveFunction:
         """
         return self.__init_from_dataset(dataset)
 
-    def convert_outputs(self, scores: np.ndarray) -> np.ndarray:
+    def convert_raw_scores(self, scores: np.ndarray) -> np.ndarray:
         """
         Convert the raw scores to the final predictions.
 
@@ -5353,7 +5353,7 @@ class ObjectiveFunction:
             scores = _data_to_2d_numpy(scores, dtype=np.float64, name="scores")
 
         num_data = scores.size
-        out_preds = np.zeros_like(scores, dtype=np.float64)
+        out_preds = np.empty_like(scores, dtype=np.float64)
 
         _safe_call(
             _LIB.LGBM_ObjectiveFunctionConvertOutputs(
@@ -5387,8 +5387,8 @@ class ObjectiveFunction:
             raise ValueError("ObjectiveFunction was not created properly")
 
         data_shape = self.num_data * self.num_class
-        grad = np.zeros(dtype=np.float32, shape=data_shape)
-        hess = np.zeros(dtype=np.float32, shape=data_shape)
+        grad = np.empty(dtype=np.float32, shape=data_shape)
+        hess = np.empty(dtype=np.float32, shape=data_shape)
 
         _safe_call(
             _LIB.LGBM_ObjectiveFunctionGetGradients(

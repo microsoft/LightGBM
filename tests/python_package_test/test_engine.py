@@ -4423,7 +4423,7 @@ def test_objective_function_class(use_weight, num_boost_round, custom_objective,
         "device": "cpu",
     }
     builtin_loss = builtin_objective(objective_name, copy.deepcopy(params))
-    builtin_convert_outputs = lgb.ObjectiveFunction(objective_name, copy.deepcopy(params)).convert_outputs
+    builtin_convert_scores = lgb.ObjectiveFunction(objective_name, copy.deepcopy(params)).convert_raw_scores
 
     params["objective"] = builtin_loss
     booster_exposed = lgb.train(params, lgb_train, num_boost_round=num_boost_round)
@@ -4440,4 +4440,4 @@ def test_objective_function_class(use_weight, num_boost_round, custom_objective,
     y_pred = np.zeros_like(booster.predict(X, raw_score=True))
     np.testing.assert_allclose(builtin_loss(y_pred, lgb_train), custom_objective(y_pred, lgb_train))
 
-    np.testing.assert_allclose(builtin_convert_outputs(booster_exposed.predict(X)), booster.predict(X))
+    np.testing.assert_allclose(builtin_convert_scores(booster_exposed.predict(X)), booster.predict(X))
