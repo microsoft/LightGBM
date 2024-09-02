@@ -9,6 +9,17 @@ SETUP_CONDA=${SETUP_CONDA:-"true"}
 
 ARCH=$(uname -m)
 
+echo "---- df ----"
+df
+echo ""
+echo "---- docker images ----"
+docker images
+echo ""
+echo "---- docker container ls --all ----"
+docker container ls --all
+echo ""
+echo "---- docker system df ----"
+exit 123
 
 if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
