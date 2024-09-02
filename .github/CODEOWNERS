@@ -1,0 +1,10 @@
+# This file controls default reviewers for LightGBM code.
+# See https://help.github.com/en/articles/about-code-owners
+# for details
+#
+# Maintainers are encouraged to use their best discretion in
+# setting reviewers on PRs manually, but this file should
+# offer a reasonable automatic best-guess
+
+# catch-all rule (this only gets matched if no rules below match)
+*    @guolinke @jameslamb @shiyu1994 @jmoralez @borchero @StrikerRUS
