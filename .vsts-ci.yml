@@ -87,14 +87,6 @@ jobs:
       echo "---- df ----"
       df
       echo ""
-      echo "---- docker images ----"
-      /tmp/docker images
-      echo ""
-      echo "---- docker container ls --all ----"
-      /tmp/docker container ls --all
-      echo ""
-      echo "---- docker system df ----"
-      /tmp/docker system df
       echo "---- ls /__t ----"
       ls /__t
       exit 123
@@ -187,6 +179,8 @@ jobs:
       echo ""
       echo "---- docker system df ----"
       /tmp/docker system df
+      echo "---- ls /__t ----"
+      ls /__t
       exit 123
     displayName: 'get diagnostic information'
   - script: |
