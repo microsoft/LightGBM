@@ -58,7 +58,7 @@ jobs:
     OS_NAME: 'linux'
     PRODUCES_ARTIFACTS: 'true'
   pool: mariner-20240410-0
-  #container: linux-artifact-builder
+  container: linux-artifact-builder
   strategy:
     matrix:
       regular:
@@ -119,7 +119,7 @@ jobs:
     OS_NAME: 'linux'
     SETUP_CONDA: 'true'
   pool: mariner-20240410-0
-  #container: ubuntu-latest
+  container: ubuntu-latest
   strategy:
     matrix:
       regular:
