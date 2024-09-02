@@ -24,7 +24,6 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
-    builtin_objective,
     dummy_obj,
     load_breast_cancer,
     load_digits,
@@ -4411,6 +4410,20 @@ def test_quantized_training():
 )
 @pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Skip due to ObjectiveFunction not exposed for cuda devices.")
 def test_objective_function_class(use_weight, num_boost_round, custom_objective, objective_name, df, num_class):
+    def builtin_objective(name, params):
+        fobj = lgb.ObjectiveFunction(name, params)
+
+        def loss(y_pred, dtrain):
+            if fobj.num_data is None:
+                fobj.init(dtrain)
+            (grad, hess) = fobj.get_gradients(y_pred)
+            if fobj.num_class != 1:
+                grad = grad.reshape((fobj.num_class, -1)).transpose()
+                hess = hess.reshape((fobj.num_class, -1)).transpose()
+            return (grad, hess)
+
+        return loss
+
     X, y = df
     rng = np.random.default_rng()
     weight = rng.choice([1, 2], y.shape) if use_weight else None

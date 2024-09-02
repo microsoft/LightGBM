@@ -168,21 +168,6 @@ def multiclass_custom_objective(y_pred, ds):
     return grad, hess
 
 
-def builtin_objective(name, params):
-    """Mimics the builtin objective functions to mock training."""
-
-    def wrapper(y_pred, dtrain):
-        fobj = lgb.ObjectiveFunction(name, params)
-        fobj.init(dtrain)
-        (grad, hess) = fobj.get_gradients(y_pred)
-        if fobj.num_class != 1:
-            grad = grad.reshape((fobj.num_class, -1)).transpose()
-            hess = hess.reshape((fobj.num_class, -1)).transpose()
-        return (grad, hess)
-
-    return wrapper
-
-
 def pickle_obj(obj, filepath, serializer):
     if serializer == "pickle":
         with open(filepath, "wb") as f:
