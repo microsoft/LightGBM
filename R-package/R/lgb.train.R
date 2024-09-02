@@ -258,7 +258,9 @@ lgb.train <- function(params = list(),
 
   # Cannot use early stopping with 'dart' boosting
   if (using_dart) {
-    warning("Early stopping is not available in 'dart' mode.")
+    if (using_early_stopping) {
+      warning("Early stopping is not available in 'dart' mode.")
+    }
     using_early_stopping <- FALSE
 
     # Remove the cb_early_stop() function if it was passed in to callbacks

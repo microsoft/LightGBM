@@ -132,6 +132,7 @@ if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+    message(STATUS "LIBR_LIBS_DIR: ${LIBR_LIBS_DIR}")
     message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
     include_directories(${LIBR_INCLUDE_DIRS})
     add_definitions(-DLGB_R_BUILD)
@@ -272,8 +273,12 @@ if(USE_CUDA)
 
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+      set_target_properties(
+        histo${hsize}${hname}
+        PROPERTIES
+          CUDA_SEPARABLE_COMPILATION ON
+          CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      )
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -539,10 +544,14 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
-  # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
-  set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
-  # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
-  set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
+  set_target_properties(
+    _lightgbm_swig
+    PROPERTIES
+      # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
+      PREFIX ""
+      # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
+      OUTPUT_NAME "lib_lightgbm_swig"
+  )
   if(WIN32)
     if(MINGW OR CYGWIN)
         add_custom_command(
@@ -655,20 +664,29 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  endif()
 
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(
+    lightgbm_objs
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_SEPARABLE_COMPILATION ON
+  )
 
-  # Device linking is not supported for object libraries.
-  # Thus we have to specify them on final targets.
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  )
+
   if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    set_target_properties(
+      lightgbm
+      PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
   endif()
-  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
@@ -811,21 +829,55 @@ if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
+  #   - (R-only) ${LIBR_LIBS_DIR}    (wherever R for macOS stores vendored third-party libraries)
   #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
   #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
   #   - /opt/local/lib/libomp        (where 'port install' puts libomp.dylib)
   #
+
+  # with some compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
+  list(APPEND __omp_install_rpaths "${OpenMP_LIBRARY_DIR}")
+
+  # with clang, libomp doesn't ship with the compiler and might be supplied separately
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      list(
+        APPEND __omp_install_rpaths
+          "/opt/homebrew/opt/libomp/lib"
+          "/opt/local/lib/libomp"
+      )
+      # It appears that CRAN's macOS binaries compiled with -fopenmp have install names
+      # of the form:
+      #
+      #   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libomp.dylib
+      #
+      # That corresponds to the libomp.dylib that ships with the R framework for macOS, available
+      # from https://cran.r-project.org/bin/macosx/.
+      #
+      # That absolute-path install name leads to that library being loaded unconditionally.
+      #
+      # That can result in e.g. 'library(data.table)' loading R's libomp.dylib and 'library(lightgbm)' loading
+      # Homebrew's. Having 2 loaded in the same process can lead to segfaults and unpredictable behavior.
+      #
+      # This can't be easily avoided by forcing R-package builds in LightGBM to use R's libomp.dylib
+      # at build time... LightGBM's CMake uses find_package(OpenMP), and R for macOS only provides the
+      # library, not CMake config files for it.
+      #
+      # Best we can do, to allow CMake-based builds of the R-package here to continue to work
+      # alongside CRAN-prepared binaries of other packages with OpenMP dependencies, is to
+      # ensure that R's library directory is the first place the loader searches for
+      # libomp.dylib when clang is used.
+      #
+      # ref: https://github.com/microsoft/LightGBM/issues/6628
+      #
+      if(__BUILD_FOR_R)
+        list(PREPEND __omp_install_rpaths "${LIBR_LIBS_DIR}")
+      endif()
+  endif()
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-          # with clang, libomp doesn't ship with the compiler and might be supplied separately
-          INSTALL_RPATH "${OpenMP_LIBRARY_DIR};/opt/homebrew/opt/libomp/lib;/opt/local/lib/libomp;"
-      else()
-          # with other compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
-          INSTALL_RPATH "${OpenMP_LIBRARY_DIR}"
-      endif()
+      INSTALL_RPATH "${__omp_install_rpaths}"
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
 endif()
