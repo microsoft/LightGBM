@@ -83,6 +83,20 @@ jobs:
         TASK: swig
   steps:
   - script: |
+      echo "---- df ----"
+      df
+      echo ""
+      echo "---- docker images ----"
+      /tmp/docker images
+      echo ""
+      echo "---- docker container ls --all ----"
+      /tmp/docker container ls --all
+      echo ""
+      echo "---- docker system df ----"
+      /tmp/docker system df
+      exit 123
+  displayName: 'get diagnostic information'
+  - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
       echo "##vso[task.prependpath]$CONDA/bin"
@@ -158,6 +172,20 @@ jobs:
         TASK: cpp-tests
         METHOD: with-sanitizers
   steps:
+  - script: |
+      echo "---- df ----"
+      df
+      echo ""
+      echo "---- docker images ----"
+      /tmp/docker images
+      echo ""
+      echo "---- docker container ls --all ----"
+      /tmp/docker container ls --all
+      echo ""
+      echo "---- docker system df ----"
+      /tmp/docker system df
+      exit 123
+  displayName: 'get diagnostic information'
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       CONDA=$HOME/miniforge
