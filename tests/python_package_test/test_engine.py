@@ -2366,9 +2366,13 @@ def test_refit_tree_manual():
         "num_leaves": 5,
         "objective": "gamma",
     }
-    bst = lgb.train(params, ds, callbacks=[debias_callback])
+
+    # Check that the model is biased when no callback is provided
+    bst = lgb.train(params, ds)
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, bst.predict(df).mean(), y.mean())
 
     # Check if debiasing worked
+    bst = lgb.train(params, ds, callbacks=[debias_callback])
     np.testing.assert_allclose(bst.predict(df).mean(), y.mean())
 
 
