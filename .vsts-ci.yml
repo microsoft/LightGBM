@@ -51,6 +51,53 @@ resources:
       tasks: true
 jobs:
 ###########################################
+- job: Maintenance
+###########################################
+  steps:
+  - displayName: routine cleanup
+    script: |
+      print-diagnostics(){
+        echo "---- df ----"
+        df
+        echo "---- docker system df ----"
+        /tmp/docker system df
+        echo "---- docker images ----"
+        /tmp/docker images
+      }
+      print-diagnostics
+      # remove old containers, container images, volumes
+      # ref: https://stackoverflow.com/a/32723127/3986677)
+      /tmp/docker system prune \
+        --all \
+        --force \
+        --filter until=720h \
+        --volumes
+      # check again
+      print-diagnostics
+  - script: |
+      echo "---- df ----"
+      df
+      echo ""
+      echo "---- docker images ----"
+      /tmp/docker images
+      echo ""
+      echo "---- docker container ls --all ----"
+      /tmp/docker container ls --all
+      echo ""
+      echo "---- docker system df ----"
+      /tmp/docker system df
+      echo "---- ls /__t ----"
+      ls -alF /__t
+      echo ""
+      echo "---- ls -alF /agent/_work ----"
+      ls -alF /agent/_work
+      echo ""
+      echo "---- ls -alF /__w ----"
+      ls -alF /__w
+      exit 123
+    displayName: 'get diagnostic information'
+
+###########################################
 - job: Linux
 ###########################################
   variables:
