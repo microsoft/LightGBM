@@ -91,39 +91,24 @@ jobs:
       regular:
         TASK: regular
         PYTHON_VERSION: '3.10'
-      # sdist:
-      #   TASK: sdist
-      #   PYTHON_VERSION: '3.8'
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: '3.9'
-      # inference:
-      #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      #   PYTHON_VERSION: '3.9'
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
-      # swig:
-      #   TASK: swig
+      sdist:
+        TASK: sdist
+        PYTHON_VERSION: '3.8'
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: '3.9'
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+        PYTHON_VERSION: '3.9'
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+      swig:
+        TASK: swig
   steps:
-  - script: |
-      echo "---- df ----"
-      df
-      echo ""
-      echo "---- ls -alF /__t ----"
-      ls -alF /__t
-      echo ""
-      echo "---- ls -alF /agent/_work ----"
-      ls -alF /agent/_work
-      echo ""
-      echo "---- ls -alF /__w ----"
-      ls -alF /__w
-      exit 123
-      exit 123
-    displayName: 'get diagnostic information'
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       echo "##vso[task.prependpath]/usr/lib64/openmpi/bin"
@@ -166,62 +151,40 @@ jobs:
     matrix:
       regular:
         TASK: regular
-      # sdist:
-      #   TASK: sdist
-      # bdist:
-      #   TASK: bdist
-      #   PYTHON_VERSION: '3.10'
-      # inference:
-      #   TASK: if-else
-      # mpi_source:
-      #   TASK: mpi
-      #   METHOD: source
-      # mpi_pip:
-      #   TASK: mpi
-      #   METHOD: pip
-      #   PYTHON_VERSION: '3.11'
-      # mpi_wheel:
-      #   TASK: mpi
-      #   METHOD: wheel
-      #   PYTHON_VERSION: '3.9'
-      # gpu_source:
-      #   TASK: gpu
-      #   METHOD: source
-      #   PYTHON_VERSION: '3.11'
-      # gpu_pip:
-      #   TASK: gpu
-      #   METHOD: pip
-      #   PYTHON_VERSION: '3.10'
-      # gpu_wheel:
-      #   TASK: gpu
-      #   METHOD: wheel
-      #   PYTHON_VERSION: '3.9'
-      # cpp_tests:
-      #   TASK: cpp-tests
-      #   METHOD: with-sanitizers
+      sdist:
+        TASK: sdist
+      bdist:
+        TASK: bdist
+        PYTHON_VERSION: '3.10'
+      inference:
+        TASK: if-else
+      mpi_source:
+        TASK: mpi
+        METHOD: source
+      mpi_pip:
+        TASK: mpi
+        METHOD: pip
+        PYTHON_VERSION: '3.11'
+      mpi_wheel:
+        TASK: mpi
+        METHOD: wheel
+        PYTHON_VERSION: '3.9'
+      gpu_source:
+        TASK: gpu
+        METHOD: source
+        PYTHON_VERSION: '3.11'
+      gpu_pip:
+        TASK: gpu
+        METHOD: pip
+        PYTHON_VERSION: '3.10'
+      gpu_wheel:
+        TASK: gpu
+        METHOD: wheel
+        PYTHON_VERSION: '3.9'
+      cpp_tests:
+        TASK: cpp-tests
+        METHOD: with-sanitizers
   steps:
-  - script: |
-      echo "---- df ----"
-      df
-      echo ""
-      echo "---- docker images ----"
-      /tmp/docker images
-      echo ""
-      echo "---- docker container ls --all ----"
-      /tmp/docker container ls --all
-      echo ""
-      echo "---- docker system df ----"
-      /tmp/docker system df
-      echo "---- ls /__t ----"
-      ls -alF /__t
-      echo ""
-      echo "---- ls -alF /agent/_work ----"
-      ls -alF /agent/_work
-      echo ""
-      echo "---- ls -alF /__w ----"
-      ls -alF /__w
-      exit 123
-    displayName: 'get diagnostic information'
   - script: |
       echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
       CONDA=$HOME/miniforge
