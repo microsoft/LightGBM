@@ -132,7 +132,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const override {
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_data; i += num_class_) {
-      ConvertOutput(inputs + i, outputs + i);
+      ConvertOutput(&inputs[i], &outputs[i]);
     }
   }
 
@@ -246,7 +246,7 @@ class MulticlassOVA: public ObjectiveFunction {
   void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const override {
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_data; i += num_class_) {
-      ConvertOutput(inputs + i, outputs + i);
+      ConvertOutput(&inputs[i], &outputs[i]);
     }
   }
 

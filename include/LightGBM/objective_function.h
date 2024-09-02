@@ -70,7 +70,7 @@ class ObjectiveFunction {
   virtual void ConvertOutputs(const int num_data, const double* inputs, double* outputs) const {
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < num_data; i ++) {
-      ConvertOutput(inputs + i, outputs + i);
+      ConvertOutput(&inputs[i], &outputs[i]);
     }
   }
 

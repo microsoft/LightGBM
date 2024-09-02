@@ -5386,7 +5386,14 @@ class ObjectiveFunction:
         if self.num_data is None or self.num_class is None:
             raise ValueError("ObjectiveFunction was not created properly")
 
+        if y_pred.shape[0] != self.num_data:
+            raise ValueError("Gradients cannot be computed as the number of predictions is wrong")
+
+        if self.num_class != 1 and (y_pred.ndim != 2 or y_pred.shape[1] != self.num_class):
+            raise ValueError("Multiclass gradient computation should be called with the correct shape")
+
         data_shape = self.num_data * self.num_class
+        y_pred = np.asfortranarray(y_pred)
         grad = np.empty(dtype=np.float32, shape=data_shape)
         hess = np.empty(dtype=np.float32, shape=data_shape)
 
