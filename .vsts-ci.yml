@@ -59,8 +59,8 @@ jobs:
   steps:
   - script: |
       print-diagnostics(){
-        echo "---- df ----"
-        df
+        echo "---- df -h -m ----"
+        df -h -m
         echo "---- docker system df ----"
         /tmp/docker system df
         echo "---- docker images ----"
