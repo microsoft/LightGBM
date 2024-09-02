@@ -54,10 +54,9 @@ jobs:
 - job: Maintenance
 ###########################################
   pool: mariner-20240410-0
-  container: linux-artifact-builder
+  container: ubuntu-latest
   steps:
-  - displayName: routine cleanup
-    script: |
+  - script: |
       print-diagnostics(){
         echo "---- df ----"
         df
