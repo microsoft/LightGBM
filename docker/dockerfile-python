@@ -23,7 +23,10 @@ RUN apt-get update && \
     conda config --set always_yes yes --set changeps1 no && \
     # lightgbm
     conda install -q -y numpy scipy scikit-learn pandas && \
-    git clone --recursive --branch ${LIGHTGBM_GIT_REF} --depth 1 https://github.com/Microsoft/LightGBM && \
+    git clone \
+        --recursive \
+        https://github.com/Microsoft/LightGBM && \
+    git -C ./LightGBM checkout ${LIGHTGBM_GIT_REF} && \
     cd ./LightGBM && \
     sh ./build-python.sh install && \
     # clean

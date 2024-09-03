@@ -40,7 +40,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # LightGBM
 WORKDIR /opt
-RUN git clone --recursive --branch ${LIGHTGBM_GIT_REF} --depth 1 https://github.com/Microsoft/LightGBM && \
+RUN git clone \
+        --recursive \
+        https://github.com/Microsoft/LightGBM && \
+    git -C ./LightGBM checkout ${LIGHTGBM_GIT_REF} && \
     cd LightGBM && \
     cmake -B build -S . -DUSE_GPU=1 -DOpenCL_LIBRARY=${OPENCL_LIBRARIES}/libOpenCL.so.1 -DOpenCL_INCLUDE_DIR=$OPENCL_INCLUDE_DIR && \
     OPENCL_HEADERS=$OPENCL_INCLUDE_DIR LIBOPENCL=$OPENCL_LIBRARIES cmake --build build

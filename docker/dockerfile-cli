@@ -23,9 +23,8 @@ RUN curl -L -o cmake.sh https://github.com/Kitware/CMake/releases/download/v3.29
 
 RUN git clone \
         --recursive \
-        --branch ${LIGHTGBM_GIT_REF} \
-        --depth 1 \
         https://github.com/Microsoft/LightGBM && \
+    git -C ./LightGBM checkout ${LIGHTGBM_GIT_REF} && \
     cd ./LightGBM && \
     cmake -B build -S . && \
     cmake --build build -j4 && \
