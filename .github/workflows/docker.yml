@@ -24,32 +24,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: dockerfile-cli
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/dockerfile-python
       - name: dockerfile-r
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/dockerfile-r
       - name: dockerfile-python
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/dockerfile-python
       - name: dockerfile.gpu
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/gpu/dockerfile.gpu
       - name: dockerfile-cli-only.gpu
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/gpu/dockerfile-cli-only.gpu
       - name: dockerfile-cli-only-distroless.gpu
-        shell:
+        run: |
           docker build \
             --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
             - < ./docker/gpu/dockerfile-cli-only-distroless.gpu
