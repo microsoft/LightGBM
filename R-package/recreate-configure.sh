@@ -8,7 +8,7 @@ AUTOCONF_VERSION=$(cat R-package/AUTOCONF_UBUNTU_VERSION)
 
 # R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
-LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+LGB_VERSION=$(sed "s/rc/-/g" < VERSION.txt)
 
 # this script changes configure.ac. Copying to a temporary file
 # so changes to configure.ac don't get committed in git
@@ -20,7 +20,7 @@ apt update
 apt-get install \
     --no-install-recommends \
     -y \
-        autoconf=${AUTOCONF_VERSION}
+        autoconf="${AUTOCONF_VERSION}"
 
 cd R-package
 
