@@ -1,16 +1,18 @@
 ARG R_VERSION=latest
 FROM rocker/verse:${R_VERSION}
 
+ARG LIGHTGBM_GIT_REF=stable
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         libomp-dev && \
     git clone \
         --recursive \
-        --branch stable \
+        --branch ${LIGHTGBM_GIT_REF} \
         --depth 1 https://github.com/Microsoft/LightGBM && \
     cd ./LightGBM && \
     sh build-cran-package.sh --no-build-vignettes && \
-    R CMD INSTALL ./lightgbm_*.tar.gz && \
+    MAKEFLAGS="-j2" R CMD INSTALL ./lightgbm_*.tar.gz && \
     cd .. && \
     rm -rf ./LightGBM
