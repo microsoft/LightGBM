@@ -290,9 +290,9 @@ void GBDT::RefitTree(const int* tree_leaf_prediction, const size_t nrow, const s
 }
 
 void GBDT::RefitTreeManual(int tree_idx, const double *vals, const int vals_size) {
-  CHECK(tree_idx >= 0);
-  CHECK(static_cast<size_t>(tree_idx) < models_.size());
-  CHECK(vals_size == models_[tree_idx]->num_leaves());
+  CHECK_GE(tree_idx, 0);
+  CHECK_LT(static_cast<size_t>(tree_idx), models_.size());
+  CHECK_EQ(vals_size, models_[tree_idx]->num_leaves());
   // reset score by adding the difference
   for (int leaf_id = 0; leaf_id < models_[tree_idx]->num_leaves(); ++leaf_id) {
     models_[tree_idx]->SetLeafOutput(leaf_id, vals[leaf_id] - models_[tree_idx]->LeafOutput(leaf_id));
