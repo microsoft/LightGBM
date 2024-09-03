@@ -801,6 +801,12 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
   features_used_global_[best_split_info.feature] += 1;
   splits_used_global_.insert(best_split_info.threshold);
+  share_state_->threshold_used.insert(best_split_info.threshold);
+  /* std::cout << "Set elements: ";
+  for (int8_t num : share_state_->threshold_used) {
+      std::cout << static_cast<int>(num) << " "; // Cast to int for proper display
+  }
+  std::cout << std::endl; */
   // TODO: check why gain is +inf for this log; probably an indicator that this is the wrong place to update the variables
   Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
               best_split_info.feature, best_split_info.threshold, best_split_info.gain);

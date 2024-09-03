@@ -270,6 +270,10 @@ struct TrainingShareStates {
   bool is_constant_hessian = true;
   const data_size_t* bagging_use_indices;
   data_size_t bagging_indices_cnt;
+  // TODO Nina appropriate place to store features used? Rather create an own struct that only gets created if required?
+  // TODO Is mostly used for bagging ... - we might later decide for a
+  std::set<int8_t> threshold_used;
+
 
   TrainingShareStates() {
     multi_val_bin_wrapper_.reset(nullptr);

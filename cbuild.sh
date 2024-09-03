@@ -15,3 +15,6 @@ fi
 cd examples/binary_classification
 "../../lightgbm" config=train.conf > train.output
 "../../lightgbm" config=predict.conf > predict.output
+
+cd ../..
+python3 plot_model.py
