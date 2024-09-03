@@ -67,6 +67,8 @@ LightGBMLSS (An extension of LightGBM to probabilistic modelling from which pred
 
 FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
 
+supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
+
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
@@ -115,7 +117,7 @@ Ruby gem: https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
-lightgbm-rs (Rust binding): https://github.com/vaaaaanquish/lightgbm-rs
+lightgbm3 (Rust binding): https://github.com/Mottl/lightgbm3-rs
 
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
 
