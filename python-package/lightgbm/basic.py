@@ -5288,8 +5288,10 @@ class ObjectiveFunction:
     ObjectiveFunction in LightGBM.
 
     This class exposes the builtin objective functions for evaluating gradients and hessians
-    on external datasets. LightGBM does not use this wrapper during its training as it is
-    using the underlying C++ class.
+    on external datasets. This is useful for examining the state of the training(for example in a callback)
+    in a generic way.
+
+    Note: LightGBM does not use this wrapper during its training as it is using the underlying C++ class.
     """
 
     def __init__(self, name: str, params: Dict[str, Any]):
