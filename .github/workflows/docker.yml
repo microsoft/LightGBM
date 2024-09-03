@@ -26,32 +26,32 @@ jobs:
       - name: dockerfile-cli
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/dockerfile-python
       - name: dockerfile-r
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/dockerfile-r
       - name: dockerfile-python
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/dockerfile-python
       - name: dockerfile.gpu
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/gpu/dockerfile.gpu
       - name: dockerfile-cli-only.gpu
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/gpu/dockerfile-cli-only.gpu
       - name: dockerfile-cli-only-distroless.gpu
         run: |
           docker build \
-            --build-arg LIGHTGBM_GIT_REF=${{ github.ref }} \
+            --build-arg LIGHTGBM_GIT_REF=${{ github.sha }} \
             - < ./docker/gpu/dockerfile-cli-only-distroless.gpu
   all-docker-jobs-successful:
     if: always()
