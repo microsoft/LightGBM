@@ -336,92 +336,99 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(int tt_leaf_id) const {
+std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features_used_global, std::set<float> splits_used_global) {
   /**
    * The following code is just the first draft.
    * Next step: make use of vector of ids from ToFullArray and with this fill the three arrays (tinytree, tt_features, tt_thresholds)
    */
   
-  std::vector<std::vector<int>> tinytree;
-  std::vector<int> tt_features;
-  std::vector<double> tt_thresholds;
+  // std::vector<std::vector<int>> tinytree;
+  // std::vector<int> tt_features;
+  // convert set to vector; TODO: check if order of values stays the same each time
+  std::vector<float> tt_thresholds(splits_used_global.begin(), splits_used_global.end());
+  tt_features_ = features_used_global;
+  tt_thresholds_ = tt_thresholds; 
 
-  int tt_nodes = pow(2.0, (1.0+max_depth_))-1;
+  std::vector<int> fulltree_ids = ToFullArray();
+
+  int tt_nodes = fulltree_ids.size();
   int init_value = -1;
-  tinytree.resize(2, std::vector<int>(tt_nodes, init_value));
+  tinytree_.resize(2, std::vector<int>(tt_nodes, init_value));
   std::vector<double>::iterator threshold_it;
   std::vector<int>::iterator feature_it;
 
-  threshold_it = std::find(tt_thresholds.begin(), tt_thresholds.end(), threshold_[0]);
-	if (threshold_it == tt_thresholds.end() ) {  
-		// did not find element
-    // TODO: think about inserting in ordered way; downside is that the indizes change
-    tt_thresholds.insert(threshold_it, threshold_[0]);
-  }
+  /**
+   * Pseudocode:
+   * for each node in fulltree
+   * j = fulltree_ids[i]
+   * check if node exists, e.g. try threshold_[j]
+   * if true, get index of threshold_[j] in tt_thresholds and store in tinytree_[i][1]
+   *    same for features but store in tinytree_[i][0]
+   * 
+   * -> save tinytree_, tt_features_, tt_thresholds_ with in model file  
+   */
 
-  int threshold_id = std::distance(tt_thresholds.begin(), threshold_it);
+  // // QUESTION: which values are stored in threshold_ array? why use element 0?
+  // threshold_it = std::find(tt_thresholds.begin(), tt_thresholds.end(), threshold_[0]);
+	// if (threshold_it == tt_thresholds.end() ) {  
+	// 	// did not find element
+  //   // TODO: think about inserting in ordered way; downside is that the indizes change
+  //   tt_thresholds.insert(threshold_it, threshold_[0]);
+  // }
 
-  feature_it = std::find(tt_features.begin(), tt_features.end(), split_feature_[0]);
-	if (feature_it == tt_features.end() ) {  
-		// did not find element
-    // TODO: think about inserting in ordered way; downside is that the indizes change
-    tt_features.insert(feature_it, split_feature_[0]);
-  }
+  // int threshold_id = std::distance(tt_thresholds.begin(), threshold_it);
 
-  int feature_id = std::distance(tt_features.begin(), feature_it);
-  tinytree[0] = {feature_id, threshold_id} ;
+  // feature_it = std::find(tt_features.begin(), tt_features.end(), split_feature_[0]);
+	// if (feature_it == tt_features.end() ) {  
+	// 	// did not find element
+  //   // TODO: think about inserting in ordered way; downside is that the indizes change
+  //   tt_features.insert(feature_it, split_feature_[0]);
+  // }
+
+  // int feature_id = std::distance(tt_features.begin(), feature_it);
+  // tinytree[0] = {feature_id, threshold_id} ;
   
 }
 
 std::vector<int> Tree::ToFullArray() const {
-  std::vector<int> fulltree;
+  std::vector<int> fulltree; 
 
+  // find max depth, adapted from RecomputeMaxDepth(); TODO: num_leaves_ vs. leaft_depth_ vs. num_leaves() -> used correct?
   int depth = 0;
   if (num_leaves_ == 1) {
     depth = 0;
   } else {
-    // TODO: what is this for?
-    // if (leaf_depth_.size() == 0) {
-    //   RecomputeLeafDepths(0, 0);
-    // }
     depth = leaf_depth_[0];
     for (int i = 1; i < num_leaves(); ++i) {
       if (depth < leaf_depth_[i]) depth = leaf_depth_[i];
     }
   }
+  Log::Debug("max depth of all leaves: %d", depth);
 
-  Log::Debug("max depth after recompute: %d", depth);
-  Log::Debug("leaf depth size: %d", leaf_depth_.size());
-
+  // number of nodes for a full tree with given depth
   int tt_nodes = pow(2.0, (1.0+depth))-1;
-  Log::Debug("Full tree #nodes: %d", tt_nodes);
   // TODO: not possible to init empty; to use 0 the tree elements need to be shifted by 1; not possible to use negative as lightgbm assigns leaf with negative index
   int init_value = {INT_MIN};
   fulltree.resize(tt_nodes, init_value);
-  int treesize = fulltree.size();
-  Log::Debug("Tree size: %d", treesize);
 
   // TODO: think about if it is better to solve this with iterator
   for (int i = 0; i < tt_nodes; i++)
   {
-    Log::Debug("for loop, iteration: %d", i);
-    // std::cout << lgbm_id << "\n";
+    // lightgbm id of root node is 0
     if (i == 0)
     {
       fulltree[0] = 0;
     }
+    // get the lightgbm id of the current node
     int lgbm_id = fulltree[i];
-    // leaf id is < 0, so only fill child nodes for > 0 
+    // leaf ids are < 0, so only fill child nodes for >= 0 
     if (lgbm_id >= 0)
     {
-      Log::Debug("positive lgbm id: %d", lgbm_id);
+      // Log::Debug("positive lgbm id: %d", lgbm_id);
       fulltree[2 * i + 1] = left_child_[lgbm_id];
-      std::cout << (2 * i + 1) << "\n";
+      // std::cout << (2 * i + 1) << "\n";
       fulltree[2 * i + 2] = right_child_[lgbm_id];
     }     
-    else {
-      Log::Debug("else lgbm id: %d", lgbm_id);
-    }
   }
   return fulltree;
 }

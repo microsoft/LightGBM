@@ -251,6 +251,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
+  tree->ToArrayPointer(features_used_global_, splits_used_global_);
+
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
 
   std::stringstream ss_f;
