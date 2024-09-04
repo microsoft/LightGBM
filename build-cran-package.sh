@@ -152,7 +152,7 @@ cd "${TEMP_R_DIR}"
         -e 's/^.*#pragma endregion.*$//' \
         -e 's/^.*#pragma warning.*$//' \
         {} +
-    find . \( -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' \) -exec rm {} \;
+    find . -name '*.bak' -exec rm {} \;
 
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
