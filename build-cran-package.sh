@@ -130,7 +130,8 @@ cd "${TEMP_R_DIR}"
     # Rtools35 (used with R 3.6 on Windows) doesn't support C++17
     LGB_CXX_STD="C++17"
     using_windows_and_r3=$(
-        Rscript -e "cat(.Platform$OS.type == \"windows\" && R.version[[\"major\"]] < 4)"
+        # shellcheck disable=SC2016
+        Rscript -e 'cat(.Platform$OS.type == "windows" && R.version[["major"]] < 4)'
     )
     if test "${using_windows_and_r3}" = "TRUE"; then
         LGB_CXX_STD="C++11"

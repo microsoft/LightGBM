@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # [description]
 #
@@ -60,7 +60,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-set -e -E -u
+set -e -u
 
 echo "building lightgbm"
 
@@ -91,42 +91,42 @@ while [ $# -gt 0 ]; do
     # customized library paths #
     ############################
     --boost-dir|--boost-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'"
         ;;
     --boost-include-dir|--boost-include-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_INCLUDE_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_INCLUDE_DIR='${BOOST_INCLUDE_DIR}'"
         ;;
     --boost-librarydir|--boost-librarydir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_LIBRARY_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.BOOST_LIBRARYDIR='${BOOST_LIBRARY_DIR}'"
         ;;
     --boost-root|--boost-root=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_INCLUDE_DIR="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.OpenCL_INCLUDE_DIR='${OPENCL_INCLUDE_DIR}'"
         ;;
     --opencl-library|--opencl-library=*)
-        if [[ "$1" != *=* ]];
+        if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_LIBRARY="${1#*=}"
