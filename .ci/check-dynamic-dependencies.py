@@ -12,6 +12,7 @@ Version history for these symbols can be found at the following:
 * GLIBCXX: https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html
 * OMP/GOMP: https://github.com/gcc-mirror/gcc/blob/master/libgomp/libgomp.map
 """
+
 import re
 import sys
 from pathlib import Path

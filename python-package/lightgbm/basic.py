@@ -1,5 +1,6 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+
 import abc
 import ctypes
 import inspect
@@ -13,7 +14,7 @@ from os import SEEK_END, environ
 from os.path import getsize
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -22,6 +23,7 @@ from .compat import (
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
+    arrow_is_boolean,
     arrow_is_floating,
     arrow_is_integer,
     concat,
@@ -154,6 +156,8 @@ _LGBM_SetFieldType = Union[
 ]
 
 ZERO_THRESHOLD = 1e-35
+
+_MULTICLASS_OBJECTIVES = {"multiclass", "multiclassova", "multiclass_ova", "ova", "ovr", "softmax"}
 
 
 def _is_zero(x: float) -> bool:
@@ -354,10 +358,10 @@ def _list_to_1d_numpy(
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
     elif _is_1d_list(data):
-        return np.array(data, dtype=dtype, copy=False)
+        return np.asarray(data, dtype=dtype)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+        return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
             f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
@@ -537,13 +541,13 @@ def _param_dict_to_str(data: Optional[Dict[str, Any]]) -> str:
 class _TempFile:
     """Proxy class to workaround errors on Windows."""
 
-    def __enter__(self):
+    def __enter__(self) -> "_TempFile":
         with NamedTemporaryFile(prefix="lightgbm_tmp_", delete=True) as f:
             self.name = f.name
             self.path = Path(self.name)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.path.is_file():
             self.path.unlink()
 
@@ -555,7 +559,8 @@ class LightGBMError(Exception):
 
 
 # DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
+# ref: https://peps.python.org/pep-0565/#additional-use-case-for-futurewarning
+class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
@@ -595,7 +600,7 @@ class _ConfigAliases:
         )
 
     @classmethod
-    def get(cls, *args) -> Set[str]:
+    def get(cls, *args: str) -> Set[str]:
         if cls.aliases is None:
             cls.aliases = cls._get_all_param_aliases()
         ret = set()
@@ -610,7 +615,7 @@ class _ConfigAliases:
         return cls.aliases.get(name, [name])
 
     @classmethod
-    def get_by_alias(cls, *args) -> Set[str]:
+    def get_by_alias(cls, *args: str) -> Set[str]:
         if cls.aliases is None:
             cls.aliases = cls._get_all_param_aliases()
         ret = set(args)
@@ -725,7 +730,7 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
 def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -746,7 +751,7 @@ def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray
 def _c_int_array(data: np.ndarray) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -1267,7 +1272,7 @@ class _InnerPredictor:
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
@@ -1563,7 +1568,7 @@ class _InnerPredictor:
         start_iteration: int,
         num_iteration: int,
         predict_type: int,
-    ):
+    ) -> Tuple[Union[List[scipy.sparse.csc_matrix], List[scipy.sparse.csr_matrix]], int]:
         ptr_indptr, type_ptr_indptr, __ = _c_int_array(csc.indptr)
         ptr_data, type_ptr_data, _ = _c_float_array(csc.data)
         csc_indices = csc.indices.astype(np.int32, copy=False)
@@ -1688,7 +1693,7 @@ class _InnerPredictor:
             raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Prepare prediction output array
@@ -1740,7 +1745,15 @@ class _InnerPredictor:
 
 
 class Dataset:
-    """Dataset in LightGBM."""
+    """
+    Dataset in LightGBM.
+
+    LightGBM does not train on raw data.
+    It discretizes continuous features into histogram bins, tries to combine categorical features,
+    and automatically handles missing and infinite values.
+
+    This class handles that preprocessing, and holds that alternative representation of the input data.
+    """
 
     def __init__(
         self,
@@ -1813,7 +1826,7 @@ class Dataset:
         self._need_slice = True
         self._predictor: Optional[_InnerPredictor] = None
         self.pandas_categorical: Optional[List[List]] = None
-        self._params_back_up = None
+        self._params_back_up: Optional[Dict[str, Any]] = None
         self.version = 0
         self._start_row = 0  # Used when pushing rows one by one.
 
@@ -2195,7 +2208,7 @@ class Dataset:
         return self.set_feature_name(feature_name)
 
     @staticmethod
-    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]):
+    def _yield_row_from_seqlist(seqs: List[Sequence], indices: Iterable[int]) -> Iterator[np.ndarray]:
         offset = 0
         seq_id = 0
         seq = seqs[seq_id]
@@ -2282,9 +2295,9 @@ class Dataset:
 
         self._handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+            data = np.asarray(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
@@ -2329,7 +2342,7 @@ class Dataset:
             nrow[i] = mat.shape[0]
 
             if mat.dtype == np.float32 or mat.dtype == np.float64:
-                mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+                mats[i] = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
             else:  # change non-float data to float data, need to copy
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 
@@ -2435,7 +2448,7 @@ class Dataset:
             raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
-        if not all(arrow_is_integer(t) or arrow_is_floating(t) for t in table.schema.types):
+        if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
             raise ValueError("Arrow table may only have integer or floating point datatypes")
 
         # Export Arrow table to C
@@ -2697,7 +2710,7 @@ class Dataset:
             return self
         params = deepcopy(params)
 
-        def update():
+        def update() -> None:
             if not self.params:
                 self.params = params
             else:
@@ -3704,7 +3717,7 @@ class Booster:
     def __copy__(self) -> "Booster":
         return self.__deepcopy__(None)
 
-    def __deepcopy__(self, _) -> "Booster":
+    def __deepcopy__(self, *args: Any, **kwargs: Any) -> "Booster":
         model_str = self.model_to_string(num_iteration=-1)
         return Booster(model_str=model_str)
 
@@ -4757,7 +4770,7 @@ class Booster:
         dataset_params: Optional[Dict[str, Any]] = None,
         free_raw_data: bool = True,
         validate_features: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> "Booster":
         """Refit the existing Booster by new data.
 

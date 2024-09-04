@@ -1,9 +1,10 @@
 # coding: utf-8
 """Plotting library."""
+
 import math
 from copy import deepcopy
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -19,6 +20,9 @@ __all__ = [
     "plot_tree",
 ]
 
+if TYPE_CHECKING:
+    import matplotlib
+
 
 def _check_not_tuple_of_2_elements(obj: Any, obj_name: str) -> None:
     """Check object is not tuple or does not have 2 elements."""
@@ -32,7 +36,7 @@ def _float2str(value: float, precision: Optional[int]) -> str:
 
 def plot_importance(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     height: float = 0.2,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -168,7 +172,7 @@ def plot_split_value_histogram(
     booster: Union[Booster, LGBMModel],
     feature: Union[int, str],
     bins: Union[int, str, None] = None,
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     width_coef: float = 0.8,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
@@ -284,7 +288,7 @@ def plot_metric(
     booster: Union[Dict, LGBMModel],
     metric: Optional[str] = None,
     dataset_names: Optional[List[str]] = None,
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     xlim: Optional[Tuple[float, float]] = None,
     ylim: Optional[Tuple[float, float]] = None,
     title: Optional[str] = "Metric during training",
@@ -735,7 +739,7 @@ def create_tree_digraph(
 
 def plot_tree(
     booster: Union[Booster, LGBMModel],
-    ax=None,
+    ax: "Optional[matplotlib.axes.Axes]" = None,
     tree_index: int = 0,
     figsize: Optional[Tuple[float, float]] = None,
     dpi: Optional[int] = None,

@@ -1,5 +1,6 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
+
 import copy
 from inspect import signature
 from pathlib import Path
@@ -9,6 +10,7 @@ import numpy as np
 import scipy.sparse
 
 from .basic import (
+    _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
     LightGBMError,
@@ -40,7 +42,6 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     dt_DataTable,
-    np_random_Generator,
     pd_DataFrame,
 )
 from .engine import train
@@ -454,6 +455,30 @@ _lgbmmodel_doc_predict = """
     """
 
 
+def _extract_evaluation_meta_data(
+    *,
+    collection: Optional[Union[Dict[Any, Any], List[Any]]],
+    name: str,
+    i: int,
+) -> Optional[Any]:
+    """Try to extract the ith element of one of the ``eval_*`` inputs."""
+    if collection is None:
+        return None
+    elif isinstance(collection, list):
+        # It's possible, for example, to pass 3 eval sets through `eval_set`,
+        # but only 1 init_score through `eval_init_score`.
+        #
+        # This if-else accounts for that possibility.
+        if len(collection) > i:
+            return collection[i]
+        else:
+            return None
+    elif isinstance(collection, dict):
+        return collection.get(i, None)
+    else:
+        raise TypeError(f"{name} should be dict or list")
+
+
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
@@ -475,10 +500,10 @@ class LGBMModel(_LGBMModelBase):
         colsample_bytree: float = 1.0,
         reg_alpha: float = 0.0,
         reg_lambda: float = 0.0,
-        random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
-        **kwargs,
+        **kwargs: Any,
     ):
         r"""Construct a gradient boosting model.
 
@@ -492,6 +517,7 @@ class LGBMModel(_LGBMModelBase):
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
             Maximum tree depth for base learners, <=0 means no limit.
+            If setting this to a positive value, consider also changing ``num_leaves`` to ``<= 2^max_depth``.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -738,7 +764,7 @@ class LGBMModel(_LGBMModelBase):
 
         if isinstance(params["random_state"], np.random.RandomState):
             params["random_state"] = params["random_state"].randint(np.iinfo(np.int32).max)
-        elif isinstance(params["random_state"], np_random_Generator):
+        elif isinstance(params["random_state"], np.random.Generator):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
         if self._n_classes > 2:
             for alias in _ConfigAliases.get("num_class"):
@@ -862,22 +888,12 @@ class LGBMModel(_LGBMModelBase):
             group=group,
             init_score=init_score,
             categorical_feature=categorical_feature,
+            feature_name=feature_name,
             params=params,
         )
 
         valid_sets: List[Dataset] = []
         if eval_set is not None:
-
-            def _get_meta_data(collection, name, i):
-                if collection is None:
-                    return None
-                elif isinstance(collection, list):
-                    return collection[i] if len(collection) > i else None
-                elif isinstance(collection, dict):
-                    return collection.get(i, None)
-                else:
-                    raise TypeError(f"{name} should be dict or list")
-
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
@@ -885,8 +901,16 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = _get_meta_data(eval_sample_weight, "eval_sample_weight", i)
-                    valid_class_weight = _get_meta_data(eval_class_weight, "eval_class_weight", i)
+                    valid_weight = _extract_evaluation_meta_data(
+                        collection=eval_sample_weight,
+                        name="eval_sample_weight",
+                        i=i,
+                    )
+                    valid_class_weight = _extract_evaluation_meta_data(
+                        collection=eval_class_weight,
+                        name="eval_class_weight",
+                        i=i,
+                    )
                     if valid_class_weight is not None:
                         if isinstance(valid_class_weight, dict) and self._class_map is not None:
                             valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
@@ -895,8 +919,16 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(eval_init_score, "eval_init_score", i)
-                    valid_group = _get_meta_data(eval_group, "eval_group", i)
+                    valid_init_score = _extract_evaluation_meta_data(
+                        collection=eval_init_score,
+                        name="eval_init_score",
+                        i=i,
+                    )
+                    valid_group = _extract_evaluation_meta_data(
+                        collection=eval_group,
+                        name="eval_group",
+                        i=i,
+                    )
                     valid_set = Dataset(
                         data=valid_data[0],
                         label=valid_data[1],
@@ -928,7 +960,6 @@ class LGBMModel(_LGBMModelBase):
             valid_names=eval_names,
             feval=eval_metrics_callable,  # type: ignore[arg-type]
             init_model=init_model,
-            feature_name=feature_name,
             callbacks=callbacks,
         )
 
@@ -981,7 +1012,7 @@ class LGBMModel(_LGBMModelBase):
                 f"match the input. Model n_features_ is {self._n_features} and "
                 f"input n_features is {n_features}"
             )
-        # retrive original params that possibly can be used in both training and prediction
+        # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
@@ -1114,10 +1145,25 @@ class LGBMModel(_LGBMModelBase):
 
     @property
     def feature_name_(self) -> List[str]:
-        """:obj:`list` of shape = [n_features]: The names of features."""
+        """:obj:`list` of shape = [n_features]: The names of features.
+
+        .. note::
+
+            If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
+        """
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
+
+    @property
+    def feature_names_in_(self) -> np.ndarray:
+        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
+
+        .. versionadded:: 4.5.0
+        """
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
+        return np.array(self.feature_name_)
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
@@ -1209,7 +1255,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 eval_metric_list = [eval_metric]
             else:
                 eval_metric_list = []
-            if self._n_classes > 2:
+            if self.__is_multiclass:
                 for index, metric in enumerate(eval_metric_list):
                     if metric in {"logloss", "binary_logloss"}:
                         eval_metric_list[index] = "multi_logloss"
@@ -1319,7 +1365,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 "Returning raw scores instead."
             )
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self.__is_multiclass or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
             return np.vstack((1.0 - result, result)).transpose()
@@ -1346,6 +1392,11 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No classes found. Need to call fit beforehand.")
         return self._n_classes
+
+    @property
+    def __is_multiclass(self) -> bool:
+        """:obj:`bool`:  Indicator of whether the classifier is used for multiclass."""
+        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in _MULTICLASS_OBJECTIVES)
 
 
 class LGBMRanker(LGBMModel):

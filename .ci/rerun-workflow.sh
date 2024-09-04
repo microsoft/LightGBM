@@ -4,7 +4,7 @@
 #     Rerun specified workflow for given pull request.
 #
 # [usage]
-#     rerun_workflow.sh <WORKFLOW_ID> <PR_NUMBER> <PR_BRANCH>
+#     rerun-workflow.sh <WORKFLOW_ID> <PR_NUMBER> <PR_BRANCH>
 #
 # WORKFLOW_ID: Identifier (config name of ID) of a workflow to be rerun.
 #
@@ -12,7 +12,7 @@
 #
 # PR_BRANCH: Name of pull request's branch.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

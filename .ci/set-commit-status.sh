@@ -4,7 +4,7 @@
 #     Set a status with a given name to the specified commit.
 #
 # [usage]
-#     set_commit_status.sh <NAME> <STATUS> <SHA>
+#     set-commit-status.sh <NAME> <STATUS> <SHA>
 #
 # NAME: Name of status.
 #       Status with existing name overwrites a previous one.
@@ -14,7 +14,7 @@
 #
 # SHA: SHA of a commit to set a status on.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

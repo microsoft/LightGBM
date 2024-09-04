@@ -38,7 +38,7 @@ class LeafSplits {
   }
 
   /*!
-  * \brief Init split on current leaf on partial data. 
+  * \brief Init split on current leaf on partial data.
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param sum_gradients
@@ -54,7 +54,7 @@ class LeafSplits {
   }
 
   /*!
-  * \brief Init split on current leaf on partial data. 
+  * \brief Init split on current leaf on partial data.
   * \param leaf Index of current leaf
   * \param data_partition current data partition
   * \param sum_gradients

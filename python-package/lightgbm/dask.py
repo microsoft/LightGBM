@@ -6,6 +6,7 @@ dask.Array and dask.DataFrame collections.
 
 It is based on dask-lightgbm, which was based on dask-xgboost.
 """
+
 import operator
 import socket
 from collections import defaultdict

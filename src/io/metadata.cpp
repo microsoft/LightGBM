@@ -531,7 +531,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
 
   data_size_t sum = 0;
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum)
-  for (data_size_t i = 0; i < last - first; ++i) {
+  for (data_size_t i = 0; i < static_cast<data_size_t>(last - first); ++i) {
     sum += first[i];
   }
   if (num_data_ != sum) {

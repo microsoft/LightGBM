@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -e -E -u -o pipefail
 
 echo "running pre-commit checks"
 pre-commit run --all-files || exit 1

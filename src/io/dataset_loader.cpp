@@ -274,7 +274,7 @@ Dataset* DatasetLoader::LoadFromFile(const char* filename, int rank, int num_mac
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), rank, num_machines, &num_global_data, &used_data_indices));
 
     // checks whether there's a initial score file when loaded from binary data files
-    // the intial score file should with suffix ".bin.init"
+    // the initial score file should with suffix ".bin.init"
     dataset->metadata_.LoadInitialScore(bin_filename);
 
     dataset->device_type_ = config_.device_type;
@@ -344,7 +344,7 @@ Dataset* DatasetLoader::LoadFromFileAlignWithOtherDataset(const char* filename, 
     // load data from binary file
     dataset.reset(LoadFromBinFile(filename, bin_filename.c_str(), 0, 1, &num_global_data, &used_data_indices));
     // checks whether there's a initial score file when loaded from binary data files
-    // the intial score file should with suffix ".bin.init"
+    // the initial score file should with suffix ".bin.init"
     dataset->metadata_.LoadInitialScore(bin_filename);
   }
   // not need to check validation data

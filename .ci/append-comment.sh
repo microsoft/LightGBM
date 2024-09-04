@@ -4,13 +4,13 @@
 #     Update comment appending a given body to the specified original comment.
 #
 # [usage]
-#     append_comment.sh <COMMENT_ID> <BODY>
+#     append-comment.sh <COMMENT_ID> <BODY>
 #
 # COMMENT_ID: ID of comment that should be modified.
 #
 # BODY: Text that will be appended to the original comment body.
 
-set -e
+set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
   echo "Must be run inside GitHub Actions CI"

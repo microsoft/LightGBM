@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e -E -u -o pipefail
+
 rm -f ./_FIRST_RUN.flag
 
 export PATH="${CONDA}/bin:${PATH}"

@@ -15,11 +15,11 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 dependencies = [
-    "dataclasses ; python_version < '3.7'",
-    "numpy",
+    "numpy>=1.17.0",
     "scipy"
 ]
 description = "LightGBM Python Package"
@@ -29,8 +29,8 @@ maintainers = [
 ]
 name = "lightgbm"
 readme = "README.rst"
-requires-python = ">=3.6"
-version = "4.3.0.99"
+requires-python = ">=3.7"
+version = "4.5.0.99"
 
 [project.optional-dependencies]
 arrow = [
@@ -57,26 +57,30 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.4.4"]
+requires = ["scikit-build-core>=0.10.1"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.minimum-version = "3.18"
-ninja.minimum-version = "1.11"
+cmake.version = "CMakeLists.txt"
+ninja.version = ">=1.11"
 ninja.make-fallback = true
 cmake.args = [
     "-D__BUILD_FOR_PYTHON:BOOL=ON"
 ]
-cmake.verbose = false
+build.verbose = false
 cmake.build-type = "Release"
+build.targets = ["_lightgbm"]
+# stripping binaries should be turned back on once this is fixed:
+# https://github.com/jameslamb/pydistcheck/issues/235
+install.strip = false
 logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
-strict-config = true
-minimum-version = "0.4.4"
+strict-config = false
+minimum-version = "build-system.requires"
 
 # end:build-system
 
@@ -92,6 +96,7 @@ skip_glob = [
 ]
 
 [tool.mypy]
+disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
 ignore_missing_imports = true
 
@@ -151,6 +156,8 @@ select = [
     "E",
     # pyflakes
     "F",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PL",
     # flake8-return: unnecessary assignment before return

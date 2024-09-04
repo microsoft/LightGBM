@@ -550,7 +550,7 @@ def test_multi_class_error():
 @pytest.mark.skipif(
     getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
 )
-def test_auc_mu():
+def test_auc_mu(rng):
     # should give same result as binary auc for 2 classes
     X, y = load_digits(n_class=10, return_X_y=True)
     y_new = np.zeros((len(y)))
@@ -578,7 +578,7 @@ def test_auc_mu():
     assert results_auc_mu["training"]["auc_mu"][-1] == pytest.approx(0.5)
     # test that weighted data gives different auc_mu
     lgb_X = lgb.Dataset(X, label=y)
-    lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(np.random.normal(size=y.shape)))
+    lgb_X_weighted = lgb.Dataset(X, label=y, weight=np.abs(rng.standard_normal(size=y.shape)))
     results_unweighted = {}
     results_weighted = {}
     params = dict(params, num_classes=10, num_leaves=5)
@@ -938,6 +938,54 @@ def test_early_stopping_via_global_params(first_metric_only):
     assert "error" in gbm.best_score[valid_set_name]
 
 
+@pytest.mark.parametrize("early_stopping_round", [-10, -1, 0, None, "None"])
+def test_early_stopping_is_not_enabled_for_non_positive_stopping_rounds(early_stopping_round):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": early_stopping_round,
+        "first_metric_only": True,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    valid_set_name = "valid_set"
+
+    if early_stopping_round is None:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert "early_stopping_round" not in gbm.params
+        assert gbm.num_trees() == num_trees
+    elif early_stopping_round == "None":
+        with pytest.raises(TypeError, match="early_stopping_round should be an integer. Got 'str'"):
+            gbm = lgb.train(
+                params,
+                lgb_train,
+                feval=[constant_metric],
+                valid_sets=lgb_eval,
+                valid_names=valid_set_name,
+            )
+    elif early_stopping_round <= 0:
+        gbm = lgb.train(
+            params,
+            lgb_train,
+            feval=[constant_metric],
+            valid_sets=lgb_eval,
+            valid_names=valid_set_name,
+        )
+        assert gbm.params["early_stopping_round"] == early_stopping_round
+        assert gbm.num_trees() == num_trees
+
+
 @pytest.mark.parametrize("first_only", [True, False])
 @pytest.mark.parametrize("single_metric", [True, False])
 @pytest.mark.parametrize("greater_is_better", [True, False])
@@ -1019,6 +1067,29 @@ def test_early_stopping_min_delta(first_only, single_metric, greater_is_better):
         assert np.greater_equal(last_score, best_score - min_delta).any()
 
 
+@pytest.mark.parametrize("early_stopping_min_delta", [1e3, 0.0])
+def test_early_stopping_min_delta_via_global_params(early_stopping_min_delta):
+    X, y = load_breast_cancer(return_X_y=True)
+    num_trees = 5
+    params = {
+        "num_trees": num_trees,
+        "num_leaves": 5,
+        "objective": "binary",
+        "metric": "None",
+        "verbose": -1,
+        "early_stopping_round": 2,
+        "early_stopping_min_delta": early_stopping_min_delta,
+    }
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train)
+    gbm = lgb.train(params, lgb_train, feval=decreasing_metric, valid_sets=lgb_eval)
+    if early_stopping_min_delta == 0:
+        assert gbm.best_iteration == num_trees
+    else:
+        assert gbm.best_iteration == 1
+
+
 def test_early_stopping_can_be_triggered_via_custom_callback():
     X, y = make_synthetic_regression()
 
@@ -1041,15 +1112,15 @@ def test_early_stopping_can_be_triggered_via_custom_callback():
     assert bst.current_iteration() == 7
 
 
-def test_continue_train():
+def test_continue_train(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {"objective": "regression", "metric": "l1", "verbose": -1}
     lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
     init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
-    model_name = "model.txt"
-    init_gbm.save_model(model_name)
+    model_path = tmp_path / "model.txt"
+    init_gbm.save_model(model_path)
     evals_result = {}
     gbm = lgb.train(
         params,
@@ -1059,7 +1130,7 @@ def test_continue_train():
         # test custom eval metrics
         feval=(lambda p, d: ("custom_mae", mean_absolute_error(p, d.get_label()), False)),
         callbacks=[lgb.record_evaluation(evals_result)],
-        init_model="model.txt",
+        init_model=model_path,
     )
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 13.6
@@ -1350,35 +1421,42 @@ def test_cvbooster_picklable(serializer):
 def test_feature_name():
     X_train, y_train = make_synthetic_regression()
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
     feature_names = [f"f_{i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
     # test feature_names with whitespaces
     feature_names_with_space = [f"f {i}" for i in range(X_train.shape[-1])]
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names_with_space)
+    lgb_train.set_feature_name(feature_names_with_space)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
 
 
-def test_feature_name_with_non_ascii():
-    X_train = np.random.normal(size=(100, 4))
-    y_train = np.random.random(100)
+def test_feature_name_with_non_ascii(rng, tmp_path):
+    X_train = rng.normal(size=(100, 4))
+    y_train = rng.normal(size=(100,))
     # This has non-ascii strings.
     feature_names = ["F_零", "F_一", "F_二", "F_三"]
     params = {"verbose": -1}
-    lgb_train = lgb.Dataset(X_train, y_train)
+    lgb_train = lgb.Dataset(X_train, y_train, feature_name=feature_names)
 
-    gbm = lgb.train(params, lgb_train, num_boost_round=5, feature_name=feature_names)
+    gbm = lgb.train(params, lgb_train, num_boost_round=5)
     assert feature_names == gbm.feature_name()
-    gbm.save_model("lgb.model")
+    model_path_txt = str(tmp_path / "lgb.model")
+    gbm.save_model(model_path_txt)
 
-    gbm2 = lgb.Booster(model_file="lgb.model")
+    gbm2 = lgb.Booster(model_file=model_path_txt)
     assert feature_names == gbm2.feature_name()
 
 
-def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
-    X = np.hstack([np.random.rand(100, 1), np.random.randint(0, 5, (100, 2))])
-    y = np.random.rand(100)
+def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
+    X = np.hstack(
+        [
+            rng.uniform(size=(100, 1)),
+            rng.integers(low=0, high=5, size=(100, 2)),
+        ]
+    )
+    y = rng.uniform(size=(100,))
     ds = lgb.Dataset(X, y)
     params = {
         "bagging_fraction": 0.8,
@@ -1391,6 +1469,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
         "metric": ["l2", "rmse"],
         "num_leaves": 5,
         "num_threads": 1,
+        "verbosity": 0,
     }
     model_file = tmp_path / "model.txt"
     orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
@@ -1420,7 +1499,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys):
     np.testing.assert_allclose(preds, orig_preds)
 
 
-def test_save_load_copy_pickle():
+def test_save_load_copy_pickle(tmp_path):
     def train_and_predict(init_model=None, return_model=False):
         X, y = make_synthetic_regression()
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1432,17 +1511,19 @@ def test_save_load_copy_pickle():
     gbm = train_and_predict(return_model=True)
     ret_origin = train_and_predict(init_model=gbm)
     other_ret = []
-    gbm.save_model("lgb.model")
-    with open("lgb.model") as f:  # check all params are logged into model file correctly
+    model_path_txt = str(tmp_path / "lgb.model")
+    gbm.save_model(model_path_txt)
+    with open(model_path_txt) as f:  # check all params are logged into model file correctly
         assert f.read().find("[num_iterations: 10]") != -1
-    other_ret.append(train_and_predict(init_model="lgb.model"))
-    gbm_load = lgb.Booster(model_file="lgb.model")
+    other_ret.append(train_and_predict(init_model=model_path_txt))
+    gbm_load = lgb.Booster(model_file=model_path_txt)
     other_ret.append(train_and_predict(init_model=gbm_load))
     other_ret.append(train_and_predict(init_model=copy.copy(gbm)))
     other_ret.append(train_and_predict(init_model=copy.deepcopy(gbm)))
-    with open("lgb.pkl", "wb") as f:
+    model_path_pkl = str(tmp_path / "lgb.pkl")
+    with open(model_path_pkl, "wb") as f:
         pickle.dump(gbm, f)
-    with open("lgb.pkl", "rb") as f:
+    with open(model_path_pkl, "rb") as f:
         gbm_pickle = pickle.load(f)
     other_ret.append(train_and_predict(init_model=gbm_pickle))
     gbm_pickles = pickle.loads(pickle.dumps(gbm))
@@ -1508,6 +1589,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[extra_trees: 0]",
         "[extra_seed: 6642]",
         "[early_stopping_round: 0]",
+        "[early_stopping_min_delta: 0]",
         "[first_metric_only: 0]",
         "[max_delta_step: 0]",
         "[lambda_l1: 0]",
@@ -1629,29 +1711,29 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         assert param_str in model_txt_from_memory
 
 
-def test_pandas_categorical():
+# why fixed seed?
+# sometimes there is no difference how cols are treated (cat or not cat)
+def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pd = pytest.importorskip("pandas")
-    np.random.seed(42)  # sometimes there is no difference how cols are treated (cat or not cat)
     X = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "c", "d"] * 75),  # str
-            "B": np.random.permutation([1, 2, 3] * 100),  # int
-            "C": np.random.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
-            "D": np.random.permutation([True, False] * 150),  # bool
-            "E": pd.Categorical(np.random.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "c", "d"] * 75),  # str
+            "B": rng_fixed_seed.permutation([1, 2, 3] * 100),  # int
+            "C": rng_fixed_seed.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+            "D": rng_fixed_seed.permutation([True, False] * 150),  # bool
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True),
         }
     )  # str and ordered categorical
-    y = np.random.permutation([0, 1] * 150)
+    y = rng_fixed_seed.permutation([0, 1] * 150)
     X_test = pd.DataFrame(
         {
-            "A": np.random.permutation(["a", "b", "e"] * 20),  # unseen category
-            "B": np.random.permutation([1, 3] * 30),
-            "C": np.random.permutation([0.1, -0.1, 0.2, 0.2] * 15),
-            "D": np.random.permutation([True, False] * 30),
-            "E": pd.Categorical(np.random.permutation(["z", "y"] * 30), ordered=True),
+            "A": rng_fixed_seed.permutation(["a", "b", "e"] * 20),  # unseen category
+            "B": rng_fixed_seed.permutation([1, 3] * 30),
+            "C": rng_fixed_seed.permutation([0.1, -0.1, 0.2, 0.2] * 15),
+            "D": rng_fixed_seed.permutation([True, False] * 30),
+            "E": pd.Categorical(rng_fixed_seed.permutation(["z", "y"] * 30), ordered=True),
         }
     )
-    np.random.seed()  # reset seed
     cat_cols_actual = ["A", "B", "C", "D"]
     cat_cols_to_store = cat_cols_actual + ["E"]
     X[cat_cols_actual] = X[cat_cols_actual].astype("category")
@@ -1674,8 +1756,9 @@ def test_pandas_categorical():
     gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D"])
     pred3 = gbm3.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D"]
-    gbm3.save_model("categorical.model")
-    gbm4 = lgb.Booster(model_file="categorical.model")
+    categorical_model_path = tmp_path / "categorical.model"
+    gbm3.save_model(categorical_model_path)
+    gbm4 = lgb.Booster(model_file=categorical_model_path)
     pred4 = gbm4.predict(X_test)
     model_str = gbm4.model_to_string()
     gbm4.model_from_string(model_str)
@@ -1713,25 +1796,25 @@ def test_pandas_categorical():
     assert gbm7.pandas_categorical == cat_values
 
 
-def test_pandas_sparse():
+def test_pandas_sparse(rng):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 1, 2] * 100)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 150)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 1, 2] * 100)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1, 0.2] * 60)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 150)),
         }
     )
-    y = pd.Series(pd.arrays.SparseArray(np.random.permutation([0, 1] * 150)))
+    y = pd.Series(pd.arrays.SparseArray(rng.permutation([0, 1] * 150)))
     X_test = pd.DataFrame(
         {
-            "A": pd.arrays.SparseArray(np.random.permutation([0, 2] * 30)),
-            "B": pd.arrays.SparseArray(np.random.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
-            "C": pd.arrays.SparseArray(np.random.permutation([True, False] * 30)),
+            "A": pd.arrays.SparseArray(rng.permutation([0, 2] * 30)),
+            "B": pd.arrays.SparseArray(rng.permutation([0.0, 0.1, 0.2, -0.1] * 15)),
+            "C": pd.arrays.SparseArray(rng.permutation([True, False] * 30)),
         }
     )
     for dtype in pd.concat([X.dtypes, X_test.dtypes, pd.Series(y.dtypes)]):
-        assert pd.api.types.is_sparse(dtype)
+        assert isinstance(dtype, pd.SparseDtype)
     params = {"objective": "binary", "verbose": -1}
     lgb_train = lgb.Dataset(X, y)
     gbm = lgb.train(params, lgb_train, num_boost_round=10)
@@ -1743,9 +1826,9 @@ def test_pandas_sparse():
     np.testing.assert_allclose(pred_sparse, pred_dense)
 
 
-def test_reference_chain():
-    X = np.random.normal(size=(100, 2))
-    y = np.random.normal(size=100)
+def test_reference_chain(rng):
+    X = rng.normal(size=(100, 2))
+    y = rng.normal(size=(100,))
     tmp_dat = lgb.Dataset(X, y)
     # take subsets and train
     tmp_dat_train = tmp_dat.subset(np.arange(80))
@@ -1867,28 +1950,28 @@ def test_contribs_sparse_multiclass():
         np.testing.assert_allclose(contribs_csc_array, contribs_dense)
 
 
-@pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
-def test_int32_max_sparse_contribs():
-    params = {"objective": "binary"}
-    train_features = np.random.rand(100, 1000)
-    train_targets = [0] * 50 + [1] * 50
-    lgb_train = lgb.Dataset(train_features, train_targets)
-    gbm = lgb.train(params, lgb_train, num_boost_round=2)
-    csr_input_shape = (3000000, 1000)
-    test_features = csr_matrix(csr_input_shape)
-    for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
-        for j in range(0, 1000, 100):
-            test_features[i, j] = random.random()
-    y_pred_csr = gbm.predict(test_features, pred_contrib=True)
-    # Note there is an extra column added to the output for the expected value
-    csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
-    assert y_pred_csr.shape == csr_output_shape
-    y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
-    # Note output CSC shape should be same as CSR output shape
-    assert y_pred_csc.shape == csr_output_shape
+# @pytest.mark.skipif(psutil.virtual_memory().available / 1024 / 1024 / 1024 < 3, reason="not enough RAM")
+# def test_int32_max_sparse_contribs(rng):
+#     params = {"objective": "binary"}
+#     train_features = rng.uniform(size=(100, 1000))
+#     train_targets = [0] * 50 + [1] * 50
+#     lgb_train = lgb.Dataset(train_features, train_targets)
+#     gbm = lgb.train(params, lgb_train, num_boost_round=2)
+#     csr_input_shape = (3000000, 1000)
+#     test_features = csr_matrix(csr_input_shape)
+#     for i in range(0, csr_input_shape[0], csr_input_shape[0] // 6):
+#         for j in range(0, 1000, 100):
+#             test_features[i, j] = random.random()
+#     y_pred_csr = gbm.predict(test_features, pred_contrib=True)
+#     # Note there is an extra column added to the output for the expected value
+#     csr_output_shape = (csr_input_shape[0], csr_input_shape[1] + 1)
+#     assert y_pred_csr.shape == csr_output_shape
+#     y_pred_csc = gbm.predict(test_features.tocsc(), pred_contrib=True)
+#     # Note output CSC shape should be same as CSR output shape
+#     assert y_pred_csc.shape == csr_output_shape
 
 
-def test_sliced_data():
+def test_sliced_data(rng):
     def train_and_get_predictions(features, labels):
         dataset = lgb.Dataset(features, label=labels)
         lgb_params = {
@@ -1904,7 +1987,7 @@ def test_sliced_data():
         return gbm.predict(features)
 
     num_samples = 100
-    features = np.random.rand(num_samples, 5)
+    features = rng.uniform(size=(num_samples, 5))
     positive_samples = int(num_samples * 0.25)
     labels = np.append(
         np.ones(positive_samples, dtype=np.float32), np.zeros(num_samples - positive_samples, dtype=np.float32)
@@ -1938,13 +2021,13 @@ def test_sliced_data():
     np.testing.assert_allclose(origin_pred, sliced_pred)
 
 
-def test_init_with_subset():
-    data = np.random.random((50, 2))
+def test_init_with_subset(tmp_path, rng):
+    data = rng.uniform(size=(50, 2))
     y = [1] * 25 + [0] * 25
     lgb_train = lgb.Dataset(data, y, free_raw_data=False)
-    subset_index_1 = np.random.choice(np.arange(50), 30, replace=False)
+    subset_index_1 = rng.choice(a=np.arange(50), size=30, replace=False)
     subset_data_1 = lgb_train.subset(subset_index_1)
-    subset_index_2 = np.random.choice(np.arange(50), 20, replace=False)
+    subset_index_2 = rng.choice(a=np.arange(50), size=20, replace=False)
     subset_data_2 = lgb_train.subset(subset_index_2)
     params = {"objective": "binary", "verbose": -1}
     init_gbm = lgb.train(params=params, train_set=subset_data_1, num_boost_round=10, keep_training_booster=True)
@@ -1952,21 +2035,22 @@ def test_init_with_subset():
     assert lgb_train.get_data().shape[0] == 50
     assert subset_data_1.get_data().shape[0] == 30
     assert subset_data_2.get_data().shape[0] == 20
-    lgb_train.save_binary("lgb_train_data.bin")
-    lgb_train_from_file = lgb.Dataset("lgb_train_data.bin", free_raw_data=False)
+    lgb_train_data = str(tmp_path / "lgb_train_data.bin")
+    lgb_train.save_binary(lgb_train_data)
+    lgb_train_from_file = lgb.Dataset(lgb_train_data, free_raw_data=False)
     subset_data_3 = lgb_train_from_file.subset(subset_index_1)
     subset_data_4 = lgb_train_from_file.subset(subset_index_2)
     init_gbm_2 = lgb.train(params=params, train_set=subset_data_3, num_boost_round=10, keep_training_booster=True)
     with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Unknown format of training data"):
         lgb.train(params=params, train_set=subset_data_4, num_boost_round=10, init_model=init_gbm_2)
-    assert lgb_train_from_file.get_data() == "lgb_train_data.bin"
-    assert subset_data_3.get_data() == "lgb_train_data.bin"
-    assert subset_data_4.get_data() == "lgb_train_data.bin"
+    assert lgb_train_from_file.get_data() == lgb_train_data
+    assert subset_data_3.get_data() == lgb_train_data
+    assert subset_data_4.get_data() == lgb_train_data
 
 
-def test_training_on_constructed_subset_without_params():
-    X = np.random.random((100, 10))
-    y = np.random.random(100)
+def test_training_on_constructed_subset_without_params(rng):
+    X = rng.uniform(size=(100, 10))
+    y = rng.uniform(size=(100,))
     lgb_data = lgb.Dataset(X, y)
     subset_indices = [1, 2, 3, 4]
     subset = lgb_data.subset(subset_indices).construct()
@@ -1978,9 +2062,10 @@ def test_training_on_constructed_subset_without_params():
 
 def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
     number_of_dpoints = 3000
-    x1_positively_correlated_with_y = np.random.random(size=number_of_dpoints)
-    x2_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
-    x3_negatively_correlated_with_y = np.random.random(size=number_of_dpoints)
+    rng = np.random.default_rng()
+    x1_positively_correlated_with_y = rng.uniform(size=number_of_dpoints)
+    x2_negatively_correlated_with_y = rng.uniform(size=number_of_dpoints)
+    x3_negatively_correlated_with_y = rng.uniform(size=number_of_dpoints)
     x = np.column_stack(
         (
             x1_positively_correlated_with_y,
@@ -1989,8 +2074,8 @@ def generate_trainset_for_monotone_constraints_tests(x3_to_category=True):
         )
     )
 
-    zs = np.random.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
-    scales = 10.0 * (np.random.random(6) + 0.5)
+    zs = rng.normal(loc=0.0, scale=0.01, size=number_of_dpoints)
+    scales = 10.0 * (rng.uniform(size=6) + 0.5)
     y = (
         scales[0] * x1_positively_correlated_with_y
         + np.sin(scales[1] * np.pi * x1_positively_correlated_with_y)
@@ -2192,9 +2277,8 @@ def test_max_bin_by_feature():
     assert len(np.unique(est.predict(X))) == 3
 
 
-def test_small_max_bin():
-    np.random.seed(0)
-    y = np.random.choice([0, 1], 100)
+def test_small_max_bin(rng_fixed_seed):
+    y = rng_fixed_seed.choice([0, 1], 100)
     x = np.ones((100, 1))
     x[:30, 0] = -1
     x[60:, 0] = 2
@@ -2205,7 +2289,6 @@ def test_small_max_bin():
     params["max_bin"] = 3
     lgb_x = lgb.Dataset(x, label=y)
     lgb.train(params, lgb_x, num_boost_round=5)
-    np.random.seed()  # reset seed
 
 
 def test_refit():
@@ -2220,14 +2303,14 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
-def test_refit_dataset_params():
+def test_refit_dataset_params(rng):
     # check refit accepts dataset_params
     X, y = load_breast_cancer(return_X_y=True)
     lgb_train = lgb.Dataset(X, y, init_score=np.zeros(y.size))
     train_params = {"objective": "binary", "verbose": -1, "seed": 123}
     gbm = lgb.train(train_params, lgb_train, num_boost_round=10)
     non_weight_err_pred = log_loss(y, gbm.predict(X))
-    refit_weight = np.random.rand(y.shape[0])
+    refit_weight = rng.uniform(size=(y.shape[0],))
     dataset_params = {
         "max_bin": 260,
         "min_data_in_bin": 5,
@@ -2938,7 +3021,7 @@ def test_model_size():
 @pytest.mark.skipif(
     getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
 )
-def test_get_split_value_histogram():
+def test_get_split_value_histogram(rng_fixed_seed):
     X, y = make_synthetic_regression()
     X = np.repeat(X, 3, axis=0)
     y = np.repeat(y, 3, axis=0)
@@ -3278,7 +3361,7 @@ def test_binning_same_sign():
     assert predicted[1] == pytest.approx(predicted[2])
 
 
-def test_dataset_update_params():
+def test_dataset_update_params(rng):
     default_params = {
         "max_bin": 100,
         "max_bin_by_feature": [20, 10],
@@ -3327,8 +3410,8 @@ def test_dataset_update_params():
         "linear_tree": True,
         "precise_float_parser": False,
     }
-    X = np.random.random((100, 2))
-    y = np.random.random(100)
+    X = rng.uniform(size=(100, 2))
+    y = rng.uniform(size=(100,))
 
     # decreasing without freeing raw data is allowed
     lgb_data = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
@@ -3370,12 +3453,12 @@ def test_dataset_update_params():
             lgb.train(new_params, lgb_data, num_boost_round=3)
 
 
-def test_dataset_params_with_reference():
+def test_dataset_params_with_reference(rng):
     default_params = {"max_bin": 100}
-    X = np.random.random((100, 2))
-    y = np.random.random(100)
-    X_val = np.random.random((100, 2))
-    y_val = np.random.random(100)
+    X = rng.uniform(size=(100, 2))
+    y = rng.uniform(size=(100,))
+    X_val = rng.uniform(size=(100, 2))
+    y_val = rng.uniform(size=(100,))
     lgb_train = lgb.Dataset(X, y, params=default_params, free_raw_data=False).construct()
     lgb_val = lgb.Dataset(X_val, y_val, reference=lgb_train, free_raw_data=False).construct()
     assert lgb_train.get_params() == default_params
@@ -3413,7 +3496,7 @@ def test_path_smoothing():
     assert err < err_new
 
 
-def test_trees_to_dataframe():
+def test_trees_to_dataframe(rng):
     pytest.importorskip("pandas")
 
     def _imptcs_to_numpy(X, impcts_dict):
@@ -3443,7 +3526,7 @@ def test_trees_to_dataframe():
 
     # test edge case with one leaf
     X = np.ones((10, 2))
-    y = np.random.rand(10)
+    y = rng.uniform(size=(10,))
     data = lgb.Dataset(X, label=y)
     bst = lgb.train({"objective": "binary", "verbose": -1}, data, num_trees)
     tree_df = bst.trees_to_dataframe()
@@ -3501,11 +3584,10 @@ def test_interaction_constraints():
     )
 
 
-def test_linear_trees_num_threads():
+def test_linear_trees_num_threads(rng_fixed_seed):
     # check that number of threads does not affect result
-    np.random.seed(0)
     x = np.arange(0, 1000, 0.1)
-    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    y = 2 * x + rng_fixed_seed.normal(loc=0, scale=0.1, size=(len(x),))
     x = x[:, np.newaxis]
     lgb_train = lgb.Dataset(x, label=y)
     params = {"verbose": -1, "objective": "regression", "seed": 0, "linear_tree": True, "num_threads": 2}
@@ -3517,11 +3599,10 @@ def test_linear_trees_num_threads():
     np.testing.assert_allclose(pred1, pred2)
 
 
-def test_linear_trees(tmp_path):
+def test_linear_trees(tmp_path, rng_fixed_seed):
     # check that setting linear_tree=True fits better than ordinary trees when data has linear relationship
-    np.random.seed(0)
     x = np.arange(0, 100, 0.1)
-    y = 2 * x + np.random.normal(0, 0.1, len(x))
+    y = 2 * x + rng_fixed_seed.normal(0, 0.1, len(x))
     x = x[:, np.newaxis]
     lgb_train = lgb.Dataset(x, label=y)
     params = {"verbose": -1, "metric": "mse", "seed": 0, "num_leaves": 2}
@@ -4026,21 +4107,20 @@ def test_record_evaluation_with_cv(train_metric):
                 np.testing.assert_allclose(cv_hist[key], eval_result[dataset][f"{metric}-{agg}"])
 
 
-def test_pandas_with_numpy_regular_dtypes():
+def test_pandas_with_numpy_regular_dtypes(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
     uints = ["uint8", "uint16", "uint32", "uint64"]
     ints = ["int8", "int16", "int32", "int64"]
     bool_and_floats = ["bool", "float16", "float32", "float64"]
-    rng = np.random.RandomState(42)
 
     n_samples = 100
     # data as float64
     df = pd.DataFrame(
         {
-            "x1": rng.randint(0, 2, n_samples),
-            "x2": rng.randint(1, 3, n_samples),
-            "x3": 10 * rng.randint(1, 3, n_samples),
-            "x4": 100 * rng.randint(1, 3, n_samples),
+            "x1": rng_fixed_seed.integers(low=0, high=2, size=n_samples),
+            "x2": rng_fixed_seed.integers(low=1, high=3, size=n_samples),
+            "x3": 10 * rng_fixed_seed.integers(low=1, high=3, size=n_samples),
+            "x4": 100 * rng_fixed_seed.integers(low=1, high=3, size=n_samples),
         }
     )
     df = df.astype(np.float64)
@@ -4066,23 +4146,22 @@ def test_pandas_with_numpy_regular_dtypes():
         np.testing.assert_allclose(preds, preds2)
 
 
-def test_pandas_nullable_dtypes():
+def test_pandas_nullable_dtypes(rng_fixed_seed):
     pd = pytest.importorskip("pandas")
-    rng = np.random.RandomState(0)
     df = pd.DataFrame(
         {
-            "x1": rng.randint(1, 3, size=100),
+            "x1": rng_fixed_seed.integers(low=1, high=3, size=100),
             "x2": np.linspace(-1, 1, 100),
-            "x3": pd.arrays.SparseArray(rng.randint(0, 11, size=100)),
-            "x4": rng.rand(100) < 0.5,
+            "x3": pd.arrays.SparseArray(rng_fixed_seed.integers(low=0, high=11, size=100)),
+            "x4": rng_fixed_seed.uniform(size=(100,)) < 0.5,
         }
     )
     # introduce some missing values
     df.loc[1, "x1"] = np.nan
     df.loc[2, "x2"] = np.nan
-    df.loc[3, "x4"] = np.nan
-    # the previous line turns x3 into object dtype in recent versions of pandas
+    # in recent versions of pandas, type 'bool' is incompatible with nan values in x4
     df["x4"] = df["x4"].astype(np.float64)
+    df.loc[3, "x4"] = np.nan
     y = df["x1"] * df["x2"] + df["x3"] * (1 + df["x4"])
     y = y.fillna(0)
 
@@ -4146,7 +4225,7 @@ def test_boost_from_average_with_single_leaf_trees():
     assert y.min() <= mean_preds <= y.max()
 
 
-def test_cegb_split_buffer_clean():
+def test_cegb_split_buffer_clean(rng_fixed_seed):
     # modified from https://github.com/microsoft/LightGBM/issues/3679#issuecomment-938652811
     # and https://github.com/microsoft/LightGBM/pull/5087
     # test that the ``splits_per_leaf_`` of CEGB is cleaned before training a new tree
@@ -4155,11 +4234,9 @@ def test_cegb_split_buffer_clean():
     #    Check failed: (best_split_info.left_count) > (0)
 
     R, C = 1000, 100
-    seed = 29
-    np.random.seed(seed)
-    data = np.random.randn(R, C)
+    data = rng_fixed_seed.standard_normal(size=(R, C))
     for i in range(1, C):
-        data[i] += data[0] * np.random.randn()
+        data[i] += data[0] * rng_fixed_seed.standard_normal()
 
     N = int(0.8 * len(data))
     train_data = data[:N]
@@ -4200,9 +4277,23 @@ def test_verbosity_and_verbose(capsys):
         "verbosity": 0,
     }
     lgb.train(params, ds, num_boost_round=1)
-    expected_msg = "[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. " "Current value: verbosity=0"
+    expected_msg = "[LightGBM] [Warning] verbosity is set=0, verbose=1 will be ignored. Current value: verbosity=0"
     stdout = capsys.readouterr().out
     assert expected_msg in stdout
+
+
+def test_verbosity_is_respected_when_using_custom_objective(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    params = {
+        "objective": mse_obj,
+        "nonsense": 123,
+        "num_leaves": 3,
+    }
+    lgb.train({**params, "verbosity": -1}, ds, num_boost_round=1)
+    assert capsys.readouterr().out == ""
+    lgb.train({**params, "verbosity": 0}, ds, num_boost_round=1)
+    assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("verbosity_param", lgb.basic._ConfigAliases.get("verbosity"))
@@ -4308,3 +4399,27 @@ def test_quantized_training():
     quant_bst = lgb.train(bst_params, ds, num_boost_round=10)
     quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
     assert quant_rmse < rmse + 6.0
+
+
+def test_bagging_by_query_in_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
+    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / "rank.test"))
+    q_test = np.loadtxt(str(rank_example_dir / "rank.test.query"))
+    params = {"objective": "lambdarank", "verbose": -1, "metric": "ndcg", "ndcg_eval_at": "5"}
+    lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
+    lgb_test = lgb.Dataset(X_test, y_test, group=q_test, params=params)
+    gbm = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score = gbm.best_score["valid_0"]["ndcg@5"]
+
+    params.update({"bagging_by_query": True, "bagging_fraction": 0.1, "bagging_freq": 1})
+    gbm_bagging_by_query = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score_bagging_by_query = gbm_bagging_by_query.best_score["valid_0"]["ndcg@5"]
+
+    params.update({"bagging_by_query": False, "bagging_fraction": 0.1, "bagging_freq": 1})
+    gbm_no_bagging_by_query = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
+    print(ndcg_score_bagging_by_query, ndcg_score, ndcg_score_no_bagging_by_query)
+    assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
+    assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1

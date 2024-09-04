@@ -2,19 +2,16 @@
 """Get the most recent status of workflow for the current PR.
 
 [usage]
-    python get_workflow_status.py TRIGGER_PHRASE
+    python get-workflow-status.py TRIGGER_PHRASE
 
 TRIGGER_PHRASE: Code phrase that triggers workflow.
 """
+
 import json
 from os import environ
 from sys import argv, exit
 from time import sleep
-
-try:
-    from urllib import request
-except ImportError:
-    import urllib2 as request
+from urllib import request
 
 
 def get_runs(trigger_phrase):

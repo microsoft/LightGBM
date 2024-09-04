@@ -25,9 +25,14 @@ X_test = df_test.drop(0, axis=1)
 
 num_train, num_feature = X_train.shape
 
+# generate feature names
+feature_name = [f"feature_{col}" for col in range(num_feature)]
+
 # create dataset for lightgbm
 # if you want to re-use data, remember to set free_raw_data=False
-lgb_train = lgb.Dataset(X_train, y_train, weight=W_train, free_raw_data=False)
+lgb_train = lgb.Dataset(
+    X_train, y_train, weight=W_train, feature_name=feature_name, categorical_feature=[21], free_raw_data=False
+)
 lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, weight=W_test, free_raw_data=False)
 
 # specify your configurations as a dict
@@ -43,9 +48,6 @@ params = {
     "verbose": 0,
 }
 
-# generate feature names
-feature_name = [f"feature_{col}" for col in range(num_feature)]
-
 print("Starting training...")
 # feature_name and categorical_feature
 gbm = lgb.train(
@@ -53,8 +55,6 @@ gbm = lgb.train(
     lgb_train,
     num_boost_round=10,
     valid_sets=lgb_train,  # eval training data
-    feature_name=feature_name,
-    categorical_feature=[21],
 )
 
 print("Finished first 10 rounds...")
