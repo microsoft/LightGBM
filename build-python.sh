@@ -364,9 +364,9 @@ if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
     if test "${BUILD_WHEEL}" = true; then
-        PACKAGE_NAME="lightgbm*.whl"
+        PACKAGE_NAME=$(find . -name "lightgbm*.whl" -print -quit)
     else
-        PACKAGE_NAME="lightgbm*.tar.gz"
+        PACKAGE_NAME=$(find . -name "lightgbm*.tar.gz" -print -quit)
     fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
