@@ -94,7 +94,7 @@ for eigen_module in ${modules}; do
     cp "external_libs/eigen/Eigen/${eigen_module}" "${EIGEN_R_DIR}/${eigen_module}"
     if [ "${eigen_module}" != "Dense" ]; then
         mkdir -p "${EIGEN_R_DIR}/src/${eigen_module}/"
-        cp -R external_libs/eigen/Eigen/src/"${eigen_module}"/* "${EIGEN_R_DIR}/src/${eigen_module}/"
+        cp -R "external_libs/eigen/Eigen/src/${eigen_module}"/* "${EIGEN_R_DIR}/src/${eigen_module}/"
     fi
 done
 
