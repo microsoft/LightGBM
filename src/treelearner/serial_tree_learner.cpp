@@ -804,8 +804,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // TODO Nina this seems to be the id of the column not the actual split value.
   share_state_->threshold_used.insert(best_split_info.threshold);
   std::cout << "Set elements: ";
-  for (int8_t num : share_state_->threshold_used) {
-      std::cout << static_cast<int>(num) << " "; // Cast to int for proper display
+  for (float num : share_state_->threshold_used) {
+      std::cout << static_cast<float>(num) << " "; // Cast to int for proper display
   }
   std::cout << std::endl;
   // TODO: check why gain is +inf for this log; probably an indicator that this is the wrong place to update the variables

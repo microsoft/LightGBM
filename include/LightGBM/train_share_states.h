@@ -272,7 +272,7 @@ struct TrainingShareStates {
   data_size_t bagging_indices_cnt;
   // TODO Nina appropriate place to store features used? Rather create an own struct that only gets created if required?
   // TODO Is mostly used for bagging ... - we might later decide for a
-  std::set<uint32_t> threshold_used;
+  std::set<float> threshold_used;
 
 
   TrainingShareStates() {
