@@ -24,6 +24,7 @@ import lightgbm as lgb
 from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
 
 from .utils import (
+    assert_silent,
     load_breast_cancer,
     load_digits,
     load_iris,
@@ -1335,6 +1336,58 @@ def test_verbosity_is_respected_when_using_custom_objective(capsys):
     assert capsys.readouterr().out == ""
     lgb.LGBMRegressor(**params, verbosity=0, n_estimators=1).fit(X, y)
     assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
+
+
+def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
+    X, y = make_synthetic_regression()
+    base_kwargs = {
+        "num_leaves": 5,
+        "verbosity": -1,
+    }
+
+    # no warning: no aliases, all defaults
+    reg = lgb.LGBMRegressor(**base_kwargs).fit(X, y)
+    assert reg.n_estimators_ == 100
+    assert_silent(capsys)
+
+    # no warning: no aliases, just n_estimators
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=2).fit(X, y)
+    assert reg.n_estimators_ == 2
+    assert_silent(capsys)
+
+    # no warning: 1 alias + n_estimators (both same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=3, n_iter=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # no warning: 1 alias + n_estimators (different values... value from params should win)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=3, n_iter=4).fit(X, y)
+    assert reg.n_estimators_ == 4
+    assert_silent(capsys)
+
+    # no warning: 2 aliases (both same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_iter=3, num_iterations=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # no warning: 4 aliases (all same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_iter=3, num_trees=3, nrounds=3, max_iter=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+        reg = lgb.LGBMRegressor(**base_kwargs, num_iterations=5, n_iter=6).fit(X, y)
+    assert reg.n_estimators_ == 5
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... first one in the order from Config::parameter2aliases() wins)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 4 boosting rounds"):
+        reg = lgb.LGBMRegressor(**base_kwargs, n_iter=4, max_iter=5).fit(X, y)
+    assert reg.n_estimators_ == 4
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
 
 
 @pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])

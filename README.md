@@ -67,6 +67,8 @@ LightGBMLSS (An extension of LightGBM to probabilistic modelling from which pred
 
 FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
 
+supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
+
 Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
 
 Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
