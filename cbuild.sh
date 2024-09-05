@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if cmake -B build -S . -DUSE_CUDA=1; then
+if cmake -B build -S . -DUSE_CUDA=1 -DUSE_DEBUG=ON; then
     if cmake --build build -j4; then
         echo "build complete"
     else
@@ -12,9 +12,10 @@ else
     exit 1
 fi
 
-cd examples/binary_classification
+cd examples/binary_classification || exit
 "../../lightgbm" config=train.conf > train.output
 "../../lightgbm" config=predict.conf > predict.output
 
 cd ../..
+
 python3 plot_model.py

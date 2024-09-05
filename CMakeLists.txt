@@ -4,7 +4,7 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
-option(USE_DEBUG "Set to ON for Debug mode" OFF)
+option(USE_DEBUG "Set to ON for Debug mode" ON)
 option(USE_SANITIZER "Use santizer flags" OFF)
 option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
 set(
