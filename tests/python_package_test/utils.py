@@ -191,6 +191,25 @@ def pickle_and_unpickle_object(obj, serializer):
     return obj_from_disk  # noqa: RET504
 
 
+def assert_silent(capsys) -> None:
+    """
+    Given a ``CaptureFixture`` instance (from the ``pytest`` built-in ``capsys`` fixture),
+    read the recently-captured data into a variable and assert that nothing was written
+    to stdout or stderr.
+
+    This is just here to turn 3 lines of repetitive code into 1.
+
+    Note that this does have a side effect... ``capsys.readouterr()`` copies
+    from a buffer then frees it. So it will only store into ``.out`` and ``.err`` the
+    captured output since the last time that ``.readouterr()`` was called.
+
+    ref: https://docs.pytest.org/en/stable/how-to/capture-stdout-stderr.html
+    """
+    captured = capsys.readouterr()
+    assert captured.out == "", captured.out
+    assert captured.err == "", captured.err
+
+
 # doing this here, at import time, to ensure it only runs once_per import
 # instead of once per assertion
 _numpy_testing_supports_strict_kwarg = "strict" in getfullargspec(np.testing.assert_array_equal).kwonlyargs
