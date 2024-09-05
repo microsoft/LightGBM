@@ -28,8 +28,6 @@ class CostEfficientGradientBoosting {
     if (config->cegb_tradeoff >= 1.0f && config->cegb_penalty_split <= 0.0f &&
         config->cegb_penalty_feature_coupled.empty() &&
         config->cegb_penalty_feature_lazy.empty()) {
-        // TODO Nina do we want to reuse the Cost Efficient in case the forestsize is set? Or rather just use the max_trees - max_depth?
-        // && onfig->tinygbdt_forestsize <= 0.0f
       return false;
     } else {
       return true;

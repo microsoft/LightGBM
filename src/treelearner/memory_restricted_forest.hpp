@@ -39,6 +39,25 @@ namespace LightGBM {
           InsertThresholdInfo(best_split_info.threshold, best_split_info.left_count, best_split_info.right_count);
           // TODO Jan/Nina merging with Method from Jan either storing result here or in the tree.
           // tree->toArrayPointer();
+          // For the overall memory consumption it is assumed that each split that uses a feature not yet used increases the memory by two double values (split and predict value).
+          // Was feature already used?
+          estimated_consumed_memory += 2 * sizeof(int);
+          // Insert dummy values to check if it works.
+          float threshold = 1.0;
+          uint32_t feature = 1;
+          std::vector<float>::iterator threshold_it;
+          std::vector<u_int32_t>::iterator feature_it;
+          threshold_it = std::find(tree->tt_thresholds_.begin(), tree->tt_thresholds_.end(), threshold);
+          feature_it = std::find(tree->tt_features_.begin(), tree->tt_features_.end(), feature);
+          if (feature_it == tree->tt_features_.end()) {
+            // If yes, only one double value is added.
+            estimated_consumed_memory += sizeof(double);
+          }
+          if (threshold_it == tree->tt_thresholds_.end()) {
+            // If yes, only one double value is added.
+            estimated_consumed_memory += sizeof(double);
+          }
+          Log::Debug("Estimated consumed memory: %f", (estimated_consumed_memory));
         }
         void InsertThresholdInfo(uint32_t threshold, uint32_t left, uint32_t right) {
           threshold_info info;
@@ -54,14 +73,16 @@ namespace LightGBM {
             if (config->tinygbdt_forestsize == 0.0f) {
                 return false;
             } else {
-                if (config->num_iterations && config->max_depth) {
+                if (config->num_iterations != 100 && config->max_depth > 0) {
                     Log::Debug("num_tree and max_depth set");
                   // TODO TinyGBT do we automatically want to set values if those are not set?
                   // TODO I guess having one set is the easiest as we can eventually scale in the other direction.
-                } else if (config->num_iterations) {
+                } else if (config->num_iterations != 100 ) {
                     Log::Debug("num_tree set");
-                } else if (config->max_depth) {
+                } else if (config->max_depth > 0) {
                     Log::Debug("max_depth set");
+                    // Assuming we have a fully covered binary tree get the maximum nodes in a single tree.
+                    // int max_nodes = static_cast<int>(pow(2, config->max_depth + 1) - 1);
                 } else {
                   // TODO TinyGBT none set we could either set a value assuming an average memory consumption for one if both but estimation will lead to a loss in accuracy.
                     Log::Debug("Non set");
