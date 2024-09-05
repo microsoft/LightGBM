@@ -266,8 +266,13 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
 
   // [tinygbdt]
-  int precision = 2;
-  tree->ToArrayPointer(precision);
+  if (mrf_ != nullptr) {
+    int precision = (int)(config_->tinygbdt_forestsize);
+    std::vector<float> tug = mrf_->thresholds_used_global_;
+    Log::Debug("No. of split values used: %d, first value: %d", tug.size(), tug[0]);
+    tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, precision);
+  }
+
 
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
 
@@ -820,6 +825,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   features_used_global_[best_split_info.feature] += 1;
   splits_used_global_.insert(best_split_info.threshold);
 
+  // TODO: is this threshold the best gain threshold and not the split value?
   Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
               best_split_info.feature, best_split_info.threshold, best_split_info.gain);
 
@@ -979,7 +985,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
   if (mrf_ != nullptr) {
-    mrf_->InsertSplitInfo(best_split_info, tree);
+    mrf_->InsertSplitInfo(best_split_info, tree, (int)config_->tinygbdt_forestsize);
   }
 }
 

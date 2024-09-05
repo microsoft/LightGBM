@@ -336,9 +336,11 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
+std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<float> thresholds, u_int8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
+  tt_features_ = features;
+  tt_thresholds_ = thresholds;
  
   // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
@@ -367,17 +369,17 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
       threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
 
-      // if not, add them to lookup tables and update iterator
-      if (feature_it == tt_features_.end())
-      {
-        tt_features_.push_back(split_feature_[lightgbm_id]);
-        feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
-      }
-      if (threshold_it == tt_thresholds_.end())
-      {
-        tt_thresholds_.push_back(threshold_rounded);
-        threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
-      }
+      // // if not, add them to lookup tables and update iterator
+      // if (feature_it == tt_features_.end())
+      // {
+      //   tt_features_.push_back(split_feature_[lightgbm_id]);
+      //   feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
+      // }
+      // if (threshold_it == tt_thresholds_.end())
+      // {
+      //   tt_thresholds_.push_back(threshold_rounded);
+      //   threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      // }
       
       // get ids referencing to values in lookup tables
       threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
@@ -451,16 +453,20 @@ std::string Tree::ToString() const {
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
+  // TODO: create the following only for mrf
   str_buf << "full_tree_array_lgbids=" 
     << ArrayToString(fulltree, fulltree.size()) << '\n';
-  str_buf << "tiny_tree_ids_features=" 
-    << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
-  str_buf << "tiny_tree_ids_thresholds=" 
-    << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
-  str_buf << "tiny_tree_features=" 
-    << ArrayToString(tt_features_, tt_features_.size()) << '\n';
-  str_buf << "tiny_tree_thresholds=" 
-    << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n';
+  if (tinytree_.size() > 0)
+  {
+    str_buf << "tiny_tree_ids_features=" 
+      << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
+    str_buf << "tiny_tree_ids_thresholds=" 
+      << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
+    str_buf << "tiny_tree_features=" 
+      << ArrayToString(tt_features_, tt_features_.size()) << '\n';
+    str_buf << "tiny_tree_thresholds=" 
+      << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n'; 
+  }
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="
