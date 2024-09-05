@@ -336,57 +336,63 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features_used_global, std::set<float> splits_used_global) {
-  /**
-   * The following code is just the first draft.
-   * Next step: make use of vector of ids from ToFullArray and with this fill the three arrays (tinytree, tt_features, tt_thresholds)
-   */
-  
-  // std::vector<std::vector<int>> tinytree;
-  // std::vector<int> tt_features;
-  // convert set to vector; TODO: check if order of values stays the same each time
-  std::vector<float> tt_thresholds(splits_used_global.begin(), splits_used_global.end());
-  tt_features_ = features_used_global;
-  tt_thresholds_ = tt_thresholds; 
-
+std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
+  // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
-
+ 
+  // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
   int init_value = -1;
   tinytree_.resize(2, std::vector<int>(tt_nodes, init_value));
-  std::vector<double>::iterator threshold_it;
-  std::vector<int>::iterator feature_it;
 
-  /**
-   * Pseudocode:
-   * for each node in fulltree
-   * j = fulltree_ids[i]
-   * check if node exists, e.g. try threshold_[j]
-   * if true, get index of threshold_[j] in tt_thresholds and store in tinytree_[i][1]
-   *    same for features but store in tinytree_[i][0]
-   * 
-   * -> save tinytree_, tt_features_, tt_thresholds_ with in model file  
-   */
+  // init iterators and ids
+  std::vector<float>::iterator threshold_it;
+  std::vector<u_int32_t>::iterator feature_it;
+  int threshold_id;
+  int feature_id;
 
-  // // QUESTION: which values are stored in threshold_ array? why use element 0?
-  // threshold_it = std::find(tt_thresholds.begin(), tt_thresholds.end(), threshold_[0]);
-	// if (threshold_it == tt_thresholds.end() ) {  
-	// 	// did not find element
-  //   // TODO: think about inserting in ordered way; downside is that the indizes change
-  //   tt_thresholds.insert(threshold_it, threshold_[0]);
-  // }
+  // iterate over all nodes in full tree
+  for (int i = 0; i < tt_nodes; i++)
+  {
+    // get lightgbm id of current node
+    int lightgbm_id = fulltree_ids[i];
 
-  // int threshold_id = std::distance(tt_thresholds.begin(), threshold_it);
+    if (lightgbm_id >= 0)
+    {
+      // round threshold value to given decimals, otherwise find() might not recognise (almost) same values
+      // TODO: make precision config parameter (if we want to use it)
+      float threshold_rounded = (int)(threshold_[lightgbm_id]*pow(10, decimals) + 0.5) / pow(10, decimals);
+      
+      // check if threshold and feature are already in lookup tables
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
 
-  // feature_it = std::find(tt_features.begin(), tt_features.end(), split_feature_[0]);
-	// if (feature_it == tt_features.end() ) {  
-	// 	// did not find element
-  //   // TODO: think about inserting in ordered way; downside is that the indizes change
-  //   tt_features.insert(feature_it, split_feature_[0]);
-  // }
+      // if not, add them to lookup tables and update iterator
+      if (feature_it == tt_features_.end())
+      {
+        tt_features_.push_back(split_feature_[lightgbm_id]);
+        feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
+      }
+      if (threshold_it == tt_thresholds_.end())
+      {
+        tt_thresholds_.push_back(threshold_rounded);
+        threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      }
+      
+      // get ids referencing to values in lookup tables
+      threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      feature_id = std::distance(tt_features_.begin(), feature_it);
+      
+      // set references to lookup tables for threshold and feature in tiny tree
+      tinytree_[0][i] = feature_id;
+      tinytree_[1][i] = threshold_id; 
+    }
+    
+  }
+  Log::Debug("difference no. threshold values: %d, difference no. of feature values: %d", (tt_thresholds_.size()-threshold_.size()), (tt_features_.size()-split_feature_.size()) );
 
-  // int feature_id = std::distance(tt_features.begin(), feature_it);
-  // tinytree[0] = {feature_id, threshold_id} ;
+  // TODO: does something need to be returned? if not make function void
+  return tinytree_;
   
 }
 
@@ -445,8 +451,16 @@ std::string Tree::ToString() const {
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
-  str_buf << "full_tree_array=" 
+  str_buf << "full_tree_array_lgbids=" 
     << ArrayToString(fulltree, fulltree.size()) << '\n';
+  str_buf << "tiny_tree_ids_features=" 
+    << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
+  str_buf << "tiny_tree_ids_thresholds=" 
+    << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
+  str_buf << "tiny_tree_features=" 
+    << ArrayToString(tt_features_, tt_features_.size()) << '\n';
+  str_buf << "tiny_tree_thresholds=" 
+    << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n';
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="
