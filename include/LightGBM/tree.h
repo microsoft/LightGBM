@@ -250,7 +250,7 @@ class Tree {
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
-  std::vector<std::vector<int>> ToArrayPointer(int tinytree_id) const;
+  std::vector<std::vector<int>> ToArrayPointer(u_int8_t decimals);
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
   std::vector<int> ToFullArray() const;
@@ -506,10 +506,12 @@ class Tree {
   std::vector<int8_t> decision_type_;
   /*! \brief A non-leaf node's split gain */
   std::vector<float> split_gain_;
-  // /*! \brief [tinygbdt] tiny tree features */
-  // std::vector<int> tt_features_;
-  // /*! \brief [tinygbdt] tiny tree threshold split values */
-  // std::vector<double> tt_thresholds_;
+  /*! \brief [tinygbdt] tiny tree features */
+  std::vector<u_int32_t> tt_features_;
+  /*! \brief [tinygbdt] tiny tree threshold split values */
+  std::vector<float> tt_thresholds_;
+  /*! \brief [tinygbdt] tiny tree holding only referencing to split values and features in lookup table; TODO: use struct? */
+  std::vector<std::vector<int>> tinytree_;
   // used for leaf node
   /*! \brief The parent of leaf */
   std::vector<int> leaf_parent_;

@@ -336,92 +336,105 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(int tt_leaf_id) const {
-  /**
-   * The following code is just the first draft.
-   * Next step: make use of vector of ids from ToFullArray and with this fill the three arrays (tinytree, tt_features, tt_thresholds)
-   */
-  
-  std::vector<std::vector<int>> tinytree;
-  std::vector<int> tt_features;
-  std::vector<double> tt_thresholds;
-
-  int tt_nodes = pow(2.0, (1.0+max_depth_))-1;
+std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
+  // get lightgbm ids in full tree array format
+  std::vector<int> fulltree_ids = ToFullArray();
+ 
+  // init tiny tree values for tree object
+  int tt_nodes = fulltree_ids.size();
   int init_value = -1;
-  tinytree.resize(2, std::vector<int>(tt_nodes, init_value));
-  std::vector<double>::iterator threshold_it;
-  std::vector<int>::iterator feature_it;
+  tinytree_.resize(2, std::vector<int>(tt_nodes, init_value));
 
-  threshold_it = std::find(tt_thresholds.begin(), tt_thresholds.end(), threshold_[0]);
-	if (threshold_it == tt_thresholds.end() ) {  
-		// did not find element
-    // TODO: think about inserting in ordered way; downside is that the indizes change
-    tt_thresholds.insert(threshold_it, threshold_[0]);
+  // init iterators and ids
+  std::vector<float>::iterator threshold_it;
+  std::vector<u_int32_t>::iterator feature_it;
+  int threshold_id;
+  int feature_id;
+
+  // iterate over all nodes in full tree
+  for (int i = 0; i < tt_nodes; i++)
+  {
+    // get lightgbm id of current node
+    int lightgbm_id = fulltree_ids[i];
+
+    if (lightgbm_id >= 0)
+    {
+      // round threshold value to given decimals, otherwise find() might not recognise (almost) same values
+      // TODO: make precision config parameter (if we want to use it)
+      float threshold_rounded = (int)(threshold_[lightgbm_id]*pow(10, decimals) + 0.5) / pow(10, decimals);
+      
+      // check if threshold and feature are already in lookup tables
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
+
+      // if not, add them to lookup tables and update iterator
+      if (feature_it == tt_features_.end())
+      {
+        tt_features_.push_back(split_feature_[lightgbm_id]);
+        feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
+      }
+      if (threshold_it == tt_thresholds_.end())
+      {
+        tt_thresholds_.push_back(threshold_rounded);
+        threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      }
+      
+      // get ids referencing to values in lookup tables
+      threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      feature_id = std::distance(tt_features_.begin(), feature_it);
+      
+      // set references to lookup tables for threshold and feature in tiny tree
+      tinytree_[0][i] = feature_id;
+      tinytree_[1][i] = threshold_id; 
+    }
+    
   }
+  Log::Debug("difference no. threshold values: %d, difference no. of feature values: %d", (tt_thresholds_.size()-threshold_.size()), (tt_features_.size()-split_feature_.size()) );
 
-  int threshold_id = std::distance(tt_thresholds.begin(), threshold_it);
-
-  feature_it = std::find(tt_features.begin(), tt_features.end(), split_feature_[0]);
-	if (feature_it == tt_features.end() ) {  
-		// did not find element
-    // TODO: think about inserting in ordered way; downside is that the indizes change
-    tt_features.insert(feature_it, split_feature_[0]);
-  }
-
-  int feature_id = std::distance(tt_features.begin(), feature_it);
-  tinytree[0] = {feature_id, threshold_id} ;
+  // TODO: does something need to be returned? if not make function void
+  return tinytree_;
   
 }
 
 std::vector<int> Tree::ToFullArray() const {
-  std::vector<int> fulltree;
+  std::vector<int> fulltree; 
 
+  // find max depth, adapted from RecomputeMaxDepth(); TODO: num_leaves_ vs. leaft_depth_ vs. num_leaves() -> used correct?
   int depth = 0;
   if (num_leaves_ == 1) {
     depth = 0;
   } else {
-    // TODO: what is this for?
-    // if (leaf_depth_.size() == 0) {
-    //   RecomputeLeafDepths(0, 0);
-    // }
     depth = leaf_depth_[0];
     for (int i = 1; i < num_leaves(); ++i) {
       if (depth < leaf_depth_[i]) depth = leaf_depth_[i];
     }
   }
+  Log::Debug("max depth of all leaves: %d", depth);
 
-  Log::Debug("max depth after recompute: %d", depth);
-  Log::Debug("leaf depth size: %d", leaf_depth_.size());
-
+  // number of nodes for a full tree with given depth
   int tt_nodes = pow(2.0, (1.0+depth))-1;
-  Log::Debug("Full tree #nodes: %d", tt_nodes);
   // TODO: not possible to init empty; to use 0 the tree elements need to be shifted by 1; not possible to use negative as lightgbm assigns leaf with negative index
   int init_value = {INT_MIN};
   fulltree.resize(tt_nodes, init_value);
-  int treesize = fulltree.size();
-  Log::Debug("Tree size: %d", treesize);
 
   // TODO: think about if it is better to solve this with iterator
   for (int i = 0; i < tt_nodes; i++)
   {
-    Log::Debug("for loop, iteration: %d", i);
-    // std::cout << lgbm_id << "\n";
+    // lightgbm id of root node is 0
     if (i == 0)
     {
       fulltree[0] = 0;
     }
+    // get the lightgbm id of the current node
     int lgbm_id = fulltree[i];
-    // leaf id is < 0, so only fill child nodes for > 0 
+    // leaf ids are < 0, so only fill child nodes for >= 0 
     if (lgbm_id >= 0)
     {
-      Log::Debug("positive lgbm id: %d", lgbm_id);
+      // Log::Debug("positive lgbm id: %d", lgbm_id);
       fulltree[2 * i + 1] = left_child_[lgbm_id];
-      std::cout << (2 * i + 1) << "\n";
+      // std::cout << (2 * i + 1) << "\n";
       fulltree[2 * i + 2] = right_child_[lgbm_id];
     }     
-    else {
-      Log::Debug("else lgbm id: %d", lgbm_id);
-    }
   }
   return fulltree;
 }
@@ -438,8 +451,16 @@ std::string Tree::ToString() const {
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
-  str_buf << "full_tree_array=" 
+  str_buf << "full_tree_array_lgbids=" 
     << ArrayToString(fulltree, fulltree.size()) << '\n';
+  str_buf << "tiny_tree_ids_features=" 
+    << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
+  str_buf << "tiny_tree_ids_thresholds=" 
+    << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
+  str_buf << "tiny_tree_features=" 
+    << ArrayToString(tt_features_, tt_features_.size()) << '\n';
+  str_buf << "tiny_tree_thresholds=" 
+    << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n';
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="

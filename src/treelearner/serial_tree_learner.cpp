@@ -265,6 +265,10 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
+  // [tinygbdt]
+  int precision = 2;
+  tree->ToArrayPointer(precision);
+
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
 
   std::stringstream ss_f;
@@ -815,8 +819,8 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
   features_used_global_[best_split_info.feature] += 1;
   splits_used_global_.insert(best_split_info.threshold);
-  // TODO: check why gain is +inf for this log; probably an indicator that this is the wrong place to update the variables
-  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f",
+
+  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
               best_split_info.feature, best_split_info.threshold, best_split_info.gain);
 
   /*[tinygbdt] END*/
