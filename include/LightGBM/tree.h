@@ -40,7 +40,7 @@ class Tree {
   Tree(const char* str, size_t* used_len);
 
   virtual ~Tree() noexcept = default;
-
+  friend class MemoryRestrictedForest;
   /*!
   * \brief Performing a split on tree leaves.
   * \param leaf Index of leaf to be split
