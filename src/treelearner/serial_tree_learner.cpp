@@ -17,6 +17,7 @@
 #include <numeric> 
 
 #include "cost_effective_gradient_boosting.hpp"
+#include "memory_restricted_forest.hpp"
 
 namespace LightGBM {
 
@@ -76,6 +77,10 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   if (CostEfficientGradientBoosting::IsEnable(config_)) {
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
+  }
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    mrf_.reset(new MemoryRestrictedForest(this));
+    mrf_->Init();
   }
 
   /*[tinygbdt] BEGIN: Initializing global variables */
@@ -151,6 +156,9 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
   if (cegb_ != nullptr) {
     cegb_->Init();
   }
+  if (mrf_ != nullptr) {
+    mrf_->Init();
+  }
 }
 
 void SerialTreeLearner::ResetConfig(const Config* config) {
@@ -188,6 +196,12 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
       cegb_.reset(new CostEfficientGradientBoosting(this));
     }
     cegb_->Init();
+  }
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    if (mrf_ == nullptr) {
+      mrf_.reset(new MemoryRestrictedForest(this));
+    }
+    mrf_->Init();
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
@@ -801,16 +815,10 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
   features_used_global_[best_split_info.feature] += 1;
   splits_used_global_.insert(best_split_info.threshold);
-  // TODO Nina this seems to be the id of the column not the actual split value.
-  share_state_->threshold_used.insert(best_split_info.threshold);
-  std::cout << "Set elements: ";
-  for (float num : share_state_->threshold_used) {
-      std::cout << static_cast<float>(num) << " "; // Cast to int for proper display
-  }
-  std::cout << std::endl;
   // TODO: check why gain is +inf for this log; probably an indicator that this is the wrong place to update the variables
-  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
+  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f",
               best_split_info.feature, best_split_info.threshold, best_split_info.gain);
+
   /*[tinygbdt] END*/
 
 
@@ -965,6 +973,9 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // update leave outputs if needed
   for (auto leaf : leaves_need_update) {
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
+  }
+  if (mrf_ != nullptr) {
+    mrf_->InsertSplitInfo(best_split_info, tree);
   }
 }
 

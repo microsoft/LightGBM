@@ -196,6 +196,7 @@ struct SplitInfo {
   }
 };
 
+
 struct LightSplitInfo {
  public:
   /*! \brief Feature index */

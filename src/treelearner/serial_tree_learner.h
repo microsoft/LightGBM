@@ -41,6 +41,7 @@ using json11_internal_lightgbm::Json;
 
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
+class MemoryRestrictedForest;
 
 /*!
 * \brief Used for learning a tree by single machine
@@ -242,6 +243,7 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
+  std::unique_ptr<MemoryRestrictedForest> mrf_;
   std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
 };
 
