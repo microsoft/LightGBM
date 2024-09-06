@@ -63,6 +63,62 @@ def _emit_dataset_kwarg_warning(calling_function: str, argname: str) -> None:
     warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
+def _choose_num_iterations(num_boost_round_kwarg: int, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Choose number of boosting rounds.
+
+    In ``train()`` and ``cv()``, there are multiple ways to provide configuration for
+    the number of boosting rounds to perform:
+
+      * the ``num_boost_round`` keyword argument
+      * any of the ``num_iterations`` or its aliases via the ``params`` dictionary
+
+    These should be preferred in the following order (first one found wins):
+
+      1. ``num_iterations`` provided via ``params`` (because it's the main parameter name)
+      2. any other aliases of ``num_iterations`` provided via ``params``
+      3. the ``num_boost_round`` keyword argument
+
+    This function handles that choice, and issuing helpful warnings in the cases where the
+    result might be surprising.
+
+    Returns
+    -------
+    params : dict
+        Parameters, with ``"num_iterations"`` set to the preferred value and all other
+        aliases of ``num_iterations`` removed.
+    """
+    num_iteration_configs_provided = {
+        alias: params[alias] for alias in _ConfigAliases.get("num_iterations") if alias in params
+    }
+
+    # now that the relevant information has been pulled out of params, it's safe to overwrite it
+    # with the content that should be used for training (i.e. with aliases resolved)
+    params = _choose_param_value(
+        main_param_name="num_iterations",
+        params=params,
+        default_value=num_boost_round_kwarg,
+    )
+
+    # if there were not multiple boosting rounds configurations provided in params,
+    # then by definition they cannot have conflicting values... no need to warn
+    if len(num_iteration_configs_provided) <= 1:
+        return params
+
+    # if all the aliases have the same value, no need to warn
+    if len(set(num_iteration_configs_provided.values())) <= 1:
+        return params
+
+    # if this line is reached, lightgbm should warn
+    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided.items())
+    _log_warning(
+        f"Found conflicting values for num_iterations provided via 'params': {value_string}. "
+        f"LightGBM will perform up to {params['num_iterations']} boosting rounds. "
+        "To be confident in the maximum number of boosting rounds LightGBM will perform and to "
+        "suppress this warning, modify 'params' so that only one of those is present."
+    )
+    return params
+
+
 def train(
     params: Dict[str, Any],
     train_set: Dataset,
@@ -169,9 +225,6 @@ def train(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"train() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
     if isinstance(valid_sets, list):
         for i, valid_item in enumerate(valid_sets):
             if not isinstance(valid_item, Dataset):
@@ -198,11 +251,12 @@ def train(
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = "none"
-    for alias in _ConfigAliases.get("num_iterations"):
-        if alias in params:
-            num_boost_round = params.pop(alias)
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
-    params["num_iterations"] = num_boost_round
+
+    params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
+    num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
+
     # setting early stopping via global params should be possible
     params = _choose_param_value(
         main_param_name="early_stopping_round",
@@ -713,9 +767,6 @@ def cv(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
     # raise deprecation warnings if necessary
     # ref: https://github.com/microsoft/LightGBM/issues/6435
     if categorical_feature != "auto":
@@ -733,11 +784,12 @@ def cv(
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = "none"
-    for alias in _ConfigAliases.get("num_iterations"):
-        if alias in params:
-            _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
-            num_boost_round = params.pop(alias)
-    params["num_iterations"] = num_boost_round
+
+    params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
+    num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
+
     # setting early stopping via global params should be possible
     params = _choose_param_value(
         main_param_name="early_stopping_round",
