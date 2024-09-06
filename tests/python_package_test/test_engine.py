@@ -4517,7 +4517,7 @@ def test_bagging_by_query_in_lambdarank():
     q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
     X_test, y_test = load_svmlight_file(str(rank_example_dir / "rank.test"))
     q_test = np.loadtxt(str(rank_example_dir / "rank.test.query"))
-    params = {"objective": "lambdarank", "verbose": -1, "metric": "ndcg", "ndcg_eval_at": "5"}
+    params = {"objective": "lambdarank", "verbose": -1, "metric": "ndcg", "ndcg_eval_at": [5]}
     lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
     lgb_test = lgb.Dataset(X_test, y_test, group=q_test, params=params)
     gbm = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
