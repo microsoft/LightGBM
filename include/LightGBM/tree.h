@@ -510,7 +510,8 @@ class Tree {
   std::vector<u_int32_t> tt_features_;
   /*! \brief [tinygbdt] tiny tree threshold split values */
   std::vector<float> tt_thresholds_;
-  /*! \brief [tinygbdt] tiny tree holding only referencing to split values and features in lookup table; TODO: use struct? */
+  /*! \brief [tinygbdt] tiny tree holding only referencing to split values and features in lookup table; 
+    TODO: think about datatype -> unsigned int as only empty nodes are negative? use struct? */
   std::vector<std::vector<int>> tinytree_;
   // used for leaf node
   /*! \brief The parent of leaf */
