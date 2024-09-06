@@ -38,7 +38,7 @@ class ObjectiveFunction {
     score_t* gradients, score_t* hessians) const = 0;
 
     /*!
-  * \brief calculating first order derivative of loss function, used only for baggin by query in lambdarank
+  * \brief calculating first order derivative of loss function, used only for bagging by query in lambdarank
   * \param score prediction score in this round
   * \param num_sampled_queries number of in-bag queries
   * \param sampled_query_indices indices of in-bag queries
