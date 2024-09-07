@@ -254,8 +254,8 @@ create_isolated_source_dir() {
     modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
     for eigen_module in ${modules}; do
         cp \
-            external_libs/eigen/Eigen/"${eigen_module}" \
-            ./lightgbm-python/external_libs/eigen/Eigen/"${eigen_module}"
+            "external_libs/eigen/Eigen/${eigen_module}" \
+            "./lightgbm-python/external_libs/eigen/Eigen/${eigen_module}"
         if [ "${eigen_module}" != "Dense" ]; then
             mkdir -p "./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/"
             cp \
