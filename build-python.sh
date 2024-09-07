@@ -261,7 +261,7 @@ create_isolated_source_dir() {
             cp \
                 -R \
                 "external_libs/eigen/Eigen/src/${eigen_module}"/* \
-                "./lightgbm-python/external_libs/eigen/Eigen/src/"${eigen_module}/"
+                "./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/"
         fi
     done
 
