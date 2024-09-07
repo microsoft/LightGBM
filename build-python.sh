@@ -364,7 +364,7 @@ if test "${INSTALL}" = true; then
     echo "--- installing lightgbm ---"
     cd ../dist
     if test "${BUILD_WHEEL}" = true; then
-        PACKAGE_NAME=$(find . -name "lightgbm*.whl" -print -quit)
+        PACKAGE_NAME="$(echo lightgbm*.whl)"
     else
         PACKAGE_NAME="$(echo lightgbm*.tar.gz)"
     fi
