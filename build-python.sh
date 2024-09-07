@@ -346,7 +346,7 @@ if test "${BUILD_SDIST}" = true; then
     python -m build \
         --sdist \
         --outdir ../dist \
-        ${BUILD_ARGS:+ -o "$BUILD_ARGS"} \
+        ${BUILD_ARGS:+${BUILD_ARGS}} \
         .
 fi
 
@@ -356,7 +356,7 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
-        ${BUILD_ARGS:+ -o "$BUILD_ARGS"} \
+        ${BUILD_ARGS:+${BUILD_ARGS}} \
         .
 fi
 
