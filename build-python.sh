@@ -257,7 +257,7 @@ create_isolated_source_dir() {
             external_libs/eigen/Eigen/"${eigen_module}" \
             ./lightgbm-python/external_libs/eigen/Eigen/"${eigen_module}"
         if [ "${eigen_module}" != "Dense" ]; then
-            mkdir -p ./lightgbm-python/external_libs/eigen/Eigen/src/"${eigen_module}"/
+            mkdir -p "./lightgbm-python/external_libs/eigen/Eigen/src/${eigen_module}/"
             cp \
                 -R \
                 "external_libs/eigen/Eigen/src/${eigen_module}"/* \
