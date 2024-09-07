@@ -366,7 +366,7 @@ if test "${INSTALL}" = true; then
     if test "${BUILD_WHEEL}" = true; then
         PACKAGE_NAME=$(find . -name "lightgbm*.whl" -print -quit)
     else
-        PACKAGE_NAME=$(find . -name "lightgbm*.tar.gz" -print -quit)
+        PACKAGE_NAME="$(echo lightgbm*.tar.gz)"
     fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
     pip install \
