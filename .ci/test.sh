@@ -131,9 +131,11 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     source activate $CONDA_ENV
     # check reStructuredText formatting
     cd "${BUILD_DIRECTORY}/python-package"
-    rstcheck --report-level warning "$(find . -type f -name "*.rst")" || exit 1
+    find . -type f -name "*.rst" -exec \
+        rstcheck --report-level warning {} + || exit 1
     cd "${BUILD_DIRECTORY}/docs"
-    rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile "$(find . -type f -name "*.rst")" || exit 1
+    find . -type f -name "*.rst" -exec \
+        rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} + || exit 1
     # build docs
     make html || exit 1
     if [[ $TASK == "check-links" ]]; then
