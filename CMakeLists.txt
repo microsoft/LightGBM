@@ -59,10 +59,10 @@ if(__INTEGRATE_OPENCL)
   message(STATUS "Building library with integrated OpenCL components")
 endif()
 
-if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R)
-    # the Python and R package don't require the CLI
+if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R OR USE_SWIG)
+    # the SWIG wrapper, the Python and R package don't require the CLI
     set(BUILD_CLI OFF)
-    # installing the R and Python package shouldn't place LightGBM's headers
+    # installing the SWIG wrapper, the R and Python package shouldn't place LightGBM's headers
     # outside of where the package is installed
     set(INSTALL_HEADERS OFF)
 endif()
