@@ -104,15 +104,16 @@ if(USE_SWIG)
   include_directories(JNI_INCLUDE_DIRS)
   include_directories($ENV{JAVA_HOME}/include)
   if(WIN32)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
       include_directories($ENV{JAVA_HOME}/include/win32)
   elseif(APPLE)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
       include_directories($ENV{JAVA_HOME}/include/darwin)
   else()
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
       include_directories($ENV{JAVA_HOME}/include/linux)
   endif()
+  file(MAKE_DIRECTORY "${LGBM_SWIG_DESTINATION_DIR}")
 endif()
 
 set(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
@@ -553,84 +554,41 @@ if(USE_SWIG)
       OUTPUT_NAME "lib_lightgbm_swig"
   )
   if(WIN32)
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dll")
     if(MINGW OR CYGWIN)
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll")
     else()
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll")
     endif()
   elseif(APPLE)
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
-          com/microsoft/ml/lightgbm/osx/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
-          com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dylib")
   else()
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.so")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.so")
   endif()
+  add_custom_command(
+      TARGET _lightgbm_swig
+      POST_BUILD
+      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_DESTINATION_DIR}"
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_SWIG_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_LIB_DESTINATION_PATH}"
+      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+    )
 endif()
 
 if(USE_MPI)
