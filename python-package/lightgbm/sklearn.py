@@ -662,7 +662,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
-    def _more_tags(self) -> Dict[str, Any]:
+    def __sklearn_tags__(self) -> Dict[str, Any]:
         return {
             "allow_nan": True,
             "X_types": ["2darray", "sparse", "1dlabels"],
