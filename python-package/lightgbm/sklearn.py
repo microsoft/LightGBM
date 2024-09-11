@@ -41,7 +41,6 @@ from .compat import (
     _LGBMLabelEncoder,
     _LGBMModelBase,
     _LGBMRegressorBase,
-    _LGBMTags,
     dt_DataTable,
     pd_DataFrame,
 )
@@ -663,7 +662,7 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
-    def __sklearn_tags__(self) -> _LGBMTags:
+    def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         tags.input_tags.allow_nan = True
         tags.input_tags.sparse = True
