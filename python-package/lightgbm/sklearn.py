@@ -668,10 +668,10 @@ class LGBMModel(_LGBMModelBase):
         tags.input_tags.sparse = True
         tags.target_tags.one_d_labels = True
         tags._xfail_checks = {
-                "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
-                "cannot be set in __init__: "
-                "(see https://github.com/microsoft/LightGBM/issues/2628)"
-            }
+            "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
+            "cannot be set in __init__: "
+            "(see https://github.com/microsoft/LightGBM/issues/2628)"
+        }
         return tags
 
     def __sklearn_is_fitted__(self) -> bool:
