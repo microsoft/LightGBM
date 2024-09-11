@@ -24,6 +24,7 @@ from .basic import (
     _LGBM_InitScoreType,
     _LGBM_LabelType,
     _LGBM_WeightType,
+    _LGBMTags,
     _log_warning,
 )
 from .callback import _EvalResultDict, record_evaluation
@@ -662,16 +663,17 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
-    def __sklearn_tags__(self) -> Dict[str, Any]:
-        return {
-            "allow_nan": True,
-            "X_types": ["2darray", "sparse", "1dlabels"],
-            "_xfail_checks": {
+    def __sklearn_tags__(self) -> _LGBMTags:
+        tags = super().__sklearn_tags__()
+        tags.input_tags.allow_nan = True
+        tags.input_tags.sparse = True
+        tags.target_tags.one_d_labels = True
+        tags._xfail_checks = {
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)"
-            },
-        }
+            }
+        return tags
 
     def __sklearn_is_fitted__(self) -> bool:
         return getattr(self, "fitted_", False)
