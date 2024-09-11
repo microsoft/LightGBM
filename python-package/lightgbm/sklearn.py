@@ -24,7 +24,6 @@ from .basic import (
     _LGBM_InitScoreType,
     _LGBM_LabelType,
     _LGBM_WeightType,
-    _LGBMTags,
     _log_warning,
 )
 from .callback import _EvalResultDict, record_evaluation
@@ -42,6 +41,7 @@ from .compat import (
     _LGBMLabelEncoder,
     _LGBMModelBase,
     _LGBMRegressorBase,
+    _LGBMTags,
     dt_DataTable,
     pd_DataFrame,
 )
