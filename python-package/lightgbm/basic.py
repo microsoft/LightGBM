@@ -5281,3 +5281,171 @@ class Booster:
                 self.__higher_better_inner_eval = [
                     name.startswith(("auc", "ndcg@", "map@", "average_precision")) for name in self.__name_inner_eval
                 ]
+
+
+class ObjectiveFunction:
+    """
+    ObjectiveFunction in LightGBM.
+
+    This class exposes the builtin objective functions for evaluating gradients and hessians
+    on external datasets. This is useful for examining the state of the training(for example in a callback)
+    in a generic way.
+
+    Note: LightGBM does not use this wrapper during its training as it is using the underlying C++ class.
+    """
+
+    def __init__(self, name: str, params: Dict[str, Any]):
+        """
+        Initialize the ObjectiveFunction.
+
+        Parameters
+        ----------
+        name : str
+            The name of the objective function.
+        params : dict
+            Dictionary of parameters for the objective function.
+            These are the parameters that would have been passed to ``booster.train``.
+            The ``name`` should be consistent with the ``params["objective"]`` field.
+        """
+        self.name = name
+        self.params = params
+        self.num_data = None
+        self.num_class = params.get("num_class", 1)
+
+        if "objective" in params and params["objective"] != self.name:
+            raise ValueError('The name should be consistent with the params["objective"] field.')
+
+        self.__create()
+
+    def init(self, dataset: Dataset) -> "ObjectiveFunction":
+        """
+        Initialize the objective function using the provided dataset.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object used for initialization.
+
+        Returns
+        -------
+        self : ObjectiveFunction
+            Initialized objective function object.
+        """
+        return self.__init_from_dataset(dataset)
+
+    def convert_raw_scores(self, scores: np.ndarray) -> np.ndarray:
+        """
+        Convert the raw scores to the final predictions.
+
+        Parameters
+        ----------
+        scores : numpy.ndarray
+            Raw scores from the model.
+
+        Returns
+        -------
+        result : numpy.ndarray
+        """
+        if self._handle is None:
+            raise ValueError("Objective function seems uninitialized")
+
+        if self.num_class == 1:
+            scores = _list_to_1d_numpy(scores, dtype=np.float64, name="scores")
+        else:
+            scores = _data_to_2d_numpy(scores, dtype=np.float64, name="scores")
+
+        num_data = scores.size
+        out_preds = np.empty_like(scores, dtype=np.float64)
+
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionConvertOutputs(
+                self._handle,
+                ctypes.c_int(num_data),
+                scores.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                out_preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+            )
+        )
+
+        return out_preds
+
+    def get_gradients(self, y_pred: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Evaluate the objective function given model predictions.
+
+        Parameters
+        ----------
+        y_pred : numpy.ndarray
+            Predicted scores from the model.
+
+        Returns
+        -------
+        (grad, hess) : Tuple[np.ndarray, np.ndarray]
+            A tuple containing gradients and Hessians.
+        """
+        if self._handle is None:
+            raise ValueError("Objective function seems uninitialized")
+
+        if self.num_data is None or self.num_class is None:
+            raise ValueError("ObjectiveFunction was not created properly")
+
+        if y_pred.shape[0] != self.num_data:
+            raise ValueError("Gradients cannot be computed as the number of predictions is wrong")
+
+        if self.num_class != 1 and (y_pred.ndim != 2 or y_pred.shape[1] != self.num_class):
+            raise ValueError("Multiclass gradient computation should be called with the correct shape")
+
+        data_shape = self.num_data * self.num_class
+        y_pred = np.asfortranarray(y_pred)
+        grad = np.empty(dtype=np.float32, shape=data_shape)
+        hess = np.empty(dtype=np.float32, shape=data_shape)
+
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionGetGradients(
+                self._handle,
+                y_pred.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+                hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            )
+        )
+
+        return (grad, hess)
+
+    def __create(self):
+        self._handle = ctypes.c_void_p()
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionCreate(
+                _c_str(self.name),
+                _c_str(_param_dict_to_str(self.params)),
+                ctypes.byref(self._handle),
+            )
+        )
+
+    def __init_from_dataset(self, dataset: Dataset) -> "ObjectiveFunction":
+        if dataset._handle is None:
+            raise ValueError("Cannot create ObjectiveFunction from uninitialised Dataset")
+
+        if self._handle is None:
+            raise ValueError("Dealocated ObjectiveFunction cannot be initialized")
+
+        tmp_num_data = ctypes.c_int(0)
+        _safe_call(
+            _LIB.LGBM_ObjectiveFunctionInit(
+                self._handle,
+                dataset._handle,
+                ctypes.byref(tmp_num_data),
+            )
+        )
+        self.num_data = tmp_num_data.value
+        return self
+
+    def __del__(self) -> None:
+        try:
+            self._free_handle()
+        except AttributeError:
+            pass
+
+    def _free_handle(self) -> "ObjectiveFunction":
+        if self._handle is not None:
+            _safe_call(_LIB.LGBM_ObjectiveFunctionFree(self._handle))
+            self._handle = None
+        return self

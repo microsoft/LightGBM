@@ -130,6 +130,9 @@ def mse_obj(y_pred, dtrain):
     y_true = dtrain.get_label()
     grad = y_pred - y_true
     hess = np.ones(len(grad))
+    if dtrain.get_weight() is not None:
+        grad *= dtrain.get_weight()
+        hess *= dtrain.get_weight()
     return grad, hess
 
 
@@ -155,6 +158,13 @@ def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
         weight2d = weight.reshape(-1, 1)
         grad *= weight2d
         hess *= weight2d
+    return grad, hess
+
+
+def multiclass_custom_objective(y_pred, ds):
+    y_true = ds.get_label()
+    weight = ds.get_weight()
+    grad, hess = sklearn_multiclass_custom_objective(y_true, y_pred, weight)
     return grad, hess
 
 

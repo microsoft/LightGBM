@@ -907,6 +907,7 @@ using LightGBM::kZeroThreshold;
 using LightGBM::LGBM_APIHandleException;
 using LightGBM::Log;
 using LightGBM::Network;
+using LightGBM::ObjectiveFunction;
 using LightGBM::Random;
 using LightGBM::ReduceScatterFunction;
 using LightGBM::SingleRowPredictor;
@@ -2744,6 +2745,74 @@ int LGBM_BoosterGetLowerBoundValue(BoosterHandle handle,
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   double min_value = ref_booster->LowerBoundValue();
   *out_results = min_value;
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionCreate(const char *typ,
+                                                   const char *parameter,
+                                                   ObjectiveFunctionHandle *out) {
+  API_BEGIN();
+  auto param = Config::Str2Map(parameter);
+  Config config(param);
+  if (config.device_type != std::string("cpu")) {
+    Log::Fatal("Currently the ObjectiveFunction class is only exposed for CPU devices.");
+  } else {
+    *out = ObjectiveFunction::CreateObjectiveFunction(std::string(typ), config);
+  }
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionInit(ObjectiveFunctionHandle handle,
+                                                 DatasetHandle dataset,
+                                                 int *num_data) {
+  API_BEGIN();
+  ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
+  Dataset* ref_dataset = reinterpret_cast<Dataset*>(dataset);
+  ref_fobj->Init(ref_dataset->metadata(), ref_dataset->num_data());
+  *num_data = ref_dataset->num_data();
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionGetGradients(ObjectiveFunctionHandle handle,
+                                                         const double* score,
+                                                         float* grad,
+                                                         float* hess) {
+  API_BEGIN();
+  #ifdef SCORE_T_USE_DOUBLE
+  (void) handle;       // UNUSED VARIABLE
+  (void) grad;         // UNUSED VARIABLE
+  (void) hess;         // UNUSED VARIABLE
+  Log::Fatal("Don't support evaluating objective function when SCORE_T_USE_DOUBLE is enabled");
+  #else
+  ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
+  ref_fobj->GetGradients(score, grad, hess);
+  #endif
+  API_END();
+}
+
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionConvertOutputs(ObjectiveFunctionHandle handle,
+                                                           const int num_data,
+                                                           const double* inputs,
+                                                           double* outputs) {
+  API_BEGIN();
+  #ifdef SCORE_T_USE_DOUBLE
+  (void) handle;       // UNUSED VARIABLE
+  (void) num_data;     // UNUSED VARIABLE
+  (void) inputs;       // UNUSED VARIABLE
+  (void) outputs;      // UNUSED VARIABLE
+  Log::Fatal("Don't support evaluating objective function when SCORE_T_USE_DOUBLE is enabled");
+  #else
+  ObjectiveFunction* ref_fobj = reinterpret_cast<ObjectiveFunction*>(handle);
+  ref_fobj->ConvertOutputs(num_data, inputs, outputs);
+  #endif
+  API_END();
+}
+
+/*!
+ */
+LIGHTGBM_C_EXPORT int LGBM_ObjectiveFunctionFree(ObjectiveFunctionHandle handle) {
+  API_BEGIN();
+  delete reinterpret_cast<ObjectiveFunction*>(handle);
   API_END();
 }
 
