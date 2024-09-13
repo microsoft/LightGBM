@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if cmake -B build -S . -DUSE_CUDA=1 -DUSE_DEBUG=ON; then
+if cmake -B build -S . -DUSE_CUDA=0 -DUSE_DEBUG=ON; then
     if cmake --build build -j4; then
         echo "build complete"
     else
@@ -18,4 +18,4 @@ cd examples/binary_classification || exit
 
 cd ../..
 
-python3 plot_model.py
+# python3 plot_model.py
