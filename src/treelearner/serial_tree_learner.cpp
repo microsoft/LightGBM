@@ -80,7 +80,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   }
   if (MemoryRestrictedForest::IsEnable(config_)) {
     mrf_.reset(new MemoryRestrictedForest(this));
-    mrf_->Init();
+    mrf_->Init(config_->tinygbdt_forestsize);
   }
 
   /*[tinygbdt] BEGIN: Initializing global variables */
@@ -157,7 +157,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
     cegb_->Init();
   }
   if (mrf_ != nullptr) {
-    mrf_->Init();
+    mrf_->Init(config_->tinygbdt_forestsize);
   }
 }
 
@@ -201,7 +201,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     if (mrf_ == nullptr) {
       mrf_.reset(new MemoryRestrictedForest(this));
     }
-    mrf_->Init();
+    mrf_->Init(config_->tinygbdt_forestsize);
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
@@ -1064,7 +1064,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   // !!! The feature penalty is already implemented by cegb_penalty_feature_coupled parameter (different costs for each feature can be set)
   if (features_used_global_[feature_index] == 0){
       Log::Debug("Gain no penalty: %f", new_split.gain);
-      new_split.gain -= config_->tinygbdt_penalty_feature;
+      int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
+      new_split.gain *= leftovermemory;
       Log::Debug("Gain with penalty: %f", new_split.gain);
   }
 
@@ -1072,7 +1073,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   // elaborate this
   if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
     Log::Debug("Gain no penalty: %f", new_split.gain);
-    new_split.gain -= config_->tinygbdt_penalty_split;
+    int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
+    new_split.gain *= leftovermemory;
     Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */
