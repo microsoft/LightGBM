@@ -336,9 +336,11 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
+std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<float> thresholds, u_int8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
+  tt_features_ = features;
+  tt_thresholds_ = thresholds;
  
   // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
@@ -350,34 +352,25 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
   std::vector<u_int32_t>::iterator feature_it;
   int threshold_id;
   int feature_id;
+  int lightgbm_id;
+  int left_child_id;
 
   // iterate over all nodes in full tree
   for (int i = 0; i < tt_nodes; i++)
   {
     // get lightgbm id of current node
-    int lightgbm_id = fulltree_ids[i];
+    lightgbm_id = fulltree_ids[i];
 
+    // TODO: do we want to include leaf nodes in tiny tree? numbering is difficult as non split nodes are initialized with -1
     if (lightgbm_id >= 0)
     {
       // round threshold value to given decimals, otherwise find() might not recognise (almost) same values
-      // TODO: make precision config parameter (if we want to use it)
+      // TODO: make precision a config parameter (if we want to use it)
       float threshold_rounded = (int)(threshold_[lightgbm_id]*pow(10, decimals) + 0.5) / pow(10, decimals);
       
       // check if threshold and feature are already in lookup tables
       threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
-
-      // if not, add them to lookup tables and update iterator
-      if (feature_it == tt_features_.end())
-      {
-        tt_features_.push_back(split_feature_[lightgbm_id]);
-        feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
-      }
-      if (threshold_it == tt_thresholds_.end())
-      {
-        tt_thresholds_.push_back(threshold_rounded);
-        threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
-      }
       
       // get ids referencing to values in lookup tables
       threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
@@ -386,8 +379,7 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(u_int8_t decimals) {
       // set references to lookup tables for threshold and feature in tiny tree
       tinytree_[0][i] = feature_id;
       tinytree_[1][i] = threshold_id; 
-    }
-    
+    }    
   }
   Log::Debug("difference no. threshold values: %d, difference no. of feature values: %d", (tt_thresholds_.size()-threshold_.size()), (tt_features_.size()-split_feature_.size()) );
 
@@ -412,12 +404,12 @@ std::vector<int> Tree::ToFullArray() const {
   Log::Debug("max depth of all leaves: %d", depth);
 
   // number of nodes for a full tree with given depth
+  // TODO: think about removing last level as leaves are not relevant for calculation
   int tt_nodes = pow(2.0, (1.0+depth))-1;
   // TODO: not possible to init empty; to use 0 the tree elements need to be shifted by 1; not possible to use negative as lightgbm assigns leaf with negative index
   int init_value = {INT_MIN};
   fulltree.resize(tt_nodes, init_value);
 
-  // TODO: think about if it is better to solve this with iterator
   for (int i = 0; i < tt_nodes; i++)
   {
     // lightgbm id of root node is 0
@@ -430,9 +422,7 @@ std::vector<int> Tree::ToFullArray() const {
     // leaf ids are < 0, so only fill child nodes for >= 0 
     if (lgbm_id >= 0)
     {
-      // Log::Debug("positive lgbm id: %d", lgbm_id);
       fulltree[2 * i + 1] = left_child_[lgbm_id];
-      // std::cout << (2 * i + 1) << "\n";
       fulltree[2 * i + 2] = right_child_[lgbm_id];
     }     
   }
@@ -451,16 +441,20 @@ std::string Tree::ToString() const {
 
   str_buf << "num_leaves=" << num_leaves_ << '\n';
   str_buf << "num_cat=" << num_cat_ << '\n';
+  // TODO: create the following only for mrf
   str_buf << "full_tree_array_lgbids=" 
     << ArrayToString(fulltree, fulltree.size()) << '\n';
-  str_buf << "tiny_tree_ids_features=" 
-    << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
-  str_buf << "tiny_tree_ids_thresholds=" 
-    << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
-  str_buf << "tiny_tree_features=" 
-    << ArrayToString(tt_features_, tt_features_.size()) << '\n';
-  str_buf << "tiny_tree_thresholds=" 
-    << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n';
+  if (tinytree_.size() > 0)
+  {
+    str_buf << "tiny_tree_ids_features=" 
+      << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
+    str_buf << "tiny_tree_ids_thresholds=" 
+      << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
+    str_buf << "tiny_tree_features=" 
+      << ArrayToString(tt_features_, tt_features_.size()) << '\n';
+    str_buf << "tiny_tree_thresholds=" 
+      << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n'; 
+  }
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
   str_buf << "split_gain="

@@ -34,7 +34,7 @@ namespace LightGBM {
               return threshold_used == other.threshold_used && leftmost_value == other.leftmost_value && rightmost_value == other.rightmost_value;
             }
         };
-        void InsertSplitInfo(SplitInfo best_split_info, Tree* tree){
+        void InsertSplitInfo(SplitInfo best_split_info, Tree* tree, int precision){
           // TODO Nina as we have the Histograms we can not really get the left and right value. I mean theoretically we could looking when the count value changes but that consumes time and I guess would be a no go for merging into LightGBM.
           InsertThresholdInfo(best_split_info.threshold, best_split_info.left_count, best_split_info.right_count);
           // TODO Jan/Nina merging with Method from Jan either storing result here or in the tree.
@@ -42,20 +42,32 @@ namespace LightGBM {
           // For the overall memory consumption it is assumed that each split that uses a feature not yet used increases the memory by two double values (split and predict value).
           // Was feature already used?
           estimated_consumed_memory += 2 * sizeof(int);
-          // Insert dummy values to check if it works.
-          float threshold = 1.0;
-          uint32_t feature = 1;
+  
+          // id of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0
+          int last_node_id = tree->num_leaves_ - 2;
+
+          // TODO: merge following lines, but depends on if/how we implement rounding 
+          float threshold = tree->threshold_[last_node_id];
+          float threshold_rounded = (int)(threshold*pow(10, precision) + 0.5) / pow(10, precision);
+          threshold = threshold_rounded;
+
+          uint32_t feature = tree->split_feature_[last_node_id];
+          Log::Debug("threshold: %f, node_id: %i, feature: %u", threshold, last_node_id, feature);
+
           std::vector<float>::iterator threshold_it;
           std::vector<u_int32_t>::iterator feature_it;
-          threshold_it = std::find(tree->tt_thresholds_.begin(), tree->tt_thresholds_.end(), threshold);
-          feature_it = std::find(tree->tt_features_.begin(), tree->tt_features_.end(), feature);
-          if (feature_it == tree->tt_features_.end()) {
+          
+          threshold_it = std::find(thresholds_used_global_.begin(), thresholds_used_global_.end(), threshold);
+          feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
+          if (feature_it == features_used_global_.end()) {
             // If yes, only one double value is added.
             estimated_consumed_memory += sizeof(double);
+            features_used_global_.push_back(feature);
           }
-          if (threshold_it == tree->tt_thresholds_.end()) {
+          if (threshold_it == thresholds_used_global_.end()) {
             // If yes, only one double value is added.
             estimated_consumed_memory += sizeof(double);
+            thresholds_used_global_.push_back(threshold);
           }
           Log::Debug("Estimated consumed memory: %f", (estimated_consumed_memory));
         }
@@ -71,6 +83,7 @@ namespace LightGBM {
         }
         static bool IsEnable(const Config* config) {
             if (config->tinygbdt_forestsize == 0.0f) {
+                Log::Debug("MemoryRestrictedForest disabled");
                 return false;
             } else {
                 if (config->num_iterations != 100 && config->max_depth > 0) {
@@ -98,6 +111,11 @@ namespace LightGBM {
         float estimated_consumed_memory;
         const SerialTreeLearner* tree_learner_;
         std::vector<threshold_info> threshold_used;
+        
+        /*! \brief count feature use; TODO: possible to use fewer bits? */
+        std::vector<u_int32_t> features_used_global_;
+        /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
+        std::vector<float> thresholds_used_global_;
 
     };
 }
