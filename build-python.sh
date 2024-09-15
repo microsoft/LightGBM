@@ -308,16 +308,13 @@ if test "${INSTALL}" = true; then
         # use regular-old setuptools for these builds, to avoid
         # trying to recompile the shared library
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
-        {
-            echo '[build-system]'; \
-            echo 'requires = ["setuptools"]'; \
-            echo 'build-backend = "setuptools.build_meta"'; \
-            echo ""; \
-        }  >> ./pyproject.toml
-        {
-            echo "recursive-include lightgbm *.dll *.dylib *.so"; \
-            echo ""; \
-        } >> ./MANIFEST.in
+        # shellcheck disable=SC2129
+        echo '[build-system]' >> ./pyproject.toml
+        echo 'requires = ["setuptools"]' >> ./pyproject.toml
+        echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
+        echo "" >> ./pyproject.toml
+        echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
+        echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "found pre-compiled lib_lightgbm.so"
