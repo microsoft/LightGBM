@@ -22,6 +22,7 @@ python -m pip install \
         'numpy>=2.0.0.dev0' \
         'matplotlib>=3.10.0.dev0' \
         'pandas>=3.0.0.dev0' \
+        'scikit-learn<1.16.0a0' \
         'scipy>=1.15.0.dev0'
 
 python -m pip install \
