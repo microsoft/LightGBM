@@ -302,7 +302,7 @@ if [[ $TASK == "regular" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
                 python ./.ci/check-dynamic-dependencies.py ./objdump.log || exit 1
             fi
-            cp ./lib_lightgbm.so "$BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.so"
+            cp ./lib_lightgbm.so "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.so"
         fi
     fi
     cd "$BUILD_DIRECTORY/examples/python-guide"
