@@ -316,7 +316,7 @@ matplotlib.use\(\"Agg\"\)\
         'h5py>=3.10' \
         'ipywidgets>=8.1.2' \
         'notebook>=7.1.2'
-    for f in *.py **/*.py; do python "$f" || exit 1; done  # run all examples
+    for f in *.py **/*.py; do python "${f}" || exit 1; done  # run all examples
     cd "$BUILD_DIRECTORY/examples/python-guide/notebooks"
     sed -i'.bak' 's/INTERACTIVE = False/assert False, \\"Interactive mode disabled\\"/' interactive_plot_example.ipynb
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace ./*.ipynb || exit 1  # run all notebooks
