@@ -676,13 +676,13 @@ class LGBMModel(_LGBMModelBase):
     def __sklearn_tags__(self):
         tags = super().__sklearn_tags__()
         more_tags = self._more_tags()
-        tags.input_tags.allow_nan = more_tags.pop('allow_nan', False)
-        tagged_input_types = more_tags.pop('X_types', [])
-        tags.input_tags.sparse = 'sparse' in tagged_input_types
-        tags.target_tags.one_d_labels = '1dlabels' in tagged_input_types
-        tags._xfail_checks = more_tags.pop('_xfail_checks', {})
+        tags.input_tags.allow_nan = more_tags.pop("allow_nan", False)
+        tagged_input_types = more_tags.pop("X_types", [])
+        tags.input_tags.sparse = "sparse" in tagged_input_types
+        tags.target_tags.one_d_labels = "1dlabels" in tagged_input_types
+        tags._xfail_checks = more_tags.pop("_xfail_checks", {})
         if more_tags or set(tagged_input_types).difference({"2darray", "sparse", "1dlabels"}):
-            _log_warning(f'Some tags sklearn tag values are missing from __sklearn_tags__: `{more_tags}`')
+            _log_warning(f"Some tags sklearn tag values are missing from __sklearn_tags__: `{more_tags}`")
         return tags
 
     def __sklearn_is_fitted__(self) -> bool:
