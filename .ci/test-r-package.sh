@@ -181,12 +181,13 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
 
         # the exceptions below are from R itself and not LightGBM:
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
-        exit "$(
+        # shellcheck disable=SC2046
+        exit $(
             cat ${RCHK_LOG_FILE} \
             | grep -v "in function strptime_internal" \
             | grep -v "in function RunGenCollect" \
             | grep --count -E '\[PB\]|ERROR'
-        )"
+        )
     fi
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
