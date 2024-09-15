@@ -296,7 +296,7 @@ pytest ./tests || exit 1
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
         if [[ $OS_NAME == "macos" ]]; then
-            cp ./lib_lightgbm.dylib "$BUILD_ARTIFACTSTAGINGDIRECTORY/lib_lightgbm.dylib"
+            cp ./lib_lightgbm.dylib "${BUILD_ARTIFACTSTAGINGDIRECTORY}/lib_lightgbm.dylib"
         else
             if [[ $COMPILER == "gcc" ]]; then
                 objdump -T ./lib_lightgbm.so > ./objdump.log || exit 1
