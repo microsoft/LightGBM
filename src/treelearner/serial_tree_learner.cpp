@@ -1058,30 +1058,27 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   }
   new_split.feature = real_fidx;
 
-  /*[tinygbdt] BEGIN: if feature/split is not already used, the model should pay a price
-  * TODO: better save penalties in variables and only use condition if penalties are not 0
-  */
-  // !!! The feature penalty is already implemented by cegb_penalty_feature_coupled parameter (different costs for each feature can be set)
-  if (features_used_global_[feature_index] == 0){
-      Log::Debug("Gain no penalty: %f", new_split.gain);
-      int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
-      if(leftovermemory < 0){
-        leftovermemory = 0;
-      }
-      new_split.gain *= leftovermemory;
-      Log::Debug("Gain with penalty: %f", new_split.gain);
-  }
-
-  // TODO: this (probably?) leads to a split not being made because of the decreased gain, but the idea is to reuse a threshold (i.e. make a split but with an existing threshold). 
-  // elaborate this
-  if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
-    Log::Debug("Gain no penalty: %f", new_split.gain);
-    int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
-    if(leftovermemory < 0){
-        leftovermemory = 0;
-      }
-    new_split.gain *= leftovermemory;
-    Log::Debug("Gain with penalty: %f", new_split.gain);
+  /*[tinygbdt] BEGIN: if feature/split is not already used, the model should pay a price. */  
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    consumed_memory con_mem = {};
+    const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
+    double threshold = bin_mapper->BinToValue(new_split.threshold);    
+    mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
+    float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
+    int additional_bytes = con_mem.bytes;
+    // Let's just assume for a first try that we reduce the the gain only by the last 90 % ... 
+    // TODO find some fancy way to include the leftovermemory.
+    Log::Debug("Gain no penalty: %f %u %f %d %f", new_split.gain, new_split.threshold, percentual_leftovermemory, mrf_->est_leftover_memory, config_->tinygbdt_forestsize);
+    if (con_mem.new_threshold) {
+      if (con_mem.new_feature)
+        new_split.gain *= 0.92;
+      else 
+        new_split.gain *= 0.94;
+    } else {
+      if (con_mem.new_threshold)
+        new_split.gain *= 0.96;
+    }
+    Log::Debug("Gain with penalty: %f", new_split.gain * percentual_leftovermemory);
   }
   /*[tinygbdt] END */
 
