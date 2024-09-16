@@ -177,9 +177,9 @@ cd "${BUILD_DIRECTORY}"
 if [[ $TASK == "sdist" ]]; then
     sh ./build-python.sh sdist || exit 1
     sh .ci/check-python-dists.sh ./dist || exit 1
-    pip install "./dist/lightgbm-$LGB_VER.tar.gz" -v || exit 1
+    pip install "./dist/lightgbm-${LGB_VER}.tar.gz" -v || exit 1
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-        cp "./dist/lightgbm-$LGB_VER.tar.gz" "$BUILD_ARTIFACTSTAGINGDIRECTORY" || exit 1
+        cp "./dist/lightgbm-${LGB_VER}.tar.gz" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
     fi
     pytest ./tests/python_package_test || exit 1
     exit 0
@@ -188,7 +188,7 @@ elif [[ $TASK == "bdist" ]]; then
         sh ./build-python.sh bdist_wheel || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-"$LGB_VER"-py3-none-macosx*.whl "$BUILD_ARTIFACTSTAGINGDIRECTORY" || exit 1
+            cp dist/lightgbm-"${LGB_VER}"-py3-none-macosx*.whl "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
     else
         if [[ $ARCH == "x86_64" ]]; then
@@ -204,10 +204,10 @@ elif [[ $TASK == "bdist" ]]; then
             ./dist/tmp.whl || exit 1
         mv \
             ./dist/tmp.whl \
-            "./dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl" || exit 1
+            "./dist/lightgbm-${LGB_VER}-py3-none-${PLATFORM}.whl" || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp "dist/lightgbm-$LGB_VER-py3-none-$PLATFORM.whl" "$BUILD_ARTIFACTSTAGINGDIRECTORY" || exit 1
+            cp "dist/lightgbm-${LGB_VER}-py3-none-${PLATFORM}.whl" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
         # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
         export LIGHTGBM_TEST_DUAL_CPU_GPU=1
@@ -226,14 +226,14 @@ if [[ $TASK == "gpu" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_GPU=ON \
-            "./dist/lightgbm-$LGB_VER.tar.gz" \
+            "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
         pytest ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-"$LGB_VER"*.whl -v || exit 1
+        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -251,14 +251,14 @@ elif [[ $TASK == "cuda" ]]; then
         pip install \
             -v \
             --config-settings=cmake.define.USE_CUDA=ON \
-            "./dist/lightgbm-$LGB_VER.tar.gz" \
+            "./dist/lightgbm-${LGB_VER}.tar.gz" \
         || exit 1
         pytest ./tests/python_package_test || exit 1
         exit 0
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-"$LGB_VER"*.whl -v || exit 1
+        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -278,7 +278,7 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install ./dist/lightgbm-"$LGB_VER"*.whl -v || exit 1
+        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
