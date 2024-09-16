@@ -1065,6 +1065,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   if (features_used_global_[feature_index] == 0){
       Log::Debug("Gain no penalty: %f", new_split.gain);
       int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
+      if(leftovermemory < 0){
+        leftovermemory = 0;
+      }
       new_split.gain *= leftovermemory;
       Log::Debug("Gain with penalty: %f", new_split.gain);
   }
@@ -1074,6 +1077,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   if (splits_used_global_.find(new_split.threshold) == splits_used_global_.end()) {
     Log::Debug("Gain no penalty: %f", new_split.gain);
     int leftovermemory =  config_->tinygbdt_forestsize - mrf_->est_leftover_memory;
+    if(leftovermemory < 0){
+        leftovermemory = 0;
+      }
     new_split.gain *= leftovermemory;
     Log::Debug("Gain with penalty: %f", new_split.gain);
   }
