@@ -92,8 +92,15 @@ namespace LightGBM {
           // Always the predict value adds to one double. 
           con_mem.bytes += sizeof(float);
         }
-        void CalculateThresholdVariability(const BinMapper* binmapper, const Dataset* train_data, uint32_t featureidx, uint32_t bin_idx ){
-
+        void CalculateThresholdVariability(const BinMapper* binmapper, const Dataset* train_data, int featureidx, uint32_t bin_idx, FeatureHistogram* histogram_array_){
+          // Gives the min and max value - scan data yourself?
+          uint8_t bit_type = 0;
+          bool is_sparse = false;
+          BinIterator* bin_iterator = nullptr;
+          const Bin* bin = train_data->FeatureGroupBin(featureidx); 
+          // This does not seem to work.
+          const void * data = bin->GetColWiseData(&bit_type, &is_sparse, &bin_iterator);
+          // std::cout << "The value at the pointer address is: " << *(static_cast<const float*>(data)) << std::endl;
         }
         void InsertThresholdInfo(uint32_t threshold, uint32_t featureidx, uint32_t left, uint32_t right) {
           threshold_info info;
@@ -111,18 +118,14 @@ namespace LightGBM {
                 return false;
             } else {
                 if (config->num_iterations != 100 && config->max_depth > 0) {
-                    Log::Debug("num_tree and max_depth set");
                   // TODO TinyGBT do we automatically want to set values if those are not set?
                   // TODO I guess having one set is the easiest as we can eventually scale in the other direction.
                 } else if (config->num_iterations != 100 ) {
-                    Log::Debug("num_tree set");
                 } else if (config->max_depth > 0) {
-                    Log::Debug("max_depth set");
                     // Assuming we have a fully covered binary tree get the maximum nodes in a single tree.
                     // int max_nodes = static_cast<int>(pow(2, config->max_depth + 1) - 1);
                 } else {
                   // TODO TinyGBT none set we could either set a value assuming an average memory consumption for one if both but estimation will lead to a loss in accuracy.
-                    Log::Debug("Non set");
                 }
                 return true;
             }

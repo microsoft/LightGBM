@@ -1062,23 +1062,24 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
   if (MemoryRestrictedForest::IsEnable(config_)) {
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
-    double threshold = bin_mapper->BinToValue(new_split.threshold);    
+    double threshold = bin_mapper->BinToValue(new_split.threshold);
+    mrf_->CalculateThresholdVariability(bin_mapper, train_data_, feature_index, new_split.threshold, histogram_array_);
     mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
     float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     int additional_bytes = con_mem.bytes;
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ... 
     // TODO find some fancy way to include the leftovermemory.
-    Log::Debug("Gain no penalty: %f %u %f %d %f", new_split.gain, new_split.threshold, percentual_leftovermemory, mrf_->est_leftover_memory, config_->tinygbdt_forestsize);
+    Log::Debug("Gain no penalty: %f", new_split.gain);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
         new_split.gain *= 0.92;
       else 
         new_split.gain *= 0.94;
     } else {
-      if (con_mem.new_threshold)
-        new_split.gain *= 0.96;
+      if (con_mem.new_feature)
+        new_split.gain *= 0.98;
     }
-    Log::Debug("Gain with penalty: %f", new_split.gain * percentual_leftovermemory);
+    Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */
 
