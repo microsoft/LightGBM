@@ -29,7 +29,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
-    if { type -f apt > /dev/null; } 2>&1; then
+    if type -f apt > /dev/null 2>&1; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
             ca-certificates \

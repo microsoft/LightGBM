@@ -20,12 +20,12 @@ fi
 
 # Get details needed for installing R components
 IFS='.' read -ra R_MAJOR_VERSION <<< "$R_VERSION"
-if [[ "${R_MAJOR_VERSION[0]}" == "3" ]]; then
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
     export R_LINUX_VERSION="3.6.3-1bionic"
     export R_APT_REPO="bionic-cran35/"
-elif [[ "${R_MAJOR_VERSION[0]}" == "4" ]]; then
+elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
@@ -110,7 +110,7 @@ fi
 
 # fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
-if [[ "${R_MAJOR_VERSION[0]}" == "3" ]]; then
+if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
 else
     # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
