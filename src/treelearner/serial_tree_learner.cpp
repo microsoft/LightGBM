@@ -1079,6 +1079,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       if (con_mem.new_feature)
         new_split.gain *= 0.98;
     }
+    // TODO Find a way to abort calculation. This is just a quick fix!!
+    if (percentual_leftovermemory <= 0.1) {
+      printf("Enter No GAIN!!!!!!!!!");
+      new_split.gain = 0;
+    }
     Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */
