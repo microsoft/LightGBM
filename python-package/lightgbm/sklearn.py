@@ -662,6 +662,10 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
+    # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
+    # _more_tags() can be removed whenever lightgbm's minimum supported scikit-learn version
+    # is >=1.6.
+    # ref: https://github.com/microsoft/LightGBM/pull/6651
     def _more_tags(self) -> Dict[str, Any]:
         return {
             "allow_nan": True,
@@ -674,10 +678,6 @@ class LGBMModel(_LGBMModelBase):
         }
 
     def __sklearn_tags__(self):
-        # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
-        # _more_tags() can be removed whenever lightgbm's minimum supported scikit-learn version
-        # is >=1.6.
-        # ref: https://github.com/microsoft/LightGBM/pull/6651
         tags = super().__sklearn_tags__()
         more_tags = self._more_tags()
         tags.input_tags.allow_nan = more_tags["allow_nan"]
