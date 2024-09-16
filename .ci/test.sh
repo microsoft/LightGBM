@@ -233,7 +233,7 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
+        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -258,7 +258,7 @@ elif [[ $TASK == "cuda" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
+        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -278,7 +278,7 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-${LGB_VER}*.whl)" -v || exit 1
+        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
