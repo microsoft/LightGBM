@@ -19,7 +19,7 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION="${R_VERSION%.*.*}"
+R_MAJOR_VERSION="${R_VERSION%.*}"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
