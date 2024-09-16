@@ -19,7 +19,7 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-IFS='.' read -ra R_MAJOR_VERSION <<< "$R_VERSION"
+R_MAJOR_VERSION="${R_VERSION%.*.*}"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
@@ -171,11 +171,11 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
         mkdir -p packages
         cp "${PKG_TARBALL}" packages
         RCHK_LOG_FILE="rchk-logs.txt"
-        { docker run \
+        docker run \
             -v "$(pwd)/packages:/rchk/packages" \
             kalibera/rchk:latest \
             "/rchk/packages/${PKG_TARBALL}" \
-        > ${RCHK_LOG_FILE}; } 2>&1  \
+        > ${RCHK_LOG_FILE} 2>&1  \
         || (cat ${RCHK_LOG_FILE} && exit 1)
         cat ${RCHK_LOG_FILE}
 
