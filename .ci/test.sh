@@ -117,10 +117,9 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
-    cd "${BUILD_DIRECTORY}/docs"
     mamba env create \
         -n $CONDA_ENV \
-        --file ./env.yml || exit 1
+        --file ./docs/env.yml || exit 1
     mamba install \
         -q \
         -y \
@@ -130,22 +129,19 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     # shellcheck disable=SC1091
     source activate $CONDA_ENV
     # check reStructuredText formatting
-    cd "${BUILD_DIRECTORY}/python-package"
-    find . -type f -name "*.rst" -exec \
-        rstcheck --report-level warning {} + || exit 1
-    cd "${BUILD_DIRECTORY}/docs"
-    find . -type f -name "*.rst" -exec \
-        rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} + || exit 1
+    find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
+        -exec rstcheck {} \+
+    find "${BUILD_DIRECTORY}/docs" -type f -name "*.rst" \
+        -exec rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} \+
     # build docs
-    make html || exit 1
+    make -C docs html || exit 1
     if [[ $TASK == "check-links" ]]; then
         # check docs for broken links
         pip install linkchecker
-        linkchecker --config=.linkcheckerrc ./_build/html/*.html || exit 1
+        linkchecker --config=.linkcheckerrc ./docs/_build/html/*.html || exit 1
         exit 0
     fi
     # check the consistency of parameters' descriptions and other stuff
-    cd "${BUILD_DIRECTORY}"
     cp ./docs/Parameters.rst ./docs/Parameters-backup.rst
     cp ./src/io/config_auto.cpp ./src/io/config_auto-backup.cpp
     python ./.ci/parameter-generator.py || exit 1
@@ -188,7 +184,7 @@ elif [[ $TASK == "bdist" ]]; then
         sh ./build-python.sh bdist_wheel || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
         if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
-            cp dist/lightgbm-"${LGB_VER}"-py3-none-macosx*.whl "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
+            cp "$(echo "dist/lightgbm-${LGB_VER}-py3-none-macosx"*.whl)" "${BUILD_ARTIFACTSTAGINGDIRECTORY}" || exit 1
         fi
     else
         if [[ $ARCH == "x86_64" ]]; then
