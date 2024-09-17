@@ -2,7 +2,6 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
-import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -1444,16 +1443,16 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 @pytest.mark.parametrize("task", tasks)
 @pytest.mark.parametrize("output", data_output)
 def test_init_score(task, output, cluster):
-    if task == "ranking":
-        pytest.skip("LGBMRanker is not currently tested for init_score")
+    if task == "ranking" and output == "scipy_csr_matrix":
+        pytest.skip("LGBMRanker is not currently tested on sparse matrices")
 
     with Client(cluster) as client:
         _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output=output, group=None)
 
         model_factory = task_to_dask_factory[task]
 
-        params = {"n_estimators": 1, "num_leaves": 2, "time_out": 5}
-        init_score = random.random()
+        params = {"n_estimators": 30, "num_leaves": 15, "time_out": 5}
+        init_score = 1
         size_factor = 1
         if task == "multiclass-classification":
             size_factor = 3  # number of classes
@@ -1472,7 +1471,8 @@ def test_init_score(task, output, cluster):
         pred_init_score = model_init_score.predict(dX, raw_score=True)
 
         # check if init score changes predictions
-        assert not np.allclose(pred, pred_init_score)
+        with pytest.raises(AssertionError):
+            assert_eq(pred, pred_init_score, atol=0.0001)
 
 
 def sklearn_checks_to_run():
