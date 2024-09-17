@@ -66,9 +66,9 @@ fi
 CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
-    mamba create -q -y -n $CONDA_ENV "${CONDA_PYTHON_REQUIREMENT}" numpy
+    mamba create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
     # shellcheck disable=SC1091
-    source activate $CONDA_ENV
+    source activate "${CONDA_ENV}"
     cmake -B build -S . || exit 1
     cmake --build build --target lightgbm -j4 || exit 1
     cd "$BUILD_DIRECTORY/tests/cpp_tests"
