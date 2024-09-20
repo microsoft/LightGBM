@@ -17,17 +17,62 @@ This page contains descriptions of all parameters in LightGBM.
 Parameters Format
 -----------------
 
+Parameters are merged together in the following order (later items overwrite earlier ones):
+
+1. LightGBM's default values
+2. special files for ``weight``, ``init_score``, ``query``, and ``positions`` (see `Others <#others>`__)
+3. (CLI only) configuration in a file passed like ``config=train.conf``
+4. (CLI only) configuration passed via the command line
+5. (Python, R) special keyword arguments to some functions (e.g. ``num_boost_round`` in ``train()``)
+6. (Python, R) ``params`` function argument (including ``**kwargs`` in Python and ``...`` in R)
+7. (C API) ``parameters`` or ``params`` function argument
+
+Many parameters have "aliases", alternative names which refer to the same configuration.
+
+Where a mix of the primary parameter name and aliases are given, the primary parameter name is always preferred to any aliases.
+
+For example, in Python:
+
+.. code-block:: python
+
+   # use learning rate of 0.07, becase 'learning_rate'
+   # is the primary parameter name
+   lgb.train(
+      params={
+         "learning_rate": 0.07,
+         "shrinkage_rate": 0.12
+      },
+      train_set=dtrain
+   )
+
+Where multiple aliases are given, and the primary parameter name is not, the first alias
+appearing in the lists returned by ``Config::parameter2aliases()`` in the C++ library is used.
+Those lists are hard-coded in a fairly arbitrary way... wherever possible, avoid relying on this behavior.
+
+For example, in Python:
+
+.. code-block:: python
+
+   # use learning rate of 0.12, LightGBM has a hard-coded preference for 'shrinkage_rate'
+   # over any other aliases, and 'learning_rate' is not provided
+   lgb.train(
+      params={
+         "eta": 0.19,
+         "shrinkage_rate": 0.12
+      },
+      train_set=dtrain
+   )
+
+**CLI**
+
 The parameters format is ``key1=value1 key2=value2 ...``.
 Parameters can be set both in config file and command line.
 By using command line, parameters should not have spaces before and after ``=``.
 By using config files, one line can only contain one parameter. You can use ``#`` to comment.
 
-If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
-
-For the Python and R packages, any parameters that accept a list of values (usually they have ``multi-xxx`` type, e.g. ``multi-int`` or ``multi-double``) can be specified in those languages' default array types.
-For example, ``monotone_constraints`` can be specified as follows.
-
 **Python**
+
+Any parameters that accept multiple values should be passed as a Python list.
 
 .. code-block:: python
 
@@ -37,6 +82,8 @@ For example, ``monotone_constraints`` can be specified as follows.
 
 
 **R**
+
+Any parameters that accept multiple values should be passed as an R list.
 
 .. code-block:: r
 
@@ -1352,7 +1399,8 @@ Others
 Continued Training with Input Score
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LightGBM supports continued training with initial scores. It uses an additional file to store these initial scores, like the following:
+LightGBM supports continued training with initial scores.
+It uses an additional file to store these initial scores, like the following:
 
 ::
 
@@ -1364,7 +1412,7 @@ LightGBM supports continued training with initial scores. It uses an additional 
 It means the initial score of the first data row is ``0.5``, second is ``-0.1``, and so on.
 The initial score file corresponds with data file line by line, and has per score per line.
 
-And if the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
+If the name of data file is ``train.txt``, the initial score file should be named as ``train.txt.init`` and placed in the same folder as the data file.
 In this case, LightGBM will auto load initial score file if it exists.
 
 If binary data files exist for raw data file ``train.txt``, for example in the name ``train.txt.bin``, then the initial score file should be named as ``train.txt.bin.init``.
@@ -1372,7 +1420,8 @@ If binary data files exist for raw data file ``train.txt``, for example in the n
 Weight Data
 ~~~~~~~~~~~
 
-LightGBM supports weighted training. It uses an additional file to store weight data, like the following:
+LightGBM supports weighted training.
+It uses an additional file to store weight data, like the following:
 
 ::
 
@@ -1388,7 +1437,8 @@ The weight file corresponds with data file line by line, and has per weight per 
 And if the name of data file is ``train.txt``, the weight file should be named as ``train.txt.weight`` and placed in the same folder as the data file.
 In this case, LightGBM will load the weight file automatically if it exists.
 
-Also, you can include weight column in your data file. Please refer to the ``weight_column`` `parameter <#weight_column>`__ in above.
+Also, you can include weight column in your data file.
+Please refer to the ``weight_column`` `parameter <#weight_column>`__ in above.
 
 Query Data
 ~~~~~~~~~~
@@ -1417,4 +1467,5 @@ For example, if you have a 112-document dataset with ``group = [27, 18, 67]``, t
 If the name of data file is ``train.txt``, the query file should be named as ``train.txt.query`` and placed in the same folder as the data file.
 In this case, LightGBM will load the query file automatically if it exists.
 
-Also, you can include query/group id column in your data file. Please refer to the ``group_column`` `parameter <#group_column>`__ in above.
+Also, you can include query/group id column in your data file.
+Please refer to the ``group_column`` `parameter <#group_column>`__ in above.

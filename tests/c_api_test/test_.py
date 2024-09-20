@@ -25,7 +25,7 @@ dtype_int64 = 3
 
 
 def c_str(string):
-    return ctypes.c_char_p(string.encode("utf-8"))
+    return ctypes.c_char_p(str(string).encode("utf-8"))
 
 
 def load_from_file(filename, reference):
@@ -203,8 +203,8 @@ def test_booster(tmp_path):
     LIB.LGBM_BoosterCreateFromModelfile(c_str(str(model_path)), ctypes.byref(num_total_model), ctypes.byref(booster2))
     data = np.loadtxt(str(binary_example_dir / "binary.test"), dtype=np.float64)
     mat = data[:, 1:]
-    preb = np.empty(mat.shape[0], dtype=np.float64)
-    num_preb = ctypes.c_int64(0)
+    preds = np.empty(mat.shape[0], dtype=np.float64)
+    num_preds = ctypes.c_int64(0)
     data = np.asarray(mat.reshape(mat.size), dtype=np.float64)
     LIB.LGBM_BoosterPredictForMat(
         booster2,
@@ -217,8 +217,8 @@ def test_booster(tmp_path):
         ctypes.c_int(0),
         ctypes.c_int(25),
         c_str(""),
-        ctypes.byref(num_preb),
-        preb.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        ctypes.byref(num_preds),
+        preds.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
     )
     LIB.LGBM_BoosterPredictForFile(
         booster2,
@@ -228,7 +228,7 @@ def test_booster(tmp_path):
         ctypes.c_int(0),
         ctypes.c_int(25),
         c_str(""),
-        c_str("preb.txt"),
+        c_str(tmp_path / "preds.txt"),
     )
     LIB.LGBM_BoosterPredictForFile(
         booster2,
@@ -238,7 +238,7 @@ def test_booster(tmp_path):
         ctypes.c_int(10),
         ctypes.c_int(25),
         c_str(""),
-        c_str("preb.txt"),
+        c_str(tmp_path / "preds.txt"),
     )
     LIB.LGBM_BoosterFree(booster2)
 
