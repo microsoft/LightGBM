@@ -917,14 +917,15 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   feature2subfeature_.clear();
   has_raw_ = dataset->has_raw();
   numeric_feature_map_ = dataset->numeric_feature_map_;
-  for (const int feature_index : dataset->numeric_feature_map_) {
-    if (feature_index != -1) {
-      numeric_feature_map_.push_back(feature_index + dataset->num_features_);
+  num_numeric_features_ = dataset->num_numeric_features_;
+  for (const int nuermic_feature_index : dataset->numeric_feature_map_) {
+    if (nuermic_feature_index != -1) {
+      numeric_feature_map_.push_back(num_numeric_features_);
+      ++num_numeric_features_;
     } else {
       numeric_feature_map_.push_back(-1);
     }
   }
-  num_numeric_features_ = dataset->num_numeric_features_ * 2;
   // copy feature bin mapper data
   feature_need_push_zeros_.clear();
   group_bin_boundaries_.clear();
@@ -2102,9 +2103,9 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
     const int feature_index = diff_original_feature_index->at(i);
     const data_size_t num_samples_for_feature = static_cast<data_size_t>(sample_values[feature_index].size());
     if (config.zero_as_missing) {
+      int cur_query = 0;
       for (int j = 0; j < num_samples_for_feature; ++j) {
         const double value = sample_values[feature_index][j];
-        int cur_query = 0;
         data_size_t cur_data_index = sample_indices[feature_index][j];
         while (query_boundaries[cur_query + 1] <= cur_data_index) {
           ++cur_query;
@@ -2117,8 +2118,8 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
     } else {
       CHECK_GT(sample_indices[feature_index].size(), 0);
       int cur_pos_j = 0;
+      int cur_query = 0;
       for (int j = 0; j < sample_indices[feature_index].back() + 1; ++j) {
-        int cur_query = 0;
         while (query_boundaries[cur_query + 1] <= j) {
           ++cur_query;
         }
@@ -2144,7 +2145,7 @@ void Dataset::CreatePairwiseRankingDifferentialFeatures(
     differential_feature_bin_mappers->operator[](i)->FindBin(
       sampled_differential_values[i].data(),
       static_cast<int>(sampled_differential_values[i].size()),
-      static_cast<size_t>(num_total_sample_data * (num_total_sample_data) / 2),
+      static_cast<size_t>(num_total_sample_data * (num_total_sample_data + 1) / 2),
       config.max_bin, config.min_data_in_bin, filter_cnt, config.feature_pre_filter,
       BinType::NumericalBin, config.use_missing, config.zero_as_missing, forced_upper_bounds
     );

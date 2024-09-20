@@ -606,15 +606,17 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
     }
   }
 
-  void GetGradients(const double* score_pairwise, score_t* gradients_pairwise,
-    score_t* hessians_pairwise) const override {
+  void GetGradients(const double* score_pairwise, const data_size_t num_sampled_queries, const data_size_t* sampled_query_indices,
+                    score_t* gradients_pairwise, score_t* hessians_pairwise) const override {
+    const data_size_t num_queries = (sampled_query_indices == nullptr ? num_queries_ : num_sampled_queries);
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
-    for (data_size_t i = 0; i < num_queries_; ++i) {
+    for (data_size_t i = 0; i < num_queries; ++i) {
       global_timer.Start("pairwise_lambdarank::GetGradients part 0");
-      const data_size_t start_pointwise = query_boundaries_[i];
-      const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
-      const data_size_t start_pairwise = query_boundaries_pairwise_[i];
-      const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
+      const data_size_t query_index = (sampled_query_indices == nullptr ? i : sampled_query_indices[i]);
+      const data_size_t start_pointwise = query_boundaries_[query_index];
+      const data_size_t cnt_pointwise = query_boundaries_[query_index + 1] - query_boundaries_[query_index];
+      const data_size_t start_pairwise = query_boundaries_pairwise_[query_index];
+      const data_size_t cnt_pairwise = query_boundaries_pairwise_[query_index + 1] - query_boundaries_pairwise_[query_index];
       std::vector<double> score_adjusted_pairwise;
       if (num_position_ids_ > 0) {
         for (data_size_t j = 0; j < cnt_pairwise; ++j) {
@@ -624,15 +626,15 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       }
       global_timer.Stop("pairwise_lambdarank::GetGradients part 0");
       global_timer.Start("pairwise_lambdarank::GetGradients part 1");
-      GetGradientsForOneQuery(i, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data() + start_pointwise, num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
-        right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i],
+      GetGradientsForOneQuery(query_index, cnt_pointwise, cnt_pairwise, label_ + start_pointwise, scores_pointwise_.data() + start_pointwise, num_position_ids_ > 0 ? score_adjusted_pairwise.data() : score_pairwise + start_pairwise,
+        right2left_map_byquery_[query_index], left2right_map_byquery_[query_index], left_right2pair_map_byquery_[query_index],
         gradients_pairwise + start_pairwise, hessians_pairwise + start_pairwise);
       std::vector<data_size_t> all_pairs(cnt_pairwise);
       std::iota(all_pairs.begin(), all_pairs.end(), 0);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 1");
       global_timer.Start("pairwise_lambdarank::GetGradients part 2");
       UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-        paired_index_map_ + start_pairwise, right2left_map_byquery_[i], left2right_map_byquery_[i], left_right2pair_map_byquery_[i], truncation_level_, sigmoid_, sigmoid_cache_);
+        paired_index_map_ + start_pairwise, right2left_map_byquery_[query_index], left2right_map_byquery_[query_index], left_right2pair_map_byquery_[query_index], truncation_level_, sigmoid_, sigmoid_cache_);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 2");
     }
     if (num_position_ids_ > 0) {
@@ -640,9 +642,10 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       std::vector<score_t> hessians_pointwise(num_data_);
       #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
       for (data_size_t i = 0; i < num_queries_; ++i) {
-        const data_size_t cnt_pointwise = query_boundaries_[i + 1] - query_boundaries_[i];
-        const data_size_t cnt_pairwise = query_boundaries_pairwise_[i + 1] - query_boundaries_pairwise_[i];
-        TransformGradientsPairwiseIntoPointwiseForOneQuery(i, cnt_pointwise, cnt_pairwise, gradients_pairwise, hessians_pairwise, gradients_pointwise.data(), hessians_pointwise.data());
+        const data_size_t query_index = (sampled_query_indices == nullptr ? i : sampled_query_indices[i]);
+        const data_size_t cnt_pointwise = query_boundaries_[query_index + 1] - query_boundaries_[query_index];
+        const data_size_t cnt_pairwise = query_boundaries_pairwise_[query_index + 1] - query_boundaries_pairwise_[query_index];
+        TransformGradientsPairwiseIntoPointwiseForOneQuery(query_index, cnt_pointwise, cnt_pairwise, gradients_pairwise, hessians_pairwise, gradients_pointwise.data(), hessians_pointwise.data());
       }
       UpdatePositionBiasFactors(gradients_pointwise.data(), hessians_pointwise.data());
     }
