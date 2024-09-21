@@ -1452,15 +1452,14 @@ def test_init_score(task, output, cluster):
         model_factory = task_to_dask_factory[task]
 
         params = {"n_estimators": 30, "num_leaves": 15, "time_out": 5}
-        init_score = 1
-        size_factor = 1
-        if task == "multiclass-classification":
-            size_factor = 3  # number of classes
+        num_classes = 3 if task == "multiclass-classification" else 1
+
+        rnd = np.random.RandomState(42)
 
         if output.startswith("dataframe"):
-            init_scores = dy.map_partitions(lambda x: pd.DataFrame([[init_score] * size_factor] * x.size))
+            init_scores = dy.map_partitions(lambda x: pd.DataFrame(rnd.uniform(size=(x.size, num_classes))))
         else:
-            init_scores = dy.map_blocks(lambda x: np.full((x.size, size_factor), init_score))
+            init_scores = dy.map_blocks(lambda x: rnd.uniform(size=(x.size, num_classes)))
 
         model = model_factory(client=client, **params)
         model.fit(dX, dy, sample_weight=dw, group=dg)
@@ -1472,7 +1471,7 @@ def test_init_score(task, output, cluster):
 
         # check if init score changes predictions
         with pytest.raises(AssertionError):
-            assert_eq(pred, pred_init_score, atol=0.0001)
+            assert_eq(pred, pred_init_score)
 
 
 def sklearn_checks_to_run():
