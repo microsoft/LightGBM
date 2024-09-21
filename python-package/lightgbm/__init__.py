@@ -38,7 +38,7 @@ if platform.system().lower() == "linux" and platform.processor().lower() == "aar
     import ctypes
 
     try:
-        # this seems specific to libgomp, so no need to attempt e.g. libomp or libiomp
+        # this issue seems specific to libgomp, so no need to attempt e.g. libomp or libiomp
         _ = ctypes.CDLL("libgomp.so.1", ctypes.RTLD_GLOBAL)
     except:  # noqa: E722
         # this needs to be try-catched, to handle these situations:
