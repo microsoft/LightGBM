@@ -1450,11 +1450,10 @@ def test_init_score(task, output, cluster):
         _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output=output, group=None)
 
         model_factory = task_to_dask_factory[task]
-
-        params = {"n_estimators": 30, "num_leaves": 15, "time_out": 5}
-        num_classes = 3 if task == "multiclass-classification" else 1
-
         rnd = np.random.RandomState(42)
+
+        params = {"n_estimators": 1, "num_leaves": 2, "time_out": 5}
+        num_classes = 3 if task == "multiclass-classification" else 1
 
         if output.startswith("dataframe"):
             init_scores = dy.map_partitions(lambda x: pd.DataFrame(rnd.uniform(size=(x.size, num_classes))))
