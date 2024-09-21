@@ -36,6 +36,7 @@ from .utils import (
 )
 
 decreasing_generator = itertools.count(0, -1)
+estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
 task_to_model_factory = {
     "ranking": lgb.LGBMRanker,
     "binary-classification": lgb.LGBMClassifier,
@@ -1311,7 +1312,7 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 @pytest.mark.parametrize("max_depth", [3, 4, 5, 8])
 def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
@@ -1390,7 +1391,7 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
     assert_silent(capsys)
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 def test_getting_feature_names_in_np_input(estimator_class):
     # input is a numpy array, which doesn't have feature names. LightGBM adds
     # feature names to the fitted model, which is inconsistent with sklearn's behavior
@@ -1409,7 +1410,7 @@ def test_getting_feature_names_in_np_input(estimator_class):
     np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     col_names = X.columns.to_list()
@@ -1434,6 +1435,17 @@ def test_getting_feature_names_in_pd_input(estimator_class):
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
     check(estimator)
+
+
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimator_class):
+    est = estimator_class()
+    more_tags = est._more_tags()
+    assert (
+        more_tags["X_types"] == ["2darray", "sparse", "1dlabels"],
+        "List of supported X_types has changed. Update LGBMModel.__sklearn__tags() to match.",
+    )
+    sklearn_tags = est.__sklearn_tags__()
 
 
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])

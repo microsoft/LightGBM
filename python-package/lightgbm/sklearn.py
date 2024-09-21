@@ -677,13 +677,36 @@ class LGBMModel(_LGBMModelBase):
             },
         }
 
-    def __sklearn_tags__(self):
-        tags = super().__sklearn_tags__()
-        more_tags = self._more_tags()
+    @staticmethod
+    def _update_sklearn_tags_from_dict(
+        *,
+        tags: "sklearn.utils.Tags",
+        tags_dict: Dict[str, Any]
+    ) -> "sklearn.utils.Tags":
+        """
+        scikit-learn 1.6 introduced a dataclass-based interface for estimator tags.
+        ref: https://github.com/scikit-learn/scikit-learn/pull/29677
+
+        That interface means that each 
+        """
         tags.input_tags.allow_nan = more_tags["allow_nan"]
         tags.input_tags.sparse = "sparse" in more_tags["X_types"]
         tags.target_tags.one_d_labels = "1dlabels" in more_tags["X_types"]
         tags._xfail_checks = more_tags["_xfail_checks"]
+        return tags
+
+    def __sklearn_tags__(self):
+        # super().__sklearn_tags__() cannot be called unconditionally,
+        # because that method isn't defined for scikit-learn<1.6
+        if not callable(getattr(super(), "__sklearn_tags__", None)):
+            return None
+
+        # take whatever tags are provided by BaseEstimator, then modify
+        # them with LightGBM-specific values
+        tags = self._update_sklearn_tags_from_dict(
+            tags=super().__sklearn_tags__(),
+            tags_dict=self._more_tags()
+        )
         return tags
 
     def __sklearn_is_fitted__(self) -> bool:
@@ -1182,6 +1205,17 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
+    def _more_tags(self) -> Dict[str, Any]:
+        tags = super(LGBMModel, self)._more_tags()
+        tags.update(super(_LGBMRegressorBase, self)._more_tags())
+        return tags
+
+    def __sklearn_tags__(self):
+        tags = super().__sklearn_tags__()
+        if tags is None:
+            return None
+        
+
     def fit(  # type: ignore[override]
         self,
         X: _LGBM_ScikitMatrixLike,
@@ -1227,6 +1261,14 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
+
+    def _more_tags(self) -> Dict[str, Any]:
+        tags = super(LGBMModel, self)._more_tags()
+        tags.update(super(_LGBMClassifierBase, self)._more_tags())
+        return tags
+
+    def __sklearn_tags__(self):
+        return super().__
 
     def fit(  # type: ignore[override]
         self,
