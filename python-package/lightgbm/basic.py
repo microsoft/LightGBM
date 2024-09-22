@@ -272,7 +272,7 @@ def _log_callback(msg: bytes) -> None:
 
 
 # connect the Python logger to logging in lib_lightgbm
-if environ.get("LIGHTGBM_BUILD_DOC", False):
+if not environ.get("LIGHTGBM_BUILD_DOC", False):
     _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
