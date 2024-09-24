@@ -47,6 +47,8 @@ from .compat import (
 from .engine import train
 
 if TYPE_CHECKING:
+    # sklearn.utils.Tags can be imported unconditionally once
+    # lightgbm's minimum scikit-learn version is 1.6 or higher
     try:
         from sklearn.utils import Tags as _sklearn_Tags
     except ImportError:
