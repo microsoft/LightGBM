@@ -103,6 +103,7 @@ if [[ $TASK == "lint" ]]; then
         'mypy>=1.11.1' \
         'pre-commit>=3.8.0' \
         'pyarrow-core>=17.0' \
+        'scikit-learn>=1.15.0' \
         'r-lintr>=3.1.2'
     source activate $CONDA_ENV
     echo "Linting Python code"

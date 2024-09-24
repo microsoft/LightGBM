@@ -1441,11 +1441,16 @@ def test_sklearn_integration(estimator, check):
 def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimator_class):
     est = estimator_class()
     more_tags = est._more_tags()
-    assert (
-        more_tags["X_types"] == ["2darray", "sparse", "1dlabels"],
-        "List of supported X_types has changed. Update LGBMModel.__sklearn__tags() to match.",
-    )
+    err_msg = "List of supported X_types has changed. Update LGBMModel.__sklearn__tags() to match."
+    assert more_tags["X_types"] == ["2darray", "sparse", "1dlabels"], err_msg
     sklearn_tags = est.__sklearn_tags__()
+    # these tests should be run unconditionally (no 'if') once lightgbm's
+    # minimum scikit-learn version is 1.6 or higher
+    if sklearn_tags is not None:
+        assert sklearn_tags.input_tags.allow_nan is True
+        assert sklearn_tags.input_tags.sparse is True
+        assert sklearn_tags.target_tags.one_d_labels is True
+        assert sklearn_tags._xfail_checks == more_tags["_xfail_checks"]
 
 
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])
