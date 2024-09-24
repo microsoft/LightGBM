@@ -1219,8 +1219,8 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
     def _more_tags(self) -> Dict[str, Any]:
         # handle the case where ClassifierMixin possibly provides _more_tags()
-        if callable(getattr(_LGBMClassifierBase, "_more_tags", None)):
-            tags = _LGBMClassifierBase._more_tags(self)
+        if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
+            tags = _LGBMRegressorBase._more_tags(self)
         else:
             tags = {}
         # override those with LightGBM-specific preferences
