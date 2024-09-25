@@ -25,23 +25,28 @@ namespace LightGBM {
     bool new_threshold;
     bool new_feature;
   };
+  struct threshold_info {
+      float threshold;
+      uint32_t feature;
+      uint32_t leftmost;
+      uint32_t rightmost;
+      bool used;
+      bool operator==(const threshold_info& other) const {
+        return threshold == other.threshold && leftmost == other.leftmost && rightmost == other.rightmost;
+      }
+      
+  };
+  std::ostream& operator<<(std::ostream& os, const threshold_info& thres_info) {
+    os << "Used: " << thres_info.threshold << ", Min: " << thres_info.leftmost << "Max: " << thres_info.rightmost;
+    return os;
+  }
     class MemoryRestrictedForest {
     public:
         explicit MemoryRestrictedForest(const SerialTreeLearner* tree_learner)
                 : init_(false), tree_learner_(tree_learner) {}
-        
-        // TODO Nina appropriate place to store features used? Rather create an own struct that only gets created if required?
-        struct threshold_info {
-            uint32_t threshold_used;
-            uint32_t leftmost_value;
-            uint32_t rightmost_value;
-            bool operator==(const threshold_info& other) const {
-              return threshold_used == other.threshold_used && leftmost_value == other.leftmost_value && rightmost_value == other.rightmost_value;
-            }
-        };
         void InsertSplitInfo(SplitInfo best_split_info, Tree* tree, int precision){
           // ID of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0.
-          // TODO we need a split that might not have been inserted
+          // We need a split that might not have been inserted
           int last_node_id = tree->num_leaves_ - 2;
 
           // TODO: merge following lines, but depends on if/how we implement rounding.
@@ -50,10 +55,7 @@ namespace LightGBM {
           //threshold = threshold_rounded;
           uint32_t feature = tree->split_feature_[last_node_id];
 
-          // TODO Nina as we have the Histograms we can not really get the left and right value. I mean theoretically we could looking when the count 
-          // ... value changes but that consumes time and I guess would be a no go for merging into LightGBM.
-          // NVM I think we can.
-          InsertThresholdInfo(threshold, feature, best_split_info.left_count, best_split_info.right_count);
+          UpdateThresholdInfo(threshold, feature);
 
           consumed_memory con_mem = {};
           CalculateSplitMemoryConsumption(/*precision,*/ con_mem, threshold, feature);
@@ -92,25 +94,38 @@ namespace LightGBM {
           // Always the predict value adds to one double. 
           con_mem.bytes += sizeof(float);
         }
-        void CalculateThresholdVariability(const BinMapper* binmapper, const Dataset* train_data, int featureidx, uint32_t bin_idx, FeatureHistogram* histogram_array_){
-          // Gives the min and max value - scan data yourself?
-          uint8_t bit_type = 0;
-          bool is_sparse = false;
-          BinIterator* bin_iterator = nullptr;
-          const Bin* bin = train_data->FeatureGroupBin(featureidx); 
-          // This does not seem to work.
-          const void * data = bin->GetColWiseData(&bit_type, &is_sparse, &bin_iterator);
-          // std::cout << "The value at the pointer address is: " << *(static_cast<const float*>(data)) << std::endl;
-        }
-        void InsertThresholdInfo(uint32_t threshold, uint32_t featureidx, uint32_t left, uint32_t right) {
-          threshold_info info;
-          info.threshold_used = threshold;
-          info.leftmost_value = left;
-          info.rightmost_value = right;
-          if (std::find(threshold_used_.begin(), threshold_used_.end(), info) == threshold_used_.end()) {
-            // If not found, add it to the vector.
-            threshold_used_.push_back(info);
+        void UpdateThresholdInfo(float threshold, uint32_t feature) {
+          // threshold_feature_info
+          std::vector<threshold_info>::iterator it;
+          // Iterate through the vector update the inserted threshold as used.
+          for (it = threshold_feature_info.begin(); it != threshold_feature_info.end(); ++it) {
+              if (it->feature == feature && it->threshold == threshold) {
+                it->used = true;
+                return;
+              }
           }
+          // This should not happen error handling.
+        }
+        void CalculateAndInsertThresholdVariability(const Dataset* train_data, const BinMapper* binmapper, int featureidx, float threshold){
+          // Gives the min and max value - scan data yourself?
+          const Bin* bin = train_data->FeatureGroupBin(featureidx); 
+          // Somehow the bin does not have min and max values seems like it is not the right bin.
+          printf("Test Reinterpret Cast Min %f Max %f ...\n", bin->min, bin->max);
+        }
+        void InsertThresholdFeatureInfo(uint32_t threshold, uint32_t featureidx) {
+          threshold_info info;
+          info.threshold = threshold;
+          // info.leftmost = left;
+          // info.rightmost = right;
+          if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.end()) {
+            // If not found, add it to the vector.
+            threshold_feature_info.push_back(info);
+          }
+        }
+        void CheckThresholdVariability(float min, float max) {
+          for (const threshold_info& elem : threshold_feature_info) {
+            // TODO: Check if there is a threshold "close by"
+          }  
         }
         static bool IsEnable(const Config* config) {
             if (config->tinygbdt_forestsize == 0.0f) {
@@ -138,7 +153,7 @@ namespace LightGBM {
         bool init_;
         int est_leftover_memory;
         const SerialTreeLearner* tree_learner_;
-        std::vector<threshold_info> threshold_used_;
+        std::vector<threshold_info> threshold_feature_info;
         
         // TODO change this to short? or even smaller?
         /*! \brief count feature use; TODO: possible to use fewer bits? */

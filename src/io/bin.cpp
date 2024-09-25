@@ -872,6 +872,17 @@ namespace LightGBM {
     return nullptr;
   }
 
+  void Bin::setMinAndMax(double value) {
+    if (value < min) {
+      min = value;
+      printf("setmin: %f  \n", value);
+    }
+    if (value > max) {
+      max = value;
+      printf("setMax:  %f  \n", value);
+    }
+  }
+
   #ifdef USE_CUDA
   template <>
   const void* MultiValDenseBin<uint8_t>::GetRowWiseData(uint8_t* bit_type,

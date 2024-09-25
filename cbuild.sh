@@ -12,7 +12,7 @@ else
     exit 1
 fi
 
-cd examples/binary_classification || exit
+cd examples/min || exit
 "../../lightgbm" config=train.conf > train.output
 "../../lightgbm" config=predict.conf > predict.output
 

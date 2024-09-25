@@ -1063,7 +1063,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    mrf_->CalculateThresholdVariability(bin_mapper, train_data_, feature_index, new_split.threshold, histogram_array_);
+
+    mrf_->CalculateAndInsertThresholdVariability(train_data_, bin_mapper, feature_index, threshold);
     mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
     float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     int additional_bytes = con_mem.bytes;
@@ -1081,7 +1082,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     }
     // TODO Find a way to abort calculation. This is just a quick fix!!
     if (percentual_leftovermemory <= 0.1) {
-      printf("Enter No GAIN!!!!!!!!!");
       new_split.gain = 0;
     }
     Log::Debug("Gain with penalty: %f", new_split.gain);

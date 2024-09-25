@@ -258,9 +258,11 @@ class FeatureGroup {
       bin -= 1;
     }
     if (is_multi_val_) {
+      multi_bin_data_[sub_feature_idx]->setMinAndMax(value);
       multi_bin_data_[sub_feature_idx]->Push(tid, line_idx, bin + 1);
     } else {
       bin += bin_offsets_[sub_feature_idx];
+      bin_data_->setMinAndMax(value);
       bin_data_->Push(tid, line_idx, bin);
     }
   }

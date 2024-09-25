@@ -326,7 +326,11 @@ class Bin {
 
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
+  
+  void setMinAndMax(double value);
 
+  float max = 0;
+  float min = FLT_MAX;
   /*! \brief Get data pointer */
   virtual void* get_data() = 0;
 
