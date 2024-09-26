@@ -37,6 +37,17 @@ class ObjectiveFunction {
   virtual void GetGradients(const double* score,
     score_t* gradients, score_t* hessians) const = 0;
 
+    /*!
+  * \brief calculating first order derivative of loss function, used only for baggin by query in lambdarank
+  * \param score prediction score in this round
+  * \param num_sampled_queries number of in-bag queries
+  * \param sampled_query_indices indices of in-bag queries
+  * \gradients Output gradients
+  * \hessians Output hessians
+  */
+  virtual void GetGradients(const double* score, const data_size_t /*num_sampled_queries*/, const data_size_t* /*sampled_query_indices*/,
+    score_t* gradients, score_t* hessians) const { GetGradients(score, gradients, hessians); }
+
   virtual const char* GetName() const = 0;
 
   virtual bool IsConstantHessian() const { return false; }
@@ -108,7 +119,18 @@ class ObjectiveFunction {
   virtual bool NeedConvertOutputCUDA () const { return false; }
 
   #endif  // USE_CUDA
+
+  virtual void SetDataIndices(const data_size_t* used_data_indices) const { used_data_indices_ = used_data_indices; }
+
+ private:
+  mutable const data_size_t* used_data_indices_ = nullptr;
 };
+
+void UpdatePointwiseScoresForOneQuery(data_size_t query_id, double* score_pointwise, const double* score_pairwise, data_size_t cnt_pointwise,
+  data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
+  const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
+  const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
+  int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache);
 
 }  // namespace LightGBM
 

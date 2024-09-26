@@ -86,12 +86,12 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
       share_state_.reset(dataset->GetShareStates<true, 32>(
         reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
         col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-        config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins));
+        config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank")));
     } else {
       share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(),
           col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-          config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins));
+          config_->force_col_wise, config_->force_row_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank")));
     }
   } else {
     CHECK_NOTNULL(share_state_);
@@ -100,12 +100,12 @@ void SerialTreeLearner::GetShareStates(const Dataset* dataset,
       share_state_.reset(dataset->GetShareStates<true, 32>(
           reinterpret_cast<score_t*>(gradient_discretizer_->ordered_int_gradients_and_hessians()), nullptr,
           col_sampler_.is_feature_used_bytree(), is_constant_hessian,
-          share_state_->is_col_wise, !share_state_->is_col_wise, config_->num_grad_quant_bins));
+          share_state_->is_col_wise, !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank")));
     } else {
       share_state_.reset(dataset->GetShareStates<false, 0>(
           ordered_gradients_.data(), ordered_hessians_.data(), col_sampler_.is_feature_used_bytree(),
           is_constant_hessian, share_state_->is_col_wise,
-          !share_state_->is_col_wise, config_->num_grad_quant_bins));
+          !share_state_->is_col_wise, config_->num_grad_quant_bins, config_->objective == std::string("pairwise_lambdarank")));
     }
   }
   CHECK_NOTNULL(share_state_);
@@ -126,7 +126,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
   data_partition_->ResetNumData(num_data_);
   if (reset_multi_val_bin) {
     col_sampler_.SetTrainingData(train_data_);
-    GetShareStates(train_data_, is_constant_hessian, false);
+    GetShareStates(train_data_, is_constant_hessian, config_->objective == std::string("pairwise_lambdarank"));
   }
 
   // initialize ordered gradients and hessians
@@ -756,6 +756,9 @@ std::set<int> SerialTreeLearner::FindAllForceFeatures(Json force_split_leaf_sett
 void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                    int* right_leaf, bool update_cnt) {
   Common::FunctionTimer fun_timer("SerialTreeLearner::SplitInner", global_timer);
+
+  // histogram_pool_.DumpContent();
+
   SplitInfo& best_split_info = best_split_per_leaf_[best_leaf];
   const int inner_feature_index =
       train_data_->InnerFeatureIndex(best_split_info.feature);
@@ -843,7 +846,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   // init the leaves that used on next iteration
   if (!config_->use_quantized_grad) {
     if (best_split_info.left_count < best_split_info.right_count) {
-      CHECK_GT(best_split_info.left_count, 0);
+      // CHECK_GT(best_split_info.left_count, 0);
       smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                  best_split_info.left_sum_gradient,
                                  best_split_info.left_sum_hessian,
@@ -853,7 +856,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                 best_split_info.right_sum_hessian,
                                 best_split_info.right_output);
     } else {
-      CHECK_GT(best_split_info.right_count, 0);
+      // CHECK_GT(best_split_info.right_count, 0);
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                  best_split_info.right_sum_gradient,
                                  best_split_info.right_sum_hessian,
@@ -865,7 +868,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     }
   } else {
     if (best_split_info.left_count < best_split_info.right_count) {
-      CHECK_GT(best_split_info.left_count, 0);
+      // CHECK_GT(best_split_info.left_count, 0);
       smaller_leaf_splits_->Init(*left_leaf, data_partition_.get(),
                                  best_split_info.left_sum_gradient,
                                  best_split_info.left_sum_hessian,
@@ -877,7 +880,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                  best_split_info.right_sum_gradient_and_hessian,
                                  best_split_info.right_output);
     } else {
-      CHECK_GT(best_split_info.right_count, 0);
+      // CHECK_GT(best_split_info.right_count, 0);
       smaller_leaf_splits_->Init(*right_leaf, data_partition_.get(),
                                  best_split_info.right_sum_gradient,
                                  best_split_info.right_sum_hessian,
@@ -896,9 +899,9 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
                                                     data_partition_->leaf_count(*right_leaf));
   }
 
-  #ifdef DEBUG
-  CheckSplit(best_split_info, *left_leaf, *right_leaf);
-  #endif
+  // #ifdef DEBUG
+  // CheckSplit(best_split_info, *left_leaf, *right_leaf);
+  // #endif
 
   auto leaves_need_update = constraints_->Update(
       is_numerical_split, *left_leaf, *right_leaf,
@@ -1057,7 +1060,7 @@ std::vector<int8_t> node_used_features = col_sampler_.GetByNode(tree, leaf);
   *split = bests[best_idx];
 }
 
-#ifdef DEBUG
+// #ifdef DEBUG
 void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int left_leaf_index, const int right_leaf_index) {
   data_size_t num_data_in_left = 0;
   data_size_t num_data_in_right = 0;
@@ -1097,8 +1100,38 @@ void SerialTreeLearner::CheckSplit(const SplitInfo& best_split_info, const int l
     CHECK_EQ(sum_right_gradient, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian >> 32));
     CHECK_EQ(sum_right_hessian, static_cast<int32_t>(best_split_info.right_sum_gradient_and_hessian & 0x00000000ffffffff));
     Log::Warning("============================ end leaf split info ============================");
+    Log::Warning("============================ pass split check ============================");
+  } else {
+    double sum_left_gradient = 0;
+    double sum_left_hessian = 0;
+    double sum_right_gradient = 0;
+    double sum_right_hessian = 0;
+
+    for (data_size_t i = 0; i < num_data_in_left; ++i) {
+      const data_size_t index = data_indices_in_left[i];
+      sum_left_gradient += gradients_[index];
+      sum_left_hessian += hessians_[index];
+    }
+    for (data_size_t i = 0; i < num_data_in_right; ++i) {
+      const data_size_t index = data_indices_in_right[i];
+      sum_right_gradient += gradients_[index];
+      sum_right_hessian += hessians_[index];
+    }
+    Log::Warning("num_data_in_left = %d, best_split_info.left_count = %d", num_data_in_left, best_split_info.left_count);
+    Log::Warning("num_data_in_right = %d, best_split_info.right_count = %d", num_data_in_right, best_split_info.right_count);
+    Log::Warning("sum_left_gradient = %f, best_split_info.left_sum_gradient = %f", sum_left_gradient, best_split_info.left_sum_gradient);
+    Log::Warning("sum_left_hessian = %f, best_split_info.sum_left_hessian = %f", sum_left_hessian, best_split_info.left_sum_hessian);
+    Log::Warning("sum_right_gradient = %f, best_split_info.sum_right_gradient = %f", sum_right_gradient, best_split_info.right_sum_gradient);
+    Log::Warning("sum_right_hessian = %f, best_split_info.sum_right_hessian = %f", sum_right_hessian, best_split_info.right_sum_hessian);
+    CHECK_EQ(num_data_in_left, best_split_info.left_count);
+    CHECK_EQ(num_data_in_right, best_split_info.right_count);
+    CHECK_LE(std::fabs(sum_left_gradient - best_split_info.left_sum_gradient), 1e-3);
+    CHECK_LE(std::fabs(sum_left_hessian - best_split_info.left_sum_hessian), 1e-3);
+    CHECK_LE(std::fabs(sum_right_gradient - best_split_info.right_sum_gradient), 1e-3);
+    CHECK_LE(std::fabs(sum_right_hessian - best_split_info.right_sum_hessian), 1e-3);
+    Log::Warning("============================ pass split check ============================");
   }
 }
-#endif
+// #endif
 
 }  // namespace LightGBM

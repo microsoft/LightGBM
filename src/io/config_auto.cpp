@@ -208,6 +208,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "neg_bagging_fraction",
   "bagging_freq",
   "bagging_seed",
+  "bagging_by_query",
   "feature_fraction",
   "feature_fraction_bynode",
   "feature_fraction_seed",
@@ -306,6 +307,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "lambdarank_norm",
   "label_gain",
   "lambdarank_position_bias_regularization",
+  "use_differential_feature_in_pairwise_ranking",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -376,6 +378,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetInt(params, "bagging_freq", &bagging_freq);
 
   GetInt(params, "bagging_seed", &bagging_seed);
+
+  GetBool(params, "bagging_by_query", &bagging_by_query);
 
   GetDouble(params, "feature_fraction", &feature_fraction);
   CHECK_GT(feature_fraction, 0.0);
@@ -627,6 +631,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "lambdarank_position_bias_regularization", &lambdarank_position_bias_regularization);
   CHECK_GE(lambdarank_position_bias_regularization, 0.0);
 
+  GetBool(params, "use_differential_feature_in_pairwise_ranking", &use_differential_feature_in_pairwise_ranking);
+
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
 
@@ -688,6 +694,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[neg_bagging_fraction: " << neg_bagging_fraction << "]\n";
   str_buf << "[bagging_freq: " << bagging_freq << "]\n";
   str_buf << "[bagging_seed: " << bagging_seed << "]\n";
+  str_buf << "[bagging_by_query: " << bagging_by_query << "]\n";
   str_buf << "[feature_fraction: " << feature_fraction << "]\n";
   str_buf << "[feature_fraction_bynode: " << feature_fraction_bynode << "]\n";
   str_buf << "[feature_fraction_seed: " << feature_fraction_seed << "]\n";
@@ -770,6 +777,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[lambdarank_norm: " << lambdarank_norm << "]\n";
   str_buf << "[label_gain: " << Common::Join(label_gain, ",") << "]\n";
   str_buf << "[lambdarank_position_bias_regularization: " << lambdarank_position_bias_regularization << "]\n";
+  str_buf << "[use_differential_feature_in_pairwise_ranking: " << use_differential_feature_in_pairwise_ranking << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -813,6 +821,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"neg_bagging_fraction", {"neg_sub_row", "neg_subsample", "neg_bagging"}},
     {"bagging_freq", {"subsample_freq"}},
     {"bagging_seed", {"bagging_fraction_seed"}},
+    {"bagging_by_query", {}},
     {"feature_fraction", {"sub_feature", "colsample_bytree"}},
     {"feature_fraction_bynode", {"sub_feature_bynode", "colsample_bynode"}},
     {"feature_fraction_seed", {}},
@@ -911,6 +920,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"lambdarank_norm", {}},
     {"label_gain", {}},
     {"lambdarank_position_bias_regularization", {}},
+    {"use_differential_feature_in_pairwise_ranking", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -957,6 +967,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"neg_bagging_fraction", "double"},
     {"bagging_freq", "int"},
     {"bagging_seed", "int"},
+    {"bagging_by_query", "bool"},
     {"feature_fraction", "double"},
     {"feature_fraction_bynode", "double"},
     {"feature_fraction_seed", "int"},
@@ -1055,6 +1066,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"lambdarank_norm", "bool"},
     {"label_gain", "vector<double>"},
     {"lambdarank_position_bias_regularization", "double"},
+    {"use_differential_feature_in_pairwise_ranking", "bool"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},

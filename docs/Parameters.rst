@@ -168,6 +168,8 @@ Core Parameters
 
       -  ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
 
+      -  ``pairwise_lambdarank``, pairwise lambdarank algorithm
+
       -  label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
 
    -  custom objective function (gradients and hessians not computed directly by LightGBM)
@@ -412,6 +414,10 @@ Learning Control Parameters
 -  ``bagging_seed`` :raw-html:`<a id="bagging_seed" title="Permalink to this parameter" href="#bagging_seed">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int, aliases: ``bagging_fraction_seed``
 
    -  random seed for bagging
+
+-  ``bagging_by_query`` :raw-html:`<a id="bagging_by_query" title="Permalink to this parameter" href="#bagging_by_query">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to do bagging sample by query
 
 -  ``feature_fraction`` :raw-html:`<a id="feature_fraction" title="Permalink to this parameter" href="#feature_fraction">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, aliases: ``sub_feature``, ``colsample_bytree``, constraints: ``0.0 < feature_fraction <= 1.0``
 
@@ -1213,6 +1219,12 @@ Objective Parameters
    -  larger values reduce the inferred position bias factors
 
    -  *New in version 4.1.0*
+
+-  ``use_differential_feature_in_pairwise_ranking`` :raw-html:`<a id="use_differential_feature_in_pairwise_ranking" title="Permalink to this parameter" href="#use_differential_feature_in_pairwise_ranking">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use differential features in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
 
 Metric Parameters
 -----------------

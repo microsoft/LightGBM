@@ -374,6 +374,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
   offsets->clear();
   feature_hist_offsets_.clear();
   if (in_is_col_wise) {
+    // Log::Fatal("not supported 0");
     uint32_t cur_num_bin = 0;
     uint32_t hist_cur_num_bin = 0;
     for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
@@ -438,9 +439,10 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       }
     }
     sum_dense_ratio /= ncol;
-    const bool is_sparse_row_wise = (1.0f - sum_dense_ratio) >=
-      MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
+    const bool is_sparse_row_wise = false; //(1.0f - sum_dense_ratio) >=
+      // MultiValBin::multi_val_bin_sparse_threshold ? 1 : 0;
     if (is_sparse_row_wise) {
+      // Log::Fatal("not supported 1");
       int cur_num_bin = 1;
       uint32_t hist_cur_num_bin = 1;
       for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
@@ -474,6 +476,7 @@ void TrainingShareStates::CalcBinOffsets(const std::vector<std::unique_ptr<Featu
       for (int group = 0; group < static_cast<int>(feature_groups.size()); ++group) {
         const std::unique_ptr<FeatureGroup>& feature_group = feature_groups[group];
         if (feature_group->is_multi_val_) {
+          Log::Fatal("not supported 2");
           for (int i = 0; i < feature_group->num_feature_; ++i) {
             const std::unique_ptr<BinMapper>& bin_mapper = feature_group->bin_mappers_[i];
             if (group == 0 && i == 0 && bin_mapper->GetMostFreqBin() > 0) {
