@@ -187,7 +187,7 @@ You can find LightGBM's logo in different file formats and resolutions `here <ht
 
 **Possible Cause**: This behavior may indicate that you have multiple OpenMP libraries installed on your machine and they conflict with each other, similarly to the ``FAQ #10``.
 
-If you are using any Python package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
+If you are using any Python-package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
 
 .. code-block:: console
 
@@ -228,10 +228,10 @@ which makes such failures more likely. See these discussions:
 * https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
 * https://gcc.gcc.gnu.narkive.com/vOXMQqLA/failure-to-dlopen-libgomp-due-to-static-tls-data
 
-If you are experiencing this issue when using the ``lightgbm`` Python package, try upgrading
+If you are experiencing this issue when using the ``lightgbm`` Python-package, try upgrading
 to at least ``v4.6.0``.
 
-For older versions of the Python package, or for other LightGBM APIs, this issue can
+For older versions of the Python-package, or for other LightGBM APIs, this issue can
 often be avoided by loading ``libgomp.so.1``. That can be done directly by setting environment
 variable ``LD_PRELOAD``, like this:
 
