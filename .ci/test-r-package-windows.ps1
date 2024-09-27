@@ -144,7 +144,7 @@ Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
-Write-Output "Building R package"
+Write-Output "Building R-package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
@@ -234,7 +234,7 @@ if ($checks_cnt -eq 0) {
   Check-Output $False
 }
 
-# Checking that we actually got the expected compiler. The R package has some logic
+# Checking that we actually got the expected compiler. The R-package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
 if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -303,4 +303,4 @@ if ($env:COMPILER -eq "MSVC") {
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
-Write-Output "No issues were found checking the R package"
+Write-Output "No issues were found checking the R-package"
