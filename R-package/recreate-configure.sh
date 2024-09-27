@@ -6,7 +6,7 @@ set -e -E -u -o pipefail
 # this script should run on Ubuntu 22.04
 AUTOCONF_VERSION=$(cat R-package/AUTOCONF_UBUNTU_VERSION)
 
-# R-packages cannot have versions like 3.0.0rc1, but
+# R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
 LGB_VERSION=$(sed "s/rc/-/g" < VERSION.txt)
 
