@@ -364,7 +364,7 @@ result <- file.copy(
 )
 .handle_result(result)
 
-# R-packages cannot have versions like 3.0.0rc1, but
+# R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
 LGB_VERSION <- readLines("VERSION.txt")[1L]
 LGB_VERSION <- gsub(
