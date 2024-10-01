@@ -28,6 +28,25 @@ enum MissingType {
   Zero,
   NaN
 };
+struct MinMax {
+  double Min;
+  double Max;
+  MinMax(){
+    Min = std::numeric_limits<double>::infinity();
+    Max = -std::numeric_limits<double>::infinity();
+  }
+  bool operator==(const MinMax& mm) const {
+     return (Min == mm.Min)
+     && (Max == mm.Max);
+  }
+  bool operator!=(const MinMax& mm) const {
+    return !operator==(mm);
+  }
+  void setMin(const double min) {Min = min;}
+  void setMax(const double max) {Max = max;}
+  double getMin() const {return Min; }
+  double getMax() const {return Max; }
+};
 
 typedef double hist_t;
 typedef int32_t int_hist_t;
@@ -230,6 +249,42 @@ class BinMapper {
       return str_buf.str();
     }
   }
+  MinMax getMinAndMax(double threshold) const {
+    int counter = 0;
+    for (int i = 0; i < num_bin_; i++) {
+      if (threshold <= bin_minmax_values_[i].getMax() && !(threshold > bin_minmax_values_[i+1].getMin())) {
+        counter = i;
+        break;
+      }
+    }
+
+    // In case we are in the last bin, or the first bin we need to change to -infinity and +infinity.
+    MinMax minmax;
+    minmax.setMin(bin_minmax_values_[counter-1].Max);
+    minmax.setMax(bin_minmax_values_[counter].Min);
+
+    return minmax;
+  }
+
+  void setMinAndMax(const double value) {
+    int count = 0;
+    for (int i = 0; i < num_bin_; i++) {
+      if (value > bin_upper_bound_[i])
+        count = i + 1;
+    }
+  
+    MinMax minmax;
+    bin_minmax_values_.resize(num_bin_+1, minmax);
+    #pragma omp critical
+    {
+      if (value < bin_minmax_values_[count].getMin()) {
+        bin_minmax_values_[count].setMin(value);
+      }
+      if (value > bin_minmax_values_[count].getMax()) {
+        bin_minmax_values_[count].setMax(value);
+      }
+    }
+  }
 
  private:
   /*! \brief Number of bins */
@@ -237,6 +292,8 @@ class BinMapper {
   MissingType missing_type_;
   /*! \brief Store upper bound for each bin */
   std::vector<double> bin_upper_bound_;
+    /*! \brief Store min and max value inside the bin */
+  std::vector<MinMax> bin_minmax_values_;
   /*! \brief True if this feature is trivial */
   bool is_trivial_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
@@ -326,17 +383,6 @@ class Bin {
 
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
-  
-  void setMinAndMax(double value)  {
-    if (value < min) {
-      min = value;
-      printf("setmin: %f  \n", value);
-    }
-    if (value > max) {
-      max = value;
-      printf("setMax:  %f  \n", value);
-    }
-  };
 
   double max = 0;
   double min = DBL_MAX;

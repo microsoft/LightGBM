@@ -28,15 +28,16 @@ namespace LightGBM {
   struct threshold_info {
       float threshold;
       uint32_t feature;
-      uint32_t leftmost;
-      uint32_t rightmost;
+      double leftmost;
+      double rightmost;
       bool used;
       bool operator==(const threshold_info& other) const {
         return threshold == other.threshold && leftmost == other.leftmost && rightmost == other.rightmost;
       }
       
   };
-  std::ostream& operator<<(std::ostream& os, const threshold_info& thres_info) {
+
+  inline std::ostream& operator<<(std::ostream& os, const threshold_info& thres_info) {
     os << "Used: " << thres_info.threshold << ", Min: " << thres_info.leftmost << "Max: " << thres_info.rightmost;
     return os;
   }
@@ -44,21 +45,22 @@ namespace LightGBM {
     public:
         explicit MemoryRestrictedForest(const SerialTreeLearner* tree_learner)
                 : init_(false), tree_learner_(tree_learner) {}
-        void InsertSplitInfo(SplitInfo best_split_info, Tree* tree, int precision){
+        void InsertSplitInfo(const SplitInfo& best_split_info, const Tree* tree, int precision, const Dataset* train_data_) {
           // ID of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0.
           // We need a split that might not have been inserted
-          int last_node_id = tree->num_leaves_ - 2;
+          const int last_node_id = tree->num_leaves_ - 2;
 
           // TODO: merge following lines, but depends on if/how we implement rounding.
-          float threshold = tree->threshold_[last_node_id];
+          const float threshold = tree->threshold_[last_node_id];
           //float threshold_rounded = (int)(threshold*pow(10, precision) + 0.5) / pow(10, precision);
           //threshold = threshold_rounded;
-          uint32_t feature = tree->split_feature_[last_node_id];
+          const uint32_t feature = tree->split_feature_[last_node_id];
+          const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature);
 
-          UpdateThresholdInfo(threshold, feature);
+          InsertThresholdFeatureInfo(threshold, feature, bin_mapper);
 
           consumed_memory con_mem = {};
-          CalculateSplitMemoryConsumption(/*precision,*/ con_mem, threshold, feature);
+          CalculateSplitMemoryConsumption(train_data_, bin_mapper, con_mem, threshold, feature);
 
           if (con_mem.new_feature) {
             // If yes, only one int value is added.
@@ -72,61 +74,61 @@ namespace LightGBM {
           est_leftover_memory -= con_mem.bytes;
           Log::Debug("Estimated consumed memory: %d", (est_leftover_memory));
         }
-        void CalculateSplitMemoryConsumption(/*int precision,*/ consumed_memory &con_mem, float threshold, uint32_t feature){
-          // Two integers to save the id of split and threshold in the overall structure. 
+        float CalculateSplitMemoryConsumption(const Dataset* train_data_, const BinMapper* bin_mapper, consumed_memory &con_mem, float threshold, uint32_t feature){
+          // Two integers to save the id of split and threshold in the overall structure and a float for the predict value.
           // TODO dependent on the size of the tree those could be encoded as chars. ( 0 -255 for unsigned chars) (unsigned short 65535)
-          con_mem.bytes = 2 * sizeof(short);
-        
-          std::vector<float>::iterator threshold_it;
-          std::vector<u_int32_t>::iterator feature_it;
+          con_mem.bytes = 2 * sizeof(short) + sizeof(float);
+
+          std::vector<uint32_t>::iterator feature_it;
           
-          threshold_it = std::find(thresholds_used_global_.begin(), thresholds_used_global_.end(), threshold);
+          std::vector<float>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
+                                                                thresholds_used_global_.end(), threshold);
           feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
           if (feature_it == features_used_global_.end()) {
             con_mem.bytes += sizeof(short);
             con_mem.new_feature = true;
-
           }
+          // If the threshold is not present and cannot be adjusted to a close by threshold.
           if (threshold_it == thresholds_used_global_.end()) {
-            con_mem.bytes += sizeof(float);
-            con_mem.new_threshold = true;
+            float possible_thres = CalculateAndInsertThresholdVariability(train_data_, bin_mapper, feature, threshold);
+            if (possible_thres == threshold) {
+              con_mem.bytes += sizeof(float);
+              con_mem.new_threshold = true;
+            } else {
+              return possible_thres;
+            }
           }
-          // Always the predict value adds to one double. 
-          con_mem.bytes += sizeof(float);
+          return threshold;
         }
-        void UpdateThresholdInfo(float threshold, uint32_t feature) {
-          // threshold_feature_info
-          std::vector<threshold_info>::iterator it;
-          // Iterate through the vector update the inserted threshold as used.
-          for (it = threshold_feature_info.begin(); it != threshold_feature_info.end(); ++it) {
-              if (it->feature == feature && it->threshold == threshold) {
-                it->used = true;
-                return;
+
+        float CalculateAndInsertThresholdVariability(const Dataset* train_data, const BinMapper* bin_mapper, int featureidx, float threshold){
+          // 0.00001 is the epsilon value to compare the float values.
+          float epsilon = 1e-5f;
+          float best_sofar = threshold;
+          for (const threshold_info& elem : threshold_feature_info) {
+            // In case the threshold is close to an already inserted threshold take it.
+            if (std::fabs(threshold - elem.threshold) < epsilon) {
+              if (best_sofar > std::fabs(threshold - elem.threshold)) {
+                best_sofar = elem.threshold;
               }
+            }
           }
-          // This should not happen error handling.
+          return best_sofar;
         }
-        void CalculateAndInsertThresholdVariability(const Dataset* train_data, const BinMapper* binmapper, int featureidx, float threshold){
-          // Gives the min and max value - scan data yourself?
-          const Bin* bin = train_data->FeatureGroupBin(featureidx); 
-          // Somehow the bin does not have min and max values seems like it is not the right bin.
-          printf("Test Reinterpret Cast Min %f Max %f ...\n", bin->min, bin->max);
-        }
-        void InsertThresholdFeatureInfo(uint32_t threshold, uint32_t featureidx) {
-          threshold_info info;
+        void InsertThresholdFeatureInfo(float threshold, uint32_t featureidx, const BinMapper* bin_mapper) {
+          threshold_info info{};
           info.threshold = threshold;
-          // info.leftmost = left;
-          // info.rightmost = right;
+          info.feature = featureidx;
+          MinMax minmax = bin_mapper->getMinAndMax(threshold);
+          info.leftmost = minmax.getMin();
+          info.rightmost = minmax.getMax();
+          info.used = true;
           if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.end()) {
             // If not found, add it to the vector.
             threshold_feature_info.push_back(info);
           }
         }
-        void CheckThresholdVariability(float min, float max) {
-          for (const threshold_info& elem : threshold_feature_info) {
-            // TODO: Check if there is a threshold "close by"
-          }  
-        }
+
         static bool IsEnable(const Config* config) {
             if (config->tinygbdt_forestsize == 0.0f) {
                 Log::Debug("MemoryRestrictedForest disabled");
@@ -151,7 +153,7 @@ namespace LightGBM {
         }
 
         bool init_;
-        int est_leftover_memory;
+        int est_leftover_memory{};
         const SerialTreeLearner* tree_learner_;
         std::vector<threshold_info> threshold_feature_info;
         

@@ -985,7 +985,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
   if (mrf_ != nullptr) {
-    mrf_->InsertSplitInfo(best_split_info, tree, (int)config_->tinygbdt_forestsize);
+    mrf_->InsertSplitInfo(best_split_info, tree, (int)config_->tinygbdt_forestsize, train_data_);
   }
 }
 
@@ -1063,9 +1063,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-
-    mrf_->CalculateAndInsertThresholdVariability(train_data_, bin_mapper, feature_index, threshold);
-    mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
+    mrf_->CalculateSplitMemoryConsumption(train_data_, bin_mapper, con_mem, threshold, real_fidx);
     float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     int additional_bytes = con_mem.bytes;
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ... 
@@ -1081,9 +1079,9 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         new_split.gain *= 0.98;
     }
     // TODO Find a way to abort calculation. This is just a quick fix!!
-    if (percentual_leftovermemory <= 0.1) {
+    /*if (percentual_leftovermemory <= 0.1) {
       new_split.gain = 0;
-    }
+    }*/
     Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */

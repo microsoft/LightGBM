@@ -23,6 +23,9 @@ namespace LightGBM {
   BinMapper::BinMapper(): num_bin_(1), is_trivial_(true), bin_type_(BinType::NumericalBin) {
     bin_upper_bound_.clear();
     bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
+    bin_minmax_values_.clear();
+    MinMax minmax;
+    bin_minmax_values_.push_back(minmax);
   }
 
   // deep copy function for BinMapper
@@ -42,6 +45,7 @@ namespace LightGBM {
     max_val_ = other.max_val_;
     default_bin_ = other.default_bin_;
     most_freq_bin_ = other.most_freq_bin_;
+    bin_minmax_values_ = other.bin_minmax_values_;
   }
 
   BinMapper::BinMapper(const void* memory) {
@@ -870,17 +874,6 @@ namespace LightGBM {
     *bit_type = 32;
     *bin_iterator = new SparseBinIterator<uint32_t>(this, 0);
     return nullptr;
-  }
-
-  void Bin::setMinAndMax(double value) {
-    if (value < min) {
-      min = value;
-      printf("setmin: %f  \n", value);
-    }
-    if (value > max) {
-      max = value;
-      printf("setMax:  %f  \n", value);
-    }
   }
 
   #ifdef USE_CUDA
