@@ -6,6 +6,7 @@ option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
+option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
 set(
   ENABLED_SANITIZERS
   "address" "leak" "undefined"
@@ -22,7 +23,7 @@ option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the P
 option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.28)
 
 # If using Visual Studio generators, always target v10.x of the Windows SDK.
 # Doing this avoids lookups that could fall back to very old versions, e.g. by finding
@@ -58,10 +59,10 @@ if(__INTEGRATE_OPENCL)
   message(STATUS "Building library with integrated OpenCL components")
 endif()
 
-if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R)
-    # the Python and R package don't require the CLI
+if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R OR USE_SWIG)
+    # the SWIG wrapper, the Python and R package don't require the CLI
     set(BUILD_CLI OFF)
-    # installing the R and Python package shouldn't place LightGBM's headers
+    # installing the SWIG wrapper, the R and Python package shouldn't place LightGBM's headers
     # outside of where the package is installed
     set(INSTALL_HEADERS OFF)
 endif()
@@ -103,15 +104,16 @@ if(USE_SWIG)
   include_directories(JNI_INCLUDE_DIRS)
   include_directories($ENV{JAVA_HOME}/include)
   if(WIN32)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/windows/x86_64")
       include_directories($ENV{JAVA_HOME}/include/win32)
   elseif(APPLE)
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/osx/x86_64")
       include_directories($ENV{JAVA_HOME}/include/darwin)
   else()
-      file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
+      set(LGBM_SWIG_DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}/com/microsoft/ml/lightgbm/linux/x86_64")
       include_directories($ENV{JAVA_HOME}/include/linux)
   endif()
+  file(MAKE_DIRECTORY "${LGBM_SWIG_DESTINATION_DIR}")
 endif()
 
 set(EIGEN_DIR "${PROJECT_SOURCE_DIR}/external_libs/eigen")
@@ -131,6 +133,7 @@ if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
     message(STATUS "LIBR_INCLUDE_DIRS: ${LIBR_INCLUDE_DIRS}")
+    message(STATUS "LIBR_LIBS_DIR: ${LIBR_LIBS_DIR}")
     message(STATUS "LIBR_CORE_LIBRARY: ${LIBR_CORE_LIBRARY}")
     include_directories(${LIBR_INCLUDE_DIRS})
     add_definitions(-DLGB_R_BUILD)
@@ -161,16 +164,18 @@ if(USE_OPENMP)
     if(APPLE)
         find_package(OpenMP)
         if(NOT OpenMP_FOUND)
-            # libomp 15.0+ from brew is keg-only, so have to search in other locations.
-            # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
-            execute_process(COMMAND brew --prefix libomp
+            if(USE_HOMEBREW_FALLBACK)
+                # libomp 15.0+ from brew is keg-only, so have to search in other locations.
+                # See https://github.com/Homebrew/homebrew-core/issues/112107#issuecomment-1278042927.
+                execute_process(COMMAND brew --prefix libomp
                             OUTPUT_VARIABLE HOMEBREW_LIBOMP_PREFIX
                             OUTPUT_STRIP_TRAILING_WHITESPACE)
-            set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
-            set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
-            set(OpenMP_C_LIB_NAMES omp)
-            set(OpenMP_CXX_LIB_NAMES omp)
-            set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+                set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+                set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${HOMEBREW_LIBOMP_PREFIX}/include")
+                set(OpenMP_C_LIB_NAMES omp)
+                set(OpenMP_CXX_LIB_NAMES omp)
+                set(OpenMP_omp_LIBRARY ${HOMEBREW_LIBOMP_PREFIX}/lib/libomp.dylib)
+            endif()
             find_package(OpenMP REQUIRED)
         endif()
     else()
@@ -269,8 +274,12 @@ if(USE_CUDA)
 
     function(add_histogram hsize hname hadd hconst hdir)
       add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-      set_target_properties(histo${hsize}${hname} PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
+      set_target_properties(
+        histo${hsize}${hname}
+        PROPERTIES
+          CUDA_SEPARABLE_COMPILATION ON
+          CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      )
       if(hadd)
         list(APPEND histograms histo${hsize}${hname})
         set(histograms ${histograms} PARENT_SCOPE)
@@ -368,17 +377,6 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    set(
-      variables
-        CMAKE_C_FLAGS_DEBUG
-        CMAKE_C_FLAGS_MINSIZEREL
-        CMAKE_C_FLAGS_RELEASE
-        CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS_DEBUG
-        CMAKE_CXX_FLAGS_MINSIZEREL
-        CMAKE_CXX_FLAGS_RELEASE
-        CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
@@ -412,40 +410,85 @@ if(USE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
 endif()
 
-file(
-    GLOB
-    SOURCES
-      src/boosting/*.cpp
-      src/io/*.cpp
-      src/metric/*.cpp
-      src/objective/*.cpp
-      src/network/*.cpp
-      src/treelearner/*.cpp
-      src/utils/*.cpp
+set(
+    LGBM_SOURCES
+      src/boosting/boosting.cpp
+      src/boosting/gbdt_model_text.cpp
+      src/boosting/gbdt_prediction.cpp
+      src/boosting/gbdt.cpp
+      src/boosting/prediction_early_stop.cpp
+      src/boosting/sample_strategy.cpp
+      src/io/bin.cpp
+      src/io/config_auto.cpp
+      src/io/config.cpp
+      src/io/dataset_loader.cpp
+      src/io/dataset.cpp
+      src/io/file_io.cpp
+      src/io/json11.cpp
+      src/io/metadata.cpp
+      src/io/parser.cpp
+      src/io/train_share_states.cpp
+      src/io/tree.cpp
+      src/metric/dcg_calculator.cpp
+      src/metric/metric.cpp
+      src/network/linker_topo.cpp
+      src/network/linkers_mpi.cpp
+      src/network/linkers_socket.cpp
+      src/network/network.cpp
+      src/objective/objective_function.cpp
+      src/treelearner/data_parallel_tree_learner.cpp
+      src/treelearner/feature_histogram.cpp
+      src/treelearner/feature_parallel_tree_learner.cpp
+      src/treelearner/gpu_tree_learner.cpp
+      src/treelearner/gradient_discretizer.cpp
+      src/treelearner/linear_tree_learner.cpp
+      src/treelearner/serial_tree_learner.cpp
+      src/treelearner/tree_learner.cpp
+      src/treelearner/voting_parallel_tree_learner.cpp
+      src/utils/openmp_wrapper.cpp
 )
-file(
-    GLOB
+set(
     LGBM_CUDA_SOURCES
-      src/treelearner/*.cu
-      src/boosting/cuda/*.cpp
-      src/boosting/cuda/*.cu
-      src/metric/cuda/*.cpp
-      src/metric/cuda/*.cu
-      src/objective/cuda/*.cpp
-      src/objective/cuda/*.cu
-      src/treelearner/cuda/*.cpp
-      src/treelearner/cuda/*.cu
-      src/io/cuda/*.cu
-      src/io/cuda/*.cpp
-      src/cuda/*.cpp
-      src/cuda/*.cu
+      src/boosting/cuda/cuda_score_updater.cpp
+      src/boosting/cuda/cuda_score_updater.cu
+      src/metric/cuda/cuda_binary_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cpp
+      src/metric/cuda/cuda_regression_metric.cpp
+      src/metric/cuda/cuda_pointwise_metric.cu
+      src/objective/cuda/cuda_binary_objective.cpp
+      src/objective/cuda/cuda_multiclass_objective.cpp
+      src/objective/cuda/cuda_rank_objective.cpp
+      src/objective/cuda/cuda_regression_objective.cpp
+      src/objective/cuda/cuda_binary_objective.cu
+      src/objective/cuda/cuda_multiclass_objective.cu
+      src/objective/cuda/cuda_rank_objective.cu
+      src/objective/cuda/cuda_regression_objective.cu
+      src/treelearner/cuda/cuda_best_split_finder.cpp
+      src/treelearner/cuda/cuda_data_partition.cpp
+      src/treelearner/cuda/cuda_histogram_constructor.cpp
+      src/treelearner/cuda/cuda_leaf_splits.cpp
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cpp
+      src/treelearner/cuda/cuda_best_split_finder.cu
+      src/treelearner/cuda/cuda_data_partition.cu
+      src/treelearner/cuda/cuda_gradient_discretizer.cu
+      src/treelearner/cuda/cuda_histogram_constructor.cu
+      src/treelearner/cuda/cuda_leaf_splits.cu
+      src/treelearner/cuda/cuda_single_gpu_tree_learner.cu
+      src/io/cuda/cuda_column_data.cu
+      src/io/cuda/cuda_tree.cu
+      src/io/cuda/cuda_column_data.cpp
+      src/io/cuda/cuda_metadata.cpp
+      src/io/cuda/cuda_row_data.cpp
+      src/io/cuda/cuda_tree.cpp
+      src/cuda/cuda_utils.cpp
+      src/cuda/cuda_algorithms.cu
 )
 
 if(USE_CUDA)
-  list(APPEND SOURCES ${LGBM_CUDA_SOURCES})
+  list(APPEND LGBM_SOURCES ${LGBM_CUDA_SOURCES})
 endif()
 
-add_library(lightgbm_objs OBJECT ${SOURCES})
+add_library(lightgbm_objs OBJECT ${LGBM_SOURCES})
 
 if(BUILD_CLI)
     add_executable(lightgbm src/main.cpp src/application/application.cpp)
@@ -491,89 +534,50 @@ if(USE_SWIG)
   set_property(SOURCE swig/lightgbmlib.i PROPERTY SWIG_FLAGS "${swig_options}")
   swig_add_library(_lightgbm_swig LANGUAGE java SOURCES swig/lightgbmlib.i)
   swig_link_libraries(_lightgbm_swig _lightgbm)
-  # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
-  set_target_properties(_lightgbm_swig PROPERTIES PREFIX "")
-  # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
-  set_target_properties(_lightgbm_swig PROPERTIES OUTPUT_NAME "lib_lightgbm_swig")
+  set_target_properties(
+    _lightgbm_swig
+    PROPERTIES
+      # needed to ensure Linux build does not have lib prefix specified twice, e.g. liblib_lightgbm_swig
+      PREFIX ""
+      # needed in some versions of CMake for VS and MinGW builds to ensure output dll has lib prefix
+      OUTPUT_NAME "lib_lightgbm_swig"
+  )
   if(WIN32)
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dll")
     if(MINGW OR CYGWIN)
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.dll")
     else()
-        add_custom_command(
-            TARGET _lightgbm_swig
-            POST_BUILD
-            COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND
-              "${CMAKE_COMMAND}"
-              -E
-              copy_if_different
-              "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll"
-              com/microsoft/ml/lightgbm/windows/x86_64
-            COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-        )
+        set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm.dll")
+        set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/Release/lib_lightgbm_swig.dll")
     endif()
   elseif(APPLE)
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib"
-          com/microsoft/ml/lightgbm/osx/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib"
-          com/microsoft/ml/lightgbm/osx/x86_64/lib_lightgbm_swig.dylib
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.dylib")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.jnilib")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.dylib")
   else()
-    add_custom_command(
-        TARGET _lightgbm_swig
-        POST_BUILD
-        COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND
-          "${CMAKE_COMMAND}"
-          -E
-          copy_if_different
-          "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so"
-          com/microsoft/ml/lightgbm/linux/x86_64
-        COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
-    )
+    set(LGBM_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm.so")
+    set(LGBM_SWIG_LIB_SOURCE_PATH "${PROJECT_SOURCE_DIR}/lib_lightgbm_swig.so")
+    set(LGBM_SWIG_LIB_DESTINATION_PATH "${LGBM_SWIG_DESTINATION_DIR}/lib_lightgbm_swig.so")
   endif()
+  add_custom_command(
+      TARGET _lightgbm_swig
+      POST_BUILD
+      COMMAND "${Java_JAVAC_EXECUTABLE}" -d . java/*.java
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_DESTINATION_DIR}"
+      COMMAND
+        "${CMAKE_COMMAND}"
+        -E
+        copy_if_different
+        "${LGBM_SWIG_LIB_SOURCE_PATH}"
+        "${LGBM_SWIG_LIB_DESTINATION_PATH}"
+      COMMAND "${Java_JAR_EXECUTABLE}" -cf lightgbmlib.jar com
+    )
 endif()
 
 if(USE_MPI)
@@ -581,7 +585,7 @@ if(USE_MPI)
 endif()
 
 if(USE_OPENMP)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_link_libraries(lightgbm_objs PUBLIC OpenMP::OpenMP_CXX)
     # c_api headers also includes OpenMP headers, thus compiling
     # lightgbm_capi_objs needs include directory for OpenMP.
@@ -607,20 +611,29 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  set_target_properties(_lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_ARCHITECTURES ${CUDA_ARCHS})
-  endif()
 
-  set_target_properties(lightgbm_objs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(
+    lightgbm_objs
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_SEPARABLE_COMPILATION ON
+  )
 
-  # Device linking is not supported for object libraries.
-  # Thus we have to specify them on final targets.
+  set_target_properties(
+    _lightgbm
+    PROPERTIES
+      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_RESOLVE_DEVICE_SYMBOLS ON
+  )
+
   if(BUILD_CLI)
-    set_target_properties(lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+    set_target_properties(
+      lightgbm
+      PROPERTIES
+        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
   endif()
-  set_target_properties(_lightgbm PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
@@ -667,7 +680,19 @@ if(BUILD_CPP_TEST)
   set(LightGBM_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/tests/cpp_tests)
   include_directories(${LightGBM_TEST_HEADER_DIR})
 
-  file(GLOB CPP_TEST_SOURCES tests/cpp_tests/*.cpp)
+  set(
+    CPP_TEST_SOURCES
+      tests/cpp_tests/test_array_args.cpp
+      tests/cpp_tests/test_arrow.cpp
+      tests/cpp_tests/test_byte_buffer.cpp
+      tests/cpp_tests/test_chunked_array.cpp
+      tests/cpp_tests/test_common.cpp
+      tests/cpp_tests/test_main.cpp
+      tests/cpp_tests/test_serialize.cpp
+      tests/cpp_tests/test_single_row.cpp
+      tests/cpp_tests/test_stream.cpp
+      tests/cpp_tests/testutils.cpp
+    )
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
   endif()
@@ -686,14 +711,14 @@ if(__BUILD_FOR_PYTHON)
     set(CMAKE_INSTALL_PREFIX "lightgbm")
 endif()
 
-# The macOS linker puts an absolute path to linked libraries in lib_lightgb.dylib.
+# The macOS linker puts an absolute path to linked libraries in lib_lightgbm.dylib.
 # This block overrides that information for LightGBM's OpenMP dependency, to allow
 # finding that library in more places.
 #
-# This reduces the risk of runtime issues resulting from multiple libomp.dylib being loaded.
+# This reduces the risk of runtime issues resulting from multiple {libgomp,libiomp,libomp}.dylib being loaded.
 #
-if(APPLE AND USE_OPENMP)
-  # store path to libomp found at build time in a variable
+if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
+  # store path to {libgomp,libiomp,libomp}.dylib found at build time in a variable
   get_target_property(
     OpenMP_LIBRARY_LOCATION
     OpenMP::OpenMP_CXX
@@ -736,7 +761,7 @@ if(APPLE AND USE_OPENMP)
 
   # Override the absolute path to OpenMP with a relative one using @rpath.
   #
-  # This also ensures that if a libomp.dylib has already been loaded, it'll just use that.
+  # This also ensures that if a {libgomp,libiomp,libomp}.dylib has already been loaded, it'll just use that.
   add_custom_command(
     TARGET _lightgbm
     POST_BUILD
@@ -751,14 +776,55 @@ if(APPLE AND USE_OPENMP)
   )
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
-  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - (R-only) ${LIBR_LIBS_DIR}    (wherever R for macOS stores vendored third-party libraries)
   #   - ${OpenMP_LIBRARY_DIR}        (wherever find_package(OpenMP) found OpenMP at build time)
+  #   - /opt/homebrew/opt/libomp/lib (where 'brew install' / 'brew link' puts libomp.dylib)
+  #   - /opt/local/lib/libomp        (where 'port install' puts libomp.dylib)
   #
+
+  # with some compilers, OpenMP ships with the compiler (e.g. libgomp with gcc)
+  list(APPEND __omp_install_rpaths "${OpenMP_LIBRARY_DIR}")
+
+  # with clang, libomp doesn't ship with the compiler and might be supplied separately
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      list(
+        APPEND __omp_install_rpaths
+          "/opt/homebrew/opt/libomp/lib"
+          "/opt/local/lib/libomp"
+      )
+      # It appears that CRAN's macOS binaries compiled with -fopenmp have install names
+      # of the form:
+      #
+      #   /Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/lib/libomp.dylib
+      #
+      # That corresponds to the libomp.dylib that ships with the R framework for macOS, available
+      # from https://cran.r-project.org/bin/macosx/.
+      #
+      # That absolute-path install name leads to that library being loaded unconditionally.
+      #
+      # That can result in e.g. 'library(data.table)' loading R's libomp.dylib and 'library(lightgbm)' loading
+      # Homebrew's. Having 2 loaded in the same process can lead to segfaults and unpredictable behavior.
+      #
+      # This can't be easily avoided by forcing R-package builds in LightGBM to use R's libomp.dylib
+      # at build time... LightGBM's CMake uses find_package(OpenMP), and R for macOS only provides the
+      # library, not CMake config files for it.
+      #
+      # Best we can do, to allow CMake-based builds of the R-package here to continue to work
+      # alongside CRAN-prepared binaries of other packages with OpenMP dependencies, is to
+      # ensure that R's library directory is the first place the loader searches for
+      # libomp.dylib when clang is used.
+      #
+      # ref: https://github.com/microsoft/LightGBM/issues/6628
+      #
+      if(__BUILD_FOR_R)
+        list(PREPEND __omp_install_rpaths "${LIBR_LIBS_DIR}")
+      endif()
+  endif()
   set_target_properties(
     _lightgbm
     PROPERTIES
       BUILD_WITH_INSTALL_RPATH TRUE
-      INSTALL_RPATH "/opt/homebrew/opt/libomp/lib;${OpenMP_LIBRARY_DIR}"
+      INSTALL_RPATH "${__omp_install_rpaths}"
       INSTALL_RPATH_USE_LINK_PATH FALSE
   )
 endif()

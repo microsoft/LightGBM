@@ -24,6 +24,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_silent,
     dummy_obj,
     load_breast_cancer,
     load_digits,
@@ -1112,15 +1113,15 @@ def test_early_stopping_can_be_triggered_via_custom_callback():
     assert bst.current_iteration() == 7
 
 
-def test_continue_train():
+def test_continue_train(tmp_path):
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
     params = {"objective": "regression", "metric": "l1", "verbose": -1}
     lgb_train = lgb.Dataset(X_train, y_train, free_raw_data=False)
     lgb_eval = lgb.Dataset(X_test, y_test, reference=lgb_train, free_raw_data=False)
     init_gbm = lgb.train(params, lgb_train, num_boost_round=20)
-    model_name = "model.txt"
-    init_gbm.save_model(model_name)
+    model_path = tmp_path / "model.txt"
+    init_gbm.save_model(model_path)
     evals_result = {}
     gbm = lgb.train(
         params,
@@ -1130,7 +1131,7 @@ def test_continue_train():
         # test custom eval metrics
         feval=(lambda p, d: ("custom_mae", mean_absolute_error(p, d.get_label()), False)),
         callbacks=[lgb.record_evaluation(evals_result)],
-        init_model="model.txt",
+        init_model=model_path,
     )
     ret = mean_absolute_error(y_test, gbm.predict(X_test))
     assert ret < 13.6
@@ -1713,7 +1714,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
 
 # why fixed seed?
 # sometimes there is no difference how cols are treated (cat or not cat)
-def test_pandas_categorical(rng_fixed_seed):
+def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
@@ -1756,8 +1757,9 @@ def test_pandas_categorical(rng_fixed_seed):
     gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D"])
     pred3 = gbm3.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D"]
-    gbm3.save_model("categorical.model")
-    gbm4 = lgb.Booster(model_file="categorical.model")
+    categorical_model_path = tmp_path / "categorical.model"
+    gbm3.save_model(categorical_model_path)
+    gbm4 = lgb.Booster(model_file=categorical_model_path)
     pred4 = gbm4.predict(X_test)
     model_str = gbm4.model_to_string()
     gbm4.model_from_string(model_str)
@@ -2020,7 +2022,7 @@ def test_sliced_data(rng):
     np.testing.assert_allclose(origin_pred, sliced_pred)
 
 
-def test_init_with_subset(rng):
+def test_init_with_subset(tmp_path, rng):
     data = rng.uniform(size=(50, 2))
     y = [1] * 25 + [0] * 25
     lgb_train = lgb.Dataset(data, y, free_raw_data=False)
@@ -2034,16 +2036,17 @@ def test_init_with_subset(rng):
     assert lgb_train.get_data().shape[0] == 50
     assert subset_data_1.get_data().shape[0] == 30
     assert subset_data_2.get_data().shape[0] == 20
-    lgb_train.save_binary("lgb_train_data.bin")
-    lgb_train_from_file = lgb.Dataset("lgb_train_data.bin", free_raw_data=False)
+    lgb_train_data = str(tmp_path / "lgb_train_data.bin")
+    lgb_train.save_binary(lgb_train_data)
+    lgb_train_from_file = lgb.Dataset(lgb_train_data, free_raw_data=False)
     subset_data_3 = lgb_train_from_file.subset(subset_index_1)
     subset_data_4 = lgb_train_from_file.subset(subset_index_2)
     init_gbm_2 = lgb.train(params=params, train_set=subset_data_3, num_boost_round=10, keep_training_booster=True)
     with np.testing.assert_raises_regex(lgb.basic.LightGBMError, "Unknown format of training data"):
         lgb.train(params=params, train_set=subset_data_4, num_boost_round=10, init_model=init_gbm_2)
-    assert lgb_train_from_file.get_data() == "lgb_train_data.bin"
-    assert subset_data_3.get_data() == "lgb_train_data.bin"
-    assert subset_data_4.get_data() == "lgb_train_data.bin"
+    assert lgb_train_from_file.get_data() == lgb_train_data
+    assert subset_data_3.get_data() == lgb_train_data
+    assert subset_data_4.get_data() == lgb_train_data
 
 
 def test_training_on_constructed_subset_without_params(rng):
@@ -4289,7 +4292,7 @@ def test_verbosity_is_respected_when_using_custom_objective(capsys):
         "num_leaves": 3,
     }
     lgb.train({**params, "verbosity": -1}, ds, num_boost_round=1)
-    assert capsys.readouterr().out == ""
+    assert_silent(capsys)
     lgb.train({**params, "verbosity": 0}, ds, num_boost_round=1)
     assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
 
@@ -4316,6 +4319,115 @@ def test_verbosity_can_suppress_alias_warnings(capsys, verbosity_param, verbosit
         assert expected_msg in stdout
     else:
         assert re.search(r"\[LightGBM\]", stdout) is None
+
+
+def test_cv_only_raises_num_rounds_warning_when_expected(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    base_params = {
+        "num_leaves": 5,
+        "objective": "regression",
+        "verbosity": -1,
+    }
+    additional_kwargs = {"return_cvbooster": True, "stratified": False}
+
+    # no warning: no aliases, all defaults
+    cv_bst = lgb.cv({**base_params}, ds, **additional_kwargs)
+    assert all(t == 100 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # no warning: no aliases, just num_boost_round
+    cv_bst = lgb.cv({**base_params}, ds, num_boost_round=2, **additional_kwargs)
+    assert all(t == 2 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # no warning: 1 alias + num_boost_round (both same value)
+    cv_bst = lgb.cv({**base_params, "n_iter": 3}, ds, num_boost_round=3, **additional_kwargs)
+    assert all(t == 3 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # no warning: 1 alias + num_boost_round (different values... value from params should win)
+    cv_bst = lgb.cv({**base_params, "n_iter": 4}, ds, num_boost_round=3, **additional_kwargs)
+    assert all(t == 4 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # no warning: 2 aliases (both same value)
+    cv_bst = lgb.cv({**base_params, "n_iter": 3, "num_iterations": 3}, ds, **additional_kwargs)
+    assert all(t == 3 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # no warning: 4 aliases (all same value)
+    cv_bst = lgb.cv({**base_params, "n_iter": 3, "num_trees": 3, "nrounds": 3, "max_iter": 3}, ds, **additional_kwargs)
+    assert all(t == 3 for t in cv_bst["cvbooster"].num_trees())
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+        cv_bst = lgb.cv({**base_params, "n_iter": 6, "num_iterations": 5}, ds, **additional_kwargs)
+    assert all(t == 5 for t in cv_bst["cvbooster"].num_trees())
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... first one in the order from Config::parameter2aliases() wins)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 4 boosting rounds"):
+        cv_bst = lgb.cv({**base_params, "n_iter": 4, "max_iter": 5}, ds, **additional_kwargs)["cvbooster"]
+    assert all(t == 4 for t in cv_bst.num_trees())
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
+
+def test_train_only_raises_num_rounds_warning_when_expected(capsys):
+    X, y = make_synthetic_regression()
+    ds = lgb.Dataset(X, y)
+    base_params = {
+        "num_leaves": 5,
+        "objective": "regression",
+        "verbosity": -1,
+    }
+
+    # no warning: no aliases, all defaults
+    bst = lgb.train({**base_params}, ds)
+    assert bst.num_trees() == 100
+    assert_silent(capsys)
+
+    # no warning: no aliases, just num_boost_round
+    bst = lgb.train({**base_params}, ds, num_boost_round=2)
+    assert bst.num_trees() == 2
+    assert_silent(capsys)
+
+    # no warning: 1 alias + num_boost_round (both same value)
+    bst = lgb.train({**base_params, "n_iter": 3}, ds, num_boost_round=3)
+    assert bst.num_trees() == 3
+    assert_silent(capsys)
+
+    # no warning: 1 alias + num_boost_round (different values... value from params should win)
+    bst = lgb.train({**base_params, "n_iter": 4}, ds, num_boost_round=3)
+    assert bst.num_trees() == 4
+    assert_silent(capsys)
+
+    # no warning: 2 aliases (both same value)
+    bst = lgb.train({**base_params, "n_iter": 3, "num_iterations": 3}, ds)
+    assert bst.num_trees() == 3
+    assert_silent(capsys)
+
+    # no warning: 4 aliases (all same value)
+    bst = lgb.train({**base_params, "n_iter": 3, "num_trees": 3, "nrounds": 3, "max_iter": 3}, ds)
+    assert bst.num_trees() == 3
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+        bst = lgb.train({**base_params, "n_iter": 6, "num_iterations": 5}, ds)
+    assert bst.num_trees() == 5
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... first one in the order from Config::parameter2aliases() wins)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 4 boosting rounds"):
+        bst = lgb.train({**base_params, "n_iter": 4, "max_iter": 5}, ds)
+    assert bst.num_trees() == 4
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
@@ -4353,7 +4465,7 @@ def test_train_and_cv_raise_informative_error_for_train_set_of_wrong_type():
 @pytest.mark.parametrize("num_boost_round", [-7, -1, 0])
 def test_train_and_cv_raise_informative_error_for_impossible_num_boost_round(num_boost_round):
     X, y = make_synthetic_regression(n_samples=100)
-    error_msg = rf"num_boost_round must be greater than 0\. Got {num_boost_round}\."
+    error_msg = rf"Number of boosting rounds must be greater than 0\. Got {num_boost_round}\."
     with pytest.raises(ValueError, match=error_msg):
         lgb.train({}, train_set=lgb.Dataset(X, y), num_boost_round=num_boost_round)
     with pytest.raises(ValueError, match=error_msg):

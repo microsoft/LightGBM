@@ -8,9 +8,16 @@ function Check-Output {
 
 $env:CONDA_ENV = "test-env"
 $env:LGB_VER = (Get-Content $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim()
+# Use custom temp directory to avoid
+# > warning MSB8029: The Intermediate directory or Output directory cannot reside under the Temporary directory
+# > as it could lead to issues with incremental build.
+# And make sure this directory is always clean
+$env:TMPDIR = "$env:USERPROFILE\tmp"
+Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
+[Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
 if ($env:TASK -eq "r-package") {
-  & .\.ci\test_r_package_windows.ps1 ; Check-Output $?
+  & .\.ci\test-r-package-windows.ps1 ; Check-Output $?
   Exit 0
 }
 
@@ -24,11 +31,22 @@ if ($env:TASK -eq "cpp-tests") {
 if ($env:TASK -eq "swig") {
   $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-  Invoke-WebRequest -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/swigwin-4.0.2.zip" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "NativeHost"
+  Invoke-WebRequest -Uri "https://sourceforge.net/projects/swig/files/latest/download" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "curl"
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig")
-  $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin-4.0.2;" + $env:PATH
-  cmake -B build -S . -A x64 -DUSE_SWIG=ON ; Check-Output $?
+  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig") ; Check-Output $?
+  $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
+  $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
+  $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
+  cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
+  Write-Output "CMake build logs:"
+  Get-Content -Path "$BuildLogFileName"
+  Check-Output $build_succeeded
+  $checks = Select-String -Path "${BuildLogFileName}" -Pattern "-- Found SWIG.*${SwigFolder}/swig.exe"
+  $checks_cnt = $checks.Matches.length
+  if ($checks_cnt -eq 0) {
+    Write-Output "Wrong SWIG version was found (expected '${SwigFolder}'). Check the build logs."
+    Check-Output $False
+  }
   cmake --build build --target ALL_BUILD --config Release ; Check-Output $?
   if ($env:AZURE -eq "true") {
     cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Check-Output $?
@@ -70,7 +88,7 @@ if ($env:TASK -eq "regular") {
 }
 elseif ($env:TASK -eq "sdist") {
   sh ./build-python.sh sdist ; Check-Output $?
-  sh ./.ci/check_python_dists.sh ./dist ; Check-Output $?
+  sh ./.ci/check-python-dists.sh ./dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *.gz) -v ; Check-Output $?
 }
 elseif ($env:TASK -eq "bdist") {
@@ -85,7 +103,7 @@ elseif ($env:TASK -eq "bdist") {
 
   conda activate $env:CONDA_ENV
   sh "build-python.sh" bdist_wheel --integrated-opencl ; Check-Output $?
-  sh ./.ci/check_python_dists.sh ./dist ; Check-Output $?
+  sh ./.ci/check-python-dists.sh ./dist ; Check-Output $?
   cd dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Check-Output $?
   cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {

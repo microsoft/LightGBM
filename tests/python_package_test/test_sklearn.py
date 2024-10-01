@@ -24,6 +24,7 @@ import lightgbm as lgb
 from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
 
 from .utils import (
+    assert_silent,
     load_breast_cancer,
     load_digits,
     load_iris,
@@ -53,7 +54,7 @@ def _create_data(task, n_samples=100, n_features=4):
         elif task == "multiclass-classification":
             centers = 3
         else:
-            ValueError(f"Unknown classification task '{task}'")
+            raise ValueError(f"Unknown classification task '{task}'")
         X, y = make_blobs(n_samples=n_samples, n_features=n_features, centers=centers, random_state=42)
         g = None
     elif task == "regression":
@@ -558,7 +559,7 @@ def test_feature_importances_type():
 
 # why fixed seed?
 # sometimes there is no difference how cols are treated (cat or not cat)
-def test_pandas_categorical(rng_fixed_seed):
+def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pd = pytest.importorskip("pandas")
     X = pd.DataFrame(
         {
@@ -593,8 +594,9 @@ def test_pandas_categorical(rng_fixed_seed):
     pred2 = gbm2.predict(X_test, raw_score=True)
     gbm3 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=["A", "B", "C", "D"])
     pred3 = gbm3.predict(X_test, raw_score=True)
-    gbm3.booster_.save_model("categorical.model")
-    gbm4 = lgb.Booster(model_file="categorical.model")
+    categorical_model_path = tmp_path / "categorical.model"
+    gbm3.booster_.save_model(categorical_model_path)
+    gbm4 = lgb.Booster(model_file=categorical_model_path)
     pred4 = gbm4.predict(X_test)
     gbm5 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=["A", "B", "C", "D", "E"])
     pred5 = gbm5.predict(X_test, raw_score=True)
@@ -718,6 +720,25 @@ def test_predict():
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0, start_iteration=10)
     with pytest.raises(AssertionError):
         np.testing.assert_allclose(res_engine, res_sklearn_params)
+
+    # Test multiclass binary classification
+    num_samples = 100
+    num_classes = 2
+    X_train = np.linspace(start=0, stop=10, num=num_samples * 3).reshape(num_samples, 3)
+    y_train = np.concatenate([np.zeros(int(num_samples / 2 - 10)), np.ones(int(num_samples / 2 + 10))])
+
+    gbm = lgb.train({"objective": "multiclass", "num_class": num_classes, "verbose": -1}, lgb.Dataset(X_train, y_train))
+    clf = lgb.LGBMClassifier(objective="multiclass", num_classes=num_classes).fit(X_train, y_train)
+
+    res_engine = gbm.predict(X_train)
+    res_sklearn = clf.predict_proba(X_train)
+
+    assert res_engine.shape == (num_samples, num_classes)
+    assert res_sklearn.shape == (num_samples, num_classes)
+    np.testing.assert_allclose(res_engine, res_sklearn)
+
+    res_class_sklearn = clf.predict(X_train)
+    np.testing.assert_allclose(res_class_sklearn, y_train)
 
 
 def test_predict_with_params_from_init():
@@ -1035,6 +1056,20 @@ def test_metrics():
     assert len(gbm.evals_result_["training"]) == 1
     assert "binary_logloss" in gbm.evals_result_["training"]
 
+    # the evaluation metric changes to multiclass metric even num classes is 2 for multiclass objective
+    gbm = lgb.LGBMClassifier(objective="multiclass", num_classes=2, **params).fit(
+        eval_metric="binary_logloss", **params_fit
+    )
+    assert len(gbm._evals_result["training"]) == 1
+    assert "multi_logloss" in gbm.evals_result_["training"]
+
+    # the evaluation metric changes to multiclass metric even num classes is 2 for ovr objective
+    gbm = lgb.LGBMClassifier(objective="ovr", num_classes=2, **params).fit(eval_metric="binary_error", **params_fit)
+    assert gbm.objective_ == "ovr"
+    assert len(gbm.evals_result_["training"]) == 2
+    assert "multi_logloss" in gbm.evals_result_["training"]
+    assert "multi_error" in gbm.evals_result_["training"]
+
 
 def test_multiple_eval_metrics():
     X, y = load_breast_cancer(return_X_y=True)
@@ -1301,6 +1336,58 @@ def test_verbosity_is_respected_when_using_custom_objective(capsys):
     assert capsys.readouterr().out == ""
     lgb.LGBMRegressor(**params, verbosity=0, n_estimators=1).fit(X, y)
     assert "[LightGBM] [Warning] Unknown parameter: nonsense" in capsys.readouterr().out
+
+
+def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
+    X, y = make_synthetic_regression()
+    base_kwargs = {
+        "num_leaves": 5,
+        "verbosity": -1,
+    }
+
+    # no warning: no aliases, all defaults
+    reg = lgb.LGBMRegressor(**base_kwargs).fit(X, y)
+    assert reg.n_estimators_ == 100
+    assert_silent(capsys)
+
+    # no warning: no aliases, just n_estimators
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=2).fit(X, y)
+    assert reg.n_estimators_ == 2
+    assert_silent(capsys)
+
+    # no warning: 1 alias + n_estimators (both same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=3, n_iter=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # no warning: 1 alias + n_estimators (different values... value from params should win)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_estimators=3, n_iter=4).fit(X, y)
+    assert reg.n_estimators_ == 4
+    assert_silent(capsys)
+
+    # no warning: 2 aliases (both same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_iter=3, num_iterations=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # no warning: 4 aliases (all same value)
+    reg = lgb.LGBMRegressor(**base_kwargs, n_iter=3, num_trees=3, nrounds=3, max_iter=3).fit(X, y)
+    assert reg.n_estimators_ == 3
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... "num_iterations" wins because it's the main param name)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 5 boosting rounds"):
+        reg = lgb.LGBMRegressor(**base_kwargs, num_iterations=5, n_iter=6).fit(X, y)
+    assert reg.n_estimators_ == 5
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
+
+    # warning: 2 aliases (different values... first one in the order from Config::parameter2aliases() wins)
+    with pytest.warns(UserWarning, match="LightGBM will perform up to 4 boosting rounds"):
+        reg = lgb.LGBMRegressor(**base_kwargs, n_iter=4, max_iter=5).fit(X, y)
+    assert reg.n_estimators_ == 4
+    # should not be any other logs (except the warning, intercepted by pytest)
+    assert_silent(capsys)
 
 
 @pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])

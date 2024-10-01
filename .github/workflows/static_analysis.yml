@@ -17,13 +17,14 @@ concurrency:
 
 env:
   COMPILER: 'gcc'
+  MAKEFLAGS: '-j4'
   OS_NAME: 'linux'
   PYTHON_VERSION: '3.12'
 
 jobs:
   test:
     name: ${{ matrix.task }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false

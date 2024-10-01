@@ -202,9 +202,52 @@ If you are using any Python package that depends on ``threadpoolctl``, you also 
 
 Detailed description of conflicts between multiple OpenMP instances is provided in the `following document <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__.
 
-**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md#user-content-workarounds-for-intel-openmp-and-llvm-openmp-case>`__.
+**Solution**: Assuming you are using LightGBM Python-package and conda as a package manager, we strongly recommend using ``conda-forge`` channel as the only source of all your Python package installations because it contains built-in patches to workaround OpenMP conflicts. Some other workarounds are listed `here <https://github.com/joblib/threadpoolctl/blob/master/multiple_openmp.md>`__ under the "Workarounds for Intel OpenMP and LLVM OpenMP case" section.
 
 If this is not your case, then you should find conflicting OpenMP library installations on your own and leave only one of them.
+
+17. Loading LightGBM fails like: ``cannot allocate memory in static TLS block``
+-------------------------------------------------------------------------------
+
+When loading LightGBM, you may encounter errors like the following.
+
+.. code-block:: console
+
+   lib/libgomp.so.1: cannot allocate memory in static TLS block
+
+This most commonly happens on aarch64 Linux systems.
+
+``gcc``'s OpenMP library (``libgomp.so``) tries to allocate a small amount of static thread-local storage ("TLS")
+when it's dynamically loaded.
+
+That error can happen when the loader isn't able to find a large enough block of memory.
+
+On aarch64 Linux, processes and loaded libraries share the same pool of static TLS,
+which makes such failures more likely. See these discussions:
+
+* https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
+* https://gcc.gcc.gnu.narkive.com/vOXMQqLA/failure-to-dlopen-libgomp-due-to-static-tls-data
+
+If you are experiencing this issue when using the ``lightgbm`` Python package, try upgrading
+to at least ``v4.6.0``.
+
+For older versions of the Python package, or for other LightGBM APIs, this issue can
+often be avoided by loading ``libgomp.so.1``. That can be done directly by setting environment
+variable ``LD_PRELOAD``, like this:
+
+.. code-block:: console
+
+    export LD_PRELOAD=/root/miniconda3/envs/test-env/lib/libgomp.so.1
+
+It can also be done indirectly by changing the order that other libraries are loaded
+into processes, which varies by programming language and application type.
+
+For more details, see these discussions:
+
+* https://github.com/microsoft/LightGBM/pull/6654#issuecomment-2352014275
+* https://github.com/microsoft/LightGBM/issues/6509
+* https://maskray.me/blog/2021-02-14-all-about-thread-local-storage
+* https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
 
 ------
 
@@ -329,6 +372,8 @@ Also, feel free to post a new issue in our GitHub repository. We always look at 
 4. I would like to install LightGBM from conda. What channel should I choose?
 -----------------------------------------------------------------------------
 
-We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons.
-The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM.
-More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one.
+
+For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
+
+In addition, as of ``lightgbm==4.4.0``, the ``conda-forge`` package automatically supports CUDA-based GPU acceleration.
