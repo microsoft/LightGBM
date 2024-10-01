@@ -1,6 +1,13 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
 
+# This import causes lib_lightgbm.{dll,dylib,so} to be loaded.
+# It's intentionally done here, as early as possible, to avoid issues like
+# "libgomp.so.1: cannot allocate memory in static TLS block" on aarch64 Linux.
+#
+# For details, see the "cannot allocate memory in static TLS block" entry in docs/FAQ.rst.
+from .libpath import _LIB  # isort: skip
+
 import abc
 import ctypes
 import inspect
@@ -37,7 +44,6 @@ from .compat import (
     pd_DataFrame,
     pd_Series,
 )
-from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -160,6 +166,12 @@ ZERO_THRESHOLD = 1e-35
 _MULTICLASS_OBJECTIVES = {"multiclass", "multiclassova", "multiclass_ova", "ova", "ovr", "softmax"}
 
 
+class LightGBMError(Exception):
+    """Error thrown by LightGBM."""
+
+    pass
+
+
 def _is_zero(x: float) -> bool:
     return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
 
@@ -259,26 +271,13 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode("utf-8")))
 
 
-def _load_lib() -> ctypes.CDLL:
-    """Load LightGBM library."""
-    lib_path = find_lib_path()
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
-    lib.LGBM_GetLastError.restype = ctypes.c_char_p
+# connect the Python logger to logging in lib_lightgbm
+if not environ.get("LIGHTGBM_BUILD_DOC", False):
+    _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
-    lib.callback = callback(_log_callback)  # type: ignore[attr-defined]
-    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(lib.LGBM_GetLastError().decode("utf-8"))
-    return lib
-
-
-# we don't need lib_lightgbm while building docs
-_LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", False):
-    from unittest.mock import Mock  # isort: skip
-
-    _LIB = Mock(ctypes.CDLL)  # type: ignore
-else:
-    _LIB = _load_lib()
+    _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
+    if _LIB.LGBM_RegisterLogCallback(_LIB.callback) != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
 
 
 _NUMERIC_TYPES = (int, float, bool)
@@ -550,12 +549,6 @@ class _TempFile:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.path.is_file():
             self.path.unlink()
-
-
-class LightGBMError(Exception):
-    """Error thrown by LightGBM."""
-
-    pass
 
 
 # DeprecationWarning is not shown by default, so let's create our own with higher level
