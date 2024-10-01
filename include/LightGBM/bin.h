@@ -327,10 +327,19 @@ class Bin {
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
   
-  void setMinAndMax(double value);
+  void setMinAndMax(double value)  {
+    if (value < min) {
+      min = value;
+      printf("setmin: %f  \n", value);
+    }
+    if (value > max) {
+      max = value;
+      printf("setMax:  %f  \n", value);
+    }
+  };
 
-  float max = 0;
-  float min = FLT_MAX;
+  double max = 0;
+  double min = DBL_MAX;
   /*! \brief Get data pointer */
   virtual void* get_data() = 0;
 
