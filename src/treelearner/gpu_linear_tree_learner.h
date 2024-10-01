@@ -15,6 +15,8 @@
 
 namespace LightGBM {
 
+#ifdef USE_GPU
+
 class GPULinearTreeLearner: public GPUTreeLearner {
  public:
   explicit GPULinearTreeLearner(const Config* config) : GPUTreeLearner(config) {}
@@ -123,5 +125,19 @@ class GPULinearTreeLearner: public GPUTreeLearner {
   mutable std::vector<std::vector<std::vector<double>>> XTg_by_thread_;
 };
 
+#else  // USE_GPU
+
+class GPULinearTreeLearner: public GPUTreeLearner {
+ public:
+  #ifdef _MSC_VER
+    #pragma warning(disable : 4702)
+  #endif
+  explicit GPULinearTreeLearner(const Config* tree_config) : GPUTreeLearner(tree_config) {
+    Log::Fatal("GPU Tree Linear Learner was not enabled in this build.\n"
+               "Please recompile with CMake option -DUSE_GPU=1");
+  }
+};
+
 }  // namespace LightGBM
+
 #endif   // LightGBM_TREELEARNER_GPU_LINEAR_TREE_LEARNER_H_
