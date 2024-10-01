@@ -326,11 +326,19 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     }
     auto old_leaf_output = tree->LeafOutput(i);
     auto new_leaf_output = output * tree->shrinkage();
-    tree->SetLeafOutput(i, config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output);
+    double new_output = config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output;
+    tree->SetLeafOutput(i, new_output);
+    if (MemoryRestrictedForest::IsEnable(config_)) {
+      mrf_->InsertLeafInformation(new_output);
+    }
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   return tree.release();
+}
+
+void SerialTreeLearner::updateMemoryForLeaf(double val) {
+  mrf_->InsertLeafInformation(val);
 }
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
@@ -1009,12 +1017,19 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
         // bag_mapper[index_mapper[i]]
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
+        if (MemoryRestrictedForest::IsEnable(config_)) {
+          mrf_->InsertLeafInformation(new_output);
+        }
       } else {
         CHECK_GT(num_machines, 1);
         tree->SetLeafOutput(i, 0.0);
+        if (MemoryRestrictedForest::IsEnable(config_)) {
+          mrf_->InsertLeafInformation(0.0);
+        }
         n_nozeroworker_perleaf[i] = 0;
       }
     }
+
     if (num_machines > 1) {
       std::vector<double> outputs(tree->num_leaves());
       for (int i = 0; i < tree->num_leaves(); ++i) {
@@ -1024,6 +1039,9 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
+        if (MemoryRestrictedForest::IsEnable(config_)) {
+          mrf_->InsertLeafInformation(outputs[i] / n_nozeroworker_perleaf[i]);
+        }
       }
     }
   }
@@ -1063,11 +1081,12 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    mrf_->CalculateSplitMemoryConsumption(train_data_, bin_mapper, con_mem, threshold, real_fidx);
+    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(train_data_, bin_mapper, con_mem, threshold, real_fidx);
     float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
-    int additional_bytes = con_mem.bytes;
-    // Let's just assume for a first try that we reduce the the gain only by the last 90 % ... 
+    // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
     // TODO find some fancy way to include the leftovermemory.
+    // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
+    // However, the new_split just saves the bin id for the upper bound.
     Log::Debug("Gain no penalty: %f", new_split.gain);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
@@ -1078,10 +1097,10 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       if (con_mem.new_feature)
         new_split.gain *= 0.98;
     }
-    // TODO Find a way to abort calculation. This is just a quick fix!!
-    /*if (percentual_leftovermemory <= 0.1) {
+    // TODO Find a way to abort calculation. And still add the leaves This is just a quick fix!!
+    if (percentual_leftovermemory <= 0.1) {
       new_split.gain = 0;
-    }*/
+    }
     Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */

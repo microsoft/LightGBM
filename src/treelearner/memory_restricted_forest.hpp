@@ -43,9 +43,20 @@ namespace LightGBM {
   }
     class MemoryRestrictedForest {
     public:
-        explicit MemoryRestrictedForest(const SerialTreeLearner* tree_learner)
-                : init_(false), tree_learner_(tree_learner) {}
-        void InsertSplitInfo(const SplitInfo& best_split_info, const Tree* tree, int precision, const Dataset* train_data_) {
+      explicit MemoryRestrictedForest(const SerialTreeLearner* tree_learner)
+              : init_(false), tree_learner_(tree_learner) {}
+      void InsertLeafInformation(float leaf_value) {
+        auto threshold_it = std::find(thresholds_used_global_.begin(),
+                                                              thresholds_used_global_.end(), leaf_value);
+        printf("Leaf value inserted: %f\n", leaf_value);
+        // If the threshold is not present and cannot be adjusted to a close by threshold.
+        if (threshold_it == thresholds_used_global_.end()) {
+          est_leftover_memory -= sizeof(float);
+          thresholds_used_global_.push_back(leaf_value);
+        }
+        est_leftover_memory -= sizeof(short);
+      }
+      void InsertSplitInfo(const SplitInfo& best_split_info, const Tree* tree, int precision, const Dataset* train_data_) {
           // ID of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0.
           // We need a split that might not have been inserted
           const int last_node_id = tree->num_leaves_ - 2;

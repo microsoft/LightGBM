@@ -52,4 +52,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
   return nullptr;
 }
 
+void TreeLearner::updateMemoryForLeaf(double val) {
+  return;
+}
 }  // namespace LightGBM
