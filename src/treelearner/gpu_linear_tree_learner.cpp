@@ -2,6 +2,9 @@
  * Copyright (c) 2024 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
+
+#ifdef USE_GPU
+
 #include "gpu_linear_tree_learner.h"
 
 #include <Eigen/Dense>
@@ -379,3 +382,6 @@ void GPULinearTreeLearner::CalculateLinear(Tree* tree, bool is_refit, const scor
   }
 }
 }  // namespace LightGBM
+
+
+#endif  // USE_GPU
