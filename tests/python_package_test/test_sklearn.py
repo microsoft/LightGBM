@@ -1443,10 +1443,16 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
     more_tags = est._more_tags()
     err_msg = "List of supported X_types has changed. Update LGBMModel.__sklearn__tags() to match."
     assert more_tags["X_types"] == ["2darray", "sparse", "1dlabels"], err_msg
-    sklearn_tags = est.__sklearn_tags__()
-    # these tests should be run unconditionally (no 'if') once lightgbm's
-    # minimum scikit-learn version is 1.6 or higher
-    if sklearn_tags is not None:
+    # the try-except part of this should be removed once lightgbm's
+    # minimum supported scikit-learn version is at least 1.6
+    try:
+        sklearn_tags = est.__sklearn_tags__()
+    except AttributeError as err:
+        # only the exact error we expected to be raised should be raised
+        assert bool(re.search(r"__sklearn_tags__.* should not be called", err))
+    else:
+        # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
+        # and so the actual effects of __sklearn_tags__() should be tested
         assert sklearn_tags.input_tags.allow_nan is True
         assert sklearn_tags.input_tags.sparse is True
         assert sklearn_tags.target_tags.one_d_labels is True

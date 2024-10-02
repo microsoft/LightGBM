@@ -1,7 +1,7 @@
 # coding: utf-8
 """Compatibility library."""
 
-from typing import Any, List
+from typing import TYPE_CHECKING, Any, List
 
 # scikit-learn is intentionally imported first here,
 # see https://github.com/microsoft/LightGBM/issues/6509
@@ -73,6 +73,16 @@ except ImportError:
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
+
+# additional scikit-learn imports only for type hints
+if TYPE_CHECKING:
+    # sklearn.utils.Tags can be imported unconditionally once
+    # lightgbm's minimum scikit-learn version is 1.6 or higher
+    try:
+        from sklearn.utils import Tags as _sklearn_Tags
+    except ImportError:
+        _sklearn_Tags = None
+
 
 """pandas"""
 try:

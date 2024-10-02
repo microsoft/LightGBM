@@ -47,12 +47,8 @@ from .compat import (
 from .engine import train
 
 if TYPE_CHECKING:
-    # sklearn.utils.Tags can be imported unconditionally once
-    # lightgbm's minimum scikit-learn version is 1.6 or higher
-    try:
-        from sklearn.utils import Tags as _sklearn_Tags
-    except ImportError:
-        _sklearn_Tags = None
+    from .compat import _sklearn_Tags
+
 
 __all__ = [
     "LGBMClassifier",
@@ -711,8 +707,14 @@ class LGBMModel(_LGBMModelBase):
     def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
         # _LGBMModelBase.__sklearn_tags__() cannot be called unconditionally,
         # because that method isn't defined for scikit-learn<1.6
-        if not callable(getattr(_LGBMModelBase, "__sklearn_tags__", None)):
-            return None
+        if not hasattr(self, "__sklearn_tags__"):
+            from sklearn import __version__ as sklearn_version
+
+            err_msg = (
+                "__sklearn_tags__() should not be called when using scikit-learn<1.6. "
+                f"detected version: {sklearn_version}"
+            )
+            raise AttributeError(err_msg)
 
         # take whatever tags are provided by BaseEstimator, then modify
         # them with LightGBM-specific values
@@ -1218,7 +1220,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
     def _more_tags(self) -> Dict[str, Any]:
-        # handle the case where ClassifierMixin possibly provides _more_tags()
+        # handle the case where RegressorMixin possibly provides _more_tags()
         if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
             tags = _LGBMRegressorBase._more_tags(self)
         else:
@@ -1227,7 +1229,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         tags.update(LGBMModel._more_tags(self))
         return tags
 
-    def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
         return LGBMModel.__sklearn_tags__(self)
 
     def fit(  # type: ignore[override]
@@ -1286,7 +1288,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         tags.update(LGBMModel._more_tags(self))
         return tags
 
-    def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
         return LGBMModel.__sklearn_tags__(self)
 
     def fit(  # type: ignore[override]
