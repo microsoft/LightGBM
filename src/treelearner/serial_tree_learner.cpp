@@ -78,25 +78,12 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
     cegb_.reset(new CostEfficientGradientBoosting(this));
     cegb_->Init();
   }
+  /*[tinygbdt] BEGIN: Initializing global variables */
   if (MemoryRestrictedForest::IsEnable(config_)) {
     mrf_.reset(new MemoryRestrictedForest(this));
-    mrf_->Init(config_->tinygbdt_forestsize);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
   }
-
-  /*[tinygbdt] BEGIN: Initializing global variables */
-  features_used_global_.clear();
-  features_used_global_.resize(train_data->num_features());
-  splits_used_global_.clear();
-  /*! \brief storing fully grown tree
-  *  naive approach using a simple array, probably better use vector (combined with structs)  
-  *  TODO: catch the case that num_iterations and max_depth are not set (e.g. only init if certain param is set that defaults them to non-zero values)
-  */
-  // number of nodes for a fully grown tree 
-  int nodes = pow(2.0, (1.0+(config_->max_depth)))-1;
-  // tree with num_iterations trees, nodes corresponding to max_depth and 2 variables (feature, split value)
-  int full_tree[config_->num_iterations][nodes][2];
   /*[tinygbdt] END */
-
 }
 
 void SerialTreeLearner::GetShareStates(const Dataset* dataset,
@@ -157,7 +144,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
     cegb_->Init();
   }
   if (mrf_ != nullptr) {
-    mrf_->Init(config_->tinygbdt_forestsize);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
   }
 }
 
@@ -201,7 +188,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     if (mrf_ == nullptr) {
       mrf_.reset(new MemoryRestrictedForest(this));
     }
-    mrf_->Init(config_->tinygbdt_forestsize);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
@@ -265,35 +252,12 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
-  // [tinygbdt]
+  /*[tinygbdt] BEGIN */
   if (mrf_ != nullptr) {
-    int precision = (int)(config_->tinygbdt_forestsize);
-    std::vector<float> tug = mrf_->thresholds_used_global_;
-    Log::Debug("No. of split values used: %d, first value: %d", tug.size(), tug[0]);
+    int precision = (int)(config_->tinygbdt_precision);
     tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, precision);
   }
-
-
-  Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
-
-  std::stringstream ss_f;
-  int total_features = 0;
-  for(size_t i = 0; i < features_used_global_.size(); ++i)
-  {
-    if(i != 0) {
-      ss_f << " ";
-    }
-    ss_f << features_used_global_[i];
-    if (features_used_global_[i] != 0) {
-      total_features++;
-    }    
-  }
-  std::string s_f = ss_f.str();
-  // std::cout << s_f << std::endl;
-  Log::Debug("Times a feature was used: %s", s_f.c_str());  
-  Log::Debug("No. of features used: %d", total_features); 
-  Log::Debug("Total split points: %u", std::accumulate(splits_used_global_.begin(), splits_used_global_.end(), 0)); 
-  Log::Debug("#Split values used: %u", splits_used_global_.size());
+  /*[tinygbdt] END */
 
   return tree.release();
 }
@@ -828,18 +792,6 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
   const int inner_feature_index =
       train_data_->InnerFeatureIndex(best_split_info.feature);
 
-  /*[tinygbdt] BEGIN: update feature and split usage*/
-  // TODO: check if this is the right place to update the variables or if they are altered during the split and should be updated in the end
-  features_used_global_[best_split_info.feature] += 1;
-  splits_used_global_.insert(best_split_info.threshold);
-
-  // TODO: is this threshold the best gain threshold and not the split value?
-  Log::Debug("Best split. Feature: %d, Threshold: %f, Gain: %f", 
-              best_split_info.feature, best_split_info.threshold, best_split_info.gain);
-
-  /*[tinygbdt] END*/
-
-
   if (cegb_ != nullptr) {
     cegb_->UpdateLeafBestSplits(tree, best_leaf, &best_split_info,
                                 &best_split_per_leaf_);
@@ -1081,7 +1033,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(train_data_, bin_mapper, con_mem, threshold, real_fidx);
+    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
     float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
     // TODO find some fancy way to include the leftovermemory.
