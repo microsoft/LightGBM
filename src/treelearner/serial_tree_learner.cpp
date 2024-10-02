@@ -238,10 +238,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
-      if (MemoryRestrictedForest::IsEnable(config_)) {
-        // The value inserted but Shrinkage and addBias are still applied so the float is most likely not used...
-        mrf_->InsertLeafInformation(tree_ptr->LeafOutput(best_leaf));
-      }
       Log::Warning("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
       break;
     }

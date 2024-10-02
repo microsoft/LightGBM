@@ -44,19 +44,16 @@ namespace LightGBM {
     }
     void InsertLeavesInformation(std::vector<double> leaf_value_) {
       for (double leaf_value : leaf_value_) {
-        InsertLeafInformation(static_cast<float>(leaf_value));
+        float n_leave_value = CalculateAndInsertThresholdVariability(static_cast<float>(leaf_value));
+        if (n_leave_value == static_cast<float>(leaf_value)) {
+          // value in the threshold table.
+          est_leftover_memory -= sizeof(float);
+        }
+        // reference in the "tree" table.
+        est_leftover_memory -= sizeof(short);
+        Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
+        // TODO insert in the data structure
       }
-    }
-    void InsertLeafInformation(float leaf_value) {
-      auto threshold_it = std::find(thresholds_used_global_.begin(),
-                                    thresholds_used_global_.end(), leaf_value);
-      Log::Debug("Leaf value inserted: %f", leaf_value);
-      // If the threshold is not present and cannot be adjusted to a close by threshold.
-      if (threshold_it == thresholds_used_global_.end()) {
-        est_leftover_memory -= sizeof(float);
-        thresholds_used_global_.push_back(leaf_value);
-      }
-      est_leftover_memory -= sizeof(short);
     }
 
     void InsertSplitInfo(const SplitInfo &best_split_info, const Tree *tree, int precision,
@@ -95,7 +92,6 @@ namespace LightGBM {
       con_mem.bytes = 2 * sizeof(short) + sizeof(float);
 
       std::vector<uint32_t>::iterator feature_it;
-
       std::vector<float>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
                                                             thresholds_used_global_.end(), threshold);
       feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
