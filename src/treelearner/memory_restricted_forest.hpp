@@ -9,7 +9,6 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
-#include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/log.h>
 
 #include <vector>
@@ -40,7 +39,7 @@ namespace LightGBM {
 
   class MemoryRestrictedForest {
   public:
-    explicit MemoryRestrictedForest(const TreeLearner *tree_learner)
+    explicit MemoryRestrictedForest(const SerialTreeLearner *tree_learner)
       : init_(false), tree_learner_(tree_learner) {
     }
     void InsertLeavesInformation(std::vector<double> leaf_value_) {
@@ -172,7 +171,7 @@ namespace LightGBM {
     bool init_;
     int est_leftover_memory{};
     double precision;
-    const TreeLearner *tree_learner_;
+    const SerialTreeLearner *tree_learner_;
     std::vector<threshold_info> threshold_feature_info;
 
     // TODO change this to short? or even smaller?
