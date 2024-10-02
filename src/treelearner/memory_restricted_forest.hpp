@@ -9,15 +9,10 @@
 
 #include <LightGBM/config.h>
 #include <LightGBM/dataset.h>
-#include <LightGBM/utils/common.h>
+#include <LightGBM/tree_learner.h>
 #include <LightGBM/utils/log.h>
-#include <LightGBM/utils/threading.h>
 
 #include <vector>
-
-#include "data_partition.hpp"
-#include "serial_tree_learner.h"
-#include "split_info.hpp"
 
 namespace LightGBM {
   struct consumed_memory {
@@ -45,10 +40,14 @@ namespace LightGBM {
 
   class MemoryRestrictedForest {
   public:
-    explicit MemoryRestrictedForest(const SerialTreeLearner *tree_learner)
+    explicit MemoryRestrictedForest(const TreeLearner *tree_learner)
       : init_(false), tree_learner_(tree_learner) {
     }
-
+    void InsertLeavesInformation(std::vector<double> leaf_value_) {
+      for (double leaf_value : leaf_value_) {
+        InsertLeafInformation(static_cast<float>(leaf_value));
+      }
+    }
     void InsertLeafInformation(float leaf_value) {
       auto threshold_it = std::find(thresholds_used_global_.begin(),
                                     thresholds_used_global_.end(), leaf_value);
@@ -141,9 +140,7 @@ namespace LightGBM {
       info.leftmost = minmax.getMin();
       info.rightmost = minmax.getMax();
       info.used = true;
-      if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.
-          end()) {
-        // If not found, add it to the vector.
+      if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.end()) {
         threshold_feature_info.push_back(info);
       }
     }
@@ -175,7 +172,7 @@ namespace LightGBM {
     bool init_;
     int est_leftover_memory{};
     double precision;
-    const SerialTreeLearner *tree_learner_;
+    const TreeLearner *tree_learner_;
     std::vector<threshold_info> threshold_feature_info;
 
     // TODO change this to short? or even smaller?

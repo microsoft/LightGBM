@@ -13,7 +13,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
 namespace LightGBM {
 
 #define kCategoricalMask (1)
@@ -88,7 +87,7 @@ class Tree {
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
-
+  inline std::vector<double> GetLeaves() { return leaf_value_; }
   /*! \brief Set the output of one leaf */
   inline void SetLeafOutput(int leaf, double output) {
     leaf_value_[leaf] = MaybeRoundToZero(output);

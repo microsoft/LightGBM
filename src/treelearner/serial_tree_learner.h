@@ -41,7 +41,6 @@ using json11_internal_lightgbm::Json;
 
 /*! \brief forward declaration */
 class CostEfficientGradientBoosting;
-class MemoryRestrictedForest;
 
 /*!
 * \brief Used for learning a tree by single machine
@@ -115,11 +114,13 @@ class SerialTreeLearner: public TreeLearner {
     }
   }
   void updateMemoryForLeaf(double val) override;
+  void updateMemoryForLeaf(std::vector<double> leaf_value_) override;
   void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
                        data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const override;
 
   /*! \brief Get output of parent node, used for path smoothing */
   double GetParentOutput(const Tree* tree, const LeafSplits* leaf_splits) const;
+  std::unique_ptr<MemoryRestrictedForest> mrf_;
 
  protected:
   void ComputeBestSplitForFeature(FeatureHistogram* histogram_array_,
@@ -243,7 +244,6 @@ class SerialTreeLearner: public TreeLearner {
   const Json* forced_split_json_;
   std::unique_ptr<TrainingShareStates> share_state_;
   std::unique_ptr<CostEfficientGradientBoosting> cegb_;
-  std::unique_ptr<MemoryRestrictedForest> mrf_;
   std::unique_ptr<GradientDiscretizer> gradient_discretizer_;
 };
 

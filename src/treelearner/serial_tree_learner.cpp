@@ -238,11 +238,14 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     const SplitInfo& best_leaf_SplitInfo = best_split_per_leaf_[best_leaf];
     // cannot split, quit
     if (best_leaf_SplitInfo.gain <= 0.0) {
+      if (MemoryRestrictedForest::IsEnable(config_)) {
+        // The value inserted but Shrinkage and addBias are still applied so the float is most likely not used...
+        mrf_->InsertLeafInformation(tree_ptr->LeafOutput(best_leaf));
+      }
       Log::Warning("No further splits with positive gain, best gain: %f", best_leaf_SplitInfo.gain);
       break;
     }
-    // split tree with best leaf
-    Log::Debug("best leaf: %d, left leaf: %i, right leaf: %u", best_leaf, left_leaf, right_leaf);
+    // split tree with best leaf 
     Split(tree_ptr, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
@@ -292,9 +295,6 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
     auto new_leaf_output = output * tree->shrinkage();
     double new_output = config_->refit_decay_rate * old_leaf_output + (1.0 - config_->refit_decay_rate) * new_leaf_output;
     tree->SetLeafOutput(i, new_output);
-    if (MemoryRestrictedForest::IsEnable(config_)) {
-      mrf_->InsertLeafInformation(new_output);
-    }
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
@@ -303,6 +303,11 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
 
 void SerialTreeLearner::updateMemoryForLeaf(double val) {
   mrf_->InsertLeafInformation(val);
+}
+void SerialTreeLearner::updateMemoryForLeaf(std::vector<double> leaf_value_) {
+  for (double leaf_value : leaf_value_) {
+    updateMemoryForLeaf(leaf_value);
+  }
 }
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
@@ -966,18 +971,11 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       data_size_t cnt_leaf_data = 0;
       auto index_mapper = data_partition_->GetIndexOnLeaf(i, &cnt_leaf_data);
       if (cnt_leaf_data > 0) {
-        // bag_mapper[index_mapper[i]]
         const double new_output = obj->RenewTreeOutput(output, residual_getter, index_mapper, bag_mapper, cnt_leaf_data);
         tree->SetLeafOutput(i, new_output);
-        if (MemoryRestrictedForest::IsEnable(config_)) {
-          mrf_->InsertLeafInformation(new_output);
-        }
       } else {
         CHECK_GT(num_machines, 1);
         tree->SetLeafOutput(i, 0.0);
-        if (MemoryRestrictedForest::IsEnable(config_)) {
-          mrf_->InsertLeafInformation(0.0);
-        }
         n_nozeroworker_perleaf[i] = 0;
       }
     }
@@ -991,9 +989,6 @@ void SerialTreeLearner::RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj
       n_nozeroworker_perleaf = Network::GlobalSum(&n_nozeroworker_perleaf);
       for (int i = 0; i < tree->num_leaves(); ++i) {
         tree->SetLeafOutput(i, outputs[i] / n_nozeroworker_perleaf[i]);
-        if (MemoryRestrictedForest::IsEnable(config_)) {
-          mrf_->InsertLeafInformation(outputs[i] / n_nozeroworker_perleaf[i]);
-        }
       }
     }
   }
@@ -1039,7 +1034,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     // TODO find some fancy way to include the leftovermemory.
     // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
     // However, the new_split just saves the bin id for the upper bound.
-    Log::Debug("Gain no penalty: %f", new_split.gain);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
         new_split.gain *= 0.92;
@@ -1053,7 +1047,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     if (percentual_leftovermemory <= 0.1) {
       new_split.gain = 0;
     }
-    Log::Debug("Gain with penalty: %f", new_split.gain);
   }
   /*[tinygbdt] END */
 
