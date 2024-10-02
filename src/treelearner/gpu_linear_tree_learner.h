@@ -138,6 +138,8 @@ class GPULinearTreeLearner: public GPUTreeLearner {
   }
 };
 
+#endif  // USE_GPU
+
 }  // namespace LightGBM
 
 #endif   // LightGBM_TREELEARNER_GPU_LINEAR_TREE_LEARNER_H_
