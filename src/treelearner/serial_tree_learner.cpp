@@ -306,7 +306,9 @@ void SerialTreeLearner::updateMemoryForLeaf(double val) {
 }
 void SerialTreeLearner::updateMemoryForLeaf(std::vector<double> leaf_value_) {
   for (double leaf_value : leaf_value_) {
-    updateMemoryForLeaf(leaf_value);
+    if (leaf_value != 0.0) {
+      updateMemoryForLeaf(leaf_value);
+    }
   }
 }
 

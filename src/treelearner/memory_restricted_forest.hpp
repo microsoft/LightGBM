@@ -50,7 +50,7 @@ namespace LightGBM {
     void InsertLeafInformation(float leaf_value) {
       auto threshold_it = std::find(thresholds_used_global_.begin(),
                                     thresholds_used_global_.end(), leaf_value);
-      Log::Debug("Leaf value inserted: %f\n", leaf_value);
+      Log::Debug("Leaf value inserted: %f", leaf_value);
       // If the threshold is not present and cannot be adjusted to a close by threshold.
       if (threshold_it == thresholds_used_global_.end()) {
         est_leftover_memory -= sizeof(float);

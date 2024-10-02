@@ -408,8 +408,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
       if (std::fabs(init_scores[cur_tree_id]) > kEpsilon) {
         new_tree->AddBias(init_scores[cur_tree_id]);
       }
-      // gets the tree lerner from new_tree
-      tree_learner_->updateMemoryForLeaf(new_tree->GetLeaves());
     } else {
       // only add default score one-time
       if (models_.size() < static_cast<size_t>(num_tree_per_iteration_)) {
@@ -424,6 +422,8 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         new_tree->AsConstantTree(init_scores[cur_tree_id]);
       }
     }
+    tree_learner_->updateMemoryForLeaf(new_tree->GetLeaves());
+
     // add model
     models_.push_back(std::move(new_tree));
   }
