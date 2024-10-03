@@ -31,16 +31,15 @@ from .compat import (
     SKLEARN_INSTALLED,
     LGBMNotFittedError,
     _LGBMAssertAllFinite,
-    _LGBMCheckArray,
     _LGBMCheckClassificationTargets,
     _LGBMCheckSampleWeight,
-    _LGBMCheckXY,
     _LGBMClassifierBase,
     _LGBMComputeSampleWeight,
     _LGBMCpuCount,
     _LGBMLabelEncoder,
     _LGBMModelBase,
     _LGBMRegressorBase,
+    _LGBMValidateData,
     dt_DataTable,
     pd_DataFrame,
 )
@@ -912,7 +911,21 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _X, _y = _LGBMValidateData(
+                self,
+                X,
+                y,
+                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
+                # We prefer to expose these via @property, to be able to raise a NotFittedError if they're accessed on an
+                # unfitted model... and so don't want to take on the complexity of defining setters and deleters for those.
+                reset=False,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row and 1-row inputs
+                ensure_min_samples=2,
+            )
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
@@ -1054,7 +1067,20 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
+            X = _LGBMValidateData(
+                self,
+                X,
+                # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
+                #
+                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
+                # We prefer to expose these via @property, to be able to raise a NotFittedError if they're accessed on an
+                # unfitted model... and so don't want to take on the complexity of defining setters and deleters for those.
+                reset=False,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+            )
         n_features = X.shape[1]
         if self._n_features != n_features:
             raise ValueError(

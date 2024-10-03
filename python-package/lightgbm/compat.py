@@ -29,6 +29,38 @@ try:
             check_consistent_length(sample_weight, X)
             return sample_weight
 
+    try:
+        from sklearn.utils.validation import validate_data
+    except ImportError:
+        # validate_data() was added in scikit-learn 1.6, this function roughly imitates it for older versions.
+        # It can be removed when lightbm's minimum scikit-learn version is at least 1.6.
+        def validate_data(
+            _estimator,
+            X,
+            y="no_validation",
+            reset: bool = False,
+            accept_sparse: bool = True,
+            # 'force_all_finite' was renamed to 'ensure_all_finite' in scikit-learn 1.6
+            ensure_all_finite: bool = False,
+            ensure_min_samples: int = 1,
+        ):
+            # NOTE: check_X_y() calls check_array() internally, so only need to call one or the other of them here
+            if isinstance(y, str) and y == "no_validation":
+                X = check_array(X, reset=reset, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
+            else:
+                check_X_y(
+                    X,
+                    y,
+                    reset=reset,
+                    accept_sparse=accept_sparse,
+                    force_all_finite=ensure_all_finite,
+                    ensure_min_samples=ensure_min_samples,
+                )
+                # this only needs to be updated at fit() time
+                _estimator.n_features_in_ = _estimator._n_features
+
+            return X, y
+
     SKLEARN_INSTALLED = True
     _LGBMBaseCrossValidator = BaseCrossValidator
     _LGBMModelBase = BaseEstimator
@@ -38,12 +70,12 @@ try:
     LGBMNotFittedError = NotFittedError
     _LGBMStratifiedKFold = StratifiedKFold
     _LGBMGroupKFold = GroupKFold
-    _LGBMCheckXY = check_X_y
     _LGBMCheckArray = check_array
     _LGBMCheckSampleWeight = _check_sample_weight
     _LGBMAssertAllFinite = assert_all_finite
     _LGBMCheckClassificationTargets = check_classification_targets
     _LGBMComputeSampleWeight = compute_sample_weight
+    _LGBMValidateData = validate_data
 except ImportError:
     SKLEARN_INSTALLED = False
 
@@ -67,12 +99,12 @@ except ImportError:
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
     _LGBMGroupKFold = None
-    _LGBMCheckXY = None
     _LGBMCheckArray = None
     _LGBMCheckSampleWeight = None
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
+    _LGBMValidateData = None
 
 # additional scikit-learn imports only for type hints
 if TYPE_CHECKING:
