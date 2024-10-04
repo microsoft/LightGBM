@@ -906,6 +906,14 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
+        # this needs to be set before calling _LGBMValidateData(), as that function uses
+        # self.n_features_in_ (the corresponding public attribute) to check that the input has
+        # the expected number of features
+        if isinstance(X, list):
+            self._n_features_in = len(X[0])
+        else:
+            self._n_features_in = X.shape[1]
+
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMValidateData(
                 self,
@@ -1018,6 +1026,13 @@ class LGBMModel(_LGBMModelBase):
             callbacks=callbacks,
         )
 
+        # This populates the property self.n_features_, the number of features in the fitted model,
+        # and so should only be set after fitting.
+        #
+        # The related property self._n_features_in, which populates self.n_features_in_,
+        # is set BEFORE fitting.
+        self._n_features = self._Booster.num_feature()
+
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
@@ -1059,7 +1074,7 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            X, _ = _LGBMValidateData(
+            X = _LGBMValidateData(
                 self,
                 X,
                 # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()

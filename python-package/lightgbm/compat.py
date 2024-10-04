@@ -48,22 +48,23 @@ try:
             # NOTE: check_X_y() calls check_array() internally, so only need to call one or the other of them here
             if isinstance(y, str) and y == "no_validation":
                 X = check_array(X, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
-            else:
-                X, y = check_X_y(
-                    X,
-                    y,
-                    accept_sparse=accept_sparse,
-                    force_all_finite=ensure_all_finite,
-                    ensure_min_samples=ensure_min_samples,
-                )
+                return X
 
-                # this only needs to be updated at fit() time
-                _estimator._n_features = X.shape[1]
-                _estimator._n_features_in = X.shape[1]
+            # if we reach here, we're validating features and labels
+            X, y = check_X_y(
+                X,
+                y,
+                accept_sparse=accept_sparse,
+                force_all_finite=ensure_all_finite,
+                ensure_min_samples=ensure_min_samples,
+            )
+
+            # this only needs to be updated at fit() time
+            _estimator._n_features_in = X.shape[1]
 
             # raise the same error that scikit-learn's `validate_data()` does on scikit-learn>=1.6
             n_features = X.shape[1]
-            if _estimator._n_features != n_features:
+            if _estimator.__sklearn_is_fitted__() and _estimator._n_features != n_features:
                 raise ValueError(
                     f"X has {n_features} features, but {_estimator.__class__.__name__} "
                     f"is expecting {_estimator._n_features} features as input."
