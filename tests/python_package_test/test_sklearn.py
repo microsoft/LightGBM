@@ -1449,7 +1449,7 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
         sklearn_tags = est.__sklearn_tags__()
     except AttributeError as err:
         # only the exact error we expected to be raised should be raised
-        assert bool(re.search(r"__sklearn_tags__.* should not be called", err))
+        assert bool(re.search(r"__sklearn_tags__.* should not be called", str(err)))
     else:
         # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
         # and so the actual effects of __sklearn_tags__() should be tested
@@ -1582,6 +1582,27 @@ def test_validate_features(task):
 
     # check that disabling the check doesn't raise the error
     model.predict(df2, validate_features=False)
+
+
+# LightGBM's 'predict_disable_shape_check' mechanism is intentionally not respected by
+# its scikit-learn estimators, for consistency with scikit-learn's own behavior.
+@pytest.mark.parametrize("predict_disable_shape_check", [True, False])
+def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disable_shape_check):
+    X, y, _ = _create_data(task="regression", n_features=4)
+    # train on the first 3 features
+    model = lgb.LGBMRegressor(n_estimators=5, num_leaves=7, verbose=-1).fit(X[:, :-1], y)
+
+    # more cols in X than features: error
+    with pytest.raises(ValueError, match="X has 4 features, but LGBMRegressor is expecting 3 features as input"):
+        model.predict(X, predict_disable_shape_check=predict_disable_shape_check)
+
+    # fewer cols in X than features: error
+    with pytest.raises(ValueError, match="X has 2 features, but LGBMRegressor is expecting 3 features as input"):
+        model.predict(X[:, :-2], predict_disable_shape_check=predict_disable_shape_check)
+
+    # same number of columns in both: no error
+    preds = model.predict(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
+    assert preds.shape == y.shape
 
 
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])

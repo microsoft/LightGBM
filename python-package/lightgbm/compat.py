@@ -38,26 +38,36 @@ try:
             _estimator,
             X,
             y="no_validation",
-            reset: bool = False,
             accept_sparse: bool = True,
             # 'force_all_finite' was renamed to 'ensure_all_finite' in scikit-learn 1.6
             ensure_all_finite: bool = False,
             ensure_min_samples: int = 1,
+            # trap other keyword arguments that only work on scikit-learn >=1.6, like 'reset'
+            **ignored_kwargs,
         ):
             # NOTE: check_X_y() calls check_array() internally, so only need to call one or the other of them here
             if isinstance(y, str) and y == "no_validation":
-                X = check_array(X, reset=reset, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
+                X = check_array(X, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
             else:
-                check_X_y(
+                X, y = check_X_y(
                     X,
                     y,
-                    reset=reset,
                     accept_sparse=accept_sparse,
                     force_all_finite=ensure_all_finite,
                     ensure_min_samples=ensure_min_samples,
                 )
+
                 # this only needs to be updated at fit() time
-                _estimator.n_features_in_ = _estimator._n_features
+                _estimator._n_features = X.shape[1]
+                _estimator._n_features_in = X.shape[1]
+
+            # raise the same error that scikit-learn's `validate_data()` does on scikit-learn>=1.6
+            n_features = X.shape[1]
+            if _estimator._n_features != n_features:
+                raise ValueError(
+                    f"X has {n_features} features, but {_estimator.__class__.__name__} "
+                    f"is expecting {_estimator._n_features} features as input."
+                )
 
             return X, y
 

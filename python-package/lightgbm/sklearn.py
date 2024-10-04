@@ -677,10 +677,6 @@ class LGBMModel(_LGBMModelBase):
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)",
-                "check_n_features_in_after_fitting": (
-                    "validate_data() was first added in scikit-learn 1.6 and lightgbm"
-                    "supports much older versions than that"
-                ),
             },
         }
 
@@ -706,7 +702,7 @@ class LGBMModel(_LGBMModelBase):
     def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
         # _LGBMModelBase.__sklearn_tags__() cannot be called unconditionally,
         # because that method isn't defined for scikit-learn<1.6
-        if not hasattr(self, "__sklearn_tags__"):
+        if not hasattr(_LGBMModelBase, "__sklearn_tags__"):
             from sklearn import __version__ as sklearn_version
 
             err_msg = (
@@ -940,10 +936,6 @@ class LGBMModel(_LGBMModelBase):
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
-        self._n_features = _X.shape[1]
-        # copy for consistency
-        self._n_features_in = self._n_features
-
         train_set = Dataset(
             data=_X,
             label=_y,
@@ -1067,7 +1059,7 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            X = _LGBMValidateData(
+            X, _ = _LGBMValidateData(
                 self,
                 X,
                 # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
@@ -1080,13 +1072,6 @@ class LGBMModel(_LGBMModelBase):
                 accept_sparse=True,
                 # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
                 ensure_all_finite=False,
-            )
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError(
-                "Number of features of the model must "
-                f"match the input. Model n_features_ is {self._n_features} and "
-                f"input n_features is {n_features}"
             )
         # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
