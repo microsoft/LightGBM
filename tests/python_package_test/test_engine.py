@@ -4509,3 +4509,26 @@ def test_quantized_training():
     quant_bst = lgb.train(bst_params, ds, num_boost_round=10)
     quant_rmse = np.sqrt(np.mean((quant_bst.predict(X) - y) ** 2))
     assert quant_rmse < rmse + 6.0
+
+
+def test_bagging_by_query_in_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
+    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
+    X_test, y_test = load_svmlight_file(str(rank_example_dir / "rank.test"))
+    q_test = np.loadtxt(str(rank_example_dir / "rank.test.query"))
+    params = {"objective": "lambdarank", "verbose": -1, "metric": "ndcg", "ndcg_eval_at": [5]}
+    lgb_train = lgb.Dataset(X_train, y_train, group=q_train, params=params)
+    lgb_test = lgb.Dataset(X_test, y_test, group=q_test, params=params)
+    gbm = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score = gbm.best_score["valid_0"]["ndcg@5"]
+
+    params.update({"bagging_by_query": True, "bagging_fraction": 0.1, "bagging_freq": 1})
+    gbm_bagging_by_query = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score_bagging_by_query = gbm_bagging_by_query.best_score["valid_0"]["ndcg@5"]
+
+    params.update({"bagging_by_query": False, "bagging_fraction": 0.1, "bagging_freq": 1})
+    gbm_no_bagging_by_query = lgb.train(params, lgb_train, num_boost_round=50, valid_sets=[lgb_test])
+    ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
+    assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
+    assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
