@@ -18,6 +18,13 @@ namespace LightGBM {
     int bytes;
     bool new_threshold;
     bool new_feature;
+    int tindex;
+    int findex;
+  };
+  struct Node {
+    bool leave;
+    int featurepointer;
+    int thresholdpointer;
   };
 
   struct threshold_info {
@@ -42,17 +49,20 @@ namespace LightGBM {
     explicit MemoryRestrictedForest(const SerialTreeLearner *tree_learner)
       : init_(false), tree_learner_(tree_learner) {
     }
+    void InsertLeafInformation(double leaf_value) {
+      float n_leave_value = CalculateAndInsertThresholdVariability(static_cast<float>(leaf_value));
+      if (n_leave_value == static_cast<float>(leaf_value)) {
+        // value in the threshold table.
+        est_leftover_memory -= sizeof(float);
+      }
+      // reference in the "tree" table.
+      est_leftover_memory -= sizeof(short);
+      Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
+      // TODO insert in the data structure
+    }
     void InsertLeavesInformation(std::vector<double> leaf_value_) {
       for (double leaf_value : leaf_value_) {
-        float n_leave_value = CalculateAndInsertThresholdVariability(static_cast<float>(leaf_value));
-        if (n_leave_value == static_cast<float>(leaf_value)) {
-          // value in the threshold table.
-          est_leftover_memory -= sizeof(float);
-        }
-        // reference in the "tree" table.
-        est_leftover_memory -= sizeof(short);
-        Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
-        // TODO insert in the data structure
+        InsertLeafInformation(leaf_value);
       }
     }
 
@@ -73,7 +83,7 @@ namespace LightGBM {
 
       consumed_memory con_mem = {};
       CalculateSplitMemoryConsumption(con_mem, threshold, feature);
-
+      // How do we know the order?
       if (con_mem.new_feature) {
         // If yes, only one int value is added.
         features_used_global_.push_back(feature);
@@ -85,7 +95,18 @@ namespace LightGBM {
       // Always the predict value adds to one double.
       est_leftover_memory -= con_mem.bytes;
     }
+    void InsertTreeInformation(const Tree *tree) {
 
+      for (int i = 0; i < tree->num_leaves_; i++) {
+        if (tree->leaf_value_[i] != 0.0f) {
+          consumed_memory con_mem = {};
+          CalculateSplitMemoryConsumption(con_mem, tree->leaf_value_[i], 0);
+          // TODO get PARENT ID.
+          Node node = {true, 0, con_mem.tindex};
+          forest_.push_back(node);
+        }
+      }
+    }
     float CalculateSplitMemoryConsumption(consumed_memory &con_mem, float threshold, uint32_t feature) {
       // Two integers to save the id of split and threshold in the overall structure and a float for the predict value.
       // TODO dependent on the size of the tree those could be encoded as chars. ( 0 -255 for unsigned chars) (unsigned short 65535)
@@ -98,6 +119,8 @@ namespace LightGBM {
       if (feature_it == features_used_global_.end()) {
         con_mem.bytes += sizeof(short);
         con_mem.new_feature = true;
+      } else {
+        con_mem.findex = std::distance(features_used_global_.begin(), feature_it);
       }
       // If the threshold is not present and cannot be adjusted to a close by threshold.
       if (threshold_it == thresholds_used_global_.end()) {
@@ -108,6 +131,8 @@ namespace LightGBM {
         } else {
           return possible_thres;
         }
+      } else {
+        con_mem.tindex = std::distance(thresholds_used_global_.begin(), threshold_it);
       }
       return threshold;
     }
@@ -175,6 +200,8 @@ namespace LightGBM {
     std::vector<u_int32_t> features_used_global_;
     /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
     std::vector<float> thresholds_used_global_;
+    /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
+    std::vector<Node> forest_;
   };
 }
 #endif //LIGHTGBM_MEMORY_RESTRICTED_FOREST_H
