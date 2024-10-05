@@ -48,7 +48,7 @@ try:
             # NOTE: check_X_y() calls check_array() internally, so only need to call one or the other of them here
             if isinstance(y, str) and y == "no_validation":
                 X = check_array(X, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
-                return X
+                return X  # noqa: RET504
 
             # if we reach here, we're validating features and labels
             X, y = check_X_y(
