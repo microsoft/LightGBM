@@ -115,7 +115,7 @@ jobs:
             --rm \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
-            python:3.12 \
+            python:3.13 \
             /bin/bash ./.ci/test-python-latest.sh
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
