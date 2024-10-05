@@ -932,9 +932,12 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        # `sklearn.utils.validation.validate_data()` expects self.n_features_in_ to already be set by the
-        # time it's called (if you call it with reset=True like LightGBM does), and the scikit-learn
-        # estimator checks complain if X.shape is accessed unconditionally
+        # Tf self.n_features_in_ is set to any value other than ``None``, then it needs to be populated
+        # before ``sklearn.utils.validation.validate_data()`` is called, to avoid an error about mismatched
+        # feature numbers being raised on the first call to ``fit()``.
+        #
+        # lightgbm initializes that property to -1, so it can be an integer throughout its entire life
+        # (to help with type-checking), so it needs to be updated here.
         self._n_features_in = _num_features_for_raw_input(X)
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
