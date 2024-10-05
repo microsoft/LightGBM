@@ -84,7 +84,6 @@ try:
     LGBMNotFittedError = NotFittedError
     _LGBMStratifiedKFold = StratifiedKFold
     _LGBMGroupKFold = GroupKFold
-    _LGBMCheckArray = check_array
     _LGBMCheckSampleWeight = _check_sample_weight
     _LGBMAssertAllFinite = assert_all_finite
     _LGBMCheckClassificationTargets = check_classification_targets
@@ -113,7 +112,6 @@ except ImportError:
     LGBMNotFittedError = ValueError
     _LGBMStratifiedKFold = None
     _LGBMGroupKFold = None
-    _LGBMCheckArray = None
     _LGBMCheckSampleWeight = None
     _LGBMAssertAllFinite = None
     _LGBMCheckClassificationTargets = None
