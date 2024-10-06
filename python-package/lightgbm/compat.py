@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, List
 # see https://github.com/microsoft/LightGBM/issues/6509
 """sklearn"""
 try:
+    from sklearn import __version__ as _sklearn_version
     from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
     from sklearn.preprocessing import LabelEncoder
     from sklearn.utils.class_weight import compute_sample_weight
@@ -117,6 +118,7 @@ except ImportError:
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
     _LGBMValidateData = None
+    _sklearn_version = None
 
 # additional scikit-learn imports only for type hints
 if TYPE_CHECKING:

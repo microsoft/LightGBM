@@ -40,6 +40,7 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     _LGBMValidateData,
+    _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
 )
@@ -729,11 +730,9 @@ class LGBMModel(_LGBMModelBase):
         # _LGBMModelBase.__sklearn_tags__() cannot be called unconditionally,
         # because that method isn't defined for scikit-learn<1.6
         if not hasattr(_LGBMModelBase, "__sklearn_tags__"):
-            from sklearn import __version__ as sklearn_version
-
             err_msg = (
                 "__sklearn_tags__() should not be called when using scikit-learn<1.6. "
-                f"detected version: {sklearn_version}"
+                f"detected version: {_sklearn_version}"
             )
             raise AttributeError(err_msg)
 

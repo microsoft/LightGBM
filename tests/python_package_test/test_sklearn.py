@@ -43,6 +43,7 @@ task_to_model_factory = {
     "multiclass-classification": lgb.LGBMClassifier,
     "regression": lgb.LGBMRegressor,
 }
+all_tasks = tuple(task_to_model_factory.keys())
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -1459,7 +1460,7 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
         assert sklearn_tags._xfail_checks == more_tags["_xfail_checks"]
 
 
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])
+@pytest.mark.parametrize("task", all_tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
     X, y, g = _create_data(task)
@@ -1563,7 +1564,7 @@ def test_default_n_jobs(tmp_path):
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])
+@pytest.mark.parametrize("task", all_tasks)
 def test_validate_features(task):
     X, y, g = _create_data(task, n_features=4)
     features = ["x1", "x2", "x3", "x4"]
@@ -1586,23 +1587,48 @@ def test_validate_features(task):
 
 # LightGBM's 'predict_disable_shape_check' mechanism is intentionally not respected by
 # its scikit-learn estimators, for consistency with scikit-learn's own behavior.
+@pytest.mark.parametrize("task", all_tasks)
 @pytest.mark.parametrize("predict_disable_shape_check", [True, False])
-def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disable_shape_check):
-    X, y, _ = _create_data(task="regression", n_features=4)
+def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disable_shape_check, task):
+    X, y, g = _create_data(task, n_features=4)
+    model_factory = task_to_model_factory[task]
+    fit_kwargs = {"X": X[:, :-1], "y": y}
+    if task == "ranking":
+        estimator_name = "LGBMRanker"
+        fit_kwargs.update({"group": g})
+    elif task == "regression":
+        estimator_name = "LGBMRegressor"
+    else:
+        estimator_name = "LGBMClassifier"
+
     # train on the first 3 features
-    model = lgb.LGBMRegressor(n_estimators=5, num_leaves=7, verbose=-1).fit(X[:, :-1], y)
+    model = model_factory(n_estimators=5, num_leaves=7, verbose=-1).fit(**fit_kwargs)
 
     # more cols in X than features: error
-    with pytest.raises(ValueError, match="X has 4 features, but LGBMRegressor is expecting 3 features as input"):
+    err_msg = f"X has 4 features, but {estimator_name} is expecting 3 features as input"
+    with pytest.raises(ValueError, match=err_msg):
         model.predict(X, predict_disable_shape_check=predict_disable_shape_check)
 
+    if estimator_name == "LGBMClassifier":
+        with pytest.raises(ValueError, match=err_msg):
+            model.predict_proba(X, predict_disable_shape_check=predict_disable_shape_check)
+
     # fewer cols in X than features: error
-    with pytest.raises(ValueError, match="X has 2 features, but LGBMRegressor is expecting 3 features as input"):
+    err_msg = f"X has 2 features, but {estimator_name} is expecting 3 features as input"
+    with pytest.raises(ValueError, match=err_msg):
         model.predict(X[:, :-2], predict_disable_shape_check=predict_disable_shape_check)
+
+    if estimator_name == "LGBMClassifier":
+        with pytest.raises(ValueError, match=err_msg):
+            model.predict_proba(X[:, :-2], predict_disable_shape_check=predict_disable_shape_check)
 
     # same number of columns in both: no error
     preds = model.predict(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
     assert preds.shape == y.shape
+
+    if estimator_name == "LGBMClassifier":
+        preds = model.predict(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
+        assert preds.shape == y.shape
 
 
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
