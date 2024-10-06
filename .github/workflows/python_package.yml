@@ -4,10 +4,10 @@ on:
   push:
     branches:
     - master
+    - test
   pull_request:
     branches:
     - master
-    - test
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
