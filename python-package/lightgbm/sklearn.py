@@ -937,7 +937,7 @@ class LGBMModel(_LGBMModelBase):
         #
         # lightgbm initializes that property to -1, so it can be an integer throughout its entire life
         # (to help with type-checking), so it needs to be updated here.
-        self._n_features_in = _num_features_for_raw_input(X)
+        # self._n_features_in = _num_features_for_raw_input(X)
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMValidateData(
@@ -947,7 +947,7 @@ class LGBMModel(_LGBMModelBase):
                 # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
                 # We prefer to expose these via @property, to be able to raise a NotFittedError if they're accessed on an
                 # unfitted model... and so don't want to take on the complexity of defining setters and deleters for those.
-                reset=False,
+                reset=True,
                 # allow any input type (this validation is done further down, in lgb.Dataset())
                 accept_sparse=True,
                 # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
@@ -1168,6 +1168,21 @@ class LGBMModel(_LGBMModelBase):
             raise LGBMNotFittedError("No n_features_in found. Need to call fit beforehand.")
         return self._n_features_in
 
+    @n_features_in_.setter
+    def n_features_in_(self, value: int) -> None:
+        """Set number of features found in passed-in dataset.
+
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn` expects to be able to directly
+        set this property in functions like ``validate_data()``.
+
+        .. note::
+
+            Do not call ``estimator.n_features_in_ = some_int`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        self._n_features_in = value
+
     @property
     def best_score_(self) -> _LGBM_BoosterBestScoreType:
         """:obj:`dict`: The best score of fitted model."""
@@ -1265,6 +1280,28 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
         return np.array(self.feature_name_)
+
+    @feature_names_in_.deleter
+    def feature_names_in_(self) -> None:
+        """Intercept calls to delete ``feature_names_in_``.
+
+        Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
+        on estimators when a new training dataset that doesn't have features is passed.
+        LightGBM automatically assigns feature names to such datasets
+        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
+
+        However, that behavior is coupled to ``scikit-learn`` automatically updating
+        ``n_features_in_`` in those same code paths, which is necessary for compliance
+        with its API (via argument ``reset`` to functions like ``validate_data()`` and
+        ``check_array()``).
+
+        .. note::
+
+            Do not call ``del estimator.feature_names_in_`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        pass
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
