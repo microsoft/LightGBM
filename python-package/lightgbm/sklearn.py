@@ -148,32 +148,6 @@ def _get_weight_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarra
     return weight
 
 
-def _num_features_for_raw_input(X: _LGBM_ScikitMatrixLike) -> int:
-    """Get number of features from raw input data.
-
-    Some ``scikit-learn`` versions accomplish this with a private function
-    ``sklearn.utils.validation._num_features()``. This is here to avoid depending on that.
-    """
-    # if a list, assume a list of lists where each item is one row of training data,
-    # and all rows have the same number of features
-    if isinstance(X, list):
-        return len(X[0])
-
-    # scikit-learn estimator checks error out if .shape is accessed unconditionally...
-    # but allow hard-coding an assumption that anything that isn't a list and doesn't have .shape
-    # must be convertible to something following the Array API via a __array__() method
-    if hasattr(X, "shape"):
-        X_shape = X.shape
-    else:
-        X_shape = X.__array__().shape
-
-    # this condition accounts for training on a 1-dimensional input
-    if len(X_shape) == 1:
-        return 1
-    else:
-        return X_shape[1]
-
-
 class _ObjectiveFunctionWrapper:
     """Proxy class for objective function."""
 
@@ -931,14 +905,6 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        # Tf self.n_features_in_ is set to any value other than ``None``, then it needs to be populated
-        # before ``sklearn.utils.validation.validate_data()`` is called, to avoid an error about mismatched
-        # feature numbers being raised on the first call to ``fit()``.
-        #
-        # lightgbm initializes that property to -1, so it can be an integer throughout its entire life
-        # (to help with type-checking), so it needs to be updated here.
-        # self._n_features_in = _num_features_for_raw_input(X)
-
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMValidateData(
                 self,
@@ -959,6 +925,9 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
+
+            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
+            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
