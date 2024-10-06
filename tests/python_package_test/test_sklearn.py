@@ -1442,7 +1442,7 @@ def test_sklearn_integration(estimator, check):
 def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimator_class):
     est = estimator_class()
     more_tags = est._more_tags()
-    err_msg = "List of supported X_types has changed. Update LGBMModel.__sklearn__tags() to match."
+    err_msg = "List of supported X_types has changed. Update LGBMModel.__sklearn_tags__() to match."
     assert more_tags["X_types"] == ["2darray", "sparse", "1dlabels"], err_msg
     # the try-except part of this should be removed once lightgbm's
     # minimum supported scikit-learn version is at least 1.6

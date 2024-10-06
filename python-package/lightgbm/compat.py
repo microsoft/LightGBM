@@ -34,7 +34,7 @@ try:
         from sklearn.utils.validation import validate_data
     except ImportError:
         # validate_data() was added in scikit-learn 1.6, this function roughly imitates it for older versions.
-        # It can be removed when lightbm's minimum scikit-learn version is at least 1.6.
+        # It can be removed when lightgbm's minimum scikit-learn version is at least 1.6.
         def validate_data(
             _estimator,
             X,
