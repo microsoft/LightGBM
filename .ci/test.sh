@@ -66,7 +66,7 @@ fi
 CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
-    mamba create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
+    conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
     cmake -B build -S . || exit 1
@@ -96,7 +96,7 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
-    mamba create -q -y -n $CONDA_ENV \
+    conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
         'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
@@ -117,10 +117,10 @@ if [[ $TASK == "lint" ]]; then
 fi
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
-    mamba env create \
-        -n $CONDA_ENV \
+    conda env create \
+        -n "${CONDA_ENV}" \
         --file ./docs/env.yml || exit 1
-    mamba install \
+    conda install \
         -q \
         -y \
         -n $CONDA_ENV \
@@ -158,7 +158,7 @@ else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
-mamba create \
+conda create \
     -y \
     -n $CONDA_ENV \
     --file "${CONDA_REQUIREMENT_FILE}" \
@@ -308,7 +308,7 @@ matplotlib.use\(\"Agg\"\)\
 ' plot_example.py  # prevent interactive window mode
     sed -i'.bak' 's/graph.render(view=True)/graph.render(view=False)/' plot_example.py
     # requirements for examples
-    mamba install -y -n $CONDA_ENV \
+    conda install -y -n $CONDA_ENV \
         'h5py>=3.10' \
         'ipywidgets>=8.1.2' \
         'notebook>=7.1.2'
