@@ -932,7 +932,7 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        # Tf self.n_features_in_ is set to any value other than ``None``, then it needs to be populated
+        # If self.n_features_in_ is set to any value other than ``None``, then it needs to be populated
         # before ``sklearn.utils.validation.validate_data()`` is called, to avoid an error about mismatched
         # feature numbers being raised on the first call to ``fit()``.
         #
