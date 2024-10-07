@@ -9,7 +9,7 @@
 #'   \item{\code{Feature}: Feature names in the model.}
 #'   \item{\code{Gain}: The total gain of this feature's splits.}
 #'   \item{\code{Cover}: The number of observation related to this feature.}
-#'   \item{\code{Frequency}: The number of times a feature splited in trees.}
+#'   \item{\code{Frequency}: The number of times a feature split in trees.}
 #' }
 #'
 #' @examples

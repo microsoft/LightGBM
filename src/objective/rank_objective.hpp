@@ -46,7 +46,7 @@ class RankingObjective : public ObjectiveFunction {
     position_ids_ = metadata.position_ids();
     // get number of different position ids
     num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
-    // get boundries
+    // get boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
       Log::Fatal("Ranking tasks require query information");

@@ -260,12 +260,12 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
       if (smaller_leaf_num_bits <= 16) {
         std::memcpy(input_buffer_.data() + buffer_write_start_pos_int16_[feature_index],
                     this->smaller_leaf_histogram_array_[feature_index].RawDataInt16(),
-                    this->smaller_leaf_histogram_array_[feature_index].SizeOfInt16Histgram());
+                    this->smaller_leaf_histogram_array_[feature_index].SizeOfInt16Histogram());
       } else {
         if (local_smaller_leaf_num_bits == 32) {
           std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
                       this->smaller_leaf_histogram_array_[feature_index].RawDataInt32(),
-                      this->smaller_leaf_histogram_array_[feature_index].SizeOfInt32Histgram());
+                      this->smaller_leaf_histogram_array_[feature_index].SizeOfInt32Histogram());
         } else {
           this->smaller_leaf_histogram_array_[feature_index].CopyFromInt16ToInt32(
             input_buffer_.data() + buffer_write_start_pos_[feature_index]);
@@ -274,7 +274,7 @@ void DataParallelTreeLearner<TREELEARNER_T>::FindBestSplits(const Tree* tree) {
     } else {
       std::memcpy(input_buffer_.data() + buffer_write_start_pos_[feature_index],
                 this->smaller_leaf_histogram_array_[feature_index].RawData(),
-                this->smaller_leaf_histogram_array_[feature_index].SizeOfHistgram());
+                this->smaller_leaf_histogram_array_[feature_index].SizeOfHistogram());
     }
   }
   global_timer.Stop("DataParallelTreeLearner::ReduceHistogram::Copy");

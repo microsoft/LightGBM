@@ -150,7 +150,7 @@ void CUDAHistogramConstructor::CalcConstructHistogramKernelDim(
   int* block_dim_y,
   const data_size_t num_data_in_smaller_leaf) {
   *block_dim_x = cuda_row_data_->max_num_column_per_partition();
-  *block_dim_y = NUM_THRADS_PER_BLOCK / cuda_row_data_->max_num_column_per_partition();
+  *block_dim_y = NUM_THREADS_PER_BLOCK / cuda_row_data_->max_num_column_per_partition();
   *grid_dim_x = cuda_row_data_->num_feature_partitions();
   *grid_dim_y = std::max(min_grid_dim_y_,
     ((num_data_in_smaller_leaf + NUM_DATA_PER_THREAD - 1) / NUM_DATA_PER_THREAD + (*block_dim_y) - 1) / (*block_dim_y));
