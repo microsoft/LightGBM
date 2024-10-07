@@ -1140,7 +1140,7 @@ class LGBMModel(_LGBMModelBase):
     def n_features_in_(self, value: int) -> None:
         """Set number of features found in passed-in dataset.
 
-        Starting with ``scikit-learn`` 1.6, ``scikit-learn` expects to be able to directly
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn`` expects to be able to directly
         set this property in functions like ``validate_data()``.
 
         .. note::
