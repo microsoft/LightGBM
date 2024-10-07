@@ -54,7 +54,7 @@ table(bank$y)
 
 ## Training the model
 
-The R package of LightGBM offers two functions to train a model:
+The R-package of LightGBM offers two functions to train a model:
 
 - `lgb.train()`: This is the main training logic. It offers full flexibility but requires a `Dataset` object created by the `lgb.Dataset()` function.
 - `lightgbm()`: Simpler, but less flexible. Data can be passed without having to bother with `lgb.Dataset()`.

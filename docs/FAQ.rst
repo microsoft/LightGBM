@@ -187,7 +187,7 @@ You can find LightGBM's logo in different file formats and resolutions `here <ht
 
 **Possible Cause**: This behavior may indicate that you have multiple OpenMP libraries installed on your machine and they conflict with each other, similarly to the ``FAQ #10``.
 
-If you are using any Python package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
+If you are using any Python-package that depends on ``threadpoolctl``, you also may see the following warning in your logs in this case:
 
 .. code-block:: console
 
@@ -228,10 +228,10 @@ which makes such failures more likely. See these discussions:
 * https://bugzilla.redhat.com/show_bug.cgi?id=1722181#c6
 * https://gcc.gcc.gnu.narkive.com/vOXMQqLA/failure-to-dlopen-libgomp-due-to-static-tls-data
 
-If you are experiencing this issue when using the ``lightgbm`` Python package, try upgrading
+If you are experiencing this issue when using the ``lightgbm`` Python-package, try upgrading
 to at least ``v4.6.0``.
 
-For older versions of the Python package, or for other LightGBM APIs, this issue can
+For older versions of the Python-package, or for other LightGBM APIs, this issue can
 often be avoided by loading ``libgomp.so.1``. That can be done directly by setting environment
 variable ``LD_PRELOAD``, like this:
 
@@ -261,9 +261,9 @@ R-package
 1. Any training command using LightGBM does not work after an error occurred during the training of a previous LightGBM model.
 ------------------------------------------------------------------------------------------------------------------------------
 
-In older versions of the R package (prior to ``v3.3.0``), this could happen occasionally and the solution was to run ``lgb.unloader(wipe = TRUE)`` to remove all LightGBM-related objects. Some conversation about this could be found in `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
+In older versions of the R-package (prior to ``v3.3.0``), this could happen occasionally and the solution was to run ``lgb.unloader(wipe = TRUE)`` to remove all LightGBM-related objects. Some conversation about this could be found in `Microsoft/LightGBM#698 <https://github.com/microsoft/LightGBM/issues/698>`__.
 
-That is no longer necessary as of ``v3.3.0``, and function ``lgb.unloader()`` has since been removed from the R package.
+That is no longer necessary as of ``v3.3.0``, and function ``lgb.unloader()`` has since been removed from the R-package.
 
 2. I used ``setinfo()``, tried to print my ``lgb.Dataset``, and now the R console froze!
 ----------------------------------------------------------------------------------------

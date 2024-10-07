@@ -24,7 +24,7 @@ if(NOT R_ARCH)
 endif()
 
 if(NOT ("${R_ARCH}" STREQUAL "x64"))
-  message(FATAL_ERROR "LightGBM's R package currently only supports 64-bit operating systems")
+  message(FATAL_ERROR "LightGBM's R-package currently only supports 64-bit operating systems")
 endif()
 
 # Creates R.lib and R.def in the build directory for linking with MSVC
