@@ -19,8 +19,8 @@ option(BUILD_CLI "Build the 'lightbgm' command-line interface in addition to lib
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(INSTALL_HEADERS "Install headers to CMAKE_INSTALL_PREFIX (e.g. '/usr/local/include')" ON)
-option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the Python package" OFF)
-option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R package" OFF)
+option(__BUILD_FOR_PYTHON "Set to ON if building lib_lightgbm for use with the Python-package" OFF)
+option(__BUILD_FOR_R "Set to ON if building lib_lightgbm for use with the R-package" OFF)
 option(__INTEGRATE_OPENCL "Set to ON if building LightGBM with the OpenCL ICD Loader and its dependencies included" OFF)
 
 cmake_minimum_required(VERSION 3.28)
@@ -60,9 +60,9 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(__BUILD_FOR_PYTHON OR __BUILD_FOR_R OR USE_SWIG)
-    # the SWIG wrapper, the Python and R package don't require the CLI
+    # the SWIG wrapper, the Python and R packages don't require the CLI
     set(BUILD_CLI OFF)
-    # installing the SWIG wrapper, the R and Python package shouldn't place LightGBM's headers
+    # installing the SWIG wrapper, the R and Python packages shouldn't place LightGBM's headers
     # outside of where the package is installed
     set(INSTALL_HEADERS OFF)
 endif()
@@ -497,7 +497,7 @@ endif()
 
 set(API_SOURCES "src/c_api.cpp")
 # Only build the R part of the library if building for
-# use with the R package
+# use with the R-package
 if(__BUILD_FOR_R)
   list(APPEND API_SOURCES "src/lightgbm_R.cpp")
 endif()

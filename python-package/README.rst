@@ -263,7 +263,7 @@ To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running t
 
   MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
-Then install the Python package using that library.
+Then install the Python-package using that library.
 
 .. code:: sh
 
