@@ -21,11 +21,6 @@ namespace LightGBM {
     int tindex;
     int findex;
   };
-  struct Node {
-    bool leave;
-    int featurepointer;
-    int thresholdpointer;
-  };
 
   struct threshold_info {
     float threshold;
@@ -66,8 +61,7 @@ namespace LightGBM {
       }
     }
 
-    void InsertSplitInfo(const SplitInfo &best_split_info, const Tree *tree, int precision,
-                         const Dataset *train_data_) {
+    void InsertSplitInfo(const Tree *tree, const Dataset *train_data_) {
       // ID of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0.
       // We need a split that might not have been inserted
       const int last_node_id = tree->num_leaves_ - 2;
@@ -95,18 +89,7 @@ namespace LightGBM {
       // Always the predict value adds to one double.
       est_leftover_memory -= con_mem.bytes;
     }
-    void InsertTreeInformation(const Tree *tree) {
 
-      for (int i = 0; i < tree->num_leaves_; i++) {
-        if (tree->leaf_value_[i] != 0.0f) {
-          consumed_memory con_mem = {};
-          CalculateSplitMemoryConsumption(con_mem, tree->leaf_value_[i], 0);
-          // TODO get PARENT ID.
-          Node node = {true, 0, con_mem.tindex};
-          forest_.push_back(node);
-        }
-      }
-    }
     float CalculateSplitMemoryConsumption(consumed_memory &con_mem, float threshold, uint32_t feature) {
       // Two integers to save the id of split and threshold in the overall structure and a float for the predict value.
       // TODO dependent on the size of the tree those could be encoded as chars. ( 0 -255 for unsigned chars) (unsigned short 65535)
@@ -200,8 +183,6 @@ namespace LightGBM {
     std::vector<u_int32_t> features_used_global_;
     /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
     std::vector<float> thresholds_used_global_;
-    /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
-    std::vector<Node> forest_;
   };
 }
 #endif //LIGHTGBM_MEMORY_RESTRICTED_FOREST_H
