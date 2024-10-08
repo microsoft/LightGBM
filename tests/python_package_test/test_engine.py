@@ -3812,6 +3812,34 @@ def test_predict_with_start_iteration():
     inner_test(X, y, params, early_stopping_rounds=None)
 
 
+@pytest.mark.parametrize("use_init_score", [False, True])
+def test_predict_stump(rng, use_init_score):
+    X, y = load_breast_cancer(return_X_y=True)
+    dataset_kwargs = {"data": X, "label": y}
+    if use_init_score:
+        dataset_kwargs.update({"init_score": rng.uniform(size=y.shape)})
+    bst = lgb.train(
+        train_set=lgb.Dataset(**dataset_kwargs),
+        params={"objective": "binary", "min_data_in_leaf": X.shape[0]},
+        num_boost_round=5,
+    )
+    # checking prediction from 1 iteration and the whole model, to prevent bugs
+    # of the form "a model of n stumps predicts n * initial_score"
+    preds_1 = bst.predict(X, raw_score=True, num_iteration=1)
+    preds_all = bst.predict(X, raw_score=True)
+    if use_init_score:
+        # if init_score was provided, a model of stumps should predict all 0s
+        all_zeroes = np.full_like(preds_1, fill_value=0.0)
+        np.testing.assert_allclose(preds_1, all_zeroes)
+        np.testing.assert_allclose(preds_all, all_zeroes)
+    else:
+        # if init_score was not provided, prediction for a model of stumps should be
+        # the "average" of the labels
+        y_avg = np.log(y.mean() / (1.0 - y.mean()))
+        np.testing.assert_allclose(preds_1, np.full_like(preds_1, fill_value=y_avg))
+        np.testing.assert_allclose(preds_all, np.full_like(preds_all, fill_value=y_avg))
+
+
 def test_average_precision_metric():
     # test against sklearn average precision metric
     X, y = load_breast_cancer(return_X_y=True)
