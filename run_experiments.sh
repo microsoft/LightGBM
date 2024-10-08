@@ -13,10 +13,19 @@ else
 fi
 
 cd experiments || exit
-"../lightgbm" config=train.conf > train.output
-echo "Training complete"
-"../lightgbm" config=predict.conf > predict.output
-echo "Prediction complete"
+if "../lightgbm" config=train.conf > train.output; then
+    echo "Training complete"
+else
+    echo "Training failed"
+    exit 1
+fi
+# echo "Training complete"
+if "../lightgbm" config=predict.conf > predict.output; then
+    echo "Prediction complete"
+else
+    echo "Prediction failed"
+    exit 1
+fi
 
 # cd ../..
 # python3 plot_model.py
