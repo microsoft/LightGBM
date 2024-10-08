@@ -321,7 +321,7 @@ for (submodule in list.dirs(
   , recursive = FALSE
 )) {
   # compute/ is a submodule with boost, only needed if
-  # building the R package with GPU support;
+  # building the R-package with GPU support;
   # eigen/ has a special treatment due to licensing aspects
   if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
     next
