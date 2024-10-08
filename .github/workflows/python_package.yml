@@ -42,20 +42,18 @@ jobs:
             task: bdist
             method: wheel
             python_version: '3.10'
-          # We're currently skipping MPI jobs on macOS, see https://github.com/microsoft/LightGBM/pull/6425
-          # for further details.
-          # - os: macos-13
-          #   task: mpi
-          #   method: source
-          #   python_version: '3.11'
-          # - os: macos-13
-          #   task: mpi
-          #   method: pip
-          #   python_version: '3.12'
-          # - os: macos-13
-          #   task: mpi
-          #   method: wheel
-          #   python_version: '3.9'
+          - os: macos-13
+            task: mpi
+            method: source
+            python_version: '3.11'
+          - os: macos-13
+            task: mpi
+            method: pip
+            python_version: '3.12'
+          - os: macos-13
+            task: mpi
+            method: wheel
+            python_version: '3.9'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -115,7 +113,7 @@ jobs:
             --rm \
             -v $(pwd):/opt/lgb-build \
             -w /opt/lgb-build \
-            python:3.11 \
+            python:3.12 \
             /bin/bash ./.ci/test-python-latest.sh
   test-oldest-versions:
     name: Python - oldest supported versions (ubuntu-latest)
