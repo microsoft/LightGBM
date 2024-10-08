@@ -36,7 +36,7 @@ class NCCLGBDT: public GBDT_T {
 
   void Boosting() override;
 
-  void RefitTree(const std::vector<std::vector<int>>& /*tree_leaf_prediction*/) override {
+  void RefitTree(const int* /*tree_leaf_prediction*/, const size_t /*nrow*/, const size_t /*ncol*/) override {
     Log::Fatal("RefitTree is not supported for NCCLGBDT.");
   }
 
