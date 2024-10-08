@@ -1,13 +1,13 @@
 #!/bin/sh
 
 # [description]
-#     Prepare a source distribution of the R package
+#     Prepare a source distribution of the R-package
 #     to be submitted to CRAN.
 #
 # [arguments]
 #
 #     --r-executable Customize the R executable used by `R CMD build`.
-#                    Useful if building the R package in an environment with
+#                    Useful if building the R-package in an environment with
 #                    non-standard builds of R, such as those provided in
 #                    https://github.com/wch/r-debug.
 #
@@ -83,7 +83,7 @@ cp \
     external_libs/fmt/include/fmt/*.h \
     "${TEMP_R_DIR}/src/include/LightGBM/utils/fmt"
 
-# including only specific files from Eigen, to keep the R package
+# including only specific files from Eigen, to keep the R-package
 # small and avoid redistributing code with licenses incompatible with
 # LightGBM's license
 EIGEN_R_DIR="${TEMP_R_DIR}/src/include/Eigen"
@@ -116,7 +116,7 @@ cd "${TEMP_R_DIR}"
     rm recreate-configure.sh
 
     # files only used by the lightgbm CLI aren't needed for
-    # the R package
+    # the R-package
     rm src/application/application.cpp
     rm src/include/LightGBM/application.h
     rm src/main.cpp
@@ -202,8 +202,12 @@ if ${BUILD_VIGNETTES} ; then
         rm -f ./lightgbm/src/utils/*.o
 
         echo "re-tarring ${TARBALL_NAME}"
+        # --no-xattrs is the default in GNU tar but not some distributions of BSD tar.
+        # Enable it here to avoid errors on macOS.
+        # ref: https://stackoverflow.com/a/74373784/3986677
         tar \
             -cz \
+            --no-xattrs \
             -f "${TARBALL_NAME}" \
             lightgbm \
         > /dev/null 2>&1
@@ -219,4 +223,4 @@ else
         lightgbm_r
 fi
 
-echo "Done building R package"
+echo "Done building R-package"

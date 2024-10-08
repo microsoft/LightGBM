@@ -6,6 +6,9 @@
 #' @param start_iteration Index (1-based) of the first boosting round to include in the output.
 #'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
 #'        means "return information about the fifth, sixth, and seventh trees".
+#'
+#'        \emph{New in version 4.4.0}
+#'
 #' @return
 #' A \code{data.table} with detailed information about model trees' nodes and leafs.
 #'

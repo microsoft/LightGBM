@@ -1,5 +1,13 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
+
+# This import causes lib_lightgbm.{dll,dylib,so} to be loaded.
+# It's intentionally done here, as early as possible, to avoid issues like
+# "libgomp.so.1: cannot allocate memory in static TLS block" on aarch64 Linux.
+#
+# For details, see the "cannot allocate memory in static TLS block" entry in docs/FAQ.rst.
+from .libpath import _LIB  # isort: skip
+
 import abc
 import ctypes
 import inspect
@@ -36,7 +44,6 @@ from .compat import (
     pd_DataFrame,
     pd_Series,
 )
-from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -156,6 +163,14 @@ _LGBM_SetFieldType = Union[
 
 ZERO_THRESHOLD = 1e-35
 
+_MULTICLASS_OBJECTIVES = {"multiclass", "multiclassova", "multiclass_ova", "ova", "ovr", "softmax"}
+
+
+class LightGBMError(Exception):
+    """Error thrown by LightGBM."""
+
+    pass
+
 
 def _is_zero(x: float) -> bool:
     return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
@@ -256,26 +271,13 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode("utf-8")))
 
 
-def _load_lib() -> ctypes.CDLL:
-    """Load LightGBM library."""
-    lib_path = find_lib_path()
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
-    lib.LGBM_GetLastError.restype = ctypes.c_char_p
+# connect the Python logger to logging in lib_lightgbm
+if not environ.get("LIGHTGBM_BUILD_DOC", False):
+    _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
-    lib.callback = callback(_log_callback)  # type: ignore[attr-defined]
-    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(lib.LGBM_GetLastError().decode("utf-8"))
-    return lib
-
-
-# we don't need lib_lightgbm while building docs
-_LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", False):
-    from unittest.mock import Mock  # isort: skip
-
-    _LIB = Mock(ctypes.CDLL)  # type: ignore
-else:
-    _LIB = _load_lib()
+    _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
+    if _LIB.LGBM_RegisterLogCallback(_LIB.callback) != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
 
 
 _NUMERIC_TYPES = (int, float, bool)
@@ -355,10 +357,10 @@ def _list_to_1d_numpy(
         array = data.ravel()
         return _cast_numpy_array_to_dtype(array, dtype)
     elif _is_1d_list(data):
-        return np.array(data, dtype=dtype, copy=False)
+        return np.asarray(data, dtype=dtype)
     elif isinstance(data, pd_Series):
         _check_for_bad_pandas_dtypes(data.to_frame().dtypes)
-        return np.array(data, dtype=dtype, copy=False)  # SparseArray should be supported as well
+        return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
             f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
@@ -549,14 +551,9 @@ class _TempFile:
             self.path.unlink()
 
 
-class LightGBMError(Exception):
-    """Error thrown by LightGBM."""
-
-    pass
-
-
 # DeprecationWarning is not shown by default, so let's create our own with higher level
-class LGBMDeprecationWarning(UserWarning):
+# ref: https://peps.python.org/pep-0565/#additional-use-case-for-futurewarning
+class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
@@ -726,7 +723,7 @@ def _convert_from_sliced_object(data: np.ndarray) -> np.ndarray:
 def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray]:
     """Get pointer of float numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -747,7 +744,7 @@ def _c_float_array(data: np.ndarray) -> Tuple[_ctypes_float_ptr, int, np.ndarray
 def _c_int_array(data: np.ndarray) -> Tuple[_ctypes_int_ptr, int, np.ndarray]:
     """Get pointer of int numpy array / list."""
     if _is_1d_list(data):
-        data = np.array(data, copy=False)
+        data = np.asarray(data)
     if _is_numpy_1d_array(data):
         data = _convert_from_sliced_object(data)
         assert data.flags.c_contiguous
@@ -1268,7 +1265,7 @@ class _InnerPredictor:
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
             data = np.array(mat.reshape(mat.size), dtype=np.float32)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
@@ -1741,7 +1738,15 @@ class _InnerPredictor:
 
 
 class Dataset:
-    """Dataset in LightGBM."""
+    """
+    Dataset in LightGBM.
+
+    LightGBM does not train on raw data.
+    It discretizes continuous features into histogram bins, tries to combine categorical features,
+    and automatically handles missing and infinite values.
+
+    This class handles that preprocessing, and holds that alternative representation of the input data.
+    """
 
     def __init__(
         self,
@@ -2283,9 +2288,9 @@ class Dataset:
 
         self._handle = ctypes.c_void_p()
         if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
         else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+            data = np.asarray(mat.reshape(mat.size), dtype=np.float32)
 
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
@@ -2330,7 +2335,7 @@ class Dataset:
             nrow[i] = mat.shape[0]
 
             if mat.dtype == np.float32 or mat.dtype == np.float64:
-                mats[i] = np.array(mat.reshape(mat.size), dtype=mat.dtype, copy=False)
+                mats[i] = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
             else:  # change non-float data to float data, need to copy
                 mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
 

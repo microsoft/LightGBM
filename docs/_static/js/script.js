@@ -29,7 +29,6 @@ $(function() {
             '#build-mpi-version',
             '#build-gpu-version',
             '#build-cuda-version',
-            '#build-hdfs-version',
             '#build-java-wrapper',
             '#build-c-unit-tests'
         ];

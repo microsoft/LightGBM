@@ -307,6 +307,46 @@ Booster <- R6::R6Class(
 
     },
 
+    # Number of trees per iteration
+    num_trees_per_iter = function() {
+
+      self$restore_handle()
+
+      trees_per_iter <- 1L
+      .Call(
+        LGBM_BoosterNumModelPerIteration_R
+        , private$handle
+        , trees_per_iter
+      )
+      return(trees_per_iter)
+
+    },
+
+    # Total number of trees
+    num_trees = function() {
+
+      self$restore_handle()
+
+      ntrees <- 0L
+      .Call(
+        LGBM_BoosterNumberOfTotalModel_R
+        , private$handle
+        , ntrees
+      )
+      return(ntrees)
+
+    },
+
+    # Number of iterations (= rounds)
+    num_iter = function() {
+
+      ntrees <- self$num_trees()
+      trees_per_iter <- self$num_trees_per_iter()
+
+      return(ntrees / trees_per_iter)
+
+    },
+
     # Get upper bound
     upper_bound = function() {
 
@@ -1309,6 +1349,8 @@ lgb.load <- function(filename = NULL, model_str = NULL) {
 #'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
 #'        means "save the fifth, sixth, and seventh tree"
 #'
+#'        \emph{New in version 4.4.0}
+#'
 #' @return lgb.Booster
 #'
 #' @examples
@@ -1372,6 +1414,8 @@ lgb.save <- function(
 #' @param start_iteration Index (1-based) of the first boosting round to dump.
 #'        For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
 #'        means "dump the fifth, sixth, and seventh tree"
+#'
+#'        \emph{New in version 4.4.0}
 #'
 #' @return json format of model
 #'

@@ -170,7 +170,12 @@ Dataset <- R6::R6Class(
 
             # Check if more categorical features were output over the feature space
             data_is_not_filename <- !is.character(private$raw_data)
-            if (data_is_not_filename && max(private$categorical_feature) > ncol(private$raw_data)) {
+            if (
+              data_is_not_filename
+              && !is.null(private$raw_data)
+              && is.null(private$used_indices)
+              && max(private$categorical_feature) > ncol(private$raw_data)
+            ) {
               stop(
                 "lgb.Dataset.construct: supplied a too large value in categorical_feature: "
                 , max(private$categorical_feature)
@@ -753,8 +758,13 @@ Dataset <- R6::R6Class(
 )
 
 #' @title Construct \code{lgb.Dataset} object
-#' @description Construct \code{lgb.Dataset} object from dense matrix, sparse matrix
-#'              or local file (that was created previously by saving an \code{lgb.Dataset}).
+#' @description LightGBM does not train on raw data.
+#'              It discretizes continuous features into histogram bins, tries to
+#'              combine categorical features, and automatically handles missing and
+#               infinite values.
+#'
+#'              The \code{Dataset} class handles that preprocessing, and holds that
+#'              alternative representation of the input data.
 #' @inheritParams lgb_shared_dataset_params
 #' @param data a \code{matrix} object, a \code{dgCMatrix} object,
 #'             a character representing a path to a text file (CSV, TSV, or LibSVM),
@@ -1049,6 +1059,9 @@ dimnames.lgb.Dataset <- function(x) {
 #' @title Slice a dataset
 #' @description Get a new \code{lgb.Dataset} containing the specified rows of
 #'              original \code{lgb.Dataset} object
+#'
+#'              \emph{Renamed from} \code{slice()} \emph{in 4.4.0}
+#'
 #' @param dataset Object of class \code{lgb.Dataset}
 #' @param idxset an integer vector of indices of rows needed
 #' @return constructed sub dataset

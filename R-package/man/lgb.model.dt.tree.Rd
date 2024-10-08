@@ -12,8 +12,10 @@ lgb.model.dt.tree(model, num_iteration = NULL, start_iteration = 1L)
 \item{num_iteration}{Number of iterations to include. NULL or <= 0 means use best iteration.}
 
 \item{start_iteration}{Index (1-based) of the first boosting round to include in the output.
-For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
-means "return information about the fifth, sixth, and seventh trees".}
+       For example, passing \code{start_iteration=5, num_iteration=3} for a regression model
+       means "return information about the fifth, sixth, and seventh trees".
+
+       \emph{New in version 4.4.0}}
 }
 \value{
 A \code{data.table} with detailed information about model trees' nodes and leafs.

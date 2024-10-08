@@ -45,6 +45,8 @@ Remove-From-Path ".*android.*"
 Remove-From-Path ".*Android.*"
 Remove-From-Path ".*chocolatey.*"
 Remove-From-Path ".*Chocolatey.*"
+Remove-From-Path ".*cmake.*"
+Remove-From-Path ".*CMake.*"
 Remove-From-Path ".*\\Git\\.*"
 Remove-From-Path "(?!.*pandoc.*).*hostedtoolcache.*"
 Remove-From-Path ".*Microsoft SDKs.*"
@@ -87,10 +89,12 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Check-Output $false
 }
+$env:CMAKE_VERSION = "3.30.0"
 
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
-$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;"+ $env:PATH
+$env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH
 if ([version]$env:R_VERSION -lt [version]"4.0") {
   $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
 } else {
@@ -112,11 +116,13 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
 cd $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
+[Void][System.IO.Directory]::CreateDirectory($env:CMAKE_PATH)
 
-# download R and RTools
-Write-Output "Downloading R and Rtools"
+# download R, RTools and CMake
+Write-Output "Downloading R, Rtools and CMake"
 Download-File-With-Retries -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
 Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+Download-File-With-Retries -url "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" -destfile "$env:CMAKE_PATH/cmake.zip"
 
 # Install R
 Write-Output "Installing R"
@@ -127,11 +133,18 @@ Write-Output "Installing Rtools"
 Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
 Write-Output "Done installing Rtools"
 
+Write-Output "Installing CMake"
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMAKE_PATH/cmake.zip", "$env:CMAKE_PATH") ; Check-Output $?
+# Remove old CMake shiped with RTools
+Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
+Write-Output "Done installing CMake"
+
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
 Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
-Write-Output "Building R package"
+Write-Output "Building R-package"
 
 # R CMD check is not used for MSVC builds
 if ($env:COMPILER -ne "MSVC") {
@@ -195,7 +208,6 @@ if ($env:COMPILER -ne "MSVC") {
   }
 
 } else {
-  $env:TMPDIR = $env:USERPROFILE  # to avoid warnings about incremental builds inside a temp directory
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
   Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
@@ -222,7 +234,7 @@ if ($checks_cnt -eq 0) {
   Check-Output $False
 }
 
-# Checking that we actually got the expected compiler. The R package has some logic
+# Checking that we actually got the expected compiler. The R-package has some logic
 # to fail back to MinGW if MSVC fails, but for CI builds we need to check that the correct
 # compiler was used.
 if ($env:R_BUILD_TYPE -eq "cmake") {
@@ -291,4 +303,4 @@ if ($env:COMPILER -eq "MSVC") {
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
 
-Write-Output "No issues were found checking the R package"
+Write-Output "No issues were found checking the R-package"

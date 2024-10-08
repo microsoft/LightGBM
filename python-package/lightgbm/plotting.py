@@ -1,5 +1,6 @@
 # coding: utf-8
 """Plotting library."""
+
 import math
 from copy import deepcopy
 from io import BytesIO

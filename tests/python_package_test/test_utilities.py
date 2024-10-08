@@ -31,7 +31,7 @@ def test_register_logger(tmp_path):
     eval_records = {}
     callbacks = [lgb.record_evaluation(eval_records), lgb.log_evaluation(2), lgb.early_stopping(10)]
     lgb.train(
-        {"objective": "binary", "metric": ["auc", "binary_error"]},
+        {"objective": "binary", "metric": ["auc", "binary_error"], "verbose": 1},
         lgb_train,
         num_boost_round=10,
         feval=dummy_metric,

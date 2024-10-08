@@ -59,8 +59,9 @@ Many of the examples in this page use functionality from ``numpy``. To run the e
 
 .. code:: python
 
-    data = np.random.rand(500, 10)  # 500 entities, each contains 10 features
-    label = np.random.randint(2, size=500)  # binary target
+    rng = np.random.default_rng()
+    data = rng.uniform(size=(500, 10))  # 500 entities, each contains 10 features
+    label = rng.integers(low=0, high=2, size=(500, ))  # binary target
     train_data = lgb.Dataset(data, label=label)
 
 **To load a scipy.sparse.csr\_matrix array into Dataset:**
@@ -139,7 +140,8 @@ It doesn't need to convert to one-hot encoding, and is much faster than one-hot 
 
 .. code:: python
 
-    w = np.random.rand(500, )
+    rng = np.random.default_rng()
+    w = rng.uniform(size=(500, ))
     train_data = lgb.Dataset(data, label=label, weight=w)
 
 or
@@ -147,7 +149,8 @@ or
 .. code:: python
 
     train_data = lgb.Dataset(data, label=label)
-    w = np.random.rand(500, )
+    rng = np.random.default_rng()
+    w = rng.uniform(size=(500, ))
     train_data.set_weight(w)
 
 And you can use ``Dataset.set_init_score()`` to set initial score, and ``Dataset.set_group()`` to set group/query data for ranking tasks.
@@ -249,7 +252,8 @@ A model that has been trained or loaded can perform predictions on datasets:
 .. code:: python
 
     # 7 entities, each contains 10 features
-    data = np.random.rand(7, 10)
+    rng = np.random.default_rng()
+    data = rng.uniform(size=(7, 10))
     ypred = bst.predict(data)
 
 If early stopping is enabled during training, you can get predictions from the best iteration with ``bst.best_iteration``:

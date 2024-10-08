@@ -7,8 +7,14 @@
 
 #include <LightGBM/c_api.h>
 
+#ifndef R_NO_REMAP
 #define R_NO_REMAP
+#endif
+
+#ifndef R_USE_C99_IN_CXX
 #define R_USE_C99_IN_CXX
+#endif
+
 #include <Rinternals.h>
 
 /*!
@@ -382,6 +388,28 @@ LIGHTGBM_C_EXPORT SEXP LGBM_BoosterRollbackOneIter_R(
 LIGHTGBM_C_EXPORT SEXP LGBM_BoosterGetCurrentIteration_R(
   SEXP handle,
   SEXP out
+);
+
+/*!
+ * \brief Get number of trees per iteration
+ * \param handle Booster handle
+ * \param out Number of trees per iteration
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumModelPerIteration_R(
+    SEXP handle,
+    SEXP out
+);
+
+/*!
+ * \brief Get total number of trees
+ * \param handle Booster handle
+ * \param out Total number of trees of Booster
+ * \return R NULL value
+ */
+LIGHTGBM_C_EXPORT SEXP LGBM_BoosterNumberOfTotalModel_R(
+    SEXP handle,
+    SEXP out
 );
 
 /*!

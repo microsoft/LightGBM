@@ -59,68 +59,66 @@
 
 }
 
+# [description]
+#
+#     Besides applying checks, this function
+#
+#         1. turns feature *names* into 1-based integer positions, then
+#         2. adds an extra list element with skipped features, then
+#         3. turns 1-based integer positions into 0-based positions, and finally
+#         4. collapses the values of each list element into a string like "[0, 1]".
+#
 .check_interaction_constraints <- function(interaction_constraints, column_names) {
-
-  # Convert interaction constraints to feature numbers
-  string_constraints <- list()
-
-  if (!is.null(interaction_constraints)) {
-
-    if (!methods::is(interaction_constraints, "list")) {
-        stop("interaction_constraints must be a list")
-    }
-    constraint_is_character_or_numeric <- sapply(
-        X = interaction_constraints
-        , FUN = function(x) {
-            return(is.character(x) || is.numeric(x))
-        }
-    )
-    if (!all(constraint_is_character_or_numeric)) {
-        stop("every element in interaction_constraints must be a character vector or numeric vector")
-    }
-
-    for (constraint in interaction_constraints) {
-
-      # Check for character name
-      if (is.character(constraint)) {
-
-          constraint_indices <- as.integer(match(constraint, column_names) - 1L)
-
-          # Provided indices, but some indices are not existing?
-          if (sum(is.na(constraint_indices)) > 0L) {
-            stop(
-              "supplied an unknown feature in interaction_constraints "
-              , sQuote(constraint[is.na(constraint_indices)])
-            )
-          }
-
-        } else {
-
-          # Check that constraint indices are at most number of features
-          if (max(constraint) > length(column_names)) {
-            stop(
-              "supplied a too large value in interaction_constraints: "
-              , max(constraint)
-              , " but only "
-              , length(column_names)
-              , " features"
-            )
-          }
-
-          # Store indices as [0, n-1] indexed instead of [1, n] indexed
-          constraint_indices <- as.integer(constraint - 1L)
-
-        }
-
-        # Convert constraint to string
-        constraint_string <- paste0("[", paste0(constraint_indices, collapse = ","), "]")
-        string_constraints <- append(string_constraints, constraint_string)
-    }
-
+  if (is.null(interaction_constraints)) {
+    return(list())
+  }
+  if (!identical(class(interaction_constraints), "list")) {
+    stop("interaction_constraints must be a list")
   }
 
-  return(string_constraints)
+  column_indices <- seq_along(column_names)
 
+  # Convert feature names to 1-based integer positions and apply checks
+  for (j in seq_along(interaction_constraints)) {
+    constraint <- interaction_constraints[[j]]
+
+    if (is.character(constraint)) {
+      constraint_indices <- match(constraint, column_names)
+    } else if (is.numeric(constraint)) {
+      constraint_indices <- as.integer(constraint)
+    } else {
+      stop("every element in interaction_constraints must be a character vector or numeric vector")
+    }
+
+    # Features outside range?
+    bad <- !(constraint_indices %in% column_indices)
+    if (any(bad)) {
+      stop(
+        "unknown feature(s) in interaction_constraints: "
+        , toString(sQuote(constraint[bad], q = "'"))
+      )
+    }
+
+    interaction_constraints[[j]] <- constraint_indices
+  }
+
+  # Add missing features as new interaction set
+  remaining_indices <- setdiff(
+    column_indices, sort(unique(unlist(interaction_constraints)))
+  )
+  if (length(remaining_indices) > 0L) {
+    interaction_constraints <- c(
+      interaction_constraints, list(remaining_indices)
+    )
+  }
+
+  # Turn indices 0-based and convert to string
+  for (j in seq_along(interaction_constraints)) {
+    interaction_constraints[[j]] <- paste0(
+      "[", paste0(interaction_constraints[[j]] - 1L, collapse = ","), "]"
+    )
+  }
+  return(interaction_constraints)
 }
 
 
