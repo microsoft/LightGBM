@@ -485,6 +485,9 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "tinygbdt_forestsize", &tinygbdt_forestsize);
   CHECK_GE(tinygbdt_forestsize, 0.0);
 
+  GetDouble(params, "tinygbdt_precision", &tinygbdt_precision);
+  CHECK_GE(tinygbdt_precision, 0.0);
+
   GetDouble(params, "cegb_tradeoff", &cegb_tradeoff);
   CHECK_GE(cegb_tradeoff, 0.0);
 

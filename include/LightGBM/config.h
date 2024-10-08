@@ -559,6 +559,10 @@ struct Config {
   double tinygbdt_forestsize = 0.0;
 
   // check = >=0.0
+  // desc = [tinygbdt] precision for merging float/threshold values
+  double tinygbdt_precision = 0.00002;
+
+  // check = >=0.0
   // desc = cost-effective gradient boosting multiplier for all penalties
   double cegb_tradeoff = 1.0;
 

@@ -274,7 +274,6 @@ class BinMapper {
     }
   
     MinMax minmax;
-    bin_minmax_values_.resize(num_bin_+1, minmax);
     #pragma omp critical
     {
       if (value < bin_minmax_values_[count].getMin()) {
