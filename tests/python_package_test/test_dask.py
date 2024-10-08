@@ -1442,7 +1442,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
 @pytest.mark.parametrize("task", tasks)
 @pytest.mark.parametrize("output", data_output)
-def test_init_score(task, output, cluster):
+def test_init_score(task, output, cluster, rng):
     if task == "ranking" and output == "scipy_csr_matrix":
         pytest.skip("LGBMRanker is not currently tested on sparse matrices")
 
@@ -1450,15 +1450,16 @@ def test_init_score(task, output, cluster):
         _, _, _, _, dX, dy, dw, dg = _create_data(objective=task, output=output, group=None)
 
         model_factory = task_to_dask_factory[task]
-        rnd = np.random.RandomState(42)
 
         params = {"n_estimators": 1, "num_leaves": 2, "time_out": 5}
-        num_classes = 3 if task == "multiclass-classification" else 1
+        num_classes = 1
+        if task == "multiclass-classification":
+            num_classes = 3
 
         if output.startswith("dataframe"):
-            init_scores = dy.map_partitions(lambda x: pd.DataFrame(rnd.uniform(size=(x.size, num_classes))))
+            init_scores = dy.map_partitions(lambda x: pd.DataFrame(rng.uniform(size=(x.size, num_classes))))
         else:
-            init_scores = dy.map_blocks(lambda x: rnd.uniform(size=(x.size, num_classes)))
+            init_scores = dy.map_blocks(lambda x: rng.uniform(size=(x.size, num_classes)))
 
         model = model_factory(client=client, **params)
         model.fit(dX, dy, sample_weight=dw, group=dg)

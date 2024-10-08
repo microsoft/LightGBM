@@ -251,12 +251,16 @@ def assert_subtree_valid(root):
     right_child = root["right_child"]
     (l_w, l_c) = assert_subtree_valid(left_child)
     (r_w, r_c) = assert_subtree_valid(right_child)
-    assert np.allclose(root["internal_weight"], l_w + r_w)
-    assert np.allclose(root["internal_count"], l_c + r_c)
+    assert (
+        abs(root["internal_weight"] - (l_w + r_w)) <= 1e-3
+    ), "root node's internal weight should be exactly the sum of its child nodes' internal counts"
+    assert (
+        root["internal_count"] == l_c + r_c
+    ), "root node's internal count should be exactly the sum of its child nodes' internal counts"
     return (root["internal_weight"], root["internal_count"])
 
 
 def assert_all_trees_valid(model_dump):
     for idx, tree in enumerate(model_dump["tree_info"]):
-        assert tree["tree_index"] == idx
+        assert tree["tree_index"] == idx, f"tree {idx} should have tree_index={idx}. Full tree: {tree}"
         assert_subtree_valid(tree["tree_structure"])
