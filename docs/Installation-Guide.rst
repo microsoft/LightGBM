@@ -150,6 +150,15 @@ Install Using ``Homebrew``
 
   brew install lightgbm
 
+Install Using ``Pip``
+**************************
+
+.. code:: sh
+
+  pip install lightgbm
+
+
+
 Build from GitHub
 *****************
 
