@@ -298,7 +298,9 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
 }
 
 void SerialTreeLearner::updateMemoryForLeaf(double val) {
-  mrf_->InsertLeafInformation(val);
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    mrf_->InsertLeafInformation(val);
+  }
 }
 void SerialTreeLearner::updateMemoryForLeaf(std::vector<double> leaf_value_) {
   for (double leaf_value : leaf_value_) {
@@ -948,7 +950,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
   if (mrf_ != nullptr) {
-    mrf_->InsertSplitInfo(best_split_info, tree, (int)config_->tinygbdt_forestsize, train_data_);
+    mrf_->InsertSplitInfo(tree, train_data_);
   }
 }
 
@@ -1034,12 +1036,12 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     // However, the new_split just saves the bin id for the upper bound.
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
-        new_split.gain *= 0.92;
+        new_split.gain *= 0.95;
       else 
-        new_split.gain *= 0.94;
+        new_split.gain *= 0.97;
     } else {
       if (con_mem.new_feature)
-        new_split.gain *= 0.98;
+        new_split.gain *= 0.99;
     }
     // TODO Find a way to abort calculation. And still add the leaves This is just a quick fix!!
     if (percentual_leftovermemory <= 0.1) {
