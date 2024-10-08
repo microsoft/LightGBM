@@ -706,7 +706,7 @@ class LGBMModel(_LGBMModelBase):
         if not hasattr(_LGBMModelBase, "__sklearn_tags__"):
             err_msg = (
                 "__sklearn_tags__() should not be called when using scikit-learn<1.6. "
-                f"detected version: {_sklearn_version}"
+                f"Detected version: {_sklearn_version}"
             )
             raise AttributeError(err_msg)
 
@@ -910,9 +910,6 @@ class LGBMModel(_LGBMModelBase):
                 self,
                 X,
                 y,
-                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
-                # We prefer to expose these via @property, to be able to raise a NotFittedError if they're accessed on an
-                # unfitted model... and so don't want to take on the complexity of defining setters and deleters for those.
                 reset=True,
                 # allow any input type (this validation is done further down, in lgb.Dataset())
                 accept_sparse=True,

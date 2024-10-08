@@ -1627,7 +1627,7 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
     assert preds.shape == y.shape
 
     if estimator_name == "LGBMClassifier":
-        preds = model.predict(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
+        preds = model.predict_proba(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
         assert preds.shape == y.shape
 
 
