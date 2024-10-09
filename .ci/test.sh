@@ -48,15 +48,18 @@ if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
 fi
 
 if [[ "$TASK" == "cpp-tests" ]]; then
+    cmake_args=(
+        -DBUILD_CPP_TEST=ON
+        -DUSE_OPENMP=OFF
+        -DUSE_DEBUG=ON
+    )
     if [[ $METHOD == "with-sanitizers" ]]; then
-        extra_cmake_opts="-DUSE_SANITIZER=ON"
+        cmake_args+=("-DUSE_SANITIZER=ON")
         if [[ -n $SANITIZERS ]]; then
-            extra_cmake_opts="$extra_cmake_opts -DENABLED_SANITIZERS=$SANITIZERS"
+            cmake_args+=("-DENABLED_SANITIZERS=$SANITIZERS")
         fi
-    else
-        extra_cmake_opts=""
     fi
-    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON "${extra_cmake_opts}"
+    cmake -B build -S . "${cmake_args[@]}"
     cmake --build build --target testlightgbm -j4 || exit 1
     ./testlightgbm || exit 1
     exit 0
