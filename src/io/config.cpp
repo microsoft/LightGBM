@@ -466,6 +466,11 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
                  "To suppress this warning, set data_sample_strategy=goss instead.");
   }
+
+  if (bagging_by_query && data_sample_strategy != std::string("bagging")) {
+    Log::Warning("bagging_by_query=true is only compatible with data_sample_strategy=bagging. Setting bagging_by_query=false.");
+    bagging_by_query = false;
+  }
 }
 
 std::string Config::ToString() const {

@@ -9,7 +9,7 @@ from scipy import sparse
 try:
     from lightgbm.basic import _LIB as LIB
 except ModuleNotFoundError:
-    print("Could not import lightgbm Python package, looking for lib_lightgbm at the repo root")
+    print("Could not import lightgbm Python-package, looking for lib_lightgbm at the repo root")
     if system() in ("Windows", "Microsoft"):
         lib_file = Path(__file__).absolute().parents[2] / "Release" / "lib_lightgbm.dll"
     else:
