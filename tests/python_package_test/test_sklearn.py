@@ -1628,7 +1628,7 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
 
     if estimator_name == "LGBMClassifier":
         preds = model.predict_proba(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
-        assert preds.shape == y.shape
+        assert preds.shape[0] == y.shape[0]
 
 
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
