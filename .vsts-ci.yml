@@ -286,7 +286,7 @@ jobs:
     OS_NAME: 'macos'
     PRODUCES_ARTIFACTS: 'true'
   pool:
-    vmImage: 'macOS-12'
+    vmImage: 'macOS-13'
   strategy:
     matrix:
       regular:
