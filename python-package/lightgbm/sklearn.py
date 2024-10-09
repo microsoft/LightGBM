@@ -1077,6 +1077,8 @@ class LGBMModel(_LGBMModelBase):
                 accept_sparse=True,
                 # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
                 ensure_all_finite=False,
+                # raise an error on 0-row inputs
+                ensure_min_samples=1,
             )
         # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction

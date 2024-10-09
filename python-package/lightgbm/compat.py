@@ -68,7 +68,12 @@ try:
 
             # NOTE: check_X_y() calls check_array() internally, so only need to call one or the other of them here
             if no_val_y:
-                X = check_array(X, accept_sparse=accept_sparse, force_all_finite=ensure_all_finite)
+                X = check_array(
+                    X,
+                    accept_sparse=accept_sparse,
+                    force_all_finite=ensure_all_finite,
+                    ensure_min_samples=ensure_min_samples,
+                )
             else:
                 X, y = check_X_y(
                     X,
