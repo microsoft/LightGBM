@@ -3,9 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_GPU
-
 #include "gpu_linear_tree_learner.h"
+
+#ifdef USE_GPU
 
 #include <Eigen/Dense>
 
