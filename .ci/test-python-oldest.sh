@@ -30,7 +30,7 @@ pip freeze
 echo ""
 echo "checking that examples run without error"
 
-# run a few examples to test that Python package minimally works
+# run a few examples to test that Python-package minimally works
 echo ""
 echo "--- advanced_example.py ---"
 echo ""

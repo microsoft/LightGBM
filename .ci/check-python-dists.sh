@@ -8,7 +8,7 @@ DIST_DIR=${1}
 METHOD=${METHOD:-""}
 TASK=${TASK:-""}
 
-echo "checking Python package distributions in '${DIST_DIR}'"
+echo "checking Python-package distributions in '${DIST_DIR}'"
 
 pip install \
     -qq \
@@ -55,4 +55,4 @@ else
     echo "skipping pydistcheck (does not support Python 3.${PY_MINOR_VER})"
 fi
 
-echo "done checking Python package distributions"
+echo "done checking Python-package distributions"

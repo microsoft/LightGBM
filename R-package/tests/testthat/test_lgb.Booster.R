@@ -1111,7 +1111,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     )
     all_param_entries <- c(non_default_param_entries, default_param_entries)
 
-    # parameters should match what was passed from the R package
+    # parameters should match what was passed from the R-package
     model_str <- bst$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
     .expect_in(all_param_entries, params_in_file)
@@ -1176,7 +1176,7 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
     model_str <- bst$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
 
-    # parameters should match what was passed from the R package, and the "main" (non-alias)
+    # parameters should match what was passed from the R-package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
     expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
@@ -1406,7 +1406,7 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         model_str <- bst[["booster"]]$save_model_to_string()
         params_in_file <- .params_from_model_string(model_str = model_str)
 
-        # parameters should match what was passed from the R package, and the "main" (non-alias)
+        # parameters should match what was passed from the R-package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
         expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
