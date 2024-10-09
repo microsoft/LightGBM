@@ -22,7 +22,7 @@ dependencies = [
     "numpy>=1.17.0",
     "scipy"
 ]
-description = "LightGBM Python Package"
+description = "LightGBM Python-package"
 license = {file = "LICENSE"}
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}

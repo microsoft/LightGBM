@@ -57,7 +57,7 @@ For more details on how to configure and use the LightGBM CLI, see https://light
 
 ## Running the Python-package Сontainer
 
-Build an image with the LightGBM Python package installed.
+Build an image with the LightGBM Python-package installed.
 
 ```shell
 mkdir lightgbm-docker
@@ -69,8 +69,8 @@ docker build \
     .
 ```
 
-Once that completes, the built image can be used to run LightGBM's Python package in a container.
-Run the following to produce a model using the Python package.
+Once that completes, the built image can be used to run LightGBM's Python-package in a container.
+Run the following to produce a model using the Python-package.
 
 ```shell
 # get training data
@@ -116,7 +116,7 @@ docker run \
 
 ## Running the R-package Сontainer
 
-Build an image with the LightGBM R package installed.
+Build an image with the LightGBM R-package installed.
 
 ```shell
 mkdir lightgbm-docker
@@ -129,8 +129,8 @@ docker build \
     .
 ```
 
-Once that completes, the built image can be used to run LightGBM's R package in a container.
-Run the following to produce a model using the R package.
+Once that completes, the built image can be used to run LightGBM's R-package in a container.
+Run the following to produce a model using the R-package.
 
 ```shell
 # get training data
