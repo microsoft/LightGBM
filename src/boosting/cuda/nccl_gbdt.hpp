@@ -133,7 +133,6 @@ class NCCLGBDT: public GBDT_T {
 
   std::vector<int> nccl_gpu_rank_;
   std::vector<ncclComm_t> nccl_communicators_;
-  std::vector<std::unique_ptr<TreeLearner>> per_gpu_tree_learners_;
 
   std::vector<std::unique_ptr<NCCLGBDTComponent>> nccl_gbdt_components_;
 };

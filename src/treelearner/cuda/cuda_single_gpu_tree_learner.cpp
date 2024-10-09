@@ -25,13 +25,13 @@ CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config, const b
 }
 
 CUDASingleGPUTreeLearner::~CUDASingleGPUTreeLearner() {
-  if (!boosting_on_cuda_) {
-    DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-    DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
-  }
-  if (nccl_communicator_ != nullptr) {
-    CUDAStreamDestroy(nccl_stream_);
-  }
+  // if (!boosting_on_cuda_) {
+  //   DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
+  //   DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  // }
+  // if (nccl_communicator_ != nullptr) {
+  //   CUDAStreamDestroy(nccl_stream_);
+  // }
 }
 
 void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {

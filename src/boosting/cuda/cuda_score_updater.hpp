@@ -33,7 +33,7 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   inline const double* score() const override {
     if (boosting_on_cuda_) {
-      return cuda_score_;
+      return cuda_score_.RawData();
     } else {
       return score_.data();
     }
