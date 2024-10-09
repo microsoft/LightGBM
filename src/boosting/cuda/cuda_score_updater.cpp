@@ -23,9 +23,9 @@ CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iterati
       Log::Fatal("Number of class for initial score error");
     }
     has_init_score_ = true;
-    CopyFromHostToCUDADevice<double>(cuda_score_, init_score, total_size, __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<double>(cuda_score_.RawData(), init_score, total_size, __FILE__, __LINE__);
   } else {
-    SetCUDAMemory<double>(cuda_score_, 0, static_cast<size_t>(total_size), __FILE__, __LINE__);
+    SetCUDAMemory<double>(cuda_score_.RawData(), 0, static_cast<size_t>(total_size), __FILE__, __LINE__);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   if (boosting_on_cuda_) {
@@ -36,12 +36,10 @@ CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iterati
 }
 
 void CUDAScoreUpdater::InitCUDA(const size_t total_size) {
-  AllocateCUDAMemory<double>(&cuda_score_, total_size, __FILE__, __LINE__);
+  cuda_score_.Resize(total_size);
 }
 
-CUDAScoreUpdater::~CUDAScoreUpdater() {
-  DeallocateCUDAMemory<double>(&cuda_score_, __FILE__, __LINE__);
-}
+CUDAScoreUpdater::~CUDAScoreUpdater() {}
 
 inline void CUDAScoreUpdater::AddScore(double val, int cur_tree_id) {
   Common::FunctionTimer fun_timer("CUDAScoreUpdater::AddScore", global_timer);

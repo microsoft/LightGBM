@@ -51,7 +51,7 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   void LaunchMultiplyScoreConstantKernel(const double val, const size_t offset);
 
-  double* cuda_score_;
+  CUDAVector<double> cuda_score_;
 
   const int num_threads_per_block_;
 
