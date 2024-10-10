@@ -20,11 +20,11 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   ~CUDAScoreUpdater();
 
-  inline void AddScore(double val, int cur_tree_id) override;
+  void AddScore(double val, int cur_tree_id) override;
 
   inline void AddScore(const Tree* tree, int cur_tree_id) override;
 
-  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) override;
+  void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) override;
 
   inline void AddScore(const Tree* tree, const data_size_t* data_indices,
                        data_size_t data_cnt, int cur_tree_id) override;

@@ -1371,6 +1371,18 @@ GPU Parameters
 
    -  **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
 
+-  ``num_gpus`` :raw-html:`<a id="num_gpus" title="Permalink to this parameter" href="#num_gpus">&#x1F517;&#xFE0E;</a>`, default = ``1``, type = int
+
+   -  Number of GPUs to use for training, used with device_type=cuda
+
+   -  When <= 0, only 1 GPU will be used
+
+-  ``gpu_device_id_list`` :raw-html:`<a id="gpu_device_id_list" title="Permalink to this parameter" href="#gpu_device_id_list">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = string
+
+   -  List of CUDA device IDs used when device_type=cuda
+
+   -  When empty, the devices with the smallest IDs will be used
+
 -  ``gpu_use_dp`` :raw-html:`<a id="gpu_use_dp" title="Permalink to this parameter" href="#gpu_use_dp">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
 
    -  set this to ``true`` to use double precision math on GPU (by default single precision is used)

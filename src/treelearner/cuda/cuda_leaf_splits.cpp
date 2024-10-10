@@ -43,7 +43,7 @@ void CUDALeafSplits::InitValues(
   cuda_hessians_ = cuda_hessians;
   cuda_sum_of_gradients_buffer_.SetValue(0);
   cuda_sum_of_hessians_buffer_.SetValue(0);
-  LaunchInitValuesKernal(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf);
+  LaunchInitValuesKernel(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf);
   CopyFromCUDADeviceToHost<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_.RawData(), 1, __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
@@ -57,7 +57,7 @@ void CUDALeafSplits::InitValues(
   const score_t* grad_scale, const score_t* hess_scale) {
   cuda_gradients_ = reinterpret_cast<const score_t*>(cuda_gradients_and_hessians);
   cuda_hessians_ = nullptr;
-  LaunchInitValuesKernal(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf, grad_scale, hess_scale);
+  LaunchInitValuesKernel(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf, grad_scale, hess_scale);
   CopyFromCUDADeviceToHost<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_.RawData(), 1, __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }

@@ -44,6 +44,8 @@ class CUDAColumnData {
 
   void* const* cuda_data_by_column() const { return cuda_data_by_column_; }
 
+  void* const* data_by_column() const { return data_by_column_.data(); }
+
   uint32_t feature_min_bin(const int feature_index) const { return feature_min_bin_[feature_index]; }
 
   uint32_t feature_max_bin(const int feature_index) const { return feature_max_bin_[feature_index]; }
