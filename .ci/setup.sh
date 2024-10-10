@@ -2,7 +2,7 @@
 
 set -e -E -u -o pipefail
 
-brew install cmake libomp
+brew install libomp cmake
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
