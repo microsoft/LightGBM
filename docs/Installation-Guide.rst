@@ -1122,7 +1122,7 @@ Apple Clang
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
 
-The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+The executable file will be in ``LightGBM/`` folder.
 
 Apple Clang and Ninja
 *********************
@@ -1142,7 +1142,7 @@ Apple Clang and Ninja
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
 
-The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+The executable file will be in ``LightGBM/`` folder.
 
 gcc
 ***
@@ -1163,7 +1163,7 @@ gcc
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
 
-The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+The executable file will be in ``LightGBM/`` folder.
 
 gcc and Ninja
 *************
@@ -1184,7 +1184,7 @@ gcc and Ninja
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
 
-The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+The executable file will be in ``LightGBM/`` folder.
 
 
 .. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
