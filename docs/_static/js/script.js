@@ -8,15 +8,12 @@ $(function() {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
-    /* Point to the same version of R API as the current docs version */
-    var current_version_elems = $('nav.wy-nav-side > * div.version');
-    if(current_version_elems.length !== 0) {
-        var current_version = $(current_version_elems[0]).text().trim();
-        if((current_version !== 'latest') && (window.location.pathname.toLocaleLowerCase().indexOf('/latest/') === -1)) {
-            $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
-                $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
-            });
-        }
+    /* Point to the same version of R API as the current docs branch */
+    var current_branch = window.location.pathname.toLocaleLowerCase().split('/')[2];
+    if(current_branch !== 'latest') {
+        $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
+            $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_branch + '/'); });
+        });
     }
 
     /* Collapse specified sections in the installation guide */
