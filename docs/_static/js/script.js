@@ -4,7 +4,7 @@ $(function() {
 
     /* List each class property item on a new line
        https://github.com/microsoft/LightGBM/issues/5073 */
-    if(window.location.pathname.toLocaleLowerCase().indexOf('pythonapi') != -1) {
+    if(window.location.pathname.toLocaleLowerCase().indexOf('pythonapi') !== -1) {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
@@ -12,7 +12,7 @@ $(function() {
     var current_version_elems = $('nav.wy-nav-side > * div.version');
     if(current_version_elems.length !== 0) {
         var current_version = $(current_version_elems[0]).text().trim();
-        if(current_version !== 'latest') {
+        if((current_version !== 'latest') && (window.location.pathname.toLocaleLowerCase().indexOf('/latest/') === -1)) {
             $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
                 $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
             });
