@@ -2,23 +2,14 @@
 
 set -e -E -u -o pipefail
 
-rm -rf /Users/runner/hostedtoolcache
-sudo rm -rf /Library/Java/JavaVirtualMachines/*
-
-brew install cmake openjdk swig gcc ninja
-export JAVA_HOME="$(brew --prefix openjdk)/libexec/openjdk.jdk/Contents/Home/"
+brew install cmake
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-export CXX=g++-14 CC=gcc-14  # replace "7" with version of gcc installed on your machine
-cmake -B build -S . -DUSE_SWIG=ON -G Ninja
-cmake --build build -j4
+cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+cmake --build build --target testlightgbm -j4
 
 ls
-
-echo "---"
-
-ls ./build
 
 #cd "./examples/regression/"
 #"../../lightgbm" config="train.conf"
