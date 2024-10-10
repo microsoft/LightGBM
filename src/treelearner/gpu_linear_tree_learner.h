@@ -21,6 +21,8 @@ class GPULinearTreeLearner: public GPUTreeLearner {
  public:
   explicit GPULinearTreeLearner(const Config* config) : GPUTreeLearner(config) {}
 
+  ~GPULinearTreeLearner() {}
+
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
   void InitLinear(const Dataset* train_data, const int max_leaves) override;
