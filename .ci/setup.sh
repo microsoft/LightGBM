@@ -5,8 +5,10 @@
 pwsh -v
 pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope AllUsers -Force -SkipPublisherCheck"
 
+git clone -b test-install https://github.com/microsoft/LightGBM
+
 read -r -d '' analyzer_cmd << EOM
-Invoke-ScriptAnalyzer -Path ./ -Severity Warning -Recurse -Outvariable issues
+Invoke-ScriptAnalyzer -Path ./LightGBM/.ci -Severity Warning -Recurse -Outvariable issues
 \$errors   = \$issues.Where({\$_.Severity -eq 'Error'})
 \$warnings = \$issues.Where({\$_.Severity -eq 'Warning'})
 if (\$errors) {
