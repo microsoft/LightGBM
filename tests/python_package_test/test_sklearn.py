@@ -36,12 +36,14 @@ from .utils import (
 )
 
 decreasing_generator = itertools.count(0, -1)
+estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
 task_to_model_factory = {
     "ranking": lgb.LGBMRanker,
     "binary-classification": lgb.LGBMClassifier,
     "multiclass-classification": lgb.LGBMClassifier,
     "regression": lgb.LGBMRegressor,
 }
+all_tasks = tuple(task_to_model_factory.keys())
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -1311,7 +1313,7 @@ def test_check_is_fitted():
         check_is_fitted(model)
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 @pytest.mark.parametrize("max_depth", [3, 4, 5, 8])
 def test_max_depth_warning_is_never_raised(capsys, estimator_class, max_depth):
     X, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
@@ -1390,7 +1392,7 @@ def test_fit_only_raises_num_rounds_warning_when_expected(capsys):
     assert_silent(capsys)
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 def test_getting_feature_names_in_np_input(estimator_class):
     # input is a numpy array, which doesn't have feature names. LightGBM adds
     # feature names to the fitted model, which is inconsistent with sklearn's behavior
@@ -1409,7 +1411,7 @@ def test_getting_feature_names_in_np_input(estimator_class):
     np.testing.assert_array_equal(model.feature_names_in_, np.array([f"Column_{i}" for i in range(X.shape[1])]))
 
 
-@pytest.mark.parametrize("estimator_class", [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
 def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     col_names = X.columns.to_list()
@@ -1436,7 +1438,29 @@ def test_sklearn_integration(estimator, check):
     check(estimator)
 
 
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])
+@pytest.mark.parametrize("estimator_class", estimator_classes)
+def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimator_class):
+    est = estimator_class()
+    more_tags = est._more_tags()
+    err_msg = "List of supported X_types has changed. Update LGBMModel.__sklearn_tags__() to match."
+    assert more_tags["X_types"] == ["2darray", "sparse", "1dlabels"], err_msg
+    # the try-except part of this should be removed once lightgbm's
+    # minimum supported scikit-learn version is at least 1.6
+    try:
+        sklearn_tags = est.__sklearn_tags__()
+    except AttributeError as err:
+        # only the exact error we expected to be raised should be raised
+        assert bool(re.search(r"__sklearn_tags__.* should not be called", str(err)))
+    else:
+        # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
+        # and so the actual effects of __sklearn_tags__() should be tested
+        assert sklearn_tags.input_tags.allow_nan is True
+        assert sklearn_tags.input_tags.sparse is True
+        assert sklearn_tags.target_tags.one_d_labels is True
+        assert sklearn_tags._xfail_checks == more_tags["_xfail_checks"]
+
+
+@pytest.mark.parametrize("task", all_tasks)
 def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task):
     pd = pytest.importorskip("pandas")
     X, y, g = _create_data(task)
@@ -1540,7 +1564,7 @@ def test_default_n_jobs(tmp_path):
 
 
 @pytest.mark.skipif(not PANDAS_INSTALLED, reason="pandas is not installed")
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "ranking", "regression"])
+@pytest.mark.parametrize("task", all_tasks)
 def test_validate_features(task):
     X, y, g = _create_data(task, n_features=4)
     features = ["x1", "x2", "x3", "x4"]
@@ -1559,6 +1583,52 @@ def test_validate_features(task):
 
     # check that disabling the check doesn't raise the error
     model.predict(df2, validate_features=False)
+
+
+# LightGBM's 'predict_disable_shape_check' mechanism is intentionally not respected by
+# its scikit-learn estimators, for consistency with scikit-learn's own behavior.
+@pytest.mark.parametrize("task", all_tasks)
+@pytest.mark.parametrize("predict_disable_shape_check", [True, False])
+def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disable_shape_check, task):
+    X, y, g = _create_data(task, n_features=4)
+    model_factory = task_to_model_factory[task]
+    fit_kwargs = {"X": X[:, :-1], "y": y}
+    if task == "ranking":
+        estimator_name = "LGBMRanker"
+        fit_kwargs.update({"group": g})
+    elif task == "regression":
+        estimator_name = "LGBMRegressor"
+    else:
+        estimator_name = "LGBMClassifier"
+
+    # train on the first 3 features
+    model = model_factory(n_estimators=5, num_leaves=7, verbose=-1).fit(**fit_kwargs)
+
+    # more cols in X than features: error
+    err_msg = f"X has 4 features, but {estimator_name} is expecting 3 features as input"
+    with pytest.raises(ValueError, match=err_msg):
+        model.predict(X, predict_disable_shape_check=predict_disable_shape_check)
+
+    if estimator_name == "LGBMClassifier":
+        with pytest.raises(ValueError, match=err_msg):
+            model.predict_proba(X, predict_disable_shape_check=predict_disable_shape_check)
+
+    # fewer cols in X than features: error
+    err_msg = f"X has 2 features, but {estimator_name} is expecting 3 features as input"
+    with pytest.raises(ValueError, match=err_msg):
+        model.predict(X[:, :-2], predict_disable_shape_check=predict_disable_shape_check)
+
+    if estimator_name == "LGBMClassifier":
+        with pytest.raises(ValueError, match=err_msg):
+            model.predict_proba(X[:, :-2], predict_disable_shape_check=predict_disable_shape_check)
+
+    # same number of columns in both: no error
+    preds = model.predict(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
+    assert preds.shape == y.shape
+
+    if estimator_name == "LGBMClassifier":
+        preds = model.predict_proba(X[:, :-1], predict_disable_shape_check=predict_disable_shape_check)
+        assert preds.shape[0] == y.shape[0]
 
 
 @pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])

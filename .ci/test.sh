@@ -107,6 +107,7 @@ if [[ $TASK == "lint" ]]; then
         'mypy>=1.11.1' \
         'pre-commit>=3.8.0' \
         'pyarrow-core>=17.0' \
+        'scikit-learn>=1.5.2' \
         'r-lintr>=3.1.2'
     # shellcheck disable=SC1091
     source activate $CONDA_ENV
