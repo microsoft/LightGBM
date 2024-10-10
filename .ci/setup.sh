@@ -2,11 +2,11 @@
 
 set -e -E -u -o pipefail
 
-brew install cmake
+brew install cmake openmp
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+cmake -B build -S . -DBUILD_CPP_TEST=ON
 cmake --build build --target testlightgbm -j4
 
 ls
