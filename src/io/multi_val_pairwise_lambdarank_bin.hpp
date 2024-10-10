@@ -25,7 +25,7 @@ template <typename BIN_TYPE>
 class MultiValDensePairwiseLambdarankBin: public MultiValPairwiseLambdarankBin<BIN_TYPE, MultiValDenseBin> {
  public:
   MultiValDensePairwiseLambdarankBin(data_size_t num_data, int num_bin, int num_feature,
-    const std::vector<uint32_t>& offsets, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map): MultiValPairwiseLambdarankBin<BIN_TYPE, MultiValDenseBin>(num_data, num_bin, num_feature, offsets) {
+    const std::vector<uint32_t>& offsets, const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map): MultiValPairwiseLambdarankBin<BIN_TYPE, LightGBM::MultiValDenseBin>(num_data, num_bin, num_feature, offsets) {
     this->paired_ranking_item_global_index_map_ = paired_ranking_item_global_index_map;
   }
 
