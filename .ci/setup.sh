@@ -11,27 +11,8 @@ cmake --build build --target testlightgbm -j4
 
 ls
 
-#cd "./examples/regression/"
-#"../../lightgbm" config="train.conf"
+testlightgbm
 
-# if [[ $OS_NAME == "macos" ]]; then
-#     if  [[ $COMPILER == "clang" ]]; then
-#         brew install libomp
-#         if [[ $AZURE == "true" ]]; then
-#             sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
-#         fi
-#     else  # gcc
-#         # Check https://github.com/actions/runner-images/tree/main/images/macos for available
-#         # versions of Xcode
-#         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-#         brew install 'gcc@12'
-#     fi
-#     if [[ $TASK == "mpi" ]]; then
-#         brew install open-mpi
-#     fi
-#     if [[ $TASK == "swig" ]]; then
-#         brew install swig
-#     fi
 # else  # Linux
 #     if type -f apt 2>&1 > /dev/null; then
 #         sudo apt-get update
