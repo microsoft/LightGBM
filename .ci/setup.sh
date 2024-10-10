@@ -2,7 +2,7 @@
 
 set -e -E -u -o pipefail
 
-brew install cmake gcc
+brew install gcc cmake
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
