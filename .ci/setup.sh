@@ -11,7 +11,7 @@ cmake --build build --target testlightgbm -j4
 
 ls
 
-testlightgbm
+./testlightgbm
 
 # else  # Linux
 #     if type -f apt 2>&1 > /dev/null; then
