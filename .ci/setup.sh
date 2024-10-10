@@ -2,12 +2,12 @@
 
 set -e -E -u -o pipefail
 
-brew install cmake gcc
+brew install cmake gcc ninja
 
 git clone --recursive -b test-install https://github.com/microsoft/LightGBM
 cd LightGBM
 export CXX=g++-14 CC=gcc-14  # replace "7" with version of gcc installed on your machine
-cmake -B build -S . -DBUILD_CPP_TEST=ON
+cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
 cmake --build build --target testlightgbm -j4
 
 ls
