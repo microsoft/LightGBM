@@ -8,12 +8,10 @@ $(function() {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
-    /* Fix needed */
-    var current_version_elems = $('.rst-current-version');
+    /* Point to the same version of R API as the current docs version */
+    var current_version_elems = $('nav.wy-nav-side > * div.version');
     if(current_version_elems.length !== 0) {
-        var current_version = $(current_version_elems[0]).contents().filter(function() {
-            return this.nodeType == 3;
-        }).text().trim().split(' ').pop();
+        var current_version = $(current_version_elems[0]).text().trim();
         if(current_version !== 'latest') {
             $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
                 $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
