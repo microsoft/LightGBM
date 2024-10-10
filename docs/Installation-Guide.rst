@@ -1139,7 +1139,7 @@ Apple Clang and Ninja
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -DBUILD_CPP_TEST=ON
+     cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
      cmake --build build --target testlightgbm -j4
 
 The executable file will be in ``LightGBM/`` folder.
@@ -1181,7 +1181,7 @@ gcc and Ninja
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -G Ninja
      cmake --build build --target testlightgbm -j4
 
 The executable file will be in ``LightGBM/`` folder.
