@@ -2,11 +2,11 @@
 
 set -e -E -u -o pipefail
 
-brew install cmake libomp
+brew install cmake libomp ninja
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-cmake -B build -S . -DBUILD_CPP_TEST=ON
+cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
 cmake --build build --target testlightgbm -j4
 
 ls
