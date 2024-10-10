@@ -1094,12 +1094,18 @@ On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** o
 macOS
 ^^^^^
 
-On macOS a C++ unit tests of LightGBM can be built using **CMake** and **Apple Clang** or **gcc**.
+On macOS a C++ unit tests of LightGBM can be built using
+
+- **CMake** and **Apple Clang**;
+
+- **CMake**, **Ninja** and **Apple Clang**;
+
+- **CMake** and **gcc**;
+
+- **CMake**, **Ninja** and **gcc**.
 
 Apple Clang
 ***********
-
-Only **Apple Clang** version 8.1 or higher is supported.
 
 1. Install `CMake`_ :
 
@@ -1116,22 +1122,38 @@ Only **Apple Clang** version 8.1 or higher is supported.
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
 
+The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+
+Apple Clang and Ninja
+*********************
+
+1. Install `CMake`_ and `Ninja`_:
+
+   .. code:: sh
+
+     brew install cmake ninja
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake --build build --target testlightgbm -j4
+
+The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+
 gcc
 ***
 
-1. Install `CMake`_ :
+1. Install `CMake`_ and **gcc**:
 
    .. code:: sh
 
-     brew install cmake
+     brew install cmake gcc
 
-2. Install **gcc**:
-
-   .. code:: sh
-
-     brew install gcc
-
-3. Run the following commands:
+2. Run the following commands:
 
    .. code:: sh
 
@@ -1140,6 +1162,29 @@ gcc
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
      cmake --build build --target testlightgbm -j4
+
+The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
+
+gcc and Ninja
+*************
+
+1. Install `CMake`_, **gcc** and `Ninja`_:
+
+   .. code:: sh
+
+     brew install cmake gcc ninja
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
+     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake --build build --target testlightgbm -j4
+
+The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 
 
 .. |download artifacts| image:: ./_static/images/artifacts-not-available.svg
