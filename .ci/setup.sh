@@ -6,7 +6,7 @@ pwsh -v
 pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope AllUsers -Force -SkipPublisherCheck"
 
 read -r -d '' analyzer_cmd << EOM
-Invoke-ScriptAnalyzer -Path ./*.ps1 -Severity Warning -Recurse -Outvariable issues
+Invoke-ScriptAnalyzer -Path ./ -Severity Warning -Recurse -Outvariable issues
 $errors   = $issues.Where({$_.Severity -eq 'Error'})
 $warnings = $issues.Where({$_.Severity -eq 'Warning'})
 if ($errors) {
