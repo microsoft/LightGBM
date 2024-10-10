@@ -5,9 +5,17 @@ set -e -E -u -o pipefail
 pwsh -v
 pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope AllUsers -Force -SkipPublisherCheck"
 
-ls
-
-./testlightgbm
+read -r -d '' analyzer_cmd << EOM
+Invoke-ScriptAnalyzer -Path ./*.ps1 -Severity Warning -Recurse -Outvariable issues
+$errors   = $issues.Where({$_.Severity -eq 'Error'})
+$warnings = $issues.Where({$_.Severity -eq 'Warning'})
+if ($errors) {
+    Write-Error "There were $($errors.Count) errors and $($warnings.Count) warnings total." -ErrorAction Stop
+} else {
+    Write-Output "There were $($errors.Count) errors and $($warnings.Count) warnings total."
+}
+EOM
+pwsh -command "${analyzer_cmd}"
 
 # else  # Linux
 #     if type -f apt 2>&1 > /dev/null; then
