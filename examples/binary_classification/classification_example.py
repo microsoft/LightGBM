@@ -1,3 +1,4 @@
+
 import lightgbm as lgb
 import numpy as np
 from sklearn.datasets import load_breast_cancer
@@ -25,7 +26,11 @@ y_train = y[indices[:split_index]]
 X_test = X[indices[split_index:]]
 y_test = y[indices[split_index:]]
 
-# Define custom logistic loss function
+# Define custom logistic loss function 
+""" This explains how to create a custom cost function for binary classification in LightGBM. 
+The model provides raw predictions (preds), which are transformed into probabilities using the sigmoid function. 
+The true labels (labels) are compared with the predicted probabilities to calculate the gradient (grad), which is the difference between the two. The second derivative, or Hessian (hess), is derived from the logistic loss function. During training, LightGBM uses this custom objective function to adjust model parameters. 
+After training, predictions are converted into class labels and evaluated using standard metrics by thresholding probabilities at 0.5. """
 def custom_logistic_obj(preds, dtrain):
     """Custom logistic loss function"""
     labels = dtrain.get_label()
