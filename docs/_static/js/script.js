@@ -8,7 +8,7 @@ $(function() {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
-    /* Point to the same version of R API as the current docs version */
+    /* Fix needed */
     var current_version_elems = $('.rst-current-version');
     if(current_version_elems.length !== 0) {
         var current_version = $(current_version_elems[0]).contents().filter(function() {
