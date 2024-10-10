@@ -56,7 +56,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     else
         extra_cmake_opts=""
     fi
-    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON $extra_cmake_opts
+    cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_DEBUG=ON $extra_cmake_opts
     cmake --build build --target testlightgbm -j4 || exit 1
     ./testlightgbm || exit 1
     exit 0
