@@ -427,7 +427,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
             score_updater->AddScore(init_scores[cur_tree_id], cur_tree_id);
           }
         }
-        new_tree->AsConstantTree(init_scores[cur_tree_id]);
+        new_tree->AsConstantTree(init_scores[cur_tree_id], num_data_);
+      } else {
+        // extend init_scores with zeros
+        new_tree->AsConstantTree(0, num_data_);
       }
     }
     // add model

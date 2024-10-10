@@ -168,7 +168,7 @@ class RF : public GBDT {
               output = init_scores_[cur_tree_id];
             }
           }
-          new_tree->AsConstantTree(output);
+          new_tree->AsConstantTree(output, num_data_);
           MultiplyScore(cur_tree_id, (iter_ + num_init_iteration_));
           UpdateScore(new_tree.get(), cur_tree_id);
           MultiplyScore(cur_tree_id, 1.0 / (iter_ + num_init_iteration_ + 1));
