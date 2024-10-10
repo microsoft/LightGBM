@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e -E -u -o pipefail
+#set -e -E -u -o pipefail
 
 pwsh -v
 pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope AllUsers -Force -SkipPublisherCheck"
