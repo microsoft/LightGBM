@@ -1,5 +1,7 @@
 Write-Output "Installing OpenCL CPU platform"
 
+"b" = "b"
+
 $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
 
 Write-Output "Downloading OpenCL platform installer"
