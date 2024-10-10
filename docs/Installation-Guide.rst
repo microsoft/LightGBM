@@ -1107,11 +1107,11 @@ On macOS a C++ unit tests of LightGBM can be built using
 Apple Clang
 ***********
 
-1. Install `CMake`_ :
+1. Install `CMake`_ and **OpenMP**:
 
    .. code:: sh
 
-     brew install cmake
+     brew install cmake libomp
 
 2. Run the following commands:
 
@@ -1119,7 +1119,7 @@ Apple Clang
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
 The executable file will be in ``LightGBM/`` folder.
@@ -1127,11 +1127,11 @@ The executable file will be in ``LightGBM/`` folder.
 Apple Clang and Ninja
 *********************
 
-1. Install `CMake`_ and `Ninja`_:
+1. Install `CMake`_, **OpenMP** and `Ninja`_:
 
    .. code:: sh
 
-     brew install cmake ninja
+     brew install cmake libomp ninja
 
 2. Run the following commands:
 
@@ -1139,7 +1139,7 @@ Apple Clang and Ninja
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
 The executable file will be in ``LightGBM/`` folder.
