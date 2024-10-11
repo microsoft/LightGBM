@@ -1545,11 +1545,7 @@ def test_predict_with_raw_score(task, output, cluster):
 @pytest.mark.parametrize("use_init_score", [False, True])
 def test_predict_stump(output, use_init_score, cluster, rng):
     with Client(cluster) as client:
-        task = "binary-classification"
-        n_samples = 1_000
-        _, _, _, _, dX, dy, _, dg = _create_data(objective=task, n_samples=n_samples, output=output)
-
-        model_factory = task_to_dask_factory[task]
+        _, _, _, _, dX, dy, _, _ = _create_data(objective="binary-classification", n_samples=1_000, output=output)
 
         params = {"objective": "binary", "n_estimators": 5, "min_data_in_leaf": n_samples}
 
@@ -1560,7 +1556,7 @@ def test_predict_stump(output, use_init_score, cluster, rng):
         else:
             init_scores = dy.map_blocks(lambda x: rng.uniform(size=x.size))
 
-        model = model_factory(client=client, **params)
+        model = lgb.DaskLGBMClassifier(client=client, **params)
         model.fit(dX, dy, group=dg, init_score=init_scores)
         preds_1 = model.predict(dX, raw_score=True, num_iteration=1).compute()
         preds_all = model.predict(dX, raw_score=True).compute()
