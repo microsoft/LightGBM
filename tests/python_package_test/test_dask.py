@@ -6,7 +6,6 @@ import random
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
 from sys import platform
 from urllib.parse import urlparse
 
@@ -17,10 +16,8 @@ import lightgbm as lgb
 
 from .utils import sklearn_multiclass_custom_objective
 
-if not platform.startswith("linux"):
-    pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
-if machine() != "x86_64":
-    pytest.skip("lightgbm.dask tests are currently skipped on some architectures like arm64", allow_module_level=True)
+if platform in {"cygwin", "win3"}:
+    pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip("Dask is not installed", allow_module_level=True)
 
@@ -59,6 +56,10 @@ pytestmark = [
     pytest.mark.skipif(getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface"),
     pytest.mark.skipif(getenv("TASK", "") == "gpu", reason="Fails to run with GPU interface"),
     pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(
+        getenv("LGBM_SKIP_DASK_TESTS", "") == "true",
+        reason="Skipping lightgbm.dask tests (found env variable LGBM_SKIP_DASK_TESTS=true)",
+    ),
 ]
 
 

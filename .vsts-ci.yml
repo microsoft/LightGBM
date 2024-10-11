@@ -243,6 +243,8 @@ jobs:
   - script: |
       git clean -d -f -x
     displayName: 'Clean source directory'
+  # LGBM_SKIP_DASK_TESTS=true is set below only because running the tests under emulation is so slow...
+  # in theory, 'lightgbm.dask' should work without issue on aarch64 Linux systems
   - script: |
       cat > docker-script.sh <<EOF
       export CONDA=\$HOME/miniforge
@@ -266,6 +268,7 @@ jobs:
         --env OS_NAME=linux \
         --env PRODUCES_ARTIFACTS=$PRODUCES_ARTIFACTS \
         --env PYTHON_VERSION=$PYTHON_VERSION \
+        --env LGBM_SKIP_DASK_TESTS=true \
         --env TASK=$TASK \
         -v "$(Build.SourcesDirectory)":"$BUILD_DIRECTORY" \
         -v "$(Build.ArtifactStagingDirectory)":"$(Build.ArtifactStagingDirectory)" \
