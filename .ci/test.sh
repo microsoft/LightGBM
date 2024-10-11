@@ -134,9 +134,9 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     source activate $CONDA_ENV
     # check reStructuredText formatting
     find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
-        -exec rstcheck {} \+
+        -exec rstcheck --report-level warning {} \+ || exit 1
     find "${BUILD_DIRECTORY}/docs" -type f -name "*.rst" \
-        -exec rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} \+
+        -exec rstcheck --report-level warning --ignore-directives=autoclass,autofunction,autosummary,doxygenfile {} \+ || exit 1
     # build docs
     make -C docs html || exit 1
     if [[ $TASK == "check-links" ]]; then
@@ -164,7 +164,7 @@ fi
 
 conda create \
     -y \
-    -n $CONDA_ENV \
+    -n "${CONDA_ENV}" \
     --file "${CONDA_REQUIREMENT_FILE}" \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
