@@ -1547,7 +1547,7 @@ def test_predict_stump(output, use_init_score, cluster, rng):
     with Client(cluster) as client:
         _, _, _, _, dX, dy, _, _ = _create_data(objective="binary-classification", n_samples=1_000, output=output)
 
-        params = {"objective": "binary", "n_estimators": 5, "min_data_in_leaf": n_samples}
+        params = {"objective": "binary", "n_estimators": 5, "min_data_in_leaf": 1_000}
 
         if not use_init_score:
             init_scores = None
@@ -1557,7 +1557,7 @@ def test_predict_stump(output, use_init_score, cluster, rng):
             init_scores = dy.map_blocks(lambda x: rng.uniform(size=x.size))
 
         model = lgb.DaskLGBMClassifier(client=client, **params)
-        model.fit(dX, dy, group=dg, init_score=init_scores)
+        model.fit(dX, dy, init_score=init_scores)
         preds_1 = model.predict(dX, raw_score=True, num_iteration=1).compute()
         preds_all = model.predict(dX, raw_score=True).compute()
 
