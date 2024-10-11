@@ -175,15 +175,14 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             -v "$(pwd)/packages:/rchk/packages" \
             kalibera/rchk:latest \
             "/rchk/packages/${PKG_TARBALL}" \
-        > ${RCHK_LOG_FILE} 2>&1  \
+        > "${RCHK_LOG_FILE}" 2>&1  \
         || (cat ${RCHK_LOG_FILE} && exit 1)
         cat ${RCHK_LOG_FILE}
 
         # the exceptions below are from R itself and not LightGBM:
         # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
-        # shellcheck disable=SC2046
         exit $(
-            cat ${RCHK_LOG_FILE} \
+            cat "${RCHK_LOG_FILE}" \
             | grep -v "in function strptime_internal" \
             | grep -v "in function RunGenCollect" \
             | grep --count -E '\[PB\]|ERROR'

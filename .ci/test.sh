@@ -110,7 +110,7 @@ if [[ $TASK == "lint" ]]; then
         'scikit-learn>=1.5.2' \
         'r-lintr>=3.1.2'
     # shellcheck disable=SC1091
-    source activate $CONDA_ENV
+    source activate "${CONDA_ENV}"
     echo "Linting Python code"
     bash ./.ci/lint-python.sh || exit 1
     echo "Linting R code"
@@ -127,11 +127,11 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     conda install \
         -q \
         -y \
-        -n $CONDA_ENV \
+        -n "${CONDA_ENV}" \
             'doxygen>=1.10.0' \
             'rstcheck>=6.2.4' || exit 1
     # shellcheck disable=SC1091
-    source activate $CONDA_ENV
+    source activate "${CONDA_ENV}"
     # check reStructuredText formatting
     find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
         -exec rstcheck --report-level warning {} \+ || exit 1
@@ -233,7 +233,7 @@ if [[ $TASK == "gpu" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --gpu || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
+        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -258,7 +258,7 @@ elif [[ $TASK == "cuda" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --cuda || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
+        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
@@ -278,7 +278,7 @@ elif [[ $TASK == "mpi" ]]; then
     elif [[ $METHOD == "wheel" ]]; then
         sh ./build-python.sh bdist_wheel --mpi || exit 1
         sh ./.ci/check-python-dists.sh ./dist || exit 1
-        pip install "$(echo ./dist/lightgbm-"${LGB_VER}"*.whl)" -v || exit 1
+        pip install "$(echo "./dist/lightgbm-${LGB_VER}"*.whl)" -v || exit 1
         pytest ./tests || exit 1
         exit 0
     elif [[ $METHOD == "source" ]]; then
