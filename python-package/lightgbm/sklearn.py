@@ -4,7 +4,7 @@
 import copy
 from inspect import signature
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse
@@ -31,20 +31,24 @@ from .compat import (
     SKLEARN_INSTALLED,
     LGBMNotFittedError,
     _LGBMAssertAllFinite,
-    _LGBMCheckArray,
     _LGBMCheckClassificationTargets,
     _LGBMCheckSampleWeight,
-    _LGBMCheckXY,
     _LGBMClassifierBase,
     _LGBMComputeSampleWeight,
     _LGBMCpuCount,
     _LGBMLabelEncoder,
     _LGBMModelBase,
     _LGBMRegressorBase,
+    _LGBMValidateData,
+    _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
 )
 from .engine import train
+
+if TYPE_CHECKING:
+    from .compat import _sklearn_Tags
+
 
 __all__ = [
     "LGBMClassifier",
@@ -662,6 +666,10 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
+    # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
+    # _more_tags() can be removed whenever lightgbm's minimum supported scikit-learn version
+    # is >=1.6.
+    # ref: https://github.com/microsoft/LightGBM/pull/6651
     def _more_tags(self) -> Dict[str, Any]:
         return {
             "allow_nan": True,
@@ -669,9 +677,45 @@ class LGBMModel(_LGBMModelBase):
             "_xfail_checks": {
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
-                "(see https://github.com/microsoft/LightGBM/issues/2628)"
+                "(see https://github.com/microsoft/LightGBM/issues/2628)",
             },
         }
+
+    @staticmethod
+    def _update_sklearn_tags_from_dict(
+        *,
+        tags: "_sklearn_Tags",
+        tags_dict: Dict[str, Any],
+    ) -> "_sklearn_Tags":
+        """Update ``sklearn.utils.Tags`` inherited from ``scikit-learn`` base classes.
+
+        ``scikit-learn`` 1.6 introduced a dataclass-based interface for estimator tags.
+        ref: https://github.com/scikit-learn/scikit-learn/pull/29677
+
+        This method handles updating that instance based on the value in ``self._more_tags()``.
+        """
+        tags.input_tags.allow_nan = tags_dict["allow_nan"]
+        tags.input_tags.sparse = "sparse" in tags_dict["X_types"]
+        tags.target_tags.one_d_labels = "1dlabels" in tags_dict["X_types"]
+        tags._xfail_checks = tags_dict["_xfail_checks"]
+        return tags
+
+    def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
+        # _LGBMModelBase.__sklearn_tags__() cannot be called unconditionally,
+        # because that method isn't defined for scikit-learn<1.6
+        if not hasattr(_LGBMModelBase, "__sklearn_tags__"):
+            err_msg = (
+                "__sklearn_tags__() should not be called when using scikit-learn<1.6. "
+                f"Detected version: {_sklearn_version}"
+            )
+            raise AttributeError(err_msg)
+
+        # take whatever tags are provided by BaseEstimator, then modify
+        # them with LightGBM-specific values
+        return self._update_sklearn_tags_from_dict(
+            tags=_LGBMModelBase.__sklearn_tags__(self),
+            tags_dict=self._more_tags(),
+        )
 
     def __sklearn_is_fitted__(self) -> bool:
         return getattr(self, "fitted_", False)
@@ -862,11 +906,25 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _X, _y = _LGBMValidateData(
+                self,
+                X,
+                y,
+                reset=True,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row and 1-row inputs
+                ensure_min_samples=2,
+            )
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
+
+            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
+            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -876,10 +934,6 @@ class LGBMModel(_LGBMModelBase):
                 sample_weight = class_sample_weight
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
-
-        self._n_features = _X.shape[1]
-        # copy for consistency
-        self._n_features_in = self._n_features
 
         train_set = Dataset(
             data=_X,
@@ -963,6 +1017,13 @@ class LGBMModel(_LGBMModelBase):
             callbacks=callbacks,
         )
 
+        # This populates the property self.n_features_, the number of features in the fitted model,
+        # and so should only be set after fitting.
+        #
+        # The related property self._n_features_in, which populates self.n_features_in_,
+        # is set BEFORE fitting.
+        self._n_features = self._Booster.num_feature()
+
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
         self._best_score = self._Booster.best_score
@@ -1004,13 +1065,20 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError(
-                "Number of features of the model must "
-                f"match the input. Model n_features_ is {self._n_features} and "
-                f"input n_features is {n_features}"
+            X = _LGBMValidateData(
+                self,
+                X,
+                # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
+                #
+                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
+                # These shouldn't be changed at predict() time.
+                reset=False,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row inputs
+                ensure_min_samples=1,
             )
         # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
@@ -1066,6 +1134,21 @@ class LGBMModel(_LGBMModelBase):
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("No n_features_in found. Need to call fit beforehand.")
         return self._n_features_in
+
+    @n_features_in_.setter
+    def n_features_in_(self, value: int) -> None:
+        """Set number of features found in passed-in dataset.
+
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn`` expects to be able to directly
+        set this property in functions like ``validate_data()``.
+
+        .. note::
+
+            Do not call ``estimator.n_features_in_ = some_int`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        self._n_features_in = value
 
     @property
     def best_score_(self) -> _LGBM_BoosterBestScoreType:
@@ -1165,9 +1248,44 @@ class LGBMModel(_LGBMModelBase):
             raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
         return np.array(self.feature_name_)
 
+    @feature_names_in_.deleter
+    def feature_names_in_(self) -> None:
+        """Intercept calls to delete ``feature_names_in_``.
+
+        Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
+        on estimators when a new training dataset that doesn't have features is passed.
+        LightGBM automatically assigns feature names to such datasets
+        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
+
+        However, that behavior is coupled to ``scikit-learn`` automatically updating
+        ``n_features_in_`` in those same code paths, which is necessary for compliance
+        with its API (via argument ``reset`` to functions like ``validate_data()`` and
+        ``check_array()``).
+
+        .. note::
+
+            Do not call ``del estimator.feature_names_in_`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        pass
+
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
+
+    def _more_tags(self) -> Dict[str, Any]:
+        # handle the case where RegressorMixin possibly provides _more_tags()
+        if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
+            tags = _LGBMRegressorBase._more_tags(self)
+        else:
+            tags = {}
+        # override those with LightGBM-specific preferences
+        tags.update(LGBMModel._more_tags(self))
+        return tags
+
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
+        return LGBMModel.__sklearn_tags__(self)
 
     def fit(  # type: ignore[override]
         self,
@@ -1214,6 +1332,19 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
+
+    def _more_tags(self) -> Dict[str, Any]:
+        # handle the case where ClassifierMixin possibly provides _more_tags()
+        if callable(getattr(_LGBMClassifierBase, "_more_tags", None)):
+            tags = _LGBMClassifierBase._more_tags(self)
+        else:
+            tags = {}
+        # override those with LightGBM-specific preferences
+        tags.update(LGBMModel._more_tags(self))
+        return tags
+
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
+        return LGBMModel.__sklearn_tags__(self)
 
     def fit(  # type: ignore[override]
         self,
