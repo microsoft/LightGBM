@@ -439,6 +439,7 @@ set(
       src/treelearner/data_parallel_tree_learner.cpp
       src/treelearner/feature_histogram.cpp
       src/treelearner/feature_parallel_tree_learner.cpp
+      src/treelearner/gpu_linear_tree_learner.cpp
       src/treelearner/gpu_tree_learner.cpp
       src/treelearner/gradient_discretizer.cpp
       src/treelearner/linear_tree_learner.cpp
