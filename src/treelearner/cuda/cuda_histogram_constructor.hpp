@@ -19,7 +19,7 @@
 #include "cuda_leaf_splits.hpp"
 
 #define NUM_DATA_PER_THREAD (400)
-#define NUM_THRADS_PER_BLOCK (504)
+#define NUM_THREADS_PER_BLOCK (504)
 #define NUM_FEATURE_PER_THREAD_GROUP (28)
 #define SUBTRACT_BLOCK_SIZE (1024)
 #define FIX_HISTOGRAM_SHARED_MEM_SIZE (1024)

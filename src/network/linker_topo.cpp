@@ -35,10 +35,10 @@ BruckMap BruckMap::Construct(int rank, int num_machines) {
   }
   BruckMap bruckMap(k);
   for (int j = 0; j < k; ++j) {
-    // set incoming rank at k-th commuication
+    // set incoming rank at k-th communication
     const int in_rank = (rank + distance[j]) % num_machines;
     bruckMap.in_ranks[j] = in_rank;
-    // set outgoing rank at k-th commuication
+    // set outgoing rank at k-th communication
     const int out_rank = (rank - distance[j] + num_machines) % num_machines;
     bruckMap.out_ranks[j] = out_rank;
   }
