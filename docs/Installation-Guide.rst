@@ -47,7 +47,7 @@ You can download the artifacts of the latest successful build on master branch (
 Windows
 ~~~~~~~
 
-On Windows LightGBM can be built using
+On Windows, LightGBM can be built using
 
 - **Visual Studio**;
 
@@ -137,7 +137,7 @@ It is recommended that you use **Visual Studio** since it has better multithread
 Linux
 ~~~~~
 
-On Linux LightGBM can be built using **CMake** and **gcc** or **Clang**.
+On Linux, LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
 1. Install `CMake`_.
 
@@ -167,7 +167,7 @@ On Linux, LightGBM can also be built with `Ninja`_ instead of ``make``.
 macOS
 ~~~~~
 
-On macOS LightGBM can be installed using **Homebrew**, **MacPorts**, or can be built using
+On macOS, LightGBM can be installed using **Homebrew**, **MacPorts**, or can be built using
 
 - **CMake** and **Apple Clang**;
 
@@ -296,7 +296,7 @@ You can build LightGBM without OpenMP support but it is **strongly not recommend
 Windows
 ^^^^^^^
 
-On Windows a version of LightGBM without OpenMP support can be built using
+On Windows, a version of LightGBM without OpenMP support can be built using
 
 - **Visual Studio**;
 
@@ -385,7 +385,7 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 Linux
 ^^^^^
 
-On Linux a version of LightGBM without OpenMP support can be built using **CMake** and **gcc** or **Clang**.
+On Linux, a version of LightGBM without OpenMP support can be built using **CMake** and **gcc** or **Clang**.
 
 1. Install `CMake`_.
 
@@ -401,7 +401,7 @@ On Linux a version of LightGBM without OpenMP support can be built using **CMake
 macOS
 ^^^^^
 
-On macOS a version of LightGBM without OpenMP support can be built using
+On macOS, a version of LightGBM without OpenMP support can be built using
 
 - **CMake** and **Apple Clang**;
 
@@ -504,7 +504,7 @@ If you need to run a distributed learning application with high performance comm
 Windows
 ^^^^^^^
 
-On Windows an MPI version of LightGBM can be built using
+On Windows, an MPI version of LightGBM can be built using
 
 - **MS MPI** and **Visual Studio**;
 
@@ -550,7 +550,7 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 Linux
 ^^^^^
 
-On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** and **gcc** or **Clang**.
+On Linux, an MPI version of LightGBM can be built using **Open MPI**, **CMake** and **gcc** or **Clang**.
 
 1. Install `Open MPI`_.
 
@@ -570,7 +570,7 @@ On Linux an MPI version of LightGBM can be built using **Open MPI**, **CMake** a
 macOS
 ^^^^^
 
-On macOS an MPI version of LightGBM can be built using
+On macOS, an MPI version of LightGBM can be built using
 
 - **CMake**, **Open MPI** and **Apple Clang**;
 
@@ -668,7 +668,7 @@ Build GPU Version
 Windows
 ^^^^^^^
 
-On Windows a GPU version of LightGBM (``device_type=gpu``) can be built using
+On Windows, a GPU version of LightGBM (``device_type=gpu``) can be built using
 
 - **OpenCL**, **Boost**, **CMake** and **VS Build Tools**;
 
@@ -722,7 +722,7 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 Linux
 ^^^^^
 
-On Linux a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+On Linux, a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
 
 The following dependencies should be installed before compilation:
 
@@ -778,7 +778,7 @@ Use the `GPU version <#build-gpu-version>`__ (``device_type=gpu``) for GPU accel
 Linux
 ^^^^^
 
-On Linux a CUDA version of LightGBM can be built using **CUDA**, **CMake** and **gcc** or **Clang**.
+On Linux, a CUDA version of LightGBM can be built using **CUDA**, **CMake** and **gcc** or **Clang**.
 
 The following dependencies should be installed before compilation:
 
@@ -810,7 +810,7 @@ Using the following instructions you can generate a JAR file containing the Ligh
 Windows
 ^^^^^^^
 
-On Windows a Java wrapper of LightGBM can be built using
+On Windows, a Java wrapper of LightGBM can be built using
 
 - **Java**, **SWIG**, **CMake** and **VS Build Tools**;
 
@@ -885,7 +885,7 @@ It is recommended to use **VS Build Tools (Visual Studio)** since it has better 
 Linux
 ^^^^^
 
-On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **gcc** or **Clang**.
+On Linux, a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMake** and **gcc** or **Clang**.
 
 1. Install `CMake`_, `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly).
 
@@ -903,7 +903,7 @@ On Linux a Java wrapper of LightGBM can be built using **Java**, **SWIG**, **CMa
 macOS
 ^^^^^
 
-On macOS a Java wrapper of LightGBM can be built using
+On macOS, a Java wrapper of LightGBM can be built using
 
 - **CMake**, **Java**, **SWIG** and **Apple Clang**;
 
@@ -1078,7 +1078,7 @@ The ``.exe`` file will be in ``LightGBM/`` folder.
 Linux
 ^^^^^
 
-On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** or **Clang**.
+On Linux, a C++ unit tests of LightGBM can be built using **CMake** and **gcc** or **Clang**.
 
 1. Install `CMake`_.
 
@@ -1094,7 +1094,7 @@ On Linux a C++ unit tests of LightGBM can be built using **CMake** and **gcc** o
 macOS
 ^^^^^
 
-On macOS a C++ unit tests of LightGBM can be built using
+On macOS, a C++ unit tests of LightGBM can be built using
 
 - **CMake** and **Apple Clang**;
 
