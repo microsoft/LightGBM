@@ -46,7 +46,7 @@ pandas = [
     "pandas>=0.24.0"
 ]
 scikit-learn = [
-    "scikit-learn!=0.22.0"
+    "scikit-learn>=0.24.2"
 ]
 
 [project.urls]
