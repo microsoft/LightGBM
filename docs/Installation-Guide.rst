@@ -1055,7 +1055,7 @@ MinGW-w64
 
 The ``.exe`` file will be in ``LightGBM/`` folder.
 
-**Note**: You may need to run the ``cmake -B build -S . -G "MinGW Makefiles" -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -B build -S . -G "MinGW Makefiles" -DBUILD_CPP_TEST=ON`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
 
 MinGW-w64 and Ninja
 *******************
@@ -1073,7 +1073,7 @@ MinGW-w64 and Ninja
 
 The ``.exe`` file will be in ``LightGBM/`` folder.
 
-**Note**: You may need to run the ``cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
+**Note**: You may need to run the ``cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
 
 Linux
 ^^^^^
