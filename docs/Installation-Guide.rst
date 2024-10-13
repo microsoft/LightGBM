@@ -1034,7 +1034,7 @@ VS Build Tools
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -A x64 -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -A x64 -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm --config Debug
 
 The ``.exe`` file will be in ``LightGBM/Debug`` folder.
@@ -1050,7 +1050,7 @@ MinGW-w64
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -G "MinGW Makefiles" -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -G "MinGW Makefiles" -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
 The ``.exe`` file will be in ``LightGBM/`` folder.
@@ -1068,7 +1068,7 @@ MinGW-w64 and Ninja
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF
+     cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
 The ``.exe`` file will be in ``LightGBM/`` folder.
