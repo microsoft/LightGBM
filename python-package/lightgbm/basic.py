@@ -3906,7 +3906,7 @@ class Booster:
                 return feature_name
 
             def _is_single_node_tree(tree: Dict[str, Any]) -> bool:
-                return set(tree.keys()) == {"leaf_value"}
+                return set(tree.keys()) == {"leaf_value", "leaf_count"}
 
             # Create the node record, and populate universal data members
             node: Dict[str, Union[int, str, None]] = OrderedDict()
