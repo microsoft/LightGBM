@@ -8,16 +8,8 @@ $(function() {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
-    /* Point to the same version of R API as the current docs branch */
-    var current_branch = window.location.pathname.toLocaleLowerCase().split('/')[2];
-    if(current_branch !== 'latest') {
-        $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
-            $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_branch + '/'); });
-        });
-    }
-
     /* Collapse specified sections in the installation guide */
-    if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
+    if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') !== -1) {
         $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>').appendTo('body');
         var collapsable = [
             '#build-threadless-version-not-recommended',

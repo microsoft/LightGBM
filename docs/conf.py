@@ -39,10 +39,16 @@ LIB_PATH = CURR_PATH.parent / "python-package"
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
+RTD_R_REF_REGEX = compile(r"(?P<begin>https://.+/)(?P<rtd_version>latest)(?P<end>/R/reference/$)")
 
 
-class InternalRefTransform(Transform):
-    """Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'."""
+class RefTransform(Transform):
+    """Transforms all references.
+    
+    Performs the following transforms:
+    - Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'.
+    - Replaces 'latest' with actual RTD version in all links to R API docs.
+    """
 
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
@@ -52,6 +58,7 @@ class InternalRefTransform(Transform):
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
                 section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
+                section["refuri"] = RTD_R_REF_REGEX.sub(rf"\g<begin>{RTD_VERSION}\g<end>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
@@ -69,6 +76,7 @@ class IgnoredDirective(Directive):
 os.environ["LIGHTGBM_BUILD_DOC"] = "1"
 C_API = os.environ.get("C_API", "").lower().strip() != "no"
 RTD = bool(os.environ.get("READTHEDOCS", ""))
+RTD_VERSION = os.environ.get("READTHEDOCS_VERSION", "stable")
 
 # If your documentation needs a minimal Sphinx version, state it here.
 needs_sphinx = "2.1.0"  # Due to sphinx.ext.napoleon, autodoc_typehints
@@ -330,6 +338,6 @@ def setup(app: Sphinx) -> None:
         app.connect(
             "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
         )
-    app.add_transform(InternalRefTransform)
+    app.add_transform(RefTransform)
     add_js_file = getattr(app, "add_js_file", False) or app.add_javascript
     add_js_file("js/script.js")
