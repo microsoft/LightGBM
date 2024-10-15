@@ -312,8 +312,21 @@ if test "${INSTALL}" = true; then
         echo 'requires = ["setuptools"]' >> ./pyproject.toml
         echo 'build-backend = "setuptools.build_meta"' >> ./pyproject.toml
         echo "" >> ./pyproject.toml
-        echo "recursive-include lightgbm *.dll *.dylib *.so" > ./MANIFEST.in
+        echo "recursive-include lightgbm VERSION.txt py.typed *.py *.so" > ./MANIFEST.in
         echo "" >> ./MANIFEST.in
+        # create a setup.cfg for systems with setuptools<61 (e.g Ubuntu 22.04 python3-pip)
+        # ref: https://github.com/microsoft/LightGBM/issues/6665#issuecomment-2412748042
+        echo '[metadata]' > ./setup.cfg
+        echo 'name = lightgbm' >> ./setup.cfg
+        echo "version = $(head -1 ../VERSION.txt)" >> ./setup.cfg
+        echo 'description = lightgbm' >> ./setup.cfg
+        echo "" >> ./setup.cfg
+        echo '[options]' >> ./setup.cfg
+        echo 'packages = lightgbm' >> ./setup.cfg
+        echo 'include_package_data = True' >> ./setup.cfg
+        echo "" >> ./setup.cfg
+        echo '[options.packages.find]' >> ./setup.cfg
+        echo 'where = lightgbm' >> ./setup.cfg
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "found pre-compiled lib_lightgbm.so"
@@ -376,4 +389,4 @@ if test "${INSTALL}" = true; then
 fi
 
 echo "cleaning up"
-rm -rf ./lightgbm-python
+#rm -rf ./lightgbm-python
