@@ -678,6 +678,12 @@ class LGBMModel(_LGBMModelBase):
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)",
+                "check_sample_weight_equivalence": (
+                    "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
+                    "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
+                    "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
+                    "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
+                ),
             },
         }
 

@@ -416,12 +416,15 @@ std::string Tree::ToJSON() const {
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
+    str_buf << "\"tree_structure\":{";
+    str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';
     if (is_linear_) {
-      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << ", " << "\n";
-      str_buf << LinearModelToJSON(0) << "}" << "\n";
+      str_buf << "\"leaf_count\":" << leaf_count_[0] << ", " << '\n';
+      str_buf << LinearModelToJSON(0);
     } else {
-      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+      str_buf << "\"leaf_count\":" << leaf_count_[0];
     }
+    str_buf << "}" << '\n';
   } else {
     str_buf << "\"tree_structure\":" << NodeToJSON(0) << '\n';
   }
@@ -731,6 +734,12 @@ Tree::Tree(const char* str, size_t* used_len) {
     is_linear_ = false;
   }
 
+  if (key_vals.count("leaf_count")) {
+    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
+  } else {
+    leaf_count_.resize(num_leaves_);
+  }
+
   #ifdef USE_CUDA
   is_cuda_tree_ = false;
   #endif  // USE_CUDA
@@ -791,12 +800,6 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_weight_ = CommonC::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
-  }
-
-  if (key_vals.count("leaf_count")) {
-    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
-  } else {
-    leaf_count_.resize(num_leaves_);
   }
 
   if (key_vals.count("decision_type")) {
