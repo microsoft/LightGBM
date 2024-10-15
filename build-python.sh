@@ -319,14 +319,11 @@ if test "${INSTALL}" = true; then
         echo '[metadata]' > ./setup.cfg
         echo 'name = lightgbm' >> ./setup.cfg
         echo "version = $(head -1 ../VERSION.txt)" >> ./setup.cfg
-        echo 'description = lightgbm' >> ./setup.cfg
+        echo 'description = lightgbm (built with LightGBM/build-python.sh)' >> ./setup.cfg
         echo "" >> ./setup.cfg
         echo '[options]' >> ./setup.cfg
         echo 'packages = lightgbm' >> ./setup.cfg
         echo 'include_package_data = True' >> ./setup.cfg
-        echo "" >> ./setup.cfg
-        echo '[options.packages.find]' >> ./setup.cfg
-        echo 'where = lightgbm' >> ./setup.cfg
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
             echo "found pre-compiled lib_lightgbm.so"
