@@ -22,7 +22,7 @@ if ($env:TASK -eq "r-package") {
 }
 
 if ($env:TASK -eq "cpp-tests") {
-  cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_OPENMP=OFF -DUSE_DEBUG=ON -A x64
+  cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_DEBUG=ON -A x64
   cmake --build build --target testlightgbm --config Debug ; Check-Output $?
   .\Debug\testlightgbm.exe ; Check-Output $?
   Exit 0
