@@ -308,7 +308,9 @@ void SerialTreeLearner::updateMemoryForLeaves(Tree * tree, std::vector<double> l
       updateMemoryForLeaf(leaf_value);
     }
   }
-  mrf_->UpdateMemoryForTree(tree);
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    mrf_->UpdateMemoryForTree(tree);
+  }
 }
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
