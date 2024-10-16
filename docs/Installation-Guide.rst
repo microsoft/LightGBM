@@ -167,7 +167,13 @@ On Linux, LightGBM can also be built with `Ninja`_ instead of ``make``.
 macOS
 ~~~~~
 
-On macOS, LightGBM can be installed using **Homebrew**, **MacPorts**, or can be built using
+On macOS, LightGBM can be installed using
+
+- **Homebrew**;
+
+- **MacPorts**;
+
+or can be built using
 
 - **CMake** and **Apple Clang**;
 
