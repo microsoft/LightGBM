@@ -302,12 +302,13 @@ void SerialTreeLearner::updateMemoryForLeaf(double val) {
     mrf_->InsertLeafInformation(val);
   }
 }
-void SerialTreeLearner::updateMemoryForLeaf(std::vector<double> leaf_value_) {
+void SerialTreeLearner::updateMemoryForLeaves(Tree * tree, std::vector<double> leaf_value_) {
   for (double leaf_value : leaf_value_) {
     if (leaf_value != 0.0) {
       updateMemoryForLeaf(leaf_value);
     }
   }
+  mrf_->UpdateMemoryForTree(tree);
 }
 
 Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,

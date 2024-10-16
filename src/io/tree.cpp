@@ -381,7 +381,6 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> featur
       tinytree_[1][i] = threshold_id; 
     }    
   }
-  Log::Debug("difference no. threshold values: %d, difference no. of feature values: %d", (tt_thresholds_.size()-threshold_.size()), (tt_features_.size()-split_feature_.size()) );
 
   // TODO: does something need to be returned? if not make function void
   return tinytree_;
@@ -401,8 +400,6 @@ std::vector<int> Tree::ToFullArray() const {
       if (depth < leaf_depth_[i]) depth = leaf_depth_[i];
     }
   }
-  Log::Debug("max depth of all leaves: %d", depth);
-
   // number of nodes for a full tree with given depth
   // TODO: think about removing last level as leaves are not relevant for calculation
   int tt_nodes = pow(2.0, (1.0+depth))-1;

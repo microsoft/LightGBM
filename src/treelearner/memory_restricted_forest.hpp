@@ -53,14 +53,17 @@ namespace LightGBM {
       // reference in the "tree" table.
       est_leftover_memory -= sizeof(short);
       Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
-      // TODO insert in the data structure
     }
     void InsertLeavesInformation(std::vector<double> leaf_value_) {
       for (double leaf_value : leaf_value_) {
         InsertLeafInformation(leaf_value);
       }
     }
-
+    void UpdateMemoryForTree(Tree* tree) {
+      // Tree weight.
+      est_leftover_memory -= sizeof(float);
+      tree_size_.push_back(tree->getNumberNodes());
+    }
     void InsertSplitInfo(const Tree *tree, const Dataset *train_data_) {
       // ID of last node is the number of leaves - 2, as tree has num_leaves - 1 nodes and ids start with 0.
       // We need a split that might not have been inserted
@@ -77,6 +80,7 @@ namespace LightGBM {
 
       consumed_memory con_mem = {};
       CalculateSplitMemoryConsumption(con_mem, threshold, feature);
+      CalculateEffectQuantization(&con_mem, tree);
       // How do we know the order?
       if (con_mem.new_feature) {
         // If yes, only one int value is added.
@@ -90,11 +94,25 @@ namespace LightGBM {
       est_leftover_memory -= con_mem.bytes;
     }
 
-    float CalculateSplitMemoryConsumption(consumed_memory &con_mem, float threshold, uint32_t feature) {
-      // Two integers to save the id of split and threshold in the overall structure and a float for the predict value.
-      // TODO dependent on the size of the tree those could be encoded as chars. ( 0 -255 for unsigned chars) (unsigned short 65535)
-      con_mem.bytes = 2 * sizeof(short) + sizeof(float);
+    void CalculateEffectQuantization(consumed_memory *con_mem, const Tree * tree) {
+      // Every time we cross a power of two we require a new bit.
+      size_t fug_size_ = features_used_global_.size();
+      size_t next_power_of_two = static_cast<size_t>(std::pow(2, std::ceil(std::log2(fug_size_ + 1))));
+      if (fug_size_ + 1 > next_power_of_two) {
+        f_needed_bits++;
+      }
 
+      size_t tug_size = thresholds_used_global_.size();
+      next_power_of_two = static_cast<size_t>(std::pow(2, std::ceil(std::log2(tug_size + 1))));
+      if (tug_size + 1 > next_power_of_two) {
+        t_needed_bits++;
+      }
+      // Until now all trees could use the less bit representation.
+      // Reduce the current tree and increase the bits for the following trees.
+      est_leftover_memory -= f_needed_bits + t_needed_bits * tree->getNumberNodes();
+    }
+    float CalculateSplitMemoryConsumption(consumed_memory &con_mem, float threshold, uint32_t feature) {
+      // Insert the memory consumption of the two global tables.
       std::vector<uint32_t>::iterator feature_it;
       std::vector<float>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
                                                             thresholds_used_global_.end(), threshold);
@@ -117,11 +135,12 @@ namespace LightGBM {
       } else {
         con_mem.tindex = std::distance(thresholds_used_global_.begin(), threshold_it);
       }
+      con_mem.bytes += f_needed_bits + t_needed_bits;
       return threshold;
     }
 
     float CalculateAndInsertThresholdVariability(float threshold) {
-      float epsilon = 0.0f; // precision;
+      float epsilon = this->precision; // precision;
       float best_sofar = threshold;
       for (const threshold_info &elem: threshold_feature_info) {
         // In case the threshold is close to an already inserted threshold take it.
@@ -174,15 +193,17 @@ namespace LightGBM {
 
     bool init_;
     int est_leftover_memory{};
+    // In the unrealistic best case we have 2 features -> 1 bit.
+    int f_needed_bits = 1;
+    int t_needed_bits = 1;
     double precision;
     const SerialTreeLearner *tree_learner_;
     std::vector<threshold_info> threshold_feature_info;
-
-    // TODO change this to short? or even smaller?
-    /*! \brief count feature use; TODO: possible to use fewer bits? */
+    /*! \brief count feature use; */
     std::vector<u_int32_t> features_used_global_;
-    /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
+    /*! \brief record thresholds used for split; */
     std::vector<float> thresholds_used_global_;
+    std::vector<int> tree_size_;
   };
 }
 #endif //LIGHTGBM_MEMORY_RESTRICTED_FOREST_H

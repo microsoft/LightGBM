@@ -417,6 +417,15 @@ class Tree {
       return NumericalDecisionInner(fval, node, default_bin, max_bin);
     }
   }
+  inline int getNumberNodes() const {
+    if (leaf_depth_.empty()) {
+      return 0;
+    }
+    int max_depth = *std::max_element(leaf_depth_.begin(), leaf_depth_.end());
+    // The number of nodes in a binary tree with depth d is 2^(d+1) - 1 assuming we use full trees.
+    int total_nodes = static_cast<int>(std::pow(2, max_depth + 1)) - 1;
+    return total_nodes;
+  }
 
   inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
                     double left_weight, double right_weight, float gain);
