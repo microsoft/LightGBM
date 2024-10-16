@@ -678,6 +678,12 @@ class LGBMModel(_LGBMModelBase):
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)",
+                "check_sample_weight_equivalence": (
+                    "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
+                    "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
+                    "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
+                    "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
+                ),
             },
         }
 
@@ -1037,7 +1043,7 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
             y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
             sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
             init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
@@ -1114,7 +1120,7 @@ class LGBMModel(_LGBMModelBase):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -1503,7 +1509,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_probability",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",

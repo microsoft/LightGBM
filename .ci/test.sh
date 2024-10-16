@@ -50,7 +50,6 @@ fi
 if [[ "$TASK" == "cpp-tests" ]]; then
     cmake_args=(
         -DBUILD_CPP_TEST=ON
-        -DUSE_OPENMP=OFF
         -DUSE_DEBUG=ON
     )
     if [[ $METHOD == "with-sanitizers" ]]; then
