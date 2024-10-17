@@ -6,7 +6,8 @@
 sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
     ca-certificates \
-    curl
+    curl \
+    unzip
 
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
@@ -14,11 +15,17 @@ curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/
 sudo mkdir /opt/cmake
 sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake
 sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
+cmake --version
+
+curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+unzip ninja-linux.zip
+sudo ln -sf ./ninja-linux/bin/ninja /usr/local/bin/ninja
+ninja --version
 
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-cmake -B build -S .
+cmake -B build -S . -G Ninja
 cmake --build build -j4
 
 ls .
