@@ -144,12 +144,10 @@ On Linux, LightGBM can be built using
 - **CMake**, **Ninja** and **gcc**;
 - **CMake**, **Ninja** and **Clang**.
 
-gcc or Clang
-^^^^^^^^^^^^
+gcc
+^^^
 
-1. Install `CMake`_, **gcc** or **Clang**.
-
-   **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+1. Install `CMake`_ and **gcc**.
 
 2. Run the following commands:
 
@@ -162,12 +160,42 @@ gcc or Clang
 
 The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
-gcc or Clang and Ninja
-^^^^^^^^^^^^^^^^^^^^^^
+Clang
+^^^^^
 
-1. Install `CMake`_, `Ninja`_, **gcc** or **Clang**.
+1. Install `CMake`_, **Clang** and **OpenMP**.
 
-   **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S .
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+gcc and Ninja
+^^^^^^^^^^^^^
+
+1. Install `CMake`_, `Ninja`_ and **gcc**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang and Ninja
+^^^^^^^^^^^^^^^
+
+1. Install `CMake`_, `Ninja`_, **Clang** and **OpenMP**.
 
 2. Run the following commands:
 
