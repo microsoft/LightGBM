@@ -57,7 +57,6 @@ std::vector<Tree> parse_trees_from_file(const std::string& filename) {
                 currentTree.thresholds_ids.push_back(threshold_id);
             }
         } else if (header.find("shrinkage")!= std::string::npos) {
-            printf("pushing a tree");
             trees.push_back(currentTree);
             currentTree = Tree(); // Reset tree for next use
         }
@@ -66,45 +65,53 @@ std::vector<Tree> parse_trees_from_file(const std::string& filename) {
     return trees;
 }
 
-void printNode(std::ostream& out, Tree tree, int i, int& leavecounter) {
+void printNode(std::ostream& out, Tree tree, int i, int& leavecounter, int indentLevel) {
+    std::string indent(indentLevel, '\t');
+
     if (tree.feature_ids[i] == -1) {
-        out << "        result += " << tree.leaf_values[leavecounter] << ";\n";
+        out  << indent << "result += " << tree.leaf_values[leavecounter] << ";\n";
         leavecounter++;
     } else {
-        out << "        if (values[" << tree.feature_ids[i] << "] <" << "thresholds[" << tree.thresholds_ids[i] <<"]) {" << "\n";
-        printNode(out, tree, 2 * i + 1, leavecounter);
-        out << "        } else {\n";
-        printNode(out, tree, 2 * i + 1, leavecounter);
-        out << "        }\n";
+        out << indent << "if (values[" << tree.feature_ids[i] << "] <" << "thresholds[" << tree.thresholds_ids[i] <<"]) {" << "\n";
+        printNode(out, tree, 2 * i + 1, leavecounter, indentLevel + 1);
+        out << indent << "} else {\n";
+        printNode(out, tree, 2 * i + 1, leavecounter, indentLevel + 1);
+        out << indent << "}\n";
     }
 }
-void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features, std::vector<float> thresholds) {
+void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features, std::vector<float> thresholds, std::string output) {
     features.erase(std::remove(features.begin(), features.end(), -1), features.end());
-    std::ofstream out("Predict.hpp");
-    out << "#include <vector>\n";
-    out << "float predict(const float values[" << features.size() << "]) {\n";
-    out << "    float result = 0;\n";
-    out << "    float thresholds[" << thresholds.size() << "];\n";
+    std::ofstream out(output);
+    out << "#pragma once" << "\n";
+    out << "namespace LightGBM { " << "\n";
+    out << "\t\tclass CovTypeClassifier {" << "\n";
+    out << "\t\tpublic:" << "\n";
+    out << "\t\t\tfloat predict(const float values[" << features.size() << "]) {\n";
+    out << "\t\t\t\tfloat result = 0;\n";
+    out << "\t\t\t\tfloat thresholds[" << thresholds.size() << "];\n";
     int counter = 0;
     for (auto threshold : thresholds) {
-        out << "    thresholds[" << counter << "] =" << threshold << ";\n";
+        out << "\t\t\t\tthresholds[" << counter << "] =" << threshold << ";\n";
         counter++;
     }
-    out << "    int features[" <<  features.size() << "];\n";
+    out << "\t\t\t\tint features[" <<  features.size() << "];\n";
     counter = 0;
     for (auto feature : features) {
-        out << "    features[" << counter << "] =" << feature << ";\n";
+        out << "\t\t\t\tfeatures[" << counter << "] =" << feature << ";\n";
         counter++;
     }
     counter = 0;
     for (int i = 0; i < trees.size(); i++) {
         Tree tree = trees[i];
-        out << "    // " << counter << " tree...\n";
+        out << "\t\t\t\t// tree " << counter << " ...\n";
         int leavecounter = 0;
-        printNode(out, tree, 0, leavecounter);
+        printNode(out, tree, 0, leavecounter, 4);
+        counter++;
     }
-    out << "    return result;\n";
-    out << "}\n";
+    out << "\t\t\treturn result;\n";
+    out << "\t\t}\n";
+    out << "\t};" << "\n";
+    out << "}" << "\n";
     out.close();
 }
 
@@ -118,13 +125,17 @@ void getUniqueFromTree(std::vector<Tree>& trees, std::vector<T>& vec, bool featu
     auto last = std::unique(vec.begin(), vec.end());
     vec.erase(last, vec.end());
 }
-int main() {
-    std::string filename = "examples/min/LightGBM_model.txt";
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <pathLightGBMModel> <pathOutput>" << std::endl;
+        return 1; // Exit with error code
+    }
+    std::string filename = argv[1]; // "examples/binary_classification/LightGBM_model.txt";
     std::vector<Tree> trees = parse_trees_from_file(filename);
     std::vector<float> thresholds;
     std::vector<int> features;
     getUniqueFromTree(trees, thresholds, false);
     getUniqueFromTree(trees, features, true);
-    generate_cpp_file(trees, features, thresholds);
+    generate_cpp_file(trees, features, thresholds, argv[2]);
     return 0;
 }
