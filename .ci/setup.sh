@@ -38,14 +38,6 @@ cd ./examples/regression
 #             locales \
 #             locales-all || exit 1
 
-#         export LANG="en_US.UTF-8"
-#         sudo update-locale LANG=${LANG}
-#         export LC_ALL="${LANG}"
-#     fi
-#     if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
-#         sudo apt-get install --no-install-recommends -y \
-#             libomp-dev
-#     fi
 #     if [[ $TASK == "mpi" ]]; then
 #         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
 #             sudo apt-get update
