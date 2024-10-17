@@ -23,7 +23,8 @@ cmake --build build -j4
 
 ls .
 
-./lightgbm config="./examples/regression/train.conf"
+cd ./examples/regression
+../../lightgbm config=train.conf
 
 #         sudo apt-get install --no-install-recommends -y \
 #             build-essential \
