@@ -39,16 +39,11 @@ LIB_PATH = CURR_PATH.parent / "python-package"
 sys.path.insert(0, str(LIB_PATH))
 
 INTERNAL_REF_REGEX = compile(r"(?P<url>\.\/.+)(?P<extension>\.rst)(?P<anchor>$|#)")
-RTD_R_REF_REGEX = compile(r"(?P<begin>https://.+/)(?P<rtd_version>latest)(?P<end>/R/reference/$)")
+RTD_R_REF_REGEX = compile(r"(?P<begin>https://.+/)(?P<rtd_version>latest)(?P<end>/R/reference/)")
 
 
-class RefTransform(Transform):
-    """Transforms all references.
-    
-    Performs the following transforms:
-    - Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'.
-    - Replaces 'latest' with actual RTD version in all links to R API docs.
-    """
+class InternalRefTransform(Transform):
+    """Replaces '.rst' with '.html' in all internal links like './[Something].rst[#anchor]'."""
 
     default_priority = 210
     """Numerical priority of this transform, 0 through 999."""
@@ -58,7 +53,6 @@ class RefTransform(Transform):
         for section in self.document.traverse(reference):
             if section.get("refuri") is not None:
                 section["refuri"] = INTERNAL_REF_REGEX.sub(r"\g<url>.html\g<anchor>", section["refuri"])
-                section["refuri"] = RTD_R_REF_REGEX.sub(rf"\g<begin>{RTD_VERSION}\g<end>", section["refuri"])
 
 
 class IgnoredDirective(Directive):
@@ -317,6 +311,22 @@ def generate_r_docs(app: Sphinx) -> None:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
 
+def replace_reference_to_r_docs(app: Sphinx) -> None:
+    """Make reference to R-package documentation point to the actual version.
+
+    Parameters
+    ----------
+    app : sphinx.application.Sphinx
+        The application object representing the Sphinx process.
+    """
+    index_doc_path = CURR_PATH / "index.rst"
+    with open(index_doc_path, "r+t", encoding="utf-8") as index_doc:
+        content = index_doc.read()
+        content = RTD_R_REF_REGEX.sub(rf"\g<begin>{RTD_VERSION}\g<end>", content)
+        index_doc.seek(0)
+        index_doc.write(content)
+
+
 def setup(app: Sphinx) -> None:
     """Add new elements at Sphinx initialization time.
 
@@ -338,6 +348,7 @@ def setup(app: Sphinx) -> None:
         app.connect(
             "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
         )
-    app.add_transform(RefTransform)
+    app.connect("builder-inited", replace_reference_to_r_docs)
+    app.add_transform(InternalRefTransform)
     add_js_file = getattr(app, "add_js_file", False) or app.add_javascript
     add_js_file("js/script.js")
