@@ -28,15 +28,6 @@ ls .
 cd ./examples/regression
 ../../lightgbm config=train.conf
 
-#         sudo apt-get install --no-install-recommends -y \
-#             build-essential \
-#             git \
-#             libcurl4 \
-#             libicu-dev \
-#             libssl-dev \
-#             locales \
-#             locales-all || exit 1
-
 #     if [[ $TASK == "mpi" ]]; then
 #         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
 #             sudo apt-get update
