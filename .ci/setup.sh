@@ -151,5 +151,5 @@ if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
         sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
-    conda update -q -y conda
+    conda update -q -y --all
 fi
