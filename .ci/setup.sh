@@ -9,10 +9,11 @@ sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
 cmake --version
 
 curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+ls ./
 unzip ninja-linux.zip
 ls ./
-sudo ln -sf ./ninja /usr/local/bin/ninja
-ninja --version
+#sudo ln -sf ./ninja /usr/local/bin/ninja
+#ninja --version
 
 
 git clone --recursive https://github.com/microsoft/LightGBM
