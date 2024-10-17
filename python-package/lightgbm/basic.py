@@ -876,8 +876,7 @@ def _load_pandas_categorical(
         max_offset = -getsize(file_name)
         with open(file_name, "rb") as f:
             while True:
-                if offset < max_offset:
-                    offset = max_offset
+                offset = max(offset, max_offset)
                 f.seek(offset, SEEK_END)
                 lines = f.readlines()
                 if len(lines) >= 2:
