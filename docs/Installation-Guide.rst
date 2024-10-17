@@ -137,9 +137,19 @@ It is recommended that you use **Visual Studio** since it has better multithread
 Linux
 ~~~~~
 
-On Linux, LightGBM can be built using **CMake** and **gcc** or **Clang**.
+On Linux, LightGBM can be built using
 
-1. Install `CMake`_.
+- **CMake** and **gcc**;
+- **CMake** and **Clang**;
+- **CMake**, **Ninja** and **gcc**;
+- **CMake**, **Ninja** and **Clang**.
+
+gcc or Clang
+^^^^^^^^^^^^
+
+1. Install `CMake`_, **gcc** or **Clang**.
+
+  **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 2. Run the following commands:
 
@@ -150,19 +160,25 @@ On Linux, LightGBM can be built using **CMake** and **gcc** or **Clang**.
      cmake -B build -S .
      cmake --build build -j4
 
-**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
-Using ``Ninja``
-^^^^^^^^^^^^^^^
+gcc or Clang and Ninja
+^^^^^^^^^^^^^^^^^^^^^^
 
-On Linux, LightGBM can also be built with `Ninja`_ instead of ``make``.
+1. Install `CMake`_, `Ninja`_ and **gcc** or **Clang**.
 
-.. code:: sh
+  **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+
+2. Run the following commands:
+
+   .. code:: sh
 
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
-     cmake -B build -S . -G 'Ninja'
-     cmake --build build -j2
+     cmake -B build -S . -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 macOS
 ~~~~~
