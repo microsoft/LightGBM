@@ -27,7 +27,7 @@
 #     # skip vignette building
 #     sh build-cran-package.sh --no-build-vignettes
 
-set -e -E -u
+set -e -u
 
 # Default values of arguments
 BUILD_VIGNETTES=true
@@ -63,7 +63,7 @@ CURRENT_DATE=$(date +'%Y-%m-%d')
 
 # R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
-LGB_VERSION=$(cat VERSION.txt | sed "s/rc/-/g")
+LGB_VERSION=$(head -1 ./VERSION.txt | sed "s/rc/-/g")
 
 # move relevant files
 cp -R R-package/* "${TEMP_R_DIR}"
@@ -91,10 +91,10 @@ mkdir -p "${EIGEN_R_DIR}"
 
 modules="Cholesky Core Dense Eigenvalues Geometry Householder Jacobi LU QR SVD"
 for eigen_module in ${modules}; do
-    cp external_libs/eigen/Eigen/${eigen_module} "${EIGEN_R_DIR}/${eigen_module}"
-    if [ ${eigen_module} != "Dense" ]; then
+    cp "external_libs/eigen/Eigen/${eigen_module}" "${EIGEN_R_DIR}/${eigen_module}"
+    if [ "${eigen_module}" != "Dense" ]; then
         mkdir -p "${EIGEN_R_DIR}/src/${eigen_module}/"
-        cp -R external_libs/eigen/Eigen/src/${eigen_module}/* "${EIGEN_R_DIR}/src/${eigen_module}/"
+        cp -R "external_libs/eigen/Eigen/src/${eigen_module}"/* "${EIGEN_R_DIR}/src/${eigen_module}/"
     fi
 done
 
@@ -130,6 +130,7 @@ cd "${TEMP_R_DIR}"
     # Rtools35 (used with R 3.6 on Windows) doesn't support C++17
     LGB_CXX_STD="C++17"
     using_windows_and_r3=$(
+        # shellcheck disable=SC2016
         Rscript -e 'cat(.Platform$OS.type == "windows" && R.version[["major"]] < 4)'
     )
     if test "${using_windows_and_r3}" = "TRUE"; then
@@ -142,7 +143,7 @@ cd "${TEMP_R_DIR}"
     # not allow you to use compiler flag '-Wno-unknown-pragmas' or
     # pragmas that suppress warnings.
     echo "Removing unknown pragmas in headers"
-    for file in $(find . -name '*.h' -o -name '*.hpp' -o -name '*.cpp'); do
+    find . \( -name '*.h' -o -name '*.hpp' -o -name '*.cpp' \) -exec \
       sed \
         -i.bak \
         -e 's/^.*#pragma clang diagnostic.*$//' \
@@ -151,9 +152,7 @@ cd "${TEMP_R_DIR}"
         -e 's/^.*#pragma region.*$//' \
         -e 's/^.*#pragma endregion.*$//' \
         -e 's/^.*#pragma warning.*$//' \
-        "${file}"
-    done
-    find . -name '*.h.bak' -o -name '*.hpp.bak' -o -name '*.cpp.bak' -exec rm {} \;
+        {} +
 
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
@@ -164,7 +163,7 @@ cd "${TEMP_R_DIR}"
         DESCRIPTION
 
     echo "Cleaning sed backup files"
-    rm *.bak
+    find . -name '*.bak' -exec rm {} \;
 
 cd "${ORIG_WD}"
 
