@@ -167,7 +167,7 @@ gcc or Clang and Ninja
 
 1. Install `CMake`_, `Ninja`_, **gcc** or **Clang**.
 
-  **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+   **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 2. Run the following commands:
 
