@@ -63,7 +63,7 @@ CURRENT_DATE=$(date +'%Y-%m-%d')
 
 # R packages cannot have versions like 3.0.0rc1, but
 # 3.0.0-1 is acceptable
-LGB_VERSION=$(sed "s/rc/-/g" < VERSION.txt)
+LGB_VERSION=$(head -1 ./VERSION.txt | sed "s/rc/-/g")
 
 # move relevant files
 cp -R R-package/* "${TEMP_R_DIR}"
@@ -153,7 +153,6 @@ cd "${TEMP_R_DIR}"
         -e 's/^.*#pragma endregion.*$//' \
         -e 's/^.*#pragma warning.*$//' \
         {} +
-    find . -name '*.bak' -exec rm {} \;
 
     # 'processx' is listed as a 'Suggests' dependency in DESCRIPTION
     # because it is used in install.libs.R, a file that is not
@@ -164,7 +163,7 @@ cd "${TEMP_R_DIR}"
         DESCRIPTION
 
     echo "Cleaning sed backup files"
-    rm ./*.bak
+    find . -name '*.bak' -exec rm {} \;
 
 cd "${ORIG_WD}"
 

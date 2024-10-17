@@ -340,20 +340,22 @@ fi
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
+    # shellcheck disable=SC2086
     python -m build \
         --sdist \
         --outdir ../dist \
-        ${BUILD_ARGS:+${BUILD_ARGS}} \
+        ${BUILD_ARGS} \
         .
 fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
+    # shellcheck disable=SC2086
     python -m build \
         --wheel \
         --outdir ../dist \
-        ${BUILD_ARGS:+${BUILD_ARGS}} \
+        ${BUILD_ARGS} \
         .
 fi
 
@@ -366,8 +368,9 @@ if test "${INSTALL}" = true; then
         PACKAGE_NAME="$(echo lightgbm*.tar.gz)"
     fi
     # ref for use of '--find-links': https://stackoverflow.com/a/52481267/3986677
+    # shellcheck disable=SC2086
     pip install \
-        ${PIP_INSTALL_ARGS:+ -o "$PIP_INSTALL_ARGS"} \
+        ${PIP_INSTALL_ARGS} \
         --force-reinstall \
         --no-cache-dir \
         --no-deps \
