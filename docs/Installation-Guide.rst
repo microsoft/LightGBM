@@ -149,7 +149,7 @@ gcc or Clang
 
 1. Install `CMake`_, **gcc** or **Clang**.
 
-  **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+   **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 2. Run the following commands:
 
