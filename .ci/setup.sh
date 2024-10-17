@@ -1,14 +1,5 @@
 #!/bin/bash
 
-#set -e -E -u -o pipefail
-
-
-sudo apt-get update
-sudo apt-get install --no-install-recommends -y \
-    ca-certificates \
-    curl \
-    unzip
-
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
 curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh
@@ -19,8 +10,8 @@ cmake --version
 
 curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
 unzip ninja-linux.zip
-ls
-sudo ln -sf ./ninja-linux/bin/ninja /usr/local/bin/ninja
+ls ninja
+sudo ln -sf ./ninja/bin/ninja /usr/local/bin/ninja
 ninja --version
 
 
