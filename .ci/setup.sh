@@ -10,7 +10,7 @@ cmake --version
 
 curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
 unzip ninja-linux.zip
-ls -lh ./ninja
+ls -lh ./ninja/
 #sudo ln -sf ./ninja /usr/local/bin/ninja
 #ninja --version
 
