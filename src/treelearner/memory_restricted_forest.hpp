@@ -23,7 +23,7 @@ namespace LightGBM {
   };
 
   struct threshold_info {
-    float threshold;
+    double threshold;
     uint32_t feature;
     double leftmost;
     double rightmost;
@@ -45,8 +45,8 @@ namespace LightGBM {
       : init_(false), tree_learner_(tree_learner) {
     }
     void InsertLeafInformation(double leaf_value) {
-      float n_leave_value = CalculateAndInsertThresholdVariability(static_cast<float>(leaf_value));
-      if (n_leave_value == static_cast<float>(leaf_value)) {
+      double n_leave_value = CalculateAndInsertThresholdVariability(leaf_value);
+      if (n_leave_value == leaf_value) {
         // value in the threshold table.
         est_leftover_memory -= sizeof(float);
       }
@@ -70,9 +70,7 @@ namespace LightGBM {
       const int last_node_id = tree->num_leaves_ - 2;
 
       // TODO: merge following lines, but depends on if/how we implement rounding.
-      const float threshold = tree->threshold_[last_node_id];
-      //float threshold_rounded = (int)(threshold*pow(10, precision) + 0.5) / pow(10, precision);
-      //threshold = threshold_rounded;
+      const double threshold = tree->threshold_[last_node_id];
       const uint32_t feature = tree->split_feature_[last_node_id];
       const BinMapper *bin_mapper = train_data_->FeatureBinMapper(feature);
 
@@ -111,21 +109,21 @@ namespace LightGBM {
       // Reduce the current tree and increase the bits for the following trees.
       est_leftover_memory -= f_needed_bits + t_needed_bits * tree->getNumberNodes();
     }
-    float CalculateSplitMemoryConsumption(consumed_memory &con_mem, float threshold, uint32_t feature) {
+    double CalculateSplitMemoryConsumption(consumed_memory &con_mem, double threshold, uint32_t feature) {
       // Insert the memory consumption of the two global tables.
       std::vector<uint32_t>::iterator feature_it;
-      std::vector<float>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
+      std::vector<double>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
                                                             thresholds_used_global_.end(), threshold);
       feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
       if (feature_it == features_used_global_.end()) {
-        con_mem.bytes += sizeof(short);
+        con_mem.bytes += f_needed_bits;
         con_mem.new_feature = true;
       } else {
         con_mem.findex = std::distance(features_used_global_.begin(), feature_it);
       }
       // If the threshold is not present and cannot be adjusted to a close by threshold.
       if (threshold_it == thresholds_used_global_.end()) {
-        float possible_thres = CalculateAndInsertThresholdVariability(threshold);
+        double possible_thres = CalculateAndInsertThresholdVariability(threshold);
         if (possible_thres == threshold) {
           con_mem.bytes += sizeof(float);
           con_mem.new_threshold = true;
@@ -139,9 +137,9 @@ namespace LightGBM {
       return threshold;
     }
 
-    float CalculateAndInsertThresholdVariability(float threshold) {
-      float epsilon = this->precision; // precision;
-      float best_sofar = threshold;
+    double CalculateAndInsertThresholdVariability(double threshold) {
+      double epsilon = this->precision; // precision;
+      double best_sofar = threshold;
       for (const threshold_info &elem: threshold_feature_info) {
         // In case the threshold is close to an already inserted threshold take it.
         if (std::fabs(threshold - elem.threshold) < epsilon) {
@@ -154,7 +152,7 @@ namespace LightGBM {
       return best_sofar;
     }
 
-    void InsertThresholdFeatureInfo(float threshold, uint32_t featureidx, const BinMapper *bin_mapper) {
+    void InsertThresholdFeatureInfo(double threshold, uint32_t featureidx, const BinMapper *bin_mapper) {
       threshold_info info{};
       info.threshold = threshold;
       info.feature = featureidx;
@@ -202,7 +200,7 @@ namespace LightGBM {
     /*! \brief count feature use; */
     std::vector<u_int32_t> features_used_global_;
     /*! \brief record thresholds used for split; */
-    std::vector<float> thresholds_used_global_;
+    std::vector<double> thresholds_used_global_;
     std::vector<int> tree_size_;
   };
 }

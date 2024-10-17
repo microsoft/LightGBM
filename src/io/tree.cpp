@@ -336,19 +336,18 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<float> thresholds, u_int8_t decimals) {
+std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> thresholds_, u_int8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
   tt_features_ = features;
-  tt_thresholds_ = thresholds;
- 
+  tt_thresholds_ = thresholds_;
   // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
   int init_value = -1;
   tinytree_.resize(2, std::vector<int>(tt_nodes, init_value));
 
   // init iterators and ids
-  std::vector<float>::iterator threshold_it;
+  std::vector<double>::iterator threshold_it;
   std::vector<u_int32_t>::iterator feature_it;
   int threshold_id;
   int feature_id;
@@ -356,24 +355,24 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> featur
   int left_child_id;
 
   // iterate over all nodes in full tree
-  for (int i = 0; i < tt_nodes; i++)
-  {
+  for (int i = 0; i < tt_nodes; i++) {
     // get lightgbm id of current node
     lightgbm_id = fulltree_ids[i];
 
-    // TODO: do we want to include leaf nodes in tiny tree? numbering is difficult as non split nodes are initialized with -1
-    if (lightgbm_id >= 0)
-    {
-      // round threshold value to given decimals, otherwise find() might not recognise (almost) same values
-      // TODO: make precision a config parameter (if we want to use it)
-      float threshold_rounded = (int)(threshold_[lightgbm_id]*pow(10, decimals) + 0.5) / pow(10, decimals);
-      
+    if (lightgbm_id >= 0) {
+
       // check if threshold and feature are already in lookup tables
-      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_[lightgbm_id]);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
       
       // get ids referencing to values in lookup tables
-      threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)threshold_[lightgbm_id]) != tt_thresholds_.end());
+
+      if (found) {
+        threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      } else {
+        Log::Debug("We have a TINYGBDT Problem here %f", threshold_[lightgbm_id]);
+      }
       feature_id = std::distance(tt_features_.begin(), feature_it);
       
       // set references to lookup tables for threshold and feature in tiny tree
