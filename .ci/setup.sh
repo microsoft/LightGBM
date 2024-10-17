@@ -21,7 +21,7 @@ cmake --version
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-cmake -B build -S . -G Ninja
+cmake -B build -S .
 cmake --build build -j4
 
 ls .
