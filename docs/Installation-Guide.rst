@@ -165,7 +165,7 @@ The executable and ``.so`` files will be in ``LightGBM/`` folder.
 gcc or Clang and Ninja
 ^^^^^^^^^^^^^^^^^^^^^^
 
-1. Install `CMake`_, `Ninja`_ and **gcc** or **Clang**.
+1. Install `CMake`_, `Ninja`_, **gcc** or **Clang**.
 
   **Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
