@@ -2,51 +2,28 @@
 
 #set -e -E -u -o pipefail
 
-pwsh -v
-pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope AllUsers -Force -SkipPublisherCheck"
 
-git clone https://github.com/microsoft/LightGBM
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y \
+    ca-certificates \
+    curl
 
-read -r -d '' analyzer_cmd << EOM
-Invoke-ScriptAnalyzer -Path ./LightGBM/.ci -Severity Warning -Recurse -Outvariable issues
-\$errors   = \$issues.Where({\$_.Severity -eq 'Error'})
-\$warnings = \$issues.Where({\$_.Severity -eq 'Warning'})
-if (\$errors) {
-    Write-Error "There were \$(\$errors.Count) errors and \$(\$warnings.Count) warnings total." -ErrorAction Stop
-} else {
-    Write-Output "There were \$(\$errors.Count) errors and \$(\$warnings.Count) warnings total."
-}
-EOM
-pwsh -command "${analyzer_cmd}"
+ARCH="x86_64"
+CMAKE_VERSION="3.30.0"
+curl -O -L https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh
+sudo mkdir /opt/cmake
+sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake
+sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
 
-# else  # Linux
-#     if type -f apt 2>&1 > /dev/null; then
-#         sudo apt-get update
-#         sudo apt-get install --no-install-recommends -y \
-#             ca-certificates \
-#             curl
-#     else
-#         sudo yum update -y
-#         sudo yum install -y \
-#             ca-certificates \
-#             curl
-#     fi
-#     CMAKE_VERSION="3.30.0"
-#     curl -O -L \
-#         https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh \
-#     || exit 1
-#     sudo mkdir /opt/cmake || exit 1
-#     sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
-#     sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
 
-#     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
-#         # fixes error "unable to initialize frontend: Dialog"
-#         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
-#         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
+git clone --recursive https://github.com/microsoft/LightGBM
+cd LightGBM
+cmake -B build -S .
+cmake --build build -j4
 
-#         sudo apt-get update
-#         sudo apt-get install --no-install-recommends -y \
-#             software-properties-common
+ls .
+
+./lightgbm config="./examples/regression/train.conf"
 
 #         sudo apt-get install --no-install-recommends -y \
 #             build-essential \
