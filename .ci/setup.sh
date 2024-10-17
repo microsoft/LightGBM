@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#sudo apt-get update 
-#sudo apt-get install --no-install-recommends -y \
-#    clang
-#    libomp-dev
+sudo apt-get update 
+sudo apt-get install --no-install-recommends -y \
+    clang \
+    libomp-dev
+export CXX=clang++ CC=clang
 
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
@@ -16,8 +17,6 @@ cmake --version
 #curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
 #unzip ninja-linux.zip -d /usr/local/bin/
 #ninja --version
-
-#export CXX=clang++ CC=clang
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
