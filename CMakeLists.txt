@@ -3,7 +3,7 @@ option(USE_OPENMP "Enable OpenMP" ON)
 option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
-option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_CUDA "Enable CUDA-accelerated training " ON)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
@@ -218,6 +218,7 @@ endif()
 
 if(USE_CUDA)
     find_package(CUDAToolkit 11.0 REQUIRED)
+    find_package(Nccl REQUIRED)
     include_directories(${CUDAToolkit_INCLUDE_DIRS})
     set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=${OpenMP_CXX_FLAGS} -Xcompiler=-fPIC -Xcompiler=-Wall")
 
@@ -451,6 +452,7 @@ set(
     LGBM_CUDA_SOURCES
       src/boosting/cuda/cuda_score_updater.cpp
       src/boosting/cuda/cuda_score_updater.cu
+      src/boosting/cuda/nccl_gbdt.cpp
       src/metric/cuda/cuda_binary_metric.cpp
       src/metric/cuda/cuda_pointwise_metric.cpp
       src/metric/cuda/cuda_regression_metric.cpp
@@ -600,6 +602,10 @@ endif()
 if(USE_GPU)
   target_link_libraries(lightgbm_objs PUBLIC ${OpenCL_LIBRARY} ${Boost_LIBRARIES})
 endif()
+
+if(USE_CUDA)
+  target_link_libraries(lightgbm_objs PUBLIC ${NCCL_LIBRARY})
+endif(USE_CUDA)
 
 if(__INTEGRATE_OPENCL)
   # targets OpenCL and Boost are added in IntegratedOpenCL.cmake

@@ -118,6 +118,21 @@ class ObjectiveFunction {
 
   virtual bool NeedConvertOutputCUDA () const { return false; }
 
+  virtual void SetNCCLInfo(
+    ncclComm_t /*nccl_communicator*/,
+    int /*nccl_gpu_rank*/,
+    int /*local_gpu_rank*/,
+    int /*gpu_device_id*/,
+    data_size_t /*global_num_data*/) {}
+
+  /*!
+  * \brief Create object of objective function on CUDA
+  * \param type Specific type of objective function
+  * \param config Config for objective function
+  */
+  LIGHTGBM_EXPORT static ObjectiveFunction* CreateObjectiveFunctionCUDA(const std::string& type,
+    const Config& config);
+
   #endif  // USE_CUDA
 };
 
