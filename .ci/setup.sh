@@ -11,15 +11,12 @@ ARCH=$(uname -m)
 
 
 if [[ $OS_NAME == "macos" ]]; then
+    # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+    # versions of Xcode
+    sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
-        if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
-        fi
     else  # gcc
-        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
-        # versions of Xcode
-        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
         brew install 'gcc@12'
     fi
     if [[ $TASK == "mpi" ]]; then
