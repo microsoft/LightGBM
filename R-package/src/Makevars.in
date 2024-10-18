@@ -49,7 +49,6 @@ OBJECTS = \
     treelearner/feature_histogram.o \
     treelearner/feature_parallel_tree_learner.o \
     treelearner/gpu_tree_learner.o \
-    treelearner/gpu_linear_tree_learner.o \
     treelearner/gradient_discretizer.o \
     treelearner/linear_tree_learner.o \
     treelearner/serial_tree_learner.o \
