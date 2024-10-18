@@ -442,7 +442,7 @@ On Linux, a version of LightGBM without OpenMP support can be built using
 - **CMake**, **Ninja** and **Clang**.
 
 gcc
-^^^
+***
 
 1. Install `CMake`_ and **gcc**.
 
@@ -458,7 +458,7 @@ gcc
 The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 Clang
-^^^^^
+*****
 
 1. Install `CMake`_ and **Clang**.
 
@@ -474,7 +474,7 @@ Clang
 The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 gcc and Ninja
-^^^^^^^^^^^^^
+*************
 
 1. Install `CMake`_, `Ninja`_ and **gcc**.
 
@@ -490,7 +490,7 @@ gcc and Ninja
 The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 Clang and Ninja
-^^^^^^^^^^^^^^^
+***************
 
 1. Install `CMake`_, `Ninja`_ and **Clang**.
 
