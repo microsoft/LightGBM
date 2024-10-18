@@ -1008,6 +1008,26 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   bool use_differential_feature_in_pairwise_ranking = false;
 
+  // desc = whether to additionaly perform indirect document comparison in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool pairwise_lambdarank_model_indirect_comparison = false;
+
+  // desc = whether to model conditional document relevance (given documents ranked above) in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool pairwise_lambdarank_model_conditional_rel = false;
+
+  // desc = whether to limit the indirect document comparison to only auxilliary documents ranked above in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool pairwise_lambdarank_indirect_comparison_above_only = true;
+
+  // desc = whether to use logarithmic discounts when converting pairwise scores into pointwise in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool pairwise_lambdarank_logarithmic_discounts = true;
+
+  // desc = whether to use hard pairwise preference when converting pairwise scores into pointwise in pairwise ranking
+  // desc = used only in ``pairwise_lambdarank`` application
+  bool pairwise_lambdarank_hard_pairwise_preference = false;
+
   #ifndef __NVCC__
   #pragma endregion
 

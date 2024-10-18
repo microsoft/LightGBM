@@ -6,11 +6,11 @@
 #ifndef LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 #define LIGHTGBM_OBJECTIVE_RANK_OBJECTIVE_HPP_
 
-#define model_indirect_comparisons_ false
-#define model_conditional_rel_ true
-#define indirect_comparisons_above_only true
-#define logarithmic_discounts true
-#define hard_pairwise_preference false
+//#define model_indirect_comparison_ false
+//#define model_conditional_rel_ true
+//#define indirect_comparison_above_only_ true
+//#define logarithmic_discounts_ true
+//#define hard_pairwise_preference_ false
 
 #include <LightGBM/metric.h>
 #include <LightGBM/objective_function.h>
@@ -31,7 +31,8 @@ namespace LightGBM {
       data_size_t selected_pairs_cnt, const data_size_t* selected_pairs, const std::pair<data_size_t, data_size_t>* paired_index_map,
       const std::multimap<data_size_t, data_size_t>& right2left_map, const std::multimap < data_size_t, data_size_t>& left2right_map,
       const std::map<std::pair<data_size_t, data_size_t>, data_size_t>& left_right2pair_map,
-      int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache) {
+      int truncation_level, double sigma, CommonC::SigmoidCache sigmoid_cache, bool model_indirect_comparison, bool model_conditional_rel,
+      bool indirect_comparison_above_only, bool logarithmic_discounts, bool hard_pairwise_preference) {
     // get sorted indices for scores
     global_timer.Start("pairwise_lambdarank::UpdatePointwiseScoresForOneQuery part 0");
     std::vector<data_size_t> sorted_idx(cnt_pointwise);
@@ -64,12 +65,12 @@ namespace LightGBM {
         delta_score -= score_pairwise[current_pair_inverse];
         comparisons++;
       }
-      if (model_indirect_comparisons_) {
+      if (model_indirect_comparison) {
         auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
           if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
-            (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
+            (!(indirect_comparison_above_only || model_conditional_rel) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
             data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
             data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
             delta_score += score_pairwise[indexHeadRight] - score_pairwise[indexHeadLeft];
@@ -80,8 +81,8 @@ namespace LightGBM {
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
           if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
-            (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
-            (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
+            (!indirect_comparison_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
+            (!model_conditional_rel || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
             data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
             data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
             delta_score += score_pairwise[indexLeftTail] - score_pairwise[indexRightTail];
@@ -564,7 +565,13 @@ class RankXENDCG : public RankingObjective {
 
 class PairwiseLambdarankNDCG: public LambdarankNDCG {
  public:
-  explicit PairwiseLambdarankNDCG(const Config& config): LambdarankNDCG(config) {}
+  explicit PairwiseLambdarankNDCG(const Config& config): LambdarankNDCG(config) {
+    model_indirect_comparison_ = config.pairwise_lambdarank_model_indirect_comparison;
+    model_conditional_rel_ = config.pairwise_lambdarank_model_conditional_rel;
+    indirect_comparison_above_only_ = config.pairwise_lambdarank_indirect_comparison_above_only;
+    logarithmic_discounts_ = config.pairwise_lambdarank_logarithmic_discounts;
+    hard_pairwise_preference_ = config.pairwise_lambdarank_hard_pairwise_preference;
+  }
 
   explicit PairwiseLambdarankNDCG(const std::vector<std::string>& strs): LambdarankNDCG(strs) {}
 
@@ -634,7 +641,8 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
       global_timer.Stop("pairwise_lambdarank::GetGradients part 1");
       global_timer.Start("pairwise_lambdarank::GetGradients part 2");
       UpdatePointwiseScoresForOneQuery(i, scores_pointwise_.data() + start_pointwise, score_pairwise + start_pairwise, cnt_pointwise, cnt_pairwise, all_pairs.data(),
-        paired_index_map_ + start_pairwise, right2left_map_byquery_[query_index], left2right_map_byquery_[query_index], left_right2pair_map_byquery_[query_index], truncation_level_, sigmoid_, sigmoid_cache_);
+        paired_index_map_ + start_pairwise, right2left_map_byquery_[query_index], left2right_map_byquery_[query_index], left_right2pair_map_byquery_[query_index], truncation_level_, sigmoid_, sigmoid_cache_,
+        model_indirect_comparison_, model_conditional_rel_, indirect_comparison_above_only_, logarithmic_discounts_, hard_pairwise_preference_);
       global_timer.Stop("pairwise_lambdarank::GetGradients part 2");
     }
     if (num_position_ids_ > 0) {
@@ -736,12 +744,12 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
         delta_score -= score_pairwise[i_inverse];
         comparisons++;
       }
-      if (model_indirect_comparisons_) {
+      if (model_indirect_comparison_) {
         auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
           if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
-            (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
+            (!(indirect_comparison_above_only_ || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
               data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
               data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
               delta_score += score_pairwise[indexHeadRight] - score_pairwise[indexHeadLeft];
@@ -752,7 +760,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
           if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
-            (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
+            (!indirect_comparison_above_only_ || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
               (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
                 data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
                 data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
@@ -791,12 +799,12 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
         lambdas_pairwise[i_inverse] -= static_cast<score_t>(p_lambda / comparisons);
         hessians_pairwise[i_inverse] += static_cast<score_t>(p_hessian / comparisons);
       }
-      if (model_indirect_comparisons_) {
+      if (model_indirect_comparison_) {
         auto indexHead_range = right2left_map.equal_range(indexLeft);
         for (auto indexHead_it = indexHead_range.first; indexHead_it != indexHead_range.second; indexHead_it++) {
           data_size_t indexHead = indexHead_it->second;
           if (left_right2pair_map.count(std::make_pair(indexHead, indexRight)) > 0 &&
-            (!(indirect_comparisons_above_only || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
+            (!(indirect_comparison_above_only_ || model_conditional_rel_) || (ranks[indexHead] < ranks[indexLeft] && ranks[indexHead] < ranks[indexRight]))) {
               data_size_t indexHeadLeft = left_right2pair_map.at(std::make_pair(indexHead, indexLeft));
               data_size_t indexHeadRight = left_right2pair_map.at(std::make_pair(indexHead, indexRight));
               lambdas_pairwise[indexHeadRight] += static_cast<score_t>(p_lambda / comparisons);
@@ -809,7 +817,7 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
         for (auto indexTail_it = indexTail_range.first; indexTail_it != indexTail_range.second; indexTail_it++) {
           data_size_t indexTail = indexTail_it->second;
           if (left_right2pair_map.count(std::make_pair(indexRight, indexTail)) > 0 &&
-            (!indirect_comparisons_above_only || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
+            (!indirect_comparison_above_only_ || (ranks[indexTail] < ranks[indexLeft] && ranks[indexTail] < ranks[indexRight])) &&
               (!model_conditional_rel_ || (ranks[indexTail] > ranks[indexLeft] && ranks[indexTail] > ranks[indexRight]))) {
                 data_size_t indexLeftTail = left_right2pair_map.at(std::make_pair(indexLeft, indexTail));
                 data_size_t indexRightTail = left_right2pair_map.at(std::make_pair(indexRight, indexTail));
@@ -856,6 +864,11 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
    /*! \brief Number of pairwise data */
    data_size_t num_data_pairwise_;
    mutable std::vector<double> scores_pointwise_;
+   bool model_indirect_comparison_;
+   bool model_conditional_rel_;
+   bool indirect_comparison_above_only_;
+   bool logarithmic_discounts_;
+   bool hard_pairwise_preference_;
 
  private:
   const std::pair<data_size_t, data_size_t>* paired_index_map_;
