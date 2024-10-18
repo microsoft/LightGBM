@@ -249,7 +249,7 @@ class Tree {
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
-  std::vector<std::vector<int>> ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> thresholds_, u_int8_t decimals);
+  void ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> thresholds_, u_int8_t decimals);
 
   /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
   std::vector<int> ToFullArray() const;

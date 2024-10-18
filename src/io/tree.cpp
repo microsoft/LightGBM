@@ -336,7 +336,7 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> thresholds_, u_int8_t decimals) {
+void Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> thresholds_, u_int8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
   tt_features_ = features;
@@ -352,22 +352,17 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> featur
   int threshold_id;
   int feature_id;
   int lightgbm_id;
-  int left_child_id;
 
   // iterate over all nodes in full tree
   for (int i = 0; i < tt_nodes; i++) {
     // get lightgbm id of current node
     lightgbm_id = fulltree_ids[i];
-
     if (lightgbm_id >= 0) {
-
       // check if threshold and feature are already in lookup tables
       threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_[lightgbm_id]);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
-      
       // get ids referencing to values in lookup tables
       bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)threshold_[lightgbm_id]) != tt_thresholds_.end());
-
       if (found) {
         threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
       } else {
@@ -378,12 +373,10 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> featur
       // set references to lookup tables for threshold and feature in tiny tree
       tinytree_[0][i] = feature_id;
       tinytree_[1][i] = threshold_id; 
-    }    
+    } else if (~lightgbm_id < leaf_value_.size()) {
+      tinytree_[1][i] = ~lightgbm_id;
+    }
   }
-
-  // TODO: does something need to be returned? if not make function void
-  return tinytree_;
-  
 }
 
 std::vector<int> Tree::ToFullArray() const {
@@ -435,35 +428,35 @@ std::string Tree::ToString() const {
   // str_buf << "max depth: " << max_depth_ << "\n";
   std::vector<int> fulltree = ToFullArray();
 
-  str_buf << "num_leaves=" << num_leaves_ << '\n';
-  str_buf << "num_cat=" << num_cat_ << '\n';
+  str_buf << "num_leaves= " << num_leaves_ << '\n';
+  str_buf << "num_cat= " << num_cat_ << '\n';
   // TODO: create the following only for mrf
-  str_buf << "full_tree_array_lgbids=" 
+  str_buf << "full_tree_array_lgbids= "
     << ArrayToString(fulltree, fulltree.size()) << '\n';
   if (tinytree_.size() > 0)
   {
-    str_buf << "tiny_tree_ids_features=" 
+    str_buf << "tiny_tree_ids_features= "
       << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
-    str_buf << "tiny_tree_ids_thresholds=" 
+    str_buf << "tiny_tree_ids_thresholds= "
       << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
-    str_buf << "tiny_tree_features=" 
+    str_buf << "tiny_tree_features= "
       << ArrayToString(tt_features_, tt_features_.size()) << '\n';
-    str_buf << "tiny_tree_thresholds=" 
+    str_buf << "tiny_tree_thresholds= "
       << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n'; 
   }
-  str_buf << "split_feature="
+  str_buf << "split_feature= "
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
-  str_buf << "split_gain="
+  str_buf << "split_gain= "
     << ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
-  str_buf << "threshold="
+  str_buf << "threshold= "
     << ArrayToString<true>(threshold_, num_leaves_ - 1) << '\n';
-  str_buf << "decision_type="
+  str_buf << "decision_type= "
     << ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
   str_buf << "left_child="
     << ArrayToString(left_child_, num_leaves_ - 1) << '\n';
   str_buf << "right_child="
     << ArrayToString(right_child_, num_leaves_ - 1) << '\n';
-  str_buf << "leaf_value="
+  str_buf << "leaf_value= "
     << ArrayToString<true>(leaf_value_, num_leaves_) << '\n';
   str_buf << "leaf_weight="
     << ArrayToString<true>(leaf_weight_, num_leaves_) << '\n';

@@ -11,5 +11,6 @@ fi
 
 g++ -o genModel parseModel.cpp
 ./genModel ${model_string} ${output_string}
+cp ${output_string} ./
 g++ -o genPred main.cpp 
 ./genPred
