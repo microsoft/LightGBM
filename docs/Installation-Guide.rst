@@ -431,13 +431,20 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -B build -S . -G Ninja -DUSE_OPENMP=OFF`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
 
-
 Linux
 ^^^^^
 
-On Linux, a version of LightGBM without OpenMP support can be built using **CMake** and **gcc** or **Clang**.
+On Linux, a version of LightGBM without OpenMP support can be built using
 
-1. Install `CMake`_.
+- **CMake** and **gcc**;
+- **CMake** and **Clang**;
+- **CMake**, **Ninja** and **gcc**;
+- **CMake**, **Ninja** and **Clang**.
+
+gcc
+^^^
+
+1. Install `CMake`_ and **gcc**.
 
 2. Run the following commands:
 
@@ -447,6 +454,56 @@ On Linux, a version of LightGBM without OpenMP support can be built using **CMak
      cd LightGBM
      cmake -B build -S . -DUSE_OPENMP=OFF
      cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang
+^^^^^
+
+1. Install `CMake`_ and **Clang**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_OPENMP=OFF
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+gcc and Ninja
+^^^^^^^^^^^^^
+
+1. Install `CMake`_, `Ninja`_ and **gcc**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang and Ninja
+^^^^^^^^^^^^^^^
+
+1. Install `CMake`_, `Ninja`_ and **Clang**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 macOS
 ^^^^^
