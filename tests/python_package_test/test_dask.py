@@ -15,7 +15,7 @@ import lightgbm as lgb
 
 from .utils import sklearn_multiclass_custom_objective
 
-if platform in {"cygwin", "win3"}:
+if platform in {"cygwin", "win32"}:
     pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip("Dask is not installed", allow_module_level=True)
