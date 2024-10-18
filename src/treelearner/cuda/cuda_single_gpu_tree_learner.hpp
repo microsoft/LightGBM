@@ -78,8 +78,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
 
   #ifdef DEBUG
   void CheckSplitValid(
-    const int left_leaf, const int right_leaf,
-    const double sum_left_gradients, const double sum_right_gradients);
+    const int left_leaf, const int right_leaf);
   #endif  // DEBUG
 
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
@@ -110,6 +109,7 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
   std::vector<uint8_t> leaf_best_split_default_left_;
   std::vector<data_size_t> leaf_num_data_;
   std::vector<data_size_t> leaf_data_start_;
+  std::vector<double> leaf_sum_gradients_;
   std::vector<double> leaf_sum_hessians_;
   int smaller_leaf_index_;
   int larger_leaf_index_;

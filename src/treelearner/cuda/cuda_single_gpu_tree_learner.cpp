@@ -73,6 +73,7 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   leaf_best_split_default_left_.resize(config_->num_leaves, 0);
   leaf_num_data_.resize(config_->num_leaves, 0);
   leaf_data_start_.resize(config_->num_leaves, 0);
+  leaf_sum_gradients_.resize(config_->num_leaves, 0.0f);
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
   if (!boosting_on_cuda_) {
@@ -130,6 +131,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
       cuda_data_partition_->cuda_data_indices(),
       root_num_data,
       cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_gradients_[0],
       &leaf_sum_hessians_[0],
       cuda_gradient_discretizer_->grad_scale_ptr(),
       cuda_gradient_discretizer_->hess_scale_ptr());
@@ -148,6 +150,7 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
       cuda_data_partition_->cuda_data_indices(),
       root_num_data,
       cuda_histogram_constructor_->cuda_hist_pointer(),
+      &leaf_sum_gradients_[0],
       &leaf_sum_hessians_[0]);
   }
   leaf_num_data_[0] = root_num_data;
@@ -181,6 +184,12 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
   const bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   std::unique_ptr<CUDATree> tree(new CUDATree(config_->num_leaves, track_branch_features,
     config_->linear_tree, gpu_device_id_, has_categorical_feature_));
+  // set the root value by hand, as it is not handled by splits
+  tree->SetLeafOutput(0, CUDALeafSplits::CalculateSplittedLeafOutput<true, false>(
+    leaf_sum_gradients_[smaller_leaf_index_], leaf_sum_hessians_[smaller_leaf_index_],
+    config_->lambda_l1, config_->lambda_l2,  config_->path_smooth,
+    static_cast<data_size_t>(num_data_), 0));
+  tree->SyncLeafOutputFromHostToCUDA();
   for (int i = 0; i < config_->num_leaves - 1; ++i) {
     global_timer.Start("CUDASingleGPUTreeLearner::ConstructHistogramForLeaf");
     const data_size_t global_num_data_in_smaller_leaf = nccl_communicator_ != nullptr ?
@@ -344,8 +353,6 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                        best_split_info);
     }
 
-    double sum_left_gradients = 0.0f;
-    double sum_right_gradients = 0.0f;
     cuda_data_partition_->Split(best_split_info,
                                 best_leaf_index_,
                                 right_leaf_index,
@@ -364,12 +371,12 @@ Tree* CUDASingleGPUTreeLearner::Train(const score_t* gradients,
                                 &leaf_data_start_[right_leaf_index],
                                 &leaf_sum_hessians_[best_leaf_index_],
                                 &leaf_sum_hessians_[right_leaf_index],
-                                &sum_left_gradients,
-                                &sum_right_gradients,
+                                &leaf_sum_gradients_[best_leaf_index_],
+                                &leaf_sum_gradients_[right_leaf_index],
                                 global_num_data_in_leaf_.data() + best_leaf_index_,
                                 global_num_data_in_leaf_.data() + right_leaf_index);
     #ifdef DEBUG
-    CheckSplitValid(best_leaf_index_, right_leaf_index, sum_left_gradients, sum_right_gradients);
+    CheckSplitValid(best_leaf_index_, right_leaf_index);
     #endif  // DEBUG
 
     if (nccl_communicator_ != nullptr) {
@@ -440,6 +447,7 @@ void CUDASingleGPUTreeLearner::ResetConfig(const Config* config) {
     leaf_best_split_default_left_.resize(config_->num_leaves, 0);
     leaf_num_data_.resize(config_->num_leaves, 0);
     leaf_data_start_.resize(config_->num_leaves, 0);
+    leaf_sum_gradients_.resize(config_->num_leaves, 0.0f);
     leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
   }
   cuda_histogram_constructor_->ResetConfig(config);
@@ -628,9 +636,7 @@ void CUDASingleGPUTreeLearner::SelectFeatureByNode(const Tree* tree) {
 #ifdef DEBUG
 void CUDASingleGPUTreeLearner::CheckSplitValid(
   const int left_leaf,
-  const int right_leaf,
-  const double split_sum_left_gradients,
-  const double split_sum_right_gradients) {
+  const int right_leaf) {
   std::vector<data_size_t> left_data_indices(leaf_num_data_[left_leaf]);
   std::vector<data_size_t> right_data_indices(leaf_num_data_[right_leaf]);
   CopyFromCUDADeviceToHost<data_size_t>(left_data_indices.data(),
@@ -657,9 +663,9 @@ void CUDASingleGPUTreeLearner::CheckSplitValid(
     sum_right_gradients = NCCLAllReduce<double>(sum_right_gradients, ncclFloat64, ncclSum, nccl_communicator_);
     sum_right_hessians = NCCLAllReduce<double>(sum_right_hessians, ncclFloat64, ncclSum, nccl_communicator_);
   }
-  CHECK_LE(std::fabs(sum_left_gradients - split_sum_left_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_left_gradients - leaf_sum_gradients_[left_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_left_hessians - leaf_sum_hessians_[left_leaf]), 1e-6f);
-  CHECK_LE(std::fabs(sum_right_gradients - split_sum_right_gradients), 1e-6f);
+  CHECK_LE(std::fabs(sum_right_gradients - leaf_sum_gradients_[right_leaf]), 1e-6f);
   CHECK_LE(std::fabs(sum_right_hessians - leaf_sum_hessians_[right_leaf]), 1e-6f);
 }
 #endif  // DEBUG

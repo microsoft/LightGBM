@@ -38,12 +38,18 @@ void CUDALeafSplits::InitValues(
   const double lambda_l1, const double lambda_l2,
   const score_t* cuda_gradients, const score_t* cuda_hessians,
   const data_size_t* cuda_bagging_data_indices, const data_size_t* cuda_data_indices_in_leaf,
-  const data_size_t num_used_indices, hist_t* cuda_hist_in_leaf, double* root_sum_hessians) {
+  const data_size_t num_used_indices, hist_t* cuda_hist_in_leaf,
+  double* root_sum_gradients, double* root_sum_hessians) {
   cuda_gradients_ = cuda_gradients;
   cuda_hessians_ = cuda_hessians;
   cuda_sum_of_gradients_buffer_.SetValue(0);
   cuda_sum_of_hessians_buffer_.SetValue(0);
+<<<<<<< HEAD
   LaunchInitValuesKernel(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf);
+=======
+  LaunchInitValuesKernal(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf);
+  CopyFromCUDADeviceToHost<double>(root_sum_gradients, cuda_sum_of_gradients_buffer_.RawData(), 1, __FILE__, __LINE__);
+>>>>>>> master
   CopyFromCUDADeviceToHost<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_.RawData(), 1, __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
@@ -53,11 +59,16 @@ void CUDALeafSplits::InitValues(
   const int16_t* cuda_gradients_and_hessians,
   const data_size_t* cuda_bagging_data_indices,
   const data_size_t* cuda_data_indices_in_leaf, const data_size_t num_used_indices,
-  hist_t* cuda_hist_in_leaf, double* root_sum_hessians,
+  hist_t* cuda_hist_in_leaf, double* root_sum_gradients, double* root_sum_hessians,
   const score_t* grad_scale, const score_t* hess_scale) {
   cuda_gradients_ = reinterpret_cast<const score_t*>(cuda_gradients_and_hessians);
   cuda_hessians_ = nullptr;
+<<<<<<< HEAD
   LaunchInitValuesKernel(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf, grad_scale, hess_scale);
+=======
+  LaunchInitValuesKernal(lambda_l1, lambda_l2, cuda_bagging_data_indices, cuda_data_indices_in_leaf, num_used_indices, cuda_hist_in_leaf, grad_scale, hess_scale);
+  CopyFromCUDADeviceToHost<double>(root_sum_gradients, cuda_sum_of_gradients_buffer_.RawData(), 1, __FILE__, __LINE__);
+>>>>>>> master
   CopyFromCUDADeviceToHost<double>(root_sum_hessians, cuda_sum_of_hessians_buffer_.RawData(), 1, __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
