@@ -1,8 +1,8 @@
 #!/bin/bash
 
-sudo apt-get update 
-sudo apt-get install --no-install-recommends -y \
-    clang
+#sudo apt-get update 
+#sudo apt-get install --no-install-recommends -y \
+#    clang
 #    libomp-dev
 
 ARCH="x86_64"
@@ -13,9 +13,14 @@ sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cma
 sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
 cmake --version
 
-curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
-unzip ninja-linux.zip -d /usr/local/bin/
-ninja --version
+#curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+#unzip ninja-linux.zip -d /usr/local/bin/
+#ninja --version
+
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y \
+    openmpi-bin
+#    libopenmpi-dev \
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
@@ -28,19 +33,7 @@ ls .
 cd ./examples/regression
 ../../lightgbm config=train.conf
 
-#     if [[ $TASK == "mpi" ]]; then
-#         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
-#             sudo apt-get update
-#             sudo apt-get install --no-install-recommends -y \
-#                 libopenmpi-dev \
-#                 openmpi-bin
-#         else  # in manylinux image
-#             sudo yum update -y
-#             sudo yum install -y \
-#                 openmpi-devel \
-#             || exit 1
-#         fi
-#     fi
+
 #     if [[ $TASK == "gpu" ]]; then
 #         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
 #             sudo apt-get update
