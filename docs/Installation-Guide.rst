@@ -687,7 +687,7 @@ The executable and ``.so`` files will be in ``LightGBM/`` folder.
 Clang
 *****
 
-1. Install `CMake`_, **Clang**, **Open MP** and `Open MPI`_.
+1. Install `CMake`_, **Clang**, **OpenMP** and `Open MPI`_.
 
 2. Run the following commands:
 
@@ -720,7 +720,7 @@ The executable and ``.so`` files will be in ``LightGBM/`` folder.
 Clang and Ninja
 ***************
 
-1. Install `CMake`_, `Ninja`_, **Clang**, **Open MP** and `Open MPI`_.
+1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP** and `Open MPI`_.
 
 2. Run the following commands:
 
