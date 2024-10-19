@@ -1,9 +1,9 @@
 #!/bin/bash
 
-sudo apt-get update 
-sudo apt-get install --no-install-recommends -y \
-    clang \
-    libomp-dev
+#sudo apt-get update 
+#sudo apt-get install --no-install-recommends -y \
+#    clang \
+#    libomp-dev
 
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
@@ -19,48 +19,22 @@ ninja --version
 
 sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
-    libopenmpi-dev
+    libboost1.74-dev \
+    libboost-filesystem1.74-dev \
+    ocl-icd-opencl-dev
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-cmake -B build -S . -DUSE_MPI=ON -G Ninja
-cmake --build build -j4
+cmake -B build -S . -DUSE_GPU=ON
+# if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+# cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
+cmake --build build
 
 ls .
 
 cd ./examples/regression
 ../../lightgbm config=train.conf
 
-#     if [[ $TASK == "gpu" ]]; then
-#         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
-#             sudo apt-get update
-#             sudo apt-get install --no-install-recommends -y \
-#                 libboost1.74-dev \
-#                 libboost-filesystem1.74-dev \
-#                 ocl-icd-opencl-dev
-#         else  # in manylinux image
-#             sudo yum update -y
-#             sudo yum install -y \
-#                 boost-devel \
-#                 ocl-icd-devel \
-#                 opencl-headers \
-#             || exit 1
-#         fi
-#     fi
-#     if [[ $TASK == "gpu" || $TASK == "bdist" ]]; then
-#         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
-#             sudo apt-get update
-#             sudo apt-get install --no-install-recommends -y \
-#                 pocl-opencl-icd
-#         elif [[ $(uname -m) == "x86_64" ]]; then
-#             sudo yum update -y
-#             sudo yum install -y \
-#                 ocl-icd-devel \
-#                 opencl-headers \
-#             || exit 1
-#         fi
-#     fi
 #     if [[ $TASK == "cuda" ]]; then
 #         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 #         if [[ $COMPILER == "clang" ]]; then
