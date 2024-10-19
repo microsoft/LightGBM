@@ -32,7 +32,6 @@ ls .
 cd ./examples/regression
 ../../lightgbm config=train.conf
 
-
 #     if [[ $TASK == "gpu" ]]; then
 #         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
 #             sudo apt-get update
