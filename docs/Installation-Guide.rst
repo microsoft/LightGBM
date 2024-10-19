@@ -661,13 +661,19 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 Linux
 ^^^^^
 
-On Linux, an MPI version of LightGBM can be built using **Open MPI**, **CMake** and **gcc** or **Clang**.
+On Linux, an MPI version of LightGBM can be built using
 
-1. Install `Open MPI`_.
+- **CMake**, **gcc** and **Open MPI**;
+- **CMake**, **Clang** and **Open MPI**;
+- **CMake**, **Ninja**, **gcc** and **Open MPI**;
+- **CMake**, **Ninja**, **Clang** and **Open MPI**.
 
-2. Install `CMake`_.
+gcc
+***
 
-3. Run the following commands:
+1. Install `CMake`_, **gcc** and `Open MPI`_.
+
+2. Run the following commands:
 
    .. code:: sh
 
@@ -676,7 +682,57 @@ On Linux, an MPI version of LightGBM can be built using **Open MPI**, **CMake** 
      cmake -B build -S . -DUSE_MPI=ON
      cmake --build build -j4
 
-**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang
+*****
+
+1. Install `CMake`_, **Clang**, **Open MP** and `Open MPI`_.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
+     cmake -B build -S . -DUSE_MPI=ON
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+gcc and Ninja
+*************
+
+1. Install `CMake`_, `Ninja`_, **gcc** and `Open MPI`_.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_MPI=ON -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang and Ninja
+***************
+
+1. Install `CMake`_, `Ninja`_, **Clang**, **Open MP** and `Open MPI`_.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
+     cmake -B build -S . -DUSE_MPI=ON -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 macOS
 ^^^^^
