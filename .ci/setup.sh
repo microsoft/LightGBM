@@ -13,14 +13,14 @@ sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cma
 sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
 cmake --version
 
-#curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
-#unzip ninja-linux.zip -d /usr/local/bin/
-#ninja --version
+curl -O -L https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+unzip ninja-linux.zip -d /usr/local/bin/
+ninja --version
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
 export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-cmake -B build -S . -DUSE_OPENMP=OFF
+cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
 cmake --build build -j4
 
 ls .
