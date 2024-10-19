@@ -24,8 +24,7 @@ sudo apt-get install --no-install-recommends -y \
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
-export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
+cmake -B build -S . -DUSE_MPI=ON
 cmake --build build -j4
 
 ls .
