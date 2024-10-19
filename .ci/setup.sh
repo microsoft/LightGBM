@@ -19,8 +19,8 @@ cmake --version
 
 sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
-    openmpi-bin
-#    libopenmpi-dev \
+    libopenmpi-dev
+#    openmpi-bin
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
