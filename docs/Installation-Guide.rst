@@ -750,7 +750,7 @@ On macOS, an MPI version of LightGBM can be built using
 Apple Clang
 ***********
 
-1. Install `CMake`_, **OpenMP** and **Open MPI**:
+1. Install `CMake`_, **OpenMP** and `Open MPI`_:
 
    .. code:: sh
 
@@ -770,7 +770,7 @@ The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 Apple Clang and Ninja
 *********************
 
-1. Install `CMake`_, `Ninja`_, **OpenMP** and **Open MPI**:
+1. Install `CMake`_, `Ninja`_, **OpenMP** and `Open MPI`_:
 
    .. code:: sh
 
@@ -790,7 +790,7 @@ The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 gcc
 ***
 
-1. Install `CMake`_, **Open MPI** and  **gcc**:
+1. Install `CMake`_, `Open MPI`_ and  **gcc**:
 
    .. code:: sh
 
@@ -811,7 +811,7 @@ The executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 gcc and Ninja
 *************
 
-1. Install `CMake`_, `Ninja`_, **Open MPI** and  **gcc**:
+1. Install `CMake`_, `Ninja`_, `Open MPI`_ and  **gcc**:
 
    .. code:: sh
 
