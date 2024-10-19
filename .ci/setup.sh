@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#sudo apt-get update 
-#sudo apt-get install --no-install-recommends -y \
-#    clang \
-#    libomp-dev
+sudo apt-get update 
+sudo apt-get install --no-install-recommends -y \
+    clang \
+    libomp-dev
 
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
@@ -23,6 +23,7 @@ sudo apt-get install --no-install-recommends -y \
 
 git clone --recursive https://github.com/microsoft/LightGBM
 cd LightGBM
+export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
 cmake -B build -S . -DUSE_MPI=ON -G Ninja
 cmake --build build -j4
 
