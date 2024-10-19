@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#sudo apt-get update 
-#sudo apt-get install --no-install-recommends -y \
-#    clang
+sudo apt-get update 
+sudo apt-get install --no-install-recommends -y \
+    clang
 #    libomp-dev
-#export CXX=clang++ CC=clang
+export CXX=clang++ CC=clang
 
 ARCH="x86_64"
 CMAKE_VERSION="3.30.0"
