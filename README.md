@@ -129,7 +129,7 @@ LightGBMLSS (probabilistic modelling with LightGBM): https://github.com/StatMixe
 
 mlforecast (time series forecasting with LightGBM): https://github.com/Nixtla/mlforecast
 
-skforecast (Time series forecasting with LightGBM): https://github.com/JoaquinAmatRodrigo/skforecast
+skforecast (time series forecasting with LightGBM): https://github.com/JoaquinAmatRodrigo/skforecast
 
 `{bonsai}` (R `{parsnip}`-compliant interface): https://github.com/tidymodels/bonsai
 
