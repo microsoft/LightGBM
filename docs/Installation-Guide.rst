@@ -889,34 +889,91 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/Release`` folder.
 Linux
 ^^^^^
 
-On Linux, a GPU version of LightGBM (``device_type=gpu``) can be built using **OpenCL**, **Boost**, **CMake** and **gcc** or **Clang**.
+On Linux, a GPU version of LightGBM (``device_type=gpu``) can be built using
 
-The following dependencies should be installed before compilation:
+- **CMake**, **OpenCL**, **Boost** and **gcc**;
+- **CMake**, **OpenCL**, **Boost** and **Clang**;
+- **CMake**, **OpenCL**, **Boost**, **Ninja** and **gcc**;
+- **CMake**, **OpenCL**, **Boost**, **Ninja** and **Clang**.
 
--  **OpenCL** 1.2 headers and libraries, which is usually provided by GPU manufacture.
+**OpenCL** headers and libraries are usually provided by GPU manufacture.
+The generic OpenCL ICD packages (for example, Debian package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``) can also be used.
 
-   The generic OpenCL ICD packages (for example, Debian package ``ocl-icd-libopencl1`` and ``ocl-icd-opencl-dev``) can also be used.
+Necessary **Boost** libraries should be provided by the following Debian packages: ``libboost-dev``, ``libboost-system-dev``, ``libboost-filesystem-dev``.
 
--  **libboost** 1.56 or later (1.61 or later is recommended).
+gcc
+***
 
-   We use Boost.Compute as the interface to GPU, which is part of the Boost library since version 1.61. However, since we include the source code of Boost.Compute as a submodule, we only require the host has Boost 1.56 or later installed. We also use Boost.Align for memory allocation. Boost.Compute requires Boost.System and Boost.Filesystem to store offline kernel cache.
+1. Install `CMake`_, **gcc**, **OpenCL** and **Boost**.
 
-   The following Debian packages should provide necessary Boost libraries: ``libboost-dev``, ``libboost-system-dev``, ``libboost-filesystem-dev``.
+2. Run the following commands:
 
--  **CMake**
+   .. code:: sh
 
-To build LightGBM GPU version, run the following commands:
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_GPU=ON
+     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
+     cmake --build build -j4
 
-.. code:: sh
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
-  git clone --recursive https://github.com/microsoft/LightGBM
-  cd LightGBM
-  cmake -B build -S . -DUSE_GPU=ON
-  # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-  # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
-  cmake --build build
+Clang
+*****
 
-**Note**: In some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+1. Install `CMake`_, **Clang**, **OpenMP**, **OpenCL** and **Boost**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
+     cmake -B build -S . -DUSE_GPU=ON
+     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+gcc and Ninja
+*************
+
+1. Install `CMake`_, `Ninja`_, **gcc**, **OpenCL** and **Boost**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     cmake -B build -S . -DUSE_GPU=ON -G Ninja
+     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
+
+Clang and Ninja
+***************
+
+1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP**, **OpenCL** and **Boost**.
+
+2. Run the following commands:
+
+   .. code:: sh
+
+     git clone --recursive https://github.com/microsoft/LightGBM
+     cd LightGBM
+     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
+     cmake -B build -S . -DUSE_GPU=ON -G Ninja
+     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
+     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ -G Ninja
+     cmake --build build -j4
+
+The executable and ``.so`` files will be in ``LightGBM/`` folder.
 
 macOS
 ^^^^^
