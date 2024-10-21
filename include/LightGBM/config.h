@@ -664,7 +664,7 @@ struct Config {
   // desc = categorical features are used for splits as normal but are not used in the linear models
   // desc = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
   // desc = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // desc = **Note**: works only with ``cpu`` device type and ``serial`` tree learner
+  // desc = **Note**: works only with ``cpu``, ``gpu`` device type and ``serial`` tree learner
   // desc = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
   // desc = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
   // desc = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
