@@ -49,6 +49,7 @@ namespace LightGBM {
       if (n_leave_value == leaf_value) {
         // value in the threshold table.
         est_leftover_memory -= sizeof(float);
+        thresholds_used_global_.push_back(leaf_value);
       }
       // reference in the "tree" table.
       est_leftover_memory -= sizeof(short);

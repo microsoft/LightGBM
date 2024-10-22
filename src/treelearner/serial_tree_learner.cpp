@@ -251,13 +251,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
-  /*[tinygbdt] BEGIN */
-  if (mrf_ != nullptr) {
-    int precision = (int)(config_->tinygbdt_precision);
-    tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, precision);
-  }
-  /*[tinygbdt] END */
-
   return tree.release();
 }
 
@@ -310,6 +303,7 @@ void SerialTreeLearner::updateMemoryForLeaves(Tree * tree, std::vector<double> l
   }
   if (MemoryRestrictedForest::IsEnable(config_)) {
     mrf_->UpdateMemoryForTree(tree);
+    tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, config_->tinygbdt_precision);
   }
 }
 

@@ -72,7 +72,7 @@ std::vector<Tree> parse_trees_from_file(const std::string& filename, std::vector
 void printNode(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features) {
     std::string indent(indentLevel, '\t');
     if (tree.feature_ids[i] == -1) {
-        out  << indent << "result += " << tree.leaf_values[tree.thresholds_ids[i]] << ";\n";
+        out  << indent << "result += " << "thresholds[" << tree.thresholds_ids[i] << "];\n";
     } else {
         out << indent << "if (values[" << features[tree.feature_ids[i]] << "] <= thresholds[" << tree.thresholds_ids[i] <<"]) {\n";
         printNode(out, tree, 2 * i + 1, indentLevel + 1, features);
@@ -109,7 +109,7 @@ void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features
         printNode(out, tree, 0, 4, features);
         counter++;
     }
-    out << "\t\t\treturn 1.0f / (1.0f + std::exp(-1.0 * result));\n";
+    out << "\t\t\treturn 1.0f / (1.0f + exp(-1.0 * result));\n";
     out << "\t\t}\n";
     out << "\t};" << "\n";
     out << "}" << "\n";

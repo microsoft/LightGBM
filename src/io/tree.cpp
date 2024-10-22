@@ -374,7 +374,14 @@ void Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<double> t
       tinytree_[0][i] = feature_id;
       tinytree_[1][i] = threshold_id; 
     } else if (~lightgbm_id < leaf_value_.size()) {
-      tinytree_[1][i] = ~lightgbm_id;
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), leaf_value_[~lightgbm_id]);
+      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), leaf_value_[~lightgbm_id]) != tt_thresholds_.end());
+      if (found) {
+        threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      } else {
+        Log::Debug("We have a TINYGBDT Problem here %f", leaf_value_[~lightgbm_id]);
+      }
+      tinytree_[1][i] = threshold_id;
     }
   }
 }
