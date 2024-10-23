@@ -23,13 +23,15 @@ $(function() {
 
     /* Collapse specified sections in the installation guide */
     if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
-        $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>').appendTo('body');
+        $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f054";} .opened:before {content: "\\f078";}</style>').appendTo('body');
         var collapsable = [
             '#build-threadless-version-not-recommended',
             '#build-mpi-version',
             '#build-gpu-version',
             '#build-cuda-version',
             '#build-java-wrapper',
+            '#build-python-package',
+            '#build-r-package',
             '#build-c-unit-tests'
         ];
         $.each(collapsable, function(_, val) {
