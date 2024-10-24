@@ -13,13 +13,18 @@ else
 fi
 
 cd experiments || exit
-if "../lightgbm" config=train.conf > train.output; then
-    echo "Training complete"
-else
-    echo "Training failed"
-    exit 1
-fi
-# echo "Training complete"
+# "../lightgbm" config=train.conf num_trees=20 > train.output
+END=40
+for i in $(seq 5 5 $END); do 
+    if "../lightgbm" config=train.conf num_trees=$i output_model=results/model.$i.txt > results/train.$i.out; then
+        echo "Training model $i complete"
+    else
+        echo "Training model $i failed"
+        exit 1  
+    fi
+done
+echo "Training complete"
+
 if "../lightgbm" config=predict.conf > predict.output; then
     echo "Prediction complete"
 else
@@ -27,5 +32,5 @@ else
     exit 1
 fi
 
-# cd ../..
-# python3 plot_model.py
+cd python || exit
+python3 evaluate_models.py

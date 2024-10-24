@@ -444,7 +444,7 @@ std::string Tree::ToString() const {
   // TODO: create the following only for mrf
   str_buf << "full_tree_array_lgbids=" 
     << ArrayToString(fulltree, fulltree.size()) << '\n';
-  if (tinytree_.size() > 0)
+  if (tinytree_.size() > 0) // TODO: maybe change this to really greater than 0 but for test leave it like this
   {
     str_buf << "tiny_tree_ids_features=" 
       << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
@@ -454,6 +454,10 @@ std::string Tree::ToString() const {
       << ArrayToString(tt_features_, tt_features_.size()) << '\n';
     str_buf << "tiny_tree_thresholds=" 
       << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n'; 
+    str_buf << "tt_feature_count=" 
+      <<  tt_features_.size() << '\n'; 
+    str_buf << "tt_threshold_count=" 
+      <<  tt_thresholds_.size() << '\n'; 
   }
   str_buf << "split_feature="
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
