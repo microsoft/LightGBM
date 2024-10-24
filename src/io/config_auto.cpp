@@ -482,8 +482,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
   GetDouble(params, "tinygbdt_penalty_split", &tinygbdt_penalty_split);
   CHECK_GE(tinygbdt_penalty_split, 0.0);
 
-  GetDouble(params, "tinygbdt_forestsize", &tinygbdt_forestsize);
-  CHECK_GE(tinygbdt_forestsize, 0.0);
+  GetInt(params, "tinygbdt_forestsize", &tinygbdt_forestsize);
+  CHECK_GE(tinygbdt_forestsize, 0);
 
   GetDouble(params, "tinygbdt_precision", &tinygbdt_precision);
   CHECK_GE(tinygbdt_precision, 0.0);

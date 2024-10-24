@@ -1026,7 +1026,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
     float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
-    float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
     // TODO find some fancy way to include the leftovermemory.
     // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
@@ -1040,9 +1039,10 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       if (con_mem.new_feature)
         new_split.gain *= 0.99;
     }
-    // TODO Find a way to abort calculation. And still add the leaves This is just a quick fix!!
-    if (percentual_leftovermemory <= 0.1) {
+    // In case the memory that is left can only store the number of leaves that have to be inserted abort the calc.
+    if ((std::pow(2, config_->max_depth) * 4 * 2) > mrf_->est_leftover_memory) {
       new_split.gain = 0;
+      printf("TINYGBDT ABORTED DUE TO LACK OF MEMORY. Leafes consume %.2f ", (std::pow(2, config_->max_depth) * 4 * 2));
     }
   }
   /*[tinygbdt] END */

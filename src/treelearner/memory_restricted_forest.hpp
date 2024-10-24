@@ -53,15 +53,17 @@ namespace LightGBM {
       }
       // reference in the "tree" table.
       est_leftover_memory -= sizeof(short);
-      Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
+      //Log::Debug("Leaf value to be inserted: %.3f", n_leave_value);
     }
     void InsertLeavesInformation(std::vector<double> leaf_value_) {
+      Log::Debug("Inserting leaf information");
       for (double leaf_value : leaf_value_) {
         InsertLeafInformation(leaf_value);
       }
     }
     void UpdateMemoryForTree(Tree* tree) {
       // Tree weight.
+      // TODO Delete Not needed
       est_leftover_memory -= sizeof(float);
       tree_size_.push_back(tree->getNumberNodes());
     }
@@ -134,6 +136,7 @@ namespace LightGBM {
       } else {
         con_mem.tindex = std::distance(thresholds_used_global_.begin(), threshold_it);
       }
+      // TODO: change needed bits as we are using int and float values.
       con_mem.bytes += f_needed_bits + t_needed_bits;
       return threshold;
     }
@@ -157,9 +160,10 @@ namespace LightGBM {
       threshold_info info{};
       info.threshold = threshold;
       info.feature = featureidx;
-      MinMax minmax = bin_mapper->getMinAndMax(threshold);
-      info.leftmost = minmax.getMin();
-      info.rightmost = minmax.getMax();
+      // TODO CLEARUP MINMAX
+      // MinMax minmax = bin_mapper->getMinAndMax(threshold);
+      // info.leftmost = minmax.getMin();
+      // info.rightmost = minmax.getMax();
       info.used = true;
       if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.end()) {
         threshold_feature_info.push_back(info);
@@ -167,7 +171,7 @@ namespace LightGBM {
     }
 
     static bool IsEnable(const Config *config) {
-      if (config->tinygbdt_forestsize == 0.0f) {
+      if (config->tinygbdt_forestsize == 0) {
         Log::Debug("MemoryRestrictedForest disabled");
         return false;
       }
@@ -184,17 +188,17 @@ namespace LightGBM {
       return true;
     }
 
-    void Init(const double treesize, const double precision) {
-      est_leftover_memory = (int) treesize;
+    void Init(const int treesize, const double precision) {
+      est_leftover_memory = treesize;
       this->precision = precision;
-      Log::Debug("MemoryRestrictedForest Init");
     }
 
     bool init_;
     int est_leftover_memory{};
-    // In the unrealistic best case we have 2 features -> 1 bit.
-    int f_needed_bits = 1;
-    int t_needed_bits = 1;
+    // In the unrealistic best case we have 2 features -> 1 bit. But this would require a optimization of the header files, ...
+    // so right now we assume 4 bytes for float and 2 bytes for int.
+    int f_needed_bits = 16;
+    int t_needed_bits = 32;
     double precision;
     const SerialTreeLearner *tree_learner_;
     std::vector<threshold_info> threshold_feature_info;

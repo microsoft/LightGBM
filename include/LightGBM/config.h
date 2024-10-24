@@ -556,7 +556,7 @@ struct Config {
 
   // check = >=0.0
   // desc = [tinygbdt] size of the boosted tree
-  double tinygbdt_forestsize = 0.0;
+  int tinygbdt_forestsize = 0;
 
   // check = >=0.0
   // desc = [tinygbdt] precision for merging float/threshold values
