@@ -104,12 +104,12 @@ void GBDT::Init(const Config* config, const Dataset* train_data, const Objective
   boosting_on_gpu_ = objective_function_ != nullptr && objective_function_->IsCUDAObjective() &&
                      !data_sample_strategy_->IsHessianChange();  // for sample strategy with Hessian change, fall back to boosting on CPU
 
-  tree_learner_ = nullptr; // std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
-                                                                             // config_.get(), boosting_on_gpu_));
+  tree_learner_ = std::unique_ptr<TreeLearner>(TreeLearner::CreateTreeLearner(config_->tree_learner, config_->device_type,
+                                                                              config_.get(), boosting_on_gpu_));
 
   // init tree learner
-  // tree_learner_->Init(train_data_, is_constant_hessian_);
-  // tree_learner_->SetForcedSplit(&forced_splits_json_);
+  tree_learner_->Init(train_data_, is_constant_hessian_);
+  tree_learner_->SetForcedSplit(&forced_splits_json_);
 
   // push training metrics
   training_metrics_.clear();

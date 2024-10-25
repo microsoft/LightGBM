@@ -9,6 +9,7 @@
 #include <LightGBM/network.h>
 #include <LightGBM/utils/common.h>
 
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>

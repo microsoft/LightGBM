@@ -28,6 +28,8 @@ void NCCLGBDT<GBDT_T>::Init(
   const std::vector<const Metric*>& training_metrics) {
   GBDT_T::Init(gbdt_config, train_data, objective_function, training_metrics);
 
+  this->tree_learner_.reset();
+
   nccl_topology_.reset(new NCCLTopology(this->config_->gpu_device_id, this->config_->num_gpus, this->config_->gpu_device_id_list, train_data->num_data()));
 
   nccl_topology_->InitNCCL();

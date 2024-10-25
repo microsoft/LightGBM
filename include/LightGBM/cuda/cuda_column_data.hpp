@@ -13,6 +13,7 @@
 #include <LightGBM/bin.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <memory>
 #include <vector>
 
 namespace LightGBM {
