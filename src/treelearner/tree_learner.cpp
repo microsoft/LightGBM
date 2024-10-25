@@ -17,7 +17,7 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       if (config->linear_tree) {
-        return new LinearTreeLearner(config);
+        return new LinearTreeLearner<SerialTreeLearner>(config);
       } else {
         return new SerialTreeLearner(config);
       }
@@ -30,7 +30,11 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("gpu")) {
     if (learner_type == std::string("serial")) {
-      return new GPUTreeLearner(config);
+      if (config->linear_tree) {
+        return new LinearTreeLearner<GPUTreeLearner>(config);
+      } else {
+        return new GPUTreeLearner(config);
+      }
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<GPUTreeLearner>(config);
     } else if (learner_type == std::string("data")) {
