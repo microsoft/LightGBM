@@ -205,7 +205,6 @@ create_isolated_source_dir() {
     cp -R ./include ./lightgbm-python
     cp -R ./src ./lightgbm-python
     cp -R ./swig ./lightgbm-python
-    cp -R ./windows ./lightgbm-python
 
     # include only specific files from external_libs, to keep the package
     # small and avoid redistributing code with licenses incompatible with
