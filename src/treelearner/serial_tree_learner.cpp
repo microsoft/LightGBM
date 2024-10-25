@@ -1040,7 +1040,8 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
         new_split.gain *= 0.99;
     }
     // In case the memory that is left can only store the number of leaves that have to be inserted abort the calc.
-    if ((std::pow(2, config_->max_depth) * 4 * 2) > mrf_->est_leftover_memory) {
+    //if ((std::pow(2, config_->max_depth) * 4 * 2) > mrf_->est_leftover_memory) {
+    if (false) {
       new_split.gain = 0;
       printf("TINYGBDT ABORTED DUE TO LACK OF MEMORY. Leafes consume %.2f ", (std::pow(2, config_->max_depth) * 4 * 2));
     }
