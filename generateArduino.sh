@@ -9,6 +9,7 @@ if [ $# -lt 2 ]; then
     exit 1
 fi
 
+./cbuild.sh
 g++ -o genModel parseModel.cpp
 ./genModel ${model_string} ${output_string}
 cp ${output_string} ./
