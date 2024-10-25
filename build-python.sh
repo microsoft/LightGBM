@@ -302,8 +302,7 @@ if test "${INSTALL}" = true; then
             ./external_libs \
             ./include \
             ./src \
-            ./swig \
-            ./windows
+            ./swig
         # use regular-old setuptools for these builds, to avoid
         # trying to recompile the shared library
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml
