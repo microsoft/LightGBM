@@ -397,7 +397,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     }
   }
   if (device_type == std::string("gpu")) {
-    // force col-wise for gpu, and cuda version
+    // force col-wise for gpu version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
