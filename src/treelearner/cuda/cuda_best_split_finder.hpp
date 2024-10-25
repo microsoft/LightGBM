@@ -214,23 +214,23 @@ class CUDABestSplitFinder {
 
   // CUDA memory, held by this object
   // for per leaf best split information
-  CUDASplitInfo* cuda_leaf_best_split_info_;
+  CUDAVector<CUDASplitInfo> cuda_leaf_best_split_info_;
   // for best split information when finding best split
-  CUDASplitInfo* cuda_best_split_info_;
+  CUDAVector<CUDASplitInfo> cuda_best_split_info_;
   // best split information buffer, to be copied to host
-  int* cuda_best_split_info_buffer_;
+  CUDAVector<int> cuda_best_split_info_buffer_;
   // find best split task information
   CUDAVector<SplitFindTask> cuda_split_find_tasks_;
-  int8_t* cuda_is_feature_used_bytree_;
+  CUDAVector<int8_t> cuda_is_feature_used_bytree_;
   // used when finding best split with global memory
-  hist_t* cuda_feature_hist_grad_buffer_;
-  hist_t* cuda_feature_hist_hess_buffer_;
-  hist_t* cuda_feature_hist_stat_buffer_;
-  data_size_t* cuda_feature_hist_index_buffer_;
-  uint32_t* cuda_cat_threshold_leaf_;
-  int* cuda_cat_threshold_real_leaf_;
-  uint32_t* cuda_cat_threshold_feature_;
-  int* cuda_cat_threshold_real_feature_;
+  CUDAVector<hist_t> cuda_feature_hist_grad_buffer_;
+  CUDAVector<hist_t> cuda_feature_hist_hess_buffer_;
+  CUDAVector<hist_t> cuda_feature_hist_stat_buffer_;
+  CUDAVector<data_size_t> cuda_feature_hist_index_buffer_;
+  CUDAVector<uint32_t> cuda_cat_threshold_leaf_;
+  CUDAVector<int> cuda_cat_threshold_real_leaf_;
+  CUDAVector<uint32_t> cuda_cat_threshold_feature_;
+  CUDAVector<int> cuda_cat_threshold_real_feature_;
   int max_num_categories_in_split_;
   // used for extremely randomized trees
   CUDAVector<CUDARandom> cuda_randoms_;

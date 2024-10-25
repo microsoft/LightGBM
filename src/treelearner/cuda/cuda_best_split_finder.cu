@@ -1735,15 +1735,15 @@ __global__ void FindBestSplitsForLeafKernel_GlobalMemory(
     cat_l2_, \
     max_cat_threshold_, \
     min_data_per_group_, \
-    cuda_best_split_info_, \
+    cuda_best_split_info_.RawData(), \
     global_num_data_in_smaller_leaf, \
     global_num_data_in_larger_leaf
 
 #define GlobalMemory_Buffer_ARGS \
-  cuda_feature_hist_grad_buffer_, \
-  cuda_feature_hist_hess_buffer_, \
-  cuda_feature_hist_stat_buffer_, \
-  cuda_feature_hist_index_buffer_
+  cuda_feature_hist_grad_buffer_.RawData(), \
+  cuda_feature_hist_hess_buffer_.RawData(), \
+  cuda_feature_hist_stat_buffer_.RawData(), \
+  cuda_feature_hist_index_buffer_.RawData()
 
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernel(LaunchFindBestSplitsForLeafKernel_PARAMS) {
   if (!is_smaller_leaf_valid && !is_larger_leaf_valid) {
@@ -1776,8 +1776,8 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner1(LaunchFindBest
 
 template <bool USE_RAND, bool USE_L1, bool USE_SMOOTHING>
 void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBestSplitsForLeafKernel_PARAMS) {
-  const int8_t* is_feature_used_by_smaller_node = cuda_is_feature_used_bytree_;
-  const int8_t* is_feature_used_by_larger_node = cuda_is_feature_used_bytree_;
+  const int8_t* is_feature_used_by_smaller_node = cuda_is_feature_used_bytree_.RawData();
+  const int8_t* is_feature_used_by_larger_node = cuda_is_feature_used_bytree_.RawData();
   if (select_features_by_node_) {
     is_feature_used_by_smaller_node = is_feature_used_by_smaller_node_.RawData();
     is_feature_used_by_larger_node = is_feature_used_by_larger_node_.RawData();
@@ -1843,7 +1843,7 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBest
   global_num_data_in_larger_leaf
 
 #define FindBestSplitsDiscretizedForLeafKernel_ARGS \
-    cuda_is_feature_used_bytree_, \
+    cuda_is_feature_used_bytree_.RawData(), \
     num_tasks_, \
     cuda_split_find_tasks_.RawData(), \
     cuda_randoms_.RawData(), \
@@ -1864,7 +1864,7 @@ void CUDABestSplitFinder::LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBest
     max_cat_to_onehot_, \
     grad_scale, \
     hess_scale, \
-    cuda_best_split_info_, \
+    cuda_best_split_info_.RawData(), \
     global_num_data_in_smaller_leaf, \
     global_num_data_in_larger_leaf
 
@@ -2048,7 +2048,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
   const bool is_larger_leaf_valid) {
   if (!is_smaller_leaf_valid || !is_larger_leaf_valid) {
     SetInvalidLeafSplitInfoKernel<<<1, 1>>>(
-      cuda_leaf_best_split_info_,
+      cuda_leaf_best_split_info_.RawData(),
       is_smaller_leaf_valid, is_larger_leaf_valid,
       host_smaller_leaf_index, host_larger_leaf_index);
   }
@@ -2067,9 +2067,9 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
     SyncBestSplitForLeafKernel<<<num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK, 0, cuda_streams_[0]>>>(
       host_smaller_leaf_index,
       host_larger_leaf_index,
-      cuda_leaf_best_split_info_,
+      cuda_leaf_best_split_info_.RawData(),
       cuda_split_find_tasks_.RawData(),
-      cuda_best_split_info_,
+      cuda_best_split_info_.RawData(),
       num_tasks_,
       num_tasks_aligned,
       num_blocks_per_leaf,
@@ -2081,16 +2081,16 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
         host_larger_leaf_index,
         num_blocks_per_leaf,
         num_leaves_,
-        cuda_leaf_best_split_info_,
+        cuda_leaf_best_split_info_.RawData(),
         false);
     }
     SynchronizeCUDADevice(__FILE__, __LINE__);
     SyncBestSplitForLeafKernel<<<num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK, 0, cuda_streams_[1]>>>(
       host_smaller_leaf_index,
       host_larger_leaf_index,
-      cuda_leaf_best_split_info_,
+      cuda_leaf_best_split_info_.RawData(),
       cuda_split_find_tasks_.RawData(),
-      cuda_best_split_info_,
+      cuda_best_split_info_.RawData(),
       num_tasks_,
       num_tasks_aligned,
       num_blocks_per_leaf,
@@ -2102,7 +2102,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
         host_larger_leaf_index,
         num_blocks_per_leaf,
         num_leaves_,
-        cuda_leaf_best_split_info_,
+        cuda_leaf_best_split_info_.RawData(),
         true);
     }
   } else {
@@ -2110,9 +2110,9 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
     SyncBestSplitForLeafKernel<<<num_blocks_per_leaf, NUM_TASKS_PER_SYNC_BLOCK>>>(
       host_smaller_leaf_index,
       host_larger_leaf_index,
-      cuda_leaf_best_split_info_,
+      cuda_leaf_best_split_info_.RawData(),
       cuda_split_find_tasks_.RawData(),
-      cuda_best_split_info_,
+      cuda_best_split_info_.RawData(),
       num_tasks_,
       num_tasks_aligned,
       num_blocks_per_leaf,
@@ -2125,7 +2125,7 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
         host_larger_leaf_index,
         num_blocks_per_leaf,
         num_leaves_,
-        cuda_leaf_best_split_info_,
+        cuda_leaf_best_split_info_.RawData(),
         larger_only);
     }
   }
@@ -2191,14 +2191,14 @@ void CUDABestSplitFinder::LaunchFindBestFromAllSplitsKernel(
   int* best_leaf_index,
   int* num_cat_threshold) {
   FindBestFromAllSplitsKernel<<<1, NUM_THREADS_FIND_BEST_LEAF, 0, cuda_streams_[1]>>>(cur_num_leaves,
-    cuda_leaf_best_split_info_,
-    cuda_best_split_info_buffer_);
+    cuda_leaf_best_split_info_.RawData(),
+    cuda_best_split_info_buffer_.RawData());
   PrepareLeafBestSplitInfo<<<6, 1, 0, cuda_streams_[0]>>>(smaller_leaf_index, larger_leaf_index,
-    cuda_best_split_info_buffer_,
-    cuda_leaf_best_split_info_);
+    cuda_best_split_info_buffer_.RawData(),
+    cuda_leaf_best_split_info_.RawData());
   std::vector<int> host_leaf_best_split_info_buffer(8, 0);
   SynchronizeCUDADevice(__FILE__, __LINE__);
-  CopyFromCUDADeviceToHost<int>(host_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_, 8, __FILE__, __LINE__);
+  CopyFromCUDADeviceToHost<int>(host_leaf_best_split_info_buffer.data(), cuda_best_split_info_buffer_.RawData(), 8, __FILE__, __LINE__);
   *smaller_leaf_best_split_feature = host_leaf_best_split_info_buffer[0];
   *smaller_leaf_best_split_threshold = static_cast<uint32_t>(host_leaf_best_split_info_buffer[1]);
   *smaller_leaf_best_split_default_left = static_cast<uint8_t>(host_leaf_best_split_info_buffer[2]);

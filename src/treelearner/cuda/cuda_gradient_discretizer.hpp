@@ -31,6 +31,8 @@ class CUDAGradientDiscretizer: public GradientDiscretizer, public NCCLInfo {
     GradientDiscretizer(num_grad_quant_bins, num_trees, random_seed, is_constant_hessian, stochastic_roudning) {
   }
 
+  ~CUDAGradientDiscretizer() {}
+
   void DiscretizeGradients(
     const data_size_t num_data,
     const score_t* input_gradients,

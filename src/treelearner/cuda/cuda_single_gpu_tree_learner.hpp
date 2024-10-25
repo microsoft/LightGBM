@@ -135,9 +135,9 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner, public NCCLInfo {
   int* cuda_categorical_bin_offsets_;
 
   /*! \brief gradients on CUDA */
-  score_t* cuda_gradients_;
+  CUDAVector<score_t> cuda_gradients_;
   /*! \brief hessians on CUDA */
-  score_t* cuda_hessians_;
+  CUDAVector<score_t> cuda_hessians_;
   /*! \brief whether boosting is done on CUDA */
   bool boosting_on_cuda_;
 

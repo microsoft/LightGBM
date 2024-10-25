@@ -26,6 +26,8 @@ class NCCLGBDTComponent: public NCCLInfo {
  public:
   NCCLGBDTComponent() {}
 
+  ~NCCLGBDTComponent() {}
+
   void Init(const Config* config, const Dataset* train_data, const int num_tree_per_iteration, const bool boosting_on_gpu, const bool is_constant_hessian) {
     cudaGetDeviceCount(&num_gpu_in_node_);
     const data_size_t num_data_per_gpu = (train_data->num_data() + num_gpu_in_node_ - 1) / num_gpu_in_node_;

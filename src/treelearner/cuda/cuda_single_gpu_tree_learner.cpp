@@ -19,19 +19,12 @@
 
 namespace LightGBM {
 
-CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda): SerialTreeLearner(config), boosting_on_cuda_(boosting_on_cuda) {
-  cuda_gradients_ = nullptr;
-  cuda_hessians_ = nullptr;
-}
+CUDASingleGPUTreeLearner::CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda): SerialTreeLearner(config), boosting_on_cuda_(boosting_on_cuda) {}
 
 CUDASingleGPUTreeLearner::~CUDASingleGPUTreeLearner() {
-  // if (!boosting_on_cuda_) {
-  //   DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-  //   DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
-  // }
-  // if (nccl_communicator_ != nullptr) {
-  //   CUDAStreamDestroy(nccl_stream_);
-  // }
+  if (nccl_communicator_ != nullptr) {
+    CUDAStreamDestroy(nccl_stream_);
+  }
 }
 
 void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian) {
@@ -77,8 +70,8 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
   leaf_sum_hessians_.resize(config_->num_leaves, 0.0f);
 
   if (!boosting_on_cuda_) {
-    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    cuda_gradients_.Resize(static_cast<size_t>(num_data_));
+    cuda_hessians_.Resize(static_cast<size_t>(num_data_));
   }
   AllocateBitset();
 
@@ -105,10 +98,10 @@ void CUDASingleGPUTreeLearner::Init(const Dataset* train_data, bool is_constant_
 void CUDASingleGPUTreeLearner::BeforeTrain() {
   const data_size_t root_num_data = cuda_data_partition_->root_num_data();
   if (!boosting_on_cuda_) {
-    CopyFromHostToCUDADevice<score_t>(cuda_gradients_, gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    CopyFromHostToCUDADevice<score_t>(cuda_hessians_, hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    gradients_ = cuda_gradients_;
-    hessians_ = cuda_hessians_;
+    CopyFromHostToCUDADevice<score_t>(cuda_gradients_.RawData(), gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<score_t>(cuda_hessians_.RawData(), hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    gradients_ = cuda_gradients_.RawData();
+    hessians_ = cuda_hessians_.RawData();
   }
 
   #ifdef DEBUG
@@ -162,10 +155,8 @@ void CUDASingleGPUTreeLearner::BeforeTrain() {
   larger_leaf_index_ = -1;
 
   if (nccl_communicator_ != nullptr) {
+    leaf_to_hist_index_map_.resize(config_->num_leaves, -1);
     leaf_to_hist_index_map_[0] = 0;
-    for (int leaf_index = 1; leaf_index < config_->num_leaves; ++leaf_index) {
-      leaf_to_hist_index_map_[leaf_index] = -1;
-    }
     global_num_data_in_leaf_[0] = global_num_data_;
   }
 }
@@ -427,10 +418,8 @@ void CUDASingleGPUTreeLearner::ResetTrainingData(
   cuda_larger_leaf_splits_->Resize(num_data_);
   CHECK_EQ(is_constant_hessian, share_state_->is_constant_hessian);
   if (!boosting_on_cuda_) {
-    DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-    DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
-    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    cuda_gradients_.Resize(static_cast<size_t>(num_data_));
+    cuda_hessians_.Resize(static_cast<size_t>(num_data_));
   }
 }
 
@@ -613,11 +602,11 @@ void CUDASingleGPUTreeLearner::AllocateBitset() {
 
 void CUDASingleGPUTreeLearner::ResetBoostingOnGPU(const bool boosting_on_cuda) {
   boosting_on_cuda_ = boosting_on_cuda;
-  DeallocateCUDAMemory<score_t>(&cuda_gradients_, __FILE__, __LINE__);
-  DeallocateCUDAMemory<score_t>(&cuda_hessians_, __FILE__, __LINE__);
+  cuda_gradients_.Clear();
+  cuda_hessians_.Clear();
   if (!boosting_on_cuda_) {
-    AllocateCUDAMemory<score_t>(&cuda_gradients_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
-    AllocateCUDAMemory<score_t>(&cuda_hessians_, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    cuda_gradients_.Resize(static_cast<size_t>(num_data_));
+    cuda_hessians_.Resize(static_cast<size_t>(num_data_));
   }
 }
 

@@ -60,7 +60,7 @@ class CUDAObjectiveInterface: public HOST_OBJECTIVE, public NCCLInfo {
     SynchronizeCUDADevice(__FILE__, __LINE__);
   }
 
-  void GetGradients(const double* scores, const data_size_t /*num_sampled_queries*/, const data_size_t* /*sampled_query_indices*/, score_t* gradients, score_t* hessians) const override {
+  void GetGradientsWithSampledQueries(const double* scores, const data_size_t /*num_sampled_queries*/, const data_size_t* /*sampled_query_indices*/, score_t* gradients, score_t* hessians) const override {
     LaunchGetGradientsKernel(scores, gradients, hessians);
     SynchronizeCUDADevice(__FILE__, __LINE__);
   }

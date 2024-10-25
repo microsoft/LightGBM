@@ -93,13 +93,13 @@ class CUDADataPartition: public NCCLInfo {
     }
   }
 
-  const data_size_t* cuda_data_indices() const { return cuda_data_indices_; }
+  const data_size_t* cuda_data_indices() const { return cuda_data_indices_.RawData(); }
 
-  const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_; }
+  const data_size_t* cuda_leaf_num_data() const { return cuda_leaf_num_data_.RawData(); }
 
-  const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_; }
+  const data_size_t* cuda_leaf_data_start() const { return cuda_leaf_data_start_.RawData(); }
 
-  const int* cuda_data_index_to_leaf_index() const { return cuda_data_index_to_leaf_index_; }
+  const int* cuda_data_index_to_leaf_index() const { return cuda_data_index_to_leaf_index_.RawData(); }
 
   bool use_bagging() const { return use_bagging_; }
 
@@ -360,28 +360,28 @@ class CUDADataPartition: public NCCLInfo {
 
   // tree structure information
   /*! \brief data indices by leaf */
-  data_size_t* cuda_data_indices_;
+  CUDAVector<data_size_t> cuda_data_indices_;
   /*! \brief start position of each leaf in cuda_data_indices_ */
-  data_size_t* cuda_leaf_data_start_;
+  CUDAVector<data_size_t> cuda_leaf_data_start_;
   /*! \brief end position of each leaf in cuda_data_indices_ */
-  data_size_t* cuda_leaf_data_end_;
+  CUDAVector<data_size_t> cuda_leaf_data_end_;
   /*! \brief number of data in each leaf */
-  data_size_t* cuda_leaf_num_data_;
+  CUDAVector<data_size_t> cuda_leaf_num_data_;
   /*! \brief records the histogram of each leaf */
-  hist_t** cuda_hist_pool_;
+  CUDAVector<hist_t*> cuda_hist_pool_;
   /*! \brief records the value of each leaf */
-  double* cuda_leaf_output_;
+  CUDAVector<double> cuda_leaf_output_;
 
   // split data algorithm related
-  uint16_t* cuda_block_to_left_offset_;
+  CUDAVector<uint16_t> cuda_block_to_left_offset_;
   /*! \brief maps data index to leaf index, for adding scores to training data set */
-  int* cuda_data_index_to_leaf_index_;
+  CUDAVector<int> cuda_data_index_to_leaf_index_;
   /*! \brief prefix sum of number of data going to left in all blocks */
-  data_size_t* cuda_block_data_to_left_offset_;
+  CUDAVector<data_size_t> cuda_block_data_to_left_offset_;
   /*! \brief prefix sum of number of data going to right in all blocks */
-  data_size_t* cuda_block_data_to_right_offset_;
+  CUDAVector<data_size_t> cuda_block_data_to_right_offset_;
   /*! \brief buffer for splitting data indices, will be copied back to cuda_data_indices_ after split */
-  data_size_t* cuda_out_data_indices_in_leaf_;
+  CUDAVector<data_size_t> cuda_out_data_indices_in_leaf_;
 
   // split tree structure algorithm related
   /*! \brief buffer to store split information, prepared to be copied to cpu */
@@ -389,7 +389,7 @@ class CUDADataPartition: public NCCLInfo {
 
   // dataset information
   /*! \brief number of data in training set, for intialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
-  data_size_t* cuda_num_data_;
+  CUDAVector<data_size_t> cuda_num_data_;
 
 
   // CUDA memory, held by other object

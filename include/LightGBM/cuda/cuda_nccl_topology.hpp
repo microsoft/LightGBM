@@ -89,6 +89,8 @@ class NCCLTopology {
     host_threads_.resize(num_gpus_);
   }
 
+  ~NCCLTopology() {}
+
   void InitNCCL() {
     nccl_gpu_rank_.resize(num_gpus_, -1);
     nccl_communicators_.resize(num_gpus_);

@@ -157,6 +157,11 @@ class CUDAVector {
     CopyFromHostToCUDADevice(data_, host_vector.data(), host_vector.size(), __FILE__, __LINE__);
   }
 
+  void InitFromHostMemory(const T* host_memory, size_t len) {
+    Resize(len);
+    CopyFromHostToCUDADevice(data_, host_memory, len, __FILE__, __LINE__);
+  }
+
   void Clear() {
     if (size_ > 0 && data_ != nullptr) {
       DeallocateCUDAMemory<T>(&data_, __FILE__, __LINE__);
@@ -176,7 +181,7 @@ class CUDAVector {
     data_ = new_data;
   }
 
-  size_t Size() {
+  size_t Size() const {
     return size_;
   }
 
@@ -202,6 +207,19 @@ class CUDAVector {
 
   const T* RawDataReadOnly() const {
     return data_;
+  }
+
+  T* MoveTo() {
+    size_ = 0;
+    T* old_data = data_;
+    data_ = nullptr;
+    return old_data;
+  }
+
+  template <typename OTHER_T>
+  void MoveFrom(CUDAVector<OTHER_T>& other, size_t new_size) {
+    data_ = reinterpret_cast<T*>(other.MoveTo());
+    size_ = new_size;
   }
 
  private:
