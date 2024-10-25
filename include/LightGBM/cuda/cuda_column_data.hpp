@@ -101,7 +101,7 @@ class CUDAColumnData {
   std::vector<void*> GetDataByColumnPointers(const std::vector<std::unique_ptr<CUDAVector<void>>>& data_by_column) const {
     std::vector<void*> data_by_column_pointers(data_by_column.size(), nullptr);
     for (size_t i = 0; i < data_by_column.size(); ++i) {
-      data_by_column_pointers[i] = data_by_column[i].get();
+      data_by_column_pointers[i] = reinterpret_cast<void*>(data_by_column[i]->RawData());
     }
     return data_by_column_pointers;
   }
