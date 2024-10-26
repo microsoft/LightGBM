@@ -1,6 +1,6 @@
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
-function Download-File-With-Retries {
+function Get-File-With-Retries {
   param(
     [string]$url,
     [string]$destfile
@@ -20,7 +20,7 @@ function Download-File-With-Retries {
 # Using standard PowerShell redirection does not work to avoid these errors.
 # This function uses R's built-in redirection mechanism, sink(). Any place where
 # this function is used is a command that writes harmless messages to stderr
-function Run-R-Code-Redirect-Stderr {
+function Invoke-R-Code-Redirect-Stderr {
   param(
     [string]$rcode
   )
@@ -120,9 +120,9 @@ tzutil /s "GMT Standard Time"
 
 # download R, RTools and CMake
 Write-Output "Downloading R, Rtools and CMake"
-Download-File-With-Retries -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Download-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
-Download-File-With-Retries -url "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" -destfile "$env:CMAKE_PATH/cmake.zip"
+Get-File-With-Retries -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
+Get-File-With-Retries -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
+Get-File-With-Retries -url "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" -destfile "$env:CMAKE_PATH/cmake.zip"
 
 # Install R
 Write-Output "Installing R"
@@ -142,7 +142,7 @@ Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Run-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
+Invoke-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
 
 Write-Output "Building R-package"
 
@@ -165,7 +165,7 @@ if ($env:COMPILER -ne "MSVC") {
       Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
       Check-Output $false
     }
-    Run-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
+    Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
     # some flavors of tar.exe can fail in some settings on Windows.
@@ -174,7 +174,7 @@ if ($env:COMPILER -ne "MSVC") {
     if ($env:R_MAJOR_VERSION -eq "3") {
       $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     }
-    Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
     Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
@@ -193,7 +193,7 @@ if ($env:COMPILER -ne "MSVC") {
   } else {
     $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
   }
-  Run-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
+  Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
 
   Write-Output "R CMD check build logs:"
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
@@ -209,7 +209,7 @@ if ($env:COMPILER -ne "MSVC") {
 
 } else {
   $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
-  Run-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
+  Invoke-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
@@ -297,8 +297,8 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
   cd R-package/tests
-  # NOTE: using Rscript.exe intentionally here, instead of Run-R-Code-Redirect-Stderr,
-  #       because something about the interaction between Run-R-Code-Redirect-Stderr
+  # NOTE: using Rscript.exe intentionally here, instead of Invoke-R-Code-Redirect-Stderr,
+  #       because something about the interaction between Invoke-R-Code-Redirect-Stderr
   #       and testthat results in failing tests not exiting with a non-0 exit code.
   Rscript.exe --vanilla "testthat.R" ; Check-Output $?
 }
