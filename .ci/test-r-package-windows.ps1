@@ -1,9 +1,9 @@
 # Download a file and retry upon failure. This looks like
 # an infinite loop but CI-level timeouts will kill it
-function Get-File-With-Retries {
+function Get-File-With-Tenacity {
   param(
-    [string]$url,
-    [string]$destfile
+    [Parameter(Mandatory=$true)][string]$url,
+    [Parameter(Mandatory=$true)][string]$destfile
   )
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
   do {
@@ -22,7 +22,7 @@ function Get-File-With-Retries {
 # this function is used is a command that writes harmless messages to stderr
 function Invoke-R-Code-Redirect-Stderr {
   param(
-    [string]$rcode
+    [Parameter(Mandatory=$true)][string]$rcode
   )
   $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
   Rscript --vanilla -e $decorated_code
@@ -31,7 +31,7 @@ function Invoke-R-Code-Redirect-Stderr {
 # Remove all items matching some pattern from PATH environment variable
 function Remove-From-Path {
   param(
-    [string]$pattern_to_remove
+    [Parameter(Mandatory=$true)][string]$pattern_to_remove
   )
   $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
 }
