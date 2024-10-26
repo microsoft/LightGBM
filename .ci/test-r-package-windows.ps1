@@ -97,7 +97,7 @@ $env:CMAKE_VERSION = "3.30.0"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
-$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH
+$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH
 if ([version]$env:R_VERSION -lt [version]"4.0") {
   $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
 } else {
