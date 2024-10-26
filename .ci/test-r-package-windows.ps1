@@ -87,7 +87,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:R_WINDOWS_VERSION = "4.3.1"
 } else {
   Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
-  Check-Output $false
+  Assert-Output $false
 }
 $env:CMAKE_VERSION = "3.30.0"
 
@@ -113,7 +113,7 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
 
-cd $env:BUILD_SOURCESDIRECTORY
+Set-Location $env:BUILD_SOURCESDIRECTORY
 tzutil /s "GMT Standard Time"
 [Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
 [Void][System.IO.Directory]::CreateDirectory($env:CMAKE_PATH)
@@ -126,23 +126,23 @@ Get-File-With-Retries -url "https://github.com/Kitware/CMake/releases/download/v
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Check-Output $?
+Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Assert-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Check-Output $?
+Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Assert-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing CMake"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMAKE_PATH/cmake.zip", "$env:CMAKE_PATH") ; Check-Output $?
+[System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMAKE_PATH/cmake.zip", "$env:CMAKE_PATH") ; Assert-Output $?
 # Remove old CMake shiped with RTools
 Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
 $packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Invoke-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Check-Output $?
+Invoke-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Assert-Output $?
 
 Write-Output "Building R-package"
 
@@ -163,9 +163,9 @@ if ($env:COMPILER -ne "MSVC") {
       $env:BUILD_R_FLAGS = "'--skip-install'"
     } else {
       Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
-      Check-Output $false
+      Assert-Output $false
     }
-    Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Check-Output $?
+    Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Assert-Output $?
   } elseif ($env:R_BUILD_TYPE -eq "cran") {
     # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
     # some flavors of tar.exe can fail in some settings on Windows.
@@ -174,7 +174,7 @@ if ($env:COMPILER -ne "MSVC") {
     if ($env:R_MAJOR_VERSION -eq "3") {
       $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
     }
-    Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Check-Output $?
+    Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Assert-Output $?
     Remove-From-Path ".*msys64.*"
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
@@ -183,7 +183,7 @@ if ($env:COMPILER -ne "MSVC") {
     $R_CMD_CHECK_DIR = "tmp-r-cmd-check"
     New-Item -Path "C:\" -Name $R_CMD_CHECK_DIR -ItemType "directory" > $null
     Move-Item -Path "$PKG_FILE_NAME" -Destination "C:\$R_CMD_CHECK_DIR\" > $null
-    cd "C:\$R_CMD_CHECK_DIR\"
+    Set-Location "C:\$R_CMD_CHECK_DIR\"
   }
 
   Write-Output "Running R CMD check"
@@ -199,12 +199,12 @@ if ($env:COMPILER -ne "MSVC") {
   $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
 
-  Check-Output $check_succeeded
+  Assert-Output $check_succeeded
 
   Write-Output "Looking for issues with R CMD check results"
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
       echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
-      Check-Output $False
+      Assert-Output $False
   }
 
 } else {
@@ -213,11 +213,11 @@ if ($env:COMPILER -ne "MSVC") {
   Write-Output "----- build and install logs -----"
   Get-Content -Path "$INSTALL_LOG_FILE_NAME"
   Write-Output "----- end of build and install logs -----"
-  Check-Output $install_succeeded
+  Assert-Output $install_succeeded
   # some errors are not raised above, but can be found in the logs
   if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
       echo "ERRORs have been found installing lightgbm"
-      Check-Output $False
+      Assert-Output $False
   }
 }
 
@@ -231,7 +231,7 @@ if ($env:TOOLCHAIN -ne "MSVC") {
 }
 if ($checks_cnt -eq 0) {
   Write-Output "Wrong R version was found (expected '$env:R_WINDOWS_VERSION'). Check the build logs."
-  Check-Output $False
+  Assert-Output $False
 }
 
 # Checking that we actually got the expected compiler. The R-package has some logic
@@ -241,7 +241,7 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Check for working CXX compiler.*$env:COMPILER"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong compiler was used. Check the build logs."
-    Check-Output $False
+    Assert-Output $False
   }
 }
 
@@ -251,7 +251,7 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "Trying to build with.*$env:TOOLCHAIN"
   if ($checks.Matches.length -eq 0) {
     Write-Output "The wrong toolchain was used. Check the build logs."
-    Check-Output $False
+    Assert-Output $False
   }
 }
 
@@ -267,7 +267,7 @@ if ($env:R_BUILD_TYPE -eq "cran") {
 }
 if ($checks_cnt -eq 0) {
   Write-Output "MM_PREFETCH preprocessor definition wasn't used. Check the build logs."
-  Check-Output $False
+  Assert-Output $False
 }
 
 # Checking that MM_MALLOC preprocessor definition is actually used in CI builds.
@@ -282,7 +282,7 @@ if ($env:R_BUILD_TYPE -eq "cran") {
 }
 if ($checks_cnt -eq 0) {
   Write-Output "MM_MALLOC preprocessor definition wasn't used. Check the build logs."
-  Check-Output $False
+  Assert-Output $False
 }
 
 # Checking that OpenMP is actually used in CMake builds.
@@ -290,17 +290,17 @@ if ($env:R_BUILD_TYPE -eq "cmake") {
   $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern ".*Found OpenMP: TRUE.*"
   if ($checks.Matches.length -eq 0) {
     Write-Output "OpenMP wasn't found. Check the build logs."
-    Check-Output $False
+    Assert-Output $False
   }
 }
 
 if ($env:COMPILER -eq "MSVC") {
   Write-Output "Running tests with testthat.R"
-  cd R-package/tests
+  Set-Location R-package/tests
   # NOTE: using Rscript.exe intentionally here, instead of Invoke-R-Code-Redirect-Stderr,
   #       because something about the interaction between Invoke-R-Code-Redirect-Stderr
   #       and testthat results in failing tests not exiting with a non-0 exit code.
-  Rscript.exe --vanilla "testthat.R" ; Check-Output $?
+  Rscript.exe --vanilla "testthat.R" ; Assert-Output $?
 }
 
 Write-Output "No issues were found checking the R-package"
