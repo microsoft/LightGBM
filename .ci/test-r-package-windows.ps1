@@ -30,10 +30,13 @@ function Invoke-R-Code-Redirect-Stderr {
 
 # Remove all items matching some pattern from PATH environment variable
 function Remove-From-Path {
+  [CmdletBinding(SupportsShouldProcess)]
   param(
     [Parameter(Mandatory=$true)][string]$pattern_to_remove
   )
-  $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
+  if ($PSCmdlet.ShouldProcess($env:PATH, "Removing ${pattern_to_remove}")) {
+    $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
+  }
 }
 
 # remove some details that exist in the GitHub Actions images which might
