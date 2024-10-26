@@ -112,7 +112,7 @@ if [[ $TASK == "lint" ]]; then
     # source activate "${CONDA_ENV}"
     pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
     echo "Linting PowerShell code"
-    pwsh -command "Invoke-ScriptAnalyzer -Path "${BUILD_DIRECTORY}"/.ci -Recurse -EnableExit -Severity Warning,Error -IncludeDefaultRules -IncludeRules *" || exit 1
+    pwsh -command "Invoke-ScriptAnalyzer -Path "${BUILD_DIRECTORY}"/.ci -Recurse -EnableExit -Severity Warning,Error" || exit 1
     # echo "Linting Python code"
     # bash ./.ci/lint-python.sh || exit 1
     # echo "Linting R code"
