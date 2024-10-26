@@ -203,7 +203,7 @@ if ($env:COMPILER -ne "MSVC") {
 
   Write-Output "Looking for issues with R CMD check results"
   if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
-      echo "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
+      Write-Output "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
       Assert-Output $False
   }
 
@@ -216,7 +216,7 @@ if ($env:COMPILER -ne "MSVC") {
   Assert-Output $install_succeeded
   # some errors are not raised above, but can be found in the logs
   if (Get-Content "$INSTALL_LOG_FILE_NAME" | Select-String -Pattern "ERROR" -CaseSensitive -Quiet) {
-      echo "ERRORs have been found installing lightgbm"
+      Write-Output "ERRORs have been found installing lightgbm"
       Assert-Output $False
   }
 }
