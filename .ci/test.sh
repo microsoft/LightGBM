@@ -110,6 +110,9 @@ if [[ $TASK == "lint" ]]; then
         'r-lintr>=3.1.2'
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
+    pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
+    echo "Linting PowerShell code"
+    pwsh -File ./.ci/lint-powershell.ps1 -scripts_dir "${BUILD_DIRECTORY}"/.ci || exit 1
     echo "Linting Python code"
     bash ./.ci/lint-python.sh || exit 1
     echo "Linting R code"
