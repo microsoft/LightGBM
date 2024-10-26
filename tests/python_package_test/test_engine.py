@@ -24,6 +24,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_all_trees_valid,
     assert_silent,
     dummy_obj,
     load_breast_cancer,
@@ -3811,6 +3812,34 @@ def test_predict_with_start_iteration():
     inner_test(X, y, params, early_stopping_rounds=None)
 
 
+@pytest.mark.parametrize("use_init_score", [False, True])
+def test_predict_stump(rng, use_init_score):
+    X, y = load_breast_cancer(return_X_y=True)
+    dataset_kwargs = {"data": X, "label": y}
+    if use_init_score:
+        dataset_kwargs.update({"init_score": rng.uniform(size=y.shape)})
+    bst = lgb.train(
+        train_set=lgb.Dataset(**dataset_kwargs),
+        params={"objective": "binary", "min_data_in_leaf": X.shape[0]},
+        num_boost_round=5,
+    )
+    # checking prediction from 1 iteration and the whole model, to prevent bugs
+    # of the form "a model of n stumps predicts n * initial_score"
+    preds_1 = bst.predict(X, raw_score=True, num_iteration=1)
+    preds_all = bst.predict(X, raw_score=True)
+    if use_init_score:
+        # if init_score was provided, a model of stumps should predict all 0s
+        all_zeroes = np.full_like(preds_1, fill_value=0.0)
+        np.testing.assert_allclose(preds_1, all_zeroes)
+        np.testing.assert_allclose(preds_all, all_zeroes)
+    else:
+        # if init_score was not provided, prediction for a model of stumps should be
+        # the "average" of the labels
+        y_avg = np.log(y.mean() / (1.0 - y.mean()))
+        np.testing.assert_allclose(preds_1, np.full_like(preds_1, fill_value=y_avg))
+        np.testing.assert_allclose(preds_all, np.full_like(preds_all, fill_value=y_avg))
+
+
 def test_average_precision_metric():
     # test against sklearn average precision metric
     X, y = load_breast_cancer(return_X_y=True)
@@ -3855,21 +3884,60 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     assert new_bst.params == expected_params
 
 
-def test_dump_model():
+@pytest.mark.parametrize("linear_tree", [False, True])
+def test_dump_model_stump(linear_tree):
     X, y = load_breast_cancer(return_X_y=True)
+
     train_data = lgb.Dataset(X, label=y)
-    params = {"objective": "binary", "verbose": -1}
+    params = {"objective": "binary", "verbose": -1, "linear_tree": linear_tree, "min_data_in_leaf": len(y)}
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    tree_structure = dumped_model["tree_info"][0]["tree_structure"]
+    assert len(dumped_model["tree_info"]) == 1
+    assert "leaf_value" in tree_structure
+    assert tree_structure["leaf_count"] == len(y)
+
+
+def test_dump_model():
+    initial_score_offset = 57.5
+    X, y = make_synthetic_regression()
+    train_data = lgb.Dataset(X, label=y + initial_score_offset)
+
+    params = {
+        "objective": "regression",
+        "verbose": -1,
+        "boost_from_average": True,
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
-    params["linear_tree"] = True
+
+    for tree in dumped_model["tree_info"]:
+        assert tree["tree_structure"]["internal_value"] != 0
+
+    assert dumped_model["tree_info"][0]["tree_structure"]["internal_value"] == pytest.approx(
+        initial_score_offset, abs=1
+    )
+    assert_all_trees_valid(dumped_model)
+
+
+def test_dump_model_linear():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+        "linear_tree": True,
+    }
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    assert_all_trees_valid(dumped_model)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str

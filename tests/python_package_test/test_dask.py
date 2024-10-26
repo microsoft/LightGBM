@@ -2,7 +2,6 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
-import random
 import socket
 from itertools import groupby
 from os import getenv
@@ -1443,7 +1442,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
 @pytest.mark.parametrize("task", tasks)
 @pytest.mark.parametrize("output", data_output)
-def test_init_score(task, output, cluster):
+def test_init_score(task, output, cluster, rng):
     if task == "ranking" and output == "scipy_csr_matrix":
         pytest.skip("LGBMRanker is not currently tested on sparse matrices")
 
@@ -1452,20 +1451,35 @@ def test_init_score(task, output, cluster):
 
         model_factory = task_to_dask_factory[task]
 
-        params = {"n_estimators": 1, "num_leaves": 2, "time_out": 5}
-        init_score = random.random()
-        size_factor = 1
+        params = {
+            "n_estimators": 1,
+            "num_leaves": 2,
+            "time_out": 5,
+            "seed": 708,
+            "deterministic": True,
+            "force_row_wise": True,
+            "num_thread": 1,
+        }
+        num_classes = 1
         if task == "multiclass-classification":
-            size_factor = 3  # number of classes
+            num_classes = 3
 
         if output.startswith("dataframe"):
-            init_scores = dy.map_partitions(lambda x: pd.DataFrame([[init_score] * size_factor] * x.size))
+            init_scores = dy.map_partitions(lambda x: pd.DataFrame(rng.uniform(size=(x.size, num_classes))))
         else:
-            init_scores = dy.map_blocks(lambda x: np.full((x.size, size_factor), init_score))
+            init_scores = dy.map_blocks(lambda x: rng.uniform(size=(x.size, num_classes)))
+
         model = model_factory(client=client, **params)
-        model.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
-        # value of the root node is 0 when init_score is set
-        assert model.booster_.trees_to_dataframe()["value"][0] == 0
+        model.fit(dX, dy, sample_weight=dw, group=dg)
+        pred = model.predict(dX, raw_score=True)
+
+        model_init_score = model_factory(client=client, **params)
+        model_init_score.fit(dX, dy, sample_weight=dw, init_score=init_scores, group=dg)
+        pred_init_score = model_init_score.predict(dX, raw_score=True)
+
+        # check if init score changes predictions
+        with pytest.raises(AssertionError):
+            assert_eq(pred, pred_init_score)
 
 
 def sklearn_checks_to_run():
@@ -1525,6 +1539,39 @@ def test_predict_with_raw_score(task, output, cluster):
         if task.endswith("classification"):
             pred_proba_raw = model.predict_proba(dX, raw_score=True).compute()
             assert_eq(raw_predictions, pred_proba_raw)
+
+
+@pytest.mark.parametrize("output", data_output)
+@pytest.mark.parametrize("use_init_score", [False, True])
+def test_predict_stump(output, use_init_score, cluster, rng):
+    with Client(cluster) as client:
+        _, _, _, _, dX, dy, _, _ = _create_data(objective="binary-classification", n_samples=1_000, output=output)
+
+        params = {"objective": "binary", "n_estimators": 5, "min_data_in_leaf": 1_000}
+
+        if not use_init_score:
+            init_scores = None
+        elif output.startswith("dataframe"):
+            init_scores = dy.map_partitions(lambda x: pd.DataFrame(rng.uniform(size=x.size)))
+        else:
+            init_scores = dy.map_blocks(lambda x: rng.uniform(size=x.size))
+
+        model = lgb.DaskLGBMClassifier(client=client, **params)
+        model.fit(dX, dy, init_score=init_scores)
+        preds_1 = model.predict(dX, raw_score=True, num_iteration=1).compute()
+        preds_all = model.predict(dX, raw_score=True).compute()
+
+        if use_init_score:
+            # if init_score was provided, a model of stumps should predict all 0s
+            all_zeroes = np.full_like(preds_1, fill_value=0.0)
+            assert_eq(preds_1, all_zeroes)
+            assert_eq(preds_all, all_zeroes)
+        else:
+            # if init_score was not provided, prediction for a model of stumps should be
+            # the "average" of the labels
+            y_avg = np.log(dy.mean() / (1.0 - dy.mean()))
+            assert_eq(preds_1, np.full_like(preds_1, fill_value=y_avg))
+            assert_eq(preds_all, np.full_like(preds_all, fill_value=y_avg))
 
 
 def test_distributed_quantized_training(tmp_path, cluster):
