@@ -21,7 +21,9 @@ if (Test-Path "$installer") {
 
 # Install OpenCL platform from installer executable
 Write-Output "Running OpenCL installer"
-Invoke-Command -ScriptBlock { Start-Process "$installer" -ArgumentList '/S /V"/quiet /norestart /passive /log opencl.log"' -Wait }
+Invoke-Command -ScriptBlock {
+    Start-Process "$installer" -ArgumentList '/S /V"/quiet /norestart /passive /log opencl.log"' -Wait
+}
 
 $property = Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 if ($null -eq $property) {

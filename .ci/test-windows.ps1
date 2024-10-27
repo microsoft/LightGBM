@@ -1,6 +1,6 @@
 function Assert-Output {
     param( [Parameter(Mandatory = $true)][bool]$success )
-    if (!$success) {
+    if (-not $success) {
         $host.SetShouldExit(-1)
         exit 1
     }
@@ -87,13 +87,11 @@ if ($env:TASK -eq "regular") {
     sh ./build-python.sh install --precompile ; Assert-Output $?
     cp ./Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
     cp ./Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-}
-elseif ($env:TASK -eq "sdist") {
+} elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *.gz) -v ; Assert-Output $?
-}
-elseif ($env:TASK -eq "bdist") {
+} elseif ($env:TASK -eq "bdist") {
     # Import the Chocolatey profile module so that the RefreshEnv command
     # invoked below properly updates the current PowerShell session environment.
     $module = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"

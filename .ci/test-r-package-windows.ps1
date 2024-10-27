@@ -8,9 +8,9 @@ function Get-File-With-Tenacity {
     $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
     do {
         Write-Output "Downloading ${url}"
-        sleep 5;
+        sleep 5
         Invoke-WebRequest -Uri $url -OutFile $destfile
-    } while(!$?);
+    } while(!$?)
 }
 
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
@@ -98,11 +98,11 @@ $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
 $env:PATH =
-    "$env:RTOOLS_BIN;" +
-    "$env:RTOOLS_MINGW_BIN;" +
-    "$env:R_LIB_PATH/R/bin/x64;" +
-    "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" +
-    $env:PATH
+"$env:RTOOLS_BIN;" +
+"$env:RTOOLS_MINGW_BIN;" +
+"$env:R_LIB_PATH/R/bin/x64;" +
+"$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" +
+$env:PATH
 if ([version]$env:R_VERSION -lt [version]"4.0") {
     $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
 } else {
@@ -144,7 +144,7 @@ $params = @{
     url = "https://github.com/Kitware/CMake/releases/download/v{0}/cmake-{0}-windows-x86_64.zip" -f $env:CMAKE_VERSION
     destfile = "$env:CMAKE_PATH/cmake.zip"
 }
-Get-File-With-Tenacity @params 
+Get-File-With-Tenacity @params
 
 # Install R
 Write-Output "Installing R"
