@@ -20,7 +20,7 @@ Write-Output "Running OpenCL installer"
 Invoke-Command -ScriptBlock { Start-Process "$installer" -ArgumentList '/S /V"/quiet /norestart /passive /log opencl.log"' -Wait }
 
 $property = Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
-if ($property -eq $null) {
+if ($null -eq $property) {
   Write-Output "Unable to install OpenCL CPU platform"
   Write-Output "OpenCL installation log:"
   Get-Content "opencl.log"
