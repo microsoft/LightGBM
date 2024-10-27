@@ -69,10 +69,10 @@ if ($env:PYTHON_VERSION -eq "3.7") {
 }
 
 conda create `
-  -y `
-  -n $env:CONDA_ENV `
-  --file $env:CONDA_REQUIREMENT_FILE `
-  "python=$env:PYTHON_VERSION[build=*cpython]" ; Assert-Output $?
+    -y `
+    -n $env:CONDA_ENV `
+    --file $env:CONDA_REQUIREMENT_FILE `
+    "python=$env:PYTHON_VERSION[build=*cpython]" ; Assert-Output $?
 
 if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
@@ -133,8 +133,8 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
     (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
     conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
     foreach ($file in @(Get-ChildItem *.py)) {
-      @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
-      python $file ; Assert-Output $?
+        @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
+        python $file ; Assert-Output $?
     }  # run all examples
     Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
     (Get-Content "interactive_plot_example.ipynb").replace('INTERACTIVE = False', 'assert False, \"Interactive mode disabled\"') | Set-Content "interactive_plot_example.ipynb"

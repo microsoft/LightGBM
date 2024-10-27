@@ -20,7 +20,7 @@ $settings = @{
             Enable = $true
             NoEmptyLineBefore = $true
             IgnoreOneLineBlock = $true
-            NewLineAfter = $true
+            NewLineAfter = $false
         }
         PSPlaceOpenBrace = @{
             Enable = $true
