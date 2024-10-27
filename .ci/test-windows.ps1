@@ -31,11 +31,19 @@ if ($env:TASK -eq "cpp-tests") {
 if ($env:TASK -eq "swig") {
     $env:JAVA_HOME = $env:JAVA_HOME_8_X64  # there is pre-installed Eclipse Temurin 8 somewhere
     $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-    Invoke-WebRequest -Uri "https://sourceforge.net/projects/swig/files/latest/download" -OutFile $env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip -UserAgent "curl"
+    $params = @{
+        Uri = "https://sourceforge.net/projects/swig/files/latest/download"
+        OutFile = "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip"
+        UserAgent = "curl"
+    }
+    Invoke-WebRequest @params
     Add-Type -AssemblyName System.IO.Compression.FileSystem
-    [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip", "$env:BUILD_SOURCESDIRECTORY/swig") ; Assert-Output $?
+    [System.IO.Compression.ZipFile]::ExtractToDirectory(
+        "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip",
+        "$env:BUILD_SOURCESDIRECTORY/swig"
+    ) ; Assert-Output $?
     $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
-    $env:PATH = "$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder;" + $env:PATH
+    $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", $env:PATH) -join ";"
     $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
     cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
     Write-Output "CMake build logs:"
@@ -116,9 +124,9 @@ if ($env:TASK -eq "regular") {
 
 if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
     # cannot test C API with "sdist" task
-    $tests = $env:BUILD_SOURCESDIRECTORY + "/tests/python_package_test"
+    $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 } else {
-    $tests = $env:BUILD_SOURCESDIRECTORY + "/tests"
+    $tests = "$env:BUILD_SOURCESDIRECTORY/tests"
 }
 if ($env:TASK -eq "bdist") {
     # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
@@ -130,13 +138,27 @@ pytest $tests ; Assert-Output $?
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
     Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
-    (Get-Content "plot_example.py").replace('graph.render(view=True)', 'graph.render(view=False)') | Set-Content "plot_example.py"  # prevent interactive window mode
+    # Prevent interactive window mode
+    (Get-Content "plot_example.py").replace(
+        'graph.render(view=True)',
+        'graph.render(view=False)'
+    ) | Set-Content "plot_example.py"
     conda install -y -n $env:CONDA_ENV "h5py>=3.10" "ipywidgets>=8.1.2" "notebook>=7.1.2"
+    # Run all examples
     foreach ($file in @(Get-ChildItem *.py)) {
-        @("import sys, warnings", "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))") + (Get-Content $file) | Set-Content $file
+        @(
+            "import sys, warnings",
+            -join @(
+                "warnings.showwarning = lambda message, category, filename, lineno, file=None, line=None: ",
+                "sys.stdout.write(warnings.formatwarning(message, category, filename, lineno, line))"
+            )
+        ) + (Get-Content $file) | Set-Content $file
         python $file ; Assert-Output $?
-    }  # run all examples
+    }
+    # Run all notebooks
     Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-    (Get-Content "interactive_plot_example.ipynb").replace('INTERACTIVE = False', 'assert False, \"Interactive mode disabled\"') | Set-Content "interactive_plot_example.ipynb"
-    jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Assert-Output $?  # run all notebooks
+    (Get-Content "interactive_plot_example.ipynb").
+        replace('INTERACTIVE = False', 'assert False, \"Interactive mode disabled\"') |
+            Set-Content "interactive_plot_example.ipynb"
+    jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Assert-Output $?
 }

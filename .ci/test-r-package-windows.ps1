@@ -97,12 +97,13 @@ $env:CMAKE_VERSION = "3.30.0"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
-$env:PATH =
-"$env:RTOOLS_BIN;" +
-"$env:RTOOLS_MINGW_BIN;" +
-"$env:R_LIB_PATH/R/bin/x64;" +
-"$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" +
-$env:PATH
+$env:PATH = @(
+    "$env:RTOOLS_BIN",
+    "$env:RTOOLS_MINGW_BIN",
+    "$env:R_LIB_PATH/R/bin/x64",
+    "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin",
+    $env:PATH
+) -join ";"
 if ([version]$env:R_VERSION -lt [version]"4.0") {
     $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
 } else {
@@ -148,11 +149,23 @@ Get-File-With-Tenacity @params
 
 # Install R
 Write-Output "Installing R"
-Start-Process -FilePath R-win.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386" ; Assert-Output $?
+$params = @{
+    FilePath = "R-win.exe"
+    NoNewWindow = $true
+    Wait = $true
+    ArgumentList = "/VERYSILENT /DIR=$env:R_LIB_PATH/R /COMPONENTS=main,x64,i386"
+}
+Start-Process @params ; Assert-Output $?
 Write-Output "Done installing R"
 
 Write-Output "Installing Rtools"
-Start-Process -FilePath Rtools.exe -NoNewWindow -Wait -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH" ; Assert-Output $?
+$params = @{
+    FilePath = "Rtools.exe"
+    NoNewWindow = $true
+    Wait = $true
+    ArgumentList = "/VERYSILENT /SUPPRESSMSGBOXES /DIR=$RTOOLS_INSTALL_PATH"
+}
+Start-Process @params; Assert-Output $?
 Write-Output "Done installing Rtools"
 
 Write-Output "Installing CMake"
@@ -163,8 +176,16 @@ Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
-$packages = "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
-Invoke-R-Code-Redirect-Stderr "options(install.packages.check.source = 'no'); install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())" ; Assert-Output $?
+$packages = -join @(
+    "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', ",
+    "'RhpcBLASctl', 'testthat'), dependencies = c('Imports', 'Depends', 'LinkingTo')"
+)
+$params = -join @(
+    "options(install.packages.check.source = 'no'); ",
+    "install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', ",
+    "lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())"
+)
+Invoke-R-Code-Redirect-Stderr $params ; Assert-Output $?
 
 Write-Output "Building R-package"
 
@@ -187,16 +208,21 @@ if ($env:COMPILER -ne "MSVC") {
             Write-Output "[ERROR] Unrecognized toolchain: $env:TOOLCHAIN"
             Assert-Output $false
         }
-        Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"; Assert-Output $?
+        Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){$env:BUILD_R_FLAGS}; source('build_r.R')"
+        Assert-Output $?
     } elseif ($env:R_BUILD_TYPE -eq "cran") {
         # NOTE: gzip and tar are needed to create a CRAN package on Windows, but
         # some flavors of tar.exe can fail in some settings on Windows.
         # Putting the msys64 utilities at the beginning of PATH temporarily to be
         # sure they're used for that purpose.
         if ($env:R_MAJOR_VERSION -eq "3") {
-            $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+            $env:PATH = @("C:\msys64\usr\bin", $env:PATH) -join ";"
         }
-        Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; Assert-Output $?
+        $params = -join @(
+            "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', ",
+            "echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)"
+        )
+        Invoke-R-Code-Redirect-Stderr $params ; Assert-Output $?
         Remove-From-Path ".*msys64.*"
         # Test CRAN source .tar.gz in a directory that is not this repo or below it.
         # When people install.packages('lightgbm'), they won't have the LightGBM
@@ -215,7 +241,11 @@ if ($env:COMPILER -ne "MSVC") {
     } else {
         $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
     }
-    Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
+    $params = -join (
+        "result <- processx::run(command = 'R.exe', args = $check_args, ",
+        "echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)"
+    )
+    Invoke-R-Code-Redirect-Stderr $params ; $check_succeeded = $?
 
     Write-Output "R CMD check build logs:"
     $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
@@ -247,7 +277,11 @@ if ($env:TOOLCHAIN -ne "MSVC") {
     $checks = Select-String -Path "${LOG_FILE_NAME}" -Pattern "using R version $env:R_WINDOWS_VERSION"
     $checks_cnt = $checks.Matches.length
 } else {
-    $checks = Select-String -Path "${INSTALL_LOG_FILE_NAME}" -Pattern "R version passed into FindLibR.* $env:R_WINDOWS_VERSION"
+    $checksParams = @{
+        Path = "${INSTALL_LOG_FILE_NAME}"
+        Pattern = "R version passed into FindLibR.* $env:R_WINDOWS_VERSION"
+    }
+    $checks = Select-String @checksParams
     $checks_cnt = $checks.Matches.length
 }
 if ($checks_cnt -eq 0) {
