@@ -1,5 +1,10 @@
 $settings = @{
 
+    Severity = @(
+        'Warning',
+        'Error'
+    )
+
     IncludeDefaultRules = $true
 
     ExcludeRules        = @(
@@ -58,4 +63,4 @@ $settings = @{
     }
 }
 
-Invoke-ScriptAnalyzer -Path "${env:BUILD_DIRECTORY}/.ci" -Recurse -EnableExit -Severity Warning,Error -Settings $settings
+Invoke-ScriptAnalyzer -Path "${env:BUILD_DIRECTORY}/.ci" -Recurse -EnableExit -Settings $settings
