@@ -68,11 +68,13 @@ if ($env:PYTHON_VERSION -eq "3.7") {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core.txt"
 }
 
-conda create `
-    -y `
-    -n $env:CONDA_ENV `
-    --file $env:CONDA_REQUIREMENT_FILE `
-    "python=$env:PYTHON_VERSION[build=*cpython]" ; Assert-Output $?
+$condaParams = @(
+    "-y",
+    "-n", "$env:CONDA_ENV",
+    "--file", "$env:CONDA_REQUIREMENT_FILE",
+    "python=$env:PYTHON_VERSION[build=*cpython]"
+)
+conda create @condaParams ; Assert-Output $?
 
 if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV

@@ -4,7 +4,11 @@ $installer = "AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe"
 
 Write-Output "Downloading OpenCL platform installer"
 $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
-Invoke-WebRequest -OutFile "$installer" -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer"
+$params = @{
+    OutFile = "$installer"
+    Uri = "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer"
+}
+Invoke-WebRequest @params
 
 if (Test-Path "$installer") {
     Write-Output "Successfully downloaded OpenCL platform installer"
