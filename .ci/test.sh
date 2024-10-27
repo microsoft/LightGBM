@@ -119,7 +119,7 @@ if [[ $TASK == "lint" ]]; then
     # Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
     # echo "Linting C++ code"
     # bash ./.ci/lint-cpp.sh || exit 1
-    # exit 0
+    exit 0
 fi
 
 if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
