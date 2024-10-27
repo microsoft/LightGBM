@@ -128,16 +128,23 @@ tzutil /s "GMT Standard Time"
 
 # download R, RTools and CMake
 Write-Output "Downloading R, Rtools and CMake"
-Get-File-With-Tenacity `
-    -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" `
-    -destfile "R-win.exe"
-Get-File-With-Tenacity `
-    -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" `
-    -destfile "Rtools.exe"
-Get-File-With-Tenacity `
-    -url "https://github.com/Kitware/CMake/releases/download/v{0}/cmake-{0}-windows-x86_64.zip" -f
-        $env:CMAKE_VERSION `
-    -destfile "$env:CMAKE_PATH/cmake.zip"
+$params = @{
+    url = "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe"
+    destfile = "R-win.exe"
+}
+Get-File-With-Tenacity @params
+
+$params = @{
+    url = "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE"
+    destfile = "Rtools.exe"
+}
+Get-File-With-Tenacity @params
+
+$params = @{
+    url = "https://github.com/Kitware/CMake/releases/download/v{0}/cmake-{0}-windows-x86_64.zip" -f $env:CMAKE_VERSION
+    destfile = "$env:CMAKE_PATH/cmake.zip"
+}
+Get-File-With-Tenacity @params 
 
 # Install R
 Write-Output "Installing R"
