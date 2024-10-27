@@ -1,5 +1,5 @@
 function Assert-Output {
-  param( [Parameter(Mandatory=$true)][bool]$success )
+  param( [Parameter(Mandatory = $true)][bool]$success )
   if (!$success) {
     $host.SetShouldExit(-1)
     exit 1

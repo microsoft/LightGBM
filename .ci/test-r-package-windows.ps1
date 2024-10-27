@@ -2,8 +2,8 @@
 # an infinite loop but CI-level timeouts will kill it
 function Get-File-With-Tenacity {
   param(
-    [Parameter(Mandatory=$true)][string]$url,
-    [Parameter(Mandatory=$true)][string]$destfile
+    [Parameter(Mandatory = $true)][string]$url,
+    [Parameter(Mandatory = $true)][string]$destfile
   )
   $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows down download speed
   do {
@@ -22,7 +22,7 @@ function Get-File-With-Tenacity {
 # this function is used is a command that writes harmless messages to stderr
 function Invoke-R-Code-Redirect-Stderr {
   param(
-    [Parameter(Mandatory=$true)][string]$rcode
+    [Parameter(Mandatory = $true)][string]$rcode
   )
   $decorated_code = "out_file <- file(tempfile(), open = 'wt'); sink(out_file, type = 'message'); $rcode; sink()"
   Rscript --vanilla -e $decorated_code
@@ -32,7 +32,7 @@ function Invoke-R-Code-Redirect-Stderr {
 function Remove-From-Path {
   [CmdletBinding(SupportsShouldProcess)]
   param(
-    [Parameter(Mandatory=$true)][string]$pattern_to_remove
+    [Parameter(Mandatory = $true)][string]$pattern_to_remove
   )
   if ($PSCmdlet.ShouldProcess($env:PATH, "Removing ${pattern_to_remove}")) {
     $env:PATH = ($env:PATH.Split(';') | Where-Object { $_ -notmatch "$pattern_to_remove" }) -join ';'
