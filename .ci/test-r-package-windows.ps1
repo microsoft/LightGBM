@@ -97,7 +97,12 @@ $env:CMAKE_VERSION = "3.30.0"
 $env:R_LIB_PATH = "$env:BUILD_SOURCESDIRECTORY/RLibrary" -replace '[\\]', '/'
 $env:R_LIBS = "$env:R_LIB_PATH"
 $env:CMAKE_PATH = "$env:BUILD_SOURCESDIRECTORY/CMake_installation"
-$env:PATH = "$env:RTOOLS_BIN;" + "$env:RTOOLS_MINGW_BIN;" + "$env:R_LIB_PATH/R/bin/x64;" + "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" + $env:PATH
+$env:PATH =
+    "$env:RTOOLS_BIN;" +
+    "$env:RTOOLS_MINGW_BIN;" +
+    "$env:R_LIB_PATH/R/bin/x64;" +
+    "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin;" +
+    $env:PATH
 if ([version]$env:R_VERSION -lt [version]"4.0") {
     $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
 } else {
@@ -123,9 +128,16 @@ tzutil /s "GMT Standard Time"
 
 # download R, RTools and CMake
 Write-Output "Downloading R, Rtools and CMake"
-Get-File-With-Tenacity -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" -destfile "R-win.exe"
-Get-File-With-Tenacity -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" -destfile "Rtools.exe"
-Get-File-With-Tenacity -url "https://github.com/Kitware/CMake/releases/download/v$env:CMAKE_VERSION/cmake-$env:CMAKE_VERSION-windows-x86_64.zip" -destfile "$env:CMAKE_PATH/cmake.zip"
+Get-File-With-Tenacity `
+    -url "$env:CRAN_MIRROR/bin/windows/base/old/$env:R_WINDOWS_VERSION/R-$env:R_WINDOWS_VERSION-win.exe" `
+    -destfile "R-win.exe"
+Get-File-With-Tenacity `
+    -url "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$env:RTOOLS_EXE_FILE" `
+    -destfile "Rtools.exe"
+Get-File-With-Tenacity `
+    -url "https://github.com/Kitware/CMake/releases/download/v{0}/cmake-{0}-windows-x86_64.zip" -f
+        $env:CMAKE_VERSION `
+    -destfile "$env:CMAKE_PATH/cmake.zip"
 
 # Install R
 Write-Output "Installing R"
