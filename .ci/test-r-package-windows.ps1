@@ -10,7 +10,7 @@ function Get-File-With-Tenacity {
         Write-Output "Downloading ${url}"
         sleep 5
         Invoke-WebRequest -Uri $url -OutFile $destfile
-    } while(!$?)
+    } while (-not $?)
 }
 
 # External utilities like R.exe / Rscript.exe writing to stderr (even for harmless
@@ -216,19 +216,18 @@ if ($env:COMPILER -ne "MSVC") {
         $check_args = "c('CMD', 'check', '--no-multiarch', '--as-cran', '--run-donttest', '$PKG_FILE_NAME')"
     }
     Invoke-R-Code-Redirect-Stderr "result <- processx::run(command = 'R.exe', args = $check_args, echo = TRUE, windows_verbatim_args = FALSE, error_on_status = TRUE)" ; $check_succeeded = $?
-  
+
     Write-Output "R CMD check build logs:"
     $INSTALL_LOG_FILE_NAME = "lightgbm.Rcheck\00install.out"
     Get-Content -Path "$INSTALL_LOG_FILE_NAME"
-  
+
     Assert-Output $check_succeeded
-  
+
     Write-Output "Looking for issues with R CMD check results"
     if (Get-Content "$LOG_FILE_NAME" | Select-String -Pattern "NOTE|WARNING|ERROR" -CaseSensitive -Quiet) {
         Write-Output "NOTEs, WARNINGs, or ERRORs have been found by R CMD check"
         Assert-Output $False
     }
-
 } else {
     $INSTALL_LOG_FILE_NAME = "$env:BUILD_SOURCESDIRECTORY\00install_out.txt"
     Invoke-R-Code-Redirect-Stderr "source('build_r.R')" 1> $INSTALL_LOG_FILE_NAME ; $install_succeeded = $?
