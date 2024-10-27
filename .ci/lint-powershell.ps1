@@ -1,4 +1,4 @@
-@{
+$settings = @{
 
     IncludeDefaultRules = $true
 
@@ -58,4 +58,4 @@
     }
 }
 
-Invoke-ScriptAnalyzer -Path "${env:BUILD_DIRECTORY}/.ci" -Recurse -EnableExit -Severity Warning,Error
+Invoke-ScriptAnalyzer -Path "${env:BUILD_DIRECTORY}/.ci" -Recurse -EnableExit -Severity Warning,Error -Settings $settings
