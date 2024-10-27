@@ -157,8 +157,9 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
     }
     # Run all notebooks
     Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
-    (Get-Content "interactive_plot_example.ipynb").
-        replace('INTERACTIVE = False', 'assert False, \"Interactive mode disabled\"') |
-            Set-Content "interactive_plot_example.ipynb"
+    (Get-Content "interactive_plot_example.ipynb").replace(
+        'INTERACTIVE = False',
+        'assert False, \"Interactive mode disabled\"'
+    ) | Set-Content "interactive_plot_example.ipynb"
     jupyter nbconvert --ExecutePreprocessor.timeout=180 --to notebook --execute --inplace *.ipynb ; Assert-Output $?
 }
