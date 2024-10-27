@@ -89,7 +89,7 @@ if ($env:R_MAJOR_VERSION -eq "3") {
   $env:RTOOLS_EXE_FILE = "rtools43-5550-5548.exe"
   $env:R_WINDOWS_VERSION = "4.3.1"
 } else {
-  echo "[ERROR] Unrecognized R version: $env:R_VERSION"
+  Write-Output "[ERROR] Unrecognized R version: $env:R_VERSION"
   Assert-Output $false
 }
 $env:CMAKE_VERSION = "3.30.0"

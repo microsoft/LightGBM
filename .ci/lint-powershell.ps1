@@ -1,63 +1,52 @@
 $settings = @{
-
     Severity = @(
+        'Information',
         'Warning',
         'Error'
     )
-
     IncludeDefaultRules = $true
-
-    ExcludeRules        = @(
-        'PSAvoidUsingWriteHost',
-        'PSReviewUnusedParameter',
-        'PSUseSingularNouns'
-    )
-
-    Rules               = @{
-        PSPlaceOpenBrace                   = @{
-            Enable             = $true
-            OnSameLine         = $true
-            NewLineAfter       = $true
-            IgnoreOneLineBlock = $true
-        }
-
-        PSPlaceCloseBrace                  = @{
-            Enable             = $true
-            NewLineAfter       = $false
-            IgnoreOneLineBlock = $true
-            NoEmptyLineBefore  = $true
-        }
-
-        PSUseConsistentIndentation         = @{
-            Enable              = $true
-            Kind                = 'space'
-            PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
-            IndentationSize     = 4
-        }
-
-        PSUseConsistentWhitespace          = @{
-            Enable                                  = $true
-            CheckInnerBrace                         = $true
-            CheckOpenBrace                          = $true
-            CheckOpenParen                          = $true
-            CheckOperator                           = $false
-            CheckPipe                               = $true
-            CheckPipeForRedundantWhitespace         = $false
-            CheckSeparator                          = $true
-            CheckParameter                          = $false
-            IgnoreAssignmentOperatorInsideHashTable = $true
-        }
-
-        PSAlignAssignmentStatement         = @{
-            Enable         = $true
-            CheckHashtable = $true
-        }
-
-        PSUseCorrectCasing                 = @{
+    Rules = @{
+        PSAvoidExclaimOperator = @{
             Enable = $true
         }
-
+        PSAvoidLongLines = @{
+            Enable = $true
+            MaximumLineLength = 120
+        }
         PSAvoidSemicolonsAsLineTerminators = @{
+            Enable = $true
+        }
+        PSPlaceCloseBrace = @{
+            Enable = $true
+            NoEmptyLineBefore = $true
+            IgnoreOneLineBlock = $true
+            NewLineAfter = $true
+        }
+        PSPlaceOpenBrace = @{
+            Enable = $true
+            OnSameLine = $true
+            NewLineAfter = $true
+            IgnoreOneLineBlock = $true
+        }
+        PSUseConsistentIndentation = @{
+            Enable = $true
+            IndentationSize = 4
+            PipelineIndentation = 'IncreaseIndentationAfterEveryPipeline'
+            Kind = 'space'
+        }
+        PSUseConsistentWhitespace = @{
+            Enable = $true
+            CheckInnerBrace = $true
+            CheckOpenBrace = $true
+            CheckOpenParen = $true
+            CheckOperator = $true
+            CheckSeparator = $true
+            CheckPipe = $true
+            CheckPipeForRedundantWhitespace = $true
+            CheckParameter = $true
+            IgnoreAssignmentOperatorInsideHashTable = $false
+        }
+        PSUseCorrectCasing = @{
             Enable = $true
         }
     }
