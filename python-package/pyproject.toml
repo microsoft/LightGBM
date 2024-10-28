@@ -22,7 +22,7 @@ dependencies = [
     "numpy>=1.17.0",
     "scipy"
 ]
-description = "LightGBM Python Package"
+description = "LightGBM Python-package"
 license = {file = "LICENSE"}
 maintainers = [
   {name = "Yu Shi", email = "yushi@microsoft.com"}
@@ -30,7 +30,7 @@ maintainers = [
 name = "lightgbm"
 readme = "README.rst"
 requires-python = ">=3.7"
-version = "4.4.0.99"
+version = "4.5.0.99"
 
 [project.optional-dependencies]
 arrow = [
@@ -45,7 +45,7 @@ pandas = [
     "pandas>=0.24.0"
 ]
 scikit-learn = [
-    "scikit-learn!=0.22.0"
+    "scikit-learn>=0.24.2"
 ]
 
 [project.urls]
@@ -57,21 +57,21 @@ changelog = "https://github.com/microsoft/LightGBM/releases"
 # start:build-system
 [build-system]
 
-requires = ["scikit-build-core>=0.9.3"]
+requires = ["scikit-build-core>=0.10.1"]
 build-backend = "scikit_build_core.build"
 
 # based on https://github.com/scikit-build/scikit-build-core#configuration
 [tool.scikit-build]
 
-cmake.version = ">=3.18"
+cmake.version = "CMakeLists.txt"
 ninja.version = ">=1.11"
 ninja.make-fallback = true
 cmake.args = [
     "-D__BUILD_FOR_PYTHON:BOOL=ON"
 ]
-cmake.verbose = false
+build.verbose = false
 cmake.build-type = "Release"
-cmake.targets = ["_lightgbm"]
+build.targets = ["_lightgbm"]
 # stripping binaries should be turned back on once this is fixed:
 # https://github.com/jameslamb/pydistcheck/issues/235
 install.strip = false
@@ -80,7 +80,7 @@ sdist.reproducible = true
 wheel.py-api = "py3"
 experimental = false
 strict-config = false
-minimum-version = "0.9.3"
+minimum-version = "build-system.requires"
 
 # end:build-system
 

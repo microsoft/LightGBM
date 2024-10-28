@@ -73,11 +73,6 @@ GPU Support
 
 -  Refer to `GPU Tutorial <./GPU-Tutorial.rst>`__ and `GPU Targets <./GPU-Targets.rst>`__.
 
-Recommendations for gcc Users (MinGW, \*nix)
---------------------------------------------
-
--  Refer to `gcc Tips <./gcc-Tips.rst>`__.
-
 Support for Position Bias Treatment
 ------------------------------------
 

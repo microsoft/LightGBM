@@ -4,7 +4,6 @@ set -e -E -u -o pipefail
 
 # defaults
 ARCH=$(uname -m)
-INSTALL_CMAKE_FROM_RELEASES=${INSTALL_CMAKE_FROM_RELEASES:-"false"}
 
 # set up R environment
 CRAN_MIRROR="https://cran.rstudio.com"
@@ -20,7 +19,7 @@ if [[ $R_BUILD_TYPE != "cran" ]]; then
 fi
 
 # Get details needed for installing R components
-R_MAJOR_VERSION=( ${R_VERSION//./ } )
+R_MAJOR_VERSION="${R_VERSION%.*}"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     export R_MAC_VERSION=3.6.3
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
@@ -70,18 +69,9 @@ if [[ $OS_NAME == "linux" ]]; then
         sudo apt-get install \
             --no-install-recommends \
             -y \
-                autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION) \
+                "autoconf=$(cat R-package/AUTOCONF_UBUNTU_VERSION)" \
                 automake \
                 || exit 1
-    fi
-    if [[ $INSTALL_CMAKE_FROM_RELEASES == "true" ]]; then
-        curl -O -L \
-            https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-${ARCH}.sh \
-        || exit 1
-
-        sudo mkdir /opt/cmake || exit 1
-        sudo sh cmake-3.25.1-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
-        sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
     fi
 fi
 
@@ -100,9 +90,9 @@ if [[ $OS_NAME == "macos" ]]; then
     sudo tlmgr --verify-repo=none update --self || exit 1
     sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs || exit 1
 
-    curl -sL ${R_MAC_PKG_URL} -o R.pkg || exit 1
+    curl -sL "${R_MAC_PKG_URL}" -o R.pkg || exit 1
     sudo installer \
-        -pkg $(pwd)/R.pkg \
+        -pkg "$(pwd)/R.pkg" \
         -target / || exit 1
 
     # install tidy v5.8.0
@@ -110,7 +100,7 @@ if [[ $OS_NAME == "macos" ]]; then
     TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
     curl -sL ${TIDY_URL} -o tidy.pkg
     sudo installer \
-        -pkg $(pwd)/tidy.pkg \
+        -pkg "$(pwd)/tidy.pkg" \
         -target /
 
     # ensure that this newer version of 'tidy' is used by 'R CMD check'
@@ -160,7 +150,7 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
             git diff --name-only | wc -l
         )
         if [[ ${num_files_changed} -gt 0 ]]; then
-            echo "'configure' in the R package has changed. Please recreate it and commit the changes."
+            echo "'configure' in the R-package has changed. Please recreate it and commit the changes."
             echo "Changed files:"
             git diff --compact-summary
             echo "See R-package/README.md for details on how to recreate this script."
@@ -176,9 +166,9 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     # git repo around. This is to protect against the use of relative paths
     # like ../../CMakeLists.txt that would only work if you are in the repo
     R_CMD_CHECK_DIR="${HOME}/tmp-r-cmd-check/"
-    mkdir -p ${R_CMD_CHECK_DIR}
-    mv ${PKG_TARBALL} ${R_CMD_CHECK_DIR}
-    cd ${R_CMD_CHECK_DIR}
+    mkdir -p "${R_CMD_CHECK_DIR}"
+    mv "${PKG_TARBALL}" "${R_CMD_CHECK_DIR}"
+    cd "${R_CMD_CHECK_DIR}"
 fi
 
 declare -i allowed_notes=0

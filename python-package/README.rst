@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version| |Downloads| |API Docs|
+|License| |Python Versions| |PyPI Version| |PyPI Downloads| |conda Version| |conda Downloads| |API Docs|
 
 Installation
 ------------
@@ -263,7 +263,7 @@ To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running t
 
   MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
-Then install the Python package using that library.
+Then install the Python-package using that library.
 
 .. code:: sh
 
@@ -294,7 +294,11 @@ To check that a contribution to the package matches its style expectations, run 
    :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white
    :target: https://pypi.org/project/lightgbm
-.. |Downloads| image:: https://pepy.tech/badge/lightgbm
+.. |PyPI Downloads| image:: https://img.shields.io/pepy/dt/lightgbm?logo=pypi&logoColor=white&label=pypi%20downloads
    :target: https://pepy.tech/project/lightgbm
+.. |conda Version| image:: https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda
+   :target: https://anaconda.org/conda-forge/lightgbm
+.. |conda Downloads| image:: https://img.shields.io/conda/d/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda%20downloads
+   :target: https://anaconda.org/conda-forge/lightgbm/files
 .. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest
    :target: https://lightgbm.readthedocs.io/en/latest/Python-API.html

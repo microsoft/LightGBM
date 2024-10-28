@@ -224,8 +224,14 @@ void GBDT::Boosting() {
   }
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
-  objective_function_->
-    GetGradients(GetTrainingScore(&num_score), gradients_pointer_, hessians_pointer_);
+  if (config_->bagging_by_query) {
+    data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+    objective_function_->
+      GetGradients(GetTrainingScore(&num_score), data_sample_strategy_->num_sampled_queries(), data_sample_strategy_->sampled_query_indices(), gradients_pointer_, hessians_pointer_);
+  } else {
+    objective_function_->
+      GetGradients(GetTrainingScore(&num_score), gradients_pointer_, hessians_pointer_);
+  }
 }
 
 void GBDT::Train(int snapshot_freq, const std::string& model_output_path) {
@@ -366,7 +372,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   }
 
   // bagging logic
-  data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+  if (!config_->bagging_by_query) {
+    data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+  }
   const bool is_use_subset = data_sample_strategy_->is_use_subset();
   const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
   const std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices = data_sample_strategy_->bag_data_indices();
@@ -419,7 +427,10 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
             score_updater->AddScore(init_scores[cur_tree_id], cur_tree_id);
           }
         }
-        new_tree->AsConstantTree(init_scores[cur_tree_id]);
+        new_tree->AsConstantTree(init_scores[cur_tree_id], num_data_);
+      } else {
+        // extend init_scores with zeros
+        new_tree->AsConstantTree(0, num_data_);
       }
     }
     // add model

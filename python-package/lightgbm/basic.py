@@ -1,6 +1,13 @@
 # coding: utf-8
 """Wrapper for C API of LightGBM."""
 
+# This import causes lib_lightgbm.{dll,dylib,so} to be loaded.
+# It's intentionally done here, as early as possible, to avoid issues like
+# "libgomp.so.1: cannot allocate memory in static TLS block" on aarch64 Linux.
+#
+# For details, see the "cannot allocate memory in static TLS block" entry in docs/FAQ.rst.
+from .libpath import _LIB  # isort: skip
+
 import abc
 import ctypes
 import inspect
@@ -37,7 +44,6 @@ from .compat import (
     pd_DataFrame,
     pd_Series,
 )
-from .libpath import find_lib_path
 
 if TYPE_CHECKING:
     from typing import Literal
@@ -157,6 +163,14 @@ _LGBM_SetFieldType = Union[
 
 ZERO_THRESHOLD = 1e-35
 
+_MULTICLASS_OBJECTIVES = {"multiclass", "multiclassova", "multiclass_ova", "ova", "ovr", "softmax"}
+
+
+class LightGBMError(Exception):
+    """Error thrown by LightGBM."""
+
+    pass
+
 
 def _is_zero(x: float) -> bool:
     return -ZERO_THRESHOLD <= x <= ZERO_THRESHOLD
@@ -257,26 +271,13 @@ def _log_callback(msg: bytes) -> None:
     _log_native(str(msg.decode("utf-8")))
 
 
-def _load_lib() -> ctypes.CDLL:
-    """Load LightGBM library."""
-    lib_path = find_lib_path()
-    lib = ctypes.cdll.LoadLibrary(lib_path[0])
-    lib.LGBM_GetLastError.restype = ctypes.c_char_p
+# connect the Python logger to logging in lib_lightgbm
+if not environ.get("LIGHTGBM_BUILD_DOC", False):
+    _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
-    lib.callback = callback(_log_callback)  # type: ignore[attr-defined]
-    if lib.LGBM_RegisterLogCallback(lib.callback) != 0:
-        raise LightGBMError(lib.LGBM_GetLastError().decode("utf-8"))
-    return lib
-
-
-# we don't need lib_lightgbm while building docs
-_LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", False):
-    from unittest.mock import Mock  # isort: skip
-
-    _LIB = Mock(ctypes.CDLL)  # type: ignore
-else:
-    _LIB = _load_lib()
+    _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
+    if _LIB.LGBM_RegisterLogCallback(_LIB.callback) != 0:
+        raise LightGBMError(_LIB.LGBM_GetLastError().decode("utf-8"))
 
 
 _NUMERIC_TYPES = (int, float, bool)
@@ -550,18 +551,21 @@ class _TempFile:
             self.path.unlink()
 
 
-class LightGBMError(Exception):
-    """Error thrown by LightGBM."""
-
-    pass
-
-
 # DeprecationWarning is not shown by default, so let's create our own with higher level
 # ref: https://peps.python.org/pep-0565/#additional-use-case-for-futurewarning
 class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
+
+
+def _emit_datatable_deprecation_warning() -> None:
+    msg = (
+        "Support for 'datatable' in LightGBM is deprecated, and will be removed in a future release. "
+        "To avoid this warning, convert 'datatable' inputs to a supported format "
+        "(for example, use the 'to_numpy()' method)."
+    )
+    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 class _ConfigAliases:
@@ -872,8 +876,7 @@ def _load_pandas_categorical(
         max_offset = -getsize(file_name)
         with open(file_name, "rb") as f:
             while True:
-                if offset < max_offset:
-                    offset = max_offset
+                offset = max(offset, max_offset)
                 f.seek(offset, SEEK_END)
                 lines = f.readlines()
                 if len(lines) >= 2:
@@ -1091,7 +1094,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1205,6 +1208,7 @@ class _InnerPredictor:
                 predict_type=predict_type,
             )
         elif isinstance(data, dt_DataTable):
+            _emit_datatable_deprecation_warning()
             preds, nrow = self.__pred_for_np2d(
                 mat=data.to_numpy(),
                 start_iteration=start_iteration,
@@ -1743,7 +1747,15 @@ class _InnerPredictor:
 
 
 class Dataset:
-    """Dataset in LightGBM."""
+    """
+    Dataset in LightGBM.
+
+    LightGBM does not train on raw data.
+    It discretizes continuous features into histogram bins, tries to combine categorical features,
+    and automatically handles missing and infinite values.
+
+    This class handles that preprocessing, and holds that alternative representation of the input data.
+    """
 
     def __init__(
         self,
@@ -1763,7 +1775,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2169,6 +2181,7 @@ class Dataset:
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
         elif isinstance(data, dt_DataTable):
+            _emit_datatable_deprecation_warning()
             self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
@@ -2595,7 +2608,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -3252,7 +3265,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3265,6 +3278,7 @@ class Dataset:
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
                 elif isinstance(self.data, dt_DataTable):
+                    _emit_datatable_deprecation_warning()
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
@@ -3453,6 +3467,7 @@ class Dataset:
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
                 elif isinstance(other.data, dt_DataTable):
+                    _emit_datatable_deprecation_warning()
                     self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
@@ -3463,6 +3478,7 @@ class Dataset:
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
                 elif isinstance(other.data, dt_DataTable):
+                    _emit_datatable_deprecation_warning()
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
@@ -3480,10 +3496,12 @@ class Dataset:
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
                 elif isinstance(other.data, dt_DataTable):
+                    _emit_datatable_deprecation_warning()
                     self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
                 else:
                     self.data = None
             elif isinstance(self.data, dt_DataTable):
+                _emit_datatable_deprecation_warning()
                 if isinstance(other.data, np.ndarray):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
                 elif isinstance(other.data, scipy.sparse.spmatrix):
@@ -3903,7 +3921,7 @@ class Booster:
                 return feature_name
 
             def _is_single_node_tree(tree: Dict[str, Any]) -> bool:
-                return set(tree.keys()) == {"leaf_value"}
+                return set(tree.keys()) == {"leaf_value", "leaf_count"}
 
             # Create the node record, and populate universal data members
             node: Dict[str, Union[int, str, None]] = OrderedDict()
@@ -4685,7 +4703,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4766,7 +4784,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
