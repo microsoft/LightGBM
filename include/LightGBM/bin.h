@@ -250,32 +250,35 @@ class BinMapper {
     }
   }
   MinMax getMinAndMax(double threshold) const {
-    int counter = 0;
-    for (int i = 0; i < num_bin_; i++) {
-      if (threshold <= bin_minmax_values_[i].getMax() && !(threshold > bin_minmax_values_[i+1].getMin())) {
-        counter = i;
-        break;
+    if (false) {
+      // TODO CLEARUP MINMAX
+      int counter = 0;
+      for (int i = 0; i < num_bin_; i++) {
+        if (threshold <= bin_minmax_values_[i].getMax() && !(threshold > bin_minmax_values_[i+1].getMin())) {
+          counter = i;
+          break;
+        }
       }
+
+      // In case we are in the last bin, or the first bin we need to change to -infinity and +infinity.
+      MinMax minmax;
+      minmax.setMin(bin_minmax_values_[counter-1].Max);
+      minmax.setMax(bin_minmax_values_[counter].Min);
+
+      return minmax;
     }
-
-    // In case we are in the last bin, or the first bin we need to change to -infinity and +infinity.
-    MinMax minmax;
-    minmax.setMin(bin_minmax_values_[counter-1].Max);
-    minmax.setMax(bin_minmax_values_[counter].Min);
-
-    return minmax;
   }
 
   void setMinAndMax(const double value) {
-    int count = 0;
-    for (int i = 0; i < num_bin_; i++) {
-      if (value > bin_upper_bound_[i])
-        count = i + 1;
-    }
-  
-    MinMax minmax;
-    #pragma omp critical
-    {
+    if (false) {
+      // TODO CLEARUP MINMAX
+      int count = 0;
+      for (int i = 0; i < num_bin_; i++) {
+        if (value > bin_upper_bound_[i])
+          count = i + 1;
+      }
+
+      MinMax minmax;
       if (value < bin_minmax_values_[count].getMin()) {
         bin_minmax_values_[count].setMin(value);
       }

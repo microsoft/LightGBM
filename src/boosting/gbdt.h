@@ -451,7 +451,6 @@ class GBDT : public GBDTBase {
     CHECK(tree_idx >= 0 && static_cast<size_t>(tree_idx) < models_.size());
     CHECK(leaf_idx >= 0 && leaf_idx < models_[tree_idx]->num_leaves());
     models_[tree_idx]->SetLeafOutput(leaf_idx, val);
-    TreeLearner* tree_learner = tree_learner_.get();
     tree_learner_->updateMemoryForLeaf(val);
   }
 

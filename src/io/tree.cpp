@@ -336,56 +336,54 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<float> thresholds, uint8_t decimals) {
+void Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<double> thresholds_, uint8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
   tt_features_ = features;
-  tt_thresholds_ = thresholds;
- 
+  tt_thresholds_ = thresholds_;
   // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
   int init_value = -1;
   tinytree_.resize(2, std::vector<int>(tt_nodes, init_value));
 
   // init iterators and ids
-  std::vector<float>::iterator threshold_it;
+  std::vector<double>::iterator threshold_it;
   std::vector<uint32_t>::iterator feature_it;
   int threshold_id;
   int feature_id;
   int lightgbm_id;
-  int left_child_id;
 
   // iterate over all nodes in full tree
-  for (int i = 0; i < tt_nodes; i++)
-  {
+  for (int i = 0; i < tt_nodes; i++) {
     // get lightgbm id of current node
     lightgbm_id = fulltree_ids[i];
-
-    // TODO: do we want to include leaf nodes in tiny tree? numbering is difficult as non split nodes are initialized with -1
-    if (lightgbm_id >= 0)
-    {
-      // round threshold value to given decimals, otherwise find() might not recognise (almost) same values
-      // TODO: make precision a config parameter (if we want to use it)
-      float threshold_rounded = (int)(threshold_[lightgbm_id]*pow(10, decimals) + 0.5) / pow(10, decimals);
-      
+    if (lightgbm_id >= 0) {
       // check if threshold and feature are already in lookup tables
-      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_rounded);
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_[lightgbm_id]);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
-      
       // get ids referencing to values in lookup tables
-      threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)threshold_[lightgbm_id]) != tt_thresholds_.end());
+      if (found) {
+        threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      } else {
+        Log::Debug("We have a TINYGBDT Problem here %f", threshold_[lightgbm_id]);
+      }
       feature_id = std::distance(tt_features_.begin(), feature_it);
       
       // set references to lookup tables for threshold and feature in tiny tree
       tinytree_[0][i] = feature_id;
       tinytree_[1][i] = threshold_id; 
-    }    
+    } else if (~lightgbm_id < leaf_value_.size()) {
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), leaf_value_[~lightgbm_id]);
+      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), leaf_value_[~lightgbm_id]) != tt_thresholds_.end());
+      if (found) {
+        threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
+      } else {
+        Log::Debug("We have a TINYGBDT Problem here %f", leaf_value_[~lightgbm_id]);
+      }
+      tinytree_[1][i] = threshold_id;
+    }
   }
-  Log::Debug("difference no. threshold values: %d, difference no. of feature values: %d", (tt_thresholds_.size()-threshold_.size()), (tt_features_.size()-split_feature_.size()) );
-
-  // TODO: does something need to be returned? if not make function void
-  return tinytree_;
-  
 }
 
 std::vector<int> Tree::ToFullArray() const {
@@ -401,8 +399,6 @@ std::vector<int> Tree::ToFullArray() const {
       if (depth < leaf_depth_[i]) depth = leaf_depth_[i];
     }
   }
-  Log::Debug("max depth of all leaves: %d", depth);
-
   // number of nodes for a full tree with given depth
   // TODO: think about removing last level as leaves are not relevant for calculation
   int tt_nodes = pow(2.0, (1.0+depth))-1;
@@ -439,39 +435,39 @@ std::string Tree::ToString() const {
   // str_buf << "max depth: " << max_depth_ << "\n";
   std::vector<int> fulltree = ToFullArray();
 
-  str_buf << "num_leaves=" << num_leaves_ << '\n';
-  str_buf << "num_cat=" << num_cat_ << '\n';
+  str_buf << "num_leaves= " << num_leaves_ << '\n';
+  str_buf << "num_cat= " << num_cat_ << '\n';
   // TODO: create the following only for mrf
-  str_buf << "full_tree_array_lgbids=" 
+  str_buf << "full_tree_array_lgbids= "
     << ArrayToString(fulltree, fulltree.size()) << '\n';
   if (tinytree_.size() > 0) // TODO: maybe change this to really greater than 0 but for test leave it like this
   {
-    str_buf << "tiny_tree_ids_features=" 
+    str_buf << "tiny_tree_ids_features= "
       << ArrayToString(tinytree_[0], tinytree_[0].size()) << '\n';
-    str_buf << "tiny_tree_ids_thresholds=" 
+    str_buf << "tiny_tree_ids_thresholds= "
       << ArrayToString(tinytree_[1], tinytree_[1].size()) << '\n';
-    str_buf << "tiny_tree_features=" 
+    str_buf << "tiny_tree_features= "
       << ArrayToString(tt_features_, tt_features_.size()) << '\n';
-    str_buf << "tiny_tree_thresholds=" 
+    str_buf << "tiny_tree_thresholds= "
       << ArrayToString(tt_thresholds_, tt_thresholds_.size()) << '\n'; 
     str_buf << "tt_feature_count=" 
       <<  tt_features_.size() << '\n'; 
     str_buf << "tt_threshold_count=" 
       <<  tt_thresholds_.size() << '\n'; 
   }
-  str_buf << "split_feature="
+  str_buf << "split_feature= "
     << ArrayToString(split_feature_, num_leaves_ - 1) << '\n';
-  str_buf << "split_gain="
+  str_buf << "split_gain= "
     << ArrayToString(split_gain_, num_leaves_ - 1) << '\n';
-  str_buf << "threshold="
+  str_buf << "threshold= "
     << ArrayToString<true>(threshold_, num_leaves_ - 1) << '\n';
-  str_buf << "decision_type="
+  str_buf << "decision_type= "
     << ArrayToString(Common::ArrayCast<int8_t, int>(decision_type_), num_leaves_ - 1) << '\n';
   str_buf << "left_child="
     << ArrayToString(left_child_, num_leaves_ - 1) << '\n';
   str_buf << "right_child="
     << ArrayToString(right_child_, num_leaves_ - 1) << '\n';
-  str_buf << "leaf_value="
+  str_buf << "leaf_value= "
     << ArrayToString<true>(leaf_value_, num_leaves_) << '\n';
   str_buf << "leaf_weight="
     << ArrayToString<true>(leaf_weight_, num_leaves_) << '\n';

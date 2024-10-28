@@ -12,11 +12,15 @@ else
     exit 1
 fi
 
-cd experiments || exit
-"../lightgbm" config=train.conf > train.output
-"../lightgbm" config=predict.conf > predict.output
-python3 calcAccuracy.py >> Accuracy.txt
+cd examples/binary_classification || exit
+"../../lightgbm" config=train.conf > train.output
+"../../lightgbm" config=predict.conf > predict.output
 
 cd ..
+
+cd examples/min || exit
+"../../lightgbm" config=train.conf > train.output
+"../../lightgbm" config=predict.conf > predict.output
+python3 calcAccuracy.py >> Accuracy.txt
 
 # python3 plot_model.py

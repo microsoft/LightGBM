@@ -586,7 +586,7 @@ Learning Control Parameters
 
    -  [tinygbdt] precision for merging threshold/float values
 
--  ``tinygbdt_forestsize`` :raw-html:`<a id="tinygbdt_forestsize" title="Permalink to this parameter" href="#tinygbdt_forestsize">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``tinygbdt_forestsize >= 0.0``
+-  ``tinygbdt_forestsize`` :raw-html:`<a id="tinygbdt_forestsize" title="Permalink to this parameter" href="#tinygbdt_forestsize">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, constraints: ``tinygbdt_forestsize >= 0.0``
 
    -  [tinygbdt] byte size of the boosted tree
 

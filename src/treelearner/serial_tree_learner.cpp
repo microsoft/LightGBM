@@ -251,13 +251,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
-  /*[tinygbdt] BEGIN */
-  if (mrf_ != nullptr) {
-    int precision = (int)(config_->tinygbdt_precision);
-    tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, precision);
-  }
-  /*[tinygbdt] END */
-
   return tree.release();
 }
 
@@ -302,11 +295,15 @@ void SerialTreeLearner::updateMemoryForLeaf(double val) {
     mrf_->InsertLeafInformation(val);
   }
 }
-void SerialTreeLearner::updateMemoryForLeaf(std::vector<double> leaf_value_) {
+void SerialTreeLearner::updateMemoryForLeaves(Tree * tree, std::vector<double> leaf_value_) {
   for (double leaf_value : leaf_value_) {
     if (leaf_value != 0.0) {
       updateMemoryForLeaf(leaf_value);
     }
+  }
+  if (MemoryRestrictedForest::IsEnable(config_)) {
+    mrf_->UpdateMemoryForTree(tree);
+    tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, config_->tinygbdt_precision);
   }
 }
 
@@ -1029,7 +1026,6 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
     float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
-    float percentual_leftovermemory =  mrf_->est_leftover_memory / config_->tinygbdt_forestsize;
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
     // TODO find some fancy way to include the leftovermemory.
     // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
@@ -1043,9 +1039,11 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
       if (con_mem.new_feature)
         new_split.gain *= 0.99;
     }
-    // TODO Find a way to abort calculation. And still add the leaves This is just a quick fix!!
-    if (percentual_leftovermemory <= 0.1) {
+    // In case the memory that is left can only store the number of leaves that have to be inserted abort the calc.
+    //if ((std::pow(2, config_->max_depth) * 6) > mrf_->est_leftover_memory) {
+    if (false) {
       new_split.gain = 0;
+      printf("TINYGBDT ABORTED DUE TO LACK OF MEMORY. Leafes consume %.2f ", (std::pow(2, config_->max_depth) * 4 * 2));
     }
   }
   /*[tinygbdt] END */
