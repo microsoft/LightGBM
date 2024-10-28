@@ -67,6 +67,7 @@ SEXP make_altrepped_raw_vec(void *void_ptr) {
   ptr_to_cpp_vec->release();
 
   R_set_altrep_data1(R_raw, R_ptr);
+  Rf_unprotect(2);
   return R_raw;
 }
 #else
@@ -75,6 +76,7 @@ SEXP make_r_raw_vec(void *void_ptr) {
   R_xlen_t len = ptr_to_cpp_vec->get()->size();
   SEXP out = Rf_protect(Rf_allocVector(RAWSXP, len));
   std::copy(ptr_to_cpp_vec->get()->begin(), ptr_to_cpp_vec->get()->end(), reinterpret_cast<char*>(RAW(out)));
+  Rf_unprotect(1);
   return out;
 }
 #define make_altrepped_raw_vec make_r_raw_vec
@@ -146,6 +148,7 @@ SEXP make_altrepped_vec_from_arr(void *void_ptr) {
 
   R_set_altrep_data1(R_vec, R_ptr);
   R_set_altrep_data2(R_vec, R_len);
+  Rf_unprotect(3);
   return R_vec;
 }
 #else
@@ -155,6 +158,7 @@ SEXP make_R_vec_from_arr(void *void_ptr) {
   uint64_t len = static_cast<arr_and_len<T>*>(void_ptr)->len;
   SEXP out = Rf_protect(Rf_allocVector(get_sexptype_class_for_type<T>(), len));
   std::copy(arr, arr + len, get_r_vec_ptr<T>(out));
+  Rf_unprotect(1);
   return out;
 }
 #define make_altrepped_vec_from_arr make_R_vec_from_arr
@@ -301,6 +305,7 @@ SEXP LGBM_DatasetCreateFromFile_R(SEXP filename,
   CHECK_CALL(LGBM_DatasetCreateFromFile(filename_ptr, parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
+  Rf_unprotect(3);
   return ret;
   R_API_END();
 }
@@ -332,6 +337,7 @@ SEXP LGBM_DatasetCreateFromCSC_R(SEXP indptr,
     nrow, parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -356,6 +362,7 @@ SEXP LGBM_DatasetCreateFromMat_R(SEXP data,
     parameters_ptr, ref, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -384,6 +391,7 @@ SEXP LGBM_DatasetGetSubset_R(SEXP handle,
     &res));
   R_SetExternalPtrAddr(ret, res);
   R_RegisterCFinalizerEx(ret, _DatasetFinalizer, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -400,12 +408,13 @@ SEXP LGBM_DatasetSetFeatureNames_R(SEXP handle,
   }
   CHECK_CALL(LGBM_DatasetSetFeatureNames(R_ExternalPtrAddr(handle),
     vec_sptr.get(), len));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
 
 SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
-  SEXP cont_token = R_MakeUnwindCont();
+  SEXP cont_token = Rf_protect(R_MakeUnwindCont());
   R_API_BEGIN();
   _AssertDatasetHandleNotNull(handle);
   SEXP feature_names;
@@ -443,10 +452,11 @@ SEXP LGBM_DatasetGetFeatureNames_R(SEXP handle) {
         ptr_names.data()));
   }
   CHECK_EQ(len, out_len);
-  feature_names = safe_R_string(static_cast<R_xlen_t>(len), &cont_token);
+  feature_names = Rf_protect(safe_R_string(static_cast<R_xlen_t>(len), &cont_token));
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(feature_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
+  Rf_unprotect(2);
   return feature_names;
   R_API_END();
 }
@@ -455,9 +465,10 @@ SEXP LGBM_DatasetSaveBinary_R(SEXP handle,
   SEXP filename) {
   R_API_BEGIN();
   _AssertDatasetHandleNotNull(handle);
-  const char* filename_ptr = CHAR(Rf_asChar(filename));
+  const char* filename_ptr = CHAR(Rf_protect(Rf_asChar(filename)));
   CHECK_CALL(LGBM_DatasetSaveBinary(R_ExternalPtrAddr(handle),
     filename_ptr));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -489,6 +500,7 @@ SEXP LGBM_DatasetSetField_R(SEXP handle,
     std::copy(REAL(field_data), REAL(field_data) + len, vec.get());
     CHECK_CALL(LGBM_DatasetSetField(R_ExternalPtrAddr(handle), name, vec.get(), len, C_API_DTYPE_FLOAT32));
   }
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -520,6 +532,7 @@ SEXP LGBM_DatasetGetField_R(SEXP handle,
     auto p_data = reinterpret_cast<const float*>(res);
     std::copy(p_data, p_data + out_len, REAL(field_data));
   }
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -538,6 +551,7 @@ SEXP LGBM_DatasetGetFieldSize_R(SEXP handle,
     out_len -= 1;
   }
   INTEGER(out)[0] = out_len;
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -548,6 +562,7 @@ SEXP LGBM_DatasetUpdateParamChecking_R(SEXP old_params,
   const char* old_params_ptr = CHAR(Rf_protect(Rf_asChar(old_params)));
   const char* new_params_ptr = CHAR(Rf_protect(Rf_asChar(new_params)));
   CHECK_CALL(LGBM_DatasetUpdateParamChecking(old_params_ptr, new_params_ptr));
+  Rf_unprotect(2);
   return R_NilValue;
   R_API_END();
 }
@@ -610,6 +625,7 @@ SEXP LGBM_BoosterCreate_R(SEXP train_data,
   CHECK_CALL(LGBM_BoosterCreate(R_ExternalPtrAddr(train_data), parameters_ptr, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -623,6 +639,7 @@ SEXP LGBM_BoosterCreateFromModelfile_R(SEXP filename) {
   CHECK_CALL(LGBM_BoosterCreateFromModelfile(filename_ptr, &out_num_iterations, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -653,6 +670,7 @@ SEXP LGBM_BoosterLoadModelFromString_R(SEXP model_str) {
   CHECK_CALL(LGBM_BoosterLoadModelFromString(model_str_ptr, &out_num_iterations, &handle));
   R_SetExternalPtrAddr(ret, handle);
   R_RegisterCFinalizerEx(ret, _BoosterFinalizer, TRUE);
+  Rf_unprotect(n_protected);
   return ret;
   R_API_END();
 }
@@ -693,6 +711,7 @@ SEXP LGBM_BoosterResetParameter_R(SEXP handle,
   _AssertBoosterHandleNotNull(handle);
   const char* parameters_ptr = CHAR(Rf_protect(Rf_asChar(parameters)));
   CHECK_CALL(LGBM_BoosterResetParameter(R_ExternalPtrAddr(handle), parameters_ptr));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -844,6 +863,7 @@ SEXP LGBM_BoosterGetEvalNames_R(SEXP handle) {
   for (int i = 0; i < len; ++i) {
     SET_STRING_ELT(eval_names, i, safe_R_mkChar(ptr_names[i], &cont_token));
   }
+  Rf_unprotect(2);
   return eval_names;
   R_API_END();
 }
@@ -920,6 +940,7 @@ SEXP LGBM_BoosterPredictForFile_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterPredictForFile(R_ExternalPtrAddr(handle), data_filename_ptr,
     Rf_asInteger(data_has_header), pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), parameter_ptr,
     result_filename_ptr));
+  Rf_unprotect(3);
   return R_NilValue;
   R_API_END();
 }
@@ -973,6 +994,7 @@ SEXP LGBM_BoosterPredictForCSC_R(SEXP handle,
     p_indptr, C_API_DTYPE_INT32, p_indices,
     p_data, C_API_DTYPE_FLOAT64, nindptr, ndata,
     nrow, pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), parameter_ptr, &out_len, ptr_ret));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1000,6 +1022,7 @@ SEXP LGBM_BoosterPredictForCSR_R(SEXP handle,
     Rf_xlength(indptr), Rf_xlength(data), Rf_asInteger(ncols),
     pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
     parameter_ptr, &out_len, REAL(out_result)));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1028,6 +1051,7 @@ SEXP LGBM_BoosterPredictForCSRSingleRow_R(SEXP handle,
     2, nnz, Rf_asInteger(ncols),
     pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
     parameter_ptr, &out_len, REAL(out_result)));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1056,6 +1080,7 @@ SEXP LGBM_BoosterPredictForCSRSingleRowFastInit_R(SEXP handle,
     parameter_ptr, &out_fastConfig));
   R_SetExternalPtrAddr(ret, out_fastConfig);
   R_RegisterCFinalizerEx(ret, LGBM_FastConfigFree_wrapped, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -1100,6 +1125,7 @@ SEXP LGBM_BoosterPredictForMat_R(SEXP handle,
   CHECK_CALL(LGBM_BoosterPredictForMat(R_ExternalPtrAddr(handle),
     p_mat, C_API_DTYPE_FLOAT64, nrow, ncol, COL_MAJOR,
     pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), parameter_ptr, &out_len, ptr_ret));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1178,6 +1204,7 @@ SEXP LGBM_BoosterPredictSparseOutput_R(SEXP handle,
       static_cast<void*>(&data_str), throw_R_memerr, &cont_token, cont_token));
   pointers_struct->data = nullptr;
 
+  Rf_unprotect(3);
   return out;
   R_API_END();
 }
@@ -1201,6 +1228,7 @@ SEXP LGBM_BoosterPredictForMatSingleRow_R(SEXP handle,
     REAL(data), C_API_DTYPE_FLOAT64, Rf_xlength(data), 1,
     pred_type, Rf_asInteger(start_iteration), Rf_asInteger(num_iteration),
     parameter_ptr, &out_len, ptr_ret));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1225,6 +1253,7 @@ SEXP LGBM_BoosterPredictForMatSingleRowFastInit_R(SEXP handle,
     parameter_ptr, &out_fastConfig));
   R_SetExternalPtrAddr(ret, out_fastConfig);
   R_RegisterCFinalizerEx(ret, LGBM_FastConfigFree_wrapped, TRUE);
+  Rf_unprotect(2);
   return ret;
   R_API_END();
 }
@@ -1249,6 +1278,7 @@ SEXP LGBM_BoosterSaveModel_R(SEXP handle,
   _AssertBoosterHandleNotNull(handle);
   const char* filename_ptr = CHAR(Rf_protect(Rf_asChar(filename)));
   CHECK_CALL(LGBM_BoosterSaveModel(R_ExternalPtrAddr(handle), Rf_asInteger(start_iteration), Rf_asInteger(num_iteration), Rf_asInteger(feature_importance_type), filename_ptr));
+  Rf_unprotect(1);
   return R_NilValue;
   R_API_END();
 }
@@ -1276,6 +1306,7 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
     CHECK_CALL(LGBM_BoosterSaveModelToString(R_ExternalPtrAddr(handle), start_iter, num_iter, importance_type, out_len, &out_len, inner_char_buf->data()));
   }
   SEXP out = R_UnwindProtect(make_altrepped_raw_vec, &inner_char_buf, throw_R_memerr, &cont_token, cont_token);
+  Rf_unprotect(1);
   return out;
   R_API_END();
 }
@@ -1301,6 +1332,7 @@ SEXP LGBM_BoosterSaveModelToString_R(SEXP handle,
   } else {
     std::copy(inner_char_buf.begin(), inner_char_buf.begin() + out_len, reinterpret_cast<char*>(RAW(model_str)));
   }
+  Rf_unprotect(2);
   return model_str;
   R_API_END();
 }
@@ -1328,6 +1360,7 @@ SEXP LGBM_BoosterDumpModel_R(SEXP handle,
   }
   model_str = Rf_protect(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(model_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  Rf_unprotect(2);
   return model_str;
   R_API_END();
 }
@@ -1347,6 +1380,7 @@ SEXP LGBM_DumpParamAliases_R() {
   }
   aliases_str = Rf_protect(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(aliases_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  Rf_unprotect(2);
   return aliases_str;
   R_API_END();
 }
@@ -1367,6 +1401,7 @@ SEXP LGBM_BoosterGetLoadedParam_R(SEXP handle) {
   }
   params_str = Rf_protect(safe_R_string(static_cast<R_xlen_t>(1), &cont_token));
   SET_STRING_ELT(params_str, 0, safe_R_mkChar(inner_char_buf.data(), &cont_token));
+  Rf_unprotect(2);
   return params_str;
   R_API_END();
 }
