@@ -313,7 +313,6 @@ jobs:
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
-
           if [[ "${{ matrix.image }}" =~ "clang" ]]; then
             # allowing the following NOTEs (produced by default in the clang images):
             #
