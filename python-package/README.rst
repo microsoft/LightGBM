@@ -1,7 +1,7 @@
 LightGBM Python-package
 =======================
 
-|License| |Python Versions| |PyPI Version| |Downloads| |API Docs|
+|License| |Python Versions| |PyPI Version| |PyPI Downloads| |conda Version| |conda Downloads| |API Docs|
 
 Installation
 ------------
@@ -10,8 +10,6 @@ Preparation
 '''''''''''
 
 32-bit Python is not supported. Please install 64-bit version. If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
-
-`setuptools <https://pypi.org/project/setuptools>`_ is needed.
 
 Install from `PyPI <https://pypi.org/project/lightgbm>`_
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -24,7 +22,7 @@ Compiled library that is included in the wheel file supports both **GPU** and **
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
 
-For **Linux** users, **glibc** >= 2.14 is required for LightGBM ``<=3.3.3`` and **glibc** >= 2.28 is required for newer versions. Also, in some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+In some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** (we provide wheels for 3 newest macOS versions) users:
 
@@ -72,17 +70,15 @@ Build from Sources
 
     pip install --no-binary lightgbm lightgbm
 
-For **Linux** and **macOS** users, installation from sources requires installed `CMake`_.
-
-For **Linux** users, **glibc** >= 2.28 is required. Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
+Also, in some rare cases you may need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
 
 For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**.
 
-- In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first and **CMake** version 3.16 or higher is required.
+- In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang>`__) first.
 
 - In case you prefer **gcc**, you need to install it (details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__) and specify compilers by running ``export CXX=g++-7 CC=gcc-7`` (replace "7" with version of **gcc** installed on your machine) first.
 
-For **Windows** users, **Visual Studio** (or `VS Build Tools <https://visualstudio.microsoft.com/downloads/>`_) is needed. If you get any errors during installation, you may need to install `CMake`_ (version 3.8 or higher).
+For **Windows** users, **Visual Studio** (or `VS Build Tools <https://visualstudio.microsoft.com/downloads/>`_) is needed.
 
 Build Threadless Version
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,7 +100,7 @@ Build MPI Version
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
-For **Windows** users, compilation with **MinGW-w64** is not supported and `CMake`_ (version 3.8 or higher) is strongly required.
+For **Windows** users, compilation with **MinGW-w64** is not supported.
 
 **MPI** libraries are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
 
@@ -116,8 +112,6 @@ Build GPU Version
     pip install lightgbm --config-settings=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
-
-For **Windows** users, `CMake`_ (version 3.8 or higher) is strongly required.
 
 **Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. Almost always you also need to pass ``OpenCL_INCLUDE_DIR``, ``OpenCL_LIBRARY`` options for **Linux** and ``BOOST_ROOT``, ``BOOST_LIBRARYDIR`` options for **Windows** to **CMake** via ``pip`` options, like
 
@@ -151,24 +145,11 @@ Build CUDA Version
 
     pip install lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
-All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well, and `CMake`_ (version 3.16 or higher) is strongly required.
-
-**CUDA** library (version 10.0 or higher) is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version-experimental>`__.
-
-To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
-
-Build HDFS Version
-~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-    pip install lightgbm --config-settings=cmake.define.USE_HDFS=ON
-
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
-**HDFS** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-hdfs-version>`__.
+**CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version>`__.
 
-Note that the installation process of HDFS version was tested only on **Linux**.
+To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,7 +160,7 @@ Build with MinGW-w64 on Windows
     export CMAKE_GENERATOR='MinGW Makefiles'
     pip install lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
-`CMake`_ and `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
+`MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
@@ -210,27 +191,37 @@ Use this option to make LightGBM output time costs for different internal routin
 Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-If you use ``conda`` to manage Python dependencies, you can install LightGBM using ``conda install``.
-
-We strongly recommend installation from the ``conda-forge`` channel and not from the ``default`` one due to many reasons. The main ones are less time delay for new releases, greater number of supported architectures and better handling of dependency conflicts, especially workaround for OpenMP is crucial for LightGBM. More details can be found in `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`_.
-
-**Note**: The `lightgbm conda-forge feedstock <https://github.com/conda-forge/lightgbm-feedstock>`_ is not maintained by LightGBM maintainers.
+``lightgbm`` conda packages are available from the ``conda-forge`` channel.
 
 .. code:: sh
 
     conda install -c conda-forge lightgbm
+
+These are precompiled packages that are fast to install.
+Use them instead of ``pip install`` if any of the following are true:
+
+* you prefer to use ``conda`` to manage software environments
+* you want to use GPU-accelerated LightGBM
+* you are using a platform that ``lightgbm`` does not provide wheels for (like PowerPC)
+
+For ``lightgbm>=4.4.0``, if you are on a system where CUDA is installed, ``conda install`` will automatically
+select a CUDA-enabled build of ``lightgbm``.
+
+.. code:: sh
+
+    conda install -c conda-forge 'lightgbm>=4.4.0'
 
 Install from GitHub
 '''''''''''''''''''
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
-For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log, you should install `CMake`_ (version 3.8 or higher).
+For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log.
 
 .. code:: sh
 
     git clone --recursive https://github.com/microsoft/LightGBM.git
-    # export CXX=g++-7 CC=gcc-7  # macOS users, if you decided to compile with gcc, don't forget to specify compilers (replace "7" with version of gcc installed on your machine)
+    # export CXX=g++-14 CC=gcc-14  # macOS users, if you decided to compile with gcc, don't forget to specify compilers
     sh ./build-python.sh install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
@@ -245,8 +236,6 @@ Run ``sh ./build-python.sh install --gpu`` to enable GPU support. All requiremen
 
 Run ``sh ./build-python.sh install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --hdfs`` to enable HDFS support. All requirements from `Build HDFS Version section <#build-hdfs-version>`__ apply for this installation option as well.
-
 Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
 Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
@@ -256,10 +245,10 @@ If you get any errors during installation or due to any other reasons, you may w
 Build Wheel File
 ****************
 
-You can use ``sh ./build-python.sh install bdist_wheel`` to build a wheel file but not install it.
+You can use ``sh ./build-python.sh bdist_wheel`` to build a wheel file but not install it.
 
 That script requires some dependencies like ``build``, ``scikit-build-core``, and ``wheel``.
-In environments with restricted or no internt access, install those tools and then pass ``--no-isolation``.
+In environments with restricted or no internet access, install those tools and then pass ``--no-isolation``.
 
 .. code:: sh
 
@@ -274,7 +263,7 @@ To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running t
 
   MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
-Then install the Python package using that library.
+Then install the Python-package using that library.
 
 .. code:: sh
 
@@ -282,8 +271,6 @@ Then install the Python package using that library.
 
 Troubleshooting
 ---------------
-
-In case you are facing any errors during the installation process, you can examine ``$HOME/LightGBM_compilation.log`` file, in which all operations are logged, to get more details about occurred problem. Also, please attach this file to the issue on GitHub to help faster indicate the cause of the error.
 
 Refer to `FAQ <https://github.com/microsoft/LightGBM/tree/master/docs/FAQ.rst>`_.
 
@@ -295,15 +282,11 @@ Refer to the walk through examples in `Python guide folder <https://github.com/m
 Development Guide
 -----------------
 
-The code style of Python-package follows `PEP 8 <https://www.python.org/dev/peps/pep-0008/>`_.
-
-The package's documentation strings (docstrings) are written in the `numpydoc style <https://numpydoc.readthedocs.io/en/latest/format.html>`_.
-
 To check that a contribution to the package matches its style expectations, run the following from the root of the repo.
 
 .. code:: sh
 
-    sh .ci/lint-python.sh
+    bash .ci/lint-python.sh
 
 .. |License| image:: https://img.shields.io/github/license/microsoft/lightgbm.svg
    :target: https://github.com/microsoft/LightGBM/blob/master/LICENSE
@@ -311,8 +294,11 @@ To check that a contribution to the package matches its style expectations, run 
    :target: https://pypi.org/project/lightgbm
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/lightgbm.svg?logo=pypi&logoColor=white
    :target: https://pypi.org/project/lightgbm
-.. |Downloads| image:: https://pepy.tech/badge/lightgbm
+.. |PyPI Downloads| image:: https://img.shields.io/pepy/dt/lightgbm?logo=pypi&logoColor=white&label=pypi%20downloads
    :target: https://pepy.tech/project/lightgbm
+.. |conda Version| image:: https://img.shields.io/conda/vn/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda
+   :target: https://anaconda.org/conda-forge/lightgbm
+.. |conda Downloads| image:: https://img.shields.io/conda/d/conda-forge/lightgbm?logo=conda-forge&logoColor=white&label=conda%20downloads
+   :target: https://anaconda.org/conda-forge/lightgbm/files
 .. |API Docs| image:: https://readthedocs.org/projects/lightgbm/badge/?version=latest
    :target: https://lightgbm.readthedocs.io/en/latest/Python-API.html
-.. _CMake: https://cmake.org/

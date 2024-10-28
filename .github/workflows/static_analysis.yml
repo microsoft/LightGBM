@@ -9,7 +9,6 @@ on:
   pull_request:
     branches:
     - master
-    - release/*
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -18,15 +17,14 @@ concurrency:
 
 env:
   COMPILER: 'gcc'
-  CONDA_ENV: test-env
-  GITHUB_ACTIONS: 'true'
+  MAKEFLAGS: '-j4'
   OS_NAME: 'linux'
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.12'
 
 jobs:
   test:
     name: ${{ matrix.task }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -36,7 +34,7 @@ jobs:
           - task: check-docs
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: false
@@ -47,8 +45,8 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:$HOME/.local/bin:${PATH}
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit -1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit -1
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
+          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
   r-check-docs:
     name: r-package-check-docs
     timeout-minutes: 60
@@ -59,20 +57,20 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
       - name: Install packages
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'roxygen2', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
-          sh build-cran-package.sh || exit -1
-          R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit -1
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'roxygen2', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          sh build-cran-package.sh || exit 1
+          R CMD INSTALL --with-keep.source lightgbm_*.tar.gz || exit 1
       - name: Test documentation
         shell: bash --noprofile --norc {0}
         run: |
-          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit -1
+          Rscript --vanilla -e "roxygen2::roxygenize('R-package/', load = 'installed')" || exit 1
           num_doc_files_changed=$(
               git diff --name-only | grep --count -E "\.Rd|NAMESPACE"
           )
@@ -83,7 +81,7 @@ jobs:
               echo "    R CMD INSTALL --with-keep.source lightgbm_*.tar.gz"
               echo "    Rscript -e \"roxygen2::roxygenize('R-package/', load = 'installed')\""
               echo ""
-              exit -1
+              exit 1
           fi
   all-static-analysis-jobs-successful:
     if: always()

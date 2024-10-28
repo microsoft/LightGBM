@@ -405,7 +405,7 @@ python-package/lightgbm/VERSION.txt
 
 # R build artefacts
 **/autom4te.cache/
-conftest*
+R-package/conftest*
 R-package/config.status
 !R-package/data/agaricus.test.rda
 !R-package/data/agaricus.train.rda

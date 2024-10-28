@@ -50,7 +50,7 @@ The parameters format is ``key1=value1 key2=value2 ...``.
 Parameters can be set both in config file and command line.
 If one parameter appears in both command line and config file, LightGBM will use the parameter from the command line.
 
-The most important parameters which new users should take a look to are located into `Core Parameters <./Parameters.rst#core-parameters>`__
+The most important parameters which new users should take a look at are located into `Core Parameters <./Parameters.rst#core-parameters>`__
 and the top of `Learning Control Parameters <./Parameters.rst#learning-control-parameters>`__
 sections of the full detailed list of `LightGBM's parameters <./Parameters.rst>`__.
 

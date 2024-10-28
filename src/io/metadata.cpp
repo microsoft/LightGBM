@@ -355,30 +355,42 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
   }
 }
 
-void Metadata::SetInitScore(const double* init_score, data_size_t len) {
+template <typename It>
+void Metadata::SetInitScoresFromIterator(It first, It last) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // save to nullptr
-  if (init_score == nullptr || len == 0) {
+  // Clear init scores on empty input
+  if (last - first == 0) {
     init_score_.clear();
     num_init_score_ = 0;
     return;
   }
-  if ((len % num_data_) != 0) {
+  if (((last - first) % num_data_) != 0) {
     Log::Fatal("Initial score size doesn't match data size");
   }
-  if (init_score_.empty()) { init_score_.resize(len); }
-  num_init_score_ = len;
+  if (init_score_.empty()) {
+    init_score_.resize(last - first);
+  }
+  num_init_score_ = last - first;
 
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_init_score_ >= 1024)
   for (int64_t i = 0; i < num_init_score_; ++i) {
-    init_score_[i] = Common::AvoidInf(init_score[i]);
+    init_score_[i] = Common::AvoidInf(first[i]);
   }
   init_score_load_from_file_ = false;
+
   #ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
-    cuda_metadata_->SetInitScore(init_score_.data(), len);
+    cuda_metadata_->SetInitScore(init_score_.data(), init_score_.size());
   }
   #endif  // USE_CUDA
+}
+
+void Metadata::SetInitScore(const double* init_score, data_size_t len) {
+  SetInitScoresFromIterator(init_score, init_score + len);
+}
+
+void Metadata::SetInitScore(const ArrowChunkedArray& array) {
+  SetInitScoresFromIterator(array.begin<double>(), array.end<double>());
 }
 
 void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
@@ -519,7 +531,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
 
   data_size_t sum = 0;
   #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum)
-  for (data_size_t i = 0; i < last - first; ++i) {
+  for (data_size_t i = 0; i < static_cast<data_size_t>(last - first); ++i) {
     sum += first[i];
   }
   if (num_data_ != sum) {

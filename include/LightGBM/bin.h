@@ -144,7 +144,7 @@ class BinMapper {
 
   /*!
   * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  * \return Maximum categorical value for categorical features, 0 for numerical features
   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {

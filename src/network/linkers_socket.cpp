@@ -171,13 +171,9 @@ void Linkers::Construct() {
       need_connect[i] = 1;
     }
   }
-  int need_connect_cnt = 0;
   int incoming_cnt = 0;
   for (auto it = need_connect.begin(); it != need_connect.end(); ++it) {
     int machine_rank = it->first;
-    if (machine_rank >= 0 && machine_rank != rank_) {
-      ++need_connect_cnt;
-    }
     if (machine_rank < rank_) {
       ++incoming_cnt;
     }
