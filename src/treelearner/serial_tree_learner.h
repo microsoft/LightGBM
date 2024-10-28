@@ -179,7 +179,7 @@ class SerialTreeLearner: public TreeLearner {
 
   /*[tinygbdt] BEGIN: Declaring global variables */
   /*! \brief count feature use; TODO: possible to use fewer bits? */
-  std::vector<u_int32_t> features_used_global_;
+  std::vector<uint32_t> features_used_global_;
   /*! \brief record thresholds used for split */
   std::set<float> splits_used_global_;
   /*[tinygbdt] END */

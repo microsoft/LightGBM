@@ -180,7 +180,7 @@ namespace LightGBM {
 
     // TODO change this to short? or even smaller?
     /*! \brief count feature use; TODO: possible to use fewer bits? */
-    std::vector<u_int32_t> features_used_global_;
+    std::vector<uint32_t> features_used_global_;
     /*! \brief record thresholds used for split; TODO: round values to avoid dissimilarity of (almost) same values (-> quantization?) */
     std::vector<float> thresholds_used_global_;
   };

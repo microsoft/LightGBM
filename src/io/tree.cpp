@@ -336,7 +336,7 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> features, std::vector<float> thresholds, u_int8_t decimals) {
+std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<float> thresholds, uint8_t decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
   tt_features_ = features;
@@ -349,7 +349,7 @@ std::vector<std::vector<int>> Tree::ToArrayPointer(std::vector<u_int32_t> featur
 
   // init iterators and ids
   std::vector<float>::iterator threshold_it;
-  std::vector<u_int32_t>::iterator feature_it;
+  std::vector<uint32_t>::iterator feature_it;
   int threshold_id;
   int feature_id;
   int lightgbm_id;
