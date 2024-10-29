@@ -42,7 +42,7 @@ else
     export MACOSX_DEPLOYMENT_TARGET=12.0
 fi
 
-if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash "${BUILD_DIRECTORY}/.ci/test-r-package.sh" || exit 1
     exit 0
 fi
