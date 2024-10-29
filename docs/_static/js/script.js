@@ -4,25 +4,12 @@ $(function() {
 
     /* List each class property item on a new line
        https://github.com/microsoft/LightGBM/issues/5073 */
-    if(window.location.pathname.toLocaleLowerCase().indexOf('pythonapi') != -1) {
+    if(window.location.pathname.toLocaleLowerCase().indexOf('pythonapi') !== -1) {
         $('.py.property').each(function() { this.style.setProperty('display', 'inline', 'important'); });
     }
 
-    /* Point to the same version of R API as the current docs version */
-    var current_version_elems = $('.rst-current-version');
-    if(current_version_elems.length !== 0) {
-        var current_version = $(current_version_elems[0]).contents().filter(function() {
-            return this.nodeType == 3;
-        }).text().trim().split(' ').pop();
-        if(current_version !== 'latest') {
-            $('a.reference.external[href$="/latest/R/reference/"]').each(function() {
-                $(this).attr('href', function (_, val) { return val.replace('/latest/', '/' + current_version + '/'); });
-            });
-        }
-    }
-
     /* Collapse specified sections in the installation guide */
-    if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') != -1) {
+    if(window.location.pathname.toLocaleLowerCase().indexOf('installation-guide') !== -1) {
         $('<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f054";} .opened:before {content: "\\f078";}</style>').appendTo('body');
         var collapsable = [
             '#build-threadless-version-not-recommended',
