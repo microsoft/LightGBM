@@ -7,7 +7,7 @@ insert_final_newline = true
 indent_style = space
 indent_size = 2
 
-[*.{py,sh,js}]
+[*.{py,sh,js,ps1}]
 indent_size = 4
 line_length = 120
 skip = external_libs
