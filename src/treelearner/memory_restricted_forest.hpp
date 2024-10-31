@@ -97,7 +97,7 @@ namespace LightGBM {
 
     void CalculateEffectQuantization(consumed_memory *con_mem, const Tree * tree) {
       // Every time we cross a power of two we require a new bit.
-      size_t fug_size_ = features_used_global_.size();
+      /*size_t fug_size_ = features_used_global_.size();
       size_t next_power_of_two = static_cast<size_t>(std::pow(2, std::ceil(std::log2(fug_size_ + 1))));
       if (fug_size_ + 1 > next_power_of_two) {
         f_needed_bits++;
@@ -107,10 +107,10 @@ namespace LightGBM {
       next_power_of_two = static_cast<size_t>(std::pow(2, std::ceil(std::log2(tug_size + 1))));
       if (tug_size + 1 > next_power_of_two) {
         t_needed_bits++;
-      }
+      }*/
       // Until now all trees could use the less bit representation.
       // Reduce the current tree and increase the bits for the following trees.
-      est_leftover_memory -= f_needed_bits + t_needed_bits * tree->getNumberNodes();
+      est_leftover_memory -= (f_needed_bits/8) + (t_needed_bits/8) * tree->getNumberNodes();
     }
     double CalculateSplitMemoryConsumption(consumed_memory &con_mem, double threshold, uint32_t feature) {
       // Insert the memory consumption of the two global tables.
@@ -137,7 +137,7 @@ namespace LightGBM {
         con_mem.tindex = std::distance(thresholds_used_global_.begin(), threshold_it);
       }
       // TODO: change needed bits as we are using int and float values.
-      con_mem.bytes += f_needed_bits + t_needed_bits;
+      con_mem.bytes += f_needed_bits/8 + t_needed_bits/8;
       return threshold;
     }
 

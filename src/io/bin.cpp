@@ -510,7 +510,7 @@ namespace LightGBM {
     } else {
       sparse_rate_ = 1.0f;
     }
-    bin_minmax_values_.resize(num_bin_);
+    //bin_minmax_values_.resize(num_bin_);
   }
 
   void BinMapper::CopyTo(char * buffer) const {
