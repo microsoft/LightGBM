@@ -558,9 +558,8 @@ struct Config {
   // desc = [tinygbdt] size of the boosted tree
   int tinygbdt_forestsize = 0;
 
-  // check = >=0.0
   // desc = [tinygbdt] precision for merging float/threshold values
-  double tinygbdt_precision = 0.00002;
+  double tinygbdt_precision = 3;
 
   // check = >=0.0
   // desc = cost-effective gradient boosting multiplier for all penalties

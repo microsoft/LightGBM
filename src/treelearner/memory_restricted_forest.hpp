@@ -74,6 +74,8 @@ namespace LightGBM {
 
       // TODO: merge following lines, but depends on if/how we implement rounding.
       const double threshold = tree->threshold_[last_node_id];
+      // const double threshold = RoundDecimals(tree->threshold_[last_node_id], this->precision);
+      printf("original threshold: %f, rounded threshold: %f \n", tree->threshold_[last_node_id], threshold);
       const uint32_t feature = tree->split_feature_[last_node_id];
       const BinMapper *bin_mapper = train_data_->FeatureBinMapper(feature);
 
@@ -81,7 +83,7 @@ namespace LightGBM {
 
       consumed_memory con_mem = {};
       CalculateSplitMemoryConsumption(con_mem, threshold, feature);
-      CalculateEffectQuantization(&con_mem, tree);
+      // CalculateEffectQuantization(&con_mem, tree);
       // How do we know the order?
       if (con_mem.new_feature) {
         // If yes, only one int value is added.
@@ -142,7 +144,7 @@ namespace LightGBM {
     }
 
     double CalculateAndInsertThresholdVariability(double threshold) {
-      double epsilon = this->precision; // precision;
+      double epsilon = pow(10, -(this->precision)); // precision;
       double best_sofar = threshold;
       for (const threshold_info &elem: threshold_feature_info) {
         // In case the threshold is close to an already inserted threshold take it.
@@ -168,6 +170,13 @@ namespace LightGBM {
       if (std::find(threshold_feature_info.begin(), threshold_feature_info.end(), info) == threshold_feature_info.end()) {
         threshold_feature_info.push_back(info);
       }
+    }
+
+    double RoundDecimals(double number, double decimals) {
+      printf("input number %f ", number);
+      double rounded = ((double)((int)(number * pow(10.0, decimals) + .5))) / pow(10.0, decimals);
+      printf("rounded number %f \n", rounded);
+      return rounded;
     }
 
     static bool IsEnable(const Config *config) {

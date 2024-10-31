@@ -359,10 +359,12 @@ void Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<double> th
     lightgbm_id = fulltree_ids[i];
     if (lightgbm_id >= 0) {
       // check if threshold and feature are already in lookup tables
-      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), threshold_[lightgbm_id]);
+      const double threshold = threshold_[lightgbm_id];
+      double rounded_threshold = ((double)(int)(threshold * pow(10.0, decimals) + .5)) / pow(10.0, decimals); 
+      threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), rounded_threshold);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
       // get ids referencing to values in lookup tables
-      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)threshold_[lightgbm_id]) != tt_thresholds_.end());
+      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)rounded_threshold) != tt_thresholds_.end());
       if (found) {
         threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
       } else {

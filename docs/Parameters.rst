@@ -582,13 +582,21 @@ Learning Control Parameters
 
    -  used only in ``refit`` task in CLI version or as argument in ``refit`` function in language-specific package
 
--  ``tinygbdt_precision`` :raw-html:`<a id="tinygbdt_precision" title="Permalink to this parameter" href="#tinygbdt_precision">&#x1F517;&#xFE0E;</a>`, default = ``0.00001``, type = double, constraints: ``tinygbdt_precision >= 0.0``
+-  ``tinygbdt_penalty_feature`` :raw-html:`<a id="tinygbdt_penalty_feature" title="Permalink to this parameter" href="#tinygbdt_penalty_feature">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``tinygbdt_penalty_feature >= 0.0``
 
-   -  [tinygbdt] precision for merging threshold/float values
+   -  [tinygbdt] penalty for using a new feature
+
+-  ``tinygbdt_penalty_split`` :raw-html:`<a id="tinygbdt_penalty_split" title="Permalink to this parameter" href="#tinygbdt_penalty_split">&#x1F517;&#xFE0E;</a>`, default = ``0.0``, type = double, constraints: ``tinygbdt_penalty_split >= 0.0``
+
+   -  [tinygbdt] penalty for using a new split value
 
 -  ``tinygbdt_forestsize`` :raw-html:`<a id="tinygbdt_forestsize" title="Permalink to this parameter" href="#tinygbdt_forestsize">&#x1F517;&#xFE0E;</a>`, default = ``0``, type = int, constraints: ``tinygbdt_forestsize >= 0.0``
 
-   -  [tinygbdt] byte size of the boosted tree
+   -  [tinygbdt] size of the boosted tree
+
+-  ``tinygbdt_precision`` :raw-html:`<a id="tinygbdt_precision" title="Permalink to this parameter" href="#tinygbdt_precision">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = double
+
+   -  [tinygbdt] precision for merging float/threshold values
 
 -  ``cegb_tradeoff`` :raw-html:`<a id="cegb_tradeoff" title="Permalink to this parameter" href="#cegb_tradeoff">&#x1F517;&#xFE0E;</a>`, default = ``1.0``, type = double, constraints: ``cegb_tradeoff >= 0.0``
 
