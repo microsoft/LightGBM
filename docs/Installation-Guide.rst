@@ -5,6 +5,10 @@ All instructions below are aimed at compiling the 64-bit version of LightGBM.
 It is worth compiling the 32-bit version only in very rare special cases involving environmental limitations.
 The 32-bit version is slow and untested, so use it at your own risk and don't forget to adjust some of the commands below when installing.
 
+By default, instructions below will use **VS Build Tools** or **make** tool to compile the code.
+It it possible to use `Ninja`_ tool instead of make on all platforms, but VS Build Tools cannot be replaced with Ninja.
+You can add ``-G Ninja`` to CMake flags to use Ninja.
+
 By default, instructions below will produce a shared library file and an executable file with command-line interface.
 You can add ``-DBUILD_CLI=OFF`` to CMake flags to disable the executable compilation.
 
@@ -18,7 +22,9 @@ You can add ``-DUSE_HOMEBREW_FALLBACK=OFF`` to CMake flags to disable this behav
 
 Users who want to perform benchmarking can make LightGBM output time costs for different internal routines by adding ``-DUSE_TIMETAG=ON`` to CMake flags.
 
-It is possible to build LightGBM in debug mode. In this mode all compiler optimizations are disabled and LightGBM performs more checks internally. To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
+It is possible to build LightGBM in debug mode.
+In this mode all compiler optimizations are disabled and LightGBM performs more checks internally.
+To enable debug mode you can add ``-DUSE_DEBUG=ON`` to CMake flags or choose ``Debug_*`` configuration (e.g. ``Debug_DLL``, ``Debug_mpi``) in Visual Studio depending on how you are building LightGBM.
 
 .. _sanitizers:
 
@@ -51,8 +57,7 @@ On Windows, LightGBM can be built using
 
 - **Visual Studio**;
 - **CMake** and **VS Build Tools**;
-- **CMake** and **MinGW**;
-- **CMake**, **MinGW** and **Ninja**.
+- **CMake** and **MinGW**.
 
 Visual Studio (or VS Build Tools)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -110,36 +115,13 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 It is recommended that you use **Visual Studio** since it has better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
-MinGW-w64 and Ninja
-^^^^^^^^^^^^^^^^^^^
-
-1. Install `Git for Windows`_, `CMake`_, `MinGW-w64`_ and `Ninja`_.
-
-2. Run the following commands:
-
-   .. code:: console
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja
-     cmake --build build -j4
-
-The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
-
-**Note**: You may need to run the ``cmake -B build -S . -G Ninja`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
-
-It is recommended that you use **Visual Studio** since it has better multithreading efficiency in **Windows** for many-core systems
-(see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
-
 Linux
 ~~~~~
 
 On Linux, LightGBM can be built using
 
 - **CMake** and **gcc**;
-- **CMake** and **Clang**;
-- **CMake**, **Ninja** and **gcc**;
-- **CMake**, **Ninja** and **Clang**.
+- **CMake** and **Clang**.
 
 After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
 
@@ -172,35 +154,6 @@ Clang
      cmake -B build -S .
      cmake --build build -j4
 
-gcc and Ninja
-^^^^^^^^^^^^^
-
-1. Install `CMake`_, `Ninja`_ and **gcc**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-^^^^^^^^^^^^^^^
-
-1. Install `CMake`_, `Ninja`_, **Clang** and **OpenMP**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -G Ninja
-     cmake --build build -j4
-
 macOS
 ~~~~~
 
@@ -212,9 +165,7 @@ On macOS, LightGBM can be installed using
 or can be built using
 
 - **CMake** and **Apple Clang**;
-- **CMake**, **Ninja** and **Apple Clang**;
-- **CMake** and **gcc**;
-- **CMake**, **Ninja** and **gcc**.
+- **CMake** and **gcc**.
 
 Install Using ``Homebrew``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -259,24 +210,6 @@ Apple Clang
      cmake -B build -S .
      cmake --build build -j4
 
-Apple Clang and Ninja
-*********************
-
-1. Install `CMake`_, **OpenMP** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake libomp ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja
-     cmake --build build -j4
-
 gcc
 ***
 
@@ -294,25 +227,6 @@ gcc
      cd LightGBM
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S .
-     cmake --build build -j4
-
-gcc and Ninja
-*************
-
-1. Install `CMake`_, **gcc** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake gcc ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -G Ninja
      cmake --build build -j4
 
 Docker
@@ -333,8 +247,7 @@ On Windows, a version of LightGBM without OpenMP support can be built using
 
 - **Visual Studio**;
 - **CMake** and **VS Build Tools**;
-- **CMake** and **MinGW**;
-- **CMake**, **MinGW** and **Ninja**.
+- **CMake** and **MinGW**.
 
 Visual Studio (or VS Build Tools)
 *********************************
@@ -393,33 +306,13 @@ The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -B build -S . -G "MinGW Makefiles" -DUSE_OPENMP=OFF`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
 
-MinGW-w64 and Ninja
-*******************
-
-1. Install `Git for Windows`_, `CMake`_, `MinGW-w64`_ and `Ninja`_.
-
-2. Run the following commands:
-
-   .. code:: console
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja -DUSE_OPENMP=OFF
-     cmake --build build -j4
-
-The ``.exe`` and ``.dll`` files will be in ``LightGBM/`` folder.
-
-**Note**: You may need to run the ``cmake -B build -S . -G Ninja -DUSE_OPENMP=OFF`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
-
 Linux
 ^^^^^
 
 On Linux, a version of LightGBM without OpenMP support can be built using
 
 - **CMake** and **gcc**;
-- **CMake** and **Clang**;
-- **CMake**, **Ninja** and **gcc**;
-- **CMake**, **Ninja** and **Clang**.
+- **CMake** and **Clang**.
 
 After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
 
@@ -452,44 +345,13 @@ Clang
      cmake -B build -S . -DUSE_OPENMP=OFF
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_ and **gcc**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_ and **Clang**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
-     cmake --build build -j4
-
 macOS
 ^^^^^
 
 On macOS, a version of LightGBM without OpenMP support can be built using
 
 - **CMake** and **Apple Clang**;
-- **CMake**, **Ninja** and **Apple Clang**;
-- **CMake** and **gcc**;
-- **CMake**, **Ninja** and **gcc**.
+- **CMake** and **gcc**.
 
 After compilation the executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 
@@ -511,24 +373,6 @@ Apple Clang
      cmake -B build -S . -DUSE_OPENMP=OFF
      cmake --build build -j4
 
-Apple Clang and Ninja
-*********************
-
-1. Install `CMake`_ and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
-     cmake --build build -j4
-
 gcc
 ***
 
@@ -546,25 +390,6 @@ gcc
      cd LightGBM
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S . -DUSE_OPENMP=OFF
-     cmake --build build -j4
-
-gcc and Ninja
-*************
-
-1. Install `CMake`_, **gcc** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake gcc ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DUSE_OPENMP=OFF -G Ninja
      cmake --build build -j4
 
 Build MPI Version
@@ -626,9 +451,7 @@ Linux
 On Linux, an MPI version of LightGBM can be built using
 
 - **CMake**, **gcc** and **Open MPI**;
-- **CMake**, **Clang** and **Open MPI**;
-- **CMake**, **Ninja**, **gcc** and **Open MPI**;
-- **CMake**, **Ninja**, **Clang** and **Open MPI**.
+- **CMake**, **Clang** and **Open MPI**.
 
 After compilation the executable and ``.so`` files will be in ``LightGBM/`` folder.
 
@@ -661,44 +484,13 @@ Clang
      cmake -B build -S . -DUSE_MPI=ON
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_, **gcc** and `Open MPI`_.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_MPI=ON -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP** and `Open MPI`_.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DUSE_MPI=ON -G Ninja
-     cmake --build build -j4
-
 macOS
 ^^^^^
 
 On macOS, an MPI version of LightGBM can be built using
 
 - **CMake**, **Open MPI** and **Apple Clang**;
-- **CMake**, **Open MPI**, **Ninja** and **Apple Clang**;
-- **CMake**, **Open MPI** and **gcc**;
-- **CMake**, **Open MPI**, **Ninja** and **gcc**.
+- **CMake**, **Open MPI** and **gcc**.
 
 After compilation the executable and ``.dylib`` files will be in ``LightGBM/`` folder.
 
@@ -720,24 +512,6 @@ Apple Clang
      cmake -B build -S . -DUSE_MPI=ON
      cmake --build build -j4
 
-Apple Clang and Ninja
-*********************
-
-1. Install `CMake`_, `Ninja`_, **OpenMP** and `Open MPI`_:
-
-   .. code:: sh
-
-     brew install cmake ninja libomp open-mpi
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_MPI=ON -G Ninja
-     cmake --build build -j4
-
 gcc
 ***
 
@@ -757,25 +531,6 @@ gcc
      cmake -B build -S . -DUSE_MPI=ON
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_, `Open MPI`_ and  **gcc**:
-
-   .. code:: sh
-
-     brew install cmake ninja open-mpi gcc
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DUSE_MPI=ON -G Ninja
-     cmake --build build -j4
-
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
 
@@ -785,8 +540,7 @@ Windows
 On Windows, a GPU version of LightGBM (``device_type=gpu``) can be built using
 
 - **OpenCL**, **Boost**, **CMake** and **VS Build Tools**;
-- **OpenCL**, **Boost**, **CMake** and **MinGW**;
-- **OpenCL**, **Boost**, **CMake**, **MinGW** and **Ninja**.
+- **OpenCL**, **Boost**, **CMake** and **MinGW**.
 
 If you use **MinGW**, the build procedure is similar to the build on Linux.
 
@@ -837,9 +591,7 @@ Linux
 On Linux, a GPU version of LightGBM (``device_type=gpu``) can be built using
 
 - **CMake**, **OpenCL**, **Boost** and **gcc**;
-- **CMake**, **OpenCL**, **Boost** and **Clang**;
-- **CMake**, **OpenCL**, **Boost**, **Ninja** and **gcc**;
-- **CMake**, **OpenCL**, **Boost**, **Ninja** and **Clang**.
+- **CMake**, **OpenCL**, **Boost** and **Clang**.
 
 **OpenCL** headers and libraries are usually provided by GPU manufacture.
 The generic OpenCL ICD packages (for example, Debian packages ``ocl-icd-libopencl1``, ``ocl-icd-opencl-dev``, ``pocl-opencl-icd``) can also be used.
@@ -881,39 +633,6 @@ Clang
      # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_, **gcc**, **OpenCL** and **Boost**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_GPU=ON -G Ninja
-     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP**, **OpenCL** and **Boost**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DUSE_GPU=ON -G Ninja
-     # if you have installed NVIDIA CUDA to a customized location, you should specify paths to OpenCL headers and library like the following:
-     # cmake -B build -S . -DUSE_GPU=ON -DOpenCL_LIBRARY=/usr/local/cuda/lib64/libOpenCL.so -DOpenCL_INCLUDE_DIR=/usr/local/cuda/include/ -G Ninja
-     cmake --build build -j4
-
 macOS
 ^^^^^
 
@@ -944,9 +663,7 @@ Linux
 On Linux, a CUDA version of LightGBM can be built using
 
 - **CMake**, **gcc** and **CUDA**;
-- **CMake**, **Clang** and **CUDA**;
-- **CMake**, **Ninja**, **gcc** and **CUDA**;
-- **CMake**, **Ninja**, **Clang** and **CUDA**.
+- **CMake**, **Clang** and **CUDA**.
 
 Please refer to `this detailed guide`_ for **CUDA** libraries installation.
 
@@ -981,35 +698,6 @@ Clang
      cmake -B build -S . -DUSE_CUDA=ON
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_, **gcc** and **CUDA**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_CUDA=ON -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP** and **CUDA**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DUSE_CUDA=ON -G Ninja
-     cmake --build build -j4
-
 macOS
 ^^^^^
 
@@ -1028,8 +716,7 @@ Windows
 On Windows, a Java wrapper of LightGBM can be built using
 
 - **Java**, **SWIG**, **CMake** and **VS Build Tools**;
-- **Java**, **SWIG**, **CMake** and **MinGW**;
-- **Java**, **SWIG**, **CMake**, **MinGW** and **Ninja**.
+- **Java**, **SWIG**, **CMake** and **MinGW**.
 
 VS Build Tools
 **************
@@ -1068,36 +755,13 @@ MinGW-w64
 It is recommended to use **VS Build Tools (Visual Studio)** since it has better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
-MinGW-w64 and Ninja
-*******************
-
-1. Install `Git for Windows`_, `CMake`_, `MinGW-w64`_ and `Ninja`_.
-
-2. Install `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly).
-
-3. Run the following commands:
-
-   .. code:: console
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja -DUSE_SWIG=ON
-     cmake --build build -j4
-
-**Note**: You may need to run the ``cmake -B build -S . -G Ninja -DUSE_SWIG=ON`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
-
-It is recommended to use **VS Build Tools (Visual Studio)** since it has better multithreading efficiency in **Windows** for many-core systems
-(see `Question 4 <./FAQ.rst#i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <./FAQ.rst#cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
-
 Linux
 ^^^^^
 
 On Linux, a Java wrapper of LightGBM can be built using
 
 - **CMake**, **gcc**, **Java** and **SWIG**;
-- **CMake**, **Clang**, **Java** and **SWIG**;
-- **CMake**, **Ninja**, **gcc**, **Java** and **SWIG**;
-- **CMake**, **Ninja**, **Clang**, **Java** and **SWIG**.
+- **CMake**, **Clang**, **Java** and **SWIG**.
 
 gcc
 ***
@@ -1128,44 +792,13 @@ Clang
      cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_, **gcc**, `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly).
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_SWIG=ON -G Ninja
-     cmake --build build -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_, **Clang**, **OpenMP**, `SWIG`_ and **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly).
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DUSE_SWIG=ON -G Ninja
-     cmake --build build -j4
-
 macOS
 ^^^^^
 
 On macOS, a Java wrapper of LightGBM can be built using
 
 - **CMake**, **Java**, **SWIG** and **Apple Clang**;
-- **CMake**, **Java**, **SWIG**, **Ninja** and **Apple Clang**;
-- **CMake**, **Java**, **SWIG** and **gcc**;
-- **CMake**, **Java**, **SWIG**, **Ninja** and **gcc**.
+- **CMake**, **Java**, **SWIG** and **gcc**.
 
 Apple Clang
 ***********
@@ -1184,25 +817,6 @@ Apple Clang
      git clone --recursive https://github.com/microsoft/LightGBM
      cd LightGBM
      cmake -B build -S . -DUSE_SWIG=ON
-     cmake --build build -j4
-
-Apple Clang and Ninja
-*********************
-
-1. Install `CMake`_, **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly), `SWIG`_, **OpenMP** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake openjdk swig libomp ninja
-     export JAVA_HOME="$(brew --prefix openjdk)/libexec/openjdk.jdk/Contents/Home/"
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DUSE_SWIG=ON -G Ninja
      cmake --build build -j4
 
 gcc
@@ -1225,26 +839,6 @@ gcc
      cmake -B build -S . -DUSE_SWIG=ON
      cmake --build build -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, **Java** (also make sure that ``JAVA_HOME`` environment variable is set properly), `SWIG`_, **gcc** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake openjdk swig gcc ninja
-     export JAVA_HOME="$(brew --prefix openjdk)/libexec/openjdk.jdk/Contents/Home/"
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DUSE_SWIG=ON -G Ninja
-     cmake --build build -j4
-
 Build Python-package
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1264,8 +858,7 @@ Windows
 On Windows, C++ unit tests of LightGBM can be built using
 
 - **CMake** and **VS Build Tools**;
-- **CMake** and **MinGW**;
-- **CMake**, **MinGW** and **Ninja**.
+- **CMake** and **MinGW**.
 
 VS Build Tools
 **************
@@ -1301,33 +894,13 @@ The ``.exe`` file will be in ``LightGBM/`` folder.
 
 **Note**: You may need to run the ``cmake -B build -S . -G "MinGW Makefiles" -DBUILD_CPP_TEST=ON`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
 
-MinGW-w64 and Ninja
-*******************
-
-1. Install `Git for Windows`_, `CMake`_, `MinGW-w64`_ and `Ninja`_.
-
-2. Run the following commands:
-
-   .. code:: console
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON
-     cmake --build build --target testlightgbm -j4
-
-The ``.exe`` file will be in ``LightGBM/`` folder.
-
-**Note**: You may need to run the ``cmake -B build -S . -G Ninja -DBUILD_CPP_TEST=ON`` one more time or add ``-DCMAKE_SH=CMAKE_SH-NOTFOUND`` to CMake flags if you encounter the ``sh.exe was found in your PATH`` error.
-
 Linux
 ^^^^^
 
 On Linux, a C++ unit tests of LightGBM can be built using
 
 - **CMake** and **gcc**;
-- **CMake** and **Clang**;
-- **CMake**, **Ninja** and **gcc**;
-- **CMake**, **Ninja** and **Clang**.
+- **CMake** and **Clang**.
 
 After compilation the executable file will be in ``LightGBM/`` folder.
 
@@ -1360,44 +933,13 @@ Clang
      cmake -B build -S . -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
-gcc and Ninja
-*************
-
-1. Install `CMake`_, `Ninja`_ and **gcc**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
-     cmake --build build --target testlightgbm -j4
-
-Clang and Ninja
-***************
-
-1. Install `CMake`_, `Ninja`_, **Clang** and **OpenMP**.
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=clang++-14 CC=clang-14  # replace "14" with version of Clang installed on your machine
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
-     cmake --build build --target testlightgbm -j4
-
 macOS
 ^^^^^
 
 On macOS, a C++ unit tests of LightGBM can be built using
 
 - **CMake** and **Apple Clang**;
-- **CMake**, **Ninja** and **Apple Clang**;
-- **CMake** and **gcc**;
-- **CMake**, **Ninja** and **gcc**.
+- **CMake** and **gcc**.
 
 After compilation the executable file will be in ``LightGBM/`` folder.
 
@@ -1419,24 +961,6 @@ Apple Clang
      cmake -B build -S . -DBUILD_CPP_TEST=ON
      cmake --build build --target testlightgbm -j4
 
-Apple Clang and Ninja
-*********************
-
-1. Install `CMake`_, **OpenMP** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake libomp ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
-     cmake --build build --target testlightgbm -j4
-
 gcc
 ***
 
@@ -1454,25 +978,6 @@ gcc
      cd LightGBM
      export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
      cmake -B build -S . -DBUILD_CPP_TEST=ON
-     cmake --build build --target testlightgbm -j4
-
-gcc and Ninja
-*************
-
-1. Install `CMake`_, **gcc** and `Ninja`_:
-
-   .. code:: sh
-
-     brew install cmake gcc ninja
-
-2. Run the following commands:
-
-   .. code:: sh
-
-     git clone --recursive https://github.com/microsoft/LightGBM
-     cd LightGBM
-     export CXX=g++-7 CC=gcc-7  # replace "7" with version of gcc installed on your machine
-     cmake -B build -S . -DBUILD_CPP_TEST=ON -G Ninja
      cmake --build build --target testlightgbm -j4
 
 
