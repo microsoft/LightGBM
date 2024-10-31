@@ -7,12 +7,12 @@ $ProgressPreference = "SilentlyContinue"  # progress bar bug extremely slows dow
 Invoke-WebRequest -OutFile "$installer" -Uri "https://github.com/microsoft/LightGBM/releases/download/v2.0.12/$installer"
 
 if (Test-Path "$installer") {
-  Write-Output "Successfully downloaded OpenCL platform installer"
+    Write-Output "Successfully downloaded OpenCL platform installer"
 } else {
-  Write-Output "Unable to download OpenCL platform installer"
-  Write-Output "Setting EXIT"
-  $host.SetShouldExit(-1)
-  exit 1
+    Write-Output "Unable to download OpenCL platform installer"
+    Write-Output "Setting EXIT"
+    $host.SetShouldExit(-1)
+    exit 1
 }
 
 # Install OpenCL platform from installer executable
@@ -21,14 +21,14 @@ Invoke-Command -ScriptBlock { Start-Process "$installer" -ArgumentList '/S /V"/q
 
 $property = Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 if ($property -eq $null) {
-  Write-Output "Unable to install OpenCL CPU platform"
-  Write-Output "OpenCL installation log:"
-  Get-Content "opencl.log"
-  Write-Output "Setting EXIT"
-  $host.SetShouldExit(-1)
-  exit 1
+    Write-Output "Unable to install OpenCL CPU platform"
+    Write-Output "OpenCL installation log:"
+    Get-Content "opencl.log"
+    Write-Output "Setting EXIT"
+    $host.SetShouldExit(-1)
+    exit 1
 } else {
-  Write-Output "Successfully installed OpenCL CPU platform"
-  Write-Output "Current OpenCL drivers:"
-  Write-Output $property
+    Write-Output "Successfully installed OpenCL CPU platform"
+    Write-Output "Current OpenCL drivers:"
+    Write-Output $property
 }
