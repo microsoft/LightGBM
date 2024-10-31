@@ -22,11 +22,15 @@ def count_values_in_file(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
 
-    tinycounts = {
+    tinycountsloop = {
         "tiny_tree_thresholds": {"value": 0, "float": True, "add": False},
         "tiny_tree_features": {"value": 0, "float": False, "add": False},
         "tiny_tree_ids_features": {"value": 0, "float": False, "add": True},
         "tiny_tree_ids_thresholds": {"value": 0, "float": False, "add": True}
+    }
+    tinycountsifelse = {
+        "tiny_tree_thresholds": {"value": 0, "float": True, "add": False},
+        "tiny_tree_features": {"value": 0, "float": False, "add": False}
     }
     nativecounts = {
         "split_feature": {"value": 0, "float": False},
@@ -35,15 +39,19 @@ def count_values_in_file(file_path):
         "right_child": {"value": 0, "float": False},
         "leaf_value": {"value": 0, "float": True}
     }
-    memorycounttiny = 0
+    memorycounttinyloop = 0
+    memorycounttinyifelse = 0
     memorycountnative = 0
 
     for line in lines:
-        for key, element in tinycounts.items() :
+        for key, element in tinycountsloop.items() :
             if element['add']:
                 element['value'] += read_line(line, key, element['float'], 0)
-            else:
-                element['value'] = read_line(line, key, element['float'], element['value'])
+
+        for key, element in tinycountsifelse.items() :
+            n_thresholds = read_line(line, key, element['float'], element['value'])
+            element['value'] = n_thresholds
+            tinycountsloop[key]['value'] = n_thresholds
 
         for key, element in nativecounts.items() :
                 element['value'] += read_line(line, key, element['float'], 0)
@@ -53,13 +61,17 @@ def count_values_in_file(file_path):
         multiplier = 4 if data["float"] else 2
         memorycountnative += data['value'] * multiplier
 
-    for key, data in tinycounts.items():
+    for key, data in tinycountsloop.items():
         multiplier = 4 if data["float"] else 2
-        memorycounttiny += data['value'] * multiplier
+        memorycounttinyloop += data['value'] * multiplier
 
-    print(tinycounts)
-    print(nativecounts)
-    print(f"Assumed memory consumption tiny = {memorycounttiny} Assumed memory consumption native = {memorycountnative}")
+    for key, data in tinycountsifelse.items():
+        multiplier = 4 if data["float"] else 2
+        memorycounttinyifelse += data['value'] * multiplier
+
+    print(tinycountsifelse)
+    print(tinycountsloop)
+    print(f"Assumed memory consumption tiny loop = {memorycounttinyloop} \nAssumed memory consumption tiny if else = {memorycounttinyifelse} \nAssumed memory consumption native = {memorycountnative}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
