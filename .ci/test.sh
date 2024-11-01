@@ -103,6 +103,7 @@ if [[ $TASK == "lint" ]]; then
     pwsh -file "./.ci/lint-powershell.ps1" || :
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
+        'biome>=1.9.3' \
         'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
@@ -113,12 +114,14 @@ if [[ $TASK == "lint" ]]; then
         'r-lintr>=3.1.2'
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
-    echo "Linting Python code"
-    bash ./.ci/lint-python.sh || exit 1
+    echo "Linting Python and bash code"
+    bash ./.ci/lint-python-bash.sh || exit 1
     echo "Linting R code"
     Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
     echo "Linting C++ code"
     bash ./.ci/lint-cpp.sh || exit 1
+    echo "Linting JavaScript code"
+    bash ./.ci/lint-js.sh || exit 1
     exit 0
 fi
 
