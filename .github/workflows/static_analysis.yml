@@ -6,7 +6,6 @@ on:
   push:
     branches:
     - master
-    - ci/psanalizer-3
   pull_request:
     branches:
     - master
