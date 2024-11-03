@@ -8,7 +8,7 @@ end_of_line = lf
 indent_style = space
 indent_size = 2
 
-[*.{py,sh,ps1,js,json,css}]
+[*.{py,sh,ps1,js,json}]
 indent_size = 4
 max_line_length = 120
 skip = external_libs
