@@ -433,7 +433,7 @@ test_that("lgb.cv() rejects negative or 0 value passed to nrounds", {
   }
 })
 
-test_that("lgb.cv() throws an informative error if 'data' is not an lgb.Dataset and labels are not given", {
+test_that("lgb.cv() throws an informative error if 'data' is not an lgb.Dataset", {
   bad_values <- list(
     4L
     , "hello"
@@ -454,7 +454,7 @@ test_that("lgb.cv() throws an informative error if 'data' is not an lgb.Dataset 
         , 10L
         , nfold = 5L
       )
-    }, regexp = "'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'", fixed = TRUE)
+    }, regexp = "lgb.cv: data must be an lgb.Dataset instance", fixed = TRUE)
   }
 })
 
