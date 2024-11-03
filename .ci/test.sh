@@ -100,7 +100,7 @@ fi
 if [[ $TASK == "lint" ]]; then
     pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
     echo "Linting PowerShell code"
-    pwsh -file "./.ci/lint-powershell.ps1" || :
+    pwsh -file ./.ci/lint-powershell.ps1 || exit 1
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
         'biome>=1.9.3' \
