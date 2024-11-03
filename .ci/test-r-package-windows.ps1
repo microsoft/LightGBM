@@ -122,10 +122,10 @@ if (($env:COMPILER -eq "MINGW") -and ($env:R_BUILD_TYPE -eq "cmake")) {
     $env:CC = "$env:RTOOLS_MINGW_BIN/gcc.exe"
 }
 
-Set-Location $env:BUILD_SOURCESDIRECTORY
+Set-Location "$env:BUILD_SOURCESDIRECTORY"
 tzutil /s "GMT Standard Time"
-[Void][System.IO.Directory]::CreateDirectory($env:R_LIB_PATH)
-[Void][System.IO.Directory]::CreateDirectory($env:CMAKE_PATH)
+[Void][System.IO.Directory]::CreateDirectory("$env:R_LIB_PATH")
+[Void][System.IO.Directory]::CreateDirectory("$env:CMAKE_PATH")
 
 # download R, RTools and CMake
 Write-Output "Downloading R, Rtools and CMake"
@@ -216,7 +216,7 @@ if ($env:COMPILER -ne "MSVC") {
         # Putting the msys64 utilities at the beginning of PATH temporarily to be
         # sure they're used for that purpose.
         if ($env:R_MAJOR_VERSION -eq "3") {
-            $env:PATH = @("C:\msys64\usr\bin", $env:PATH) -join ";"
+            $env:PATH = @("C:\msys64\usr\bin", "$env:PATH") -join ";"
         }
         $params = -join @(
             "result <- processx::run(command = 'sh', args = 'build-cran-package.sh', ",

@@ -43,7 +43,7 @@ if ($env:TASK -eq "swig") {
         "$env:BUILD_SOURCESDIRECTORY/swig"
     ) ; Assert-Output $?
     $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
-    $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", $env:PATH) -join ";"
+    $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", "$env:PATH") -join ";"
     $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
     cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
     Write-Output "CMake build logs:"
@@ -88,13 +88,13 @@ if ($env:TASK -ne "bdist") {
     conda activate $env:CONDA_ENV
 }
 
-Set-Location $env:BUILD_SOURCESDIRECTORY
+Set-Location "$env:BUILD_SOURCESDIRECTORY"
 if ($env:TASK -eq "regular") {
     cmake -B build -S . -A x64 ; Assert-Output $?
     cmake --build build --target ALL_BUILD --config Release ; Assert-Output $?
     sh ./build-python.sh install --precompile ; Assert-Output $?
-    cp ./Release/lib_lightgbm.dll $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-    cp ./Release/lightgbm.exe $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+    cp ./Release/lib_lightgbm.dll "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
+    cp ./Release/lightgbm.exe "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif ($env:TASK -eq "sdist") {
     sh ./build-python.sh sdist ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
@@ -113,7 +113,7 @@ if ($env:TASK -eq "regular") {
     sh "build-python.sh" bdist_wheel --integrated-opencl ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
-    cp @(Get-ChildItem *py3-none-win_amd64.whl) $env:BUILD_ARTIFACTSTAGINGDIRECTORY
+    cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 } elseif (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python")) {
     if ($env:COMPILER -eq "MINGW") {
         sh ./build-python.sh install --mingw ; Assert-Output $?
@@ -136,7 +136,7 @@ if ($env:TASK -eq "bdist") {
 pytest $tests ; Assert-Output $?
 
 if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq "python"))) {
-    Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide
+    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide"
     @("import matplotlib", "matplotlib.use('Agg')") + (Get-Content "plot_example.py") | Set-Content "plot_example.py"
     # Prevent interactive window mode
     (Get-Content "plot_example.py").replace(
@@ -156,7 +156,7 @@ if (($env:TASK -eq "regular") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -e
         python $file ; Assert-Output $?
     }
     # Run all notebooks
-    Set-Location $env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks
+    Set-Location "$env:BUILD_SOURCESDIRECTORY/examples/python-guide/notebooks"
     (Get-Content "interactive_plot_example.ipynb").replace(
         'INTERACTIVE = False',
         'assert False, \"Interactive mode disabled\"'
