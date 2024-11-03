@@ -67,7 +67,7 @@ SEXP make_altrepped_raw_vec(void *void_ptr) {
   ptr_to_cpp_vec->release();
 
   R_set_altrep_data1(R_raw, R_ptr);
-  Rf_unprotect(2);
+  Rf_unprotect(1);
   return R_raw;
 }
 #else
