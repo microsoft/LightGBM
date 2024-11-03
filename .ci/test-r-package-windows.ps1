@@ -102,7 +102,7 @@ $env:PATH = @(
     "$env:RTOOLS_MINGW_BIN",
     "$env:R_LIB_PATH/R/bin/x64",
     "$env:CMAKE_PATH/cmake-$env:CMAKE_VERSION-windows-x86_64/bin",
-    $env:PATH
+    "$env:PATH"
 ) -join ";"
 if ([version]$env:R_VERSION -lt [version]"4.0") {
     $env:CRAN_MIRROR = "https://cran-archive.r-project.org"
