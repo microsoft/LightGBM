@@ -112,10 +112,6 @@ into a predictor model which frees up memory and the original datasets}
 \item{eval_train_metric}{\code{boolean}, whether to add the cross validation results on the
 training data. This parameter defaults to \code{FALSE}. Setting it to \code{TRUE}
 will increase run time.}
-
-\item{label}{Deprecated. See "Deprecated Arguments" section below.}
-
-\item{weight}{Deprecated. See "Deprecated Arguments" section below.}
 }
 \value{
 a trained model \code{lgb.CVBooster}.

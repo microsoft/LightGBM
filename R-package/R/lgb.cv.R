@@ -25,8 +25,6 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label Deprecated. See "Deprecated Arguments" section below.
-#' @param weight Deprecated. See "Deprecated Arguments" section below.
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
