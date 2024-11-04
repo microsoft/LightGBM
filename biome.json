@@ -1,0 +1,21 @@
+{
+    "files": {
+        "ignore": [".mypy_cache/"]
+    },
+    "formatter": {
+        "enabled": true,
+        "useEditorconfig": true
+    },
+    "organizeImports": {
+        "enabled": true
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "all": true
+        }
+    },
+    "javascript": {
+        "globals": ["$"]
+    }
+}

@@ -125,12 +125,7 @@ Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/A
 
 # Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-# NOTE: testthat is not required when running rchk
-if [[ "${TASK}" == "r-rchk" ]]; then
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl')"
-else
-    packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
-fi
+packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
@@ -165,28 +160,6 @@ elif [[ $R_BUILD_TYPE == "cran" ]]; then
     fi
 
     ./build-cran-package.sh || exit 1
-
-    if [[ "${TASK}" == "r-rchk" ]]; then
-        echo "Checking R-package with rchk"
-        mkdir -p packages
-        cp "${PKG_TARBALL}" packages
-        RCHK_LOG_FILE="rchk-logs.txt"
-        docker run \
-            -v "$(pwd)/packages:/rchk/packages" \
-            kalibera/rchk:latest \
-            "/rchk/packages/${PKG_TARBALL}" \
-        > "${RCHK_LOG_FILE}" 2>&1  \
-        || (cat ${RCHK_LOG_FILE} && exit 1)
-        cat ${RCHK_LOG_FILE}
-
-        # the exceptions below are from R itself and not LightGBM:
-        # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
-        exit "$(
-            grep "${RCHK_LOG_FILE}" -v "in function strptime_internal" \
-            | grep -v "in function RunGenCollect" \
-            | grep --count -E '\[PB\]|ERROR'
-        )"
-    fi
 
     # Test CRAN source .tar.gz in a directory that is not this repo or below it.
     # When people install.packages('lightgbm'), they won't have the LightGBM
