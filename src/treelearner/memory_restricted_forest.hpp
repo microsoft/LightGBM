@@ -73,8 +73,7 @@ namespace LightGBM {
       const int last_node_id = tree->num_leaves_ - 2;
 
       // TODO: merge following lines, but depends on if/how we implement rounding.
-      const double threshold = tree->threshold_[last_node_id];
-      // const double threshold = RoundDecimals(tree->threshold_[last_node_id], this->precision);
+      const double threshold = RoundDecimals(tree->threshold_[last_node_id], this->precision);
       printf("original threshold: %f, rounded threshold: %f \n", tree->threshold_[last_node_id], threshold);
       const uint32_t feature = tree->split_feature_[last_node_id];
       const BinMapper *bin_mapper = train_data_->FeatureBinMapper(feature);
@@ -114,9 +113,11 @@ namespace LightGBM {
       // Reduce the current tree and increase the bits for the following trees.
       est_leftover_memory -= (f_needed_bits/8) + (t_needed_bits/8) * tree->getNumberNodes();
     }
+
     double CalculateSplitMemoryConsumption(consumed_memory &con_mem, double threshold, uint32_t feature) {
       // Insert the memory consumption of the two global tables.
       std::vector<uint32_t>::iterator feature_it;
+      threshold = RoundDecimals(threshold, this->precision);
       std::vector<double>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
                                                             thresholds_used_global_.end(), threshold);
       feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
