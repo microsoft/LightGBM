@@ -248,10 +248,10 @@ class Tree {
   /*! \brief Serialize this object to if-else statement*/
   std::string ToIfElse(int index, bool predict_leaf_index) const;
 
-  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
-  void ToArrayPointer(std::vector<uint32_t> features, std::vector<double> thresholds_, uint8_t decimals);
+  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree; assign thresholds and features to index-based tree ids*/
+  void ToArrayPointer(std::vector<uint32_t> features, std::vector<double> thresholds_, double decimals);
 
-  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree*/
+  /*! \brief [tinygbdt] Serialize this object to an array, representing fully grown tree; returns lightgbm node ids in index-based tree format*/
   std::vector<int> ToFullArray() const;
 
 

@@ -336,11 +336,11 @@ double Tree::GetLowerBoundValue() const {
   return lower_bound;
 }
 
-void Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<double> thresholds_, uint8_t decimals) {
+void Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<double> thresholds, double decimals) {
   // get lightgbm ids in full tree array format
   std::vector<int> fulltree_ids = ToFullArray();
   tt_features_ = features;
-  tt_thresholds_ = thresholds_;
+  tt_thresholds_ = thresholds;
   // init tiny tree values for tree object
   int tt_nodes = fulltree_ids.size();
   int init_value = -1;
@@ -360,11 +360,11 @@ void Tree::ToArrayPointer(std::vector<uint32_t> features, std::vector<double> th
     if (lightgbm_id >= 0) {
       // check if threshold and feature are already in lookup tables
       const double threshold = threshold_[lightgbm_id];
-      double rounded_threshold = ((double)(int)(threshold * pow(10.0, decimals) + .5)) / pow(10.0, decimals); 
+      double rounded_threshold = ((double)((int)(threshold * pow(10.0, decimals) + .5))) / pow(10.0, decimals); 
       threshold_it = std::find(tt_thresholds_.begin(), tt_thresholds_.end(), rounded_threshold);
       feature_it = std::find(tt_features_.begin(), tt_features_.end(), split_feature_[lightgbm_id]);
       // get ids referencing to values in lookup tables
-      bool found = (std::find(tt_thresholds_.begin(), tt_thresholds_.end(), (double)rounded_threshold) != tt_thresholds_.end());
+      bool found = (threshold_it != tt_thresholds_.end());
       if (found) {
         threshold_id = std::distance(tt_thresholds_.begin(), threshold_it);
       } else {
