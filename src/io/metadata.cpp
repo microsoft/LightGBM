@@ -853,7 +853,7 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
-data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation, const std::string& pairing_approach) {
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach) {
   num_queries_ = metadata.num_queries();
   label_.clear();
   positions_.clear();
@@ -928,7 +928,9 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
             continue;
           }
           const label_t label_j = label_[item_index_j];
-          if ((pairing_approach == std::string("all")) || (label_i != label_j)) {
+          if ((pairing_approach == std::string("all")) ||
+              (pairing_approach == std::string("different_relevance") && label_i != label_j) ||
+              (pairing_approach == std::string("at_least_one_relevant") && (label_i > 0 || label_j > 0))) {
             paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
             paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
             ++num_data_;

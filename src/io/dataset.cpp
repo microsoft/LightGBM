@@ -904,7 +904,7 @@ void Dataset::CreateValid(const Dataset* dataset) {
 
 void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_validation, const Config& config) {
   const std::string& pairing_approach = is_validation ? config.pairwise_lambdarank_valid_pairing_approach : config.pairwise_lambdarank_train_pairing_approach;
-  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), is_validation, pairing_approach);
+  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), pairing_approach);
 
   feature_groups_.clear();
   num_features_ = dataset->num_features_ * 2;
