@@ -1275,7 +1275,7 @@ public:
     }
   }
 
-  double compute(double score) {
+  double compute(double score) const {
     if (score <= min_sigmoid_input_) {
       // too small, use lower bound
       return sigmoid_table_[0];

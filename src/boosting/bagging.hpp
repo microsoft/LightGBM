@@ -188,7 +188,7 @@ class BaggingSampleStrategy : public SampleStrategy {
       double average_bag_rate =
           (static_cast<double>(bag_data_cnt_) / num_data_) / config_->bagging_freq;
       is_use_subset_ = false;
-      if (config_->device_type != std::string("cuda")) {
+      if (config_->device_type != std::string("cuda") && !config_->bagging_by_query) {
         const int group_threshold_usesubset = 200;
         const double average_bag_rate_threshold = 0.5;
         Log::Warning("train_data_->num_feature_groups() = %d", train_data_->num_feature_groups());
