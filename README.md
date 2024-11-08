@@ -139,6 +139,8 @@ lightgbm-transform (feature transformation binding): https://github.com/microsof
 
 `postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
 
+`pyodide` (run `lightgbm` Python package in a web browser): https://github.com/pyodide/pyodide
+
 `vaex-ml` (Python DataFrame library with its own interface to LightGBM): https://github.com/vaexio/vaex
 
 Support
