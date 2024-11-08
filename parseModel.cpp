@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 
+
 struct Node {
     int featureid;
     int thresholdid;
@@ -14,13 +15,19 @@ struct Tree {
     std::vector<int> thresholds_ids;
     std::vector<Node> nodes;
 };
-
+struct Sizes {
+    int max_depth;
+    int featuresize;
+    int thresholdssize;
+    int maxthresholdsize;
+    int maxfeaturesize;
+};
+Sizes size = {0,0,0,0};
 std::vector<Tree> parse_trees_from_file(const std::string& filename, std::vector<int>& features, std::vector<float>& thresholds, int &max_depth) {
     std::ifstream file(filename);
     std::string line;
     std::vector<Tree> trees;
     Tree currentTree;
-
     while (getline(file, line)) {
         if (line.empty()) { // Skip empty lines
             continue;
@@ -42,6 +49,11 @@ std::vector<Tree> parse_trees_from_file(const std::string& filename, std::vector
             int id;
             while (iss >> id) {
                 currentTree.feature_ids.push_back(id);
+            }
+        } else if (header == "feature_names=") {
+            std::string column;
+            while (iss >> column) {
+                size.featuresize++;
             }
         } else if (header == "tiny_tree_thresholds=") {
             double threshold;
@@ -66,23 +78,24 @@ std::vector<Tree> parse_trees_from_file(const std::string& filename, std::vector
         } else if (header.find("[max_depth:") != std::string::npos) {
             int maxdepth;
             while (iss >> maxdepth) {
-              max_depth = maxdepth;
+              size.max_depth = maxdepth;
             }
         }
     }
     file.close();
+    size.thresholdssize = thresholds.size();
     return trees;
 }
 
-void printNode(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features, std::vector<float> thresholds) {
+void printNode(std::ostream& out, Tree tree, int i, std::vector<int> features, std::vector<float> thresholds, int indentLevel =4) {
     std::string indent(indentLevel, '\t');
     if (tree.feature_ids[i] == -1) {
         out  << indent << "result += " << thresholds[tree.thresholds_ids[i]] << ";\n";
     } else {
         out << indent << "if (values[" << features[tree.feature_ids[i]] << "] <= " << thresholds[tree.thresholds_ids[i]] << ") {\n";
-        printNode(out, tree, 2 * i + 1, indentLevel + 1, features, thresholds);
+        printNode(out, tree, 2 * i + 1,  features, thresholds, indentLevel +1);
         out << indent << "} else {\n";
-        printNode(out, tree, 2 * i + 2, indentLevel + 1, features, thresholds);
+        printNode(out, tree, 2 * i + 2, features, thresholds, indentLevel + 1);
         out << indent << "}\n";
     }
 }
@@ -94,14 +107,13 @@ void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features
     out << "namespace LightGBM { " << "\n";
     out << "\t\tclass CovTypeClassifier {" << "\n";
     out << "\t\tpublic:" << "\n";
-    out << "\t\t\tfloat Predict(const float values[" << features.size() << "]) {\n";
+    out << "\t\t\tfloat Predict(const float values[" << size.featuresize << "]) {\n";
     out << "\t\t\t\tfloat result = 0;\n";
-    // out << "\t\t\t\tfloat thresholds[" << thresholds.size() << "];\n";
     int counter = 0;
     for (int i = 0; i < trees.size(); i++) {
         Tree tree = trees[i];
         out << "\t\t\t\t// tree " << counter << " ...\n";
-        printNode(out, tree, 0, 4, features, thresholds);
+        printNode(out, tree, 0, features, thresholds);
         counter++;
     }
     out << "\t\t\treturn 1.0f / (1.0f + exp(-1.0 * result));\n";
@@ -116,7 +128,11 @@ std::string genArray(std::string name, std::vector<T> array) {
     std::string tmp = "";
     name == "" ? tmp += "{": tmp += "\t\t\t" + name + " = {";
     for (auto element : array) {
-        tmp += std::to_string(element) + ", ";
+        if (element == -1) {
+            tmp += "-1, ";
+        } else {
+            tmp += std::to_string(element) + ", ";
+        }
     }
     if (!tmp.empty()) {
         tmp.pop_back();
@@ -132,7 +148,11 @@ std::string genArray(std::string name, std::vector<T> array, std::vector<T2> arr
     std::string tmp = "";
     name == "" ? tmp += "{": tmp += "\t\t\t" + name + " = {";
     for (auto element : array) {
-        tmp += std::to_string(array_values[element]) + ", ";
+        if (element == -1) {
+            tmp += "-1, ";
+        } else {
+            tmp += std::to_string(array_values[element]) + ", ";
+        }
     }
     if (!tmp.empty()) {
         tmp.pop_back();
@@ -142,33 +162,50 @@ std::string genArray(std::string name, std::vector<T> array, std::vector<T2> arr
     return tmp;
 }
 
-void genTree(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features, std::vector<float> thresholds) {
+template <typename T, typename T2>
+void genArraySingle(std::ostream& out, std::string writename, int indentLevel, std::vector<T> array, std::vector<T2> array_values) {
     std::string indent(indentLevel, '\t');
-    out << indent << "Forest[" << i << "].feature_ids = new int[" << tree.feature_ids.size() << "] ;\n";
-    out << indent << "int initial_feature_ids_" << i << "[" << tree.feature_ids.size() << "] = " << genArray("", tree.feature_ids, features);
-    out << indent << "Forest[" << i << "].thresholds_ids = new float[" << tree.thresholds_ids.size() << "];\n";
-    out << indent << "float initial_threshold_ids_" << i << "[" << tree.feature_ids.size() << "] = " << genArray("", tree.thresholds_ids, thresholds);
-    out << indent << "for (int i = 0; i < " << tree.feature_ids.size() << "; ++i) {" << "\n";
-    out << indent << "\tForest[" << i << "].feature_ids[i] = initial_feature_ids_" << i << "[i];" << "\n";
-    out << indent << "\tForest[" << i << "].thresholds_ids[i] = initial_threshold_ids_" << i << "[i];" << "\n";
-    out << indent << "}" << "\n";
+    for (int i = 0; i< array.size(); i++) {
+        if (array[i] == -1) {
+            out << indent << writename << "[" << i << "] = -1;\n";
+        } else {
+            out << indent << writename << "[" << i << "] = " << array_values[array[i]] << ";\n";
+        }
+    }
+}
+template <typename T2>
+void genArraySingle(std::ostream& out, std::string writename, int indentLevel, std::vector<T2> array_values) {
+    std::string indent(indentLevel, '\t');
+    for (int i = 0; i< array_values.size(); i++) {
+        if (array_values[i] == -1) {
+            out << indent << writename << "[" << i << "] = -1;\n";
+        } else {
+            out << indent << writename << "[" << i << "] = " << array_values[i] << ";\n";
+        }
+    }
+}
+void genTree(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features) {
+    std::string indent(indentLevel, '\t');
+    genArraySingle(out, "features", indentLevel, tree.feature_ids, features);
+    genArraySingle(out, "thresholdids", indentLevel, tree.thresholds_ids);
 }
 
-void generatePredictTree(std::ostream& out, int indentLevel, int max_depth) {
-    std::string indent(indentLevel, '\t');
-    out << "\t\tfloat PredictTree(Tree tree, const float values[]) {\n";
+void generatePredictTree(std::ostream& out, std::string featuretype, std::string thresholdtype) {
+    std::string indent(3, '\t');
+
+    out << "\t\tfloat PredictTree(const " << featuretype << "* features, const " << thresholdtype << "* threshold_ids, const float thresholds[" << size.thresholdssize << "], const float values[" << size.featuresize << "]) {\n";
     out << indent << "int node = 0;" << "\n";
     out << indent << "float threshold = 0.0;" << "\n";
-    out << indent << "int max_depth =" << max_depth << ";\n";
-    out << indent << "int i = 0;" << "\n";
-    out << indent << "while (i < max_depth) {" << "\n";
-    out << indent << "\tint feature_id = tree.feature_ids[node];" << "\n";
-    out << indent << "\tthreshold = tree.thresholds_ids[node];" << "\n";
-    out << indent << "\tif (feature_id == -1) {" << "\n";
-    out << indent << "\t\tbreak;" << "\n";
+    out << indent << "int max_depth =" << size.max_depth << ";\n";
+    out << indent << "int featureid = 0;\n";
+
+    out << indent << "for (int i = 0; i < max_depth; i++) {" << "\n";
+    out << indent << "\tfeatureid = features[node];" << "\n";
+    out << indent << "\tthreshold = thresholds[threshold_ids[node]];" << "\n";
+    out << indent << "\tif (featureid == -1) {" << "\n";
+    out << indent << "\t\treturn threshold;" << "\n";
     out << indent << "\t}" << "\n";
-    out << indent << "\tvalues[feature_id] <= threshold ? node = 2 * node + 1 : node = 2 * node + 2;" << "\n";
-    out << indent << "\ti++;" << "\n";
+    out << indent << "\tvalues[featureid] <= threshold ? node = 2 * node + 1 : node = 2 * node + 2;" << "\n";
     out << indent << "}" << "\n";
     out << indent << "return threshold;" << "\n";
     out << "\t\t}" << "\n";
@@ -179,29 +216,44 @@ void generate_cpp_loop(const std::vector<Tree>& trees, std::vector<int> features
     std::ofstream out(output + "_loop" + ".h");
     out << "#pragma once" << "\n";
     out << "namespace LightGBM { " << "\n";
-    out << "\tstruct Tree {" << "\n";
-    out << "    int* feature_ids;" << "\n";
-    out << "    float* thresholds_ids;" << "\n";
-    out << "\t};" << "\n";
     out << "\tclass CovTypeClassifier {" << "\n";
     out << "\tpublic:" << "\n";
-    out << "\t\tfloat Predict(const float values[" << features.size() << "]) {\n";
-    out << "\t\t\tTree Forest["<< trees.size() <<"];\n";
-    for (int i = 0; i < trees.size(); i++) {
-        genTree(out, trees[i], i, 3, features, thresholds);
-    }
-    out << "\t\t\tfloat result = 0;\n";
-    // out << genArray("float thresholds[" + std::to_string(thresholds.size()) + "]", thresholds);
-    // out << genArray("byte features[" +  std::to_string(features.size()) + "]", features);
+    out << "\t\tfloat Predict(const float values[" << size.featuresize << "]) {\n";
     int counter = 0;
+    std::string typefeature = "int";
+    std::string typethreshold = "int";
+    if (size.featuresize < 255) {
+        typefeature = "byte";
+    }
+    if (size.thresholdssize < 255) {
+        typethreshold = "byte";
+    }
+
+    out << genArray("float thresholds[" + std::to_string(thresholds.size()) + "]", thresholds);
+    out << "\t\t\tfloat result = 0;\n";
+
+    out << "\t\t\t" << typefeature << " *features = NULL;\n";
+    out << "\t\t\t" << typethreshold << " *thresholdids = NULL;\n";
+    out << "\t\t\tfeatures = malloc(" << trees[0].feature_ids.size() << "* sizeof ("<< typefeature << "));\n";
+    out << "\t\t\tthresholdids = malloc(" << trees[0].thresholds_ids.size() << "* sizeof ("<< typethreshold << "));\n";
+
     for (int i = 0; i < trees.size(); i++) {
+        out << "\t\t\t// Tree " << i << "\n";
+        genTree(out, trees[i], i, 3, features);
         Tree tree = trees[i];
-        out << "\t\t\tresult += PredictTree(Forest[" << counter << "], values);\n";
+        out << "\t\t\tresult += PredictTree( features, thresholdids, thresholds, values);\n";
         counter++;
+        if (tree.feature_ids.size() > size.maxfeaturesize) {
+            size.maxfeaturesize = tree.feature_ids.size();
+        }
+        if (tree.thresholds_ids.size() > size.maxthresholdsize) {
+            size.maxthresholdsize = tree.thresholds_ids.size();
+        }
     }
     out << "\t\t\treturn 1.0f / (1.0f + exp(-1.0 * result));\n";
     out << "\t\t}\n";
-    generatePredictTree(out, 3, max_depth);
+    // TODO: Currently we take the max in any tree. Does it make a difference to have multiple functions in case a tree is smaller?
+    generatePredictTree(out, typefeature, typethreshold);
 
     out << "\t};" << "\n";
     out << "}" << "\n";
@@ -209,6 +261,7 @@ void generate_cpp_loop(const std::vector<Tree>& trees, std::vector<int> features
 }
 
 int main(int argc, char* argv[]) {
+
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <pathLightGBMModel> <pathOutput>" << std::endl;
         return 1; // Exit with error code
