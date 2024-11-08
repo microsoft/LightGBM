@@ -208,9 +208,10 @@ class Metadata {
   * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
   * \param metadata Reference to metadata of the existing ranking dataset
   * \param is_validation Whether the dataset is a validation set
+  * \param pairing_approach The pairing approach of this dataset
   * \return The number of paired data
   */
-  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation);
+  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata, const bool is_validation, const std::string& pairing_approach);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded

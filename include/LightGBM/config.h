@@ -1028,6 +1028,18 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   bool pairwise_lambdarank_hard_pairwise_preference = false;
 
+  // desc = pairing appraoch for training dataset
+  // desc = used only in ``pairwise_lambdarank`` application
+  // desc = with ``relevance``, only consider pairs with difference relevance score
+  // desc = with ``all``, all pairs will be used
+  std::string pairwise_lambdarank_train_pairing_approach = std::string("relevance");
+
+  // desc = pairing appraoch for validation dataset
+  // desc = used only in ``pairwise_lambdarank`` application
+  // desc = with ``relevance``, only consider pairs with difference relevance score
+  // desc = with ``all``, all pairs will be used
+  std::string pairwise_lambdarank_valid_pairing_approach = std::string("relevance");
+
   #ifndef __NVCC__
   #pragma endregion
 
