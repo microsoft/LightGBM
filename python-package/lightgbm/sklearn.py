@@ -40,6 +40,8 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     _LGBMValidateData,
+    _sklearn_ClassifierTags,
+    _sklearn_RegressorTags,
     _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
@@ -1290,7 +1292,10 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        tags = LGBMModel.__sklearn_tags__(self)
+        tags.estimator_type = "regressor"
+        tags.regressor_tags = _sklearn_RegressorTags(multi_label=False)
+        return tags
 
     def fit(  # type: ignore[override]
         self,
@@ -1349,7 +1354,10 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        tags = LGBMModel.__sklearn_tags__(self)
+        tags.estimator_type = "classifier"
+        tags.classifier_tags = _sklearn_ClassifierTags(multi_class=True, multi_label=False)
+        return tags
 
     def fit(  # type: ignore[override]
         self,

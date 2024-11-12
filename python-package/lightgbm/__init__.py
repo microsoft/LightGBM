@@ -11,11 +11,8 @@ from pathlib import Path
 from .basic import Booster, Dataset, Sequence, register_logger
 from .callback import EarlyStopException, early_stopping, log_evaluation, record_evaluation, reset_parameter
 from .engine import CVBooster, cv, train
+from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor
 
-try:
-    from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor
-except ImportError:
-    pass
 try:
     from .plotting import create_tree_digraph, plot_importance, plot_metric, plot_split_value_histogram, plot_tree
 except ImportError:
