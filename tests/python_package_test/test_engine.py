@@ -4611,3 +4611,27 @@ def test_bagging_by_query_in_lambdarank():
     ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
     assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
     assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
+
+
+def test_train_with_column_major_dataset():
+    params = {"num_leaves": 16}
+    rounds = 2
+
+    X_row, y = make_synthetic_regression()
+    assert X_row.flags["C_CONTIGUOUS"]
+    ds_row = lgb.Dataset(X_row, y)
+    bst_row = lgb.train(params, ds_row, num_boost_round=rounds)
+    pred_row = bst_row.predict(X_row)
+    # check that we didn't get a trivial model
+    dumped_row = bst_row.dump_model()
+    assert len(dumped_row["tree_info"]) == rounds
+    for tree in dumped_row["tree_info"]:
+        assert tree["num_leaves"] > 1
+
+    X_col = np.asfortranarray(X_row)
+    assert X_col.flags["F_CONTIGUOUS"]
+    ds_col = lgb.Dataset(X_col, y)
+    bst_col = lgb.train(params, ds_col, num_boost_round=rounds)
+    dumped_col = bst_col.dump_model()
+
+    assert dumped_row == dumped_col

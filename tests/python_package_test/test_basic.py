@@ -947,3 +947,16 @@ def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(c
         "in params. Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity."
     )
     assert expected_warning in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("order", ["C", "F"])
+@pytest.mark.parametrize("dtype", ["float32", "int64"])
+def test_no_copy_in_dataset_from_numpy_2d(order, dtype):
+    X = np.random.rand(100, 3)
+    X = np.require(X, dtype=dtype, requirements=order)
+    X1d = lgb.basic._np2d_to_np1d(X)
+    if dtype == "float32":
+        assert np.shares_memory(X, X1d)
+    else:
+        # makes a copy
+        assert not np.shares_memory(X, X1d)

@@ -188,6 +188,14 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
     return sample_cnt.value
 
 
+def _np2d_to_np1d(mat: np.ndarray) -> np.ndarray:
+    data = mat.ravel(order="A")  # keeps memory layout
+    if data.dtype not in (np.float32, np.float64):
+        # change non-float data to float data, need to copy
+        data = data.astype(np.float32)
+    return data
+
+
 class _MissingType(Enum):
     NONE = "None"
     NAN = "NaN"
@@ -685,6 +693,7 @@ _C_API_DTYPE_INT32 = 2
 _C_API_DTYPE_INT64 = 3
 
 """Matrix is row major in Python"""
+_C_API_IS_COL_MAJOR = 0
 _C_API_IS_ROW_MAJOR = 1
 
 """Macro definition of prediction type in C API of LightGBM"""
@@ -2297,10 +2306,11 @@ class Dataset:
             raise ValueError("Input numpy.ndarray must be 2 dimensional")
 
         self._handle = ctypes.c_void_p()
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
-        else:  # change non-float data to float data, need to copy
-            data = np.asarray(mat.reshape(mat.size), dtype=np.float32)
+        data = _np2d_to_np1d(mat)
+        if mat.flags["C_CONTIGUOUS"]:
+            layout = _C_API_IS_ROW_MAJOR
+        else:
+            layout = _C_API_IS_COL_MAJOR
 
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
@@ -2309,7 +2319,7 @@ class Dataset:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
