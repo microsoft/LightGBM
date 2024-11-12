@@ -703,7 +703,6 @@ class LGBMModel(_LGBMModelBase):
         tags.input_tags.allow_nan = tags_dict["allow_nan"]
         tags.input_tags.sparse = "sparse" in tags_dict["X_types"]
         tags.target_tags.one_d_labels = "1dlabels" in tags_dict["X_types"]
-        tags._xfail_checks = tags_dict["_xfail_checks"]
         return tags
 
     def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
