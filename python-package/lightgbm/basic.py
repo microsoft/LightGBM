@@ -189,11 +189,18 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
 
 
 def _np2d_to_np1d(mat: np.ndarray) -> np.ndarray:
-    data = mat.ravel(order="A")  # keeps memory layout
-    if data.dtype not in (np.float32, np.float64):
-        # change non-float data to float data, need to copy
-        data = data.astype(np.float32)
-    return data
+    if mat.dtype in (np.float32, np.float64):
+        dtype = mat.dtype
+    else:
+        dtype = np.float32
+    if mat.flags["F_CONTIGUOUS"]:
+        order = "F"
+    else:
+        order = "C"
+    # ensure dtype and order, copies if either do not match
+    data = np.asarray(mat, dtype=dtype, order=order)
+    # flatten array without copying
+    return data.ravel(order=order)
 
 
 class _MissingType(Enum):
@@ -2307,10 +2314,12 @@ class Dataset:
 
         self._handle = ctypes.c_void_p()
         data = _np2d_to_np1d(mat)
-        if mat.flags["C_CONTIGUOUS"]:
-            layout = _C_API_IS_ROW_MAJOR
-        else:
+        if mat.flags["F_CONTIGUOUS"]:
             layout = _C_API_IS_COL_MAJOR
+        else:
+            # the array was row major or not contiguous (slice)
+            # in any case we flatten as row-major
+            layout = _C_API_IS_ROW_MAJOR
 
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(

@@ -4621,7 +4621,6 @@ def test_train_with_column_major_dataset():
     assert X_row.flags["C_CONTIGUOUS"]
     ds_row = lgb.Dataset(X_row, y)
     bst_row = lgb.train(params, ds_row, num_boost_round=rounds)
-    pred_row = bst_row.predict(X_row)
     # check that we didn't get a trivial model
     dumped_row = bst_row.dump_model()
     assert len(dumped_row["tree_info"]) == rounds
