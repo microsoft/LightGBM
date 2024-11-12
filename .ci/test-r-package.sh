@@ -108,10 +108,11 @@ if [[ $OS_NAME == "macos" ]]; then
     export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
-# fix for issue where CRAN was not returning {lattice} and {evaluate} when using R 3.6
+# fix for issue where CRAN was not returning {evaluate}, {lattice}, or {waldo} when using R 3.6
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla -e "install.packages(c('https://cran.r-project.org/src/contrib/Archive/lattice/lattice_0.20-41.tar.gz', 'https://cran.r-project.org/src/contrib/Archive/evaluate/evaluate_0.23.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
+    cran_archive='https://cran.r-project.org/src/contrib/Archive'
+    Rscript --vanilla -e "install.packages(c('${cran_archive}/lattice/lattice_0.20-41.tar.gz', '${cran_archive}/evaluate/evaluate_0.23.tar.gz', '${cran_archive}/waldo/waldo_0.6.0.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
 else
     # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
     # This should be unnecessary on R >=4.4.0
