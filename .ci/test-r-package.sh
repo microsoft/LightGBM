@@ -112,7 +112,7 @@ fi
 # "Warning: dependency ‘lattice’ is not available"
 if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
     cran_archive='https://cran.r-project.org/src/contrib/Archive'
-    Rscript --vanilla -e "install.packages(c('${cran_archive}/lattice/lattice_0.20-41.tar.gz', '${cran_archive}/evaluate/evaluate_0.23.tar.gz', '${cran_archive}/waldo/waldo_0.5.3.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}')"
+    Rscript --vanilla -e "install.packages(c('${cran_archive}/lattice/lattice_0.20-41.tar.gz', '${cran_archive}/evaluate/evaluate_0.23.tar.gz', '${cran_archive}/waldo/waldo_0.5.3.tar.gz'), repos = NULL, lib = '${R_LIB_PATH}', dependencies = FALSE)"
 else
     # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
     # This should be unnecessary on R >=4.4.0
