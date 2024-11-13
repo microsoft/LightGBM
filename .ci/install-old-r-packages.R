@@ -67,7 +67,8 @@ print("--- group 3 ---")
 
 print("--- group 4 ----")
 .install_packages(c(
-    "tibble/tibble_3.2.0.tar.gz"
+    "pillar/pillar_1.8.1.tar.gz"
+    , "tibble/tibble_3.2.0.tar.gz"
 ))
 
 print("--- group 5 ---")
@@ -80,6 +81,5 @@ print("---- group 6 ----")
 .install_packages(c(
     "pkgbuild/pkgbuild_1.4.4.tar.gz"
     , "pkgload/pkgload_1.3.4.tar.gz"
-    , "pillar/pillar_1.8.1.tar.gz"
     , "testthat/testthat_3.2.1.tar.gz"
 ))
