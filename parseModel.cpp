@@ -22,6 +22,7 @@ struct Sizes {
     int maxthresholdsize;
     int maxfeaturesize;
 };
+int maxfeaturetype = 255;
 Sizes size = {0,0,0,0};
 std::vector<Tree> parse_trees_from_file(const std::string& filename, std::vector<int>& features, std::vector<float>& thresholds, int &max_depth) {
     std::ifstream file(filename);
@@ -100,7 +101,7 @@ void printNode(std::ostream& out, Tree tree, int i, std::vector<int> features, s
     }
 }
 
-void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features, std::vector<float> thresholds, std::string output) {
+void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features, const std::vector<float>& thresholds, std::string output) {
     features.erase(std::remove(features.begin(), features.end(), -1), features.end());
     std::ofstream out(output + ".h");
     out << "#pragma once" << "\n";
@@ -110,8 +111,7 @@ void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features
     out << "\t\t\tfloat Predict(const float values[" << size.featuresize << "]) {\n";
     out << "\t\t\t\tfloat result = 0;\n";
     int counter = 0;
-    for (int i = 0; i < trees.size(); i++) {
-        Tree tree = trees[i];
+    for (auto tree : trees) {
         out << "\t\t\t\t// tree " << counter << " ...\n";
         printNode(out, tree, 0, features, thresholds);
         counter++;
@@ -125,33 +125,13 @@ void generate_cpp_file(const std::vector<Tree>& trees, std::vector<int> features
 
 template <typename T>
 std::string genArray(std::string name, std::vector<T> array) {
-    std::string tmp = "";
-    name == "" ? tmp += "{": tmp += "\t\t\t" + name + " = {";
-    for (auto element : array) {
+    std::string tmp;
+    name.empty() ? tmp += "{": tmp += "\t\t\t" + name + " = {";
+    for (T element : array) {
         if (element == -1) {
-            tmp += "-1, ";
+            tmp += "-1,";
         } else {
-            tmp += std::to_string(element) + ", ";
-        }
-    }
-    if (!tmp.empty()) {
-        tmp.pop_back();
-        tmp.pop_back();
-    }
-    tmp += "};\n";
-    return tmp;
-}
-
-
-template <typename T, typename T2>
-std::string genArray(std::string name, std::vector<T> array, std::vector<T2> array_values) {
-    std::string tmp = "";
-    name == "" ? tmp += "{": tmp += "\t\t\t" + name + " = {";
-    for (auto element : array) {
-        if (element == -1) {
-            tmp += "-1, ";
-        } else {
-            tmp += std::to_string(array_values[element]) + ", ";
+            tmp += "float16(" + std::to_string(element) + "), ";
         }
     }
     if (!tmp.empty()) {
@@ -167,7 +147,7 @@ void genArraySingle(std::ostream& out, std::string writename, int indentLevel, s
     std::string indent(indentLevel, '\t');
     for (int i = 0; i< array.size(); i++) {
         if (array[i] == -1) {
-            out << indent << writename << "[" << i << "] = -1;\n";
+            out << indent << writename << "[" << i << "] = " << maxfeaturetype << ";\n";
         } else {
             out << indent << writename << "[" << i << "] = " << array_values[array[i]] << ";\n";
         }
@@ -184,28 +164,28 @@ void genArraySingle(std::ostream& out, std::string writename, int indentLevel, s
         }
     }
 }
-void genTree(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features) {
+void genTree(std::ostream& out, Tree tree, int i, int indentLevel, std::vector<int> features, std::vector<float> thresholds) {
     std::string indent(indentLevel, '\t');
     genArraySingle(out, "features", indentLevel, tree.feature_ids, features);
-    genArraySingle(out, "thresholdids", indentLevel, tree.thresholds_ids);
+    genArraySingle(out, "thresholds", indentLevel, tree.thresholds_ids, thresholds);
 }
 
-void generatePredictTree(std::ostream& out, std::string featuretype, std::string thresholdtype) {
+void generatePredictTree(std::ostream& out, std::string featuretype) {
     std::string indent(3, '\t');
 
-    out << "\t\tfloat PredictTree(const " << featuretype << "* features, const " << thresholdtype << "* threshold_ids, const float thresholds[" << size.thresholdssize << "], const float values[" << size.featuresize << "]) {\n";
+    out << "\t\tfloat16 PredictTree(const " << featuretype << "* features, const float16 thresholds[" << size.maxthresholdsize << "], const float values[" << size.featuresize << "]) {\n";
     out << indent << "int node = 0;" << "\n";
-    out << indent << "float threshold = 0.0;" << "\n";
+    out << indent << "float16 threshold = 0.0;" << "\n";
     out << indent << "int max_depth =" << size.max_depth << ";\n";
     out << indent << "int featureid = 0;\n";
 
     out << indent << "for (int i = 0; i < max_depth; i++) {" << "\n";
     out << indent << "\tfeatureid = features[node];" << "\n";
-    out << indent << "\tthreshold = thresholds[threshold_ids[node]];" << "\n";
-    out << indent << "\tif (featureid == -1) {" << "\n";
+    out << indent << "\tthreshold = thresholds[node];" << "\n";
+    out << indent << "\tif (featureid == " << maxfeaturetype <<") {" << "\n";
     out << indent << "\t\treturn threshold;" << "\n";
     out << indent << "\t}" << "\n";
-    out << indent << "\tvalues[featureid] <= threshold ? node = 2 * node + 1 : node = 2 * node + 2;" << "\n";
+    out << indent << "\tvalues[featureid] <= threshold.toFloat() ? node = 2 * node + 1 : node = 2 * node + 2;" << "\n";
     out << indent << "}" << "\n";
     out << indent << "return threshold;" << "\n";
     out << "\t\t}" << "\n";
@@ -215,33 +195,31 @@ void generate_cpp_loop(const std::vector<Tree>& trees, std::vector<int> features
     features.erase(std::remove(features.begin(), features.end(), -1), features.end());
     std::ofstream out(output + "_loop" + ".h");
     out << "#pragma once" << "\n";
+    out << "#include \"float16.h\"\n";
     out << "namespace LightGBM { " << "\n";
     out << "\tclass CovTypeClassifier {" << "\n";
     out << "\tpublic:" << "\n";
     out << "\t\tfloat Predict(const float values[" << size.featuresize << "]) {\n";
     int counter = 0;
-    std::string typefeature = "int";
-    std::string typethreshold = "int";
-    if (size.featuresize < 255) {
+    std::string typefeature = "word";
+    // As byte can not be negative we need 255 to represent -1.
+    if (size.featuresize < 254) {
         typefeature = "byte";
+        maxfeaturetype = 255;
+    } else {
+        maxfeaturetype = 65535;
     }
-    if (size.thresholdssize < 255) {
-        typethreshold = "byte";
-    }
-
-    out << genArray("float thresholds[" + std::to_string(thresholds.size()) + "]", thresholds);
-    out << "\t\t\tfloat result = 0;\n";
-
+    out << "\t\t\tfloat16 result = 0;\n";
     out << "\t\t\t" << typefeature << " *features = NULL;\n";
-    out << "\t\t\t" << typethreshold << " *thresholdids = NULL;\n";
+    out << "\t\t\t" << "float16 *thresholds = NULL;\n";
     out << "\t\t\tfeatures = malloc(" << trees[0].feature_ids.size() << "* sizeof ("<< typefeature << "));\n";
-    out << "\t\t\tthresholdids = malloc(" << trees[0].thresholds_ids.size() << "* sizeof ("<< typethreshold << "));\n";
+    out << "\t\t\tthresholds = malloc(" << trees[0].thresholds_ids.size() << "* sizeof (float16));\n";
 
     for (int i = 0; i < trees.size(); i++) {
         out << "\t\t\t// Tree " << i << "\n";
-        genTree(out, trees[i], i, 3, features);
+        genTree(out, trees[i], i, 3, features, thresholds);
         Tree tree = trees[i];
-        out << "\t\t\tresult += PredictTree( features, thresholdids, thresholds, values);\n";
+        out << "\t\t\tresult += PredictTree( features, thresholds, values);\n";
         counter++;
         if (tree.feature_ids.size() > size.maxfeaturesize) {
             size.maxfeaturesize = tree.feature_ids.size();
@@ -250,10 +228,9 @@ void generate_cpp_loop(const std::vector<Tree>& trees, std::vector<int> features
             size.maxthresholdsize = tree.thresholds_ids.size();
         }
     }
-    out << "\t\t\treturn 1.0f / (1.0f + exp(-1.0 * result));\n";
+    out << "\t\t\treturn 1.0f / (1.0f + exp(-1.0 * result.toFloat()));\n";
     out << "\t\t}\n";
-    // TODO: Currently we take the max in any tree. Does it make a difference to have multiple functions in case a tree is smaller?
-    generatePredictTree(out, typefeature, typethreshold);
+    generatePredictTree(out, typefeature);
 
     out << "\t};" << "\n";
     out << "}" << "\n";

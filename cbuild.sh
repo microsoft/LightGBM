@@ -14,14 +14,20 @@ fi
 
 
 cd experiments || exit
-rm train?.output train.output
-rm model?.txt
-
-"../lightgbm" config=train.conf output_model=model1.txt > train.output
+rm -rf Model
+rm -rf Output
+mkdir Model
+mkdir Output
+# $(seq 5 5 40)
+for i in 2; do
+  for j in 3; do
+    "../lightgbm" config=train.conf num_trees=$i max_depth=$j output_model=Model/model_trees${i}_depth${j}.txt > Output/train_trees${i}_depth${j}.output
+  done
+done
 # python3 calcAccuracy.py >> Accuracy.txt
 
 cd ..
-cd examples/binary_classification || exit
-"../../lightgbm" config=train.conf output_model=model1.txt > train.output
-cd ../..
+#cd examples/binary_classification || exit
+#"../../lightgbm" config=train.conf output_model=model1.txt > train.output
+#cd ../..
 # python3 plot_model.py

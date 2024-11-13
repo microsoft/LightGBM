@@ -249,6 +249,9 @@ class BinMapper {
       return str_buf.str();
     }
   }
+  inline double getMinVal() const { return min_val_; }
+  inline std::vector<double> getBinUpperBound() const { return bin_upper_bound_; }
+  inline double getMaxVal() const { return max_val_; }
   MinMax getMinAndMax(double threshold) const {
     if (false) {
       // TODO CLEARUP MINMAX
