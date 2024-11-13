@@ -45,27 +45,31 @@ print("---- group 2 ----")
 .install_packages(c(
     "desc/desc_1.4.2.tar.gz"
     , "diffobj/diffobj_0.3.4.tar.gz"
+    , "lifecycle/lifecycle_1.0.3.tar.gz"
     , "processx/processx_3.8.3.tar.gz"
 ))
 
-print("--- group 3 ----")
+print("--- group 3 ---")
+.install_packages(c(
+    "callr/callr_3.7.5.tar.gz"
+    , "vctrs/vctrs_0.6.4.tar.gz"
+))
+
+print("--- group 4 ----")
 .install_packages(c(
     "tibble/tibble_3.2.0.tar.gz"
 ))
 
-print("--- group 4 ---")
+print("--- group 5 ---")
 .install_packages(c(
     "rematch2/rematch2_2.1.1.tar.gz"
     , "waldo/waldo_0.5.3.tar.gz"
 ))
 
-print("---- group 5 ----")
+print("---- group 6 ----")
 .install_packages(c(
-    "callr/callr_3.7.5.tar.gz"
-    , "lifecycle/lifecycle_1.0.3.tar.gz"
-    , "pkgbuild/pkgbuild_1.4.4.tar.gz"
+    "pkgbuild/pkgbuild_1.4.4.tar.gz"
     , "pkgload/pkgload_1.3.4.tar.gz"
     , "pillar/pillar_1.8.1.tar.gz"
     , "testthat/testthat_3.2.1.tar.gz"
-    , "vctrs/vctrs_0.6.4.tar.gz"
 ))
