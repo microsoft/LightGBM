@@ -33,6 +33,7 @@ print("---- group 1 ----")
     , "lattice/lattice_0.20-41.tar.gz"
     , "magrittr/magrittr_2.0.2.tar.gz"
     , "pkgconfig/pkgconfig_2.0.2.tar.gz"
+    , "ps/ps_1.8.0.tar.gz"
     , "R6/R6_2.5.0.tar.gz"
     , "rlang/rlang_1.1.3.tar.gz"
     , "rprojroot/rprojroot_2.0.3.tar.gz"
@@ -42,22 +43,25 @@ print("---- group 1 ----")
 
 print("---- group 2 ----")
 .install_packages(c(
-    "diffobj/diffobj_0.3.4.tar.gz"
+    "desc/desc_1.4.2.tar.gz"
+    , "diffobj/diffobj_0.3.4.tar.gz"
 ))
 
-print("---- group 3 ----")
+print("--- group 3 ----")
+.install_packages(c(
+    "waldo/waldo_0.5.3.tar.gz"
+))
+
+print("---- group 4 ----")
 .install_packages(c(
     "callr/callr_3.7.5.tar.gz"
-    , "desc/desc_1.4.2.tar.gz"
     , "lifecycle/lifecycle_1.0.3.tar.gz"
     , "pkgbuild/pkgbuild_1.4.4.tar.gz"
     , "pkgload/pkgload_1.3.4.tar.gz"
     , "pillar/pillar_1.8.1.tar.gz"
     , "processx/processx_3.8.3.tar.gz"
-    , "ps/ps_1.8.0.tar.gz"
     , "rematch2/rematch2_2.1.1.tar.gz"
     , "testthat/testthat_3.2.1.tar.gz"
     , "tibble/tibble_3.2.0.tar.gz"
     , "vctrs/vctrs_0.6.4.tar.gz"
-    , "waldo/waldo_0.5.3.tar.gz"
 ))
