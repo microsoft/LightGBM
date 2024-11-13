@@ -6,9 +6,10 @@
 
 .install_packages <- function(packages) {
     install.packages(
-        pkgs = c(
-            paste("https://cran.r-project.org/src/contrib/Archive", packages, sep = "/")
-            , "https://cran.r-project.org/src/contrib/praise_1.0.0.tar.gz"
+        pkgs = paste(
+            "https://cran.r-project.org/src/contrib/Archive"
+            , packages
+            , sep = "/"
         )
         , dependencies = FALSE
         , lib = Sys.getenv("R_LIBS")
@@ -19,6 +20,15 @@
 # when confronted with a bunch of URLs like this, install.packages() sometimes
 # struggles to determine install order... so install packages in batches here,
 # starting from the root of the dependency graph and working up
+
+# there was only a single release of {praise}, so there is no contrib/Archive link for it
+install.packages(
+    pkgs = "https://cran.r-project.org/src/contrib/praise_1.0.0.tar.gz"
+    , dependencies = FALSE
+    , lib = Sys.getenv("R_LIBS")
+    , repos = NULL
+)
+
 print("---- group 1 ----")
 .install_packages(c(
     "brio/brio_1.1.4.tar.gz"
