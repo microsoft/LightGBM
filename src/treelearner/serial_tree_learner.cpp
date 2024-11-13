@@ -81,7 +81,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   /*[tinygbdt] BEGIN: Initializing global variables */
   if (MemoryRestrictedForest::IsEnable(config_)) {
     mrf_.reset(new MemoryRestrictedForest(this));
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
   /*[tinygbdt] END */
 }
@@ -144,7 +144,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
     cegb_->Init();
   }
   if (mrf_ != nullptr) {
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
 }
 
@@ -188,7 +188,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     if (mrf_ == nullptr) {
       mrf_.reset(new MemoryRestrictedForest(this));
     }
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
@@ -250,7 +250,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     gradient_discretizer_->RenewIntGradTreeOutput(tree.get(), config_, data_partition_.get(), gradients_, hessians_,
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
-
+  Log::Debug(mrf_->printForest().c_str());
   return tree.release();
 }
 
@@ -1025,7 +1025,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
+    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx, bin_mapper);
     // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
     // TODO find some fancy way to include the leftovermemory.
     // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
