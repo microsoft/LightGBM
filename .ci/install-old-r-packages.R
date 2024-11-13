@@ -10,6 +10,7 @@
             paste("https://cran.r-project.org/src/contrib/Archive", packages, sep = "/")
             , "https://cran.r-project.org/src/contrib/praise_1.0.0.tar.gz"
         )
+        , dependencies = FALSE
         , lib = Sys.getenv("R_LIBS")
         , repos = NULL
     )
