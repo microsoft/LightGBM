@@ -952,7 +952,7 @@ def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(c
 @pytest.mark.parametrize("order", ["C", "F"])
 @pytest.mark.parametrize("dtype", ["float32", "int64"])
 def test_no_copy_in_dataset_from_numpy_2d(order, dtype):
-    X = np.random.rand(100, 3)
+    X = np.random.default_rng().random(size=(100, 3))
     X = np.require(X, dtype=dtype, requirements=order)
     X1d = lgb.basic._np2d_to_np1d(X)
     if dtype == "float32":
