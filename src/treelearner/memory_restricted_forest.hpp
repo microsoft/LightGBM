@@ -27,7 +27,7 @@ namespace LightGBM {
     std::vector<double> thresholds;
   };
   std::ostream & operator << (std::ostream & outs, const ref_tree & ref_t) {
-    outs << ref_t.tree_id << ": ";
+    outs << ref_t.tree_id << " -> ";
     for (double feature : ref_t.feature_ids) {
       outs << feature << " ";
     }
@@ -51,6 +51,7 @@ namespace LightGBM {
     for (double threshold : feature.thresholds) {
       out << threshold << " ";
     }
+    return out;
   }
   struct feature_thresholds {
     int feature_id;
@@ -89,17 +90,17 @@ namespace LightGBM {
     }
 
     void UpdateMemoryForTree(Tree* tree) {
+      Log::Info("Update Memory For Tree %d %d", treecounter, est_leftover_memory);
       treecounter++;
-      ref_trees_[treecounter] = {};
+      ref_trees_.push_back({});
       ref_trees_[treecounter].tree_id = treecounter;
-
       tree_size_.push_back(tree->getNumberNodes());
     }
     void InsertSplitInfo(const Tree *tree, const Dataset *train_data_) {
       const int last_node_id = tree->num_leaves_ - 2;
       // TODO: merge following lines, but depends on if/how we implement rounding.
       const double threshold = RoundDecimals(tree->threshold_[last_node_id], this->precision);
-      printf("original threshold: %f, rounded threshold: %f \n", tree->threshold_[last_node_id], threshold);
+      // printf("original threshold: %f, rounded threshold: %f \n", tree->threshold_[last_node_id], threshold);
       const uint32_t feature = tree->split_feature_[last_node_id];
       const BinMapper *bin_mapper = train_data_->FeatureBinMapper(feature);
       consumed_memory con_mem = {};
@@ -147,16 +148,17 @@ namespace LightGBM {
     double CalculateSplitMemoryConsumption(consumed_memory &con_mem, double threshold, uint32_t feature, const BinMapper *bin_mapper) {
       // Insert the memory consumption of the two global tables.
       std::vector<uint32_t>::iterator feature_it;
-      threshold = RoundDecimals(threshold, this->precision);
+      // threshold = RoundDecimals(threshold, this->precision);
       std::vector<double>::iterator threshold_it = std::find(thresholds_used_global_.begin(),
                                                             thresholds_used_global_.end(), threshold);
       feature_it = std::find(features_used_global_.begin(), features_used_global_.end(), feature);
       // In case the feature is not used 8 bits are added for representing a bits_single and bits_ref.
       int bits_needed = 0;
-
       if (feature_it == features_used_global_.end()) {
         std::vector<double> bin_bounds = bin_mapper->getBinUpperBound();
-        // Guessing the bits needed - wow.
+        if (isAllBool(bin_bounds)) {
+          bits_needed = 1;
+        }
         if (isAllBool(bin_bounds)) {
           bits_needed = 1;
         } else if (isAllInteger(bin_bounds)) {
@@ -171,7 +173,7 @@ namespace LightGBM {
         size_t fug_size_ = featureinfo_used_global_.size();
         size_t next_power_of_two = static_cast<size_t>(std::pow(2, std::ceil(std::log2(fug_size_ + 1))));
         if (fug_size_ + 2 > next_power_of_two) {
-          int feature_counter;
+          int feature_counter = 0;
           for (ref_tree tree : ref_trees_) {
             for (int feature_id : tree.feature_ids) {
               if (feature_id == feature) {
@@ -222,7 +224,7 @@ namespace LightGBM {
 
     static bool IsEnable(const Config *config) {
       if (config->tinygbdt_forestsize == 0) {
-        Log::Debug("MemoryRestrictedForest disabled");
+        Log::Info("MemoryRestrictedForest disabled");
         return false;
       }
       if (config->num_iterations != 100 && config->max_depth > 0) {
@@ -240,39 +242,32 @@ namespace LightGBM {
 
     void Init(const int treesize, const double precision, int max_depth_) {
       max_depth = max_depth_;
-      ref_trees_[treecounter] = {};
+      ref_trees_.push_back({});
       ref_trees_[treecounter].tree_id = treecounter;
       est_leftover_memory = treesize;
       this->precision = precision;
     }
-    std::string printForest() const {
+    void printForest() {
       std::stringstream out;
-      Common::C_stringstream(out);
-
-      using CommonC::ArrayToString;
-      out << "Consumed memory: " << est_leftover_memory << "\n";
-      out << "Thresholds used: ";
+      out << "Leftover memory: " << est_leftover_memory;
+      out << "\nThresholds used: ";
       for (double threshold : thresholds_used_global_) {
         out << threshold << " ";
       }
-      out << "\n";
-      out << "Features used: ";
+      out << "\nFeatures used: ";
       for (int feature : features_used_global_) {
-        out << feature;
+        out << feature << " ";
       }
-      out << "\n";
-      out << "Tree Information collected: ";
-      for (ref_tree ref_tree : ref_trees_) {
-        out << ref_tree;
-        out << "\n";
+      out << "\nTree Information collected: ";
+      for (ref_tree refe_tree : ref_trees_) {
+        out << refe_tree << "; ";
       }
-      out << "\n";
-      out << "Feature Information collected: ";
+      out << "\nFeature Information collected: ";
       for (feature_info feature : featureinfo_used_global_) {
-        out << feature;
-        out << "\n";
+        out << feature << "; ";
       }
-      return out.str();
+      out << "\n";
+      std::cout << out.str();
     }
     bool init_;
     int est_leftover_memory{};
