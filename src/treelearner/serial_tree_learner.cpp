@@ -81,7 +81,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
   /*[tinygbdt] BEGIN: Initializing global variables */
   if (MemoryRestrictedForest::IsEnable(config_)) {
     mrf_.reset(new MemoryRestrictedForest(this));
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
   /*[tinygbdt] END */
 }
@@ -144,7 +144,7 @@ void SerialTreeLearner::ResetTrainingDataInner(const Dataset* train_data,
     cegb_->Init();
   }
   if (mrf_ != nullptr) {
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
 }
 
@@ -188,7 +188,7 @@ void SerialTreeLearner::ResetConfig(const Config* config) {
     if (mrf_ == nullptr) {
       mrf_.reset(new MemoryRestrictedForest(this));
     }
-    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision);
+    mrf_->Init(config_->tinygbdt_forestsize, config_->tinygbdt_precision, config_->max_depth);
   }
   constraints_.reset(LeafConstraintsBase::Create(config_, config_->num_leaves, train_data_->num_features()));
 }
@@ -250,7 +250,7 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     gradient_discretizer_->RenewIntGradTreeOutput(tree.get(), config_, data_partition_.get(), gradients_, hessians_,
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
-
+  mrf_->printForest();
   return tree.release();
 }
 
@@ -1025,24 +1025,20 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
-    // Let's just assume for a first try that we reduce the the gain only by the last 90 % ...
-    // TODO find some fancy way to include the leftovermemory.
-    // TODO In case we are using a "new" threshold it needs to be saved in the new_split.
-    // However, the new_split just saves the bin id for the upper bound.
+    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx, bin_mapper);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
-        new_split.gain *= 0.95;
+        new_split.gain *= config_->tinygbdt_penalty_feature;
       else 
-        new_split.gain *= 0.97;
+        new_split.gain *= config_->tinygbdt_penalty_split;
     } else {
       if (con_mem.new_feature)
-        new_split.gain *= 0.99;
+        new_split.gain *= config_->tinygbdt_penalty_feature;
     }
     // In case the memory that is left can only store the number of leaves that have to be inserted abort the calc.
-    if ((int)(std::pow(2, config_->max_depth) * 6) > mrf_->est_leftover_memory) {
+    if (mrf_->est_leftover_memory < 0) {
       new_split.gain = 0;
-      printf("TINYGBDT aborted as %d leaves would consume %d bytes est memory %d\n", (int)std::pow(2, config_->max_depth), (int)(std::pow(2, config_->max_depth) * 6), mrf_->est_leftover_memory);
+      //Log::Debug(mrf_->printForest().c_str());
     }
   }
   /*[tinygbdt] END */
