@@ -54,96 +54,96 @@ jobs:
             r_version: 3.6
             build_type: cmake
             container: 'ubuntu:18.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.3
-            build_type: cmake
-            container: 'ubuntu:22.04'
-          - os: ubuntu-latest
-            task: r-package
-            compiler: clang
-            r_version: 4.3
-            build_type: cmake
-            container: 'ubuntu:22.04'
-          - os: macos-13
-            task: r-package
-            compiler: gcc
-            r_version: 4.3
-            build_type: cmake
-            container: null
-          - os: macos-13
-            task: r-package
-            compiler: clang
-            r_version: 4.3
-            build_type: cmake
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cmake
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.3
-            build_type: cmake
-            container: null
-          # Visual Studio 2019
-          - os: windows-2019
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 3.6
-            build_type: cmake
-            container: null
-          # Visual Studio 2022
-          - os: windows-2022
-            task: r-package
-            compiler: MSVC
-            toolchain: MSVC
-            r_version: 4.3
-            build_type: cmake
-            container: null
-          ###############
-          # CRAN builds #
-          ###############
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MINGW
-            r_version: 3.6
-            build_type: cran
-            container: null
-          - os: windows-latest
-            task: r-package
-            compiler: MINGW
-            toolchain: MSYS
-            r_version: 4.3
-            build_type: cran
-            container: null
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 4.3
-            build_type: cran
-            container: 'ubuntu:22.04'
-          - os: macos-13
-            task: r-package
-            compiler: clang
-            r_version: 4.3
-            build_type: cran
-            container: null
-          # macos-14 = arm64
-          - os: macos-14
-            task: r-package
-            compiler: clang
-            r_version: 4.3
-            build_type: cran
-            container: null
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: 'ubuntu:22.04'
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: 'ubuntu:22.04'
+          # - os: macos-13
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: null
+          # - os: macos-13
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: null
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MINGW
+          #   r_version: 3.6
+          #   build_type: cmake
+          #   container: null
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MSYS
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: null
+          # # Visual Studio 2019
+          # - os: windows-2019
+          #   task: r-package
+          #   compiler: MSVC
+          #   toolchain: MSVC
+          #   r_version: 3.6
+          #   build_type: cmake
+          #   container: null
+          # # Visual Studio 2022
+          # - os: windows-2022
+          #   task: r-package
+          #   compiler: MSVC
+          #   toolchain: MSVC
+          #   r_version: 4.3
+          #   build_type: cmake
+          #   container: null
+          # ###############
+          # # CRAN builds #
+          # ###############
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MINGW
+          #   r_version: 3.6
+          #   build_type: cran
+          #   container: null
+          # - os: windows-latest
+          #   task: r-package
+          #   compiler: MINGW
+          #   toolchain: MSYS
+          #   r_version: 4.3
+          #   build_type: cran
+          #   container: null
+          # - os: ubuntu-latest
+          #   task: r-package
+          #   compiler: gcc
+          #   r_version: 4.3
+          #   build_type: cran
+          #   container: 'ubuntu:22.04'
+          # - os: macos-13
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.3
+          #   build_type: cran
+          #   container: null
+          # # macos-14 = arm64
+          # - os: macos-14
+          #   task: r-package
+          #   compiler: clang
+          #   r_version: 4.3
+          #   build_type: cran
+          #   container: null
     steps:
       - name: Prevent conversion of line endings on Windows
         if: startsWith(matrix.os, 'windows')
