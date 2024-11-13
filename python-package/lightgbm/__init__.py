@@ -16,7 +16,6 @@ try:
     from .sklearn import LGBMClassifier, LGBMModel, LGBMRanker, LGBMRegressor
 except ImportError:
     pass
-
 try:
     from .plotting import create_tree_digraph, plot_importance, plot_metric, plot_split_value_histogram, plot_tree
 except ImportError:
