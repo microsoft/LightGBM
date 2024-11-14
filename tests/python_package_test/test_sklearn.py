@@ -43,7 +43,7 @@ from .utils import (
 )
 
 SKLEARN_MAJOR, SKLEARN_MINOR, *_ = _sklearn_version.split(".")
-SKLEARN_VERSION_GTE_1_6 = int(SKLEARN_MAJOR) >= 1 and int(SKLEARN_MINOR) >= 6
+SKLEARN_VERSION_GTE_1_6 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 6)
 
 decreasing_generator = itertools.count(0, -1)
 estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
@@ -1450,7 +1450,7 @@ def test_getting_feature_names_in_pd_input(estimator_class):
 # This block defines a patched version of parametrize_with_checks() so lightgbm's tests
 # can be compatible with scikit-learn <1.6 and >=1.6.
 #
-# This should be removed minimum supported scikit-learn version is at least 1.6.
+# This should be removed once minimum supported scikit-learn version is at least 1.6.
 if SKLEARN_VERSION_GTE_1_6:
     parametrize_with_checks = sklearn_parametrize_with_checks
 else:
