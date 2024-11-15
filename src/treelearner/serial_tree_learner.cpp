@@ -291,6 +291,7 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const score_t* 
 
 void SerialTreeLearner::updateMemoryForLeaf(double val) {
   if (MemoryRestrictedForest::IsEnable(config_)) {
+#pragma omp critical
     mrf_->InsertLeafInformation(val);
   }
 }
@@ -301,7 +302,9 @@ void SerialTreeLearner::updateMemoryForLeaves(Tree * tree, std::vector<double> l
     }
   }
   if (MemoryRestrictedForest::IsEnable(config_)) {
+#pragma omp critical
     mrf_->UpdateMemoryForTree(tree);
+#pragma omp critical
     tree->ToArrayPointer(mrf_->features_used_global_, mrf_->thresholds_used_global_, config_->tinygbdt_precision);
   }
 }
@@ -946,6 +949,7 @@ void SerialTreeLearner::SplitInner(Tree* tree, int best_leaf, int* left_leaf,
     RecomputeBestSplitForLeaf(tree, leaf, &best_split_per_leaf_[leaf]);
   }
   if (mrf_ != nullptr) {
+#pragma omp critical
     mrf_->InsertSplitInfo(tree, train_data_);
   }
 }
@@ -1024,6 +1028,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
+#pragma omp critical
     mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
