@@ -250,7 +250,6 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
     gradient_discretizer_->RenewIntGradTreeOutput(tree.get(), config_, data_partition_.get(), gradients_, hessians_,
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
-  mrf_->printForest();
   return tree.release();
 }
 
