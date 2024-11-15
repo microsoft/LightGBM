@@ -12,19 +12,19 @@ else
     exit 1
 fi
 
-
 cd experiments || exit
 rm -rf Model
 rm -rf Output
 mkdir Model
 mkdir Output
 # $(seq 5 5 40)
-for i in 2; do
-  for j in 3; do
+
+for i in 20 30; do
+  for j in 3 5; do
+    echo "${i} ${j}"
     "../lightgbm" config=train.conf num_trees=$i max_depth=$j output_model=Model/model_trees${i}_depth${j}.txt > Output/train_trees${i}_depth${j}.output
   done
 done
-# python3 calcAccuracy.py >> Accuracy.txt
 
 cd ..
 #cd examples/binary_classification || exit

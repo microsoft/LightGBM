@@ -1025,7 +1025,7 @@ void SerialTreeLearner::ComputeBestSplitForFeature(
     consumed_memory con_mem = {};
     const BinMapper* bin_mapper = train_data_->FeatureBinMapper(feature_index);
     double threshold = bin_mapper->BinToValue(new_split.threshold);
-    float alt_threshold = mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx, bin_mapper);
+    mrf_->CalculateSplitMemoryConsumption(con_mem, threshold, real_fidx);
     if (con_mem.new_threshold) {
       if (con_mem.new_feature)
         new_split.gain *= config_->tinygbdt_penalty_feature;
