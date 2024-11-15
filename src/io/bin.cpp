@@ -23,12 +23,6 @@ namespace LightGBM {
   BinMapper::BinMapper(): num_bin_(1), is_trivial_(true), bin_type_(BinType::NumericalBin) {
     bin_upper_bound_.clear();
     bin_upper_bound_.push_back(std::numeric_limits<double>::infinity());
-    if (false) {
-      // TODO CLEARUP MINMAX
-      bin_minmax_values_.clear();
-      MinMax minmax;
-      bin_minmax_values_.push_back(minmax);
-    }
   }
 
   // deep copy function for BinMapper
@@ -48,7 +42,6 @@ namespace LightGBM {
     max_val_ = other.max_val_;
     default_bin_ = other.default_bin_;
     most_freq_bin_ = other.most_freq_bin_;
-    bin_minmax_values_ = other.bin_minmax_values_;
   }
 
   BinMapper::BinMapper(const void* memory) {
@@ -510,7 +503,6 @@ namespace LightGBM {
     } else {
       sparse_rate_ = 1.0f;
     }
-    //bin_minmax_values_.resize(num_bin_);
   }
 
   void BinMapper::CopyTo(char * buffer) const {

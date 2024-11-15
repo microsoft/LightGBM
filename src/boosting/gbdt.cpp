@@ -422,7 +422,7 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         new_tree->AsConstantTree(init_scores[cur_tree_id]);
       }
     }
-    tree_learner_->updateMemoryForLeaves(new_tree.get(), new_tree->GetLeaves());
+    // tree_learner_->updateMemoryForLeaves(new_tree.get(), new_tree->GetLeaves());
 
     // add model
     models_.push_back(std::move(new_tree));

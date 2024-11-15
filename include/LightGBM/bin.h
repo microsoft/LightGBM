@@ -28,25 +28,6 @@ enum MissingType {
   Zero,
   NaN
 };
-struct MinMax {
-  double Min;
-  double Max;
-  MinMax(){
-    Min = std::numeric_limits<double>::infinity();
-    Max = -std::numeric_limits<double>::infinity();
-  }
-  bool operator==(const MinMax& mm) const {
-     return (Min == mm.Min)
-     && (Max == mm.Max);
-  }
-  bool operator!=(const MinMax& mm) const {
-    return !operator==(mm);
-  }
-  void setMin(const double min) {Min = min;}
-  void setMax(const double max) {Max = max;}
-  double getMin() const {return Min; }
-  double getMax() const {return Max; }
-};
 
 typedef double hist_t;
 typedef int32_t int_hist_t;
@@ -252,44 +233,6 @@ class BinMapper {
   inline double getMinVal() const { return min_val_; }
   inline std::vector<double> getBinUpperBound() const { return bin_upper_bound_; }
   inline double getMaxVal() const { return max_val_; }
-  MinMax getMinAndMax(double threshold) const {
-    if (false) {
-      // TODO CLEARUP MINMAX
-      int counter = 0;
-      for (int i = 0; i < num_bin_; i++) {
-        if (threshold <= bin_minmax_values_[i].getMax() && !(threshold > bin_minmax_values_[i+1].getMin())) {
-          counter = i;
-          break;
-        }
-      }
-
-      // In case we are in the last bin, or the first bin we need to change to -infinity and +infinity.
-      MinMax minmax;
-      minmax.setMin(bin_minmax_values_[counter-1].Max);
-      minmax.setMax(bin_minmax_values_[counter].Min);
-
-      return minmax;
-    }
-  }
-
-  void setMinAndMax(const double value) {
-    if (false) {
-      // TODO CLEARUP MINMAX
-      int count = 0;
-      for (int i = 0; i < num_bin_; i++) {
-        if (value > bin_upper_bound_[i])
-          count = i + 1;
-      }
-
-      MinMax minmax;
-      if (value < bin_minmax_values_[count].getMin()) {
-        bin_minmax_values_[count].setMin(value);
-      }
-      if (value > bin_minmax_values_[count].getMax()) {
-        bin_minmax_values_[count].setMax(value);
-      }
-    }
-  }
 
  private:
   /*! \brief Number of bins */
@@ -297,8 +240,6 @@ class BinMapper {
   MissingType missing_type_;
   /*! \brief Store upper bound for each bin */
   std::vector<double> bin_upper_bound_;
-    /*! \brief Store min and max value inside the bin */
-  std::vector<MinMax> bin_minmax_values_;
   /*! \brief True if this feature is trivial */
   bool is_trivial_;
   /*! \brief Sparse rate of this bins( num_bin0/num_data ) */
@@ -389,8 +330,6 @@ class Bin {
   /*! \brief Number of all data */
   virtual data_size_t num_data() const = 0;
 
-  double max = 0;
-  double min = DBL_MAX;
   /*! \brief Get data pointer */
   virtual void* get_data() = 0;
 
