@@ -49,6 +49,7 @@ class MemoryRestrictedForest;
 class SerialTreeLearner: public TreeLearner {
  public:
   friend CostEfficientGradientBoosting;
+  friend MemoryRestrictedForest;
   explicit SerialTreeLearner(const Config* config);
 
   ~SerialTreeLearner();
