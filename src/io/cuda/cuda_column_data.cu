@@ -49,11 +49,11 @@ void CUDAColumnData::LaunchCopySubrowKernel(void* const* in_cuda_data_by_column)
   const int num_blocks = (num_used_indices_ + COPY_SUBROW_BLOCK_SIZE_COLUMN_DATA - 1) / COPY_SUBROW_BLOCK_SIZE_COLUMN_DATA;
   CopySubrowKernel_ColumnData<<<num_blocks, COPY_SUBROW_BLOCK_SIZE_COLUMN_DATA>>>(
     in_cuda_data_by_column,
-    cuda_column_bit_type_,
-    cuda_used_indices_,
+    cuda_column_bit_type_.RawData(),
+    cuda_used_indices_.RawData(),
     num_used_indices_,
     num_columns_,
-    cuda_data_by_column_);
+    cuda_data_by_column_.RawData());
 }
 
 }  // namespace LightGBM
