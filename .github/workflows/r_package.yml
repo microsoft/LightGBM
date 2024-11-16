@@ -274,6 +274,7 @@ jobs:
           - clang19
           - gcc14
           - intel
+          - rchk
     runs-on: ubuntu-latest
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
@@ -311,8 +312,32 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
+
+          # 'rchk' isn't run through 'R CMD check', use the approach documented at
+          # https://r-hub.github.io/containers/local.html
+          if [[ "${{ matrix.image }}" =~ "rchk" ]]; then
+            r-check "$(pwd)" \
+            | tee ./rchk-logs.txt 2>&1
+
+            # the '-v' exceptions below are from R/rchk itself and not LightGBM:
+            # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+            if grep -E '\[PB\]|ERROR' ./rchk-logs.txt \
+               | grep -v 'too many states' \
+               > /dev/null; \
+            then
+                echo "rchk found issues"
+                exit 1
+            else
+                echo "rchk did not find any issues"
+                exit 0
+            fi
+          fi
+
+          # 'testthat' is not needed by 'rchk', so avoid installing it until here
+          Rscript -e "install.packages('testthat', repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+
           if [[ "${{ matrix.image }}" =~ "clang" ]]; then
             # allowing the following NOTEs (produced by default in the clang images):
             #

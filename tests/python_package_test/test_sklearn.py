@@ -17,11 +17,18 @@ from sklearn.ensemble import StackingClassifier, StackingRegressor
 from sklearn.metrics import accuracy_score, log_loss, mean_squared_error, r2_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.multioutput import ClassifierChain, MultiOutputClassifier, MultiOutputRegressor, RegressorChain
-from sklearn.utils.estimator_checks import parametrize_with_checks
+from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
-from lightgbm.compat import DATATABLE_INSTALLED, PANDAS_INSTALLED, dt_DataTable, pd_DataFrame, pd_Series
+from lightgbm.compat import (
+    DATATABLE_INSTALLED,
+    PANDAS_INSTALLED,
+    _sklearn_version,
+    dt_DataTable,
+    pd_DataFrame,
+    pd_Series,
+)
 
 from .utils import (
     assert_silent,
@@ -34,6 +41,9 @@ from .utils import (
     sklearn_multiclass_custom_objective,
     softmax,
 )
+
+SKLEARN_MAJOR, SKLEARN_MINOR, *_ = _sklearn_version.split(".")
+SKLEARN_VERSION_GTE_1_6 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 6)
 
 decreasing_generator = itertools.count(0, -1)
 estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
@@ -1432,7 +1442,28 @@ def test_getting_feature_names_in_pd_input(estimator_class):
     np.testing.assert_array_equal(model.feature_names_in_, X.columns)
 
 
-@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()])
+# Starting with scikit-learn 1.6 (https://github.com/scikit-learn/scikit-learn/pull/30149),
+# the only API for marking estimator tests as expected to fail is to pass a keyword argument
+# to parametrize_with_checks(). That function didn't accept additional arguments in earlier
+# versions.
+#
+# This block defines a patched version of parametrize_with_checks() so lightgbm's tests
+# can be compatible with scikit-learn <1.6 and >=1.6.
+#
+# This should be removed once minimum supported scikit-learn version is at least 1.6.
+if SKLEARN_VERSION_GTE_1_6:
+    parametrize_with_checks = sklearn_parametrize_with_checks
+else:
+
+    def parametrize_with_checks(estimator, *args, **kwargs):
+        return sklearn_parametrize_with_checks(estimator)
+
+
+def _get_expected_failed_tests(estimator):
+    return estimator._more_tags()["_xfail_checks"]
+
+
+@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()], expected_failed_checks=_get_expected_failed_tests)
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
     check(estimator)
@@ -1457,7 +1488,6 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
         assert sklearn_tags.input_tags.allow_nan is True
         assert sklearn_tags.input_tags.sparse is True
         assert sklearn_tags.target_tags.one_d_labels is True
-        assert sklearn_tags._xfail_checks == more_tags["_xfail_checks"]
 
 
 @pytest.mark.parametrize("task", all_tasks)
