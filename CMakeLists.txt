@@ -4,6 +4,7 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_ROCM "Enable ROCM-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use santizer flags" OFF)
 set(
@@ -160,6 +161,11 @@ if(USE_CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
 
+if(USE_ROCM)
+    enable_language(HIP)
+    set(USE_OPENMP ON CACHE BOOL "ROCM requires OpenMP" FORCE)
+endif()
+
 if(USE_OPENMP)
     if(APPLE)
         find_package(OpenMP)
@@ -300,6 +306,85 @@ if(USE_CUDA)
       add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
       add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
     endforeach()
+endif()
+
+if(USE_ROCM)
+    find_package(HIP)
+    include_directories(${HIP_INCLUDE_DIRS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
+
+    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
+    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
+    # avoid many warnings about missing overrides
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+    # avoid warning: shift count >= width of type in feature_histogram.hpp
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
+
+    if(USE_DEBUG)
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
+    else()
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    endif()
+    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
+
+    add_definitions(-DUSE_CUDA)
+
+    set(
+      BASE_DEFINES
+      -DPOWER_FEATURE_WORKGROUPS=12
+      -DUSE_CONSTANT_BUF=0
+    )
+    set(
+      ALLFEATS_DEFINES
+      ${BASE_DEFINES}
+      -DENABLE_ALL_FEATURES
+    )
+    set(
+      FULLDATA_DEFINES
+      ${ALLFEATS_DEFINES}
+      -DIGNORE_INDICES
+    )
+
+    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
+    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
+
+    function(add_histogram hsize hname hadd hconst hdir)
+      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
+      if(hadd)
+        list(APPEND histograms histo${hsize}${hname})
+        set(histograms ${histograms} PARENT_SCOPE)
+      endif()
+      target_compile_definitions(
+        histo${hsize}${hname}
+        PRIVATE
+        -DCONST_HESSIAN=${hconst}
+        ${hdir}
+      )
+    endfunction()
+
+    foreach(hsize _16_64_256)
+      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
+      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
+    endforeach()
+endif()
+
+if(USE_HDFS)
+    find_package(JNI REQUIRED)
+    find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
+    find_library(HDFS_LIB NAMES hdfs REQUIRED)
+    include_directories(${HDFS_INCLUDE_DIR})
+    add_definitions(-DUSE_HDFS)
+    set(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -642,6 +727,20 @@ if(USE_CUDA)
     target_link_libraries(lightgbm PRIVATE ${histograms})
   endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
+endif()
+
+if(USE_ROCM)
+  # histograms are list of object libraries. Linking object library to other
+  # object libraries only gets usage requirements, the linked objects won't be
+  # used. Thus we have to call target_link_libraries on final targets here.
+  if(BUILD_CLI)
+    target_link_libraries(lightgbm PRIVATE ${histograms})
+  endif()
+  target_link_libraries(_lightgbm PRIVATE ${histograms})
+endif()
+
+if(USE_HDFS)
+  target_link_libraries(lightgbm_objs PUBLIC ${HDFS_CXX_LIBRARIES})
 endif()
 
 if(WIN32)
