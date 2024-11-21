@@ -641,7 +641,9 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     //   }
     // }
 
-    const int num_original_features = static_cast<int>(most_freq_bins.size()) / 2;
+    Log::Warning("most_freq_bins.size() = %d, num_groups_ = %d, num_used_differential_features_ = %d, num_used_differential_groups_ = %d, ncol = %d", static_cast<int>(most_freq_bins.size()), num_groups_, num_used_differential_features_, num_used_differential_groups_, ncol);
+
+    const int num_original_features = (static_cast<int>(most_freq_bins.size()) - num_used_differential_groups_) / 2;
     std::vector<uint32_t> original_most_freq_bins;
     std::vector<uint32_t> original_offsets;
     for (int i = 0; i < num_original_features; ++i) {
@@ -661,7 +663,7 @@ MultiValBin* Dataset::GetMultiBinFromAllFeatures(const std::vector<uint32_t>& of
     fout.close();
     const data_size_t num_original_data = metadata_.query_boundaries()[metadata_.num_queries()];
     ret.reset(MultiValBin::CreateMultiValBin(
-        num_original_data, original_offsets.back(), num_original_features,
+        num_original_data, offsets.back(), num_original_features,
         1.0 - sum_dense_ratio, original_offsets, use_pairwise_ranking, metadata_.paired_ranking_item_global_index_map()));
     PushDataToMultiValBin(num_original_data, original_most_freq_bins, original_offsets, &iters, ret.get());
   } else {
@@ -1025,6 +1027,10 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
     group_feature_cnt_[i] = dataset->group_feature_cnt_[original_group_index];
   }
 
+  Log::Warning("cur_feature_index = %d", cur_feature_index);
+
+  num_used_differential_features_ = 0;
+  num_used_differential_groups_ = static_cast<int>(diff_feature_groups.size());
   if (config.use_differential_feature_in_pairwise_ranking) {
     for (size_t i = 0; i < diff_feature_groups.size(); ++i) {
       const std::vector<int>& features_in_group = diff_feature_groups[i];
@@ -1045,6 +1051,7 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
           used_feature_map_[diff_feature_index + dataset->num_total_features_ * 2] = cur_feature_index;
           ++cur_feature_index;
           ++num_features_in_group;
+          ++num_used_differential_features_;
           const int ori_feature_index = dataset->InnerFeatureIndex(diff_original_feature_index[diff_feature_index]);
           ori_bin_mappers.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
           ori_bin_mappers_for_diff.emplace_back(new BinMapper(*dataset->FeatureBinMapper(ori_feature_index)));
@@ -1079,6 +1086,8 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
 
     num_groups_ += static_cast<int>(diff_feature_groups.size());
   }
+
+  Log::Warning("cur_feature_index = %d", cur_feature_index);
 
   feature_groups_.shrink_to_fit();
 

@@ -490,7 +490,9 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   Common::FunctionTimer fun_timer("GBDT::UpdateScore", global_timer);
   // update training score
+  Log::Warning("before update score 0");
   if (!data_sample_strategy_->is_use_subset()) {
+    Log::Warning("before update score 1");
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
 
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
@@ -506,16 +508,20 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
       }
       #endif  // USE_CUDA
     }
+    Log::Warning("before update score 2");
 
   } else {
+    Log::Warning("before update score 3");
     train_score_updater_->AddScore(tree, cur_tree_id);
   }
 
 
+  Log::Warning("before update score 4");
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, cur_tree_id);
   }
+  Log::Warning("before update score 5");
 }
 
 #ifdef USE_CUDA

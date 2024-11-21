@@ -1155,6 +1155,10 @@ class Dataset {
   const data_size_t* train_query_boundaries_;
   /*! \brief stored number of queries from training dataset, for creating differential features in pairwise lambdarank */
   data_size_t train_num_queries_;
+  /*! \brief stored number of differential features used in training dataset, for creating differential features in pairwise lambdarank */
+  data_size_t num_used_differential_features_;
+  /*! \brief stored number of differential feature groups used in training dataset, for creating differential features in pairwise lambdarank */
+  data_size_t num_used_differential_groups_;
 };
 
 }  // namespace LightGBM

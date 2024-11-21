@@ -68,7 +68,7 @@ void SerialTreeLearner::Init(const Dataset* train_data, bool is_constant_hessian
 
   GetShareStates(train_data_, is_constant_hessian, true);
   histogram_pool_.DynamicChangeSize(train_data_,
-  share_state_->num_hist_total_bin(),
+  share_state_->num_hist_total_bin() * 2,
   share_state_->feature_hist_offsets(),
   config_, max_cache_size, config_->num_leaves);
   Log::Info("Number of data points in the train set: %d, number of used features: %d", num_data_, num_features_);
@@ -320,6 +320,8 @@ void SerialTreeLearner::BeforeTrain() {
     }
   }
 
+  // Log::Warning("smaller_leaf_splits_->leaf_index() = %d before train", smaller_leaf_splits_->leaf_index());
+
   larger_leaf_splits_->Init();
 
   if (cegb_ != nullptr) {
@@ -391,8 +393,12 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
+  // Log::Warning("before ConstructHistograms");
   ConstructHistograms(is_feature_used, use_subtract);
+  // Log::Warning("after ConstructHistograms");
+  // Log::Warning("before FindBestSplitsFromHistograms");
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
+  // Log::Warning("after FindBestSplitsFromHistograms");
 }
 
 void SerialTreeLearner::ConstructHistograms(
@@ -466,20 +472,27 @@ void SerialTreeLearner::ConstructHistograms(
 
 void SerialTreeLearner::FindBestSplitsFromHistograms(
     const std::vector<int8_t>& is_feature_used, bool use_subtract, const Tree* tree) {
+  // Log::Warning("FindBestSplitsFromHistograms step 0");
   Common::FunctionTimer fun_timer(
       "SerialTreeLearner::FindBestSplitsFromHistograms", global_timer);
+  // Log::Warning("FindBestSplitsFromHistograms step 0.1");
   std::vector<SplitInfo> smaller_best(share_state_->num_threads);
   std::vector<SplitInfo> larger_best(share_state_->num_threads);
+  // Log::Warning("smaller_leaf_splits_->leaf_index() = %d", smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> smaller_node_used_features = col_sampler_.GetByNode(tree, smaller_leaf_splits_->leaf_index());
   std::vector<int8_t> larger_node_used_features;
+  // Log::Warning("FindBestSplitsFromHistograms step 0.2");
   double smaller_leaf_parent_output = GetParentOutput(tree, smaller_leaf_splits_.get());
   double larger_leaf_parent_output = 0;
+  // Log::Warning("FindBestSplitsFromHistograms step 0.3");
   if (larger_leaf_splits_ != nullptr && larger_leaf_splits_->leaf_index() >= 0) {
     larger_leaf_parent_output = GetParentOutput(tree, larger_leaf_splits_.get());
   }
   if (larger_leaf_splits_->leaf_index() >= 0) {
     larger_node_used_features = col_sampler_.GetByNode(tree, larger_leaf_splits_->leaf_index());
   }
+
+  // Log::Warning("FindBestSplitsFromHistograms step 1");
 
   if (use_subtract && config_->use_quantized_grad) {
     const int parent_index = std::min(smaller_leaf_splits_->leaf_index(), larger_leaf_splits_->leaf_index());
@@ -500,15 +513,18 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     }
   }
 
+  // Log::Warning("FindBestSplitsFromHistograms step 2");
+
   OMP_INIT_EX();
 // find splits
-#pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
+// #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {
       continue;
     }
     const int tid = omp_get_thread_num();
+  // Log::Warning("FindBestSplitsFromHistograms step 2.1");
     if (config_->use_quantized_grad) {
       const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
       const int64_t int_sum_gradient_and_hessian = smaller_leaf_splits_->int_sum_gradients_and_hessians();
@@ -529,6 +545,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     }
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
+  // Log::Warning("FindBestSplitsFromHistograms step 2.2");
     ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
                                real_fidx,
                                smaller_node_used_features[feature_index],
@@ -542,6 +559,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       continue;
     }
 
+  // Log::Warning("FindBestSplitsFromHistograms step 2.3");
     if (use_subtract) {
       if (config_->use_quantized_grad) {
         const int parent_index = std::min(smaller_leaf_splits_->leaf_index(), larger_leaf_splits_->leaf_index());
@@ -589,6 +607,7 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       }
     }
 
+  // Log::Warning("FindBestSplitsFromHistograms step 2.4");
     ComputeBestSplitForFeature(larger_leaf_histogram_array_, feature_index,
                                real_fidx,
                                larger_node_used_features[feature_index],
@@ -599,6 +618,10 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
+
+  
+  // Log::Warning("FindBestSplitsFromHistograms step 3");
+
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->leaf_index();
   best_split_per_leaf_[leaf] = smaller_best[smaller_best_idx];

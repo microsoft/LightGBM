@@ -14,7 +14,8 @@ template <typename BIN_TYPE, template<typename> class MULTI_VAL_BIN_TYPE>
 class MultiValPairwiseLambdarankBin : public MULTI_VAL_BIN_TYPE<BIN_TYPE> {
  public:
   MultiValPairwiseLambdarankBin(data_size_t num_data, int num_bin, int num_feature, const std::vector<uint32_t>& offsets): MULTI_VAL_BIN_TYPE<BIN_TYPE>(num_data, num_bin, num_feature, offsets) {
-    this->num_bin_ = num_bin * 2;
+    this->num_bin_ = num_bin;
+    Log::Warning("num_bin = %d", num_bin);
   }
  protected:
   const std::pair<data_size_t, data_size_t>* paired_ranking_item_global_index_map_;
