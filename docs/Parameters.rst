@@ -795,7 +795,7 @@ Dataset Parameters
 
    -  it is recommended to rescale data before training so that features have similar mean and standard deviation
 
-   -  **Note**: works only with ``cpu`` device type and ``serial`` tree learner
+   -  **Note**: works only with ``cpu``, ``gpu`` device type and ``serial`` tree learner
 
    -  **Note**: ``regression_l1`` objective is not supported with linear tree boosting
 

@@ -24,6 +24,7 @@ from lightgbm.compat import PANDAS_INSTALLED, pd_DataFrame, pd_Series
 
 from .utils import (
     SERIALIZERS,
+    assert_all_trees_valid,
     assert_silent,
     dummy_obj,
     load_breast_cancer,
@@ -1458,7 +1459,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
         ]
     )
     y = rng.uniform(size=(100,))
-    ds = lgb.Dataset(X, y)
+    ds = lgb.Dataset(X, y, categorical_feature=[1, 2])
     params = {
         "bagging_fraction": 0.8,
         "bagging_freq": 2,
@@ -1473,7 +1474,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
         "verbosity": 0,
     }
     model_file = tmp_path / "model.txt"
-    orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
+    orig_bst = lgb.train(params, ds, num_boost_round=1)
     orig_bst.save_model(model_file)
     with model_file.open("rt") as f:
         model_contents = f.readlines()
@@ -1745,16 +1746,18 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     gbm0 = lgb.train(params, lgb_train, num_boost_round=10)
     pred0 = gbm0.predict(X_test)
     assert lgb_train.categorical_feature == "auto"
-    lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
-    gbm1 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[0])
+    lgb_train = lgb.Dataset(
+        X, pd.DataFrame(y), categorical_feature=[0]
+    )  # also test that label can be one-column pd.DataFrame
+    gbm1 = lgb.train(params, lgb_train, num_boost_round=10)
     pred1 = gbm1.predict(X_test)
     assert lgb_train.categorical_feature == [0]
-    lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
-    gbm2 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A"])
+    lgb_train = lgb.Dataset(X, pd.Series(y), categorical_feature=["A"])  # also test that label can be pd.Series
+    gbm2 = lgb.train(params, lgb_train, num_boost_round=10)
     pred2 = gbm2.predict(X_test)
     assert lgb_train.categorical_feature == ["A"]
-    lgb_train = lgb.Dataset(X, y)
-    gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D"])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=["A", "B", "C", "D"])
+    gbm3 = lgb.train(params, lgb_train, num_boost_round=10)
     pred3 = gbm3.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D"]
     categorical_model_path = tmp_path / "categorical.model"
@@ -1766,12 +1769,12 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pred5 = gbm4.predict(X_test)
     gbm5 = lgb.Booster(model_str=model_str)
     pred6 = gbm5.predict(X_test)
-    lgb_train = lgb.Dataset(X, y)
-    gbm6 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D", "E"])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=["A", "B", "C", "D", "E"])
+    gbm6 = lgb.train(params, lgb_train, num_boost_round=10)
     pred7 = gbm6.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D", "E"]
-    lgb_train = lgb.Dataset(X, y)
-    gbm7 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=[])
+    gbm7 = lgb.train(params, lgb_train, num_boost_round=10)
     pred8 = gbm7.predict(X_test)
     assert lgb_train.categorical_feature == []
     with pytest.raises(AssertionError):
@@ -3671,12 +3674,11 @@ def test_linear_trees(tmp_path, rng_fixed_seed):
     # test with a categorical feature
     x[:250, 0] = 0
     y[:250] += 10
-    lgb_train = lgb.Dataset(x, label=y)
+    lgb_train = lgb.Dataset(x, label=y, categorical_feature=[0])
     est = lgb.train(
         dict(params, linear_tree=True, subsample=0.8, bagging_freq=1),
         lgb_train,
         num_boost_round=10,
-        categorical_feature=[0],
     )
     # test refit: same results on same data
     est2 = est.refit(x, label=y)
@@ -3699,10 +3701,20 @@ def test_linear_trees(tmp_path, rng_fixed_seed):
     # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
     X_train, _, y_train, _ = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
     params = {"linear_tree": True, "verbose": -1, "metric": "mse", "seed": 0}
-    train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=2))
-    est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
-    train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
-    est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+    train_data = lgb.Dataset(
+        X_train,
+        label=y_train,
+        params=dict(params, num_leaves=2),
+        categorical_feature=[0],
+    )
+    est = lgb.train(params, train_data, num_boost_round=10)
+    train_data = lgb.Dataset(
+        X_train,
+        label=y_train,
+        params=dict(params, num_leaves=60),
+        categorical_feature=[0],
+    )
+    est = lgb.train(params, train_data, num_boost_round=10)
 
 
 def test_save_and_load_linear(tmp_path):
@@ -3713,8 +3725,8 @@ def test_save_and_load_linear(tmp_path):
     X_train[: X_train.shape[0] // 2, 0] = 0
     y_train[: X_train.shape[0] // 2] = 1
     params = {"linear_tree": True}
-    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
-    est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
+    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params, categorical_feature=[0])
+    est_1 = lgb.train(params, train_data_1, num_boost_round=10)
     pred_1 = est_1.predict(X_train)
 
     tmp_dataset = str(tmp_path / "temp_dataset.bin")
@@ -3811,6 +3823,34 @@ def test_predict_with_start_iteration():
     inner_test(X, y, params, early_stopping_rounds=None)
 
 
+@pytest.mark.parametrize("use_init_score", [False, True])
+def test_predict_stump(rng, use_init_score):
+    X, y = load_breast_cancer(return_X_y=True)
+    dataset_kwargs = {"data": X, "label": y}
+    if use_init_score:
+        dataset_kwargs.update({"init_score": rng.uniform(size=y.shape)})
+    bst = lgb.train(
+        train_set=lgb.Dataset(**dataset_kwargs),
+        params={"objective": "binary", "min_data_in_leaf": X.shape[0]},
+        num_boost_round=5,
+    )
+    # checking prediction from 1 iteration and the whole model, to prevent bugs
+    # of the form "a model of n stumps predicts n * initial_score"
+    preds_1 = bst.predict(X, raw_score=True, num_iteration=1)
+    preds_all = bst.predict(X, raw_score=True)
+    if use_init_score:
+        # if init_score was provided, a model of stumps should predict all 0s
+        all_zeroes = np.full_like(preds_1, fill_value=0.0)
+        np.testing.assert_allclose(preds_1, all_zeroes)
+        np.testing.assert_allclose(preds_all, all_zeroes)
+    else:
+        # if init_score was not provided, prediction for a model of stumps should be
+        # the "average" of the labels
+        y_avg = np.log(y.mean() / (1.0 - y.mean()))
+        np.testing.assert_allclose(preds_1, np.full_like(preds_1, fill_value=y_avg))
+        np.testing.assert_allclose(preds_all, np.full_like(preds_all, fill_value=y_avg))
+
+
 def test_average_precision_metric():
     # test against sklearn average precision metric
     X, y = load_breast_cancer(return_X_y=True)
@@ -3855,21 +3895,60 @@ def test_reset_params_works_with_metric_num_class_and_boosting():
     assert new_bst.params == expected_params
 
 
-def test_dump_model():
+@pytest.mark.parametrize("linear_tree", [False, True])
+def test_dump_model_stump(linear_tree):
     X, y = load_breast_cancer(return_X_y=True)
+
     train_data = lgb.Dataset(X, label=y)
-    params = {"objective": "binary", "verbose": -1}
+    params = {"objective": "binary", "verbose": -1, "linear_tree": linear_tree, "min_data_in_leaf": len(y)}
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    tree_structure = dumped_model["tree_info"][0]["tree_structure"]
+    assert len(dumped_model["tree_info"]) == 1
+    assert "leaf_value" in tree_structure
+    assert tree_structure["leaf_count"] == len(y)
+
+
+def test_dump_model():
+    initial_score_offset = 57.5
+    X, y = make_synthetic_regression()
+    train_data = lgb.Dataset(X, label=y + initial_score_offset)
+
+    params = {
+        "objective": "regression",
+        "verbose": -1,
+        "boost_from_average": True,
+    }
+    bst = lgb.train(params, train_data, num_boost_round=5)
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" not in dumped_model_str
     assert "leaf_coeff" not in dumped_model_str
     assert "leaf_const" not in dumped_model_str
     assert "leaf_value" in dumped_model_str
     assert "leaf_count" in dumped_model_str
-    params["linear_tree"] = True
+
+    for tree in dumped_model["tree_info"]:
+        assert tree["tree_structure"]["internal_value"] != 0
+
+    assert dumped_model["tree_info"][0]["tree_structure"]["internal_value"] == pytest.approx(
+        initial_score_offset, abs=1
+    )
+    assert_all_trees_valid(dumped_model)
+
+
+def test_dump_model_linear():
+    X, y = load_breast_cancer(return_X_y=True)
+    params = {
+        "objective": "binary",
+        "verbose": -1,
+        "linear_tree": True,
+    }
     train_data = lgb.Dataset(X, label=y)
     bst = lgb.train(params, train_data, num_boost_round=5)
-    dumped_model_str = str(bst.dump_model(5, 0))
+    dumped_model = bst.dump_model(num_iteration=5, start_iteration=0)
+    assert_all_trees_valid(dumped_model)
+    dumped_model_str = str(dumped_model)
     assert "leaf_features" in dumped_model_str
     assert "leaf_coeff" in dumped_model_str
     assert "leaf_const" in dumped_model_str
