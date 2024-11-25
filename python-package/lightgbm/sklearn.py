@@ -40,6 +40,8 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     _LGBMValidateData,
+    _sklearn_ClassifierTags,
+    _sklearn_RegressorTags,
     _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
@@ -703,7 +705,6 @@ class LGBMModel(_LGBMModelBase):
         tags.input_tags.allow_nan = tags_dict["allow_nan"]
         tags.input_tags.sparse = "sparse" in tags_dict["X_types"]
         tags.target_tags.one_d_labels = "1dlabels" in tags_dict["X_types"]
-        tags._xfail_checks = tags_dict["_xfail_checks"]
         return tags
 
     def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
@@ -1291,7 +1292,10 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        tags = LGBMModel.__sklearn_tags__(self)
+        tags.estimator_type = "regressor"
+        tags.regressor_tags = _sklearn_RegressorTags(multi_label=False)
+        return tags
 
     def fit(  # type: ignore[override]
         self,
@@ -1350,7 +1354,10 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        tags = LGBMModel.__sklearn_tags__(self)
+        tags.estimator_type = "classifier"
+        tags.classifier_tags = _sklearn_ClassifierTags(multi_class=True, multi_label=False)
+        return tags
 
     def fit(  # type: ignore[override]
         self,
