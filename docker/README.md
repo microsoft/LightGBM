@@ -8,9 +8,9 @@ These builds of LightGBM all train on the CPU. For GPU-enabled builds, see [the 
 
 Follow the general installation instructions [on the Docker site](https://docs.docker.com/install/):
 
-- [macOS](https://docs.docker.com/docker-for-mac/install/)
-- [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
-- [Windows](https://docs.docker.com/docker-for-windows/install/)
+* [macOS](https://docs.docker.com/docker-for-mac/install/)
+* [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
+* [Windows](https://docs.docker.com/docker-for-windows/install/)
 
 ## Using CLI Version of LightGBM via Docker
 
