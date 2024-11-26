@@ -181,13 +181,13 @@ jobs:
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
         if: matrix.container != 'ubuntu:18.04'
-      # R 3.6 binary isn't easily available on buntu 18.04,
+      # R 3.6 binary isn't easily available on Ubuntu 18.04,
       # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
       # ref: https://github.com/microsoft/LightGBM/issues/6298
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2.6.0
         if: matrix.container == 'ubuntu:18.04'
-      - name: install tinytex
+      - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
         env:
@@ -204,11 +204,6 @@ jobs:
           elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
               export OS_NAME="linux"
               export IN_UBUNTU_BASE_CONTAINER="true"
-              # the default version of cmake provided on Ubuntu 18.04 (v3.10.2), is not supported by LightGBM
-              # see https://github.com/microsoft/LightGBM/issues/5642
-              if [[ "${{ matrix.container }}" == "ubuntu:18.04" ]]; then
-                export INSTALL_CMAKE_FROM_RELEASES="true"
-              fi
           fi
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export R_VERSION="${{ matrix.r_version }}"
@@ -226,7 +221,7 @@ jobs:
           $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
           $env:COMPILER = "${{ matrix.compiler }}"
           $env:TASK = "${{ matrix.task }}"
-          & "$env:GITHUB_WORKSPACE/.ci/test_windows.ps1"
+          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
   test-r-sanitizers:
     name: r-sanitizers (ubuntu-latest, R-devel, ${{ matrix.compiler }} ASAN/UBSAN)
     timeout-minutes: 60
@@ -279,6 +274,7 @@ jobs:
           - clang19
           - gcc14
           - intel
+          - rchk
     runs-on: ubuntu-latest
     container: ghcr.io/r-hub/containers/${{ matrix.image }}:latest
     steps:
@@ -316,8 +312,32 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
+
+          # 'rchk' isn't run through 'R CMD check', use the approach documented at
+          # https://r-hub.github.io/containers/local.html
+          if [[ "${{ matrix.image }}" =~ "rchk" ]]; then
+            r-check "$(pwd)" \
+            | tee ./rchk-logs.txt 2>&1
+
+            # the '-v' exceptions below are from R/rchk itself and not LightGBM:
+            # https://github.com/kalibera/rchk/issues/22#issuecomment-656036156
+            if grep -E '\[PB\]|ERROR' ./rchk-logs.txt \
+               | grep -v 'too many states' \
+               > /dev/null; \
+            then
+                echo "rchk found issues"
+                exit 1
+            else
+                echo "rchk did not find any issues"
+                exit 0
+            fi
+          fi
+
+          # 'testthat' is not needed by 'rchk', so avoid installing it until here
+          Rscript -e "install.packages('testthat', repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+
           if [[ "${{ matrix.image }}" =~ "clang" ]]; then
             # allowing the following NOTEs (produced by default in the clang images):
             #

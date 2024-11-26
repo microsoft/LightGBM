@@ -634,7 +634,7 @@ test_that("lgb.cv() prefers objective in params to keyword argument", {
   for (bst_list in cv_bst$boosters) {
     bst <- bst_list[["booster"]]
     expect_equal(bst$params$objective, "regression_l1")
-    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R-package
     #       allowing access to the "objective" attribute of the Booster object on the C++ side
     model_txt_lines <- strsplit(
       x = bst$save_model_to_string()
@@ -807,7 +807,7 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
     , obj = "regression_l2"
   )
   expect_equal(bst$params$objective, "regression_l1")
-  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R-package
   #       allowing access to the "objective" attribute of the Booster object on the C++ side
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()

@@ -33,24 +33,24 @@ jobs:
       - name: Send init status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
-          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+          $GITHUB_WORKSPACE/.ci/set-commit-status.sh "${{ github.workflow }}" "pending" "${{ github.event.client_payload.pr_sha }}"
+          $GITHUB_WORKSPACE/.ci/append-comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Workflow **${{ github.workflow }}** has been triggered! 🚀\r\n${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}"
       - name: Run tests with valgrind
         shell: bash
-        run: ./.ci/test_r_package_valgrind.sh
+        run: ./.ci/test-r-package-valgrind.sh
       - name: Send final status
         if: ${{ always() }}
         run: |
-          $GITHUB_WORKSPACE/.ci/set_commit_status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
-          $GITHUB_WORKSPACE/.ci/append_comment.sh \
+          $GITHUB_WORKSPACE/.ci/set-commit-status.sh "${{ github.workflow }}" "${{ job.status }}" "${{ github.event.client_payload.pr_sha }}"
+          $GITHUB_WORKSPACE/.ci/append-comment.sh \
             "${{ github.event.client_payload.comment_number }}" \
             "Status: ${{ job.status }}."
       - name: Rerun workflow-indicator
         if: ${{ always() }}
         run: |
-          bash $GITHUB_WORKSPACE/.ci/rerun_workflow.sh \
+          bash $GITHUB_WORKSPACE/.ci/rerun-workflow.sh \
             "optional_checks.yml" \
             "${{ github.event.client_payload.pr_number }}" \
             "${{ github.event.client_payload.pr_branch }}" \

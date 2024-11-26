@@ -4,7 +4,7 @@
 #     Set a status with a given name to the specified commit.
 #
 # [usage]
-#     set_commit_status.sh <NAME> <STATUS> <SHA>
+#     set-commit-status.sh <NAME> <STATUS> <SHA>
 #
 # NAME: Name of status.
 #       Status with existing name overwrites a previous one.
@@ -39,9 +39,9 @@ sha=$3
 
 data=$(
   jq -n \
-    --arg state $status \
+    --arg state "${status}" \
     --arg url "${GITHUB_SERVER_URL}/microsoft/LightGBM/actions/runs/${GITHUB_RUN_ID}" \
-    --arg name "$name" \
+    --arg name "${name}" \
     '{"state":$state,"target_url":$url,"context":$name}'
 )
 
