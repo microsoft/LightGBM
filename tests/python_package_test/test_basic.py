@@ -954,7 +954,11 @@ def test_max_depth_warning_is_raised_if_max_depth_gte_5_and_num_leaves_omitted(c
 def test_no_copy_in_dataset_from_numpy_2d(rng, order, dtype):
     X = rng.random(size=(100, 3))
     X = np.require(X, dtype=dtype, requirements=order)
-    X1d = lgb.basic._np2d_to_np1d(X)
+    X1d, layout = lgb.basic._np2d_to_np1d(X)
+    if order == "F":
+        assert layout == lgb.basic._C_API_IS_COL_MAJOR
+    else:
+        assert layout == lgb.basic._C_API_IS_ROW_MAJOR
     if dtype == "float32":
         assert np.shares_memory(X, X1d)
     else:
