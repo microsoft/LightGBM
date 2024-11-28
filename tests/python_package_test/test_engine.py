@@ -1,5 +1,6 @@
 # coding: utf-8
 import copy
+import filecmp
 import itertools
 import json
 import math
@@ -4613,24 +4614,20 @@ def test_bagging_by_query_in_lambdarank():
     assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
 
 
-def test_train_with_column_major_dataset():
-    params = {"num_leaves": 16}
-    rounds = 2
-
+def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
+    # row-major dataset
     X_row, y = make_synthetic_regression()
     assert X_row.flags["C_CONTIGUOUS"]
     ds_row = lgb.Dataset(X_row, y)
-    bst_row = lgb.train(params, ds_row, num_boost_round=rounds)
-    # check that we didn't get a trivial model
-    dumped_row = bst_row.dump_model()
-    assert len(dumped_row["tree_info"]) == rounds
-    for tree in dumped_row["tree_info"]:
-        assert tree["num_leaves"] > 1
+    ds_row_path = tmp_path / "ds_row.txt"
+    ds_row._dump_text(ds_row_path)
 
+    # col-major dataset
     X_col = np.asfortranarray(X_row)
     assert X_col.flags["F_CONTIGUOUS"]
     ds_col = lgb.Dataset(X_col, y)
-    bst_col = lgb.train(params, ds_col, num_boost_round=rounds)
-    dumped_col = bst_col.dump_model()
+    ds_col_path = tmp_path / "ds_col.txt"
+    ds_col._dump_text(ds_col_path)
 
-    assert dumped_row == dumped_col
+    # check datasets are equal
+    assert filecmp.cmp(ds_row_path, ds_col_path)
