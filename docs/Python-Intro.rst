@@ -244,10 +244,10 @@ This works with both metrics to minimize (L2, log loss, etc.) and to maximize (N
 Note that if you specify more than one evaluation metric, all of them will be used for early stopping.
 However, you can change this behavior and make LightGBM check only the first metric for early stopping by passing ``first_metric_only=True`` in ``early_stopping`` callback constructor.
 
-In the scikit-learn API of lightgbm, early stopping is enabled by default if the training set passed during ``fit()`` has more than 10000 rows.
-This behavior can be controlled by explicitly setting the parameter ``early_stopping`` to ``True`` or ``False`` in the class constructor.
-When auto early stopping is enabled, a portion of the training data will be used as validation set. The amount of data to use for validation
-is controlled by the parameter ``validation_fraction`` and defaults to 0.1.
+In the scikit-learn API of lightgbm, early stopping can also be enabled by setting the parameter ``early_stopping`` to ``True``
+or by setting the parameter ``early_stopping_round`` to an integer greater than 0.
+When early stopping is enabled and no validation set is provided, a portion of the training data will be used as validation set.
+The amount of data to use for validation is controlled by the parameter ``validation_fraction`` and defaults to 0.1.
 
 Prediction
 ----------
