@@ -512,7 +512,7 @@ def _make_n_folds(
     seed: int,
     stratified: bool,
     shuffle: bool,
-) -> Iterable[Tuple[np.ndarray[Any, Any], np.ndarray[Any, Any]]]:
+) -> Iterable[Tuple[np.ndarray, np.ndarray]]:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
