@@ -30,8 +30,8 @@
 #include <vector>
 
 #define FMT_HEADER_ONLY
-#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
-#include "../../../external_libs/fmt/include/fmt/format.h"
+#include "fast_double_parser.h"
+#include "fmt/format.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -1232,7 +1232,7 @@ struct __TToStringHelper<T, true, true> {
 * Converts an array to a string with with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
 * and is locale-independent.
-* 
+*
 * \note If ``high_precision_output`` is set to true,
 *       floating point values are output with more digits of precision.
 */

@@ -1089,7 +1089,7 @@ void GPUTreeLearner::FindBestSplits(const Tree* tree) {
     size_t bin_size = train_data_->FeatureNumBin(feature_index) + 1;
     printf("Feature %d smaller leaf:\n", feature_index);
     PrintHistograms(smaller_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
-    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->LeafIndex() < 0) { continue; }
+    if (larger_leaf_splits_ == nullptr || larger_leaf_splits_->leaf_index() < 0) { continue; }
     printf("Feature %d larger leaf:\n", feature_index);
     PrintHistograms(larger_leaf_histogram_array_[feature_index].RawData() - kHistOffset, bin_size);
   }

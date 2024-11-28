@@ -131,7 +131,7 @@ std::vector<std::vector<int>> FindGroups(
     std::vector<int> available_groups;
     for (int gid = 0; gid < static_cast<int>(features_in_group.size()); ++gid) {
       auto cur_num_bin = group_num_bin[gid] + bin_mappers[fidx]->num_bin() +
-                         (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0);
+                         (bin_mappers[fidx]->GetMostFreqBin() == 0 ? -1 : 0);
       if (group_total_data_cnt[gid] + cur_non_zero_cnt <=
           total_sample_cnt + single_val_max_conflict_cnt) {
         if (!is_use_gpu || cur_num_bin <= max_bin_per_group) {
@@ -189,7 +189,7 @@ std::vector<std::vector<int>> FindGroups(
       group_used_row_cnt.emplace_back(cur_non_zero_cnt);
       group_num_bin.push_back(
           1 + bin_mappers[fidx]->num_bin() +
-          (bin_mappers[fidx]->GetDefaultBin() == 0 ? -1 : 0));
+          (bin_mappers[fidx]->GetMostFreqBin() == 0 ? -1 : 0));
     }
   }
   if (!is_sparse) {

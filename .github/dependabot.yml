@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      ci-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "[ci]"
+    labels:
+      - maintenance

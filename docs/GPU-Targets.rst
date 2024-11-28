@@ -107,7 +107,7 @@ Example of using GPU (``gpu_platform_id = 0`` and ``gpu_device_id = 0`` in our s
     [LightGBM] [Info] 40 dense feature groups (0.12 MB) transferred to GPU in 0.004211 secs. 76 sparse feature groups.
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=16 and depth=8
-    [1]:    test's rmse:1.10643e-17 
+    [1]:    test's rmse:1.10643e-17
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=7 and depth=5
     [2]:    test's rmse:0
@@ -145,11 +145,11 @@ Example of using CPU (``gpu_platform_id = 0``, ``gpu_device_id = 1``). The GPU d
     [LightGBM] [Info] 40 dense feature groups (0.12 MB) transferred to GPU in 0.004540 secs. 76 sparse feature groups.
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=16 and depth=8
-    [1]:    test's rmse:1.10643e-17 
+    [1]:    test's rmse:1.10643e-17
     [LightGBM] [Info] No further splits with positive gain, best gain: -inf
     [LightGBM] [Info] Trained a tree with leaves=7 and depth=5
     [2]:    test's rmse:0
-    
+
 
 Known issues:
 

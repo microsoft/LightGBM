@@ -21,7 +21,7 @@ namespace LightGBM {
   * Creates a Dataset from the internal repository examples.
   */
   int TestUtils::LoadDatasetFromExamples(const char* filename, const char* config, DatasetHandle* out) {
-    std::string fullPath("../examples/");
+    std::string fullPath("examples/");
     fullPath += filename;
     Log::Info("Debug sample data path: %s", fullPath.c_str());
     return LGBM_DatasetCreateFromFile(
@@ -277,7 +277,7 @@ namespace LightGBM {
   /*!
    * Pushes data from 1 thread into a Dataset based on thread_id and nrows.
    * e.g. with 100 rows, thread 0 will push rows 0-49, and thread 2 will push rows 50-99.
-   * Note that rows are still pushed in microbatches within their range. 
+   * Note that rows are still pushed in microbatches within their range.
    */
   void TestUtils::PushSparseBatch(DatasetHandle dataset_handle,
                                   int32_t nrows,

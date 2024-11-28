@@ -1,14 +1,28 @@
 # coding: utf-8
 import filecmp
+import os
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 import numpy as np
-import pyarrow as pa
 import pytest
 
 import lightgbm as lgb
 
 from .utils import np_assert_array_equal
+
+# NOTE: In the AppVeyor CI, importing pyarrow fails due to an old Visual Studio version. Hence,
+#  we conditionally import pyarrow here (and skip tests if it cannot be imported). However, we
+#  don't want these tests to silently be skipped, hence, we only conditionally import when a
+#  specific env var is set.
+if os.getenv("ALLOW_SKIP_ARROW_TESTS") == "1":
+    pa = pytest.importorskip("pyarrow")
+else:
+    import pyarrow as pa  # type: ignore
+
+    assert (
+        lgb.compat.PYARROW_INSTALLED is True
+    ), "'pyarrow' and its dependencies must be installed to run the arrow tests"
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
@@ -43,16 +57,17 @@ def generate_simple_arrow_table(empty_chunks: bool = False) -> pa.Table:
         pa.chunked_array(c + [[1, 2, 3]] + c + [[4, 5]] + c, type=pa.int64()),
         pa.chunked_array(c + [[1, 2, 3]] + c + [[4, 5]] + c, type=pa.float32()),
         pa.chunked_array(c + [[1, 2, 3]] + c + [[4, 5]] + c, type=pa.float64()),
+        pa.chunked_array(c + [[True, True, False]] + c + [[False, True]] + c, type=pa.bool_()),
     ]
     return pa.Table.from_arrays(columns, names=[f"col_{i}" for i in range(len(columns))])
 
 
-def generate_nullable_arrow_table() -> pa.Table:
+def generate_nullable_arrow_table(dtype: Any) -> pa.Table:
     columns = [
-        pa.chunked_array([[1, None, 3, 4, 5]], type=pa.float32()),
-        pa.chunked_array([[None, 2, 3, 4, 5]], type=pa.float32()),
-        pa.chunked_array([[1, 2, 3, 4, None]], type=pa.float32()),
-        pa.chunked_array([[None, None, None, None, None]], type=pa.float32()),
+        pa.chunked_array([[1, None, 3, 4, 5]], type=dtype),
+        pa.chunked_array([[None, 2, 3, 4, 5]], type=dtype),
+        pa.chunked_array([[1, 2, 3, 4, None]], type=dtype),
+        pa.chunked_array([[None, None, None, None, None]], type=dtype),
     ]
     return pa.Table.from_arrays(columns, names=[f"col_{i}" for i in range(len(columns))])
 
@@ -71,9 +86,7 @@ def generate_random_arrow_table(
     values: Optional[np.ndarray] = None,
 ) -> pa.Table:
     columns = [
-        generate_random_arrow_array(
-            num_datapoints, seed + i, generate_nulls=generate_nulls, values=values
-        )
+        generate_random_arrow_array(num_datapoints, seed + i, generate_nulls=generate_nulls, values=values)
         for i in range(num_columns)
     ]
     names = [f"col_{i}" for i in range(num_columns)]
@@ -122,13 +135,20 @@ def dummy_dataset_params() -> Dict[str, Any]:
 # ------------------------------------------- DATASET ------------------------------------------- #
 
 
+def assert_datasets_equal(tmp_path: Path, lhs: lgb.Dataset, rhs: lgb.Dataset):
+    lhs._dump_text(tmp_path / "arrow.txt")
+    rhs._dump_text(tmp_path / "pandas.txt")
+    assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
+
+
 @pytest.mark.parametrize(
     ("arrow_table_fn", "dataset_params"),
     [  # Use lambda functions here to minimize memory consumption
         (lambda: generate_simple_arrow_table(), dummy_dataset_params()),
         (lambda: generate_simple_arrow_table(empty_chunks=True), dummy_dataset_params()),
         (lambda: generate_dummy_arrow_table(), dummy_dataset_params()),
-        (lambda: generate_nullable_arrow_table(), dummy_dataset_params()),
+        (lambda: generate_nullable_arrow_table(pa.float32()), dummy_dataset_params()),
+        (lambda: generate_nullable_arrow_table(pa.int32()), dummy_dataset_params()),
         (lambda: generate_random_arrow_table(3, 1000, 42), {}),
         (lambda: generate_random_arrow_table(100, 10000, 43), {}),
     ],
@@ -142,9 +162,22 @@ def test_dataset_construct_fuzzy(tmp_path, arrow_table_fn, dataset_params):
     pandas_dataset = lgb.Dataset(arrow_table.to_pandas(), params=dataset_params)
     pandas_dataset.construct()
 
-    arrow_dataset._dump_text(tmp_path / "arrow.txt")
-    pandas_dataset._dump_text(tmp_path / "pandas.txt")
-    assert filecmp.cmp(tmp_path / "arrow.txt", tmp_path / "pandas.txt")
+    assert_datasets_equal(tmp_path, arrow_dataset, pandas_dataset)
+
+
+def test_dataset_construct_fuzzy_boolean(tmp_path):
+    boolean_data = generate_random_arrow_table(10, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+
+    float_schema = pa.schema([pa.field(f"col_{i}", pa.float32()) for i in range(len(boolean_data.columns))])
+    float_data = boolean_data.cast(float_schema)
+
+    arrow_dataset = lgb.Dataset(boolean_data)
+    arrow_dataset.construct()
+
+    pandas_dataset = lgb.Dataset(float_data.to_pandas())
+    pandas_dataset.construct()
+
+    assert_datasets_equal(tmp_path, arrow_dataset, pandas_dataset)
 
 
 # -------------------------------------------- FIELDS ------------------------------------------- #
@@ -156,9 +189,7 @@ def test_dataset_construct_fields_fuzzy():
     arrow_weights = generate_random_arrow_array(1000, 42, generate_nulls=False)
     arrow_groups = pa.chunked_array([[300, 400, 50], [250]], type=pa.int32())
 
-    arrow_dataset = lgb.Dataset(
-        arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups
-    )
+    arrow_dataset = lgb.Dataset(arrow_table, label=arrow_labels, weight=arrow_weights, group=arrow_groups)
     arrow_dataset.construct()
 
     pandas_dataset = lgb.Dataset(
@@ -171,9 +202,7 @@ def test_dataset_construct_fields_fuzzy():
 
     # Check for equality
     for field in ("label", "weight", "group"):
-        np_assert_array_equal(
-            arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True
-        )
+        np_assert_array_equal(arrow_dataset.get_field(field), pandas_dataset.get_field(field), strict=True)
     np_assert_array_equal(arrow_dataset.get_label(), pandas_dataset.get_label(), strict=True)
     np_assert_array_equal(arrow_dataset.get_weight(), pandas_dataset.get_weight(), strict=True)
 
@@ -194,6 +223,25 @@ def test_dataset_construct_fields_fuzzy():
 def test_dataset_construct_labels(array_type, label_data, arrow_type):
     data = generate_dummy_arrow_table()
     labels = array_type(label_data, type=arrow_type)
+    dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
+    dataset.construct()
+
+    expected = np.array([0, 1, 0, 0, 1], dtype=np.float32)
+    np_assert_array_equal(expected, dataset.get_label(), strict=True)
+
+
+@pytest.mark.parametrize(
+    ["array_type", "label_data"],
+    [
+        (pa.array, [False, True, False, False, True]),
+        (pa.chunked_array, [[False], [True, False, False, True]]),
+        (pa.chunked_array, [[], [False], [True, False, False, True]]),
+        (pa.chunked_array, [[False], [], [True, False], [], [], [False, True], []]),
+    ],
+)
+def test_dataset_construct_labels_boolean(array_type, label_data):
+    data = generate_dummy_arrow_table()
+    labels = array_type(label_data, type=pa.bool_())
     dataset = lgb.Dataset(data, label=labels, params=dummy_dataset_params())
     dataset.construct()
 
@@ -269,9 +317,7 @@ def test_dataset_construct_groups(array_type, group_data, arrow_type):
     ],
 )
 @pytest.mark.parametrize("arrow_type", _INTEGER_TYPES + _FLOAT_TYPES)
-def test_dataset_construct_init_scores_array(
-    array_type: Any, init_score_data: Any, arrow_type: Any
-):
+def test_dataset_construct_init_scores_array(array_type: Any, init_score_data: Any, arrow_type: Any):
     data = generate_dummy_arrow_table()
     init_scores = array_type(init_score_data, type=arrow_type)
     dataset = lgb.Dataset(data, init_score=init_scores, params=dummy_dataset_params())
@@ -320,14 +366,15 @@ def assert_equal_predict_arrow_pandas(booster: lgb.Booster, data: pa.Table):
     np_assert_array_equal(p_pred_contrib_arrow, p_pred_contrib_pandas, strict=True)
 
     p_first_iter_arrow = booster.predict(data, start_iteration=0, num_iteration=1, raw_score=True)
-    p_first_iter_pandas = booster.predict(
-        data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True
-    )
+    p_first_iter_pandas = booster.predict(data.to_pandas(), start_iteration=0, num_iteration=1, raw_score=True)
     np_assert_array_equal(p_first_iter_arrow, p_first_iter_pandas, strict=True)
 
 
 def test_predict_regression():
-    data = generate_random_arrow_table(10, 10000, 42)
+    data_float = generate_random_arrow_table(10, 10000, 42)
+    data_bool = generate_random_arrow_table(1, 10000, 42, generate_nulls=False, values=np.array([True, False]))
+    data = pa.Table.from_arrays(data_float.columns + data_bool.columns, names=data_float.schema.names + ["col_bool"])
+
     dataset = lgb.Dataset(
         data,
         label=generate_random_arrow_array(10000, 43, generate_nulls=False),
