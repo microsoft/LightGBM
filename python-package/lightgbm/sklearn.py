@@ -838,7 +838,7 @@ class LGBMModel(_LGBMModelBase):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
 
         params = _choose_param_value("early_stopping_round", params, self.n_iter_no_change)
-        if not self.early_stopping:
+        if self.early_stopping is not True:
             params["early_stopping_round"] = None
 
         if self._n_classes > 2:
@@ -977,7 +977,7 @@ class LGBMModel(_LGBMModelBase):
             params=params,
         )
 
-        if self.early_stopping and eval_set is None:
+        if self.early_stopping is True and eval_set is None:
             if self.validation_fraction is not None:
                 n_splits = max(int(np.ceil(1 / self.validation_fraction)), 2)
                 stratified = isinstance(self, LGBMClassifier)
