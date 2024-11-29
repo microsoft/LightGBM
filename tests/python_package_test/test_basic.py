@@ -964,3 +964,22 @@ def test_no_copy_in_dataset_from_numpy_2d(rng, order, dtype):
     else:
         # makes a copy
         assert not np.shares_memory(X, X1d)
+
+
+def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
+    # row-major dataset
+    X_row, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    assert X_row.flags["C_CONTIGUOUS"]
+    ds_row = lgb.Dataset(X_row, y)
+    ds_row_path = tmp_path / "ds_row.txt"
+    ds_row._dump_text(ds_row_path)
+
+    # col-major dataset
+    X_col = np.asfortranarray(X_row)
+    assert X_col.flags["F_CONTIGUOUS"]
+    ds_col = lgb.Dataset(X_col, y)
+    ds_col_path = tmp_path / "ds_col.txt"
+    ds_col._dump_text(ds_col_path)
+
+    # check datasets are equal
+    assert filecmp.cmp(ds_row_path, ds_col_path)

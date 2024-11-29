@@ -1,6 +1,5 @@
 # coding: utf-8
 import copy
-import filecmp
 import itertools
 import json
 import math
@@ -4612,22 +4611,3 @@ def test_bagging_by_query_in_lambdarank():
     ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
     assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
     assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
-
-
-def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
-    # row-major dataset
-    X_row, y = make_synthetic_regression()
-    assert X_row.flags["C_CONTIGUOUS"]
-    ds_row = lgb.Dataset(X_row, y)
-    ds_row_path = tmp_path / "ds_row.txt"
-    ds_row._dump_text(ds_row_path)
-
-    # col-major dataset
-    X_col = np.asfortranarray(X_row)
-    assert X_col.flags["F_CONTIGUOUS"]
-    ds_col = lgb.Dataset(X_col, y)
-    ds_col_path = tmp_path / "ds_col.txt"
-    ds_col._dump_text(ds_col_path)
-
-    # check datasets are equal
-    assert filecmp.cmp(ds_row_path, ds_col_path)
