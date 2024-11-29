@@ -327,7 +327,7 @@ def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed)
 
 
 @pytest.mark.parametrize("n_samples, expected_n_trees", [(100, 25), (10_001, 92)])
-@pytest.mark.parametrize("early_stopping", [True, False, "auto", 10])
+@pytest.mark.parametrize("early_stopping", [True, False, 10, None])
 def test_auto_early_stopping_is_triggered_correctly(n_samples, expected_n_trees, early_stopping):
     X, y = make_synthetic_regression(n_samples=n_samples)
     n_estimators = 100
@@ -338,7 +338,7 @@ def test_auto_early_stopping_is_triggered_correctly(n_samples, expected_n_trees,
         verbose=-1,
     )
     gbm.fit(X, y)
-    if early_stopping == "auto" and n_samples > 10_000 or early_stopping in (True, 10):
+    if early_stopping in (True, 10):
         # Check that early stopping actually kicked in
         assert gbm._Booster.params["early_stopping_round"] == 10
         assert gbm._Booster.num_trees() == expected_n_trees

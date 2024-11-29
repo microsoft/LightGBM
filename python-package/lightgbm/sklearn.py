@@ -830,11 +830,6 @@ class LGBMModel(_LGBMModelBase):
             params=params,
             default_value=None,
         )
-        if params["early_stopping_round"] == "auto":
-            if hasattr(self, "_n_rows_train") and self._n_rows_train > 10_000:
-                params["early_stopping_round"] = 10
-            else:
-                params["early_stopping_round"] = None
 
         if params["early_stopping_round"] is True:
             params["early_stopping_round"] = 10
@@ -915,33 +910,6 @@ class LGBMModel(_LGBMModelBase):
         init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None,
     ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
-        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            _X, _y = _LGBMValidateData(
-                self,
-                X,
-                y,
-                reset=True,
-                # allow any input type (this validation is done further down, in lgb.Dataset())
-                accept_sparse=True,
-                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
-                ensure_all_finite=False,
-                # raise an error on 0-row and 1-row inputs
-                ensure_min_samples=2,
-            )
-            if sample_weight is not None:
-                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
-        else:
-            _X, _y = X, y
-
-            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
-            self.n_features_in_ = _X.shape[1]
-
-        self._n_features = _X.shape[1]
-        # copy for consistency
-        self._n_features_in = self._n_features
-
-        self._n_rows_train = _X.shape[0]
-
         params = self._process_params(stage="fit")
 
         # Do not modify original args in fit function
@@ -962,6 +930,27 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [params["metric"]] if isinstance(params["metric"], (str, type(None))) else params["metric"]
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
+
+        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
+            _X, _y = _LGBMValidateData(
+                self,
+                X,
+                y,
+                reset=True,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row and 1-row inputs
+                ensure_min_samples=2,
+            )
+            if sample_weight is not None:
+                sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
+        else:
+            _X, _y = X, y
+
+            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
+            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
