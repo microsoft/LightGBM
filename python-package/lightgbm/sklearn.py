@@ -509,6 +509,8 @@ class LGBMModel(_LGBMModelBase):
         random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
+        early_stopping: bool = False,
+        n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
         **kwargs,
     ):
@@ -590,6 +592,11 @@ class LGBMModel(_LGBMModelBase):
             The type of feature importance to be filled into ``feature_importances_``.
             If 'split', result contains numbers of times the feature is used in a model.
             If 'gain', result contains total gains of splits which use the feature.
+        early_stopping : bool, optional (default=False)
+            Whether to enable early stopping. If set to True, training will stop if the validation score does not improve
+            for a specified number of rounds (controlled by `n_iter_no_change`).
+        n_iter_no_change : int, optional (default=10)
+            The number of iterations with no improvement after which training will be stopped.
         validation_fraction : float or None, optional (default=0.1)
             Proportion of training data to set aside as
             validation data for early stopping. If None, early stopping is done on
@@ -672,6 +679,8 @@ class LGBMModel(_LGBMModelBase):
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
         self._n_classes: int = -1
+        self.early_stopping = early_stopping
+        self.n_iter_no_change = n_iter_no_change
         self.set_params(**kwargs)
 
     # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
@@ -825,17 +834,11 @@ class LGBMModel(_LGBMModelBase):
         elif isinstance(params["random_state"], np.random.Generator):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
 
-        params = _choose_param_value(
-            main_param_name="early_stopping_round",
-            params=params,
-            default_value=None,
-        )
-
-        if params["early_stopping_round"] is True:
-            params["early_stopping_round"] = 10
-        elif params["early_stopping_round"] is False:
+        params.pop("early_stopping", False)
+        params.pop("n_iter_no_change", None)
+        params = _choose_param_value("early_stopping_round", params, self.n_iter_no_change)
+        if not self.early_stopping:
             params["early_stopping_round"] = None
-
         if self._n_classes > 2:
             for alias in _ConfigAliases.get("num_class"):
                 params.pop(alias, None)
@@ -972,7 +975,7 @@ class LGBMModel(_LGBMModelBase):
             params=params,
         )
 
-        if params["early_stopping_round"] is not None and eval_set is None:
+        if self.early_stopping and eval_set is None:
             if self.validation_fraction is not None:
                 n_splits = max(int(np.ceil(1 / self.validation_fraction)), 2)
                 stratified = isinstance(self, LGBMClassifier)

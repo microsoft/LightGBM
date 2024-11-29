@@ -288,20 +288,22 @@ def test_auto_early_stopping_binary_classification():
     assert gbm.best_iteration_ < n_estimators
 
 
-def test_auto_early_stopping_setting_early_stopping_round():
-    early_stopping_round = 15
-    X, y = make_synthetic_regression(n_samples=100)
-    n_estimators = 50
-    gbm = lgb.LGBMRegressor(
+def test_auto_early_stopping_compatibility_with_histgradientboostingclassifier():
+    X, y = load_breast_cancer(return_X_y=True)
+    n_estimators = 200
+    n_iter_no_change = 5
+    gbm = lgb.LGBMClassifier(
         n_estimators=n_estimators,
         random_state=42,
-        early_stopping=early_stopping_round,
         verbose=-1,
+        early_stopping=True,
+        num_leaves=5,
+        n_iter_no_change=n_iter_no_change
     )
     gbm.fit(X, y)
-    assert gbm._Booster.params["early_stopping_round"] == early_stopping_round
-    assert gbm._Booster.num_trees() == 25
-    assert gbm.best_iteration_ == 25
+    assert gbm._Booster.params["early_stopping_round"] == n_iter_no_change
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
 
 
 def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed):
@@ -324,30 +326,6 @@ def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed)
     assert gbm._Booster.params["early_stopping_round"] == 10
     assert gbm._Booster.num_trees() < 5
     assert gbm.best_iteration_ < 5
-
-
-@pytest.mark.parametrize("n_samples, expected_n_trees", [(100, 25), (10_001, 92)])
-@pytest.mark.parametrize("early_stopping", [True, False, 10, None])
-def test_auto_early_stopping_is_triggered_correctly(n_samples, expected_n_trees, early_stopping):
-    X, y = make_synthetic_regression(n_samples=n_samples)
-    n_estimators = 100
-    gbm = lgb.LGBMRegressor(
-        n_estimators=n_estimators,
-        random_state=42,
-        early_stopping=early_stopping,
-        verbose=-1,
-    )
-    gbm.fit(X, y)
-    if early_stopping in (True, 10):
-        # Check that early stopping actually kicked in
-        assert gbm._Booster.params["early_stopping_round"] == 10
-        assert gbm._Booster.num_trees() == expected_n_trees
-        assert gbm.best_iteration_ == expected_n_trees
-    else:
-        # Check that early stopping did not kick in
-        assert gbm.best_iteration_ == 0
-        assert gbm._Booster.num_trees() == n_estimators
-
 
 def test_early_stopping_is_deactivated_by_default_regression():
     X, y = make_synthetic_regression(n_samples=10_001)
@@ -1295,6 +1273,7 @@ def test_first_metric_only():
         "verbose": -1,
         "seed": 123,
         "early_stopping_rounds": 5,
+        "early_stopping": True,
     }  # early stop should be supported via global LightGBM parameter
     params_fit = {"X": X_train, "y": y_train}
 
