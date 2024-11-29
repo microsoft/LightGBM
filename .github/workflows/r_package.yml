@@ -48,7 +48,7 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-20.04
+          - os: macOS-13
             task: r-package
             compiler: gcc
             r_version: 3.6
