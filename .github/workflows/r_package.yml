@@ -48,7 +48,7 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             task: r-package
             compiler: gcc
             r_version: 3.6
