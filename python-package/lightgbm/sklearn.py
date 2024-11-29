@@ -828,7 +828,7 @@ class LGBMModel(_LGBMModelBase):
         params = _choose_param_value(
             main_param_name="early_stopping_round",
             params=params,
-            default_value="auto",
+            default_value=None,
         )
         if params["early_stopping_round"] == "auto":
             if hasattr(self, "_n_rows_train") and self._n_rows_train > 10_000:

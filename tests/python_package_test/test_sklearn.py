@@ -350,7 +350,7 @@ def test_auto_early_stopping_is_triggered_correctly(n_samples, expected_n_trees,
 
 
 def test_early_stopping_is_deactivated_by_default_regression():
-    X, y = make_synthetic_regression(n_samples=100)
+    X, y = make_synthetic_regression(n_samples=10_001)
     n_estimators = 5
     gbm = lgb.LGBMRegressor(n_estimators=n_estimators, random_state=42, verbose=-1)
     gbm.fit(X, y)
