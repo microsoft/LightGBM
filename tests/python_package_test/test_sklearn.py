@@ -298,7 +298,7 @@ def test_auto_early_stopping_compatibility_with_histgradientboostingclassifier()
         verbose=-1,
         early_stopping=True,
         num_leaves=5,
-        n_iter_no_change=n_iter_no_change
+        n_iter_no_change=n_iter_no_change,
     )
     gbm.fit(X, y)
     assert gbm._Booster.params["early_stopping_round"] == n_iter_no_change
@@ -326,6 +326,7 @@ def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed)
     assert gbm._Booster.params["early_stopping_round"] == 10
     assert gbm._Booster.num_trees() < 5
     assert gbm.best_iteration_ < 5
+
 
 def test_early_stopping_is_deactivated_by_default_regression():
     X, y = make_synthetic_regression(n_samples=10_001)
