@@ -968,7 +968,7 @@ def test_no_copy_in_dataset_from_numpy_2d(rng, order, dtype):
 
 def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
     # row-major dataset
-    X_row, y = make_blobs(n_samples=1_000, n_features=1, centers=2)
+    X_row, y = make_blobs(n_samples=1_000, n_features=3, centers=2)
     assert X_row.flags["C_CONTIGUOUS"]
     ds_row = lgb.Dataset(X_row, y)
     ds_row_path = tmp_path / "ds_row.txt"
