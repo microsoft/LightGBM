@@ -596,7 +596,8 @@ class LGBMModel(_LGBMModelBase):
             Whether to enable early stopping. If set to True, training will stop if the validation score does not improve
             for a specified number of rounds (controlled by `n_iter_no_change`).
         n_iter_no_change : int, optional (default=10)
-            The number of iterations with no improvement after which training will be stopped.
+            If early stopping is enabled, this parameter specifies the number of iterations with no
+            improvement after which training will be stopped.
         validation_fraction : float or None, optional (default=0.1)
             Proportion of training data to set aside as
             validation data for early stopping. If None, early stopping is done on
@@ -665,6 +666,8 @@ class LGBMModel(_LGBMModelBase):
         self.random_state = random_state
         self.n_jobs = n_jobs
         self.importance_type = importance_type
+        self.early_stopping = early_stopping
+        self.n_iter_no_change = n_iter_no_change
         self.validation_fraction = validation_fraction
         self._Booster: Optional[Booster] = None
         self._evals_result: _EvalResultDict = {}
@@ -679,8 +682,6 @@ class LGBMModel(_LGBMModelBase):
         self._n_features_in: int = -1
         self._classes: Optional[np.ndarray] = None
         self._n_classes: int = -1
-        self.early_stopping = early_stopping
-        self.n_iter_no_change = n_iter_no_change
         self.set_params(**kwargs)
 
     # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
@@ -828,17 +829,18 @@ class LGBMModel(_LGBMModelBase):
         params.pop("n_estimators", None)
         params.pop("class_weight", None)
         params.pop("validation_fraction", None)
+        params.pop("early_stopping", None)
+        params.pop("n_iter_no_change", None)
 
         if isinstance(params["random_state"], np.random.RandomState):
             params["random_state"] = params["random_state"].randint(np.iinfo(np.int32).max)
         elif isinstance(params["random_state"], np.random.Generator):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
 
-        params.pop("early_stopping", False)
-        params.pop("n_iter_no_change", None)
         params = _choose_param_value("early_stopping_round", params, self.n_iter_no_change)
         if not self.early_stopping:
             params["early_stopping_round"] = None
+
         if self._n_classes > 2:
             for alias in _ConfigAliases.get("num_class"):
                 params.pop(alias, None)
