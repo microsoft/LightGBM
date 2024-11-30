@@ -20,12 +20,7 @@ fi
 
 # Get details needed for installing R components
 R_MAJOR_VERSION="${R_VERSION%.*}"
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    export R_MAC_VERSION=3.6.3
-    export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/R-${R_MAC_VERSION}.nn.pkg
-    export R_LINUX_VERSION="3.6.3-1bionic"
-    export R_APT_REPO="bionic-cran35/"
-elif [[ "${R_MAJOR_VERSION}" == "4" ]]; then
+if [[ "${R_MAJOR_VERSION}" == "4" ]]; then
     export R_MAC_VERSION=4.3.1
     export R_MAC_PKG_URL=${CRAN_MIRROR}/bin/macosx/big-sur-${ARCH}/base/R-${R_MAC_VERSION}-${ARCH}.pkg
     export R_LINUX_VERSION="4.3.1-1.2204.0"
@@ -108,16 +103,10 @@ if [[ $OS_NAME == "macos" ]]; then
     export R_TIDYCMD=/usr/local/bin/tidy
 fi
 
-# fix for issue where CRAN was not returning {evaluate}, {lattice}, or {waldo} when using R 3.6
-# "Warning: dependency ‘lattice’ is not available"
-if [[ "${R_MAJOR_VERSION}" == "3" ]]; then
-    Rscript --vanilla ./.ci/install-old-r-packages.R
-else
-    # {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
-    # This should be unnecessary on R >=4.4.0
-    # ref: https://github.com/microsoft/LightGBM/issues/6433
-    Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
-fi
+# {Matrix} needs {lattice}, so this needs to run before manually installing {Matrix}.
+# This should be unnecessary on R >=4.4.0
+# ref: https://github.com/microsoft/LightGBM/issues/6433
+Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}')"
 
 # manually install {Matrix}, as {Matrix}=1.7-0 raised its R floor all the way to R 4.4.0
 # ref: https://github.com/microsoft/LightGBM/issues/6433
