@@ -673,6 +673,15 @@ class LGBMModel(_LGBMModelBase):
     # is >=1.6.
     # ref: https://github.com/microsoft/LightGBM/pull/6651
     def _more_tags(self) -> Dict[str, Any]:
+        check_sample_weight_str = (
+            "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
+            "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
+            "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
+            "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
+        )
+        # "check_sample_weight_equivalence" can be removed when lightgbm's
+        # minimum supported scikit-learn version is at least 1.6
+        # ref: https://github.com/scikit-learn/scikit-learn/pull/30137
         return {
             "allow_nan": True,
             "X_types": ["2darray", "sparse", "1dlabels"],
@@ -680,12 +689,9 @@ class LGBMModel(_LGBMModelBase):
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)",
-                "check_sample_weight_equivalence": (
-                    "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
-                    "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
-                    "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
-                    "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
-                ),
+                "check_sample_weight_equivalence": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_dense_data": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_sparse_data": check_sample_weight_str,
             },
         }
 
