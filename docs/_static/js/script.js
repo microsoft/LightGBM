@@ -17,7 +17,7 @@ $(() => {
         $(
             '<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>',
         ).appendTo("body");
-        const collapsable = [
+        const collapsible = [
             "#build-threadless-version-not-recommended",
             "#build-mpi-version",
             "#build-gpu-version",
@@ -25,7 +25,7 @@ $(() => {
             "#build-java-wrapper",
             "#build-c-unit-tests",
         ];
-        $.each(collapsable, (_, val) => {
+        $.each(collapsible, (_, val) => {
             const header = `${val} > :header:first`;
             const content = `${val} :not(:header:first)`;
             $(header).addClass("closed");

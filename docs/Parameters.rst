@@ -35,7 +35,7 @@ For example, in Python:
 
 .. code-block:: python
 
-   # use learning rate of 0.07, becase 'learning_rate'
+   # use learning rate of 0.07, because 'learning_rate'
    # is the primary parameter name
    lgb.train(
       params={

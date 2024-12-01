@@ -22,9 +22,9 @@ class Random {
   */
   Random() {
     std::random_device rd;
-    auto genrator = std::mt19937(rd());
+    auto generator = std::mt19937(rd());
     std::uniform_int_distribution<int> distribution(0, x);
-    x = distribution(genrator);
+    x = distribution(generator);
   }
   /*!
   * \brief Constructor, with specific seed

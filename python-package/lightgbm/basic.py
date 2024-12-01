@@ -3525,7 +3525,7 @@ class Dataset:
             _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
         _log_warning(
-            "Reseting categorical features.\n"
+            "Resetting categorical features.\n"
             "You can set new categorical features via ``set_categorical_feature`` method"
         )
         self.categorical_feature = "auto"

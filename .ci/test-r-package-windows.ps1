@@ -171,7 +171,7 @@ Write-Output "Done installing Rtools"
 Write-Output "Installing CMake"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:CMAKE_PATH/cmake.zip", "$env:CMAKE_PATH") ; Assert-Output $?
-# Remove old CMake shiped with RTools
+# Remove old CMake shipped with RTools
 Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
