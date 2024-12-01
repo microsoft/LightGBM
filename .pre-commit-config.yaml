@@ -38,4 +38,10 @@ repos:
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
-    - id: shellcheck
+      - id: shellcheck
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.23.2
+    hooks:
+      - id: typos
+        args: ["--force-exclude"]
+        exclude: (\.gitignore$)|(^\.editorconfig$)

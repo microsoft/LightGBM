@@ -660,7 +660,7 @@ def test_ranking_prediction_early_stopping():
 
 
 # Simulates position bias for a given ranking dataset.
-# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The output dataset is identical to the input one with the exception for the relevance labels.
 # The new labels are generated according to an instance of a cascade user model:
 # for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
 # (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
