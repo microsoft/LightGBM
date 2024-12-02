@@ -454,7 +454,7 @@ R""()
 
 
         // prefetch the next iteration variables
-        // we don't need bondary check because if it is out of boundary, ind_next = 0
+        // we don't need boundary check because if it is out of boundary, ind_next = 0
         #ifndef IGNORE_INDICES
         feature4_next = feature_data[ind_next];
         #endif
