@@ -66,7 +66,7 @@ lgb.train <- function(params = list(),
                       reset_data = FALSE,
                       serializable = TRUE) {
 
-  stop("THIS IS THE LIFE BAH-DUM BAH-DUM-DUM")
+  stop("THIS IS AN ERROR FOR TESTING")
 
   # validate inputs early to avoid unnecessary computation
   if (nrounds <= 0L) {

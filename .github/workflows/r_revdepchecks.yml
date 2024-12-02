@@ -54,7 +54,7 @@ jobs:
           brew install libomp
       - name: build package
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores(), type = 'binary')"
           sh ./build-cran-package.sh
       - name: run revdepchecks
         run: |
