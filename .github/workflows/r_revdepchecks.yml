@@ -2,7 +2,6 @@ name: R reverse dependency checks
 
 on:
   push:
-  pull_request:
   # Run manually by clicking a button in the UI
   workflow_dispatch:
   # Run on the 5th day of every month
@@ -55,8 +54,7 @@ jobs:
           brew install libomp
       - name: build package
         run: |
-          # just install build dependencies (runtime dependencies are installed later)
-          Rscript -e "install.packages(c('knitr', 'markdown'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
           sh ./build-cran-package.sh
       - name: run revdepchecks
         run: |
