@@ -1,4 +1,4 @@
-name: Link checks
+name: R reverse dependency checks
 
 on:
   # Run manually by clicking a button in the UI
