@@ -1,6 +1,7 @@
 name: R reverse dependency checks
 
 on:
+  push:
   # Run manually by clicking a button in the UI
   workflow_dispatch:
   # Run on the 5th day of every month
