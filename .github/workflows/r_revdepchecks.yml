@@ -61,7 +61,8 @@ jobs:
         # is hard-coded to compile them all from source
         # (https://github.com/wch/r-source/blob/594b842678e932088b16ec0cd3c39714a141eed9/src/library/tools/R/checktools.R#L295)
         run: |
-          Rscript --vanilla ./.ci/download-r-revdeps.R
+          Rscript -e "install.packages('crandep', repos='https://cran.r-project.org')"
+          Rscript ./.ci/download-r-revdeps.R
       - name: run revdepchecks
         run: |
           bash ./.ci/run-revdep-checks.sh

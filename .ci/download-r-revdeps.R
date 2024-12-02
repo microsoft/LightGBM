@@ -4,7 +4,7 @@ loadNamespace("crandep")
     cat(sprintf("[download-revdeps] %s", msg))
 }
 
-PKG_DIR <- "/tmp/packages"
+# PKG_DIR <- "/tmp/packages"
 
 # get all of lightgbm's reverse dependencies
 depDF <- crandep::get_dep(
