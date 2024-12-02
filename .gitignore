@@ -405,6 +405,7 @@ python-package/lightgbm/VERSION.txt
 
 # R build artefacts
 **/autom4te.cache/
+*.Rcheck/
 R-package/conftest*
 R-package/config.status
 !R-package/data/agaricus.test.rda
@@ -437,7 +438,6 @@ tests/distributed/mlist.txt
 tests/distributed/train*
 tests/distributed/model*
 tests/distributed/predict*
-
 
 # Files from interactive R sessions
 .Rproj.user
