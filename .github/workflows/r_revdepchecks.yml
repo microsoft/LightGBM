@@ -55,22 +55,12 @@ jobs:
           brew install libomp
       - name: build package
         run: |
+          # just install build dependencies (runtime dependencies are installed later)
+          Rscript -e "install.packages(c('knitr', 'markdown'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh ./build-cran-package.sh
       - name: run revdepchecks
         run: |
           bash ./.ci/run-revdep-checks.sh
-      - name: Setup and run tests on Windows
-        if: startsWith(matrix.os, 'windows')
-        shell: pwsh -command ". {0}"
-        run: |
-          $env:BUILD_SOURCESDIRECTORY = $env:GITHUB_WORKSPACE
-          $env:LGB_VER = (Get-Content -TotalCount 1 $env:BUILD_SOURCESDIRECTORY\VERSION.txt).trim().replace('rc', '-')
-          $env:TOOLCHAIN = "${{ matrix.toolchain }}"
-          $env:R_VERSION = "${{ matrix.r_version }}"
-          $env:R_BUILD_TYPE = "${{ matrix.build_type }}"
-          $env:COMPILER = "${{ matrix.compiler }}"
-          $env:TASK = "${{ matrix.task }}"
-          & "$env:GITHUB_WORKSPACE/.ci/test-windows.ps1"
   all-r-revdepchecks-jobs-successful:
     if: always()
     runs-on: ubuntu-latest
