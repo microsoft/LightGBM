@@ -29,7 +29,7 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
-    if type -f apt 2>&1 > /dev/null; then
+    if type -f apt > /dev/null 2>&1; then
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y \
             ca-certificates \
@@ -42,10 +42,10 @@ else  # Linux
     fi
     CMAKE_VERSION="3.30.0"
     curl -O -L \
-        https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh \
+        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
     || exit 1
     sudo mkdir /opt/cmake || exit 1
-    sudo sh cmake-${CMAKE_VERSION}-linux-${ARCH}.sh --skip-license --prefix=/opt/cmake || exit 1
+    sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
     sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
 
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
@@ -142,13 +142,13 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
             -o miniforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh
-        sh miniforge.sh -b -p $CONDA
+            "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh"
+        sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda

@@ -9,7 +9,7 @@ set.seed(708L)
 #               to an accumulator then returns the current value.
 #               This is used to mock the situation where an evaluation
 #               metric increases every iteration
-ACCUMULATOR_NAME <- "INCREASING_METRIC_ACUMULATOR"
+ACCUMULATOR_NAME <- "INCREASING_METRIC_ACCUMULATOR"
 assign(x = ACCUMULATOR_NAME, value = 0.0, envir = .GlobalEnv)
 
 .increasing_metric <- function(preds, dtrain) {
@@ -634,7 +634,7 @@ test_that("lgb.cv() prefers objective in params to keyword argument", {
   for (bst_list in cv_bst$boosters) {
     bst <- bst_list[["booster"]]
     expect_equal(bst$params$objective, "regression_l1")
-    # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+    # NOTE: using save_model_to_string() since that is the simplest public API in the R-package
     #       allowing access to the "objective" attribute of the Booster object on the C++ side
     model_txt_lines <- strsplit(
       x = bst$save_model_to_string()
@@ -807,7 +807,7 @@ test_that("lgb.train() prefers objective in params to keyword argument", {
     , obj = "regression_l2"
   )
   expect_equal(bst$params$objective, "regression_l1")
-  # NOTE: using save_model_to_string() since that is the simplest public API in the R package
+  # NOTE: using save_model_to_string() since that is the simplest public API in the R-package
   #       allowing access to the "objective" attribute of the Booster object on the C++ side
   model_txt_lines <- strsplit(
     x = bst$save_model_to_string()
@@ -1777,7 +1777,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
     , early_stopping_rounds + 1L
   )
 
-  # Booster should understand thatt all three of these metrics should be minimized
+  # Booster should understand that all three of these metrics should be minimized
   eval_info <- bst$.__enclos_env__$private$get_eval_info()
   expect_identical(eval_info, c("mape", "rmse", "l1"))
   expect_identical(

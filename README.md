@@ -63,16 +63,6 @@ External (Unofficial) Repositories
 Projects listed here offer alternative ways to use LightGBM.
 They are not maintained or officially endorsed by the `LightGBM` development team.
 
-LightGBMLSS (An extension of LightGBM to probabilistic modelling from which prediction intervals and quantiles can be derived): https://github.com/StatMixedML/LightGBMLSS
-
-FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
-
-supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
-
-Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
-
-Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
-
 JPMML (Java PMML converter): https://github.com/jpmml/jpmml-lightgbm
 
 Nyoka (Python PMML converter): https://github.com/SoftwareAG/nyoka
@@ -99,6 +89,8 @@ Shapash (model visualization and interpretation): https://github.com/MAIF/shapas
 
 dtreeviz (decision tree visualization and model interpretation): https://github.com/parrt/dtreeviz
 
+supertree (interactive visualization of decision trees): https://github.com/mljar/supertree
+
 SynapseML (LightGBM on Spark): https://github.com/microsoft/SynapseML
 
 Kubeflow Fairing (LightGBM on Kubernetes): https://github.com/kubeflow/fairing
@@ -113,13 +105,31 @@ ML.NET (.NET/C#-package): https://github.com/dotnet/machinelearning
 
 LightGBM.NET (.NET/C#-package): https://github.com/rca22/LightGBM.Net
 
-Ruby gem: https://github.com/ankane/lightgbm-ruby
+LightGBM Ruby (Ruby gem): https://github.com/ankane/lightgbm-ruby
 
 LightGBM4j (Java high-level binding): https://github.com/metarank/lightgbm4j
 
+LightGBM4J (JVM interface for LightGBM written in Scala): https://github.com/seek-oss/lightgbm4j
+
+Julia-package: https://github.com/IQVIA-ML/LightGBM.jl
+
 lightgbm3 (Rust binding): https://github.com/Mottl/lightgbm3-rs
 
+MLServer (inference server for LightGBM): https://github.com/SeldonIO/MLServer
+
 MLflow (experiment tracking, model monitoring framework): https://github.com/mlflow/mlflow
+
+FLAML (AutoML library for hyperparameter optimization): https://github.com/microsoft/FLAML
+
+MLJAR AutoML (AutoML on tabular data): https://github.com/mljar/mljar-supervised
+
+Optuna (hyperparameter optimization framework): https://github.com/optuna/optuna
+
+LightGBMLSS (probabilistic modelling with LightGBM): https://github.com/StatMixedML/LightGBMLSS
+
+mlforecast (time series forecasting with LightGBM): https://github.com/Nixtla/mlforecast
+
+skforecast (time series forecasting with LightGBM): https://github.com/JoaquinAmatRodrigo/skforecast
 
 `{bonsai}` (R `{parsnip}`-compliant interface): https://github.com/tidymodels/bonsai
 
@@ -128,6 +138,8 @@ MLflow (experiment tracking, model monitoring framework): https://github.com/mlf
 lightgbm-transform (feature transformation binding): https://github.com/microsoft/lightgbm-transform
 
 `postgresml` (LightGBM training and prediction in SQL, via a Postgres extension): https://github.com/postgresml/postgresml
+
+`pyodide` (run `lightgbm` Python-package in a web browser): https://github.com/pyodide/pyodide
 
 `vaex-ml` (Python DataFrame library with its own interface to LightGBM): https://github.com/vaexio/vaex
 
