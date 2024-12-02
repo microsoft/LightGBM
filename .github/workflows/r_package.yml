@@ -14,10 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # https://github.com/actions/checkout/issues/1590#issuecomment-2207052044
-  #
-  # this could be removed (hopefully) when R 3.6 support is removed
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   # in CMake-driven builds, parallelize compilation
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # on Debian-based images, avoid interactive prompts
@@ -48,12 +44,6 @@ jobs:
           ################
           # CMake builds #
           ################
-          - os: ubuntu-latest
-            task: r-package
-            compiler: gcc
-            r_version: 3.6
-            build_type: cmake
-            container: 'ubuntu:18.04'
           - os: ubuntu-latest
             task: r-package
             compiler: gcc
@@ -174,19 +164,12 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
       - name: Install pandoc
         uses: r-lib/actions/setup-pandoc@v2
-        if: matrix.container != 'ubuntu:18.04'
-      # R 3.6 binary isn't easily available on Ubuntu 18.04,
-      # but setup-pandoc>=2.7.1 is uses a too-new glibc for it.
-      # ref: https://github.com/microsoft/LightGBM/issues/6298
-      - name: Install pandoc
-        uses: r-lib/actions/setup-pandoc@v2.6.0
-        if: matrix.container == 'ubuntu:18.04'
       - name: Install tinytex
         if: startsWith(matrix.os, 'windows')
         uses: r-lib/actions/setup-tinytex@v2
