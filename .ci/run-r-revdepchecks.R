@@ -5,7 +5,7 @@ check_dir <- commandArgs(trailing = TRUE)[[1L]]
 tools::check_packages_in_dir(
     dir = check_dir
     , check_args = c("--as-cran")
-    , Ncpus = as.integer((parallel::detectCores() - 1) / 2)
+    , Ncpus = 1
     , clean = TRUE
     , all = TRUE
     , reverse = list(

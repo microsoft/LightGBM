@@ -49,6 +49,7 @@ install.packages(
     pkgs = all_deps
     , repos = "https://cran.r-project.org"
     , dependencies = c("Depends", "Imports", "LinkingTo")
+    , type = "both"
 )
 
 # remove 'lightgbm' and its direct reverse dependencies
@@ -57,10 +58,10 @@ remove.packages(
     pkgs = c("lightgbm", reverse_deps)
 )
 
-print(sprintf("--- downloading reverse dependencies (%i)", length(reverse_deps)))
+# print(sprintf("--- downloading reverse dependencies (%i)", length(reverse_deps)))
 
-download.packages(
-    pkgs = reverse_deps
-    , destdir = PKG_DIR
-    , repos = "https://cran.r-project.org"
-)
+# download.packages(
+#     pkgs = reverse_deps
+#     , destdir = PKG_DIR
+#     , repos = "https://cran.r-project.org"
+# )
