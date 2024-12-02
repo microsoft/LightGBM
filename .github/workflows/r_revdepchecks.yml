@@ -57,8 +57,11 @@ jobs:
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores(), type = 'binary')"
           sh ./build-cran-package.sh
       - name: pre-install binary packages
+        # pre-install all of the dependencies... tools::check_packages_in_dir()
+        # is hard-coded to compile them all from source
+        # (https://github.com/wch/r-source/blob/594b842678e932088b16ec0cd3c39714a141eed9/src/library/tools/R/checktools.R#L295)
         run: |
-          Rscript ./.ci/download-r-revdeps.R
+          Rscript --vanilla ./.ci/download-r-revdeps.R
       - name: run revdepchecks
         run: |
           bash ./.ci/run-revdep-checks.sh
