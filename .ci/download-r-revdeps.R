@@ -50,6 +50,7 @@ install.packages(
     , repos = "https://cran.r-project.org"
     , dependencies = c("Depends", "Imports", "LinkingTo")
     , type = "both"
+    , Ncpus = parallel::detectCores()
 )
 
 # remove 'lightgbm' and its direct reverse dependencies

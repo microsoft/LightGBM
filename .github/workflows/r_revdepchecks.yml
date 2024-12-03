@@ -23,6 +23,9 @@ env:
   # so our CI can too. Setting to a large value here just
   # to catch extreme problems
   _R_CHECK_PKG_SIZES_THRESHOLD_: 100
+  # ensure that the locally-installed version of 'tidy' is used
+  # ref: https://cran.r-project.org/doc/manuals/R-exts.html#Checking-packages
+  R_TIDYCMD: '/usr/local/bin/tidy'
 
 jobs:
   test:
@@ -51,7 +54,23 @@ jobs:
           r-version: 'release'
       - name: install system dependencies
         run: |
-          brew install libomp
+          brew install \
+            automake \
+            basictex \
+            checkbashisms \
+            libomp \
+            qpdf
+          sudo tlmgr --verify-repo=none update --self
+          sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs
+      - name: install tidy
+        run: |
+          # install tidy v5.8.0
+          # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
+          TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
+          curl -sL ${TIDY_URL} -o tidy.pkg
+          sudo installer \
+              -pkg "$(pwd)/tidy.pkg" \
+              -target /
       - name: build package
         run: |
           Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores(), type = 'binary')"
