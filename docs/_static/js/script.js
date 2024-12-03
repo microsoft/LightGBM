@@ -15,7 +15,7 @@ $(() => {
     /* Collapse specified sections in the installation guide */
     if (window.location.pathname.toLocaleLowerCase().indexOf("installation-guide") !== -1) {
         $(
-            '<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f078";} .opened:before {content: "\\f077";}</style>',
+            '<style>.closed, .opened {cursor: pointer;} .closed:before, .opened:before {font-family: FontAwesome; display: inline-block; padding-right: 6px;} .closed:before {content: "\\f054";} .opened:before {content: "\\f078";}</style>',
         ).appendTo("body");
         const collapsible = [
             "#build-threadless-version-not-recommended",
@@ -23,6 +23,8 @@ $(() => {
             "#build-gpu-version",
             "#build-cuda-version",
             "#build-java-wrapper",
+            "#build-python-package",
+            "#build-r-package",
             "#build-c-unit-tests",
         ];
         $.each(collapsible, (_, val) => {
