@@ -60,8 +60,9 @@ jobs:
             checkbashisms \
             libomp \
             qpdf
-          sudo tlmgr --verify-repo=none update --self
-          sudo tlmgr --verify-repo=none install inconsolata helvetic rsfs
+          echo "/Library/TeX/texbin/" >> ${GITHUB_PATH}
+          sudo /Library/TeX/texbin/tlmgr --verify-repo=none update --self
+          sudo /Library/TeX/texbin/tlmgr --verify-repo=none install inconsolata helvetic rsfs
       - name: install tidy
         run: |
           # install tidy v5.8.0
