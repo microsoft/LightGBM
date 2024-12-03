@@ -14,14 +14,6 @@ try:
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.utils.validation import assert_all_finite, check_array, check_X_y
 
-    # sklearn.utils Tags types can be imported unconditionally once
-    # lightgbm's minimum scikit-learn version is 1.6 or higher
-    try:
-        from sklearn.utils import ClassifierTags as _sklearn_ClassifierTags
-        from sklearn.utils import RegressorTags as _sklearn_RegressorTags
-    except ImportError:
-        _sklearn_ClassifierTags = None
-        _sklearn_RegressorTags = None
     try:
         from sklearn.exceptions import NotFittedError
         from sklearn.model_selection import BaseCrossValidator, GroupKFold, StratifiedKFold
