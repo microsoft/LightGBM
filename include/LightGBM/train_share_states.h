@@ -11,6 +11,7 @@
 #include <LightGBM/utils/threading.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <vector>
 

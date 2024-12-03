@@ -15,6 +15,7 @@
 #include <LightGBM/utils/random.h>
 #include <LightGBM/utils/text_reader.h>
 
+#include <cstdint>
 #include <string>
 #include <functional>
 #include <map>
