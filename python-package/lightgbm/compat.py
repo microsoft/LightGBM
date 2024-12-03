@@ -140,8 +140,6 @@ except ImportError:
     _LGBMCheckClassificationTargets = None
     _LGBMComputeSampleWeight = None
     _LGBMValidateData = None
-    _sklearn_ClassifierTags = None
-    _sklearn_RegressorTags = None
     _sklearn_version = None
 
 # additional scikit-learn imports only for type hints
