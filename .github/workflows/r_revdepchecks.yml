@@ -19,6 +19,10 @@ env:
   # ignore R CMD CHECK NOTE checking how long it has
   # been since the last submission
   _R_CHECK_CRAN_INCOMING_REMOTE_: 0
+  # Indicate that no more than 2 threads should be used.
+  # ('misspi' explicitly read this variable, and expects it to be set to 'TRUE')
+  # ref: https://github.com/wch/r-source/blob/7feb54f6a71f1a6ec9e55ac0fb20115cd1a1d4e0/doc/manual/R-ints.texi#L4163
+  _R_CHECK_LIMIT_CORES_: 'TRUE'
   # CRAN ignores the "installed size is too large" NOTE,
   # so our CI can too. Setting to a large value here just
   # to catch extreme problems
