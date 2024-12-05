@@ -73,17 +73,17 @@ class BaggingSampleStrategy : public SampleStrategy {
           for (data_size_t i = start_index + 1; i < end_index; ++i) {
             sampled_query_boundaries_[i] += sampled_query_boundaries_[i - 1];
           }
-          sampled_query_boundaires_thread_buffer_[thread_index] = sampled_query_boundaries_[end_index - 1];
+          sampled_query_boundaries_thread_buffer_[thread_index] = sampled_query_boundaries_[end_index - 1];
          });
 
         for (int thread_index = 1; thread_index < num_blocks; ++thread_index) {
-          sampled_query_boundaires_thread_buffer_[thread_index] += sampled_query_boundaires_thread_buffer_[thread_index - 1];
+          sampled_query_boundaries_thread_buffer_[thread_index] += sampled_query_boundaries_thread_buffer_[thread_index - 1];
         }
 
         Threading::For<data_size_t>(0, num_sampled_queries_ + 1, 128, [this](int thread_index, data_size_t start_index, data_size_t end_index) {
           if (thread_index > 0) {
             for (data_size_t i = start_index; i < end_index; ++i) {
-              sampled_query_boundaries_[i] += sampled_query_boundaires_thread_buffer_[thread_index - 1];
+              sampled_query_boundaries_[i] += sampled_query_boundaries_thread_buffer_[thread_index - 1];
             }
           }
         });
@@ -171,7 +171,7 @@ class BaggingSampleStrategy : public SampleStrategy {
       } else {
         bagging_runner_.ReSize(num_queries_);
         sampled_query_boundaries_.resize(num_queries_ + 1, 0);
-        sampled_query_boundaires_thread_buffer_.resize(num_threads_, 0);
+        sampled_query_boundaries_thread_buffer_.resize(num_threads_, 0);
         bag_query_indices_.resize(num_data_);
       }
       bagging_rands_.clear();
@@ -280,7 +280,7 @@ class BaggingSampleStrategy : public SampleStrategy {
   /*! \brief query boundaries of the in-bag queries */
   std::vector<data_size_t> sampled_query_boundaries_;
   /*! \brief buffer for calculating sampled_query_boundaries_ */
-  std::vector<data_size_t> sampled_query_boundaires_thread_buffer_;
+  std::vector<data_size_t> sampled_query_boundaries_thread_buffer_;
   /*! \brief in-bag query indices */
   std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_query_indices_;
   /*! \brief number of queries in the training dataset */

@@ -40,8 +40,6 @@ from .compat import (
     _LGBMModelBase,
     _LGBMRegressorBase,
     _LGBMValidateData,
-    _sklearn_ClassifierTags,
-    _sklearn_RegressorTags,
     _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
@@ -726,7 +724,7 @@ class LGBMModel(_LGBMModelBase):
         # take whatever tags are provided by BaseEstimator, then modify
         # them with LightGBM-specific values
         return self._update_sklearn_tags_from_dict(
-            tags=_LGBMModelBase.__sklearn_tags__(self),
+            tags=super().__sklearn_tags__(),
             tags_dict=self._more_tags(),
         )
 
@@ -1298,10 +1296,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        tags = LGBMModel.__sklearn_tags__(self)
-        tags.estimator_type = "regressor"
-        tags.regressor_tags = _sklearn_RegressorTags(multi_label=False)
-        return tags
+        return super().__sklearn_tags__()
 
     def fit(  # type: ignore[override]
         self,
@@ -1360,9 +1355,9 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        tags = LGBMModel.__sklearn_tags__(self)
-        tags.estimator_type = "classifier"
-        tags.classifier_tags = _sklearn_ClassifierTags(multi_class=True, multi_label=False)
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = True
+        tags.classifier_tags.multi_label = False
         return tags
 
     def fit(  # type: ignore[override]

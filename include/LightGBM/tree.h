@@ -8,6 +8,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 
+#include <cstdint>
 #include <string>
 #include <map>
 #include <memory>

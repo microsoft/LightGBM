@@ -10,6 +10,7 @@
 #include <LightGBM/meta.h>
 #include <LightGBM/utils/random.h>
 
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <vector>
