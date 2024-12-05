@@ -25,8 +25,6 @@ CVBooster <- R6::R6Class(
 #' @description Cross validation logic used by LightGBM
 #' @inheritParams lgb_shared_params
 #' @param nfold the original dataset is randomly partitioned into \code{nfold} equal size subsamples.
-#' @param label Deprecated. See "Deprecated Arguments" section below.
-#' @param weight Deprecated. See "Deprecated Arguments" section below.
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
 #' @param showsd \code{boolean}, whether to show standard deviation of cross validation.
 #'               This parameter defaults to \code{TRUE}. Setting it to \code{FALSE} can lead to a
@@ -36,8 +34,6 @@ CVBooster <- R6::R6Class(
 #' @param folds \code{list} provides a possibility to use a list of pre-defined CV folds
 #'              (each element must be a vector of test fold's indices). When folds are supplied,
 #'              the \code{nfold} and \code{stratified} parameters are ignored.
-#' @param colnames Deprecated. See "Deprecated Arguments" section below.
-#' @param categorical_feature Deprecated. See "Deprecated Arguments" section below.
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                   into a predictor model which frees up memory and the original datasets
@@ -69,20 +65,12 @@ CVBooster <- R6::R6Class(
 #' )
 #' }
 #'
-#' @section Deprecated Arguments:
-#'
-#' A future release of \code{lightgbm} will require passing an \code{lgb.Dataset}
-#' to argument \code{'data'}. It will also remove support for passing arguments
-#' \code{'categorical_feature'}, \code{'colnames'}, \code{'label'}, and \code{'weight'}.
-#'
 #' @importFrom data.table data.table setorderv
 #' @export
 lgb.cv <- function(params = list()
                    , data
                    , nrounds = 100L
                    , nfold = 3L
-                   , label = NULL
-                   , weight = NULL
                    , obj = NULL
                    , eval = NULL
                    , verbose = 1L
@@ -92,8 +80,6 @@ lgb.cv <- function(params = list()
                    , stratified = TRUE
                    , folds = NULL
                    , init_model = NULL
-                   , colnames = NULL
-                   , categorical_feature = NULL
                    , early_stopping_rounds = NULL
                    , callbacks = list()
                    , reset_data = FALSE
@@ -104,33 +90,8 @@ lgb.cv <- function(params = list()
   if (nrounds <= 0L) {
     stop("nrounds should be greater than zero")
   }
-
-  # If 'data' is not an lgb.Dataset, try to construct one using 'label'
   if (!.is_Dataset(x = data)) {
-    warning(paste0(
-      "Passing anything other than an lgb.Dataset object to lgb.cv() is deprecated. "
-      , "Either pass an lgb.Dataset object, or use lightgbm()."
-    ))
-    if (is.null(label)) {
-      stop("'label' must be provided for lgb.cv if 'data' is not an 'lgb.Dataset'")
-    }
-    data <- lgb.Dataset(data = data, label = label)
-  }
-
-  # raise deprecation warnings if necessary
-  # ref: https://github.com/microsoft/LightGBM/issues/6435
-  args <- names(match.call())
-  if ("categorical_feature" %in% args) {
-    .emit_dataset_kwarg_warning("categorical_feature", "lgb.cv")
-  }
-  if ("colnames" %in% args) {
-    .emit_dataset_kwarg_warning("colnames", "lgb.cv")
-  }
-  if ("label" %in% args) {
-    .emit_dataset_kwarg_warning("label", "lgb.cv")
-  }
-  if ("weight" %in% args) {
-    .emit_dataset_kwarg_warning("weight", "lgb.cv")
+    stop("lgb.cv: data must be an lgb.Dataset instance")
   }
 
   # set some parameters, resolving the way they were passed in with other parameters
@@ -214,36 +175,16 @@ lgb.cv <- function(params = list()
   data$construct()
 
   # Check interaction constraints
-  cnames <- NULL
-  if (!is.null(colnames)) {
-    cnames <- colnames
-  } else if (!is.null(data$get_colnames())) {
-    cnames <- data$get_colnames()
-  }
   params[["interaction_constraints"]] <- .check_interaction_constraints(
     interaction_constraints = interaction_constraints
-    , column_names = cnames
+    , column_names = data$get_colnames()
   )
-
-  if (!is.null(weight)) {
-    data$set_field(field_name = "weight", data = weight)
-  }
 
   # Update parameters with parsed parameters
   data$update_params(params = params)
 
   # Create the predictor set
   data$.__enclos_env__$private$set_predictor(predictor = predictor)
-
-  # Write column names
-  if (!is.null(colnames)) {
-    data$set_colnames(colnames = colnames)
-  }
-
-  # Write categorical features
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature = categorical_feature)
-  }
 
   if (!is.null(folds)) {
 
