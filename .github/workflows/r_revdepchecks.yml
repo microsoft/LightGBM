@@ -1,0 +1,101 @@
+name: R reverse dependency checks
+
+on:
+  push:
+  # Run manually by clicking a button in the UI
+  workflow_dispatch:
+  # Run on the 5th day of every month
+  schedule:
+    - cron: '0 0 5 * *'
+
+# automatically cancel in-progress builds if another commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # parallelize compilation (extra important for Linux, where CRAN doesn't supply pre-compiled binaries)
+  MAKEFLAGS: "-j4"
+  # ignore R CMD CHECK NOTE checking how long it has
+  # been since the last submission
+  _R_CHECK_CRAN_INCOMING_REMOTE_: 0
+  # Indicate that no more than 2 threads should be used.
+  # ('misspi' explicitly read this variable, and expects it to be set to 'TRUE')
+  # ref: https://github.com/wch/r-source/blob/7feb54f6a71f1a6ec9e55ac0fb20115cd1a1d4e0/doc/manual/R-ints.texi#L4163
+  _R_CHECK_LIMIT_CORES_: 'TRUE'
+  # CRAN ignores the "installed size is too large" NOTE,
+  # so our CI can too. Setting to a large value here just
+  # to catch extreme problems
+  _R_CHECK_PKG_SIZES_THRESHOLD_: 100
+  # ensure that the locally-installed version of 'tidy' is used
+  # ref: https://cran.r-project.org/doc/manuals/R-exts.html#Checking-packages
+  R_TIDYCMD: '/usr/local/bin/tidy'
+
+jobs:
+  test:
+    name: r-revdepchecks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          submodules: true
+      - uses: r-lib/actions/setup-pandoc@v2
+      - name: Install tinytex
+        if: startsWith(matrix.os, 'windows')
+        uses: r-lib/actions/setup-tinytex@v2
+        env:
+          CTAN_MIRROR: https://ctan.math.illinois.edu/systems/win32/miktex
+          TINYTEX_INSTALLER: TinyTeX
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      - name: install system dependencies
+        run: |
+          brew install \
+            automake \
+            basictex \
+            checkbashisms \
+            libomp \
+            qpdf
+          echo "/Library/TeX/texbin/" >> ${GITHUB_PATH}
+          sudo /Library/TeX/texbin/tlmgr --verify-repo=none update --self
+          sudo /Library/TeX/texbin/tlmgr --verify-repo=none install inconsolata helvetic rsfs
+      - name: install tidy
+        run: |
+          # install tidy v5.8.0
+          # ref: https://groups.google.com/g/r-sig-mac/c/7u_ivEj4zhM
+          TIDY_URL=https://github.com/htacg/tidy-html5/releases/download/5.8.0/tidy-5.8.0-macos-x86_64+arm64.pkg
+          curl -sL ${TIDY_URL} -o tidy.pkg
+          sudo installer \
+              -pkg "$(pwd)/tidy.pkg" \
+              -target /
+      - name: build package
+        run: |
+          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores(), type = 'binary')"
+          sh ./build-cran-package.sh
+      - name: pre-install binary packages
+        # pre-install all of the dependencies... tools::check_packages_in_dir()
+        # is hard-coded to compile them all from source, which takes a long time
+        # (https://github.com/wch/r-source/blob/594b842678e932088b16ec0cd3c39714a141eed9/src/library/tools/R/checktools.R#L295)
+        run: |
+          Rscript -e "install.packages('crandep', repos='https://cran.r-project.org', Ncpus = parallel::detectCores())"
+          Rscript ./.ci/download-r-revdeps.R
+      - name: run revdepchecks
+        run: |
+          bash ./.ci/run-revdep-checks.sh
+  all-r-revdepchecks-jobs-successful:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+    - name: Note that all tests succeeded
+      uses: re-actors/alls-green@v1.2.2
+      with:
+        jobs: ${{ toJSON(needs) }}
