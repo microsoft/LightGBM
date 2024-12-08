@@ -33,7 +33,6 @@ try:
     _LGBMComputeSampleWeight = compute_sample_weight
     _LGBMValidateData = validate_data
 except ImportError:
-    raise
     SKLEARN_INSTALLED = False
 
     class _LGBMModelBase:  # type: ignore
