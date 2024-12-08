@@ -15,7 +15,6 @@ from __future__ import annotations
 import platform
 import sys
 from dataclasses import dataclass, field
-from typing import Callable, Literal
 
 import sklearn
 from sklearn.utils._param_validation import validate_parameter_constraints
@@ -586,11 +585,11 @@ if sklearn_version < parse_version("1.6"):
         estimator=None,
         generate_only=False,
         *,
-        legacy: bool = True,
-        expected_failed_checks: dict[str, str] | None = None,
-        on_skip: Literal["warn"] | None = "warn",
-        on_fail: Literal["raise", "warn"] | None = "raise",
-        callback: Callable | None = None,
+        legacy=True,
+        expected_failed_checks=None,
+        on_skip="warn",
+        on_fail="raise",
+        callback=None,
     ):
         # legacy, on_skip, on_fail, and callback are not supported and ignored
         from sklearn.utils.estimator_checks import check_estimator
@@ -603,8 +602,8 @@ if sklearn_version < parse_version("1.6"):
     def parametrize_with_checks(
         estimators,
         *,
-        legacy: bool = True,
-        expected_failed_checks: Callable | None = None,
+        legacy=True,
+        expected_failed_checks=None,
     ):
         # legacy is not supported and ignored
         from sklearn.utils.estimator_checks import parametrize_with_checks
