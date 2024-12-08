@@ -185,6 +185,13 @@ select = [
     # (pylint) Using the global statement is discouraged
     "PLW0603"
 ]
+"python-package/lightgbm/sklearn_compat.py" = [
+    # file is vendored from sklearn-compat
+    "D401",
+    "D400",
+    "D103",
+    "D205",
+]
 "tests/*" = [
     # (flake8-bugbear) Found useless expression
     "B018",
