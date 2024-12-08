@@ -16,7 +16,7 @@ try:
     from sklearn.exceptions import NotFittedError
     from sklearn.model_selection import BaseCrossValidator, GroupKFold, StratifiedKFold
     from sklearn.utils.validation import _check_sample_weight
-    from .sklearn_compat.utils.validation import validate_data
+    from ._sklearn_compat import validate_data
 
     SKLEARN_INSTALLED = True
     _LGBMBaseCrossValidator = BaseCrossValidator
@@ -65,7 +65,7 @@ except ImportError:
 
 # additional scikit-learn imports only for type hints
 if TYPE_CHECKING:
-    from .sklearn_compat.utils import Tags as _sklearn_Tags  # noqa: F401
+    from ._sklearn_compat import Tags as _sklearn_Tags  # noqa: F401
 
 """pandas"""
 try:
