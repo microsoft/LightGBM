@@ -64,7 +64,7 @@ except ImportError:
 
 # additional scikit-learn imports only for type hints
 if TYPE_CHECKING:
-    from .sklearn_compat.utils import Tags as _sklearn_Tags
+    from .sklearn_compat.utils import Tags as _sklearn_Tags  # noqa: F401
 
 """pandas"""
 try:
