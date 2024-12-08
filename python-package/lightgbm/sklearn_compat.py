@@ -325,7 +325,7 @@ if sklearn_version < parse_version("1.6"):
         yield _construct_instance(Estimator)
 
     # validation
-    def validate_data(_estimator, /, **kwargs):
+    def validate_data(_estimator, **kwargs):
         if "ensure_all_finite" in kwargs:
             force_all_finite = kwargs.pop("ensure_all_finite")
         else:
