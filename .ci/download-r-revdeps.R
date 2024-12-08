@@ -4,7 +4,7 @@ loadNamespace("crandep")
     cat(sprintf("[download-revdeps] %s", msg))
 }
 
-# PKG_DIR <- "/tmp/packages"
+PKG_DIR <- "/tmp/lgb-revdepchecks2"
 
 # get all of lightgbm's reverse dependencies
 depDF <- crandep::get_dep(
@@ -13,6 +13,7 @@ depDF <- crandep::get_dep(
     , reverse = TRUE
 )
 reverse_deps <- depDF[["to"]]
+reverse_deps <- c("mllnrs", "misspi")
 .log(sprintf("found %i reverse deps:", length(reverse_deps)))
 .log(toString(reverse_deps))
 
@@ -59,10 +60,10 @@ remove.packages(
     pkgs = c("lightgbm", reverse_deps)
 )
 
-# print(sprintf("--- downloading reverse dependencies (%i)", length(reverse_deps)))
+print(sprintf("--- downloading reverse dependencies (%i)", length(reverse_deps)))
 
-# download.packages(
-#     pkgs = reverse_deps
-#     , destdir = PKG_DIR
-#     , repos = "https://cran.r-project.org"
-# )
+download.packages(
+    pkgs = reverse_deps
+    , destdir = PKG_DIR
+    , repos = "https://cran.r-project.org"
+)
