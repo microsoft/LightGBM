@@ -919,8 +919,8 @@ class LGBMModel(_LGBMModelBase):
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             _X, _y = _LGBMValidateData(
                 self,
-                X,
-                y,
+                X=X,
+                y=y,
                 reset=True,
                 # allow any input type (this validation is done further down, in lgb.Dataset())
                 accept_sparse=True,
@@ -1078,7 +1078,7 @@ class LGBMModel(_LGBMModelBase):
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
             X = _LGBMValidateData(
                 self,
-                X,
+                X=X,
                 # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
                 #
                 # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
