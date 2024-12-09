@@ -4,41 +4,24 @@ check_dir <- commandArgs(trailing = TRUE)[[1L]]
 
 tools::check_packages_in_dir(
     dir = check_dir
-    , check_args = c("--as-cran")
-    , Ncpus = 1
+    , check_args = c("--run-dontrun", "--run-donttest")
     , clean = TRUE
     , all = TRUE
-    # , reverse = list(
-    #     which = "most"
-    #     , recursive = FALSE
-    # )
+    # only check one package at a time, to avoid oversubscribing CPUs
+    , Ncpus = 1L
+    # only test the libraries found in `check_dir`
+    , reverse = FALSE
 )
 
-# skip the following with known issues:
-#
-#   * 'misspi' ()
-deps_to_skip <- c("misspi")
-
-# tools::check_packages_in_dir() and associated functions don't offer
-# a way to say something like ""
-for (dep in deps_to_skip) {
-    dep_check_results_dir <- paste0("rdepends_", dep, ".Rcheck")
-    file.rename(
-        file.path(dep_check_results_dir, "00check.log")
-        , file.path(dep_check_results_dir, "results-backup.bak")
-    )
-}
-
 all_checks_passed <- tools::summarize_check_packages_in_dir_results(
-    dir = "/tmp/lgb-revdepchecks"
+    dir = check_dir
     , all = TRUE
-    , which = c("SHAPforxgboost")
 )
 
 if (!isTRUE(all_checks_passed)) {
     invisible(
         tools::summarize_check_packages_in_dir_results(
-            dir = "/tmp/lgb-revdepchecks"
+            dir = check_dir
             , all = TRUE
             , full = TRUE
         )
