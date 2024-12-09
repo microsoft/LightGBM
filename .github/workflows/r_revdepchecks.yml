@@ -74,6 +74,7 @@ jobs:
           sh ./build-cran-package.sh
       - name: run revdepchecks
         run: |
+          Rscript -e "install.packages(c('crandep'), repos = 'https://cran.r-project.org', type = 'binary')"
           bash ./.ci/run-revdep-checks.sh
   all-r-revdepchecks-jobs-successful:
     if: always()
