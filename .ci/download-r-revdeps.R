@@ -17,7 +17,7 @@ reverse_deps <- depDF[["to"]]
 
 # skip some dependencies with known issues:
 #
-#   * 'misspi' ()
+#   * 'misspi' (https://github.com/microsoft/LightGBM/issues/6741)
 deps_to_skip <- "misspi"
 .log(sprintf("excluding %i reverse deps: %s", length(deps_to_skip), toString(deps_to_skip)))
 reverse_deps <- reverse_deps[!reverse_deps %in% deps_to_skip]
@@ -45,7 +45,7 @@ their_deps <- unlist(
 
 all_deps <- sort(unique(c(their_deps, reverse_deps)))
 
-# don't try to install 'lightgbm', or packages expected that ship with the R standard library
+# don't try to install 'lightgbm', or packages that ship with the R standard library
 all_deps <- all_deps[!all_deps %in% c("grid", "methods", "lightgbm", "parallel", "stats", "utils")]
 
 .log(sprintf("packages required to run these checks: %i", length(all_deps)))
