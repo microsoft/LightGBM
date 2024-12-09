@@ -8,8 +8,11 @@ mkdir -p "${CHECKS_OUTPUT_DIR}"
 # preferring precompiled binaries where available.
 #
 # This is done for speed... tools::check_packages_in_dir() only performs source
-# installs of all packages, which results in lots of compilation. {lightgbm} checks
-# do not need to care about that... as of this writing, nothing has {lightgbm} as a
+# installs of all packages, which results in lots of compilation.
+#
+# ref: https://github.com/wch/r-source/blob/594b842678e932088b16ec0cd3c39714a141eed9/src/library/tools/R/checktools.R#L295
+#
+# {lightgbm} checks do not need to care about that... as of this writing, nothing has {lightgbm} as a
 # 'LinkingTo' dependency or otherwise needs {lightgbm} at build time.
 Rscript ./.ci/download-r-revdeps.R "${CHECKS_OUTPUT_DIR}"
 
