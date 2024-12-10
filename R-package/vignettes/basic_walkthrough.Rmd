@@ -67,22 +67,6 @@ In a first step, you need to convert data to numeric. Afterwards, you are ready 
 # Numeric response and feature matrix
 y <- as.numeric(bank$y == "yes")
 X <- data.matrix(bank[, c("age", "balance")])
-
-# Train
-fit <- lightgbm(
-  data = X
-  , label = y
-  , params = list(
-    num_leaves = 4L
-    , learning_rate = 1.0
-    , objective = "binary"
-  )
-  , nrounds = 10L
-  , verbose = -1L
-)
-
-# Result
-summary(predict(fit, X))
 ```
 
 It seems to have worked! And the predictions are indeed probabilities between 0 and 1.
@@ -100,14 +84,6 @@ params <- list(
   objective = "binary"
   , num_leaves = 4L
   , learning_rate = 1.0
-)
-
-# Train
-fit <- lgb.train(
-  params
-  , data = dtrain
-  , nrounds = 10L
-  , verbose = -1L
 )
 ```
 
