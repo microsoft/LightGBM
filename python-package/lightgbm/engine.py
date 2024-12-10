@@ -510,11 +510,9 @@ def _make_n_folds(
     nfold: int,
     params: Dict[str, Any],
     seed: int,
-    fpreproc: Optional[_LGBM_PreprocFunction],
     stratified: bool,
     shuffle: bool,
-    eval_train_metric: bool,
-) -> CVBooster:
+) -> Iterable[Tuple[np.ndarray, np.ndarray]]:
     """Make a n-fold list of Booster from random indices."""
     full_data = full_data.construct()
     num_data = full_data.num_data()
@@ -559,7 +557,16 @@ def _make_n_folds(
             test_id = [randidx[i : i + kstep] for i in range(0, num_data, kstep)]
             train_id = [np.concatenate([test_id[i] for i in range(nfold) if k != i]) for k in range(nfold)]
             folds = zip(train_id, test_id)
+    return folds
 
+
+def _make_cvbooster(
+    full_data: Dataset,
+    params: Dict[str, Any],
+    folds: Iterable[Tuple[np.ndarray, np.ndarray]],
+    fpreproc: Optional[_LGBM_PreprocFunction],
+    eval_train_metric: bool,
+) -> CVBooster:
     ret = CVBooster()
     for train_idx, test_idx in folds:
         train_set = full_data.subset(sorted(train_idx))
@@ -764,10 +771,11 @@ def cv(
         nfold=nfold,
         params=params,
         seed=seed,
-        fpreproc=fpreproc,
         stratified=stratified,
         shuffle=shuffle,
-        eval_train_metric=eval_train_metric,
+    )
+    cvbooster = _make_cvbooster(
+        full_data=train_set, params=params, folds=cvfolds, fpreproc=fpreproc, eval_train_metric=eval_train_metric
     )
 
     # setup callbacks
@@ -802,7 +810,7 @@ def cv(
         for cb in callbacks_before_iter:
             cb(
                 callback.CallbackEnv(
-                    model=cvfolds,
+                    model=cvbooster,
                     params=params,
                     iteration=i,
                     begin_iteration=0,
@@ -810,8 +818,8 @@ def cv(
                     evaluation_result_list=None,
                 )
             )
-        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
-        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
+        cvbooster.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvbooster.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
             results[f"{key}-mean"].append(mean)
             results[f"{key}-stdv"].append(std)
@@ -819,7 +827,7 @@ def cv(
             for cb in callbacks_after_iter:
                 cb(
                     callback.CallbackEnv(
-                        model=cvfolds,
+                        model=cvbooster,
                         params=params,
                         iteration=i,
                         begin_iteration=0,
@@ -828,14 +836,14 @@ def cv(
                     )
                 )
         except callback.EarlyStopException as earlyStopException:
-            cvfolds.best_iteration = earlyStopException.best_iteration + 1
-            for bst in cvfolds.boosters:
-                bst.best_iteration = cvfolds.best_iteration
+            cvbooster.best_iteration = earlyStopException.best_iteration + 1
+            for bst in cvbooster.boosters:
+                bst.best_iteration = cvbooster.best_iteration
             for k in results:
-                results[k] = results[k][: cvfolds.best_iteration]
+                results[k] = results[k][: cvbooster.best_iteration]
             break
 
     if return_cvbooster:
-        results["cvbooster"] = cvfolds  # type: ignore[assignment]
+        results["cvbooster"] = cvbooster  # type: ignore[assignment]
 
     return dict(results)

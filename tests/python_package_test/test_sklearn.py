@@ -278,6 +278,112 @@ def test_binary_classification_with_custom_objective():
     assert ret < 0.05
 
 
+def test_auto_early_stopping_binary_classification():
+    X, y = load_breast_cancer(return_X_y=True)
+    n_estimators = 200
+    gbm = lgb.LGBMClassifier(n_estimators=n_estimators, random_state=42, verbose=-1, early_stopping=True, num_leaves=5)
+    gbm.fit(X, y)
+    assert gbm._Booster.params["early_stopping_round"] == 10
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
+
+
+def test_auto_early_stopping_compatibility_with_histgradientboostingclassifier():
+    X, y = load_breast_cancer(return_X_y=True)
+    n_estimators = 200
+    n_iter_no_change = 5
+    gbm = lgb.LGBMClassifier(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5,
+        n_iter_no_change=n_iter_no_change,
+    )
+    gbm.fit(X, y)
+    assert gbm._Booster.params["early_stopping_round"] == n_iter_no_change
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
+
+
+def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed):
+    pd = pytest.importorskip("pandas")
+    X = pd.DataFrame(
+        {
+            "A": pd.Categorical(
+                rng_fixed_seed.permutation(["z", "y", "x", "w", "v"] * 60), ordered=True
+            ),  # str and ordered categorical
+            "B": rng_fixed_seed.permutation([1, 2, 3] * 100),  # int
+            "C": rng_fixed_seed.permutation([0.1, 0.2, -0.1, -0.1, 0.2] * 60),  # float
+            "D": rng_fixed_seed.permutation([True, False] * 150),  # bool
+        }
+    )
+    cat_cols_actual = ["A", "B", "C", "D"]
+    y = rng_fixed_seed.permutation([0, 1] * 150)
+    n_estimators = 5
+    gbm = lgb.LGBMClassifier(n_estimators=n_estimators, random_state=42, verbose=-1, early_stopping=True, num_leaves=5)
+    gbm.fit(X, y, categorical_feature=cat_cols_actual)
+    assert gbm._Booster.params["early_stopping_round"] == 10
+    assert gbm._Booster.num_trees() < 5
+    assert gbm.best_iteration_ < 5
+
+
+def test_early_stopping_is_deactivated_by_default_regression():
+    X, y = make_synthetic_regression(n_samples=10_001)
+    n_estimators = 5
+    gbm = lgb.LGBMRegressor(n_estimators=n_estimators, random_state=42, verbose=-1)
+    gbm.fit(X, y)
+
+    # Check that early stopping did not kick in
+    assert gbm._Booster.params.get("early_stopping_round") is None
+    assert gbm._Booster.num_trees() == n_estimators
+
+
+def test_early_stopping_is_deactivated_by_default_classification():
+    X, y = load_breast_cancer(return_X_y=True)
+    n_estimators = 5
+    gbm = lgb.LGBMClassifier(n_estimators=n_estimators, random_state=42, verbose=-1)
+    gbm.fit(X, y)
+
+    # Check that early stopping did not kick in
+    assert gbm._Booster.params.get("early_stopping_round") is None
+    assert gbm._Booster.num_trees() == n_estimators
+
+
+def test_early_stopping_is_deactivated_by_default_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
+    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
+    n_estimators = 5
+    gbm = lgb.LGBMRanker(n_estimators=n_estimators, random_state=42, verbose=-1)
+    gbm.fit(X_train, y_train, group=q_train)  # Assuming 10 samples in one group
+
+    # Check that early stopping did not kick in
+    assert gbm._Booster.params.get("early_stopping_round") is None
+    assert gbm._Booster.num_trees() == n_estimators
+
+
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
+)
+def test_auto_early_stopping_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
+    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
+    n_estimators = 5
+    gbm = lgb.LGBMRanker(n_estimators=n_estimators, random_state=42, early_stopping=True, num_leaves=5)
+    gbm.fit(
+        X_train,
+        y_train,
+        group=q_train,
+        eval_at=[1, 3],
+        callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))],
+    )
+    assert gbm._Booster.params["early_stopping_round"] == 10
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
+
+
 def test_dart():
     X, y = make_synthetic_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
@@ -1168,6 +1274,7 @@ def test_first_metric_only():
         "verbose": -1,
         "seed": 123,
         "early_stopping_rounds": 5,
+        "early_stopping": True,
     }  # early stop should be supported via global LightGBM parameter
     params_fit = {"X": X_train, "y": y_train}
 
