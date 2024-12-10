@@ -32,7 +32,7 @@ R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastml
 R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastshap_*.tar.gz || true
 R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy.GUI_*.tar.gz || true
 # qeML vignettes take a very very long time to run
-R CMD check --no-manual --run-dontrun --run-donttest --no-vignettes ${CHECKS_OUTPUT_DIR}/qeML_*.tar.gz || true
+R CMD check --no-manual --run-dontrun --run-donttest --ignore-vignettes ${CHECKS_OUTPUT_DIR}/qeML_*.tar.gz || true
 R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/mllrns_*.tar.gz || true
 R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy_*.tar.gz || true
 R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/r2pmml_*.tar.gz || true
