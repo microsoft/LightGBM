@@ -4,11 +4,11 @@ check_dir <- commandArgs(trailing = TRUE)[[1L]]
 
 tools::check_packages_in_dir(
     dir = check_dir
-    , check_args = c("--run-dontrun", "--run-donttest")
+    , check_args = c("--no-manual", "--run-dontrun", "--run-donttest")
     , clean = TRUE
     , all = TRUE
     # only check one package at a time, to avoid oversubscribing CPUs
-    , Ncpus = 1L
+    , Ncpus = 2L
     # only test the libraries found in `check_dir`
     , reverse = FALSE
 )
