@@ -139,7 +139,7 @@ NULL
 #'                    system, but be aware that getting the number of cores detected correctly requires package
 #'                    \code{RhpcBLASctl} to be installed.
 #'
-#'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+#'                    This parameter gets overridden by \code{num_threads} and its aliases under \code{params}
 #'                    if passed there.
 #'
 #'                    \emph{New in version 4.0.0}
