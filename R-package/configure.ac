@@ -60,7 +60,7 @@ AC_LANG_CONFTEST(
 ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mmprefetch=yes
 AC_MSG_RESULT([${ac_mmprefetch}])
 if test "${ac_mmprefetch}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_PREFETCH=1"
 fi
 
 ############
@@ -86,7 +86,7 @@ AC_LANG_CONFTEST(
 ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftest && ac_mm_malloc=yes
 AC_MSG_RESULT([${ac_mm_malloc}])
 if test "${ac_mm_malloc}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
 ##########
