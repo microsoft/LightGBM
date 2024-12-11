@@ -1789,7 +1789,7 @@ ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftes
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ac_mmprefetch}" >&5
 printf "%s\n" "${ac_mmprefetch}" >&6; }
 if test "${ac_mmprefetch}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_PREFETCH=1"
 fi
 
 ############
@@ -1824,7 +1824,7 @@ ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftes
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ac_mm_malloc}" >&5
 printf "%s\n" "${ac_mm_malloc}" >&6; }
 if test "${ac_mm_malloc}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
 ##########
