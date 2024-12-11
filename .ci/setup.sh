@@ -13,7 +13,7 @@ ARCH=$(uname -m)
 if [[ $OS_NAME == "macos" ]]; then
     # Check https://github.com/actions/runner-images/tree/main/images/macos for available
     # versions of Xcode
-    sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
+    sudo xcode-select -s /Applications/Xcode_14.3.app/Contents/Developer || exit 1
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
     else  # gcc
