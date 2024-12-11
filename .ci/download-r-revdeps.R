@@ -61,12 +61,6 @@ install.packages(  # nolint: undesirable_function
     , Ncpus = parallel::detectCores()
 )
 
-# remove 'lightgbm' and its direct reverse dependencies
-.log("removing 'lightgbm' and its reverse dependencies")
-remove.packages(
-    pkgs = c("lightgbm", reverse_deps)
-)
-
 # get source tarballs, to be checked with 'R CMD check'
 print(sprintf("--- downloading reverse dependencies to check (%i)", length(reverse_deps)))
 download.packages(
