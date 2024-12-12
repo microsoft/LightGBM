@@ -21,20 +21,20 @@ sh ./build-cran-package.sh --no-build-vignettes
 R CMD INSTALL --with-keep.source ./lightgbm_*.tar.gz
 
 # run 'R CMD check' on lightgbm's reverse dependencies
-#Rscript ./.ci/run-r-revdepchecks.R "${CHECKS_OUTPUT_DIR}"
+Rscript ./.ci/run-r-revdepchecks.R "${CHECKS_OUTPUT_DIR}"
 
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/EIX_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/SHAPforxgboost_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/cbl_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/bonsai_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastshap_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastml_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastshap_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy.GUI_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/EIX_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/SHAPforxgboost_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/cbl_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/bonsai_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastshap_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastml_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/fastshap_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy.GUI_*.tar.gz || true
 # qeML vignettes take a very very long time to run
 #R CMD check --no-manual --run-dontrun --run-donttest --ignore-vignettes ${CHECKS_OUTPUT_DIR}/qeML_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/mllrns_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/r2pmml_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/stackgbm_*.tar.gz || true
-R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/vip_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/mllrns_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/predhy_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/r2pmml_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/stackgbm_*.tar.gz || true
+# R CMD check --no-manual --run-dontrun --run-donttest ${CHECKS_OUTPUT_DIR}/vip_*.tar.gz || true

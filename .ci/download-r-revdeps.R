@@ -18,7 +18,11 @@ reverse_deps <- depDF[["to"]]
 # skip some dependencies with known issues:
 #
 #   * 'misspi' (https://github.com/microsoft/LightGBM/issues/6741)
-deps_to_skip <- "misspi"
+#   * 'qeML'   (checks take 45+ minutes to run)
+deps_to_skip <- c(
+    "misspi"
+    , "qeML"
+)
 .log(sprintf("excluding %i reverse deps: %s", length(deps_to_skip), toString(deps_to_skip)))
 reverse_deps <- reverse_deps[!reverse_deps %in% deps_to_skip]
 
