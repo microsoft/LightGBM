@@ -84,17 +84,6 @@ minimum-version = "build-system.requires"
 
 # end:build-system
 
-[tool.isort]
-include_trailing_comma = true
-line_length = 120
-# "vertical hanging indent", to match what ruff-format does
-# ref: https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html#3-vertical-hanging-indent
-multi_line_output = 3
-skip_glob = [
-    "*/external_libs/*",
-    "*/lightgbm-python/*",
-]
-
 [tool.mypy]
 disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
