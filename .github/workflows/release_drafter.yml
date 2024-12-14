@@ -7,7 +7,6 @@ on:
   push:
     branches:
       - master
-      - ci/release-drafter
 
 jobs:
   updateReleaseDraft:
