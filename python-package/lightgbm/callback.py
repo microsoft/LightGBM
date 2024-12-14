@@ -78,7 +78,7 @@ def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     # tuples from cv() sometimes have a 5th item, with standard deviation of
     # the evaluation metric (taken over all cross-validation folds)
     if show_stdv and len(value) == 5:
-        out += f"+ {value[4]}"
+        out += f" + {value[4]:g}"
     return out
 
 
