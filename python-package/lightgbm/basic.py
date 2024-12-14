@@ -10,8 +10,8 @@ from .libpath import _LIB  # isort: skip
 
 import abc
 import ctypes
-import json
 import inspect
+import json
 import warnings
 from collections import OrderedDict
 from copy import deepcopy
