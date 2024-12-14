@@ -71,6 +71,11 @@ class CallbackEnv:
     evaluation_result_list: Optional[_ListOfEvalResultTuples]
 
 
+# TODO(jameslamb): make this not require string comparisons, but also not have cyclic imports
+def _env_model_is_cvbooster(env: CallbackEnv) -> bool:
+    return env.model.__class__.__name__ == "CVBooster"
+
+
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     """Format metric string."""
     if len(value) == 4:
@@ -144,17 +149,18 @@ class _RecordEvaluationCallback:
                 "Please report it at https://github.com/microsoft/LightGBM/issues"
             )
         self.eval_result.clear()
+        model_is_cvbooster = _env_model_is_cvbooster(env)
         for item in env.evaluation_result_list:
-            if len(item) == 4:  # regular train
-                data_name, eval_name = item[:2]
-            else:  # cv
-                data_name, eval_name = item[1].split()
-            self.eval_result.setdefault(data_name, OrderedDict())
-            if len(item) == 4:
-                self.eval_result[data_name].setdefault(eval_name, [])
+            dataset_name, metric_name, *_ = item
+            self.eval_result.setdefault(dataset_name, OrderedDict())
+            if model_is_cvbooster:
+                # cv()
+                self.eval_result[dataset_name].setdefault(f"{metric_name}-mean", [])
+                self.eval_result[dataset_name].setdefault(f"{metric_name}-stdv", [])
             else:
-                self.eval_result[data_name].setdefault(f"{eval_name}-mean", [])
-                self.eval_result[data_name].setdefault(f"{eval_name}-stdv", [])
+                # train()
+                dataset_name, metric_name, metric_value, *_ = item
+                self.eval_result[dataset_name].setdefault(metric_name, [])
 
     def __call__(self, env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
@@ -164,16 +170,17 @@ class _RecordEvaluationCallback:
                 "record_evaluation() callback enabled but no evaluation results found. This is a probably bug in LightGBM. "
                 "Please report it at https://github.com/microsoft/LightGBM/issues"
             )
+        model_is_cvbooster = _env_model_is_cvbooster(env)
         for item in env.evaluation_result_list:
-            if len(item) == 4:
-                data_name, eval_name, result = item[:3]
-                self.eval_result[data_name][eval_name].append(result)
+            if model_is_cvbooster:
+                # cv()
+                dataset_name, metric_name, metric_mean, _, metric_std_dev = item  # type: ignore[misc]
+                self.eval_result[dataset_name][f"{metric_name}-mean"].append(metric_mean)
+                self.eval_result[dataset_name][f"{metric_name}-stdv"].append(metric_std_dev)
             else:
-                data_name, eval_name = item[1].split()
-                res_mean = item[2]
-                res_stdv = item[4]  # type: ignore[misc]
-                self.eval_result[data_name][f"{eval_name}-mean"].append(res_mean)
-                self.eval_result[data_name][f"{eval_name}-stdv"].append(res_stdv)
+                # train()
+                dataset_name, metric_name, metric_value, *_ = item
+                self.eval_result[dataset_name][metric_name].append(metric_value)
 
 
 def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
@@ -306,15 +313,17 @@ class _EarlyStoppingCallback:
     def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score < best_score - delta
 
-    def _is_train_set(self, ds_name: str, eval_name: str, env: CallbackEnv) -> bool:
+    def _is_train_set(self, dataset_name: str, env: CallbackEnv) -> bool:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
-        if ds_name == "cv_agg" and eval_name == "train":
+
+        # TODO(jameslamb): make this not require string comparisons, but also not have cyclic imports
+        if _env_model_is_cvbooster(env) and dataset_name == "train":
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
-        if isinstance(env.model, Booster) and ds_name == env.model._train_data_name:
+        if isinstance(env.model, Booster) and dataset_name == env.model._train_data_name:
             return True
 
         return False
@@ -332,8 +341,7 @@ class _EarlyStoppingCallback:
         # validation sets are guaranteed to not be identical to the training data in cv()
         if isinstance(env.model, Booster):
             only_train_set = len(env.evaluation_result_list) == 1 and self._is_train_set(
-                ds_name=env.evaluation_result_list[0][0],
-                eval_name=env.evaluation_result_list[0][1].split(" ")[0],
+                dataset_name=env.evaluation_result_list[0][0],
                 env=env,
             )
             if only_train_set:
@@ -372,18 +380,18 @@ class _EarlyStoppingCallback:
                 _log_info(f"Using {self.min_delta} as min_delta for all metrics.")
             deltas = [self.min_delta] * n_datasets * n_metrics
 
-        # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-        self.first_metric = env.evaluation_result_list[0][1].split(" ")[-1]
+        self.first_metric = env.evaluation_result_list[0][1]
         for eval_ret, delta in zip(env.evaluation_result_list, deltas):
             self.best_iter.append(0)
-            if eval_ret[3]:  # greater is better
+            _, _, _, is_higher_better, *_ = eval_ret
+            if is_higher_better:
                 self.best_score.append(float("-inf"))
                 self.cmp_op.append(partial(self._gt_delta, delta=delta))
             else:
                 self.best_score.append(float("inf"))
                 self.cmp_op.append(partial(self._lt_delta, delta=delta))
 
-    def _final_iteration_check(self, env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
+    def _final_iteration_check(self, *, env: CallbackEnv, metric_name: str, i: int) -> None:
         if env.iteration == env.end_iteration - 1:
             if self.verbose:
                 best_score_str = "\t".join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
@@ -391,7 +399,7 @@ class _EarlyStoppingCallback:
                     "Did not meet early stopping. " f"Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}"
                 )
                 if self.first_metric_only:
-                    _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                    _log_info(f"Evaluated only: {metric_name}")
             raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
 
     def __call__(self, env: CallbackEnv) -> None:
@@ -407,21 +415,19 @@ class _EarlyStoppingCallback:
         # self.best_score_list is initialized to an empty list
         first_time_updating_best_score_list = self.best_score_list == []
         for i in range(len(env.evaluation_result_list)):
-            score = env.evaluation_result_list[i][2]
-            if first_time_updating_best_score_list or self.cmp_op[i](score, self.best_score[i]):
-                self.best_score[i] = score
+            # NOTE: for cv(), 'metric_value' is a mean over all CV folds
+            dataset_name, metric_name, metric_value, *_ = env.evaluation_result_list[i]
+            if first_time_updating_best_score_list or self.cmp_op[i](metric_value, self.best_score[i]):
+                self.best_score[i] = metric_value
                 self.best_iter[i] = env.iteration
                 if first_time_updating_best_score_list:
                     self.best_score_list.append(env.evaluation_result_list)
                 else:
                     self.best_score_list[i] = env.evaluation_result_list
-            # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-            eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
-            if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
+            if self.first_metric_only and self.first_metric != metric_name:
                 continue  # use only the first metric for early stopping
             if self._is_train_set(
-                ds_name=env.evaluation_result_list[i][0],
-                eval_name=eval_name_splitted[0],
+                dataset_name=dataset_name,
                 env=env,
             ):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
@@ -432,9 +438,9 @@ class _EarlyStoppingCallback:
                     )
                     _log_info(f"Early stopping, best iteration is:\n[{self.best_iter[i] + 1}]\t{eval_result_str}")
                     if self.first_metric_only:
-                        _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                        _log_info(f"Evaluated only: {metric_name}")
                 raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
-            self._final_iteration_check(env, eval_name_splitted, i)
+            self._final_iteration_check(env=env, metric_name=metric_name, i=i)
 
 
 def _should_enable_early_stopping(stopping_rounds: Any) -> bool:
