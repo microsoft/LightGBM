@@ -2310,7 +2310,7 @@ def test_refit():
 def test_refit_with_one_tree():
     X, y = load_breast_cancer(return_X_y=True)
     lgb_train = lgb.Dataset(X, label=y)
-    params={"objective": "binary", "num_trees": 1, "verbosity": -1}
+    params = {"objective": "binary", "num_trees": 1, "verbosity": -1}
     model = lgb.train(params, lgb_train, num_boost_round=1)
     model_refit = model.refit(X, y)
     assert isinstance(model_refit, lgb.Booster)
