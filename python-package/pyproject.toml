@@ -190,4 +190,4 @@ select = [
 convention = "numpy"
 
 [tool.ruff.lint.isort]
-case-sensitive = true
+known-first-party = ["lightgbm"]
