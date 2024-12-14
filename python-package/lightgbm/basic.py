@@ -8,7 +8,7 @@
 # For details, see the "cannot allocate memory in static TLS block" entry in docs/FAQ.rst.
 from .libpath import _LIB  # isort: skip
 
-import abc
+import abc 
 import ctypes
 import inspect
 import json
