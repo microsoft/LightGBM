@@ -6,6 +6,7 @@ on:
   push:
     branches:
     - master
+    - ci/linters
   pull_request:
     branches:
     - master
