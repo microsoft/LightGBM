@@ -157,6 +157,9 @@ void Linkers::ListenThread(int incoming_cnt) {
     }
     int* ptr_in_rank = reinterpret_cast<int*>(buffer);
     int in_rank = *ptr_in_rank;
+    if (in_rank < 0 || in_rank >= num_machines_) {
+      Log::Fatal("Invalid rank %d found during initialization of linkers. The world size is %d.", in_rank, num_machines_);
+    }
     // add new socket
     SetLinker(in_rank, handler);
     ++connected_cnt;
