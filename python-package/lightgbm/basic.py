@@ -2507,11 +2507,11 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        for k in other_params:
+        for k in other_params.keys():
             if k not in ignore_keys:
                 if k not in params or params[k] != other_params[k]:
                     return False
-        for k in params:
+        for k in params.keys():
             if k not in ignore_keys:
                 if k not in other_params or params[k] != other_params[k]:
                     return False
