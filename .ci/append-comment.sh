@@ -13,7 +13,7 @@
 set -e -E -u -o pipefail
 
 if [ -z "$GITHUB_ACTIONS" ]; then
-  echo "Must be run inside GitHub Actions CI"
+  echo "Must be run inside GitHub Actions CI" 
   exit 1
 fi
 
