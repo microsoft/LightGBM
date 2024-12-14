@@ -140,7 +140,7 @@ ignore = [
     "PLR1714",
     # (pylint) Magic value used in comparison
     "PLR2004",
-    # (pylint) for loop veriable overwritten by assignment target
+    # (pylint) for loop variable overwritten by assignment target
     "PLW2901",
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
     "PLR5501"
@@ -154,6 +154,7 @@ select = [
     "D",
     # pycodestyle
     "E",
+    "W",
     # pyflakes
     "F",
     # NumPy-specific rules
