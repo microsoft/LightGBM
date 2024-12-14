@@ -27,7 +27,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (
-	PANDAS_INSTALLED,
+    PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
     arrow_is_boolean,
