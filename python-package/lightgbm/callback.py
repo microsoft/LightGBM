@@ -73,8 +73,8 @@ class CallbackEnv:
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     """Format metric string."""
-    eval_name, metric_name, eval_result, *_ = value
-    out = f"{eval_name}'s {metric_name}: {eval_result:g}"
+    dataset_name, metric_name, metric_value, *_ = value
+    out = f"{dataset_name}'s {metric_name}: {metric_value:g}"
     # tuples from cv() sometimes have a 5th item, with standard deviation of
     # the evaluation metric (taken over all cross-validation folds)
     if show_stdv and len(value) == 5:
