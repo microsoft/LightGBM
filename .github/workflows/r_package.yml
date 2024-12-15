@@ -231,10 +231,10 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          R_LIBS="'R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat')"
           CRAN_MIRROR="https://cran.rstudio.com"
           RDscript${{ matrix.r_customization }} \
-            -e "install.packages(c(${R_LIBS}), repos = '${CRAN_MIRROR}', Ncpus = parallel::detectCores())"
+            -e "install.packages(${R_LIBS}, repos = '${CRAN_MIRROR}', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
@@ -299,10 +299,10 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          R_LIBS="'R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl')"
           CRAN_MIRROR="https://cran.rstudio.com"
           Rscript \
-            -e "install.packages(c(${R_LIBS}), repos = '${CRAN_MIRROR}', Ncpus = parallel::detectCores())"
+            -e "install.packages(${R_LIBS}, repos = '${CRAN_MIRROR}', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at
