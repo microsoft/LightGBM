@@ -225,7 +225,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       num_positions_ = 0;
     }
 
-    // check query boundries
+    // check query boundaries
     if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_data_) {
       query_boundaries_.clear();
       num_queries_ = 0;
@@ -282,7 +282,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       }
     }
     if (query_load_from_file_) {
-      // check query boundries
+      // check query boundaries
       if (!query_boundaries_.empty() && query_boundaries_[num_queries_] != num_all_data) {
         query_boundaries_.clear();
         num_queries_ = 0;
@@ -584,7 +584,7 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
   if (positions_.empty()) {
     positions_.resize(num_data_);
   } else {
-    Log::Warning("Overwritting positions in dataset.");
+    Log::Warning("Overwriting positions in dataset.");
   }
   num_positions_ = num_data_;
 

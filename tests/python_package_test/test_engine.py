@@ -660,7 +660,7 @@ def test_ranking_prediction_early_stopping():
 
 
 # Simulates position bias for a given ranking dataset.
-# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The output dataset is identical to the input one with the exception for the relevance labels.
 # The new labels are generated according to an instance of a cascade user model:
 # for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
 # (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
@@ -4611,3 +4611,18 @@ def test_bagging_by_query_in_lambdarank():
     ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
     assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
     assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
+
+
+def test_equal_predict_from_row_major_and_col_major_data():
+    X_row, y = make_synthetic_regression()
+    assert X_row.flags["C_CONTIGUOUS"] and not X_row.flags["F_CONTIGUOUS"]
+    ds = lgb.Dataset(X_row, y)
+    params = {"num_leaves": 8, "verbose": -1}
+    bst = lgb.train(params, ds, num_boost_round=5)
+    preds_row = bst.predict(X_row)
+
+    X_col = np.asfortranarray(X_row)
+    assert X_col.flags["F_CONTIGUOUS"] and not X_col.flags["C_CONTIGUOUS"]
+    preds_col = bst.predict(X_col)
+
+    np.testing.assert_allclose(preds_row, preds_col)

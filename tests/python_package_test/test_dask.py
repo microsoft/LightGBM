@@ -471,7 +471,7 @@ def test_classifier_custom_objective(output, task, cluster):
         assert_eq(p1_proba, p1_proba_local)
 
 
-def test_machines_to_worker_map_unparseable_host_names():
+def test_machines_to_worker_map_unparsable_host_names():
     workers = {"0.0.0.1:80": {}, "0.0.0.2:80": {}}
     machines = "0.0.0.1:80,0.0.0.2:80"
     with pytest.raises(ValueError, match="Could not parse host name from worker address '0.0.0.1:80'"):
