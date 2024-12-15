@@ -2315,6 +2315,13 @@ def test_refit_with_one_tree():
     model_refit = model.refit(X, y)
     assert isinstance(model_refit, lgb.Booster)
 
+    X, y = make_regression(n_samples=10_000, n_features=10)
+    lgb_train = lgb.Dataset(X, label=y)
+    params = {"objective": "regression", "verbosity": -1}
+    model = lgb.train(params, lgb_train, num_boost_round=1)
+    model_refit = model.refit(X, y)
+    assert isinstance(model_refit, lgb.Booster)
+
 
 def test_pred_leaf_output_shape():
     X, y = make_regression(n_samples=10_000, n_features=10)
