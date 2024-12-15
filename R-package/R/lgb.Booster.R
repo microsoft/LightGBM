@@ -1114,7 +1114,7 @@ predict.lgb.Booster <- function(object,
 #'
 #'          Requesting a different prediction type or passing parameters to \link{predict.lgb.Booster}
 #'          will cause it to ignore the fast-predict configuration and take the slow route instead
-#'          (but be aware that an existing configuration might not always be overriden by supplying
+#'          (but be aware that an existing configuration might not always be overridden by supplying
 #'          different parameters or prediction type, so make sure to check that the output is what
 #'          was expected when a prediction is to be made on a single row for something different than
 #'          what is configured).
@@ -1128,7 +1128,7 @@ predict.lgb.Booster <- function(object,
 #'          and as such, this function will produce an error if passing \code{csr=TRUE} and
 #'          \code{type = "contrib"} together.
 #' @inheritParams lgb_predict_shared_params
-#' @param model LighGBM model object (class \code{lgb.Booster}).
+#' @param model LightGBM model object (class \code{lgb.Booster}).
 #'
 #'              \bold{The object will be modified in-place}.
 #' @param csr Whether the prediction function is going to be called on sparse CSR inputs.

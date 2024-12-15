@@ -967,7 +967,7 @@ def _predict(
                     out[i].append(part)
 
             # by default, dask.array.concatenate() concatenates sparse arrays into a COO matrix
-            # the code below is used instead to ensure that the sparse type is preserved during concatentation
+            # the code below is used instead to ensure that the sparse type is preserved during concatenation
             if isinstance(pred_meta, ss.csr_matrix):
                 concat_fn = partial(ss.vstack, format="csr")
             elif isinstance(pred_meta, ss.csc_matrix):

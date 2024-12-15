@@ -7,6 +7,8 @@
 
 #include <LightGBM/cuda/cuda_column_data.hpp>
 
+#include <cstdint>
+
 namespace LightGBM {
 
 CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
