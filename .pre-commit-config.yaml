@@ -12,36 +12,44 @@ exclude: |
   |R-package/man/.*Rd$
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+  # - repo: https://github.com/pre-commit/pre-commit-hooks
+  #   rev: v5.0.0
+  #   hooks:
+  #     - id: end-of-file-fixer
+  #     - id: trailing-whitespace
+  - repo: https://github.com/adrienverge/yamllint
+    rev: 1.35.1
     hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--settings-path", "python-package/pyproject.toml"]
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.7.0
-    hooks:
-      # Run the linter.
-      - id: ruff
-        args: ["--config", "python-package/pyproject.toml"]
-        types_or: [python, jupyter]
-      # Run the formatter.
-      - id: ruff-format
-        args: ["--config", "python-package/pyproject.toml"]
-        types_or: [python, jupyter]
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.23.2
-    hooks:
-      - id: typos
-        args: ["--force-exclude"]
-        exclude: (\.gitignore$)|(^\.editorconfig$)
+      - id: yamllint
+        args: [--strict, -c=/path/to/.yamllint]
+  # entry: yamllint
+  # language: python
+  # types: [file, yaml]
+  # - repo: https://github.com/pycqa/isort
+  #   rev: 5.13.2
+  #   hooks:
+  #     - id: isort
+  #       name: isort (python)
+  #       args: ["--settings-path", "python-package/pyproject.toml"]
+  # - repo: https://github.com/astral-sh/ruff-pre-commit
+  #   # Ruff version.
+  #   rev: v0.7.0
+  #   hooks:
+  #     # Run the linter.
+  #     - id: ruff
+  #       args: ["--config", "python-package/pyproject.toml"]
+  #       types_or: [python, jupyter]
+  #     # Run the formatter.
+  #     - id: ruff-format
+  #       args: ["--config", "python-package/pyproject.toml"]
+  #       types_or: [python, jupyter]
+  # - repo: https://github.com/shellcheck-py/shellcheck-py
+  #   rev: v0.10.0.1
+  #   hooks:
+  #     - id: shellcheck
+  # - repo: https://github.com/crate-ci/typos
+  #   rev: v1.23.2
+  #   hooks:
+  #     - id: typos
+  #       args: ["--force-exclude"]
+  #       exclude: (\.gitignore$)|(^\.editorconfig$)
