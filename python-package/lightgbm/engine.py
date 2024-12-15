@@ -587,9 +587,10 @@ def _agg_cv_result(
     for one_result in raw_results:
         for one_line in one_result:
             dataset_name, metric_name, metric_value, is_higher_better = one_line
-            metric_type[metric_name] = is_higher_better
-            cvmap.setdefault(metric_name, [])
-            cvmap[metric_name].append(metric_value)
+            key = f"{dataset_name} metric_name"
+            cvmap.setdefault(key, [])
+            cvmap[key].append(metric_value)
+            metric_type[key] = is_higher_better
     return [
         (dataset_name, metric_name, float(np.mean(metric_values)), metric_type[k], float(np.std(metric_values)))
         for k, metric_values in cvmap.items()
