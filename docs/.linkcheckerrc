@@ -3,7 +3,7 @@ maxrequestspersecond=0.1
 recursionlevel=1
 anchors=1
 sslverify=0
-threads=1
+threads=10
 
 [filtering]
 ignore=
