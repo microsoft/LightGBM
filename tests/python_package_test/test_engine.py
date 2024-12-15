@@ -2307,7 +2307,16 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
-def test_refit_with_one_tree():
+def test_refit_with_one_tree_regression():
+    X, y = make_regression(n_samples=10_000, n_features=10)
+    lgb_train = lgb.Dataset(X, label=y)
+    params = {"objective": "regression", "verbosity": -1}
+    model = lgb.train(params, lgb_train, num_boost_round=1)
+    model_refit = model.refit(X, y)
+    assert isinstance(model_refit, lgb.Booster)
+
+
+def test_refit_with_one_tree_binary_classification():
     X, y = load_breast_cancer(return_X_y=True)
     lgb_train = lgb.Dataset(X, label=y)
     params = {"objective": "binary", "verbosity": -1}
@@ -2315,9 +2324,11 @@ def test_refit_with_one_tree():
     model_refit = model.refit(X, y)
     assert isinstance(model_refit, lgb.Booster)
 
-    X, y = make_regression(n_samples=10_000, n_features=10)
-    lgb_train = lgb.Dataset(X, label=y)
-    params = {"objective": "regression", "verbosity": -1}
+
+def test_refit_with_one_tree_multiclass_classification():
+    X, y = load_iris(return_X_y=True)
+    lgb_train = lgb.Dataset(X, y)
+    params = {"objective": "multiclass", "num_class": 3, "verbose": -1}
     model = lgb.train(params, lgb_train, num_boost_round=1)
     model_refit = model.refit(X, y)
     assert isinstance(model_refit, lgb.Booster)
