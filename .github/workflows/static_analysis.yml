@@ -64,7 +64,8 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'roxygen2', 'testthat')"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown'"
+          R_LIBS+=", 'Matrix', 'RhpcBLASctl', 'roxygen2', 'testthat')"
           CRAN_MIRROR="https://cran.rstudio.com"
           Rscript -e "install.packages(${R_LIBS}, repos = '${CRAN_MIRROR}', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh || exit 1
@@ -90,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, r-check-docs]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
