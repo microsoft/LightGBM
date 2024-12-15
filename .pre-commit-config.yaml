@@ -18,13 +18,10 @@ repos:
   #     - id: end-of-file-fixer
   #     - id: trailing-whitespace
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.33.0
+    rev: v1.34.0
     hooks:
       - id: yamllint
         args: ["--strict"]
-  # entry: yamllint
-  # language: python
-  # types: [file, yaml]
   # - repo: https://github.com/pycqa/isort
   #   rev: 5.13.2
   #   hooks:
