@@ -3,10 +3,10 @@ name: Python-package
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, test-latest-versions, test-oldest-versions]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
