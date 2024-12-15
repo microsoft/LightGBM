@@ -21,7 +21,7 @@ repos:
     rev: 1.35.1
     hooks:
       - id: yamllint
-        args: [--strict, -c=/path/to/.yamllint]
+        args: ["--strict"]
   # entry: yamllint
   # language: python
   # types: [file, yaml]
