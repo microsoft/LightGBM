@@ -146,8 +146,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     make -C docs html || exit 1
     if [[ $TASK == "check-links" ]]; then
         # check docs for broken links
-        pip install linkchecker
-        linkchecker --config=.linkcheckerrc ./docs/_build/html/*.html || exit 1
+        pip install 'linkchecker>=10.5.0'
+        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
         exit 0
     fi
     # check the consistency of parameters' descriptions and other stuff
