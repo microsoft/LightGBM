@@ -84,17 +84,6 @@ minimum-version = "build-system.requires"
 
 # end:build-system
 
-[tool.isort]
-include_trailing_comma = true
-line_length = 120
-# "vertical hanging indent", to match what ruff-format does
-# ref: https://pycqa.github.io/isort/docs/configuration/multi_line_output_modes.html#3-vertical-hanging-indent
-multi_line_output = 3
-skip_glob = [
-    "*/external_libs/*",
-    "*/lightgbm-python/*",
-]
-
 [tool.mypy]
 disallow_untyped_defs = true
 exclude = 'build/*|compile/*|docs/*|examples/*|external_libs/*|lightgbm-python/*|tests/*'
@@ -140,7 +129,7 @@ ignore = [
     "PLR1714",
     # (pylint) Magic value used in comparison
     "PLR2004",
-    # (pylint) for loop veriable overwritten by assignment target
+    # (pylint) for loop variable overwritten by assignment target
     "PLW2901",
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
     "PLR5501"
@@ -152,10 +141,12 @@ select = [
     "C4",
     # pydocstyle
     "D",
-    # pycodestyle
+    # pycodestyle (errors)
     "E",
     # pyflakes
     "F",
+    # isort
+    "I",
     # NumPy-specific rules
     "NPY",
     # pylint
@@ -166,11 +157,13 @@ select = [
     "SIM401",
     # flake8-print
     "T",
+    # pycodestyle (warnings)
+    "W",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = [
-    # (flake8-bugbear) raise exceptions with "raise ... from errr"
+    # (flake8-bugbear) raise exceptions with "raise ... from err"
     "B904",
     # (flake8-print) flake8-print
     "T"
@@ -196,3 +189,6 @@ select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["lightgbm"]
