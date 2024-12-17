@@ -3939,20 +3939,6 @@ def test_predict_multiclass_classification_output_shape():
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes * 2)
 
 
-def test_predict_leaf_multiclass_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=3, n_informative=6)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "multiclass", "verbosity": -1, "num_class": 3}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_leaf=True).shape == (10_000, 3)
-
-
-def test_predict_contrib_multiclass_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=3, n_informative=6)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "multiclass", "verbosity": -1, "num_class": 3}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_contrib=True).shape == (10_000, 33)
-
-
 def test_average_precision_metric():
     # test against sklearn average precision metric
     X, y = load_breast_cancer(return_X_y=True)
