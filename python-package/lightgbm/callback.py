@@ -72,7 +72,11 @@ class CallbackEnv:
 
 
 def _using_cv(env: CallbackEnv) -> bool:
-    return env.__class__.__name__ == "CVBooster"
+    """Check if model in callback env is a CVBooster"""
+    # this string-matching is used instead of isinstance() to avoid a circular import
+    return env.model.__class__.__name__ == "CVBooster" or any(
+        c.__name__ == "CVBooster" for c in env.model.__class__.__bases__
+    )
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
