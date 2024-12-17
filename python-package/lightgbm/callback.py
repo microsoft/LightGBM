@@ -143,16 +143,13 @@ class _RecordEvaluationCallback:
             )
         self.eval_result.clear()
         for item in env.evaluation_result_list:
-            if len(item) == 4:  # regular train
-                data_name, eval_name = item[:2]
-            else:  # cv
-                data_name, eval_name = item[1].split()
-            self.eval_result.setdefault(data_name, OrderedDict())
+            dataset_name, metric_name, *_ = item
+            self.eval_result.setdefault(dataset_name, OrderedDict())
             if len(item) == 4:
-                self.eval_result[data_name].setdefault(eval_name, [])
+                self.eval_result[dataset_name].setdefault(metric_name, [])
             else:
-                self.eval_result[data_name].setdefault(f"{eval_name}-mean", [])
-                self.eval_result[data_name].setdefault(f"{eval_name}-stdv", [])
+                self.eval_result[dataset_name].setdefault(f"{metric_name}-mean", [])
+                self.eval_result[dataset_name].setdefault(f"{metric_name}-stdv", [])
 
     def __call__(self, env: CallbackEnv) -> None:
         if env.iteration == env.begin_iteration:
@@ -163,15 +160,16 @@ class _RecordEvaluationCallback:
                 "Please report it at https://github.com/microsoft/LightGBM/issues"
             )
         for item in env.evaluation_result_list:
+            # for cv(), 'metric_value' is actually a mean of metric values over all CV folds
+            dataset_name, metric_name, metric_value, *_ = item
             if len(item) == 4:
-                data_name, eval_name, result = item[:3]
-                self.eval_result[data_name][eval_name].append(result)
+                # train()
+                self.eval_result[dataset_name][metric_name].append(metric_value)
             else:
-                data_name, eval_name = item[1].split()
-                res_mean = item[2]
-                res_stdv = item[4]  # type: ignore[misc]
-                self.eval_result[data_name][f"{eval_name}-mean"].append(res_mean)
-                self.eval_result[data_name][f"{eval_name}-stdv"].append(res_stdv)
+                # cv()
+                metric_std_dev = item[4]  # type: ignore[misc]
+                self.eval_result[dataset_name][f"{metric_name}-mean"].append(metric_value)
+                self.eval_result[dataset_name][f"{metric_name}-stdv"].append(metric_std_dev)
 
 
 def record_evaluation(eval_result: Dict[str, Dict[str, List[Any]]]) -> Callable:
@@ -308,7 +306,7 @@ class _EarlyStoppingCallback:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
-        if ds_name == "cv_agg" and eval_name == "train":
+        if env.model.__class__.__name__ == "CVBooster" and eval_name == "train":
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
