@@ -585,10 +585,11 @@ def _agg_cv_result(
     metric_type: Dict[str, bool] = {}
     for one_result in raw_results:
         for one_line in one_result:
-            key = f"{one_line[0]} {one_line[1]}"
-            metric_type[key] = one_line[3]
+            dataset_name, metric_name, metric_value, is_higher_better = one_line
+            key = f"{dataset_name} {metric_name}"
+            metric_type[key] = is_higher_better
             cvmap.setdefault(key, [])
-            cvmap[key].append(one_line[2])
+            cvmap[key].append(metric_value)
     return [("cv_agg", k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
 
 
