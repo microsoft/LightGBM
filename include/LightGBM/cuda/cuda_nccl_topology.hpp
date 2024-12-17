@@ -84,7 +84,7 @@ class NCCLTopology {
 
     const int num_threads = OMP_NUM_THREADS();
     if (num_gpus_ > num_threads) {
-      Log::Fatal("Number of GPUs %d is greather than the number of threads %d. Please use more threads.", num_gpus_, num_threads);
+      Log::Fatal("Number of GPUs %d is greater than the number of threads %d. Please use more threads.", num_gpus_, num_threads);
     }
 
     host_threads_.resize(num_gpus_);
