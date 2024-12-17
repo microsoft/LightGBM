@@ -581,23 +581,25 @@ def _agg_cv_result(
     raw_results: List[List[_LGBM_BoosterEvalMethodResultType]],
 ) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    # build up a map of the form
+    # build up 2 maps, of the form:
     #
-    # {
-    #     (<dataset_name>, <metric_name>): {
-    #         <is_higher_better>: bool,
-    #         <values>: list[float],
-    #     }
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): <is_higher_better>
     # }
     #
-    cvmap: Dict[Tuple[str, str], List[float]] = OrderedDict()
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): list[<metric_value>]
+    # }
+    #
+    metric_types: Dict[Tuple[str, str], bool] = OrderedDict()
+    metric_values: Dict[Tuple[str, str], List[float]] = OrderedDict()
     for one_result in raw_results:
         for one_line in one_result:
             dataset_name, metric_name, metric_value, is_higher_better = one_line
             key = (dataset_name, metric_name)
-            cvmap.setdefault(key, defaultdict(list))
-            cvmap[key]["is_higher_better"] = is_higher_better
-            cvmap[key]["values"].append(metric_value)
+            metric_types[key] = is_higher_better
+            metric_values.setdefault(key, [])
+            metric_values[key].append(metric_value)
 
     # turn that into a list of tuples of the form:
     #
@@ -605,8 +607,8 @@ def _agg_cv_result(
     #     (<dataset_name>, <metric_name>, mean(<values>), <is_higher_better>, std_dev(<values>))
     # ]
     return [
-        (k[0], k[1], float(np.mean(v["values"])), v["is_higher_better"], float(np.std(v["values"])))
-        for k, v in cvmap.items()
+        (k[0], k[1], float(np.mean(metric_values[k])), metric_types[k], float(np.std(metric_values[k])))
+        for k, v in metric_values.items()
     ]
 
 
