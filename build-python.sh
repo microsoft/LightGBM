@@ -205,7 +205,6 @@ create_isolated_source_dir() {
     cp -R ./include ./lightgbm-python
     cp -R ./src ./lightgbm-python
     cp -R ./swig ./lightgbm-python
-    cp -R ./windows ./lightgbm-python
 
     # include only specific files from external_libs, to keep the package
     # small and avoid redistributing code with licenses incompatible with
@@ -303,8 +302,7 @@ if test "${INSTALL}" = true; then
             ./external_libs \
             ./include \
             ./src \
-            ./swig \
-            ./windows
+            ./swig
         # use regular-old setuptools for these builds, to avoid
         # trying to recompile the shared library
         sed -i.bak -e '/start:build-system/,/end:build-system/d' pyproject.toml

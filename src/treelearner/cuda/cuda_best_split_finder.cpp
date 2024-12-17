@@ -111,7 +111,7 @@ void CUDABestSplitFinder::Init() {
 void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
   cuda_is_feature_used_bytree_.Resize(static_cast<size_t>(num_features_));
 
-  // intialize split find task information (a split find task is one pass through the histogram of a feature)
+  // initialize split find task information (a split find task is one pass through the histogram of a feature)
   num_tasks_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const uint32_t num_bin = feature_num_bins_[inner_feature_index];

@@ -188,6 +188,23 @@ def _get_sample_count(total_nrow: int, params: str) -> int:
     return sample_cnt.value
 
 
+def _np2d_to_np1d(mat: np.ndarray) -> Tuple[np.ndarray, int]:
+    if mat.dtype in (np.float32, np.float64):
+        dtype = mat.dtype
+    else:
+        dtype = np.float32
+    if mat.flags["F_CONTIGUOUS"]:
+        order = "F"
+        layout = _C_API_IS_COL_MAJOR
+    else:
+        order = "C"
+        layout = _C_API_IS_ROW_MAJOR
+    # ensure dtype and order, copies if either do not match
+    data = np.asarray(mat, dtype=dtype, order=order)
+    # flatten array without copying
+    return data.ravel(order=order), layout
+
+
 class _MissingType(Enum):
     NONE = "None"
     NAN = "NaN"
@@ -684,7 +701,8 @@ _C_API_DTYPE_FLOAT64 = 1
 _C_API_DTYPE_INT32 = 2
 _C_API_DTYPE_INT64 = 3
 
-"""Matrix is row major in Python"""
+"""Macro definition of data order in matrix"""
+_C_API_IS_COL_MAJOR = 0
 _C_API_IS_ROW_MAJOR = 1
 
 """Macro definition of prediction type in C API of LightGBM"""
@@ -1273,10 +1291,7 @@ class _InnerPredictor:
         predict_type: int,
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
-        else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+        data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         n_preds = self.__get_num_preds(
             start_iteration=start_iteration,
@@ -1296,7 +1311,7 @@ class _InnerPredictor:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
@@ -2297,11 +2312,7 @@ class Dataset:
             raise ValueError("Input numpy.ndarray must be 2 dimensional")
 
         self._handle = ctypes.c_void_p()
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
-        else:  # change non-float data to float data, need to copy
-            data = np.asarray(mat.reshape(mat.size), dtype=np.float32)
-
+        data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         _safe_call(
             _LIB.LGBM_DatasetCreateFromMat(
@@ -2309,7 +2320,7 @@ class Dataset:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
@@ -2493,13 +2504,13 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        for k in other_params:
+        for k, v in other_params.items():
             if k not in ignore_keys:
-                if k not in params or params[k] != other_params[k]:
+                if k not in params or params[k] != v:
                     return False
-        for k in params:
+        for k, v in params.items():
             if k not in ignore_keys:
-                if k not in other_params or params[k] != other_params[k]:
+                if k not in other_params or v != other_params[k]:
                     return False
         return True
 
@@ -3525,7 +3536,7 @@ class Dataset:
             _log_warning(err_msg)
         self.feature_name = self.get_feature_name()
         _log_warning(
-            "Reseting categorical features.\n"
+            "Resetting categorical features.\n"
             "You can set new categorical features via ``set_categorical_feature`` method"
         )
         self.categorical_feature = "auto"

@@ -317,18 +317,18 @@ void CUDALeafSplits::LaunchInitValuesKernel(
   const data_size_t num_used_indices,
   hist_t* cuda_hist_in_leaf) {
   if (cuda_bagging_data_indices == nullptr) {
-    CUDAInitValuesKernel1<false><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel1<false><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       cuda_gradients_, cuda_hessians_, num_used_indices, nullptr, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData());
   } else {
-    CUDAInitValuesKernel1<true><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel1<true><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       cuda_gradients_, cuda_hessians_, num_used_indices, cuda_bagging_data_indices, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData());
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
 
   if (nccl_communicator_ != nullptr) {
-    ReduceGradKernel<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(num_blocks_init_from_gradients_, cuda_sum_of_gradients_buffer_.RawData(),
+    ReduceGradKernel<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(num_blocks_init_from_gradients_, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData(), num_used_indices);
     SynchronizeCUDADevice(__FILE__, __LINE__);
     cudaStream_t cuda_stream = CUDAStreamCreate();
@@ -342,7 +342,7 @@ void CUDALeafSplits::LaunchInitValuesKernel(
       cuda_sum_of_hessians_buffer_.RawData(), num_used_indices,
       cuda_data_indices_in_leaf, cuda_hist_in_leaf, cuda_struct_.RawData());
   } else {
-    CUDAInitValuesKernel2<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel2<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       lambda_l1, lambda_l2,
       num_blocks_init_from_gradients_,
       cuda_sum_of_gradients_buffer_.RawData(),
@@ -364,11 +364,11 @@ void CUDALeafSplits::LaunchInitValuesKernel(
   const score_t* grad_scale,
   const score_t* hess_scale) {
   if (cuda_bagging_data_indices == nullptr) {
-    CUDAInitValuesKernel3<false><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel3<false><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       reinterpret_cast<const int16_t*>(cuda_gradients_), num_used_indices, nullptr, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(), grad_scale, hess_scale);
   } else {
-    CUDAInitValuesKernel3<true><<<num_blocks_init_from_gradients_, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel3<true><<<num_blocks_init_from_gradients_, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       reinterpret_cast<const int16_t*>(cuda_gradients_), num_used_indices, cuda_bagging_data_indices, cuda_sum_of_gradients_buffer_.RawData(),
       cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(), grad_scale, hess_scale);
   }
@@ -376,7 +376,7 @@ void CUDALeafSplits::LaunchInitValuesKernel(
   SynchronizeCUDADevice(__FILE__, __LINE__);
 
   if (nccl_communicator_ != nullptr) {
-    ReduceGradKernel<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(num_blocks_init_from_gradients_,
+    ReduceGradKernel<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(num_blocks_init_from_gradients_,
       cuda_sum_of_gradients_buffer_.RawData(), cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(),
       num_used_indices);
     SynchronizeCUDADevice(__FILE__, __LINE__);
@@ -393,7 +393,7 @@ void CUDALeafSplits::LaunchInitValuesKernel(
       cuda_sum_of_hessians_buffer_.RawData(), cuda_sum_of_gradients_hessians_buffer_.RawData(), num_used_indices,
       cuda_data_indices_in_leaf, cuda_hist_in_leaf, cuda_struct_.RawData());
   } else {
-    CUDAInitValuesKernel4<<<1, NUM_THRADS_PER_BLOCK_LEAF_SPLITS>>>(
+    CUDAInitValuesKernel4<<<1, NUM_THREADS_PER_BLOCK_LEAF_SPLITS>>>(
       lambda_l1, lambda_l2,
       num_blocks_init_from_gradients_,
       cuda_sum_of_gradients_buffer_.RawData(),

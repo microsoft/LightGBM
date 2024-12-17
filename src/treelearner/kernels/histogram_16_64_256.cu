@@ -150,7 +150,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // size of threads that process this feature4
     const unsigned int subglobal_size = lsize * (1 << power_feature_workgroups);
 
-    // equavalent thread ID in this subgroup for this feature4
+    // equivalent thread ID in this subgroup for this feature4
     const unsigned int subglobal_tid  = gtid - feature_id * subglobal_size;
 
 
@@ -508,7 +508,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // there are 2^POWER_FEATURE_WORKGROUPS workgroups processing each feature4
     for (unsigned int i = subglobal_tid; i < num_data; i += subglobal_size) {
         // prefetch the next iteration variables
-        // we don't need bondary check because we have made the buffer large
+        // we don't need boundary check because we have made the buffer large
         int i_next = i + subglobal_size;
         #ifdef IGNORE_INDICES
         // we need to check to bounds here
@@ -752,7 +752,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // assume this starts at 32 * 4 = 128-byte boundary // What does it mean? boundary??
     // total size: 2 * 256 * size_of(float) = 2 KB
     // organization: each feature/grad/hessian is at a different bank,
-    //               as indepedent of the feature value as possible
+    //               as independent of the feature value as possible
     acc_type *gh_hist = reinterpret_cast<acc_type *>(shared_array);
 
     // counter histogram

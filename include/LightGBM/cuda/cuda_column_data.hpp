@@ -14,6 +14,7 @@
 #include <LightGBM/utils/openmp_wrapper.h>
 
 #include <memory>
+#include <cstdint>
 #include <vector>
 
 namespace LightGBM {

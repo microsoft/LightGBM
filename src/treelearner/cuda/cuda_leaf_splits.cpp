@@ -16,7 +16,7 @@ num_data_(num_data) {}
 CUDALeafSplits::~CUDALeafSplits() {}
 
 void CUDALeafSplits::Init(const bool use_quantized_grad) {
-  num_blocks_init_from_gradients_ = (num_data_ + NUM_THRADS_PER_BLOCK_LEAF_SPLITS - 1) / NUM_THRADS_PER_BLOCK_LEAF_SPLITS;
+  num_blocks_init_from_gradients_ = (num_data_ + NUM_THREADS_PER_BLOCK_LEAF_SPLITS - 1) / NUM_THREADS_PER_BLOCK_LEAF_SPLITS;
 
   // allocate more memory for sum reduction in CUDA
   // only the first element records the final sum
@@ -67,7 +67,7 @@ void CUDALeafSplits::InitValues(
 
 void CUDALeafSplits::Resize(const data_size_t num_data) {
   num_data_ = num_data;
-  num_blocks_init_from_gradients_ = (num_data + NUM_THRADS_PER_BLOCK_LEAF_SPLITS - 1) / NUM_THRADS_PER_BLOCK_LEAF_SPLITS;
+  num_blocks_init_from_gradients_ = (num_data + NUM_THREADS_PER_BLOCK_LEAF_SPLITS - 1) / NUM_THREADS_PER_BLOCK_LEAF_SPLITS;
   cuda_sum_of_gradients_buffer_.Resize(static_cast<size_t>(num_blocks_init_from_gradients_));
   cuda_sum_of_hessians_buffer_.Resize(static_cast<size_t>(num_blocks_init_from_gradients_));
   cuda_sum_of_gradients_hessians_buffer_.Resize(static_cast<size_t>(num_blocks_init_from_gradients_));

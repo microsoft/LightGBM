@@ -5,7 +5,7 @@
     log(x / (1.0 - x))
 }
 
-test_that("lgb.plot.interepretation works as expected for binary classification", {
+test_that("lgb.plot.interpretation works as expected for binary classification", {
     data(agaricus.train, package = "lightgbm")
     train <- agaricus.train
     dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -57,7 +57,7 @@ test_that("lgb.plot.interepretation works as expected for binary classification"
     expect_null(plot_res)
 })
 
-test_that("lgb.plot.interepretation works as expected for multiclass classification", {
+test_that("lgb.plot.interpretation works as expected for multiclass classification", {
     data(iris)
 
     # We must convert factors to numeric

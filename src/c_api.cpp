@@ -22,6 +22,7 @@
 
 #include <string>
 #include <cstdio>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>

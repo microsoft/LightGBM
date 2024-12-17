@@ -13,7 +13,7 @@
 #include <LightGBM/utils/log.h>
 #include <LightGBM/meta.h>
 
-#define NUM_THRADS_PER_BLOCK_LEAF_SPLITS (1024)
+#define NUM_THREADS_PER_BLOCK_LEAF_SPLITS (1024)
 #define NUM_DATA_THREAD_ADD_LEAF_SPLITS (6)
 
 namespace LightGBM {
