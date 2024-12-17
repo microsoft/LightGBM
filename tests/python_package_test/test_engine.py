@@ -15,13 +15,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import (
-    load_svmlight_file,
-    make_blobs,
-    make_classification,
-    make_multilabel_classification,
-    make_regression,
-)
+from sklearn.datasets import load_svmlight_file, make_blobs, make_classification, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -2314,7 +2308,7 @@ def test_refit():
 
 
 def test_refit_with_one_tree_regression():
-    X, y = make_regression(n_samples=1_000, n_features=2)
+    X, y = make_synthetic_regression(n_samples=1_000, n_features=2)
     lgb_train = lgb.Dataset(X, label=y)
     params = {"objective": "regression", "verbosity": -1}
     model = lgb.train(params, lgb_train, num_boost_round=1)
@@ -3885,38 +3879,64 @@ def test_predict_stump(rng, use_init_score):
 
 
 def test_predict_regression_output_shape():
-    X, y = make_regression(n_samples=10_000, n_features=10)
+    n_samples = 1_000
+    n_features = 4
+    X, y = make_synthetic_regression(n_samples=n_samples, n_features=n_features)
     dtrain = lgb.Dataset(X, label=y)
     params = {"objective": "regression", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X).shape == (10_000,)
+
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
+    
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
 
 def test_predict_binary_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=2)
+    n_samples = 1_000
+    n_features = 4
+    X, y = make_classification(n_samples=n_samples, n_features=n_features, n_classes=2)
     dtrain = lgb.Dataset(X, label=y)
     params = {"objective": "binary", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X).shape == (10_000,)
+
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
+
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
 
 def test_predict_multiclass_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=3, n_informative=6)
+    n_samples = 1_000
+    n_features = 10
+    n_classes = 3
+    X, y = make_classification(n_samples=n_samples, n_features=n_features, n_classes=n_classes, n_informative=6)
     dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "multiclass", "verbosity": -1, "num_class": 3}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X).shape == (10_000, 3)
+    params = {"objective": "multiclass", "verbosity": -1, "num_class": n_classes}
 
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes)
 
-def test_predict_leaf_regression_output_shape():
-    X, y = make_regression(n_samples=10_000, n_features=10)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "regression", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_leaf=True).shape == (10_000, 1)
-
-
-def test_predict_leaf_binary_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=2)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "binary", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_leaf=True).shape == (10_000, 1)
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes * 2)
 
 
 def test_predict_leaf_multiclass_classification_output_shape():
@@ -3924,20 +3944,6 @@ def test_predict_leaf_multiclass_classification_output_shape():
     dtrain = lgb.Dataset(X, label=y)
     params = {"objective": "multiclass", "verbosity": -1, "num_class": 3}
     assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_leaf=True).shape == (10_000, 3)
-
-
-def test_predict_contrib_regression_output_shape():
-    X, y = make_regression(n_samples=10_000, n_features=10)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "regression", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_contrib=True).shape == (10_000, 11)
-
-
-def test_predict_contrib_binary_classification_output_shape():
-    X, y = make_classification(n_samples=10_000, n_features=10, n_classes=2)
-    dtrain = lgb.Dataset(X, label=y)
-    params = {"objective": "binary", "verbosity": -1}
-    assert lgb.train(params, dtrain, num_boost_round=1).predict(X, pred_contrib=True).shape == (10_000, 11)
 
 
 def test_predict_contrib_multiclass_classification_output_shape():
