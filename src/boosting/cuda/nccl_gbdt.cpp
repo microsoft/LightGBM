@@ -3,13 +3,13 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#include "nccl_gbdt.hpp"
-#include "nccl_gbdt_component.hpp"
-
 #include <LightGBM/metric.h>
 
 #include <set>
 #include <vector>
+
+#include "nccl_gbdt.hpp"
+#include "nccl_gbdt_component.hpp"
 
 #ifdef USE_CUDA
 
