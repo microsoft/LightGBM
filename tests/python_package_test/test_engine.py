@@ -660,7 +660,7 @@ def test_ranking_prediction_early_stopping():
 
 
 # Simulates position bias for a given ranking dataset.
-# The ouput dataset is identical to the input one with the exception for the relevance labels.
+# The output dataset is identical to the input one with the exception for the relevance labels.
 # The new labels are generated according to an instance of a cascade user model:
 # for each query, the user is simulated to be traversing the list of documents ranked by a baseline ranker
 # (in our example it is simply the ordering by some feature correlated with relevance, e.g., 34)
@@ -1459,7 +1459,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
         ]
     )
     y = rng.uniform(size=(100,))
-    ds = lgb.Dataset(X, y)
+    ds = lgb.Dataset(X, y, categorical_feature=[1, 2])
     params = {
         "bagging_fraction": 0.8,
         "bagging_freq": 2,
@@ -1474,7 +1474,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
         "verbosity": 0,
     }
     model_file = tmp_path / "model.txt"
-    orig_bst = lgb.train(params, ds, num_boost_round=1, categorical_feature=[1, 2])
+    orig_bst = lgb.train(params, ds, num_boost_round=1)
     orig_bst.save_model(model_file)
     with model_file.open("rt") as f:
         model_contents = f.readlines()
@@ -1746,16 +1746,18 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     gbm0 = lgb.train(params, lgb_train, num_boost_round=10)
     pred0 = gbm0.predict(X_test)
     assert lgb_train.categorical_feature == "auto"
-    lgb_train = lgb.Dataset(X, pd.DataFrame(y))  # also test that label can be one-column pd.DataFrame
-    gbm1 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[0])
+    lgb_train = lgb.Dataset(
+        X, pd.DataFrame(y), categorical_feature=[0]
+    )  # also test that label can be one-column pd.DataFrame
+    gbm1 = lgb.train(params, lgb_train, num_boost_round=10)
     pred1 = gbm1.predict(X_test)
     assert lgb_train.categorical_feature == [0]
-    lgb_train = lgb.Dataset(X, pd.Series(y))  # also test that label can be pd.Series
-    gbm2 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A"])
+    lgb_train = lgb.Dataset(X, pd.Series(y), categorical_feature=["A"])  # also test that label can be pd.Series
+    gbm2 = lgb.train(params, lgb_train, num_boost_round=10)
     pred2 = gbm2.predict(X_test)
     assert lgb_train.categorical_feature == ["A"]
-    lgb_train = lgb.Dataset(X, y)
-    gbm3 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D"])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=["A", "B", "C", "D"])
+    gbm3 = lgb.train(params, lgb_train, num_boost_round=10)
     pred3 = gbm3.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D"]
     categorical_model_path = tmp_path / "categorical.model"
@@ -1767,12 +1769,12 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pred5 = gbm4.predict(X_test)
     gbm5 = lgb.Booster(model_str=model_str)
     pred6 = gbm5.predict(X_test)
-    lgb_train = lgb.Dataset(X, y)
-    gbm6 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=["A", "B", "C", "D", "E"])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=["A", "B", "C", "D", "E"])
+    gbm6 = lgb.train(params, lgb_train, num_boost_round=10)
     pred7 = gbm6.predict(X_test)
     assert lgb_train.categorical_feature == ["A", "B", "C", "D", "E"]
-    lgb_train = lgb.Dataset(X, y)
-    gbm7 = lgb.train(params, lgb_train, num_boost_round=10, categorical_feature=[])
+    lgb_train = lgb.Dataset(X, y, categorical_feature=[])
+    gbm7 = lgb.train(params, lgb_train, num_boost_round=10)
     pred8 = gbm7.predict(X_test)
     assert lgb_train.categorical_feature == []
     with pytest.raises(AssertionError):
@@ -3672,12 +3674,11 @@ def test_linear_trees(tmp_path, rng_fixed_seed):
     # test with a categorical feature
     x[:250, 0] = 0
     y[:250] += 10
-    lgb_train = lgb.Dataset(x, label=y)
+    lgb_train = lgb.Dataset(x, label=y, categorical_feature=[0])
     est = lgb.train(
         dict(params, linear_tree=True, subsample=0.8, bagging_freq=1),
         lgb_train,
         num_boost_round=10,
-        categorical_feature=[0],
     )
     # test refit: same results on same data
     est2 = est.refit(x, label=y)
@@ -3700,10 +3701,20 @@ def test_linear_trees(tmp_path, rng_fixed_seed):
     # test when num_leaves - 1 < num_features and when num_leaves - 1 > num_features
     X_train, _, y_train, _ = train_test_split(*load_breast_cancer(return_X_y=True), test_size=0.1, random_state=2)
     params = {"linear_tree": True, "verbose": -1, "metric": "mse", "seed": 0}
-    train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=2))
-    est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
-    train_data = lgb.Dataset(X_train, label=y_train, params=dict(params, num_leaves=60))
-    est = lgb.train(params, train_data, num_boost_round=10, categorical_feature=[0])
+    train_data = lgb.Dataset(
+        X_train,
+        label=y_train,
+        params=dict(params, num_leaves=2),
+        categorical_feature=[0],
+    )
+    est = lgb.train(params, train_data, num_boost_round=10)
+    train_data = lgb.Dataset(
+        X_train,
+        label=y_train,
+        params=dict(params, num_leaves=60),
+        categorical_feature=[0],
+    )
+    est = lgb.train(params, train_data, num_boost_round=10)
 
 
 def test_save_and_load_linear(tmp_path):
@@ -3714,8 +3725,8 @@ def test_save_and_load_linear(tmp_path):
     X_train[: X_train.shape[0] // 2, 0] = 0
     y_train[: X_train.shape[0] // 2] = 1
     params = {"linear_tree": True}
-    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params)
-    est_1 = lgb.train(params, train_data_1, num_boost_round=10, categorical_feature=[0])
+    train_data_1 = lgb.Dataset(X_train, label=y_train, params=params, categorical_feature=[0])
+    est_1 = lgb.train(params, train_data_1, num_boost_round=10)
     pred_1 = est_1.predict(X_train)
 
     tmp_dataset = str(tmp_path / "temp_dataset.bin")
@@ -4600,3 +4611,18 @@ def test_bagging_by_query_in_lambdarank():
     ndcg_score_no_bagging_by_query = gbm_no_bagging_by_query.best_score["valid_0"]["ndcg@5"]
     assert ndcg_score_bagging_by_query >= ndcg_score - 0.1
     assert ndcg_score_no_bagging_by_query >= ndcg_score - 0.1
+
+
+def test_equal_predict_from_row_major_and_col_major_data():
+    X_row, y = make_synthetic_regression()
+    assert X_row.flags["C_CONTIGUOUS"] and not X_row.flags["F_CONTIGUOUS"]
+    ds = lgb.Dataset(X_row, y)
+    params = {"num_leaves": 8, "verbose": -1}
+    bst = lgb.train(params, ds, num_boost_round=5)
+    preds_row = bst.predict(X_row)
+
+    X_col = np.asfortranarray(X_row)
+    assert X_col.flags["F_CONTIGUOUS"] and not X_col.flags["C_CONTIGUOUS"]
+    preds_col = bst.predict(X_col)
+
+    np.testing.assert_allclose(preds_row, preds_col)

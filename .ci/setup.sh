@@ -142,7 +142,7 @@ else  # Linux
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \

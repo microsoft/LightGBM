@@ -17,15 +17,9 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)
-        args: ["--settings-path", "python-package/pyproject.toml"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.7.0
+    rev: v0.8.3
     hooks:
       # Run the linter.
       - id: ruff
@@ -38,4 +32,10 @@ repos:
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
     hooks:
-    - id: shellcheck
+      - id: shellcheck
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.28.3
+    hooks:
+      - id: typos
+        args: ["--force-exclude"]
+        exclude: (\.gitignore$)|(^\.editorconfig$)

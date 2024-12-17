@@ -264,7 +264,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
   }
 }
 
-#define GenDataToLeftBitVectorKernel_PARMS \
+#define GenDataToLeftBitVectorKernel_PARAMS \
   const BIN_TYPE* column_data, \
   const data_size_t num_data_in_leaf, \
   const data_size_t* data_indices_in_leaf, \
@@ -288,7 +288,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
 __global__ void GenDataToLeftBitVectorKernel(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer,
   data_size_t* block_to_right_offset_buffer) {
@@ -337,7 +337,7 @@ __global__ void GenDataToLeftBitVectorKernel(
 
 template <typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_zero,
   const bool missing_is_na,
   const bool mfb_is_zero,
@@ -365,7 +365,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
@@ -382,7 +382,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_zero,
   const bool mfb_is_na,
   const bool max_bin_to_left,
@@ -398,7 +398,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_na,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
@@ -415,7 +415,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
   if (!max_bin_to_left) {
@@ -431,7 +431,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
     GenDataToLeftBitVectorKernel
@@ -550,7 +550,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
 
 #undef UpdateDataIndexToLeafIndexKernel_PARAMS
 #undef UpdateDataIndexToLeafIndex_ARGS
-#undef GenDataToLeftBitVectorKernel_PARMS
+#undef GenDataToLeftBitVectorKernel_PARAMS
 #undef GenBitVector_ARGS
 
 template <typename BIN_TYPE, bool USE_MIN_BIN>

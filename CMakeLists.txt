@@ -6,7 +6,7 @@ option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_ROCM "Enable ROCM-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
-option(USE_SANITIZER "Use santizer flags" OFF)
+option(USE_SANITIZER "Use sanitizer flags" OFF)
 set(
   ENABLED_SANITIZERS
   "address" "leak" "undefined"
