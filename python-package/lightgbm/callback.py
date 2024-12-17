@@ -78,15 +78,13 @@ def _env_model_is_cvbooster(env: CallbackEnv) -> bool:
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     """Format metric string."""
-    if len(value) == 4:
-        return f"{value[0]}'s {value[1]}: {value[2]:g}"
-    elif len(value) == 5:
-        if show_stdv:
-            return f"{value[0]}'s {value[1]}: {value[2]:g} + {value[4]:g}"  # type: ignore[misc]
-        else:
-            return f"{value[0]}'s {value[1]}: {value[2]:g}"
-    else:
-        raise ValueError("Wrong metric value")
+    dataset_name, metric_name, metric_value, *_ = value
+    out = f"{dataset_name}'s {metric_name}: {metric_value:g}"
+    # tuples from cv() sometimes have a 5th item, with standard deviation of
+    # the evaluation metric (taken over all cross-validation folds)
+    if show_stdv and len(value) == 5:
+        out += f" + {value[4]:g}"
+    return out
 
 
 class _LogEvaluationCallback:
