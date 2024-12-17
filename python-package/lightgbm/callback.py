@@ -381,7 +381,7 @@ class _EarlyStoppingCallback:
                 self.best_score.append(float("inf"))
                 self.cmp_op.append(partial(self._lt_delta, delta=delta))
 
-    def _final_iteration_check(self, env: CallbackEnv, eval_name_splitted: List[str], i: int) -> None:
+    def _final_iteration_check(self, *, env: CallbackEnv, metric_name: str, i: int) -> None:
         if env.iteration == env.end_iteration - 1:
             if self.verbose:
                 best_score_str = "\t".join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
@@ -389,7 +389,7 @@ class _EarlyStoppingCallback:
                     "Did not meet early stopping. " f"Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}"
                 )
                 if self.first_metric_only:
-                    _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                    _log_info(f"Evaluated only: {metric_name}")
             raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
 
     def __call__(self, env: CallbackEnv) -> None:
@@ -405,21 +405,19 @@ class _EarlyStoppingCallback:
         # self.best_score_list is initialized to an empty list
         first_time_updating_best_score_list = self.best_score_list == []
         for i in range(len(env.evaluation_result_list)):
-            score = env.evaluation_result_list[i][2]
-            if first_time_updating_best_score_list or self.cmp_op[i](score, self.best_score[i]):
-                self.best_score[i] = score
+            dataset_name, metric_name, metric_value, *_ = env.evaluation_result_list[i]
+            if first_time_updating_best_score_list or self.cmp_op[i](metric_value, self.best_score[i]):
+                self.best_score[i] = metric_value
                 self.best_iter[i] = env.iteration
                 if first_time_updating_best_score_list:
                     self.best_score_list.append(env.evaluation_result_list)
                 else:
                     self.best_score_list[i] = env.evaluation_result_list
-            # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-            eval_name_splitted = env.evaluation_result_list[i][1].split(" ")
-            if self.first_metric_only and self.first_metric != eval_name_splitted[-1]:
+            if self.first_metric_only and self.first_metric != metric_name:
                 continue  # use only the first metric for early stopping
             if self._is_train_set(
-                ds_name=env.evaluation_result_list[i][0],
-                eval_name=eval_name_splitted[0],
+                ds_name=dataset_name,
+                eval_name=dataset_name,
                 env=env,
             ):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
@@ -430,9 +428,9 @@ class _EarlyStoppingCallback:
                     )
                     _log_info(f"Early stopping, best iteration is:\n[{self.best_iter[i] + 1}]\t{eval_result_str}")
                     if self.first_metric_only:
-                        _log_info(f"Evaluated only: {eval_name_splitted[-1]}")
+                        _log_info(f"Evaluated only: {metric_name}")
                 raise EarlyStopException(self.best_iter[i], self.best_score_list[i])
-            self._final_iteration_check(env, eval_name_splitted, i)
+            self._final_iteration_check(env=env, metric_name=metric_name, i=i)
 
 
 def _should_enable_early_stopping(stopping_rounds: Any) -> bool:
