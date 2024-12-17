@@ -302,15 +302,15 @@ class _EarlyStoppingCallback:
     def _lt_delta(self, curr_score: float, best_score: float, delta: float) -> bool:
         return curr_score < best_score - delta
 
-    def _is_train_set(self, ds_name: str, eval_name: str, env: CallbackEnv) -> bool:
+    def _is_train_set(self, dataset_name: str, env: CallbackEnv) -> bool:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
-        if env.model.__class__.__name__ == "CVBooster" and eval_name == "train":
+        if env.model.__class__.__name__ == "CVBooster" and dataset_name == "train":
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
-        if isinstance(env.model, Booster) and ds_name == env.model._train_data_name:
+        if isinstance(env.model, Booster) and dataset_name == env.model._train_data_name:
             return True
 
         return False
@@ -331,8 +331,7 @@ class _EarlyStoppingCallback:
         # validation sets are guaranteed to not be identical to the training data in cv()
         if isinstance(env.model, Booster):
             only_train_set = len(env.evaluation_result_list) == 1 and self._is_train_set(
-                ds_name=first_dataset_name,
-                eval_name=first_dataset_name,
+                dataset_name=first_dataset_name,
                 env=env,
             )
             if only_train_set:
@@ -416,8 +415,7 @@ class _EarlyStoppingCallback:
             if self.first_metric_only and self.first_metric != metric_name:
                 continue  # use only the first metric for early stopping
             if self._is_train_set(
-                ds_name=dataset_name,
-                eval_name=dataset_name,
+                dataset_name=dataset_name,
                 env=env,
             ):
                 continue  # train data for lgb.cv or sklearn wrapper (underlying lgb.train)
