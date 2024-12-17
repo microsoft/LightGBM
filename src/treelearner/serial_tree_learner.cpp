@@ -189,18 +189,23 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
   share_state_->num_threads = num_threads;
 
+  Log::Warning("Train step 0");
+
   if (config_->use_quantized_grad) {
     gradient_discretizer_->DiscretizeGradients(num_data_, gradients_, hessians_);
   }
 
+  Log::Warning("Train step 1");
   // some initial works before training
   BeforeTrain();
 
+  Log::Warning("Train step 2");
   bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_ptr = tree.get();
   constraints_->ShareTreePointer(tree_ptr);
 
+  Log::Warning("Train step 3");
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -209,8 +214,10 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   int init_splits = ForceSplits(tree_ptr, &left_leaf, &right_leaf, &cur_depth);
 
+  Log::Warning("Train step 4");
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
+  Log::Warning("Train step 5, split = %d", split);
     if (BeforeFindBestSplit(tree_ptr, left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits(tree_ptr);
@@ -225,15 +232,18 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       break;
     }
     // split tree with best leaf
+  Log::Warning("Train step 6, split = %d", split);
     Split(tree_ptr, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
 
+  Log::Warning("Train step 7");
   if (config_->use_quantized_grad && config_->quant_train_renew_leaf) {
     gradient_discretizer_->RenewIntGradTreeOutput(tree.get(), config_, data_partition_.get(), gradients_, hessians_,
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
+  Log::Warning("Train step 8");
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
@@ -282,20 +292,28 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
 void SerialTreeLearner::BeforeTrain() {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain", global_timer);
   // reset histogram pool
+  Log::Warning("BeforeTrain step 0");
+
   histogram_pool_.ResetMap();
 
+  Log::Warning("BeforeTrain step 1");
   col_sampler_.ResetByTree();
+  Log::Warning("BeforeTrain step 1.1");
   train_data_->InitTrain(col_sampler_.is_feature_used_bytree(), share_state_.get());
+  Log::Warning("BeforeTrain step 1.2");
   // initialize data partition
   data_partition_->Init();
 
+  Log::Warning("BeforeTrain step 2");
   constraints_->Reset();
 
+  Log::Warning("BeforeTrain step 3");
   // reset the splits for leaves
   for (int i = 0; i < config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
   }
 
+  Log::Warning("BeforeTrain step 4");
   // Sumup for root
   if (data_partition_->leaf_count(0) == num_data_) {
     // use all data
@@ -320,6 +338,7 @@ void SerialTreeLearner::BeforeTrain() {
     }
   }
 
+  Log::Warning("BeforeTrain step 5");
   // Log::Warning("smaller_leaf_splits_->leaf_index() = %d before train", smaller_leaf_splits_->leaf_index());
 
   larger_leaf_splits_->Init();
@@ -328,9 +347,11 @@ void SerialTreeLearner::BeforeTrain() {
     cegb_->BeforeTrain();
   }
 
+  Log::Warning("BeforeTrain step 6");
   if (config_->use_quantized_grad && config_->tree_learner != std::string("data")) {
     gradient_discretizer_->SetNumBitsInHistogramBin<false>(0, -1, data_partition_->leaf_count(0), 0);
   }
+  Log::Warning("BeforeTrain step 7");
 }
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {

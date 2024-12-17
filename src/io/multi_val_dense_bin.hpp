@@ -260,14 +260,19 @@ class MultiValDenseBin : public MultiValBin {
 
   void ReSize(data_size_t num_data, int num_bin, int num_feature,
               double, const std::vector<uint32_t>& offsets) override {
+  Log::Warning("ReSize step 0");
     num_data_ = num_data;
     num_bin_ = num_bin;
     num_feature_ = num_feature;
     offsets_ = offsets;
+  Log::Warning("ReSize step 1");
+  Log::Warning("data_.size() = %ld", data_.size());
     size_t new_size = static_cast<size_t>(num_feature_) * num_data_;
+  Log::Warning("new_size = %ld", new_size);
     if (data_.size() < new_size) {
       data_.resize(new_size, 0);
     }
+  Log::Warning("ReSize step 2");
   }
 
   template <bool SUBROW, bool SUBCOL>
