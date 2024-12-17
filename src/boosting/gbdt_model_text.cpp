@@ -312,8 +312,6 @@ std::string GBDT::SaveModelToString(int start_iteration, int num_iteration, int 
   std::stringstream ss;
   Common::C_stringstream(ss);
 
-  return std::string("");
-
   // output model type
   ss << SubModelName() << '\n';
   ss << "version=" << kModelVersion << '\n';
