@@ -71,6 +71,10 @@ class CallbackEnv:
     evaluation_result_list: Optional[_ListOfEvalResultTuples]
 
 
+def _using_cv(env: CallbackEnv) -> bool:
+    return env.__class__.__name__ == "CVBooster"
+
+
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
     """Format metric string."""
     dataset_name, metric_name, metric_value, *_ = value
@@ -306,7 +310,7 @@ class _EarlyStoppingCallback:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
-        if env.model.__class__.__name__ == "CVBooster" and dataset_name == "train":
+        if _using_cv(env) and dataset_name == "train":
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name
