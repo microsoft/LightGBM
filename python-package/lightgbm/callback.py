@@ -325,11 +325,14 @@ class _EarlyStoppingCallback:
             _log_warning("Early stopping is not available in dart mode")
             return
 
+        # get details of the first dataset
+        first_dataset_name, first_metric_name, *_ = env.evaluation_result_list[0]
+
         # validation sets are guaranteed to not be identical to the training data in cv()
         if isinstance(env.model, Booster):
             only_train_set = len(env.evaluation_result_list) == 1 and self._is_train_set(
-                ds_name=env.evaluation_result_list[0][0],
-                eval_name=env.evaluation_result_list[0][1].split(" ")[0],
+                ds_name=first_dataset_name,
+                eval_name=first_dataset_name,
                 env=env,
             )
             if only_train_set:
@@ -368,8 +371,7 @@ class _EarlyStoppingCallback:
                 _log_info(f"Using {self.min_delta} as min_delta for all metrics.")
             deltas = [self.min_delta] * n_datasets * n_metrics
 
-        # split is needed for "<dataset type> <metric>" case (e.g. "train l1")
-        self.first_metric = env.evaluation_result_list[0][1].split(" ")[-1]
+        self.first_metric = first_metric_name
         for eval_ret, delta in zip(env.evaluation_result_list, deltas):
             self.best_iter.append(0)
             if eval_ret[3]:  # greater is better
