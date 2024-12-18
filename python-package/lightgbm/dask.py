@@ -1137,7 +1137,6 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
         **kwargs: Any,
     ):
@@ -1344,7 +1343,6 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
         **kwargs: Any,
     ):
@@ -1515,7 +1513,6 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
         **kwargs: Any,
     ):

@@ -1274,7 +1274,6 @@ def test_first_metric_only():
         "verbose": -1,
         "seed": 123,
         "early_stopping_rounds": 5,
-        "early_stopping": True,
     }  # early stop should be supported via global LightGBM parameter
     params_fit = {"X": X_train, "y": y_train}
 
