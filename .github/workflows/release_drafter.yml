@@ -1,0 +1,23 @@
+name: Release Drafter
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  updateReleaseDraft:
+    permissions:
+      contents: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v6.0.0
+        with:
+          config-name: release-drafter.yml
+          disable-autolabeler: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
