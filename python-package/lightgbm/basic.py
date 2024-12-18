@@ -1248,7 +1248,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
-        if not is_sparse and preds.size != nrow:
+        if not is_sparse and (preds.size != nrow or pred_leaf or pred_contrib):
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
