@@ -288,7 +288,45 @@ def test_auto_early_stopping_binary_classification():
     assert gbm.best_iteration_ < n_estimators
 
 
-def test_auto_early_stopping_compatibility_with_histgradientboostingclassifier():
+def test_auto_early_stopping_regression():
+    X, y = make_synthetic_regression(n_samples=30)
+    n_estimators = 20
+    early_stopping_rounds = 2
+    gbm = lgb.LGBMRegressor(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5,
+        early_stopping_rounds=early_stopping_rounds,
+    )
+    gbm.fit(X, y)
+    assert gbm._Booster.params["early_stopping_round"] == early_stopping_rounds
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
+
+
+@pytest.mark.skipif(
+    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
+)
+def test_auto_early_stopping_lambdarank():
+    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
+    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
+    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
+    n_estimators = 5
+    gbm = lgb.LGBMRanker(n_estimators=n_estimators, random_state=42, early_stopping=True, num_leaves=5)
+    gbm.fit(
+        X_train,
+        y_train,
+        group=q_train,
+        eval_at=[1, 3],
+    )
+    assert gbm._Booster.params["early_stopping_round"] == 10
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
+
+
+def test_auto_early_stopping_n_iter_no_change():
     X, y = load_breast_cancer(return_X_y=True)
     n_estimators = 200
     n_iter_no_change = 5
@@ -324,8 +362,8 @@ def test_auto_early_stopping_categorical_features_set_during_fit(rng_fixed_seed)
     gbm = lgb.LGBMClassifier(n_estimators=n_estimators, random_state=42, verbose=-1, early_stopping=True, num_leaves=5)
     gbm.fit(X, y, categorical_feature=cat_cols_actual)
     assert gbm._Booster.params["early_stopping_round"] == 10
-    assert gbm._Booster.num_trees() < 5
-    assert gbm.best_iteration_ < 5
+    assert gbm._Booster.num_trees() < n_estimators
+    assert gbm.best_iteration_ < n_estimators
 
 
 def test_early_stopping_is_deactivated_by_default_regression():
@@ -361,26 +399,6 @@ def test_early_stopping_is_deactivated_by_default_lambdarank():
     # Check that early stopping did not kick in
     assert gbm._Booster.params.get("early_stopping_round") is None
     assert gbm._Booster.num_trees() == n_estimators
-
-
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Skip due to differences in implementation details of CUDA version"
-)
-def test_auto_early_stopping_lambdarank():
-    rank_example_dir = Path(__file__).absolute().parents[2] / "examples" / "lambdarank"
-    X_train, y_train = load_svmlight_file(str(rank_example_dir / "rank.train"))
-    q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
-    n_estimators = 5
-    gbm = lgb.LGBMRanker(n_estimators=n_estimators, random_state=42, early_stopping=True, num_leaves=5)
-    gbm.fit(
-        X_train,
-        y_train,
-        group=q_train,
-        eval_at=[1, 3],
-    )
-    assert gbm._Booster.params["early_stopping_round"] == 10
-    assert gbm._Booster.num_trees() < n_estimators
-    assert gbm.best_iteration_ < n_estimators
 
 
 def test_dart():
