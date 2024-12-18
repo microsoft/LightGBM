@@ -840,7 +840,6 @@ class LGBMModel(_LGBMModelBase):
             params["random_state"] = params["random_state"].randint(np.iinfo(np.int32).max)
         elif isinstance(params["random_state"], np.random.Generator):
             params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
-
         if self._n_classes > 2:
             for alias in _ConfigAliases.get("num_class"):
                 params.pop(alias, None)

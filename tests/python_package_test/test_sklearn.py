@@ -356,7 +356,7 @@ def test_early_stopping_is_deactivated_by_default_lambdarank():
     q_train = np.loadtxt(str(rank_example_dir / "rank.train.query"))
     n_estimators = 5
     gbm = lgb.LGBMRanker(n_estimators=n_estimators, random_state=42, verbose=-1)
-    gbm.fit(X_train, y_train, group=q_train)  # Assuming 10 samples in one group
+    gbm.fit(X_train, y_train, group=q_train)
 
     # Check that early stopping did not kick in
     assert gbm._Booster.params.get("early_stopping_round") is None
@@ -377,7 +377,6 @@ def test_auto_early_stopping_lambdarank():
         y_train,
         group=q_train,
         eval_at=[1, 3],
-        callbacks=[lgb.reset_parameter(learning_rate=lambda x: max(0.01, 0.1 - 0.01 * x))],
     )
     assert gbm._Booster.params["early_stopping_round"] == 10
     assert gbm._Booster.num_trees() < n_estimators
