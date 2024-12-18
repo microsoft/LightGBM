@@ -71,12 +71,12 @@ class CallbackEnv:
     evaluation_result_list: Optional[_ListOfEvalResultTuples]
 
 
-def _using_cv(env: CallbackEnv) -> bool:
+def _is_using_cv(env: CallbackEnv) -> bool:
     """Check if model in callback env is a CVBooster."""
-    # this string-matching is used instead of isinstance() to avoid a circular import
-    return env.model.__class__.__name__ == "CVBooster" or any(
-        c.__name__ == "CVBooster" for c in env.model.__class__.__bases__
-    )
+    # this import is here to avoid a circular import
+    from .engine import CVBooster
+
+    return isinstance(env.model, CVBooster)
 
 
 def _format_eval_result(value: _EvalResultTuple, show_stdv: bool) -> str:
@@ -314,7 +314,7 @@ class _EarlyStoppingCallback:
         """Check, by name, if a given Dataset is the training data."""
         # for lgb.cv() with eval_train_metric=True, evaluation is also done on the training set
         # and those metrics are considered for early stopping
-        if _using_cv(env) and dataset_name == "train":
+        if _is_using_cv(env) and dataset_name == "train":
             return True
 
         # for lgb.train(), it's possible to pass the training data via valid_sets with any eval_name

@@ -594,8 +594,7 @@ def _agg_cv_result(
     metric_types: Dict[Tuple[str, str], bool] = OrderedDict()
     metric_values: Dict[Tuple[str, str], List[float]] = OrderedDict()
     for one_result in raw_results:
-        for one_line in one_result:
-            dataset_name, metric_name, metric_value, is_higher_better = one_line
+        for dataset_name, metric_name, metric_value, is_higher_better in one_result:
             key = (dataset_name, metric_name)
             metric_types[key] = is_higher_better
             metric_values.setdefault(key, [])
