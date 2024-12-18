@@ -607,7 +607,7 @@ def _agg_cv_result(
     #     (<dataset_name>, <metric_name>, mean(<values>), <is_higher_better>, std_dev(<values>))
     # ]
     return [
-        (k[0], k[1], float(np.mean(metric_values[k])), metric_types[k], float(np.std(metric_values[k])))
+        (k[0], k[1], float(np.mean(v)), metric_types[k], float(np.std(v)))
         for k, v in metric_values.items()
     ]
 
