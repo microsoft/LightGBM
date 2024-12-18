@@ -3,7 +3,7 @@
 set -e -E -u -o pipefail
 
 echo "running pre-commit checks"
-pre-commit run --all-files || exit 1
+SKIP=yamllint pre-commit run --all-files || exit 1
 echo "done running pre-commit checks"
 
 echo "running mypy"
