@@ -6,8 +6,6 @@
 #' @inheritParams lgb_shared_params
 #' @param valids a list of \code{lgb.Dataset} objects, used for validation
 #' @param record Boolean, TRUE will record iteration message to \code{booster$record_evals}
-#' @param colnames Deprecated. See "Deprecated Arguments" section below.
-#' @param categorical_feature Deprecated. See "Deprecated Arguments" section below.
 #' @param callbacks List of callback functions that are applied at each iteration.
 #' @param reset_data Boolean, setting it to TRUE (not the default value) will transform the
 #'                   booster model into a predictor model which frees up memory and the
@@ -42,12 +40,6 @@
 #' )
 #' }
 #'
-#' @section Deprecated Arguments:
-#'
-#' A future release of \code{lightgbm} will remove support for passing arguments
-#' \code{'categorical_feature'} and \code{'colnames'}. Pass those things to
-#' \code{lgb.Dataset} instead.
-#'
 #' @export
 lgb.train <- function(params = list(),
                       data,
@@ -59,8 +51,6 @@ lgb.train <- function(params = list(),
                       record = TRUE,
                       eval_freq = 1L,
                       init_model = NULL,
-                      colnames = NULL,
-                      categorical_feature = NULL,
                       early_stopping_rounds = NULL,
                       callbacks = list(),
                       reset_data = FALSE,
@@ -81,16 +71,6 @@ lgb.train <- function(params = list(),
     if (is.null(evnames) || !all(nzchar(evnames))) {
       stop("lgb.train: each element of valids must have a name")
     }
-  }
-
-  # raise deprecation warnings if necessary
-  # ref: https://github.com/microsoft/LightGBM/issues/6435
-  args <- names(match.call())
-  if ("categorical_feature" %in% args) {
-    .emit_dataset_kwarg_warning("categorical_feature", "lgb.train")
-  }
-  if ("colnames" %in% args) {
-    .emit_dataset_kwarg_warning("colnames", "lgb.train")
   }
 
   # set some parameters, resolving the way they were passed in with other parameters
@@ -171,21 +151,12 @@ lgb.train <- function(params = list(),
 
   # Construct datasets, if needed
   data$update_params(params = params)
-  if (!is.null(categorical_feature)) {
-    data$set_categorical_feature(categorical_feature)
-  }
   data$construct()
 
   # Check interaction constraints
-  cnames <- NULL
-  if (!is.null(colnames)) {
-    cnames <- colnames
-  } else if (!is.null(data$get_colnames())) {
-    cnames <- data$get_colnames()
-  }
   params[["interaction_constraints"]] <- .check_interaction_constraints(
     interaction_constraints = interaction_constraints
-    , column_names = cnames
+    , column_names = data$get_colnames()
   )
 
   # Update parameters with parsed parameters
@@ -193,11 +164,6 @@ lgb.train <- function(params = list(),
 
   # Create the predictor set
   data$.__enclos_env__$private$set_predictor(predictor)
-
-  # Write column names
-  if (!is.null(colnames)) {
-    data$set_colnames(colnames)
-  }
 
   valid_contain_train <- FALSE
   train_data_name <- "train"
