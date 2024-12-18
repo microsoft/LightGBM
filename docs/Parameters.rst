@@ -1226,6 +1226,60 @@ Objective Parameters
 
    -  used only in ``pairwise_lambdarank`` application
 
+-  ``pairwise_lambdarank_model_indirect_comparison`` :raw-html:`<a id="pairwise_lambdarank_model_indirect_comparison" title="Permalink to this parameter" href="#pairwise_lambdarank_model_indirect_comparison">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to additionaly perform indirect document comparison in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_model_conditional_rel`` :raw-html:`<a id="pairwise_lambdarank_model_conditional_rel" title="Permalink to this parameter" href="#pairwise_lambdarank_model_conditional_rel">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to model conditional document relevance (given documents ranked above) in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_indirect_comparison_above_only`` :raw-html:`<a id="pairwise_lambdarank_indirect_comparison_above_only" title="Permalink to this parameter" href="#pairwise_lambdarank_indirect_comparison_above_only">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  whether to limit the indirect document comparison to only auxilliary documents ranked above in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_logarithmic_discounts`` :raw-html:`<a id="pairwise_lambdarank_logarithmic_discounts" title="Permalink to this parameter" href="#pairwise_lambdarank_logarithmic_discounts">&#x1F517;&#xFE0E;</a>`, default = ``true``, type = bool
+
+   -  whether to use logarithmic discounts when converting pairwise scores into pointwise in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_hard_pairwise_preference`` :raw-html:`<a id="pairwise_lambdarank_hard_pairwise_preference" title="Permalink to this parameter" href="#pairwise_lambdarank_hard_pairwise_preference">&#x1F517;&#xFE0E;</a>`, default = ``false``, type = bool
+
+   -  whether to use hard pairwise preference when converting pairwise scores into pointwise in pairwise ranking
+
+   -  used only in ``pairwise_lambdarank`` application
+
+-  ``pairwise_lambdarank_train_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
+
+   -  pairing appraoch for training dataset
+
+   -  used only in ``pairwise_lambdarank`` application
+
+   -  with ``different_relevance``, only consider pairs with difference relevance score
+
+   -  with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+
+   -  with ``all``, all pairs will be used
+
+-  ``pairwise_lambdarank_valid_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
+
+   -  pairing appraoch for validation dataset
+
+   -  used only in ``pairwise_lambdarank`` application
+
+   -  with ``different_relevance``, only consider pairs with difference relevance score
+
+   -  with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+
+   -  with ``all``, all pairs will be used
+
 Metric Parameters
 -----------------
 
