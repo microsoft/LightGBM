@@ -1134,10 +1134,11 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
+        client: Optional[Client] = None,
+        *,
         early_stopping: bool = False,
         n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
-        client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
@@ -1340,10 +1341,11 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
+        client: Optional[Client] = None,
+        *,
         early_stopping: bool = False,
         n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
-        client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
@@ -1510,10 +1512,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
         n_jobs: Optional[int] = None,
         importance_type: str = "split",
+        client: Optional[Client] = None,
+        *,
         early_stopping: bool = False,
         n_iter_no_change: int = 10,
         validation_fraction: Optional[float] = 0.1,
-        client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
