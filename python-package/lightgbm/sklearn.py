@@ -509,7 +509,7 @@ class LGBMModel(_LGBMModelBase):
         importance_type: str = "split",
         *,
         early_stopping: Union[bool, int] = False,
-        validation_fraction: Optional[float] = 0.1,
+        validation_fraction: float = 0.1,
         **kwargs: Any,
     ):
         r"""Construct a gradient boosting model.
@@ -599,10 +599,8 @@ class LGBMModel(_LGBMModelBase):
             ``HistGradientBoosting`` estimators. it does not affect other ``lightgbm``-specific
             early stopping mechanisms, like passing the ``lgb.early_stopping`` callback and
             validation sets to the ``eval_set`` argument of `fit()`.
-        validation_fraction : float or None, optional (default=0.1)
-            Proportion of training data to set aside as
-            validation data for early stopping. If None, early stopping is done on
-            the training data. Only used if early stopping is performed.
+        validation_fraction : float (default=0.1)
+            Proportion of training data to set aside as validation data for early stopping.
         **kwargs
             Other parameters for the model.
             Check http://lightgbm.readthedocs.io/en/latest/Parameters.html for more parameters.
@@ -1047,23 +1045,20 @@ class LGBMModel(_LGBMModelBase):
                 valid_sets.append(valid_set)
 
         elif self.early_stopping is True:
-            if self.validation_fraction is not None:
-                n_splits = max(int(np.ceil(1 / self.validation_fraction)), 2)
-                stratified = isinstance(self, LGBMClassifier)
-                cvfolds = _make_n_folds(
-                    full_data=train_set,
-                    folds=None,
-                    nfold=n_splits,
-                    params=params,
-                    seed=self.random_state,
-                    stratified=stratified,
-                    shuffle=True,
-                )
-                train_idx, val_idx = next(cvfolds)
-                valid_set = train_set.subset(sorted(val_idx))
-                train_set = train_set.subset(sorted(train_idx))
-            else:
-                valid_set = train_set
+            n_splits = max(int(np.ceil(1 / self.validation_fraction)), 2)
+            stratified = isinstance(self, LGBMClassifier)
+            cvfolds = _make_n_folds(
+                full_data=train_set,
+                folds=None,
+                nfold=n_splits,
+                params=params,
+                seed=self.random_state,
+                stratified=stratified,
+                shuffle=True,
+            )
+            train_idx, val_idx = next(cvfolds)
+            valid_set = train_set.subset(sorted(val_idx))
+            train_set = train_set.subset(sorted(train_idx))
             valid_set = valid_set.construct()
             valid_sets = [valid_set]
 
