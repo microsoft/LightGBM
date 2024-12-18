@@ -64,6 +64,13 @@ def constant_metric(preds, train_data):
     return ("error", 0.0, False)
 
 
+def constant_metric_multi(preds, train_data):
+    return [
+        ("important_metric", 1.5, False),
+        ("irrelevant_metric", 7.8, False),
+    ]
+
+
 def decreasing_metric(preds, train_data):
     return ("decreasing_metric", next(decreasing_generator), False)
 
@@ -2570,6 +2577,13 @@ def test_metrics():
     assert "valid binary_logloss-mean" in res
     assert "valid error-mean" in res
 
+    # default metric in args with 1 custom function returning a list of 2 metrics
+    res = get_cv_result(metrics="binary_logloss", feval=constant_metric_multi)
+    assert len(res) == 6
+    assert "valid binary_logloss-mean" in res
+    assert res["valid important_metric-mean"] == [1.5, 1.5]
+    assert res["valid irrelevant_metric-mean"] == [7.8, 7.8]
+
     # non-default metric in args with custom one
     res = get_cv_result(metrics="binary_error", feval=constant_metric)
     assert len(res) == 4
@@ -2702,6 +2716,13 @@ def test_metrics():
     assert len(evals_result["valid_0"]) == 2
     assert "binary_logloss" in evals_result["valid_0"]
     assert "error" in evals_result["valid_0"]
+
+    # default metric in params with custom function returning a list of 2 metrics
+    train_booster(params=params_obj_metric_log_verbose, feval=constant_metric_multi)
+    assert len(evals_result["valid_0"]) == 3
+    assert "binary_logloss" in evals_result["valid_0"]
+    assert evals_result["valid_0"]["important_metric"] == [1.5, 1.5]
+    assert evals_result["valid_0"]["irrelevant_metric"] == [7.8, 7.8]
 
     # non-default metric in params with custom one
     train_booster(params=params_obj_metric_err_verbose, feval=constant_metric)

@@ -581,15 +581,31 @@ def _agg_cv_result(
     raw_results: List[List[_LGBM_BoosterEvalMethodResultType]],
 ) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    cvmap: Dict[str, List[float]] = OrderedDict()
-    metric_type: Dict[str, bool] = {}
+    # build up 2 maps, of the form:
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): <is_higher_better>
+    # }
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): list[<metric_value>]
+    # }
+    #
+    metric_types: Dict[Tuple[str, str], bool] = OrderedDict()
+    metric_values: Dict[Tuple[str, str], List[float]] = OrderedDict()
     for one_result in raw_results:
-        for one_line in one_result:
-            key = f"{one_line[0]} {one_line[1]}"
-            metric_type[key] = one_line[3]
-            cvmap.setdefault(key, [])
-            cvmap[key].append(one_line[2])
-    return [("cv_agg", k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
+        for dataset_name, metric_name, metric_value, is_higher_better in one_result:
+            key = (dataset_name, metric_name)
+            metric_types[key] = is_higher_better
+            metric_values.setdefault(key, [])
+            metric_values[key].append(metric_value)
+
+    # turn that into a list of tuples of the form:
+    #
+    # [
+    #     (<dataset_name>, <metric_name>, mean(<values>), <is_higher_better>, std_dev(<values>))
+    # ]
+    return [(k[0], k[1], float(np.mean(v)), metric_types[k], float(np.std(v))) for k, v in metric_values.items()]
 
 
 def cv(
@@ -812,9 +828,9 @@ def cv(
             )
         cvbooster.update(fobj=fobj)  # type: ignore[call-arg]
         res = _agg_cv_result(cvbooster.eval_valid(feval))  # type: ignore[call-arg]
-        for _, key, mean, _, std in res:
-            results[f"{key}-mean"].append(mean)
-            results[f"{key}-stdv"].append(std)
+        for dataset_name, metric_name, metric_mean, _, metric_std_dev in res:
+            results[f"{dataset_name} {metric_name}-mean"].append(metric_mean)
+            results[f"{dataset_name} {metric_name}-stdv"].append(metric_std_dev)
         try:
             for cb in callbacks_after_iter:
                 cb(
