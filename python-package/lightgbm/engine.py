@@ -765,7 +765,7 @@ def cv(
     train_set._update_params(params)._set_predictor(predictor)
 
     results = defaultdict(list)
-    cvbooster = _make_n_folds(
+    cvfolds = _make_n_folds(
         full_data=train_set,
         folds=folds,
         nfold=nfold,
