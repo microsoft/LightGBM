@@ -1137,7 +1137,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        validation_fraction: Optional[float] = 0.1,
+        validation_fraction: float = 0.1,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
@@ -1343,7 +1343,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        validation_fraction: Optional[float] = 0.1,
+        validation_fraction: float = 0.1,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
@@ -1513,7 +1513,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         client: Optional[Client] = None,
         *,
         early_stopping: bool = False,
-        validation_fraction: Optional[float] = 0.1,
+        validation_fraction: float = 0.1,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
