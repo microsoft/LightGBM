@@ -2345,7 +2345,7 @@ test_that("early stopping works with lgb.cv()", {
   # never changes, its first iteration was the best oone
   expect_equal(bst$best_iter, 1L)
 
-  # best_score should be taken from the first metri
+  # best_score should be taken from the first metric
   expect_equal(bst$best_score, 0.2)
 
   # early stopping should have happened, since constant_metric was the first
