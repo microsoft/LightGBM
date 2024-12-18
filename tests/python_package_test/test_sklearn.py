@@ -5,6 +5,7 @@ import re
 from functools import partial
 from os import getenv
 from pathlib import Path
+from unittest.mock import patch
 
 import joblib
 import numpy as np
@@ -304,6 +305,52 @@ def test_auto_early_stopping_regression():
     assert gbm._Booster.params["early_stopping_round"] == early_stopping_rounds
     assert gbm._Booster.num_trees() < n_estimators
     assert gbm.best_iteration_ < n_estimators
+
+
+def test_auto_early_stopping_check_validation_fraction_default_value():
+    n_samples = 30
+    X, y = make_synthetic_regression(n_samples=n_samples)
+    n_estimators = 20
+    early_stopping_rounds = 2
+    gbm = lgb.LGBMRegressor(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5,
+        early_stopping_rounds=early_stopping_rounds,
+    )
+    with patch("lightgbm.sklearn.train", side_effect=lgb.sklearn.train) as mock_train:
+        gbm.fit(X, y)
+
+    valid_sets = mock_train.call_args.kwargs["valid_sets"]
+    assert len(valid_sets) == 1
+    assert valid_sets[0].num_data() == n_samples * 0.1
+    assert mock_train.call_args.kwargs["train_set"].num_data() == n_samples * 0.9
+
+
+def test_auto_early_stopping_check_set_validation_fraction():
+    n_samples = 30
+    validation_fraction = 0.2
+    X, y = make_synthetic_regression(n_samples=n_samples)
+    n_estimators = 20
+    early_stopping_rounds = 2
+    gbm = lgb.LGBMRegressor(
+        n_estimators=n_estimators,
+        random_state=42,
+        verbose=-1,
+        early_stopping=True,
+        num_leaves=5,
+        early_stopping_rounds=early_stopping_rounds,
+        validation_fraction=validation_fraction,
+    )
+    with patch("lightgbm.sklearn.train", side_effect=lgb.sklearn.train) as mock_train:
+        gbm.fit(X, y)
+
+    valid_sets = mock_train.call_args.kwargs["valid_sets"]
+    assert len(valid_sets) == 1
+    assert valid_sets[0].num_data() == n_samples * validation_fraction
+    assert mock_train.call_args.kwargs["train_set"].num_data() == n_samples * (1 - validation_fraction)
 
 
 @pytest.mark.skipif(
