@@ -1125,6 +1125,14 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
+  // desc = Number of GPUs to use for training, used with device_type=cuda
+  // desc = When <= 0, only 1 GPU will be used
+  int num_gpus = 1;
+
+  // desc = List of CUDA device IDs used when device_type=cuda
+  // desc = When empty, the devices with the smallest IDs will be used
+  std::string gpu_device_id_list = "";
+
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
   // desc = **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
