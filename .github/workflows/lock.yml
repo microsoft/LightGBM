@@ -3,7 +3,8 @@ name: 'Lock Inactive Threads'
 on:
   schedule:
     # midnight UTC, every Wednesday
-    - cron: '0 0 * * 3'
+    - cron: '25 22 * * *'
+    - cron: '30 22 * * *'
   # allow manual triggering from GitHub UI
   workflow_dispatch:
 
@@ -42,4 +43,4 @@ jobs:
           # what should the locking status be?
           issue-lock-reason: 'resolved'
           pr-lock-reason: 'resolved'
-          process-only: 'issues, prs'
+          process-only: ${{ github.event.schedule == '25 22 * * *' && 'issues' || 'prs' }}
