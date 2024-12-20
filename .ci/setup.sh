@@ -11,10 +11,10 @@ export SKBUILD_LOGGING_LEVEL="INFO"
 # brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
-sudo apt-get update
-sudo apt-get install --no-install-recommends -y \
-    libboost1.74-dev \
-    libboost-filesystem1.74-dev
+# sudo apt-get update
+# sudo apt-get install --no-install-recommends -y \
+#     libboost1.74-dev \
+#     libboost-filesystem1.74-dev
     # ocl-icd-opencl-dev
     # pocl-opencl-icd
 
@@ -30,10 +30,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install -v --no-binary lightgbm lightgbm \
-  --config-settings=cmake.define.USE_GPU=ON \
-  --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
-  --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
+pip install -v --no-cache-dir lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
