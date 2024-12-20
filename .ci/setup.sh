@@ -5,7 +5,7 @@
 ARCH=$(uname -m)
 
 
-brew install libomp open-mpi
+# brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 curl \
@@ -18,7 +18,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_MPI=ON
+pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
