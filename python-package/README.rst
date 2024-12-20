@@ -191,7 +191,7 @@ Build without Searching in Homebrew Folders for Dependencies on macOS
 
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_HOMEBREW_FALLBACK=OFF
 
-Use this option to stop looking into Homebrew standard folders for finding dependencies (e.g. OpenMP) on macOS.
+Use this option to stop looking into Homebrew standard folders for finding dependencies (e.g. OpenMP) during the build on macOS.
 
 Build with Time Costs Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
