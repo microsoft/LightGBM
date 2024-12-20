@@ -24,6 +24,8 @@ For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/297
 
 For **macOS** users, the **OpenMP** library is needed. You can install it by the following command: ``brew install libomp``.
 
+|
+
 Use LightGBM with PyArrow
 *************************
 
@@ -32,6 +34,8 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 .. code:: sh
 
     pip install 'lightgbm[arrow]'
+
+|
 
 Use LightGBM with Dask
 **********************
@@ -44,6 +48,8 @@ To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
 
     pip install 'lightgbm[dask]'
 
+|
+
 Use LightGBM with pandas
 ************************
 
@@ -52,6 +58,8 @@ To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pand
 .. code:: sh
 
     pip install 'lightgbm[pandas]'
+
+|
 
 Use LightGBM with Matplotlib and Graphviz
 *****************************************
@@ -62,6 +70,8 @@ To install all dependencies needed to use ``lightgbm.plotting``, append ``[plott
 
     pip install 'lightgbm[plotting]'
 
+|
+
 Use LightGBM with scikit-learn
 ******************************
 
@@ -70,6 +80,8 @@ To install all dependencies needed to use ``lightgbm.sklearn``, append ``[scikit
 .. code:: sh
 
     pip install 'lightgbm[scikit-learn]'
+
+|
 
 Build from Sources
 ******************
@@ -86,6 +98,8 @@ For **macOS** users, you can perform installation either with **Apple Clang** or
 
 For **Windows** users, **Visual Studio** (or `VS Build Tools <https://visualstudio.microsoft.com/downloads/>`_) is needed.
 
+|
+
 Build Threadless Version
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -96,6 +110,8 @@ Build Threadless Version
 All requirements, except the **OpenMP** requirement, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
 It is **strongly not recommended** to use this version of LightGBM!
+
+|
 
 Build MPI Version
 ~~~~~~~~~~~~~~~~~
@@ -109,6 +125,8 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 For **Windows** users, compilation with **MinGW-w64** is not supported.
 
 **MPI** libraries are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-mpi-version>`__.
+
+|
 
 Build GPU Version
 ~~~~~~~~~~~~~~~~~
@@ -148,6 +166,8 @@ For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/Find
 
 Don't confuse with `CUDA version <#build-cuda-version>`__. To use the GPU version within Python, pass ``{"device": "gpu"}`` respectively in parameters.
 
+|
+
 Build CUDA Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -163,6 +183,8 @@ For **macOS** and **Windows** users, the CUDA version is not supported.
 
 Don't confuse with `GPU version <#build-gpu-version>`__. To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
+|
+
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,6 +197,8 @@ Build with MinGW-w64 on Windows
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
 (see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
+|
+
 Build 32-bit Version with 32-bit Python
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -183,6 +207,8 @@ Build 32-bit Version with 32-bit Python
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.args="-GVisual Studio 17 2022" --config-settings=cmake.args="-AWin32"
 
 It is **strongly not recommended** to use this version of LightGBM!
+
+|
 
 Build without Searching in Homebrew Folders for Dependencies on macOS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -193,6 +219,8 @@ Build without Searching in Homebrew Folders for Dependencies on macOS
 
 Use this option to stop looking into Homebrew standard folders for finding dependencies (e.g. OpenMP) during the build on macOS.
 
+|
+
 Build with Time Costs Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -202,6 +230,8 @@ Build with Time Costs Output
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
 
+|
+
 Build in Debug Mode
 ~~~~~~~~~~~~~~~~~~~
 
@@ -210,6 +240,8 @@ Build in Debug Mode
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_DEBUG=ON
 
 Use this mode to make LightGBM perform more checks internally and disable all compiler optimizations.
+
+|
 
 Build with Sanitizers
 ~~~~~~~~~~~~~~~~~~~~~
@@ -221,6 +253,8 @@ Build with Sanitizers
 Use this option to build LightGBM with compiler sanitizers.
 
 For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#sanitizers>`__.
+
+|
 
 Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
