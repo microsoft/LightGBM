@@ -18,26 +18,16 @@ Install from `PyPI <https://pypi.org/project/lightgbm>`_
 
     pip install lightgbm
 
-Compiled library that is included in the wheel file supports both **GPU** and **CPU** versions out of the box. This feature is experimental and available only for **Windows** and **Linux** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <http://portablecl.org>`_ on **Linux**. Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
+Compiled library that is included in the wheel file supports both **GPU** (don't confuse with CUDA version) and **CPU** versions out of the box. This feature is available only for **Windows** and **Linux** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <https://portablecl.org>`_ on **Linux**. Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
 
-For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** (2015 or newer) is not installed.
+For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** is not installed.
 
-In some rare cases, when you hit ``OSError: libgomp.so.1: cannot open shared object file: No such file or directory`` error during importing LightGBM, you need to install OpenMP runtime library separately (use your package manager and search for ``lib[g|i]omp`` for doing this).
-
-For **macOS** (we provide wheels for 3 newest macOS versions) users:
-
-- Starting from version 2.2.1, the library file in distribution wheels is built by the **Apple Clang** (Xcode_8.3.3 for versions 2.2.1 - 2.3.1, Xcode_9.4.1 for versions 2.3.2 - 3.3.2 and Xcode_11.7 from version 4.0.0) compiler. This means that you don't need to install the **gcc** compiler anymore. Instead of that you need to install the **OpenMP** library, which is required for running LightGBM on the system with the **Apple Clang** compiler. You can install the **OpenMP** library by the following command: ``brew install libomp``.
-
-- For version smaller than 2.2.1 and not smaller than 2.1.2, **gcc-8** with **OpenMP** support must be installed first. Refer to `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc>`__ for installation of **gcc-8** with **OpenMP** support.
-
-- For version smaller than 2.1.2, **gcc-7** with **OpenMP** is required.
+For **macOS** users, the **OpenMP** library is needed. You can install it by the following command: ``brew install libomp``.
 
 Use LightGBM with Dask
 **********************
 
-.. warning::
-
-    Dask-package is only tested on Linux.
+Dask-package is only tested on Linux.
 
 To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
 
