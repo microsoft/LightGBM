@@ -19,7 +19,7 @@ conda config --set always_yes yes --set changeps1 no
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install -v lightgbm
+pip install -v lightgbm --no-binary lightgbm
 
 $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 
