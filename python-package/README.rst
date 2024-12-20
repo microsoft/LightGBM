@@ -184,6 +184,15 @@ Build 32-bit Version with 32-bit Python
 
 It is **strongly not recommended** to use this version of LightGBM!
 
+Build without Searching in Homebrew Folders for Dependencies on macOS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_HOMEBREW_FALLBACK=OFF
+
+Use this option to stop looking into Homebrew standard folders for finding dependencies (e.g. OpenMP) on macOS.
+
 Build with Time Costs Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
