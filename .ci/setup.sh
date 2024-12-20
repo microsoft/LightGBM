@@ -5,6 +5,9 @@
 ARCH=$(uname -m)
 
 
+export SKBUILD_CMAKE_VERBOSE=true
+export SKBUILD_LOGGING_LEVEL="INFO"
+
 # brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
@@ -12,7 +15,7 @@ sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
     libboost1.74-dev \
     libboost-filesystem1.74-dev \
-    # ocl-icd-opencl-dev \
+    ocl-icd-opencl-dev \
     pocl-opencl-icd
 
 curl \
