@@ -211,7 +211,7 @@ Build with Sanitizers
 
 Use this option to build LightGBM with compiler sanitizers.
 
-For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__.
+For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#sanitizers>`__.
 
 Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
