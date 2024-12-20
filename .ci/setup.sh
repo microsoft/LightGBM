@@ -12,7 +12,7 @@ sudo apt-get update
 sudo apt-get install --no-install-recommends -y \
     libboost1.74-dev \
     libboost-filesystem1.74-dev \
-    ocl-icd-opencl-dev \
+    # ocl-icd-opencl-dev \
     pocl-opencl-icd
 
 curl \
