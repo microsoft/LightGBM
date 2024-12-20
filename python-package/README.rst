@@ -119,6 +119,8 @@ Build GPU Version
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
+For **macOS** users, the GPU version is not supported.
+
 **Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. Almost always you also need to pass ``OpenCL_INCLUDE_DIR``, ``OpenCL_LIBRARY`` options for **Linux** and ``BOOST_ROOT``, ``BOOST_LIBRARYDIR`` options for **Windows** to **CMake** via ``pip`` options, like
 
 .. code:: sh
