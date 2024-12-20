@@ -14,7 +14,8 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-pip install --upgrade pip
+python.exe -m pip install --upgrade pip
+
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
