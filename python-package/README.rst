@@ -76,7 +76,7 @@ Build from Sources
 
 .. code:: sh
 
-    pip install --no-binary lightgbm lightgbm
+    pip install lightgbm --no-binary lightgbm
 
 For **macOS** users, you can perform installation either with **Apple Clang** or **gcc**.
 
@@ -115,7 +115,7 @@ Build GPU Version
 
 .. code:: sh
 
-    pip install --no-binary lightgbm lightgbm --config-settings=cmake.define.USE_GPU=ON
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
@@ -125,7 +125,7 @@ For **macOS** users, the GPU version is not supported.
 
 .. code:: sh
 
-    pip install --no-binary lightgbm lightgbm \
+    pip install lightgbm --no-binary lightgbm \
       --config-settings=cmake.define.USE_GPU=ON \
       --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
       --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
