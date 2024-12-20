@@ -27,6 +27,8 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 pip install lightgbm --no-binary lightgbm
 
 cd "${BUILD_DIRECTORY}"
+sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ./include/LightGBM/config.h
+grep -q 'std::string device_type = "gpu"' ./include/LightGBM/config.h || exit 1  # make sure that changes were really done
 pytest ./tests/python_package_test || exit 1
 
 

@@ -119,8 +119,6 @@ elif [[ $TASK == "bdist" ]]; then
 fi
 
 if [[ $TASK == "gpu" ]]; then
-    sed -i'.bak' 's/std::string device_type = "cpu";/std::string device_type = "gpu";/' ./include/LightGBM/config.h
-    grep -q 'std::string device_type = "gpu"' ./include/LightGBM/config.h || exit 1  # make sure that changes were really done
     if [[ $METHOD == "pip" ]]; then
         sh ./build-python.sh sdist || exit 1
         sh .ci/check-python-dists.sh ./dist || exit 1
