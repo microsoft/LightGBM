@@ -153,9 +153,11 @@ Build CUDA Version
 
 .. code:: sh
 
-    pip install lightgbm --config-settings=cmake.define.USE_CUDA=ON
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_CUDA=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
+
+For **macOS** and **Windows** users, the CUDA version is not supported.
 
 **CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version>`__.
 
