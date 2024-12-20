@@ -125,7 +125,7 @@ For **macOS** users, the GPU version is not supported.
 
 .. code:: sh
 
-    pip install lightgbm \
+    pip install --no-binary lightgbm lightgbm \
       --config-settings=cmake.define.USE_GPU=ON \
       --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
       --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
