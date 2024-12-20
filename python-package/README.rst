@@ -24,6 +24,15 @@ For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/297
 
 For **macOS** users, the **OpenMP** library is needed. You can install it by the following command: ``brew install libomp``.
 
+Use LightGBM with PyArrow
+*************************
+
+To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arrow]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[arrow]'
+
 Use LightGBM with Dask
 **********************
 
@@ -44,10 +53,19 @@ To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pand
 
     pip install 'lightgbm[pandas]'
 
+Use LightGBM with Matplotlib and Graphviz
+*****************************************
+
+To install all dependencies needed to use ``lightgbm.plotting``, append ``[plotting]``.
+
+.. code:: sh
+
+    pip install 'lightgbm[plotting]'
+
 Use LightGBM with scikit-learn
 ******************************
 
-To install all dependencies needed to use ``scikit-learn`` in LightGBM, append ``[scikit-learn]``.
+To install all dependencies needed to use ``lightgbm.sklearn``, append ``[scikit-learn]``.
 
 .. code:: sh
 
