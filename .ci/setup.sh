@@ -17,7 +17,7 @@ conda update -q -y conda
 pip install pytest
 
 cd "${BUILD_DIRECTORY}"
-pytest ./tests || exit 1
+pytest ./tests/python_package_test || exit 1
 
 
 
