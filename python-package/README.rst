@@ -185,8 +185,6 @@ Build 32-bit Version with 32-bit Python
     export CMAKE_GENERATOR_PLATFORM='Win32'
     pip install --no-binary lightgbm lightgbm
 
-By default, installation in environment with 32-bit Python is prohibited. However, you can remove this prohibition on your own risk by passing ``bit32`` option.
-
 It is **strongly not recommended** to use this version of LightGBM!
 
 Build with Time Costs Output
