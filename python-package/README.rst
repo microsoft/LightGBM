@@ -144,6 +144,8 @@ All available options that can be passed via ``cmake.define.{option}``.
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
+Don't confuse with `CUDA version <#build-cuda-version>`__. To use the GPU version within Python, pass ``{"device": "gpu"}`` respectively in parameters.
+
 Build CUDA Version
 ~~~~~~~~~~~~~~~~~~
 
@@ -155,7 +157,7 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 **CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version>`__.
 
-To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
+Don't confuse with `GPU version <#build-gpu-version>`__. To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
 Build with MinGW-w64 on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
