@@ -5,7 +5,7 @@
 ARCH=$(uname -m)
 
 
-# brew install gcc
+brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 curl \
@@ -25,24 +25,6 @@ pytest ./tests/python_package_test || exit 1
 
 
 
-# if [[ $OS_NAME == "macos" ]]; then
-#     if  [[ $COMPILER == "clang" ]]; then
-#         brew install libomp
-#         if [[ $AZURE == "true" ]]; then
-#             sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
-#         fi
-#     else  # gcc
-#         # Check https://github.com/actions/runner-images/tree/main/images/macos for available
-#         # versions of Xcode
-#         sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-#         brew install 'gcc@12'
-#     fi
-#     if [[ $TASK == "mpi" ]]; then
-#         brew install open-mpi
-#     fi
-#     if [[ $TASK == "swig" ]]; then
-#         brew install swig
-#     fi
 # else  # Linux
 #     if type -f apt > /dev/null 2>&1; then
 #         sudo apt-get update
@@ -99,10 +81,6 @@ pytest ./tests/python_package_test || exit 1
 #         export LANG="en_US.UTF-8"
 #         sudo update-locale LANG=${LANG}
 #         export LC_ALL="${LANG}"
-#     fi
-#     if [[ $TASK == "r-package" ]] && [[ $COMPILER == "clang" ]]; then
-#         sudo apt-get install --no-install-recommends -y \
-#             libomp-dev
 #     fi
 #     if [[ $TASK == "mpi" ]]; then
 #         if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
