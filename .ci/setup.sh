@@ -5,8 +5,8 @@
 ARCH=$(uname -m)
 
 
-brew install gcc
-export CXX=g++-14 CC=gcc-14
+# brew install gcc
+# export CXX=g++-14 CC=gcc-14
 
 curl \
     -sL \
@@ -18,7 +18,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install --no-binary lightgbm lightgbm
+pip install lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
