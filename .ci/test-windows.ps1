@@ -21,7 +21,7 @@ Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
 pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-settings=cmake.define.__BUILD_FOR_PYTHON=true --config-settings=cmake.args="-GMinGW Makefiles"
+pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.__BUILD_FOR_PYTHON=true --config-settings=cmake.args=["-GVisual Studio 17 2022", "-AWin32"]
 
 
 $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
