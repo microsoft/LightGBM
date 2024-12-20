@@ -30,7 +30,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm -v --no-binary lightgbm
+pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_HOMEBREW_FALLBACK=OFF
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
