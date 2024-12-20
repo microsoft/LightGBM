@@ -30,7 +30,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.USE_DEBUG=ON
+pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.USE_SANITIZER=ON --config-settings=cmake.define.ENABLED_SANITIZERS="address;leak;undefined"
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
