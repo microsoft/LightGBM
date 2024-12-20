@@ -91,7 +91,7 @@ Build Threadless Version
 
 .. code:: sh
 
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_OPENMP=OFF lightgbm
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
 
 All requirements, except the **OpenMP** requirement, from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
