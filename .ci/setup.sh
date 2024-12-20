@@ -18,7 +18,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm --config-settings=cmake.define.USE_OPENMP=OFF
+pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_OPENMP=OFF lightgbm
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
