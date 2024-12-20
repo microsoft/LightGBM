@@ -5,6 +5,8 @@
 ARCH=$(uname -m)
 
 
+brew install libomp
+
 curl \
     -sL \
     -o miniforge.sh \
