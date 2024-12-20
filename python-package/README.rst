@@ -115,7 +115,7 @@ Build GPU Version
 
 .. code:: sh
 
-    pip install lightgbm --config-settings=cmake.define.USE_GPU=ON
+    pip install --no-binary lightgbm lightgbm --config-settings=cmake.define.USE_GPU=ON
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
