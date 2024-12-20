@@ -1,7 +1,7 @@
 version: 4.5.0.99.{build}
 
 image: Visual Studio 2015
-platform: x64
+platform: x86
 configuration:
   - '3.8'
 
@@ -27,7 +27,7 @@ install:
       $env:ALLOW_SKIP_ARROW_TESTS = "1"
       $env:APPVEYOR = "true"
       $env:CMAKE_BUILD_PARALLEL_LEVEL = 4
-      $env:MINICONDA = "C:\Miniconda3-x64"
+      $env:MINICONDA = "C:\Miniconda3"
       $env:PATH = "$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
       $env:BUILD_SOURCESDIRECTORY = "$env:APPVEYOR_BUILD_FOLDER"
 
