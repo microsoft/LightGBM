@@ -5,7 +5,8 @@
 ARCH=$(uname -m)
 
 
-brew install libomp
+brew install gcc
+export CXX=g++-14 CC=gcc-14
 
 curl \
     -sL \
