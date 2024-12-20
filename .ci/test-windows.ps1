@@ -15,9 +15,11 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
+conda install -U pip
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
+pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 pip install -v lightgbm --no-binary lightgbm
 
