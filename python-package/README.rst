@@ -132,7 +132,7 @@ For **macOS** users, the GPU version is not supported.
 
 All available options that can be passed via ``cmake.define.{option}``.
 
-- Boost_ROOT
+- BOOST_ROOT
 
 - Boost_DIR
 
