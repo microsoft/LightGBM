@@ -8,7 +8,7 @@ ARCH=$(uname -m)
 export SKBUILD_CMAKE_VERBOSE=true
 export SKBUILD_LOGGING_LEVEL="INFO"
 
-brew install libomp  # open-mpi
+# brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 # sudo apt-get update
@@ -30,7 +30,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_HOMEBREW_FALLBACK=OFF
+conda install lightgbm
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
