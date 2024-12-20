@@ -18,6 +18,8 @@ sudo apt-get install --no-install-recommends -y \
     # ocl-icd-opencl-dev
     # pocl-opencl-icd
 
+mkdir -p /etc/OpenCL/vendors && echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+
 curl \
     -sL \
     -o miniforge.sh \
@@ -28,7 +30,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install --no-binary lightgbm lightgbm \
+pip install -v --no-binary lightgbm lightgbm \
   --config-settings=cmake.define.USE_GPU=ON \
   --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
   --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
