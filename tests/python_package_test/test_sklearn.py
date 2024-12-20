@@ -24,7 +24,7 @@ import lightgbm as lgb
 from lightgbm.compat import (
     DATATABLE_INSTALLED,
     PANDAS_INSTALLED,
-    _sklearn_version,
+    # _sklearn_version,
     dt_DataTable,
     pd_DataFrame,
     pd_Series,
@@ -42,8 +42,8 @@ from .utils import (
     softmax,
 )
 
-SKLEARN_MAJOR, SKLEARN_MINOR, *_ = _sklearn_version.split(".")
-SKLEARN_VERSION_GTE_1_6 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 6)
+# SKLEARN_MAJOR, SKLEARN_MINOR, *_ = _sklearn_version.split(".")
+# SKLEARN_VERSION_GTE_1_6 = (int(SKLEARN_MAJOR), int(SKLEARN_MINOR)) >= (1, 6)
 
 decreasing_generator = itertools.count(0, -1)
 estimator_classes = (lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker)
@@ -1451,12 +1451,12 @@ def test_getting_feature_names_in_pd_input(estimator_class):
 # can be compatible with scikit-learn <1.6 and >=1.6.
 #
 # This should be removed once minimum supported scikit-learn version is at least 1.6.
-if SKLEARN_VERSION_GTE_1_6:
-    parametrize_with_checks = sklearn_parametrize_with_checks
-else:
+# if SKLEARN_VERSION_GTE_1_6:
+parametrize_with_checks = sklearn_parametrize_with_checks
+# else:
 
-    def parametrize_with_checks(estimator, *args, **kwargs):
-        return sklearn_parametrize_with_checks(estimator)
+#     def parametrize_with_checks(estimator, *args, **kwargs):
+#         return sklearn_parametrize_with_checks(estimator)
 
 
 def _get_expected_failed_tests(estimator):
