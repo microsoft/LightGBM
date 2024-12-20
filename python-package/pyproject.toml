@@ -66,9 +66,6 @@ build-backend = "scikit_build_core.build"
 cmake.version = "CMakeLists.txt"
 ninja.version = ">=1.11"
 ninja.make-fallback = true
-cmake.args = [
-    "-D__BUILD_FOR_PYTHON:BOOL=ON"
-]
 build.verbose = false
 cmake.build-type = "Release"
 build.targets = ["_lightgbm"]
@@ -81,6 +78,9 @@ wheel.py-api = "py3"
 experimental = false
 strict-config = false
 minimum-version = "build-system.requires"
+
+[tool.scikit-build.cmake.define]
+__BUILD_FOR_PYTHON = true
 
 # end:build-system
 
