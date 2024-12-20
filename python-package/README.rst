@@ -168,9 +168,7 @@ Build with MinGW-w64 on Windows
 
 .. code:: sh
 
-    # in sh.exe, git bash, or other Unix-like shell
-    export CMAKE_GENERATOR='MinGW Makefiles'
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-settings=cmake.args="-GMinGW Makefiles"
 
 `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
