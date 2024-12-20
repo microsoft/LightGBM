@@ -21,7 +21,7 @@ Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
 pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-export CMAKE_GENERATOR='MinGW Makefiles' || set CMAKE_GENERATOR='MinGW Makefiles'
+$env:CMAKE_GENERATOR='MinGW Makefiles'
 pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
 
