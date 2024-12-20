@@ -6,7 +6,6 @@ function Assert-Output {
     }
 }
 
-$env:CONDA_ENV = "test-env"
 $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
@@ -15,7 +14,7 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-conda install -U pip
+conda update pip
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
