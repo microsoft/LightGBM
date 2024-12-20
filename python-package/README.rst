@@ -180,10 +180,7 @@ Build 32-bit Version with 32-bit Python
 
 .. code:: sh
 
-    # in sh.exe, git bash, or other Unix-like shell
-    export CMAKE_GENERATOR='Visual Studio 17 2022'
-    export CMAKE_GENERATOR_PLATFORM='Win32'
-    pip install --no-binary lightgbm lightgbm
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.args="-GVisual Studio 14 2015" --config-settings=cmake.args="-AWin32"
 
 It is **strongly not recommended** to use this version of LightGBM!
 
