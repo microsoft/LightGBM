@@ -22,7 +22,7 @@ Set-Location "$env:BUILD_SOURCESDIRECTORY"
 pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 $env:CMAKE_GENERATOR='MinGW Makefiles'
-pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
+pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND
 
 
 $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
