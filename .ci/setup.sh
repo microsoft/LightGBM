@@ -18,7 +18,7 @@ sudo apt-get install --no-install-recommends -y \
     ocl-icd-opencl-dev
     # pocl-opencl-icd
 
-mkdir -p /etc/OpenCL/vendors && echo "/usr/lib/x86_64-linux-gnu/libOpenCL.so" > /etc/OpenCL/vendors/opencl.icd
+mkdir -p /etc/OpenCL/vendors && echo "libOpenCL.so" > /etc/OpenCL/vendors/opencl.icd
 
 curl \
     -sL \
