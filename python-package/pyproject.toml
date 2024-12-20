@@ -85,7 +85,7 @@ version = "CMakeLists.txt"
 cmake.build-type = "Release"
 
 [tool.scikit-build.cmake.define]
-__BUILD_FOR_PYTHON = true
+__BUILD_FOR_PYTHON = "ON"
 
 # end:build-system
 
