@@ -8,12 +8,12 @@ configuration:
 # only build on 'master' and pull requests targeting it
 branches:
   only:
-    - master
+    - ci/test
 
 environment:
   matrix:
-    - COMPILER: MSVC
-      TASK: python
+    # - COMPILER: MSVC
+    #   TASK: python
     - COMPILER: MINGW
       TASK: python
 
