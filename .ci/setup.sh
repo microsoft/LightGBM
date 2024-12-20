@@ -14,6 +14,8 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 
 
+pip install pytest
+
 cd "${BUILD_DIRECTORY}"
 pytest ./tests || exit 1
 
