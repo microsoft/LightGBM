@@ -1,13 +1,15 @@
 #!/bin/bash
 
 
-# if [[ $SETUP_CONDA != "false" ]]; then
-#     curl \
-#         -sL \
-#         -o miniforge.sh \
-#         "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh"
-#     sh miniforge.sh -b -p "${CONDA}"
-# fi
+
+ARCH=$(uname -m)
+
+
+curl \
+    -sL \
+    -o miniforge.sh \
+    "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh"
+sh miniforge.sh -b -p "${CONDA}"
 conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 
@@ -15,14 +17,6 @@ conda update -q -y conda
 cd "${BUILD_DIRECTORY}"
 pytest ./tests || exit 1
 
-# set -e -E -u -o pipefail
-
-# # defaults
-# AZURE=${AZURE:-"false"}
-# IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
-# SETUP_CONDA=${SETUP_CONDA:-"true"}
-
-# ARCH=$(uname -m)
 
 
 # if [[ $OS_NAME == "macos" ]]; then
