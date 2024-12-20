@@ -202,6 +202,17 @@ Build in Debug Mode
 
 Use this mode to make LightGBM perform more checks internally and disable all compiler optimizations.
 
+Build with Sanitizers
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: sh
+
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_SANITIZER=ON --config-settings=cmake.define.ENABLED_SANITIZERS="address;leak;undefined"
+
+Use this option to build LightGBM with compiler sanitizers.
+
+For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__.
+
 Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
