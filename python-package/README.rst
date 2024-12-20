@@ -189,7 +189,7 @@ Build with Time Costs Output
 
 .. code:: sh
 
-    pip install lightgbm --config-settings=cmake.define.USE_TIMETAG=ON
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_TIMETAG=ON
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
 
