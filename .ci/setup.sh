@@ -17,7 +17,7 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-pip install 'lightgbm[arrow]'
+pip install --no-binary lightgbm lightgbm
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
