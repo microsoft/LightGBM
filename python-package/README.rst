@@ -13,25 +13,6 @@ Preparation
 
 |
 
-Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-``lightgbm`` conda packages are available from the ``conda-forge`` channel.
-
-This is the preferred way to install LightGBM Python-package.
-
-.. code:: sh
-
-    conda install -c conda-forge lightgbm
-
-These packages support **CPU**, **GPU** and **CUDA** versions out of the box.
-
-**GPU**-enabled version is available only for **Windows** and **Linux** currently.
-
-**CUDA**-enabled version (since ``lightgbm>=4.4.0``) is available only for **Linux** currently and will be automatically selected if you are on a system where CUDA is installed.
-
-|
-
 Install from `PyPI <https://pypi.org/project/lightgbm>`_
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -274,6 +255,23 @@ Build with Sanitizers
 Use this option to build LightGBM with compiler sanitizers.
 
 For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#sanitizers>`__.
+
+|
+
+Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+``lightgbm`` conda packages are available from the ``conda-forge`` channel.
+
+.. code:: sh
+
+    conda install -c conda-forge lightgbm
+
+These packages support **CPU**, **GPU** and **CUDA** versions out of the box.
+
+**GPU**-enabled version is available only for **Windows** and **Linux** currently.
+
+**CUDA**-enabled version (since ``lightgbm>=4.4.0``) is available only for **Linux** currently and will be automatically selected if you are on a system where CUDA is installed.
 
 |
 
