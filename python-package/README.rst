@@ -11,6 +11,25 @@ Preparation
 
 32-bit Python is not supported. Please install 64-bit version. If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
 
+|
+
+Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+``lightgbm`` conda packages are available from the ``conda-forge`` channel.
+
+This is the preffered way to install LightGBM Python-package.
+
+.. code:: sh
+
+    conda install -c conda-forge lightgbm
+
+These packages support **CPU**, **GPU** and **CUDA** versions out of the box.
+**GPU**-enabled version is available only for **Windows** and **Linux** currently.
+**CUDA**-enabled version (since ``lightgbm>=4.4.0``) is available only for **Linux** currently and will be automatically selected if you are on a system where CUDA is installed.
+
+|
+
 Install from `PyPI <https://pypi.org/project/lightgbm>`_
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -255,29 +274,6 @@ Use this option to build LightGBM with compiler sanitizers.
 For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#sanitizers>`__.
 
 |
-
-Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-``lightgbm`` conda packages are available from the ``conda-forge`` channel.
-
-.. code:: sh
-
-    conda install -c conda-forge lightgbm
-
-These are precompiled packages that are fast to install.
-Use them instead of ``pip install`` if any of the following are true:
-
-* you prefer to use ``conda`` to manage software environments
-* you want to use GPU-accelerated LightGBM
-* you are using a platform that ``lightgbm`` does not provide wheels for (like PowerPC)
-
-For ``lightgbm>=4.4.0``, if you are on a system where CUDA is installed, ``conda install`` will automatically
-select a CUDA-enabled build of ``lightgbm``.
-
-.. code:: sh
-
-    conda install -c conda-forge 'lightgbm>=4.4.0'
 
 Install from GitHub
 '''''''''''''''''''
