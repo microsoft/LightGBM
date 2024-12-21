@@ -25,7 +25,9 @@ This is the preffered way to install LightGBM Python-package.
     conda install -c conda-forge lightgbm
 
 These packages support **CPU**, **GPU** and **CUDA** versions out of the box.
+
 **GPU**-enabled version is available only for **Windows** and **Linux** currently.
+
 **CUDA**-enabled version (since ``lightgbm>=4.4.0``) is available only for **Linux** currently and will be automatically selected if you are on a system where CUDA is installed.
 
 |
