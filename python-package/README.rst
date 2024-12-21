@@ -61,7 +61,7 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 Use LightGBM with Dask
 **********************
 
-Dask-package is only tested on Linux.
+Warning: Dask-package is only tested on Linux.
 
 To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
 
