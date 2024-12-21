@@ -18,7 +18,7 @@ Install from `conda-forge channel <https://anaconda.org/conda-forge/lightgbm>`_
 
 ``lightgbm`` conda packages are available from the ``conda-forge`` channel.
 
-This is the preffered way to install LightGBM Python-package.
+This is the preferred way to install LightGBM Python-package.
 
 .. code:: sh
 
