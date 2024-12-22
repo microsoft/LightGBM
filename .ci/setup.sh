@@ -9,7 +9,7 @@ ARCH=$(uname -m)
 # export SKBUILD_CMAKE_VERBOSE=true
 export SKBUILD_LOGGING_LEVEL="INFO"
 
-# brew install libomp open-mpi
+brew install libomp  # open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 # sudo apt-get update
