@@ -63,7 +63,7 @@ jobs:
           nvidia-smi
 
           # build and test
-          rm -rf mkdir $GITHUB_WORKSPACE
+          rm -rf $GITHUB_WORKSPACE
           mkdir -p $GITHUB_WORKSPACE/.ci
           curl --output $GITHUB_WORKSPACE/.ci/setup.sh "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
           chmod +x $GITHUB_WORKSPACE/.ci/setup.sh
