@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 56
+echo 57
 
 
 ARCH=$(uname -m)
@@ -11,10 +11,10 @@ export SKBUILD_LOGGING_LEVEL="INFO"
 # brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
-sudo apt-get update
-sudo apt-get install --no-install-recommends -y \
-    libboost1.74-dev \
-    libboost-filesystem1.74-dev
+# sudo apt-get update
+# sudo apt-get install --no-install-recommends -y \
+#     libboost1.74-dev \
+#     libboost-filesystem1.74-dev
     # ocl-icd-opencl-dev
     # pocl-opencl-icd
 
@@ -35,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --gpu
+sh ./build-python.sh install --cuda
 
 
 pytest ./tests/python_package_test || exit 1
