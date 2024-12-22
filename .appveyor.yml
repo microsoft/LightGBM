@@ -15,6 +15,7 @@ environment:
   matrix:
     - COMPILER: MINGW
       TASK: python
+      BUILD: 42
 
 clone_depth: 1
 
@@ -24,6 +25,7 @@ install:
 
 test_script:
   - sh: |
+      echo $BUILD
       export ALLOW_SKIP_ARROW_TESTS="1"
       export APPVEYOR="true"
       export CMAKE_BUILD_PARALLEL_LEVEL=4
@@ -31,6 +33,7 @@ test_script:
       export PATH="$MINICONDA;$MINICONDA\Scripts;$PATH"
       export BUILD_SOURCESDIRECTORY="$APPVEYOR_BUILD_FOLDER"
   - sh: |
+      echo $BUILD
       conda config --remove channels defaults
       conda config --add channels nodefaults
       conda config --add channels conda-forge
