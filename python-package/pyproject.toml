@@ -82,7 +82,7 @@ minimum-version = "build-system.requires"
 
 [tool.scikit-build.cmake]
 version = "CMakeLists.txt"
-cmake.build-type = "Release"
+build-type = "Release"
 
 [tool.scikit-build.cmake.define]
 __BUILD_FOR_PYTHON = "ON"
