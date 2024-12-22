@@ -21,6 +21,8 @@ clone_depth: 1
 install:
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
+
+test_script:
   - sh: |
       export ALLOW_SKIP_ARROW_TESTS="1"
       export APPVEYOR="true"
