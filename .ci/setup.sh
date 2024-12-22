@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 43
+echo 44
 
 
 ARCH=$(uname -m)
