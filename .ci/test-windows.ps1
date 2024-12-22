@@ -2,9 +2,6 @@ $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
 
-
-echo 44
-
 $env:MINICONDA="C:\Miniconda3-x64"
 $env:PATH="$env:MINICONDA;$env:MINICONDA\Scripts;$env:PATH"
 $env:BUILD_SOURCESDIRECTORY="$env:APPVEYOR_BUILD_FOLDER"
