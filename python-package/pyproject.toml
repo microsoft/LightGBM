@@ -68,7 +68,7 @@ build-backend = "scikit_build_core.build"
 [tool.scikit-build]
 ninja.version = ">=1.11"
 ninja.make-fallback = true
-build.verbose = false
+# build.verbose = false
 build.targets = ["_lightgbm"]
 # stripping binaries should be turned back on once this is fixed:
 # https://github.com/jameslamb/pydistcheck/issues/235
