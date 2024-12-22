@@ -283,6 +283,7 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 .. code:: sh
 
     git clone --recursive https://github.com/microsoft/LightGBM.git
+    cd LightGBM
     # export CXX=g++-14 CC=gcc-14  # macOS users, if you decided to compile with gcc, don't forget to specify compilers
     sh ./build-python.sh install
 
