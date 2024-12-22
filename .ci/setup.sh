@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 49
+echo 50
 
 
 ARCH=$(uname -m)
@@ -8,17 +8,17 @@ ARCH=$(uname -m)
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
-brew install libomp open-mpi
+# brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
-# sudo apt-get update
-# sudo apt-get install --no-install-recommends -y \
-#     libboost1.74-dev \
-#     libboost-filesystem1.74-dev \
-#     ocl-icd-opencl-dev
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y \
+    libboost1.74-dev \
+    libboost-filesystem1.74-dev
+    # ocl-icd-opencl-dev
     # pocl-opencl-icd
 
-# mkdir -p /etc/OpenCL/vendors && echo "libOpenCL.so" > /etc/OpenCL/vendors/opencl.icd
+mkdir -p /etc/OpenCL/vendors && echo "libOpenCL.so" > /etc/OpenCL/vendors/opencl.icd
 
 curl \
     -sL \
@@ -35,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --mpi
+sh ./build-python.sh install --gpu
 
 
 pytest ./tests/python_package_test || exit 1

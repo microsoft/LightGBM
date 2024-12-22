@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - master
-    # - ci/test
+    - ci/test
 
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -54,11 +54,6 @@ jobs:
               git \
               sudo \
               curl
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 5
-          submodules: true
       - name: Setup and run tests
         run: |
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
@@ -68,4 +63,7 @@ jobs:
           nvidia-smi
 
           # build and test
-          $GITHUB_WORKSPACE/.ci/setup.sh
+          mkdir $GITHUB_WORKSPACE/.ci
+          curl --output $GITHUB_WORKSPACE/.ci/setup.sh "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
+          chmod +x $GITHUB_WORKSPACE/.ci/setup.sh
+          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1

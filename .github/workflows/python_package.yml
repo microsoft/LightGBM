@@ -3,7 +3,8 @@ name: Python-package
 on:
   push:
     branches:
-    - ci/test
+    - master
+    # - ci/test
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:

@@ -116,7 +116,7 @@ while [ $# -gt 0 ]; do
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.BOOST_ROOT='${BOOST_ROOT}'"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
         if echo "$1" | grep -q '^*=*$';
