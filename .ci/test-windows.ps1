@@ -23,9 +23,6 @@ python.exe -m pip install --upgrade pip
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
-pip --version
-pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-
 bash.exe $env:BUILD_SOURCESDIRECTORY/.ci/test.sh
 
 
