@@ -289,7 +289,7 @@ create_isolated_source_dir() {
 create_isolated_source_dir
 
 cd ./lightgbm-python
-
+echo ${BUILD_ARGS}
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
