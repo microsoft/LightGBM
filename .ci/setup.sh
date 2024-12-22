@@ -1,15 +1,14 @@
 #!/bin/bash
 
-echo 47
+echo 48
 
 
 ARCH=$(uname -m)
 
 
-# export SKBUILD_CMAKE_VERBOSE=true
 export SKBUILD_LOGGING_LEVEL="INFO"
 
-brew install libomp  # open-mpi
+# brew install libomp  # open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 # sudo apt-get update
@@ -36,8 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
 cd LightGBM
-# export CXX=g++-14 CC=gcc-14  # macOS users, if you decided to compile with gcc, don't forget to specify compilers
-sh ./build-python.sh install
+sh ./build-python.sh install --nomp
 
 
 pytest ./tests/python_package_test || exit 1
