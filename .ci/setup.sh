@@ -1,12 +1,12 @@
 #!/bin/bash
 
-echo 45
+echo 46
 
 
 ARCH=$(uname -m)
 
 
-export SKBUILD_CMAKE_VERBOSE=true
+# export SKBUILD_CMAKE_VERBOSE=true
 export SKBUILD_LOGGING_LEVEL="INFO"
 
 # brew install libomp open-mpi
