@@ -3,7 +3,6 @@ name: Python-package
 on:
   push:
     branches:
-    - master
     - ci/test
 
 # automatically cancel in-progress builds if another commit is pushed
@@ -35,4 +34,7 @@ jobs:
           export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
+          mkdir $GITHUB_WORKSPACE/.ci
+          curl --output $GITHUB_WORKSPACE/.ci/setup.sh "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
+          chmod +x $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
