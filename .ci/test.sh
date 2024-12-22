@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 46
+echo 47
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
@@ -11,7 +11,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-./build-python.sh install --mingw
+sh ./build-python.sh install --mpi
 
 
 tests="$BUILD_SOURCESDIRECTORY/tests/python_package_test"
