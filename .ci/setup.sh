@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 42
+echo 43
 
 
 ARCH=$(uname -m)
@@ -34,13 +34,12 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 
 
-git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
+git clone --recursive https://github.com/microsoft/LightGBM.git
 cd LightGBM
 # export CXX=g++-14 CC=gcc-14  # macOS users, if you decided to compile with gcc, don't forget to specify compilers
 sh ./build-python.sh install
 
 
-cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
 
 
