@@ -24,8 +24,6 @@ build: false
 install:
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-
-test_script:
   - sh: |
       echo $BUILD
       export ALLOW_SKIP_ARROW_TESTS="1"
@@ -34,6 +32,9 @@ test_script:
       export MINICONDA="C:\Miniconda3-x64"
       export PATH="$MINICONDA;$MINICONDA\Scripts;$PATH"
       export BUILD_SOURCESDIRECTORY="$APPVEYOR_BUILD_FOLDER"
+
+test_script:
+
   - sh: |
       echo $BUILD
       conda config --remove channels defaults
