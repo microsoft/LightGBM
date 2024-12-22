@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 59
+echo 60
 
 
 ARCH=$(uname -m)
@@ -18,7 +18,7 @@ sudo apt-get install --no-install-recommends -y \
     # ocl-icd-opencl-dev
     # pocl-opencl-icd
 
-# mkdir -p /etc/OpenCL/vendors && echo "libOpenCL.so" > /etc/OpenCL/vendors/opencl.icd
+mkdir -p /etc/OpenCL/vendors && echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
 
 curl \
     -sL \
