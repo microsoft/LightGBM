@@ -28,4 +28,4 @@ install:
 test_script:
   - ps: |
       echo $BUILD
-      powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test-windows.ps1
+      powershell.exe -ExecutionPolicy Bypass -File $env:APPVEYOR_BUILD_FOLDER\.ci\test-windows.ps1
