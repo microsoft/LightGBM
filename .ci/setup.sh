@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 48
+echo 49
 
 
 ARCH=$(uname -m)
@@ -8,7 +8,7 @@ ARCH=$(uname -m)
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
-# brew install libomp  # open-mpi
+brew install libomp open-mpi
 # export CXX=g++-14 CC=gcc-14
 
 # sudo apt-get update
@@ -35,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --nomp
+sh ./build-python.sh install --mpi
 
 
 pytest ./tests/python_package_test || exit 1
