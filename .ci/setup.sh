@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 60
+echo 61
 
 
 ARCH=$(uname -m)
@@ -35,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --gpu
+sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"
 
 
 pytest ./tests/python_package_test || exit 1
