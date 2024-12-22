@@ -30,7 +30,13 @@ conda update -q -y conda
 
 
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-conda install lightgbm
+
+
+
+git clone --recursive -b ci/test https://github.com/microsoft/LightGBM.git
+# export CXX=g++-14 CC=gcc-14  # macOS users, if you decided to compile with gcc, don't forget to specify compilers
+sh ./build-python.sh install
+
 
 cd "${BUILD_DIRECTORY}"
 pytest ./tests/python_package_test || exit 1
