@@ -24,8 +24,7 @@ build: false
 install:
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-  - echo $BUILD
-      # export ALLOW_SKIP_ARROW_TESTS="1"
+  - export ALLOW_SKIP_ARROW_TESTS="1"
       # export APPVEYOR="true"
       # export CMAKE_BUILD_PARALLEL_LEVEL=4
       # export MINICONDA="C:\Miniconda3-x64"
