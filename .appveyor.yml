@@ -19,11 +19,11 @@ environment:
 
 clone_depth: 1
 
+build: false
+
 install:
   - set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin;%PATH%
   - set PYTHON_VERSION=%CONFIGURATION%
-
-build: false
 
 test_script:
   - sh: |
