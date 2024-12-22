@@ -15,7 +15,7 @@ environment:
   matrix:
     - COMPILER: MINGW
       TASK: python
-      BUILD: 42
+      BUILD: 43
 
 clone_depth: 1
 
@@ -26,5 +26,6 @@ install:
   - set PYTHON_VERSION=%CONFIGURATION%
 
 test_script:
-  - bash.exe -c 'echo $BUILD ; export ALLOW_SKIP_ARROW_TESTS=1 ;  export APPVEYOR="true" ; export CMAKE_BUILD_PARALLEL_LEVEL=4 ; export MINICONDA="C:\Miniconda3-x64" ; export PATH="$MINICONDA;$MINICONDA\Scripts;$PATH" ; export BUILD_SOURCESDIRECTORY="$APPVEYOR_BUILD_FOLDER" ; conda config --remove channels defaults ; conda config --add channels nodefaults ; conda config --add channels conda-forge ; conda config --set channel_priority strict ; conda init sh'
-      # sh.exe - %APPVEYOR_BUILD_FOLDER%\.ci\test-windows.ps1
+  - ps: |
+      echo $BUILD
+      powershell.exe -ExecutionPolicy Bypass -File %APPVEYOR_BUILD_FOLDER%\.ci\test-windows.ps1

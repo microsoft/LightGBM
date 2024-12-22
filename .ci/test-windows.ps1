@@ -8,6 +8,7 @@ conda activate
 conda config --set always_yes yes --set changeps1 no
 python.exe -m pip install --upgrade pip
 
+# export MINICONDA="C:\Miniconda3-x64" ; export PATH="$MINICONDA;$MINICONDA\bin;$PATH" ; export BUILD_SOURCESDIRECTORY="$APPVEYOR_BUILD_FOLDER" ; conda config --remove channels defaults ; conda config --add channels nodefaults ; conda config --add channels conda-forge ; conda config --set channel_priority strict ; conda init sh'
 
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
