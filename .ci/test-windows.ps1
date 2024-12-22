@@ -1,11 +1,3 @@
-function Assert-Output {
-    param( [Parameter(Mandatory = $true)][bool]$success )
-    if (-not $success) {
-        $host.SetShouldExit(-1)
-        exit 1
-    }
-}
-
 $env:TMPDIR = "$env:USERPROFILE\tmp"
 Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 [Void][System.IO.Directory]::CreateDirectory($env:TMPDIR)
@@ -26,4 +18,4 @@ pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.define.__BU
 
 $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
 
-pytest $tests ; Assert-Output $?
+pytest $tests
