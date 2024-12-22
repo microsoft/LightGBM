@@ -15,7 +15,6 @@ environment:
   matrix:
     - COMPILER: MINGW
       TASK: python
-      BUILD: 43
 
 clone_depth: 1
 
