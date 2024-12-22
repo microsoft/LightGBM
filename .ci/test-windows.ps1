@@ -24,8 +24,3 @@ python.exe -m pip install --upgrade pip
 Set-Location "$env:BUILD_SOURCESDIRECTORY"
 
 bash.exe $env:BUILD_SOURCESDIRECTORY/.ci/test.sh
-
-
-$tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
-
-pytest $tests
