@@ -26,8 +26,7 @@ Set-Location "$env:BUILD_SOURCESDIRECTORY"
 pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
-New-Item -Path "$env:BUILD_SOURCESDIRECTORY/.ci" -ItemType Directory
-curl --output $env:BUILD_SOURCESDIRECTORY/.ci/setup.sh "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
+bash.exe $env:BUILD_SOURCESDIRECTORY/.ci/test.sh
 
 
 $tests = "$env:BUILD_SOURCESDIRECTORY/tests/python_package_test"
