@@ -280,8 +280,6 @@ Install from GitHub
 
 All requirements from `Build from Sources section <#build-from-sources>`__ apply for this installation option as well.
 
-For **Windows** users, if you get any errors during installation and there is the warning ``WARNING:LightGBM:Compilation with MSBuild from existing solution file failed.`` in the log.
-
 .. code:: sh
 
     git clone --recursive https://github.com/microsoft/LightGBM.git
