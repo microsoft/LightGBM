@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 54
+echo 55
 
 
 ARCH=$(uname -m)
@@ -48,14 +48,6 @@ pytest ./tests/python_package_test || exit 1
 #         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
 #         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
-#         sudo apt-get install --no-install-recommends -y \
-#             build-essential \
-#             git \
-#             libcurl4 \
-#             libicu-dev \
-#             libssl-dev \
-#             locales \
-#             locales-all || exit 1
 #         if [[ $COMPILER == "clang" ]]; then
 #             sudo apt-get install --no-install-recommends -y \
 #                 clang \
