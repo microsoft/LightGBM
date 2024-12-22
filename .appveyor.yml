@@ -35,7 +35,7 @@ install:
 build: false
 
 test_script:
-  - sh: |
+  sh: |
     conda config --remove channels defaults
     conda config --add channels nodefaults
     conda config --add channels conda-forge
