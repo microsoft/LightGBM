@@ -49,8 +49,6 @@ pytest ./tests/python_package_test || exit 1
 #         echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 
 #         sudo apt-get install --no-install-recommends -y \
-
-#         sudo apt-get install --no-install-recommends -y \
 #             build-essential \
 #             git \
 #             libcurl4 \
