@@ -1,12 +1,11 @@
 #!/bin/bash
 
-echo 66
+echo 67
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
 pip --version
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
-
 
 
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
