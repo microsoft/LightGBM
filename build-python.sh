@@ -341,7 +341,7 @@ if test "${BUILD_SDIST}" = true; then
     python -m build \
         --sdist \
         --outdir ../dist \
-        ${BUILD_ARGS/ /} \
+        $(echo ${BUILD_ARGS} | xargs) \
         .
 fi
 
@@ -352,7 +352,7 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
-        ${BUILD_ARGS} \
+        $(echo ${BUILD_ARGS} | xargs) \
         .
 fi
 
