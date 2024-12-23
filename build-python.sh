@@ -352,7 +352,7 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
-        ${BUILD_ARGS/ /} \
+        ${BUILD_ARGS} \
         .
 fi
 
