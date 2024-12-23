@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 67
+echo 68
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
