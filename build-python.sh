@@ -151,7 +151,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         # ref: https://stackoverflow.com/a/45104058/3986677
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G\'MinGW\ Makefiles\'"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -288,7 +288,7 @@ create_isolated_source_dir() {
 create_isolated_source_dir
 
 cd ./lightgbm-python
-echo ${BUILD_ARGS}
+
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
@@ -341,7 +341,7 @@ if test "${BUILD_SDIST}" = true; then
     python -m build \
         --sdist \
         --outdir ../dist \
-        $(echo "${BUILD_ARGS}" | xargs -n 1) \
+        ${BUILD_ARGS/ /} \
         .
 fi
 
@@ -352,7 +352,7 @@ if test "${BUILD_WHEEL}" = true; then
     python -m build \
         --wheel \
         --outdir ../dist \
-        $(echo "${BUILD_ARGS}" | xargs -n 1) \
+        ${BUILD_ARGS/ /} \
         .
 fi
 
