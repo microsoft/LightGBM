@@ -337,29 +337,15 @@ fi
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
-    (
-        export IFS=';'
-        # shellcheck disable=SC2086
-        python -m build \
-            --sdist \
-            --outdir ../dist \
-            $(echo ${BUILD_ARGS} | xargs) \
-            .
-    )
+    export IFS=';'
+    echo ${BUILD_ARGS} | xargs python -m build --wheel --outdir ../dist .
 fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    (
-        export IFS=';'
-        # shellcheck disable=SC2086
-        python -m build \
-            --wheel \
-            --outdir ../dist \
-            $(echo ${BUILD_ARGS} | xargs) \
-            .
-    )
+    export IFS=';'
+    echo ${BUILD_ARGS} | xargs python -m build --wheel --outdir ../dist .
 fi
 
 if test "${INSTALL}" = true; then
