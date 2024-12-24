@@ -277,35 +277,6 @@ if(USE_CUDA)
 
     message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
     message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
-
-    function(add_histogram hsize hname hadd hconst hdir)
-      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(
-        histo${hsize}${hname}
-        PROPERTIES
-          CUDA_SEPARABLE_COMPILATION ON
-          CUDA_ARCHITECTURES ${CUDA_ARCHS}
-      )
-      if(hadd)
-        list(APPEND histograms histo${hsize}${hname})
-        set(histograms ${histograms} PARENT_SCOPE)
-      endif()
-      target_compile_definitions(
-        histo${hsize}${hname}
-        PRIVATE
-        -DCONST_HESSIAN=${hconst}
-        ${hdir}
-      )
-    endfunction()
-
-    foreach(hsize _16_64_256)
-      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
-    endforeach()
 endif()
 
 if(USE_ROCM)
@@ -353,38 +324,6 @@ if(USE_ROCM)
 
     message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
     message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
-
-    function(add_histogram hsize hname hadd hconst hdir)
-      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      if(hadd)
-        list(APPEND histograms histo${hsize}${hname})
-        set(histograms ${histograms} PARENT_SCOPE)
-      endif()
-      target_compile_definitions(
-        histo${hsize}${hname}
-        PRIVATE
-        -DCONST_HESSIAN=${hconst}
-        ${hdir}
-      )
-    endfunction()
-
-    foreach(hsize _16_64_256)
-      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
-    endforeach()
-endif()
-
-if(USE_HDFS)
-    find_package(JNI REQUIRED)
-    find_path(HDFS_INCLUDE_DIR hdfs.h REQUIRED)
-    find_library(HDFS_LIB NAMES hdfs REQUIRED)
-    include_directories(${HDFS_INCLUDE_DIR})
-    add_definitions(-DUSE_HDFS)
-    set(HDFS_CXX_LIBRARIES ${HDFS_LIB} ${JAVA_JVM_LIBRARY})
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -719,7 +658,9 @@ if(USE_CUDA)
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
+endif()
 
+if(USE_ROCM OR USE_CUDA)
   # histograms are list of object libraries. Linking object library to other
   # object libraries only gets usage requirements, the linked objects won't be
   # used. Thus we have to call target_link_libraries on final targets here.
@@ -727,20 +668,6 @@ if(USE_CUDA)
     target_link_libraries(lightgbm PRIVATE ${histograms})
   endif()
   target_link_libraries(_lightgbm PRIVATE ${histograms})
-endif()
-
-if(USE_ROCM)
-  # histograms are list of object libraries. Linking object library to other
-  # object libraries only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on final targets here.
-  if(BUILD_CLI)
-    target_link_libraries(lightgbm PRIVATE ${histograms})
-  endif()
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
-endif()
-
-if(USE_HDFS)
-  target_link_libraries(lightgbm_objs PUBLIC ${HDFS_CXX_LIBRARIES})
 endif()
 
 if(WIN32)
