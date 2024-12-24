@@ -271,35 +271,6 @@ if(USE_CUDA)
 
     message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
     message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
-
-    function(add_histogram hsize hname hadd hconst hdir)
-      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(
-        histo${hsize}${hname}
-        PROPERTIES
-          CUDA_SEPARABLE_COMPILATION ON
-          CUDA_ARCHITECTURES ${CUDA_ARCHS}
-      )
-      if(hadd)
-        list(APPEND histograms histo${hsize}${hname})
-        set(histograms ${histograms} PARENT_SCOPE)
-      endif()
-      target_compile_definitions(
-        histo${hsize}${hname}
-        PRIVATE
-        -DCONST_HESSIAN=${hconst}
-        ${hdir}
-      )
-    endfunction()
-
-    foreach(hsize _16_64_256)
-      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
-    endforeach()
 endif()
 
 include(CheckCXXSourceCompiles)
