@@ -1684,7 +1684,7 @@ def test_all_expected_params_are_written_out_to_model_text(tmp_path):
         "[machines: ]",
         "[gpu_platform_id: -1]",
         "[gpu_device_id: -1]",
-        "[num_gpus: 1]",
+        "[num_gpu: 1]",
     ]
     all_param_entries = non_default_param_entries + default_param_entries
 

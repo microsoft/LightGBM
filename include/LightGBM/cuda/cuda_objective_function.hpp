@@ -22,7 +22,7 @@ template <typename HOST_OBJECTIVE>
 class CUDAObjectiveInterface: public HOST_OBJECTIVE, public NCCLInfo {
  public:
   explicit CUDAObjectiveInterface(const Config& config): HOST_OBJECTIVE(config) {
-    if (config.num_gpus <= 1) {
+    if (config.num_gpu <= 1) {
       const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;
       SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
     }

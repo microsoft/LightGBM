@@ -42,13 +42,13 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
   #endif  // USE_CUDA
   , const int
   #ifdef USE_CUDA
-  num_gpus
+  num_gpu
   #endif  // USE_CUDA
   ) {
   if (filename == nullptr || filename[0] == '\0') {
     if (type == std::string("gbdt")) {
       #ifdef USE_CUDA
-      if (device_type == std::string("cuda") && num_gpus > 1) {
+      if (device_type == std::string("cuda") && num_gpu > 1) {
         return new NCCLGBDT<GBDT>();
       } else {
       #endif  // USE_CUDA
@@ -70,7 +70,7 @@ Boosting* Boosting::CreateBoosting(const std::string& type, const char* filename
     if (GetBoostingTypeFromModelFile(filename) == std::string("tree")) {
       if (type == std::string("gbdt")) {
         #ifdef USE_CUDA
-        if (device_type == std::string("cuda") && num_gpus > 1) {
+        if (device_type == std::string("cuda") && num_gpu > 1) {
           ret.reset(new NCCLGBDT<GBDT>());
         } else {
         #endif  // USE_CUDA

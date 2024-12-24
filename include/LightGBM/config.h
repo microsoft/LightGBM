@@ -1125,10 +1125,6 @@ struct Config {
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
-  // desc = Number of GPUs to use for training, used with device_type=cuda
-  // desc = When <= 0, only 1 GPU will be used
-  int num_gpus = 1;
-
   // desc = List of CUDA device IDs used when device_type=cuda
   // desc = When empty, the devices with the smallest IDs will be used
   std::string gpu_device_id_list = "";
@@ -1140,6 +1136,7 @@ struct Config {
   // check = >0
   // desc = number of GPUs
   // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
+  // desc = When <= 0, only 1 GPU will be used
   int num_gpu = 1;
 
   #ifndef __NVCC__

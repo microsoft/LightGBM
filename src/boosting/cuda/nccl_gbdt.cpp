@@ -30,7 +30,7 @@ void NCCLGBDT<GBDT_T>::Init(
 
   this->tree_learner_.reset();
 
-  nccl_topology_.reset(new NCCLTopology(this->config_->gpu_device_id, this->config_->num_gpus, this->config_->gpu_device_id_list, train_data->num_data()));
+  nccl_topology_.reset(new NCCLTopology(this->config_->gpu_device_id, this->config_->num_gpu, this->config_->gpu_device_id_list, train_data->num_data()));
 
   nccl_topology_->InitNCCL();
 

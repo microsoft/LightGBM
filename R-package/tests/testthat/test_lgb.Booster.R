@@ -1107,7 +1107,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
         , "[gpu_platform_id: -1]"
         , "[gpu_device_id: -1]"
         , "[gpu_use_dp: 0]"
-        , "[num_gpus: 1]"
+        , "[num_gpu: 1]"
     )
     all_param_entries <- c(non_default_param_entries, default_param_entries)
 
