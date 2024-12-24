@@ -100,42 +100,42 @@ while [ $# -gt 0 ]; do
             then shift;
         fi
         BOOST_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'")"
         ;;
     --boost-include-dir|--boost-include-dir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_INCLUDE_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.Boost_INCLUDE_DIR='${BOOST_INCLUDE_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_INCLUDE_DIR='${BOOST_INCLUDE_DIR}'")"
         ;;
     --boost-librarydir|--boost-librarydir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_LIBRARY_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.BOOST_LIBRARYDIR='${BOOST_LIBRARY_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.BOOST_LIBRARYDIR='${BOOST_LIBRARY_DIR}'")"
         ;;
     --boost-root|--boost-root=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'")"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_INCLUDE_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.OpenCL_INCLUDE_DIR='${OPENCL_INCLUDE_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_INCLUDE_DIR='${OPENCL_INCLUDE_DIR}'")"
         ;;
     --opencl-library|--opencl-library=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_LIBRARY="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS};$(quote "--config-setting=cmake.define.OpenCL_LIBRARY='${OPENCL_LIBRARY}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_LIBRARY='${OPENCL_LIBRARY}'")"
         ;;
     #########
     # flags #
@@ -146,33 +146,33 @@ while [ $# -gt 0 ]; do
         echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with generator '${CMAKE_GENERATOR}'."
         ;;
     --cuda)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_CUDA=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
         ;;
     --gpu)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_GPU=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
         ;;
     --integrated-opencl)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
     --mingw)
         # ref: https://stackoverflow.com/a/45104058/3986677
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND;$(quote "--config-setting=cmake.args=-G'MinGW Makefiles'")"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND $(quote "--config-setting=cmake.args=-G'MinGW Makefiles'")"
         ;;
     --mpi)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_MPI=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
         ;;
     --no-isolation)
-        BUILD_ARGS="${BUILD_ARGS};--no-isolation"
+        BUILD_ARGS="${BUILD_ARGS} --no-isolation"
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
         ;;
     --nomp)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_OPENMP=OFF"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
         ;;
     --precompile)
         PRECOMPILE="true"
         ;;
     --time-costs)
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_TIMETAG=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_TIMETAG=ON"
         ;;
     --user)
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
@@ -342,26 +342,22 @@ fi
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
-    echo ${BUILD_ARGS} \
+    echo "${BUILD_ARGS}" \
         | xargs \
-            python \
-                -m build \
-                --wheel \
-                --outdir \
-                ../dist \
+            python -m build \
+                --sdist \
+                --outdir ../dist \
                 .
 fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    echo ${BUILD_ARGS} \
+    echo "${BUILD_ARGS}" \
         | xargs \
-            python \
-                -m build \
+            python -m build \
                 --wheel \
-                --outdir \
-                ../dist \
+                --outdir ../dist \
                 .
 fi
 
