@@ -65,6 +65,7 @@ set -e -u
 echo "building lightgbm"
 
 # put a string in a shell-quoted form
+# ref: https://www.reddit.com/r/bash/comments/1150jis/comment/j8zi8p2/
 quote () {
     printf %s\\n "$1" | sed "s/'/'\\\\''/g;1s/^/'/;\$s/\$/'/"
 }
