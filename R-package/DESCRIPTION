@@ -45,12 +45,12 @@ NeedsCompilation: yes
 Biarch: true
 VignetteBuilder: knitr
 Suggests:
+    DiagrammeR,
     knitr,
     markdown,
     processx,
     RhpcBLASctl,
     testthat,
-    DiagrammeR
 Depends:
     R (>= 3.5)
 Imports:
