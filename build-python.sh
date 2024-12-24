@@ -151,7 +151,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         # ref: https://stackoverflow.com/a/45104058/3986677
-        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND;--config-setting=cmake.args=-G'MinGW Makefiles'"
+        BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND;--config-setting=cmake.args=-G'MinGW Makefiles';"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS};--config-setting=cmake.define.USE_MPI=ON"
