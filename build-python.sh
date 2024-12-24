@@ -289,7 +289,6 @@ create_isolated_source_dir
 
 cd ./lightgbm-python
 echo $BUILD_ARGS
-export IFS=';'
 # installation involves building the wheel + `pip install`-ing it
 if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
@@ -339,6 +338,7 @@ if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
     (
+        export IFS=';'
         # shellcheck disable=SC2086
         python -m build \
             --sdist \
@@ -352,6 +352,7 @@ if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     (
+        export IFS=';'
         # shellcheck disable=SC2086
         python -m build \
             --wheel \
