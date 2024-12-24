@@ -343,7 +343,7 @@ fi
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
-    echo "${BUILD_ARGS}" \
+    echo ${BUILD_ARGS} \
         | xargs \
             python -m build \
                 --sdist \
@@ -354,7 +354,7 @@ fi
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    echo "${BUILD_ARGS}" \
+    echo ${BUILD_ARGS} \
         | xargs \
             python -m build \
                 --wheel \
