@@ -758,7 +758,7 @@ def cv(
     train_set._update_params(params)._set_predictor(predictor)
 
     results = defaultdict(list)
-    cvfolds = _make_n_folds(
+    cvbooster = _make_n_folds(
         full_data=train_set,
         folds=folds,
         nfold=nfold,
@@ -802,7 +802,7 @@ def cv(
         for cb in callbacks_before_iter:
             cb(
                 callback.CallbackEnv(
-                    model=cvfolds,
+                    model=cvbooster,
                     params=params,
                     iteration=i,
                     begin_iteration=0,
@@ -810,8 +810,8 @@ def cv(
                     evaluation_result_list=None,
                 )
             )
-        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
-        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
+        cvbooster.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvbooster.eval_valid(feval))  # type: ignore[call-arg]
         for _, key, mean, _, std in res:
             results[f"{key}-mean"].append(mean)
             results[f"{key}-stdv"].append(std)
@@ -819,7 +819,7 @@ def cv(
             for cb in callbacks_after_iter:
                 cb(
                     callback.CallbackEnv(
-                        model=cvfolds,
+                        model=cvbooster,
                         params=params,
                         iteration=i,
                         begin_iteration=0,
@@ -828,14 +828,14 @@ def cv(
                     )
                 )
         except callback.EarlyStopException as earlyStopException:
-            cvfolds.best_iteration = earlyStopException.best_iteration + 1
-            for bst in cvfolds.boosters:
-                bst.best_iteration = cvfolds.best_iteration
+            cvbooster.best_iteration = earlyStopException.best_iteration + 1
+            for bst in cvbooster.boosters:
+                bst.best_iteration = cvbooster.best_iteration
             for k in results:
-                results[k] = results[k][: cvfolds.best_iteration]
+                results[k] = results[k][: cvbooster.best_iteration]
             break
 
     if return_cvbooster:
-        results["cvbooster"] = cvfolds  # type: ignore[assignment]
+        results["cvbooster"] = cvbooster  # type: ignore[assignment]
 
     return dict(results)
