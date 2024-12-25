@@ -1,12 +1,30 @@
 #!/bin/bash
 
 
-
+echo "--- start ---"
+echo 42
 
 
 BUILD_ARGS=""
 BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
 echo "${BUILD_ARGS}" | xargs printf "%s\n"
+
+
+echo "${BUILD_ARGS}" \
+    | xargs \
+        printf \
+            "%s\n"
+
+# echo "${BUILD_ARGS}" \
+#     | xargs \
+#         python -m build \
+#             --wheel \
+#             --outdir ../dist \
+#             .
+
+
+
+echo "--- end ---"
 
 
 
