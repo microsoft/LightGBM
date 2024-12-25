@@ -2,7 +2,7 @@
 
 
 echo "--- start ---"
-echo 44
+echo 45
 
 
 BUILD_ARGS=""
@@ -10,7 +10,7 @@ BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOU
 
 
 echo "${BUILD_ARGS}" \
-    | xargs \
+    | xargs -L1 \
         printf \
             "%s\n"
 
