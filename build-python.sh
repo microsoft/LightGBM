@@ -60,7 +60,7 @@
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
-# set -e -u
+set -e -u
 
 echo "building lightgbm"
 
@@ -348,18 +348,17 @@ fi
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    echo "${BUILD_ARGS}" \
-        | xargs -I{} \
-            python -m build \
-                --wheel \
-                --outdir ../dist \
-                {} \
-                .
-    # python -m build \
-    #     --wheel \
-    #     --outdir ../dist \
-    #     ${BUILD_ARGS} \
-    #     .
+    # echo "${BUILD_ARGS}" \
+    #     | xargs \
+    #         python -m build \
+    #             --wheel \
+    #             --outdir ../dist \
+    #             .
+    python -m build \
+        --wheel \
+        --outdir ../dist \
+        ${BUILD_ARGS} \
+        .
 fi
 
 if test "${INSTALL}" = true; then
