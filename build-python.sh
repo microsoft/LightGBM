@@ -70,7 +70,8 @@ BUILD_SDIST="false"
 BUILD_WHEEL="false"
 
 PIP_INSTALL_ARGS=""
-BUILD_ARGS=""
+INITIAL_BUILD_ARGS="--outdir ../dist ."
+BUILD_ARGS="${INITIAL_BUILD_ARGS}"
 PRECOMPILE="false"
 
 while [ $# -gt 0 ]; do
@@ -294,7 +295,7 @@ if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
         BUILD_SDIST=true
         BUILD_WHEEL=false
-        BUILD_ARGS=""
+        BUILD_ARGS="${INITIAL_BUILD_ARGS}"
         rm -rf \
             ./cmake \
             ./CMakeLists.txt \
@@ -340,9 +341,7 @@ if test "${BUILD_SDIST}" = true; then
     echo "${BUILD_ARGS}" \
         | xargs \
             python -m build \
-                --sdist \
-                --outdir ../dist \
-                .
+                --sdist
 fi
 
 if test "${BUILD_WHEEL}" = true; then
@@ -351,9 +350,7 @@ if test "${BUILD_WHEEL}" = true; then
     echo "${BUILD_ARGS}" \
         | xargs \
             python -m build \
-                --wheel \
-                --outdir ../dist \
-                .
+                --wheel
 fi
 
 if test "${INSTALL}" = true; then
