@@ -36,6 +36,6 @@ jobs:
           export CONDA=${HOME}/miniforge
           export PATH=${CONDA}/bin:${PATH}
           mkdir $GITHUB_WORKSPACE/.ci
-          curl --output $GITHUB_WORKSPACE/.ci/setup.sh "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
+          curl --output $GITHUB_WORKSPACE/.ci/setup.sh -H 'Cache-Control: no-cache' "https://raw.githubusercontent.com/microsoft/LightGBM/refs/heads/ci/test/.ci/setup.sh"
           chmod +x $GITHUB_WORKSPACE/.ci/setup.sh
           $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
