@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 58
+echo 60
 echo "$SHELL"
 xargs --version
 
@@ -34,13 +34,12 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 
 cd $GITHUB_WORKSPACE/.ci
-rm -rf ./*
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --nomp
+sh ./build-python.sh install
 
 
-pytest ./tests/python_package_test || exit 1
+pytest $GITHUB_WORKSPACE/tests/python_package_test || exit 1
 
 
 
