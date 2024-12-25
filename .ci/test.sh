@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 107
+echo 108
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
@@ -11,7 +11,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 # git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 # cd LightGBM
 # sh ./build-python.sh install --mingw
-pip install lightgbm --no-binary lightgbm --config-settings=cmake.args="-AWin32"
+pip install lightgbm -v --no-binary lightgbm --config-settings=cmake.args="-AWin32"
 
 
 tests="$BUILD_SOURCESDIRECTORY/tests/python_package_test"
