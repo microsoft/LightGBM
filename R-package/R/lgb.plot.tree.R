@@ -62,8 +62,9 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
     # extract data.table model structure
     modelDT <- lgb.model.dt.tree(model)
     # check that tree is less than or equal to the maximum tree index in the model
-    if (tree > max(modelDT$tree_index)) {
-        stop("lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model (", max(modelDT$tree_index), "). Got: ", tree, ".")
+    if (tree > max(modelDT$tree_index) || tree < 1) {
+        warning("lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model (", max(modelDT$tree_index), "). Got: ", tree, ".")
+        stop("lgb.plot.tree: Invalid tree number")
     }
     # filter modelDT to just the rows for the selected tree
     modelDT <- modelDT[tree_index == tree, ]

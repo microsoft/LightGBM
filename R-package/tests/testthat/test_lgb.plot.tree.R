@@ -64,24 +64,17 @@ models <- list(
 
 for (model_name in names(models)){
   model <- models[[model_name]]
-  expected_n_trees <- NROUNDS
-  if (model_name == "multi") {
-    expected_n_trees <- NROUNDS * NCLASS
-  }
-  df <- as.data.frame(lgb.model.dt.tree(model))
-  df_list <- split(df, f = df$tree_index, drop = TRUE)
-  df_leaf <- df[!is.na(df$leaf_index), ]
-  df_internal <- df[is.na(df$leaf_index), ]
+  modelDT <- lgb.model.dt.tree(model)
 
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
       lgb.plot.tree(model, 0)
-    }, regexp = "lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model")
+    }, regexp = paste0("lgb.plot.tree: Invalid tree number"))
   })
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
       lgb.plot.tree(model, 999)
-    }, regexp = "lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model")
+    }, regexp = paste0("lgb.plot.tree: Invalid tree number"))
   })
   test_that("lgb.plot.tree fails when a non numeric tree is selected", {
     expect_error({
@@ -96,7 +89,7 @@ for (model_name in names(models)){
   test_that("lgb.plot.tree fails when a non lgb.Booster model is passed", {
     expect_error({
       lgb.plot.tree(1, 0)
-    }, regexp = "lgb.plot.tree: model should be an 'lgb.Booster'")
+    }, regexp = paste0("lgb.plot.tree: model should be an ", sQuote("lgb.Booster")))
   })
 }
 
