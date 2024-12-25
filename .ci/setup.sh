@@ -31,7 +31,7 @@
 
 
 
-echo 102
+echo 103
 
 ARCH=$(uname -m)
 
@@ -68,4 +68,4 @@ cd LightGBM
 sh ./build-python.sh install
 
 
-pytest $GITHUB_WORKSPACE./tests/python_package_test || exit 1
+pytest $GITHUB_WORKSPACE/tests/python_package_test || exit 1
