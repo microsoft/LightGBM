@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - master
-    # - ci/test
+    - ci/test
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
