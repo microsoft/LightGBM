@@ -305,6 +305,8 @@ Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** o
 
 Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
+Run ``sh ./build-python.sh install --nohomebrew``, if you want to stop looking into Homebrew standard folders. All requirements from `Build without Searching in Homebrew Folders for Dependencies on macOS section <#build-without-searching-in-homebrew-folders-for-dependencies-on-macos>`__ apply for this installation option as well.
+
 Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
