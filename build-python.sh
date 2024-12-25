@@ -349,10 +349,11 @@ if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     echo "${BUILD_ARGS}" \
-        | xargs \
+        | xargs -I{} \
             python -m build \
                 --wheel \
                 --outdir ../dist \
+                {} \
                 .
     # python -m build \
     #     --wheel \
