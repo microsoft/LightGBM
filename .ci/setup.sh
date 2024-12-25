@@ -2,7 +2,7 @@
 
 
 echo "--- start ---"
-echo 47
+echo 48
 
 
 BUILD_ARGS=""
