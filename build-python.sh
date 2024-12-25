@@ -49,13 +49,15 @@
 #     --no-isolation
 #                                   Assume all build and install dependencies are already installed,
 #                                   don't go to the internet to get them.
+#     --nohomebrew
+#                                   Compile version ignoring Homebrew standard folders  for finding dependencies.
 #     --nomp
 #                                   Compile version without OpenMP support.
 #     --precompile
 #                                   Use precompiled library.
 #                                   Only used with 'install' command.
 #     --time-costs
-#                                   Output time costs for different internal routines.
+#                                   Compile version that outputs time costs for different internal routines.
 #     --user
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
@@ -161,6 +163,9 @@ while [ $# -gt 0 ]; do
     --no-isolation)
         BUILD_ARGS="${BUILD_ARGS} --no-isolation"
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
+        ;;
+    --nohomebrew)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HOMEBREW_FALLBACK=OFF"
         ;;
     --nomp)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
