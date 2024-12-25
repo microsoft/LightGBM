@@ -9,7 +9,7 @@ configuration:
 branches:
   only:
     - master
-    - ci/test
+    # - ci/test
 
 environment:
   matrix:
