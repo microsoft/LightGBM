@@ -40,12 +40,12 @@
 #' }
 #'
 #' @export
-
 lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
     # check model is lgb.Booster
     if (!.is_Booster(x = model)) {
         stop("lgb.plot.tree: model should be an ", sQuote("lgb.Booster"))
     }
+    # check DiagrammeR is available
     if (!requireNamespace("DiagrammeR", quietly = TRUE)) {
         stop("lgb.plot.tree: DiagrammeR package is required",
             call. = FALSE
@@ -63,26 +63,36 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
     modelDT <- lgb.model.dt.tree(model)
     # check that tree is less than or equal to the maximum tree index in the model
     if (tree > max(modelDT$tree_index)) {
-        stop("lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model (", max(modelDT$tree_index, "). Got: ," tree, ".")
+        stop("lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model (", max(modelDT$tree_index), "). Got: ", tree, ".")
     }
     # filter modelDT to just the rows for the selected tree
     modelDT <- modelDT[tree_index == tree, ]
     # change the column names to shorter more diagram friendly versions
-    data.table::setnames(modelDT, old = c("tree_index", "split_feature", "threshold", "split_gain"), new = c("Tree", "Feature", "Split", "Gain"))
-    modelDT[, Value := 0.0]
+    data.table::setnames(modelDT
+    , old = c("tree_index", "split_feature", "threshold", "split_gain")
+    , new = c("Tree", "Feature", "Split", "Gain"))
+    # assign leaf_value to the Value column in modelDT
     modelDT[, Value := leaf_value]
+    # assign new values if NA
     modelDT[is.na(Value), Value := internal_value]
     modelDT[is.na(Gain), Gain := leaf_value]
     modelDT[is.na(Feature), Feature := "Leaf"]
+    # assign internal_count to Cover, and if Feature is "Leaf", assign leaf_count to Cover
     modelDT[, Cover := internal_count][Feature == "Leaf", Cover := leaf_count]
+    # remove unnecessary columns
     modelDT[, c("leaf_count", "internal_count", "leaf_value", "internal_value") := NULL]
+    # assign split_index to Node
     modelDT[, Node := split_index]
+    # find the maximum value of Node, if Node is NA, assign max_node + leaf_index + 1 to Node
     max_node <- max(modelDT[["Node"]], na.rm = TRUE)
     modelDT[is.na(Node), Node := max_node + leaf_index + 1]
+    # adding ID column
     modelDT[, ID := paste(Tree, Node, sep = "-")]
+    # remove unnecessary columns
     modelDT[, c("depth", "leaf_index") := NULL]
     modelDT[, parent := node_parent][is.na(parent), parent := leaf_parent]
     modelDT[, c("node_parent", "leaf_parent", "split_index") := NULL]
+    # assign the IDs of the matching parent nodes to Yes and No
     modelDT[, Yes := modelDT$ID[match(modelDT$Node, modelDT$parent)]]
     modelDT <- modelDT[nrow(modelDT):1, ]
     modelDT[, No := modelDT$ID[match(modelDT$Node, modelDT$parent)]]
@@ -91,14 +101,16 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
     modelDT[default_left == TRUE, Missing := Yes]
     modelDT[default_left == FALSE, Missing := No]
     modelDT[.zero_present(Split), Missing := Yes]
-    # modelDT[, c('parent', 'default_left') := NULL]
-    # data.table::setcolorder(modelDT, c('Tree','Node','ID','Feature','decision_type','Split','Yes','No','Missing','Gain','Cover','Value'))
     # create the label text
     modelDT[, label := paste0(
-        Feature,
-        "\nCover: ", Cover,
-        ifelse(Feature == "Leaf", "", "\nGain: "), ifelse(Feature == "Leaf", "", round(Gain, 4)),
-        "\nValue: ", round(Value, 4)
+        Feature
+        , "\nCover: "
+        , Cover
+        , ifelse(Feature == "Leaf", "", "\nGain: "), ifelse(Feature == "Leaf"
+        , ""
+        , round(Gain, 4))
+        , "\nValue: "
+        , round(Value, 4)
     )]
     # style the nodes - same format as xgboost
     modelDT[Node == 0, label := paste0("Tree ", Tree, "\n", label)]
