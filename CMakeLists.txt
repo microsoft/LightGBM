@@ -252,25 +252,6 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD 11)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
-
-    set(
-      BASE_DEFINES
-      -DPOWER_FEATURE_WORKGROUPS=12
-      -DUSE_CONSTANT_BUF=0
-    )
-    set(
-      ALLFEATS_DEFINES
-      ${BASE_DEFINES}
-      -DENABLE_ALL_FEATURES
-    )
-    set(
-      FULLDATA_DEFINES
-      ${ALLFEATS_DEFINES}
-      -DIGNORE_INDICES
-    )
-
-    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
-    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -605,14 +586,6 @@ if(USE_CUDA)
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
-
-  # histograms are list of object libraries. Linking object library to other
-  # object libraries only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on final targets here.
-  if(BUILD_CLI)
-    target_link_libraries(lightgbm PRIVATE ${histograms})
-  endif()
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
 if(WIN32)
