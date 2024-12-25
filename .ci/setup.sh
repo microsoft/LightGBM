@@ -2,7 +2,7 @@
 
 
 echo "--- start ---"
-echo 53
+echo 54
 
 
 BUILD_ARGS=""
@@ -15,7 +15,7 @@ BUILD_ARGS=""
 #             "%s\n"
 
 echo "${BUILD_ARGS}" \
-    | xargs \
+    | xargs -L1 \
         python -m build \
             --wheel \
             --outdir ../dist \
