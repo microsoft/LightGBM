@@ -1,6 +1,7 @@
 #!/bin/bash
 
-echo 55
+echo 56
+echo "$SHELL"
 
 
 ARCH=$(uname -m)
