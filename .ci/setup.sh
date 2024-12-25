@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 53
+echo 55
 
 
 ARCH=$(uname -m)
@@ -36,7 +36,7 @@ cd $GITHUB_WORKSPACE/.ci
 rm -rf ./*
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install
+sh ./build-python.sh install --nomp
 
 
 pytest ./tests/python_package_test || exit 1
