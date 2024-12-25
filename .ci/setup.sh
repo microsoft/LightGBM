@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo 43
+echo 44
 
 
 ARCH=$(uname -m)
@@ -32,9 +32,9 @@ conda update -q -y conda
 pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 
-
+cd $GITHUB_WORKSPACE/.ci
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
-cd $GITHUB_WORKSPACE/.ci/LightGBM
+cd LightGBM
 sh ./build-python.sh install
 
 
