@@ -2,11 +2,11 @@
 
 
 echo "--- start ---"
-echo 50
+echo 51
 
 
 BUILD_ARGS=""
-BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
+# BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
 
 
 # echo "${BUILD_ARGS}" \
