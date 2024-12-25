@@ -206,7 +206,7 @@ Build 32-bit Version with 32-bit Python
 
 .. code:: sh
 
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.args="-GVisual Studio 17 2022" --config-settings=cmake.args="-AWin32"
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.args="-AWin32"
 
 For **Windows** users, compilation with **MinGW-w64** is not supported.
 
