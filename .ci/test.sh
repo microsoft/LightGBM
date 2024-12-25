@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo 56
+echo 57
 echo "$SHELL"
+xargs --version
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
