@@ -101,42 +101,42 @@ while [ $# -gt 0 ]; do
             then shift;
         fi
         BOOST_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_DIR='${BOOST_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_DIR=${BOOST_DIR}")"
         ;;
     --boost-include-dir|--boost-include-dir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_INCLUDE_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_INCLUDE_DIR='${BOOST_INCLUDE_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_INCLUDE_DIR=${BOOST_INCLUDE_DIR}")"
         ;;
     --boost-librarydir|--boost-librarydir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_LIBRARY_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.BOOST_LIBRARYDIR='${BOOST_LIBRARY_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.BOOST_LIBRARYDIR=${BOOST_LIBRARY_DIR}")"
         ;;
     --boost-root|--boost-root=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         BOOST_ROOT="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_ROOT='${BOOST_ROOT}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.Boost_ROOT=${BOOST_ROOT}")"
         ;;
     --opencl-include-dir|--opencl-include-dir=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_INCLUDE_DIR="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_INCLUDE_DIR='${OPENCL_INCLUDE_DIR}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_INCLUDE_DIR=${OPENCL_INCLUDE_DIR}")"
         ;;
     --opencl-library|--opencl-library=*)
         if echo "$1" | grep -q '^*=*$';
             then shift;
         fi
         OPENCL_LIBRARY="${1#*=}"
-        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_LIBRARY='${OPENCL_LIBRARY}'")"
+        BUILD_ARGS="${BUILD_ARGS} $(quote "--config-setting=cmake.define.OpenCL_LIBRARY=${OPENCL_LIBRARY}")"
         ;;
     #########
     # flags #
@@ -157,7 +157,7 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         # ref: https://stackoverflow.com/a/45104058/3986677
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND $(quote "--config-setting=cmake.args=-G'MinGW Makefiles'")"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND $(quote "--config-setting=cmake.args=-GMinGW Makefiles")"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -343,7 +343,7 @@ fi
 if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
-    echo ${BUILD_ARGS} \
+    echo "${BUILD_ARGS}" \
         | xargs \
             python -m build \
                 --sdist \
@@ -354,7 +354,7 @@ fi
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
-    echo ${BUILD_ARGS} \
+    echo "${BUILD_ARGS}" \
         | xargs \
             python -m build \
                 --wheel \
