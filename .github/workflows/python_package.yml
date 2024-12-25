@@ -29,6 +29,11 @@ jobs:
             python_version: '3.10'
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
       - name: Setup and run tests
         shell: bash
         run: |
