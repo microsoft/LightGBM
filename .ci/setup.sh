@@ -1,37 +1,7 @@
 #!/bin/bash
 
 
-# echo "--- start ---"
-# echo 55
-
-
-# BUILD_ARGS="."
-# BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
-
-
-# # echo "${BUILD_ARGS}" \
-# #     | xargs -n2 \
-# #         printf \
-# #             "%s\n"
-
-# echo "${BUILD_ARGS}" \
-#     | xargs -n1 -t \
-#         python -m build \
-#             --wheel \
-#             --outdir ../dist \
-#             .
-
-
-
-# echo "--- end ---"
-
-
-
-
-
-
-
-echo 110
+echo 111
 
 ARCH=$(uname -m)
 
@@ -65,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 cd $GITHUB_WORKSPACE/.ci
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --nohomebrew
+sh ./build-python.sh install --nohomebrew --nomp
 
 
 pytest $GITHUB_WORKSPACE/tests/python_package_test || exit 1
