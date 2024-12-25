@@ -1,8 +1,6 @@
 #!/bin/bash
 
-echo 61
-echo "$SHELL"
-xargs --version
+echo 100
 
 export SKBUILD_LOGGING_LEVEL="INFO"
 
@@ -12,7 +10,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --nomp
+sh ./build-python.sh install
 
 
 tests="$BUILD_SOURCESDIRECTORY/tests/python_package_test"
