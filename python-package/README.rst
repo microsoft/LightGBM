@@ -311,6 +311,8 @@ Run ``sh ./build-python.sh install --time-costs``, if you want to output time co
 
 Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirements from `Build in Debug Mode section <#build-in-debug-mode>`__ apply for this installation option as well.
 
+Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable sanitizers. All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
+
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
