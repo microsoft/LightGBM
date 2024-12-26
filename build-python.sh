@@ -340,6 +340,9 @@ if test "${INSTALL}" = true; then
         elif test -f ../lib_lightgbm.dylib; then
             echo "found pre-compiled lib_lightgbm.dylib"
             cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
+        elif test -f ../lib_lightgbm.dll; then
+            echo "found pre-compiled lib_lightgbm.dll"
+            cp ../lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../Release/lib_lightgbm.dll; then
             echo "found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
