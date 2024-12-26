@@ -39,7 +39,7 @@
 #     --cuda
 #                                   Compile CUDA version.
 #     --debug
-#                                   Compile version with debug mode.
+#                                   Compile in debug mode.
 #     --gpu
 #                                   Compile GPU version.
 #     --integrated-opencl
