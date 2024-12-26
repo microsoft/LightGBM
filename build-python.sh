@@ -354,6 +354,9 @@ if test "${INSTALL}" = true; then
             echo "found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
             cp ../windows/x64/Debug_DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/Debug_DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        else
+            echo "cannot find pre-compiled library. Aborting"
+            exit 1
         fi
         rm -f ./*.bak
     else
