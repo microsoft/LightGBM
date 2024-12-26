@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-echo 219
+echo 220
 
 ARCH=$(uname -m)
 
@@ -35,7 +35,16 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 cd $GITHUB_WORKSPACE/.ci
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh install --sanitizers="address;undefined" --debug
+sh ./build-python.sh bdist_wheel
+
+cd ../dist
+pip install \
+    --force-reinstall \
+    --no-cache-dir \
+    --no-deps \
+    --find-links=. \
+    lightgbm-4.5.0.99-py3-none-macosx_13_0_x86_64.whl
+cd ../
 
 
 pytest $GITHUB_WORKSPACE/tests/python_package_test || exit 1
