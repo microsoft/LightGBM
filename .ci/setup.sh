@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-echo 223
+echo 224
 
 ARCH=$(uname -m)
 
@@ -29,7 +29,7 @@ conda config --set always_yes yes --set changeps1 no
 conda update -q -y conda
 
 
-pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle scikit-build-core
+pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle scikit-build-core ninja
 
 
 cd $GITHUB_WORKSPACE/.ci
