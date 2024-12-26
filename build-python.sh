@@ -72,10 +72,7 @@ BUILD_SDIST="false"
 BUILD_WHEEL="false"
 
 PIP_INSTALL_ARGS=""
-# cannot be empty to overcome the problem of passing empty string to xargs
-# ref: https://stackoverflow.com/a/8296746
-INITIAL_BUILD_ARGS="--outdir ../dist ."
-BUILD_ARGS="${INITIAL_BUILD_ARGS}"
+BUILD_ARGS=""
 PRECOMPILE="false"
 
 while [ $# -gt 0 ]; do
@@ -301,7 +298,7 @@ if test "${INSTALL}" = true; then
     if test "${PRECOMPILE}" = true; then
         BUILD_SDIST=true
         BUILD_WHEEL=false
-        BUILD_ARGS="${INITIAL_BUILD_ARGS}"
+        BUILD_ARGS=""
         rm -rf \
             ./cmake \
             ./CMakeLists.txt \
@@ -345,20 +342,17 @@ if test "${BUILD_SDIST}" = true; then
     echo "--- building sdist ---"
     rm -f ../dist/*.tar.gz
     # use xargs to work with args that contain whitespaces
-    echo "${BUILD_ARGS}" \
-        | xargs \
-            python -m build \
-                --sdist
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some xargs implementations
+    # ref: https://stackoverflow.com/a/8296746
+    echo "--sdist --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     # use xargs to work with args that contain whitespaces
-    echo "${BUILD_ARGS}" \
-        | xargs \
-            python -m build \
-                --wheel
+    echo "--wheel --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${INSTALL}" = true; then
