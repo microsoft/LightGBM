@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-echo 220
+echo 221
 
 ARCH=$(uname -m)
 
@@ -37,7 +37,7 @@ git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.g
 cd LightGBM
 sh ./build-python.sh bdist_wheel
 
-cd ../dist
+cd ./dist
 pip install \
     --force-reinstall \
     --no-cache-dir \
