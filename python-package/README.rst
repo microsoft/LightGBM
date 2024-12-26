@@ -330,7 +330,7 @@ After compiling dynamic library just run ``sh ./build-python.sh install --precom
 Build Wheel File
 ****************
 
-You can use ``sh ./build-python.sh bdist_wheel`` to build a wheel file but not install it.
+You can run ``sh ./build-python.sh bdist_wheel`` to build a wheel file but not install it.
 
 That script requires some dependencies like ``build``, ``scikit-build-core``, and ``wheel``.
 In environments with restricted or no internet access, install those tools and then pass ``--no-isolation``.
