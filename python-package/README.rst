@@ -293,6 +293,8 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
 
+|
+
 Run ``sh ./build-python.sh install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
 
 Run ``sh ./build-python.sh install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
@@ -313,6 +315,8 @@ Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirem
 
 Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers. All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
 
+|
+
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__). For example, you can use ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__ from the repo.
 
 .. code:: sh
@@ -320,6 +324,8 @@ If you get any errors during installation or due to any other reasons, you may w
   MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
 After compiling dynamic library just run ``sh ./build-python.sh install --precompile`` to install the Python-package using that library.
+
+|
 
 Build Wheel File
 ****************
