@@ -38,6 +38,8 @@
 #                                   Compile 32-bit version.
 #     --cuda
 #                                   Compile CUDA version.
+#     --debug
+#                                   Compile version with debug mode.
 #     --gpu
 #                                   Compile GPU version.
 #     --integrated-opencl
@@ -143,6 +145,9 @@ while [ $# -gt 0 ]; do
         ;;
     --cuda)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
+        ;;
+    --debug)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON"
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
