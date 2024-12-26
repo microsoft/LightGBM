@@ -313,7 +313,7 @@ Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirem
 
 Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers. All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
 
-If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
+If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__), for example, with ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__. After compiling dynamic library just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
 ****************
