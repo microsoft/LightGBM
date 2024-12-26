@@ -292,6 +292,9 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
     sh ./build-python.sh install
 
 Note: ``sudo`` (or administrator rights in **Windows**) may be needed to perform the command.
+Run ``sh ./build-python.sh install --user`` to install into user-specific instead of global site-packages directory.
+
+Run ``sh ./build-python.sh install --no-isolation`` to assume all build and install dependencies are already installed, don't go to the internet to get them.
 
 |
 
