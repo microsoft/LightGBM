@@ -309,6 +309,8 @@ Run ``sh ./build-python.sh install --nohomebrew``, if you want to ignore Homebre
 
 Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
+Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirements from `Build in Debug Mode section <#build-in-debug-mode>`__ apply for this installation option as well.
+
 If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__) and then just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
