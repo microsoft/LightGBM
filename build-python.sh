@@ -68,7 +68,7 @@
 
 set -e -u
 
-echo "building lightgbm"
+echo "[INFO] building lightgbm"
 
 # Default values of arguments
 INSTALL="false"
@@ -194,7 +194,7 @@ while [ $# -gt 0 ]; do
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
         ;;
     *)
-        echo "invalid argument '${1}'"
+        echo "[ERROR] invalid argument '${1}'. Aborting"
         exit 1
         ;;
   esac
@@ -335,27 +335,27 @@ if test "${INSTALL}" = true; then
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
-            echo "found pre-compiled lib_lightgbm.so"
+            echo "[INFO] found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
         elif test -f ../lib_lightgbm.dylib; then
-            echo "found pre-compiled lib_lightgbm.dylib"
+            echo "[INFO] found pre-compiled lib_lightgbm.dylib"
             cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
         elif test -f ../lib_lightgbm.dll; then
-            echo "found pre-compiled lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled lib_lightgbm.dll"
             cp ../lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../Release/lib_lightgbm.dll; then
-            echo "found pre-compiled Release/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../windows/x64/DLL/lib_lightgbm.dll; then
-            echo "found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
             cp ../windows/x64/DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
         elif test -f ../windows/x64/Debug_DLL/lib_lightgbm.dll; then
-            echo "found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
             cp ../windows/x64/Debug_DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/Debug_DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
         else
-            echo "cannot find pre-compiled library. Aborting"
+            echo "[ERROR] cannot find pre-compiled library. Aborting"
             exit 1
         fi
         rm -f ./*.bak
@@ -366,7 +366,7 @@ if test "${INSTALL}" = true; then
 fi
 
 if test "${BUILD_SDIST}" = true; then
-    echo "--- building sdist ---"
+    echo "[INFO] --- building sdist ---"
     rm -f ../dist/*.tar.gz
     # use xargs to work with args that contain whitespaces
     # note that empty echo string leads to that xargs doesn't run the command
@@ -376,7 +376,7 @@ if test "${BUILD_SDIST}" = true; then
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"
+    echo "[INFO] --- building wheel ---"
     rm -f ../dist/*.whl || true
     # use xargs to work with args that contain whitespaces
     # note that empty echo string leads to that xargs doesn't run the command
@@ -386,7 +386,7 @@ if test "${BUILD_WHEEL}" = true; then
 fi
 
 if test "${INSTALL}" = true; then
-    echo "--- installing lightgbm ---"
+    echo "[INFO] --- installing lightgbm ---"
     cd ../dist
     if test "${BUILD_WHEEL}" = true; then
         PACKAGE_NAME="$(echo lightgbm*.whl)"
@@ -405,5 +405,5 @@ if test "${INSTALL}" = true; then
     cd ../
 fi
 
-echo "cleaning up"
+echo "[INFO] cleaning up"
 rm -rf ./lightgbm-python
