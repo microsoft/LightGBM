@@ -319,7 +319,7 @@ If you get any errors during installation or due to any other reasons, you may w
 
   MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
 
-After compiling dynamic library just run ``sh ./build-python.sh install --precompile``.
+After compiling dynamic library just run ``sh ./build-python.sh install --precompile`` to install the Python-package using that library.
 
 Build Wheel File
 ****************
