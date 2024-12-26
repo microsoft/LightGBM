@@ -350,6 +350,10 @@ if test "${INSTALL}" = true; then
             echo "found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
             cp ../windows/x64/DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        elif test -f ../windows/x64/Debug_DLL/lib_lightgbm.dll; then
+            echo "found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
         fi
         rm -f ./*.bak
     else
