@@ -1,7 +1,7 @@
 #!/bin/bash
 
 
-echo 221
+echo 222
 
 ARCH=$(uname -m)
 
@@ -35,7 +35,7 @@ pip install pytest numpy pandas scipy scikit-learn psutil cloudpickle
 cd $GITHUB_WORKSPACE/.ci
 git clone --recursive -b docs/install-py https://github.com/microsoft/LightGBM.git
 cd LightGBM
-sh ./build-python.sh bdist_wheel
+sh ./build-python.sh bdist_wheel --no-isolation
 
 cd ./dist
 pip install \
