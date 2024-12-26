@@ -34,6 +34,8 @@
 #                                   OpenCL include directory.
 #     --opencl-library=FILEPATH
 #                                   Path to OpenCL library.
+#     --sanitizers=LIST_OF_SANITIZERS
+#                                   Semicolon separated list with chosen compiler sanitizers.
 #     --bit32
 #                                   Compile 32-bit version.
 #     --cuda
@@ -136,6 +138,14 @@ while [ $# -gt 0 ]; do
         OPENCL_LIBRARY="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.OpenCL_LIBRARY='${OPENCL_LIBRARY}'"
         ;;
+    --sanitizers|--sanitizers=*)
+        if echo "$1" | grep -q '^*=*$';
+            then shift;
+        fi
+        SANITIZERS="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_SANITIZER=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.ENABLED_SANITIZERS='${SANITIZERS}'"
+        ;;
     #########
     # flags #
     #########
@@ -147,7 +157,8 @@ while [ $# -gt 0 ]; do
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
         ;;
     --debug)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON --config-setting=cmake.build-type=Debug"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.build-type=Debug"
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
@@ -157,7 +168,8 @@ while [ $# -gt 0 ]; do
         ;;
     --mingw)
         # ref: https://stackoverflow.com/a/45104058/3986677
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND --config-setting=cmake.args=-G'MinGW Makefiles'"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=-G'MinGW Makefiles'"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
