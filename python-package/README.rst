@@ -313,7 +313,13 @@ Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirem
 
 Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers. All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
 
-If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__), for example, with ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__. After compiling dynamic library just run ``sh ./build-python.sh install --precompile``.
+If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__). For example, you can use ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__ from the repo.
+
+.. code:: sh
+
+  MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
+
+After compiling dynamic library just run ``sh ./build-python.sh install --precompile``.
 
 Build Wheel File
 ****************
@@ -326,21 +332,6 @@ In environments with restricted or no internet access, install those tools and t
 .. code:: sh
 
   sh ./build-python.sh bdist_wheel --no-isolation
-
-Build With MSBuild
-******************
-
-To use ``MSBuild`` (Windows-only), first build ``lib_lightgbm.dll`` by running the following from the root of the repo.
-
-.. code:: sh
-
-  MSBuild.exe windows/LightGBM.sln /p:Configuration=DLL /p:Platform=x64 /p:PlatformToolset=v143
-
-Then install the Python-package using that library.
-
-.. code:: sh
-
-  sh ./build-python.sh install --precompile
 
 Troubleshooting
 ---------------
