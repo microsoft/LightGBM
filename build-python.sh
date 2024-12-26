@@ -147,7 +147,7 @@ while [ $# -gt 0 ]; do
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
         ;;
     --debug)
-        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON --config-setting=cmake.build-type=Debug"
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
