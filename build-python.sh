@@ -343,7 +343,7 @@ if test "${BUILD_SDIST}" = true; then
     rm -f ../dist/*.tar.gz
     # use xargs to work with args that contain whitespaces
     # note that empty echo string leads to that xargs doesn't run the command
-    # in some xargs implementations
+    # in some implementations of xargs
     # ref: https://stackoverflow.com/a/8296746
     echo "--sdist --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
@@ -352,6 +352,9 @@ if test "${BUILD_WHEEL}" = true; then
     echo "--- building wheel ---"
     rm -f ../dist/*.whl || true
     # use xargs to work with args that contain whitespaces
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some implementations of xargs
+    # ref: https://stackoverflow.com/a/8296746
     echo "--wheel --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
