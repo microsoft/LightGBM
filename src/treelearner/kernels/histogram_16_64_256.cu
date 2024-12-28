@@ -150,7 +150,7 @@ __global__ void KERNEL_NAME(const uchar* feature_data_base,
     // size of threads that process this feature4
     const unsigned int subglobal_size = lsize * (1 << power_feature_workgroups);
 
-    // equavalent thread ID in this subgroup for this feature4
+    // equivalent thread ID in this subgroup for this feature4
     const unsigned int subglobal_tid  = gtid - feature_id * subglobal_size;
 
 

@@ -69,15 +69,17 @@ jobs:
       # check disk usage
       print-diagnostics
       # remove old containers, container images, volumes
-      # ref: https://stackoverflow.com/a/32723127/3986677)
+      # ref: https://stackoverflow.com/a/32723127/3986677
+      # ref: https://depot.dev/blog/docker-clear-cache#removing-everything-with-docker-system-prune
       echo "---- running 'docker system prune' ----"
       /tmp/docker system prune \
         --all \
         --force \
+        --volumes \
         --filter until=720h
       # check disk usage again
       print-diagnostics
-    displayName: clean
+    displayName: Clean
 ###########################################
 - job: Linux
 ###########################################
