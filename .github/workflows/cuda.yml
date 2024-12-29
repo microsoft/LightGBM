@@ -26,7 +26,7 @@ jobs:
   # This is safe as long as only 1 of these jobs runs at a time.
   restart-docker:
     name: set up docker
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, Linux]
     timeout-minutes: 30
     steps:
       - name: Setup or update software on host machine
@@ -59,7 +59,7 @@ jobs:
           exit 0
   test:
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (${{ matrix.linux_version }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, Linux]
     needs: [restart-docker]
     container:
       image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel-${{ matrix.linux_version }}
