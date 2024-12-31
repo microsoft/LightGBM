@@ -50,7 +50,7 @@ Suggests:
     markdown,
     processx,
     RhpcBLASctl,
-    testthat,
+    testthat
 Depends:
     R (>= 3.5)
 Imports:
