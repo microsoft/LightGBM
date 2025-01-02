@@ -9,8 +9,6 @@ lgb.cv(
   data,
   nrounds = 100L,
   nfold = 3L,
-  label = NULL,
-  weight = NULL,
   obj = NULL,
   eval = NULL,
   verbose = 1L,
@@ -20,8 +18,6 @@ lgb.cv(
   stratified = TRUE,
   folds = NULL,
   init_model = NULL,
-  colnames = NULL,
-  categorical_feature = NULL,
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
@@ -40,10 +36,6 @@ may allow you to pass other types of data like \code{matrix} and then separately
 \item{nrounds}{number of training rounds}
 
 \item{nfold}{the original dataset is randomly partitioned into \code{nfold} equal size subsamples.}
-
-\item{label}{Deprecated. See "Deprecated Arguments" section below.}
-
-\item{weight}{Deprecated. See "Deprecated Arguments" section below.}
 
 \item{obj}{objective function, can be character or custom objective function. Examples include
 \code{regression}, \code{regression_l1}, \code{huber},
@@ -103,10 +95,6 @@ the \code{nfold} and \code{stratified} parameters are ignored.}
 
 \item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
-\item{colnames}{Deprecated. See "Deprecated Arguments" section below.}
-
-\item{categorical_feature}{Deprecated. See "Deprecated Arguments" section below.}
-
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
 fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
@@ -131,14 +119,6 @@ a trained model \code{lgb.CVBooster}.
 \description{
 Cross validation logic used by LightGBM
 }
-\section{Deprecated Arguments}{
-
-
-A future release of \code{lightgbm} will require passing an \code{lgb.Dataset}
-to argument \code{'data'}. It will also remove support for passing arguments
-\code{'categorical_feature'}, \code{'colnames'}, \code{'label'}, and \code{'weight'}.
-}
-
 \section{Early Stopping}{
 
 
