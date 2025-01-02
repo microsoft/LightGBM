@@ -39,6 +39,9 @@ pytest=8.2.*
 # pinned here to help speed up solves
 bokeh=3.1.*
 fsspec=2024.5.*
+# TODO(jameslamb): add issue link
+libabseil=20240722.0=*_1
+libre2-11=2024.07.02=*_1
 msgpack-python=1.0.*
 pluggy=1.5.*
 pyparsing=3.1.4
