@@ -488,6 +488,7 @@ class LGBMModel(_LGBMModelBase):
 
     def __init__(
         self,
+        *,
         boosting_type: str = "gbdt",
         num_leaves: int = 31,
         max_depth: int = -1,
@@ -627,6 +628,7 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
+        print("LGBMModel.__init__()")
         if not SKLEARN_INSTALLED:
             raise LightGBMError(
                 "scikit-learn is required for lightgbm.sklearn. "
@@ -745,7 +747,36 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
+        # Based on: https://github.com/dmlc/xgboost/blob/bd92b1c9c0db3e75ec3dfa513e1435d518bb535d/python-package/xgboost/sklearn.py#L941
+        # which was based on: https://stackoverflow.com/questions/59248211
+        #
+        # `get_params()` flows like this:
+        #
+        # 0. Return parameters in subclass (self.__class__) first, by using inspect.
+        # 1. Return parameters in all parent classes (especially `LGBMModel`).
+        # 2. Return whatever is in `**kwargs`.
+        # 3. Merge them.
+        #
+        # This needs to accommodate being called recursively in the following
+        # inheritance graphs (and similar for classification and ranking):
+        #
+        #   DaskLGBMRegressor -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #   (custom subclass) -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        (custom subclass) -> LGBMModel -> BaseEstimator
+        #                                             LGBMModel -> BaseEstimator
+        #
         params = super().get_params(deep=deep)
+        cp = copy.copy(self)
+        print(f"--- {cp.__class__.__bases__}")
+        # If the immediate parent defines get_params(), use that.
+        if callable(getattr(cp.__class__.__bases__[0], "get_params", None)):
+            cp.__class__ = cp.__class__.__bases__[0]
+        # Otherwise, skip it and assume the next class will have it.
+        # This is here primarily for cases where the first class in MRO is a scikit-learn mixin.
+        else:
+            cp.__class__ = cp.__class__.__bases__[1]
+        params.update(cp.__class__.get_params(cp, deep))
         params.update(self._other_params)
         return params
 
@@ -1285,6 +1316,12 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
+    def __init__(self, **kwargs: Any):
+        print("LGBMRegressor.__init__()")
+        super().__init__(**kwargs)
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
+
     def _more_tags(self) -> Dict[str, Any]:
         # handle the case where RegressorMixin possibly provides _more_tags()
         if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
@@ -1343,6 +1380,11 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
 
     def _more_tags(self) -> Dict[str, Any]:
         # handle the case where ClassifierMixin possibly provides _more_tags()
@@ -1553,6 +1595,11 @@ class LGBMRanker(LGBMModel):
         therefore this class is not really compatible with the sklearn ecosystem.
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
 
     def fit(  # type: ignore[override]
         self,
