@@ -706,18 +706,21 @@ if(APPLE AND USE_OPENMP AND NOT BUILD_STATIC_LIB)
   # Override the absolute path to OpenMP with a relative one using @rpath.
   #
   # This also ensures that if a {libgomp,libiomp,libomp}.dylib has already been loaded, it'll just use that.
-  add_custom_command(
-    TARGET _lightgbm
-    POST_BUILD
-      COMMAND
-        install_name_tool
-        -change
-        ${OpenMP_LIBRARY_LOCATION}
-        "@rpath/${OpenMP_LIBRARY_NAME}"
-        "${__LIB_LIGHTGBM_FILENAME}"
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
-  )
+  if (NOT BUILD_STATIC_LIB)
+    add_custom_command(
+      TARGET _lightgbm
+      POST_BUILD
+        COMMAND
+          install_name_tool
+          -change
+          ${OpenMP_LIBRARY_LOCATION}
+          "@rpath/${OpenMP_LIBRARY_NAME}"
+          "${__LIB_LIGHTGBM_FILENAME}"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Replacing hard-coded OpenMP install_name with '@rpath/${OpenMP_LIBRARY_NAME}'..."
+    )
+  endif()
+  
   # add RPATH entries to ensure the loader looks in the following, in the following order:
   #
   #   - (R-only) ${LIBR_LIBS_DIR}    (wherever R for macOS stores vendored third-party libraries)
