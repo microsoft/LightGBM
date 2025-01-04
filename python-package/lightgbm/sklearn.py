@@ -1317,6 +1317,11 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
     def __init__(self, **kwargs: Any):
+        # TODO(jameslamb): add links to PR:
+        #  - https://github.com/microsoft/LightGBM/issues/4426
+        #  - https://stackoverflow.com/questions/40025406/inherit-from-scikit-learns-lassocv-model/40027200#40027200
+        #  - https://stackoverflow.com/questions/79320289/why-cant-i-wrap-lgbm
+        #  - https://github.com/dmlc/xgboost/blob/bd92b1c9c0db3e75ec3dfa513e1435d518bb535d/python-package/xgboost/sklearn.py#L941
         print("LGBMRegressor.__init__()")
         super().__init__(**kwargs)
 
