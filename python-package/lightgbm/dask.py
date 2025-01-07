@@ -44,7 +44,6 @@ from .sklearn import (
     LGBMModel,
     LGBMRanker,
     LGBMRegressor,
-    _LGBM_ScikitCustomObjectiveFunction,
     _LGBM_ScikitEvalMetricType,
     _lgbmmodel_doc_custom_eval_note,
     _lgbmmodel_doc_fit,

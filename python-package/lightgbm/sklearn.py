@@ -628,7 +628,6 @@ class LGBMModel(_LGBMModelBase):
         For multi-class task, y_pred is a numpy 2-D array of shape = [n_samples, n_classes],
         and grad and hess should be returned in the same format.
         """
-        print("LGBMModel.__init__()")
         if not SKLEARN_INSTALLED:
             raise LightGBMError(
                 "scikit-learn is required for lightgbm.sklearn. "
@@ -752,9 +751,9 @@ class LGBMModel(_LGBMModelBase):
         #
         # `get_params()` flows like this:
         #
-        # 0. Return parameters in subclass (self.__class__) first, by using inspect.
-        # 1. Return parameters in all parent classes (especially `LGBMModel`).
-        # 2. Return whatever is in `**kwargs`.
+        # 0. Get parameters in subclass (self.__class__) first, by using inspect.
+        # 1. Get parameters in all parent classes (especially `LGBMModel`).
+        # 2. Get whatever was passed via `**kwargs`.
         # 3. Merge them.
         #
         # This needs to accommodate being called recursively in the following
@@ -768,7 +767,6 @@ class LGBMModel(_LGBMModelBase):
         #
         params = super().get_params(deep=deep)
         cp = copy.copy(self)
-        print(f"--- {cp.__class__.__bases__}")
         # If the immediate parent defines get_params(), use that.
         if callable(getattr(cp.__class__.__bases__[0], "get_params", None)):
             cp.__class__ = cp.__class__.__bases__[0]
@@ -1322,7 +1320,6 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         #  - https://stackoverflow.com/questions/40025406/inherit-from-scikit-learns-lassocv-model/40027200#40027200
         #  - https://stackoverflow.com/questions/79320289/why-cant-i-wrap-lgbm
         #  - https://github.com/dmlc/xgboost/blob/bd92b1c9c0db3e75ec3dfa513e1435d518bb535d/python-package/xgboost/sklearn.py#L941
-        print("LGBMRegressor.__init__()")
         super().__init__(**kwargs)
 
     __init__.__doc__ = LGBMModel.__init__.__doc__
