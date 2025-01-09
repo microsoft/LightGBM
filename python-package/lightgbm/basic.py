@@ -2126,6 +2126,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+        elif isinstance(data, pa_Table):
+            feature_name = data.column_names
 
         # process for args
         params = {} if params is None else params
