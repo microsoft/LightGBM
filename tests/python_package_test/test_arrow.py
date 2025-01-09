@@ -432,3 +432,15 @@ def test_predict_ranking():
         num_boost_round=5,
     )
     assert_equal_predict_arrow_pandas(booster, data)
+
+
+def test_arrow_categorical():
+    data = generate_random_arrow_table(10, 10000, 42)
+    dataset = lgb.Dataset(
+        data,
+        label=generate_random_arrow_array(10000, 43, generate_nulls=False, values=np.arange(4)),
+        params=dummy_dataset_params(),
+        categorical_feature=["col_0"]
+    )
+    booster = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)
+    assert_equal_predict_arrow_pandas(booster, data)
