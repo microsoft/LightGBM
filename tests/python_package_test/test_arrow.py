@@ -437,13 +437,11 @@ def test_predict_ranking():
 def test_arrow_feature_name_auto():
     data = generate_dummy_arrow_table()
     dataset = lgb.Dataset(
-        data,
-        label=pa.array([0, 1, 0, 0, 1]),
-        params=dummy_dataset_params(),
-        categorical_feature=["a"]
+        data, label=pa.array([0, 1, 0, 0, 1]), params=dummy_dataset_params(), categorical_feature=["a"]
     )
     booster = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)
     assert booster.feature_name() == ["a", "b"]
+
 
 def test_arrow_feature_name_manual():
     data = generate_dummy_arrow_table()
@@ -452,7 +450,7 @@ def test_arrow_feature_name_manual():
         label=pa.array([0, 1, 0, 0, 1]),
         params=dummy_dataset_params(),
         feature_name=["c", "d"],
-        categorical_feature=["c"]
+        categorical_feature=["c"],
     )
     booster = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)
     assert booster.feature_name() == ["c", "d"]
