@@ -527,7 +527,7 @@ def test_subclassing_get_params_works():
     #
     # why these?
     #
-    #  - 'n_estimators" directly matches a keyword arg for the scikit-learn estimators
+    #  - 'n_estimators' directly matches a keyword arg for the scikit-learn estimators
     #  - 'eta' is a parameter alias for 'learning_rate'
     overrides = {"n_estimators": 13, "eta": 0.07}
 
