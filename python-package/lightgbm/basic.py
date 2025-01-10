@@ -2126,7 +2126,7 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
-        elif _is_pyarrow_table(data):
+        elif _is_pyarrow_table(data) and feature_name == "auto":
             feature_name = data.column_names
 
         # process for args
