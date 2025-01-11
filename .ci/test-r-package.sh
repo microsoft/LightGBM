@@ -114,7 +114,7 @@ Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/A
 
 # Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
 # to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
+packages="c('data.table', 'DiagrammeR', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
 compile_from_source="both"
 if [[ $OS_NAME == "macos" ]]; then
     packages+=", type = 'binary'"
