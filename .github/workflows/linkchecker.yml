@@ -10,7 +10,7 @@ on:
 env:
   COMPILER: gcc
   OS_NAME: 'linux'
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   TASK: 'check-links'
 
 jobs:
