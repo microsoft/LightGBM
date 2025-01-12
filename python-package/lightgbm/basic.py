@@ -27,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (
+    CFFI_INSTALLED,
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
@@ -1706,8 +1707,8 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[np.ndarray, int]:
         """Predict for a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot predict from Arrow without `pyarrow` and `cffi` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -2186,6 +2187,8 @@ class Dataset:
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
+            if not CFFI_INSTALLED:
+                raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed.")
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
@@ -2459,8 +2462,8 @@ class Dataset:
         ref_dataset: Optional[_DatasetHandle],
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
