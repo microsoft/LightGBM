@@ -1385,13 +1385,14 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     sklearn_spec = inspect.getfullargspec(classes[1])
     assert dask_spec.varargs == sklearn_spec.varargs
     assert dask_spec.varkw == sklearn_spec.varkw
-    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
-    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
-
     # "client" should be the only different, and the final argument
-    assert dask_spec.args[:-1] == sklearn_spec.args
-    assert dask_spec.defaults[:-1] == sklearn_spec.defaults
-    assert dask_spec.args[-1] == "client"
+    assert dask_spec.kwonlyargs == [*sklearn_spec.kwonlyargs, "client"]
+    assert dask_spec.kwonlydefaults == {"client": None}
+    assert sklearn_spec.kwonlydefaults is None
+
+    # only positional argument should be 'self'
+    assert dask_spec.args == sklearn_spec.args
+    assert dask_spec.args == ["self"]
     assert dask_spec.defaults[-1] is None
 
 
