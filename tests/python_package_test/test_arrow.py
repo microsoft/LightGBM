@@ -1,8 +1,10 @@
 # coding: utf-8
 import filecmp
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -454,3 +456,25 @@ def test_arrow_feature_name_manual():
     )
     booster = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)
     assert booster.feature_name() == ["c", "d"]
+
+
+def test_training_and_predicting_from_pa_table_without_cffi_raises():
+    data = generate_dummy_arrow_table()
+    with mock.patch.dict(sys.modules, {"cffi": None}):
+        assert lgb.compat.PYARROW_INSTALLED is True
+
+        with pytest.raises(
+            lgb.basic.LightGBMError, match="Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed."
+        ):
+            dataset = lgb.Dataset(
+                data,
+                label=pa.array([0, 1, 0, 0, 1]),
+                params=dummy_dataset_params(),
+                feature_name=["c", "d"],
+                categorical_feature=["c"],
+            )
+
+        with pytest.raises(
+            lgb.basic.LightGBMError, match="Cannot predict from Arrow without `pyarrow` and `cffi` installed."
+        ):
+            _ = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)

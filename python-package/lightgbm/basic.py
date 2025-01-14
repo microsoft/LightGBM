@@ -2187,8 +2187,6 @@ class Dataset:
         elif isinstance(data, np.ndarray):
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
-            if not CFFI_INSTALLED:
-                raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed.")
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
