@@ -460,8 +460,9 @@ def test_arrow_feature_name_manual():
 
 def test_training_and_predicting_from_pa_table_without_cffi_raises():
     data = generate_dummy_arrow_table()
-    with mock.patch.dict(sys.modules, {"cffi": None}):
+    with mock.patch.dict(sys.modules, {"pyarrow.cffi": None}):
         assert lgb.compat.PYARROW_INSTALLED is True
+        assert lgb.compat.CFFI_INSTALLED is False
 
         with pytest.raises(
             lgb.basic.LightGBMError, match="Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed."
