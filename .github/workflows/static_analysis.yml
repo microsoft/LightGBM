@@ -31,7 +31,7 @@ jobs:
       matrix:
         include:
           - task: lint
-          # - task: check-docs
+          - task: check-docs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
