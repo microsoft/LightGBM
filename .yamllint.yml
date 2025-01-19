@@ -8,7 +8,3 @@ rules:
   truthy:
     # prevent treating GitHub Workflow "on" key as boolean value
     check-keys: false
-
-  # temporarily disabled rules
-  indentation: disable
-  comments-indentation: disable
