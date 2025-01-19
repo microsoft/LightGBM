@@ -215,8 +215,9 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/.ci/test.sh
           targetType: 'filePath'
+###########################################
   - job: QEMU_multiarch
-    ###########################################
+###########################################
     variables:
       BUILD_DIRECTORY: /LightGBM
       COMPILER: gcc
