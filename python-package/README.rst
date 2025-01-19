@@ -145,10 +145,7 @@ For **macOS** users, the GPU version is not supported.
 
 .. code:: sh
 
-    pip install lightgbm --no-binary lightgbm \
-      --config-settings=cmake.define.USE_GPU=ON \
-      --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" \
-      --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_GPU=ON --config-settings=cmake.define.OpenCL_INCLUDE_DIR="/usr/local/cuda/include/" --config-settings=cmake.define.OpenCL_LIBRARY="/usr/local/cuda/lib64/libOpenCL.so"
 
 All available options that can be passed via ``cmake.define.{option}``.
 
@@ -243,7 +240,7 @@ Build in Debug Mode
 
 .. code:: sh
 
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_DEBUG=ON
+    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_DEBUG=ON --config-settings=cmake.build-type=Debug
 
 Use this mode to make LightGBM perform more checks internally and disable all compiler optimizations.
 
