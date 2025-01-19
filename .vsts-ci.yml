@@ -140,14 +140,14 @@ jobs:
           artifactType: container
   - job: Linux_latest
     ###########################################
-      variables:
-        COMPILER: clang-17
-        DEBIAN_FRONTEND: 'noninteractive'
-        IN_UBUNTU_BASE_CONTAINER: 'true'
-        OS_NAME: 'linux'
-        SETUP_CONDA: 'true'
-      pool: mariner-20240410-0
-      container: ubuntu-latest
+    variables:
+      COMPILER: clang-17
+      DEBIAN_FRONTEND: 'noninteractive'
+      IN_UBUNTU_BASE_CONTAINER: 'true'
+      OS_NAME: 'linux'
+      SETUP_CONDA: 'true'
+    pool: mariner-20240410-0
+    container: ubuntu-latest
     strategy:
       matrix:
         regular:
@@ -276,8 +276,8 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-- job: macOS
-  ###########################################
+  - job: macOS
+    ###########################################
     variables:
       COMPILER: clang
       OS_NAME: 'macos'
