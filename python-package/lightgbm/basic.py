@@ -1248,7 +1248,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
-        if not is_sparse and preds.size != nrow:
+        if not is_sparse and (preds.size != nrow or pred_leaf or pred_contrib):
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -2126,6 +2126,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+        elif _is_pyarrow_table(data) and feature_name == "auto":
+            feature_name = data.column_names
 
         # process for args
         params = {} if params is None else params
@@ -2185,7 +2187,6 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
-            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)

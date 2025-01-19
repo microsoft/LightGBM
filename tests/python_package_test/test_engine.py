@@ -15,7 +15,7 @@ import numpy as np
 import psutil
 import pytest
 from scipy.sparse import csr_matrix, isspmatrix_csc, isspmatrix_csr
-from sklearn.datasets import load_svmlight_file, make_blobs, make_multilabel_classification
+from sklearn.datasets import load_svmlight_file, make_blobs, make_classification, make_multilabel_classification
 from sklearn.metrics import average_precision_score, log_loss, mean_absolute_error, mean_squared_error, roc_auc_score
 from sklearn.model_selection import GroupKFold, TimeSeriesSplit, train_test_split
 
@@ -62,6 +62,13 @@ def top_k_error(y_true, y_pred, k):
 
 def constant_metric(preds, train_data):
     return ("error", 0.0, False)
+
+
+def constant_metric_multi(preds, train_data):
+    return [
+        ("important_metric", 1.5, False),
+        ("irrelevant_metric", 7.8, False),
+    ]
 
 
 def decreasing_metric(preds, train_data):
@@ -2307,6 +2314,33 @@ def test_refit():
     assert err_pred > new_err_pred
 
 
+def test_refit_with_one_tree_regression():
+    X, y = make_synthetic_regression(n_samples=1_000, n_features=2)
+    lgb_train = lgb.Dataset(X, label=y)
+    params = {"objective": "regression", "verbosity": -1}
+    model = lgb.train(params, lgb_train, num_boost_round=1)
+    model_refit = model.refit(X, y)
+    assert isinstance(model_refit, lgb.Booster)
+
+
+def test_refit_with_one_tree_binary_classification():
+    X, y = load_breast_cancer(return_X_y=True)
+    lgb_train = lgb.Dataset(X, label=y)
+    params = {"objective": "binary", "verbosity": -1}
+    model = lgb.train(params, lgb_train, num_boost_round=1)
+    model_refit = model.refit(X, y)
+    assert isinstance(model_refit, lgb.Booster)
+
+
+def test_refit_with_one_tree_multiclass_classification():
+    X, y = load_iris(return_X_y=True)
+    lgb_train = lgb.Dataset(X, y)
+    params = {"objective": "multiclass", "num_class": 3, "verbose": -1}
+    model = lgb.train(params, lgb_train, num_boost_round=1)
+    model_refit = model.refit(X, y)
+    assert isinstance(model_refit, lgb.Booster)
+
+
 def test_refit_dataset_params(rng):
     # check refit accepts dataset_params
     X, y = load_breast_cancer(return_X_y=True)
@@ -2570,6 +2604,13 @@ def test_metrics():
     assert "valid binary_logloss-mean" in res
     assert "valid error-mean" in res
 
+    # default metric in args with 1 custom function returning a list of 2 metrics
+    res = get_cv_result(metrics="binary_logloss", feval=constant_metric_multi)
+    assert len(res) == 6
+    assert "valid binary_logloss-mean" in res
+    assert res["valid important_metric-mean"] == [1.5, 1.5]
+    assert res["valid irrelevant_metric-mean"] == [7.8, 7.8]
+
     # non-default metric in args with custom one
     res = get_cv_result(metrics="binary_error", feval=constant_metric)
     assert len(res) == 4
@@ -2702,6 +2743,13 @@ def test_metrics():
     assert len(evals_result["valid_0"]) == 2
     assert "binary_logloss" in evals_result["valid_0"]
     assert "error" in evals_result["valid_0"]
+
+    # default metric in params with custom function returning a list of 2 metrics
+    train_booster(params=params_obj_metric_log_verbose, feval=constant_metric_multi)
+    assert len(evals_result["valid_0"]) == 3
+    assert "binary_logloss" in evals_result["valid_0"]
+    assert evals_result["valid_0"]["important_metric"] == [1.5, 1.5]
+    assert evals_result["valid_0"]["irrelevant_metric"] == [7.8, 7.8]
 
     # non-default metric in params with custom one
     train_booster(params=params_obj_metric_err_verbose, feval=constant_metric)
@@ -3849,6 +3897,73 @@ def test_predict_stump(rng, use_init_score):
         y_avg = np.log(y.mean() / (1.0 - y.mean()))
         np.testing.assert_allclose(preds_1, np.full_like(preds_1, fill_value=y_avg))
         np.testing.assert_allclose(preds_all, np.full_like(preds_all, fill_value=y_avg))
+
+
+def test_predict_regression_output_shape():
+    n_samples = 1_000
+    n_features = 4
+    X, y = make_synthetic_regression(n_samples=n_samples, n_features=n_features)
+    dtrain = lgb.Dataset(X, label=y)
+    params = {"objective": "regression", "verbosity": -1}
+
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
+
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
+
+
+def test_predict_binary_classification_output_shape():
+    n_samples = 1_000
+    n_features = 4
+    X, y = make_classification(n_samples=n_samples, n_features=n_features, n_classes=2)
+    dtrain = lgb.Dataset(X, label=y)
+    params = {"objective": "binary", "verbosity": -1}
+
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
+
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
+
+
+def test_predict_multiclass_classification_output_shape():
+    n_samples = 1_000
+    n_features = 10
+    n_classes = 3
+    X, y = make_classification(n_samples=n_samples, n_features=n_features, n_classes=n_classes, n_informative=6)
+    dtrain = lgb.Dataset(X, label=y)
+    params = {"objective": "multiclass", "verbosity": -1, "num_class": n_classes}
+
+    # 1-round model
+    bst = lgb.train(params, dtrain, num_boost_round=1)
+    assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes)
+
+    # 2-round model
+    bst = lgb.train(params, dtrain, num_boost_round=2)
+    assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
+    assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
+    assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes * 2)
 
 
 def test_average_precision_metric():
