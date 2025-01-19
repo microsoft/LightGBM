@@ -3,10 +3,10 @@ name: CUDA Version
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
   # Run manually by clicking a button in the UI
   workflow_dispatch:
     inputs:
@@ -130,7 +130,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

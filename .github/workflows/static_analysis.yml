@@ -5,11 +5,11 @@ name: Static Analysis
 on:
   push:
     branches:
-    - master
-    - ci/yamllint-2
+      - master
+      - ci/yamllint-2
   pull_request:
     branches:
-    - master
+      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -89,7 +89,7 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: [test, r-check-docs]
   #   steps:
-  #   - name: Note that all tests succeeded
-  #     uses: re-actors/alls-green@v1.2.2
-  #     with:
-  #       jobs: ${{ toJSON(needs) }}
+  #     - name: Note that all tests succeeded
+  #       uses: re-actors/alls-green@v1.2.2
+  #       with:
+  #         jobs: ${{ toJSON(needs) }}
