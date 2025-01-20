@@ -2,9 +2,6 @@
 
 set -e -E -o -u pipefail
 
-# TODO(jameslamb): revert before merging
-set -x
-
 # defaults
 CONDA_ENV="test-env"
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}

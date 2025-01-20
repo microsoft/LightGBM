@@ -66,7 +66,7 @@ if ($env:TASK -eq "swig") {
 conda init powershell
 conda activate
 conda config --set always_yes yes --set changeps1 no
-conda update -q -y conda "python=$env:PYTHON_VERSION=*_cp*"
+conda update -q -y conda "python=$env:PYTHON_VERSION[build=*_cp*]"
 
 if ($env:PYTHON_VERSION -eq "3.7") {
     $env:CONDA_REQUIREMENT_FILE = "$env:BUILD_SOURCESDIRECTORY/.ci/conda-envs/ci-core-py37.txt"
