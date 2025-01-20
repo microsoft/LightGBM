@@ -34,10 +34,14 @@
 #                                   OpenCL include directory.
 #     --opencl-library=FILEPATH
 #                                   Path to OpenCL library.
+#     --sanitizers=LIST_OF_SANITIZERS
+#                                   Semicolon separated list with chosen compiler sanitizers.
 #     --bit32
 #                                   Compile 32-bit version.
 #     --cuda
 #                                   Compile CUDA version.
+#     --debug
+#                                   Compile in debug mode.
 #     --gpu
 #                                   Compile GPU version.
 #     --integrated-opencl
@@ -49,20 +53,22 @@
 #     --no-isolation
 #                                   Assume all build and install dependencies are already installed,
 #                                   don't go to the internet to get them.
+#     --nohomebrew
+#                                   Compile version ignoring Homebrew standard folders  for finding dependencies.
 #     --nomp
 #                                   Compile version without OpenMP support.
 #     --precompile
 #                                   Use precompiled library.
 #                                   Only used with 'install' command.
 #     --time-costs
-#                                   Output time costs for different internal routines.
+#                                   Compile version that outputs time costs for different internal routines.
 #     --user
 #                                   Install into user-specific instead of global site-packages directory.
 #                                   Only used with 'install' command.
 
 set -e -u
 
-echo "building lightgbm"
+echo "[INFO] building lightgbm"
 
 # Default values of arguments
 INSTALL="false"
@@ -132,16 +138,27 @@ while [ $# -gt 0 ]; do
         OPENCL_LIBRARY="${1#*=}"
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.OpenCL_LIBRARY='${OPENCL_LIBRARY}'"
         ;;
+    --sanitizers|--sanitizers=*)
+        if echo "$1" | grep -q '^*=*$';
+            then shift;
+        fi
+        SANITIZERS="${1#*=}"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_SANITIZER=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.ENABLED_SANITIZERS='${SANITIZERS}'"
+        ;;
     #########
     # flags #
     #########
     --bit32)
-        export CMAKE_GENERATOR="Visual Studio 17 2022"
-        export CMAKE_GENERATOR_PLATFORM="Win32"
-        echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with generator '${CMAKE_GENERATOR}'."
+        echo "[INFO] Attempting to build 32-bit version of LightGBM, which is only supported on Windows with Visual Studio."
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=-AWin32"
         ;;
     --cuda)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_CUDA=ON"
+        ;;
+    --debug)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_DEBUG=ON"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.build-type=Debug"
         ;;
     --gpu)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_GPU=ON"
@@ -150,9 +167,9 @@ while [ $# -gt 0 ]; do
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.__INTEGRATE_OPENCL=ON"
         ;;
     --mingw)
-        export CMAKE_GENERATOR='MinGW Makefiles'
         # ref: https://stackoverflow.com/a/45104058/3986677
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.CMAKE_SH=CMAKE_SH-NOTFOUND"
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.args=-G'MinGW Makefiles'"
         ;;
     --mpi)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_MPI=ON"
@@ -160,6 +177,9 @@ while [ $# -gt 0 ]; do
     --no-isolation)
         BUILD_ARGS="${BUILD_ARGS} --no-isolation"
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --no-build-isolation"
+        ;;
+    --nohomebrew)
+        BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_HOMEBREW_FALLBACK=OFF"
         ;;
     --nomp)
         BUILD_ARGS="${BUILD_ARGS} --config-setting=cmake.define.USE_OPENMP=OFF"
@@ -174,7 +194,7 @@ while [ $# -gt 0 ]; do
         PIP_INSTALL_ARGS="${PIP_INSTALL_ARGS} --user"
         ;;
     *)
-        echo "invalid argument '${1}'"
+        echo "[ERROR] invalid argument '${1}'. Aborting"
         exit 1
         ;;
   esac
@@ -315,18 +335,28 @@ if test "${INSTALL}" = true; then
         echo "" >> ./MANIFEST.in
         mkdir -p ./lightgbm/lib
         if test -f ../lib_lightgbm.so; then
-            echo "found pre-compiled lib_lightgbm.so"
+            echo "[INFO] found pre-compiled lib_lightgbm.so"
             cp ../lib_lightgbm.so ./lightgbm/lib/lib_lightgbm.so
         elif test -f ../lib_lightgbm.dylib; then
-            echo "found pre-compiled lib_lightgbm.dylib"
+            echo "[INFO] found pre-compiled lib_lightgbm.dylib"
             cp ../lib_lightgbm.dylib ./lightgbm/lib/lib_lightgbm.dylib
+        elif test -f ../lib_lightgbm.dll; then
+            echo "[INFO] found pre-compiled lib_lightgbm.dll"
+            cp ../lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../Release/lib_lightgbm.dll; then
-            echo "found pre-compiled Release/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled Release/lib_lightgbm.dll"
             cp ../Release/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
         elif test -f ../windows/x64/DLL/lib_lightgbm.dll; then
-            echo "found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
+            echo "[INFO] found pre-compiled windows/x64/DLL/lib_lightgbm.dll"
             cp ../windows/x64/DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
             cp ../windows/x64/DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        elif test -f ../windows/x64/Debug_DLL/lib_lightgbm.dll; then
+            echo "[INFO] found pre-compiled windows/x64/Debug_DLL/lib_lightgbm.dll"
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.dll ./lightgbm/lib/lib_lightgbm.dll
+            cp ../windows/x64/Debug_DLL/lib_lightgbm.lib ./lightgbm/lib/lib_lightgbm.lib
+        else
+            echo "[ERROR] cannot find pre-compiled library. Aborting"
+            exit 1
         fi
         rm -f ./*.bak
     else
@@ -336,29 +366,27 @@ if test "${INSTALL}" = true; then
 fi
 
 if test "${BUILD_SDIST}" = true; then
-    echo "--- building sdist ---"
+    echo "[INFO] --- building sdist ---"
     rm -f ../dist/*.tar.gz
-    # shellcheck disable=SC2086
-    python -m build \
-        --sdist \
-        --outdir ../dist \
-        ${BUILD_ARGS} \
-        .
+    # use xargs to work with args that contain whitespaces
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some implementations of xargs
+    # ref: https://stackoverflow.com/a/8296746
+    echo "--sdist --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${BUILD_WHEEL}" = true; then
-    echo "--- building wheel ---"
+    echo "[INFO] --- building wheel ---"
     rm -f ../dist/*.whl || true
-    # shellcheck disable=SC2086
-    python -m build \
-        --wheel \
-        --outdir ../dist \
-        ${BUILD_ARGS} \
-        .
+    # use xargs to work with args that contain whitespaces
+    # note that empty echo string leads to that xargs doesn't run the command
+    # in some implementations of xargs
+    # ref: https://stackoverflow.com/a/8296746
+    echo "--wheel --outdir ../dist ${BUILD_ARGS} ." | xargs python -m build
 fi
 
 if test "${INSTALL}" = true; then
-    echo "--- installing lightgbm ---"
+    echo "[INFO] --- installing lightgbm ---"
     cd ../dist
     if test "${BUILD_WHEEL}" = true; then
         PACKAGE_NAME="$(echo lightgbm*.whl)"
@@ -377,5 +405,5 @@ if test "${INSTALL}" = true; then
     cd ../
 fi
 
-echo "cleaning up"
+echo "[INFO] cleaning up"
 rm -rf ./lightgbm-python
