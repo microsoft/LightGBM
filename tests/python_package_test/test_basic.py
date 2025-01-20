@@ -985,7 +985,7 @@ def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
     assert filecmp.cmp(ds_row_path, ds_col_path)
 
 
-def test_equal_datasets_from_one_and_several_matrices(rng, tmp_path):
+def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, tmp_path):
     # several matrices
     mats = [np.require(rng.random(size=(100, 2)), requirements=order) for order in ("C", "F", "F", "C")]
     several_path = tmp_path / "several.txt"
