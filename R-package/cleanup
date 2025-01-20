@@ -1,6 +1,2 @@
 #!/bin/sh
-rm -f ./src/Makevars
-
-# remove dsymutil-* temporary directories possibly left behind by clang
-# ref: https://github.com/llvm/llvm-project/issues/61920
-rm -rf ./dsymutil-*
+rm -f src/Makevars
