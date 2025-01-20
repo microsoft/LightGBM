@@ -177,7 +177,7 @@ Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
 $packages = -join @(
-    "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), ",
+    "c('data.table', 'DiagrammeR', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), ",
     "dependencies = c('Imports', 'Depends', 'LinkingTo')"
 )
 $params = -join @(
