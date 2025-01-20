@@ -1248,7 +1248,7 @@ class _InnerPredictor:
         if pred_leaf:
             preds = preds.astype(np.int32)
         is_sparse = isinstance(preds, (list, scipy.sparse.spmatrix))
-        if not is_sparse and preds.size != nrow:
+        if not is_sparse and (preds.size != nrow or pred_leaf or pred_contrib):
             if preds.size % nrow == 0:
                 preds = preds.reshape(nrow, -1)
             else:
@@ -1291,10 +1291,7 @@ class _InnerPredictor:
         predict_type: int,
         preds: Optional[np.ndarray],
     ) -> Tuple[np.ndarray, int]:
-        if mat.dtype == np.float32 or mat.dtype == np.float64:
-            data = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
-        else:  # change non-float data to float data, need to copy
-            data = np.array(mat.reshape(mat.size), dtype=np.float32)
+        data, layout = _np2d_to_np1d(mat)
         ptr_data, type_ptr_data, _ = _c_float_array(data)
         n_preds = self.__get_num_preds(
             start_iteration=start_iteration,
@@ -1314,7 +1311,7 @@ class _InnerPredictor:
                 ctypes.c_int(type_ptr_data),
                 ctypes.c_int32(mat.shape[0]),
                 ctypes.c_int32(mat.shape[1]),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                ctypes.c_int(layout),
                 ctypes.c_int(predict_type),
                 ctypes.c_int(start_iteration),
                 ctypes.c_int(num_iteration),
@@ -2129,6 +2126,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+        elif _is_pyarrow_table(data) and feature_name == "auto":
+            feature_name = data.column_names
 
         # process for args
         params = {} if params is None else params
@@ -2188,7 +2187,6 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
-            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
@@ -2507,13 +2505,13 @@ class Dataset:
         compare_result : bool
           Returns whether two dictionaries with params are equal.
         """
-        for k in other_params:
+        for k, v in other_params.items():
             if k not in ignore_keys:
-                if k not in params or params[k] != other_params[k]:
+                if k not in params or params[k] != v:
                     return False
-        for k in params:
+        for k, v in params.items():
             if k not in ignore_keys:
-                if k not in other_params or params[k] != other_params[k]:
+                if k not in other_params or v != other_params[k]:
                     return False
         return True
 
