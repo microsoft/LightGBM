@@ -64,7 +64,7 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version=*_cp* to ensure that conda prefers CPython and doesn't fall back to
+# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
 # other implementations like pypy
 CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
