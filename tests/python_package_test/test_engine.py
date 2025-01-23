@@ -3909,12 +3909,14 @@ def test_predict_regression_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
@@ -3929,12 +3931,14 @@ def test_predict_binary_classification_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
@@ -3950,12 +3954,14 @@ def test_predict_multiclass_classification_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes * 2)
 

@@ -2,9 +2,6 @@
 
 set -e -E -o -u pipefail
 
-# TODO(jameslamb): revert before merging
-set -x
-
 # defaults
 CONDA_ENV="test-env"
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
@@ -67,9 +64,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version=*_cp* to ensure that conda prefers CPython and doesn't fall back to
+# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
 # other implementations like pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}=*_cp*"
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
