@@ -171,12 +171,14 @@ else
     CONDA_REQUIREMENT_FILE="${BUILD_DIRECTORY}/.ci/conda-envs/ci-core.txt"
 fi
 
+set +u
 conda create \
     -y \
     -n "${CONDA_ENV}" \
     --file "${CONDA_REQUIREMENT_FILE}" \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
+set -u
 
 activate-conda-env "${CONDA_ENV}"
 
