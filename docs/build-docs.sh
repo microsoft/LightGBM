@@ -20,8 +20,10 @@ conda env create \
     --name docs-env \
     --file env.yml || exit 1
 
+set +u
 # shellcheck disable=SC1091
 source activate docs-env
+set -u
 make clean html || exit 1
 
 echo "Done building docs. Open docs/_build/html/index.html in a web browser to view them."
