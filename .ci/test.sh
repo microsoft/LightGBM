@@ -13,6 +13,13 @@ ARCH=$(uname -m)
 
 LGB_VER=$(head -n 1 "${BUILD_DIRECTORY}/VERSION.txt")
 
+activate-conda-env() {
+    set +u
+    # shellcheck disable=SC1091
+    source activate "${1}"
+    set -u
+}
+
 if [[ $OS_NAME == "macos" ]] && [[ $COMPILER == "gcc" ]]; then
     export CXX=g++-12
     export CC=gcc-12
@@ -69,8 +76,7 @@ CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
+    activate-conda-env "${CONDA_ENV}"
     cmake -B build -S . || exit 1
     cmake --build build --target lightgbm -j4 || exit 1
     cd "$BUILD_DIRECTORY/tests/cpp_tests"
@@ -112,8 +118,7 @@ if [[ $TASK == "lint" ]]; then
         'pyarrow-core>=17.0' \
         'scikit-learn>=1.5.2' \
         'r-lintr>=3.1.2'
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
+    activate-conda-env "${CONDA_ENV}"
     echo "Linting Python and bash code"
     bash ./.ci/lint-python-bash.sh || exit 1
     echo "Linting R code"
@@ -135,8 +140,7 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
         -n "${CONDA_ENV}" \
             'doxygen>=1.10.0' \
             'rstcheck>=6.2.4' || exit 1
-    # shellcheck disable=SC1091
-    source activate "${CONDA_ENV}"
+    activate-conda-env "${CONDA_ENV}"
     # check reStructuredText formatting
     find "${BUILD_DIRECTORY}/python-package" -type f -name "*.rst" \
         -exec rstcheck --report-level warning {} \+ || exit 1
@@ -174,8 +178,7 @@ conda create \
     "${CONDA_PYTHON_REQUIREMENT}" \
 || exit 1
 
-# shellcheck disable=SC1091
-source activate $CONDA_ENV
+activate-conda-env "${CONDA_ENV}"
 
 cd "${BUILD_DIRECTORY}"
 
