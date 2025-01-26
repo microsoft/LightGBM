@@ -12,7 +12,7 @@
 
 using LightGBM::TestUtils;
 
-TEST(SingleRow, JustWorks) {
+void test_predict_type(int predict_type, int num_predicts) {
     // Load some test data
     int result;
 
@@ -37,17 +37,19 @@ TEST(SingleRow, JustWorks) {
         booster_handle,
         &n_features);
     EXPECT_EQ(0, result) << "LGBM_BoosterGetNumFeature result code: " << result;
+    EXPECT_EQ(28, n_features) << "LGBM_BoosterGetNumFeature number of features: " << n_features;
 
     // Run a single row prediction and compare with regular Mat prediction:
     int64_t output_size;
     result = LGBM_BoosterCalcNumPredict(
         booster_handle,
         1,
-        C_API_PREDICT_NORMAL,  // predict_type
+        predict_type,          // predict_type
         0,                     // start_iteration
         -1,                    // num_iteration
         &output_size);
     EXPECT_EQ(0, result) << "LGBM_BoosterCalcNumPredict result code: " << result;
+    EXPECT_EQ(num_predicts, output_size) << "LGBM_BoosterCalcNumPredict output size: " << output_size;
 
     std::ifstream test_file("examples/binary_classification/binary.test");
     std::vector<double> test;
@@ -77,7 +79,7 @@ TEST(SingleRow, JustWorks) {
         test_set_size,         // nrow
         n_features,            // ncol
         1,                     // is_row_major
-        C_API_PREDICT_NORMAL,  // predict_type
+        predict_type,          // predict_type
         0,                     // start_iteration
         -1,                    // num_iteration
         "",
@@ -85,13 +87,47 @@ TEST(SingleRow, JustWorks) {
         &mat_output[0]);
     EXPECT_EQ(0, result) << "LGBM_BoosterPredictForMat result code: " << result;
 
-    // Now let's run with the single row fast prediction API:
+    // Test LGBM_BoosterPredictForMat in multi-threaded mode
     const int kNThreads = 10;
+    const int numIterations = 5;
+    std::vector<std::thread> predict_for_mat_threads(kNThreads);
+    for (int i = 0; i < kNThreads; i++) {
+        predict_for_mat_threads[i] = std::thread(
+            [
+                i, test_set_size, output_size, n_features,
+                    test = &test[0], booster_handle, predict_type, numIterations
+            ]() {
+                for (int j = 0; j < numIterations; j++) {
+                    int result;
+                    std::vector<double> mat_output(output_size * test_set_size, -1);
+                    int64_t written;
+                    result = LGBM_BoosterPredictForMat(
+                        booster_handle,
+                        &test[0],
+                        C_API_DTYPE_FLOAT64,
+                        test_set_size,         // nrow
+                        n_features,            // ncol
+                        1,                     // is_row_major
+                        predict_type,          // predict_type
+                        0,                     // start_iteration
+                        -1,                    // num_iteration
+                        "",
+                        &written,
+                        &mat_output[0]);
+                    EXPECT_EQ(0, result) << "LGBM_BoosterPredictForMat result code: " << result;
+                }
+            });
+    }
+    for (std::thread& t : predict_for_mat_threads) {
+        t.join();
+    }
+
+    // Now let's run with the single row fast prediction API:
     FastConfigHandle fast_configs[kNThreads];
     for (int i = 0; i < kNThreads; i++) {
         result = LGBM_BoosterPredictForMatSingleRowFastInit(
             booster_handle,
-            C_API_PREDICT_NORMAL,  // predict_type
+            predict_type,          // predict_type
             0,                     // start_iteration
             -1,                    // num_iteration
             C_API_DTYPE_FLOAT64,
@@ -102,14 +138,14 @@ TEST(SingleRow, JustWorks) {
     }
 
     std::vector<double> single_row_output(output_size * test_set_size, -1);
-    std::vector<std::thread> threads(kNThreads);
+    std::vector<std::thread> single_row_threads(kNThreads);
     int batch_size = (test_set_size + kNThreads - 1) / kNThreads;  // round up
     for (int i = 0; i < kNThreads; i++) {
-        threads[i] = std::thread(
+        single_row_threads[i] = std::thread(
             [
                 i, batch_size, test_set_size, output_size, n_features,
-                test = &test[0], fast_configs = &fast_configs[0], single_row_output = &single_row_output[0]
-            ](){
+                    test = &test[0], fast_configs = &fast_configs[0], single_row_output = &single_row_output[0]
+            ]() {
                 int result;
                 int64_t written;
                 for (int j = i * batch_size; j < std::min((i + 1) * batch_size, test_set_size); j++) {
@@ -122,8 +158,8 @@ TEST(SingleRow, JustWorks) {
                     EXPECT_EQ(written, output_size) << "LGBM_BoosterPredictForMatSingleRowFast unexpected written output size";
                 }
             });
-    }
-    for (std::thread &t : threads) {
+      }
+    for (std::thread& t : single_row_threads) {
         t.join();
     }
 
@@ -140,4 +176,12 @@ TEST(SingleRow, JustWorks) {
 
     result = LGBM_DatasetFree(train_dataset);
     EXPECT_EQ(0, result) << "LGBM_DatasetFree result code: " << result;
+}
+
+TEST(SingleRow, Normal) {
+    test_predict_type(C_API_PREDICT_NORMAL, 1);
+}
+
+TEST(SingleRow, Contrib) {
+    test_predict_type(C_API_PREDICT_CONTRIB, 29);
 }
