@@ -1309,7 +1309,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     data_type,
                                     &nrow,
                                     ncol,
-                                    is_row_major,
+                                    &is_row_major,
                                     parameters,
                                     reference,
                                     out);
@@ -1320,7 +1320,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int data_type,
                                int32_t* nrow,
                                int32_t ncol,
-                               int is_row_major,
+                               int* is_row_major,
                                const char* parameters,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
@@ -1337,7 +1337,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 
   std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
   for (int j = 0; j < nmat; ++j) {
-    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
+    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major[j]));
   }
 
   if (reference == nullptr) {

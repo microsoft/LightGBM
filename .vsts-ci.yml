@@ -49,9 +49,10 @@ resources:
         tools: true
         tasks: true
 jobs:
-###########################################
+  ###############
+  # Maintenance #
+  ###############
   - job: Maintenance
-###########################################
     pool: mariner-20240410-0
     container: ubuntu-latest
     # routine maintenance (like periodically deleting old files),
@@ -80,9 +81,10 @@ jobs:
           # check disk usage again
           print-diagnostics
         displayName: Clean
-###########################################
+  #########
+  # Linux #
+  #########
   - job: Linux
-###########################################
     variables:
       COMPILER: gcc
       SETUP_CONDA: 'false'
@@ -140,9 +142,10 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-###########################################
+  ################
+  # Linux_latest #
+  ################
   - job: Linux_latest
-###########################################
     variables:
       COMPILER: clang-17
       DEBIAN_FRONTEND: 'noninteractive'
@@ -215,9 +218,10 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/.ci/test.sh
           targetType: 'filePath'
-###########################################
+  ##################
+  # QEMU_multiarch #
+  ##################
   - job: QEMU_multiarch
-###########################################
     variables:
       BUILD_DIRECTORY: /LightGBM
       COMPILER: gcc
@@ -280,9 +284,10 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-###########################################
+  #########
+  # macOS #
+  #########
   - job: macOS
-###########################################
     variables:
       COMPILER: clang
       OS_NAME: 'macos'
@@ -332,9 +337,10 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-###########################################
+  ###########
+  # Windows #
+  ###########
   - job: Windows
-###########################################
     pool:
       vmImage: 'windows-2019'
     strategy:
@@ -376,9 +382,10 @@ jobs:
           pathtoPublish: '$(Build.ArtifactStagingDirectory)'
           artifactName: PackageAssets
           artifactType: container
-###########################################
+  ##############
+  # R_artifact #
+  ##############
   - job: R_artifact
-###########################################
     condition: not(startsWith(variables['Build.SourceBranch'], 'refs/pull/'))
     pool:
       vmImage: 'ubuntu-22.04'
@@ -403,9 +410,10 @@ jobs:
           artifactName: R-package
           artifactType: container
 
-###########################################
+  ###########
+  # Package #
+  ###########
   - job: Package
-###########################################
     dependsOn:
       - Linux
       - Linux_latest
