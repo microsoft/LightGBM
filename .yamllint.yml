@@ -10,5 +10,4 @@ rules:
     check-keys: false
 
   # temporarily disabled rules
-  indentation: disable
   comments-indentation: disable
