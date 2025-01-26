@@ -1,8 +1,8 @@
 version: 2
 build:
-  os: "ubuntu-lts-latest"
+  os: "ubuntu-24.04"
   tools:
-    python: "mambaforge-latest"
+    python: "mambaforge-23.11"
 conda:
   environment: docs/env.yml
 formats:
