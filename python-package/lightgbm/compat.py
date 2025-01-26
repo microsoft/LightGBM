@@ -343,8 +343,8 @@ except ImportError:
         cast = None
         new = None
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        pass
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
 
 
 """cpu_count()"""

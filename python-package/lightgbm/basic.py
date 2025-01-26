@@ -1708,7 +1708,7 @@ class _InnerPredictor:
     ) -> Tuple[np.ndarray, int]:
         """Predict for a PyArrow table."""
         if not (PYARROW_INSTALLED and CFFI_INSTALLED):
-            raise LightGBMError("Cannot predict from Arrow without `pyarrow` and `cffi` installed.")
+            raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -2460,7 +2460,7 @@ class Dataset:
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
         if not (PYARROW_INSTALLED and CFFI_INSTALLED):
-            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed.")
+            raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):

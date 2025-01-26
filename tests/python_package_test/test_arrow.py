@@ -1,10 +1,8 @@
 # coding: utf-8
 import filecmp
 import os
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
-from unittest import mock
 
 import numpy as np
 import pytest
@@ -458,24 +456,31 @@ def test_arrow_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
-def test_training_and_predicting_from_pa_table_without_cffi_raises():
-    data = generate_dummy_arrow_table()
-    with mock.patch.dict(sys.modules, {"pyarrow.cffi": None}):
-        assert lgb.compat.PYARROW_INSTALLED is True
-        assert lgb.compat.CFFI_INSTALLED is False
+def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed."
+    ):
+        lgb.Dataset(
+            generate_dummy_arrow_table(),
+            label=pa.array([0, 1, 0, 0, 1]),
+            params=dummy_dataset_params(),
+        ).construct()
 
-        with pytest.raises(
-            lgb.basic.LightGBMError, match="Cannot init dataframe from Arrow without `pyarrow` and `cffi` installed."
-        ):
-            dataset = lgb.Dataset(
-                data,
-                label=pa.array([0, 1, 0, 0, 1]),
-                params=dummy_dataset_params(),
-                feature_name=["c", "d"],
-                categorical_feature=["c"],
-            )
 
-        with pytest.raises(
-            lgb.basic.LightGBMError, match="Cannot predict from Arrow without `pyarrow` and `cffi` installed."
-        ):
-            _ = lgb.train({"num_leaves": 7}, dataset, num_boost_round=5)
+def test_predicting_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
+    data = generate_random_arrow_table(num_columns=3, num_datapoints=1_000, seed=42)
+    labels = generate_random_arrow_array(num_datapoints=data.shape[0], seed=42)
+    dataset = lgb.Dataset(
+        data.to_pandas(),
+        label=labels.to_pandas(),
+    )
+
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot predict from Arrow without 'pyarrow' and 'cffi' installed."
+    ):
+        bst = lgb.train(
+            params={"num_leaves": 7, "verbose": -1},
+            train_set=dataset,
+            num_boost_round=2,
+        )
+        bst.predict(data)
