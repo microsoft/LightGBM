@@ -124,8 +124,8 @@ jobs:
       matrix:
         # end-of-life Python versions
         python_version:
-          - 3.7
-          - 3.8
+          - '3.7'
+          - '3.8'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
