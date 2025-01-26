@@ -10,7 +10,7 @@ pr:
 variables:
   AZURE: 'true'
   CMAKE_BUILD_PARALLEL_LEVEL: 4
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   runCodesignValidationInjection: false
   skipComponentGovernanceDetection: true
   Codeql.Enabled: false
