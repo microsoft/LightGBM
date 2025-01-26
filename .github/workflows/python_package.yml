@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - ci/no-pandas
   pull_request:
     branches:
       - master
