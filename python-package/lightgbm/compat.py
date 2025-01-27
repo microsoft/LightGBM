@@ -316,7 +316,7 @@ except ImportError:
             pass
 
     class pa_compute:  # type: ignore
-        """Dummy class for pyarrow.compute."""
+        """Dummy class for pyarrow.compute module."""
 
         all = None
         equal = None
@@ -339,9 +339,6 @@ except ImportError:
         """Dummy class for pyarrow.cffi.ffi."""
 
         CData = None
-        addressof = None
-        cast = None
-        new = None
 
         def __init__(self, *args: Any, **kwargs: Any):
             pass

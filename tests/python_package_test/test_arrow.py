@@ -470,17 +470,16 @@ def test_dataset_construction_from_pa_table_without_cffi_raises_informative_erro
 def test_predicting_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
     data = generate_random_arrow_table(num_columns=3, num_datapoints=1_000, seed=42)
     labels = generate_random_arrow_array(num_datapoints=data.shape[0], seed=42)
-    dataset = lgb.Dataset(
-        data.to_pandas(),
-        label=labels.to_pandas(),
+    bst = lgb.train(
+        params={"num_leaves": 7, "verbose": -1},
+        train_set=lgb.Dataset(
+            data.to_pandas(),
+            label=labels.to_pandas(),
+        ),
+        num_boost_round=2,
     )
 
     with pytest.raises(
         lgb.basic.LightGBMError, match="Cannot predict from Arrow without 'pyarrow' and 'cffi' installed."
     ):
-        bst = lgb.train(
-            params={"num_leaves": 7, "verbose": -1},
-            train_set=dataset,
-            num_boost_round=2,
-        )
         bst.predict(data)
