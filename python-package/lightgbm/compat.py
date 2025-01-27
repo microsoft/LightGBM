@@ -316,7 +316,7 @@ except ImportError:
             pass
 
     class pa_compute:  # type: ignore
-        """Dummy class for pyarrow.compute."""
+        """Dummy class for pyarrow.compute module."""
 
         all = None
         equal = None
