@@ -129,6 +129,11 @@ include_directories(${FAST_DOUBLE_PARSER_INCLUDE_DIR})
 set(FMT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external_libs/fmt/include")
 include_directories(${FMT_INCLUDE_DIR})
 
+# on MSVC: "Unicode support requires compiling with /utf-8"
+target_compile_options(fmt::fmt
+  PUBLIC $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8>
+)
+
 if(__BUILD_FOR_R)
     find_package(LibR REQUIRED)
     message(STATUS "LIBR_EXECUTABLE: ${LIBR_EXECUTABLE}")
