@@ -334,6 +334,7 @@ matplotlib.use\(\"Agg\"\)\
         distributed \
         joblib \
         matplotlib-base \
+        pandas \
         psutil \
         pyarrow \
         python-graphviz \
