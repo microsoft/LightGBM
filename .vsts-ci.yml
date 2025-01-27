@@ -414,8 +414,8 @@ jobs:
       - script: |
           git clean -d -f -x
         displayName: 'Clean source directory'
-      # yamllint disable-line rule:line-length
       - script: |
+          # yamllint disable-line rule:line-length
           LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
           R_LIB_PATH=~/Rlib
           export R_LIBS=${R_LIB_PATH}
