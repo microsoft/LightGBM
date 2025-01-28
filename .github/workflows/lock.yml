@@ -45,7 +45,8 @@ jobs:
             since there has not been any recent activity since it was closed.
 
             To start a new related discussion,
-            open a new issue at https://github.com/microsoft/LightGBM/issues.
+            open a new issue at https://github.com/microsoft/LightGBM/issues
+            including a reference to this.
           # what should the locking status be?
           issue-lock-reason: 'resolved'
           pr-lock-reason: 'resolved'
