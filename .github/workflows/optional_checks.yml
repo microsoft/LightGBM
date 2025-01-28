@@ -28,5 +28,5 @@ jobs:
                 python \
                     "$GITHUB_WORKSPACE/.ci/get-workflow-status.py" \
                     "$trigger_phrase" \
-                || { echo ${comment}; exit 1; }
+                || { echo "${comment}"; exit 1; }
             done
