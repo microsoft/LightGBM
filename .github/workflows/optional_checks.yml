@@ -25,5 +25,8 @@ jobs:
                 comment="The last reported status from workflow \"$workflow_name\" is failure."
                 comment+=" Commit fixes and rerun the workflow."
                 trigger_phrase=${i#*;}
-                python "$GITHUB_WORKSPACE/.ci/get-workflow-status.py" "$trigger_phrase" \
+                python \
+                    "$GITHUB_WORKSPACE/.ci/get-workflow-status.py" \
+                    "$trigger_phrase" \
                 || { echo ${comment}; exit 1; }
+            done
