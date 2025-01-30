@@ -1393,7 +1393,7 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     # only positional argument should be 'self'
     assert dask_spec.args == sklearn_spec.args
     assert dask_spec.args == ["self"]
-    assert dask_spec.defaults[-1] is None
+    assert dask_spec.defaults is None
 
 
 @pytest.mark.parametrize(
