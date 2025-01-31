@@ -47,6 +47,7 @@ env:
 
 jobs:
   test:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -244,7 +245,9 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat')"
+          RDscript${{ matrix.r_customization }} \
+            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
@@ -309,7 +312,9 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl')"
+          Rscript \
+            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at
