@@ -176,7 +176,8 @@ Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
-Invoke-R-Code-Redirect-Stderr "commandArgs <- function(...){c('--build', '--test')}; source('build_r.R')" ; Assert-Output $?
+$command_args_patch = "commandArgs <- function(...){c('--build', '--test')};"
+Invoke-R-Code-Redirect-Stderr "$command_args_patch source('install-r-deps.R')" ; Assert-Output $?
 
 Write-Output "Building R-package"
 
