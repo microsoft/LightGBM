@@ -19,7 +19,7 @@ options(
 )
 
 # always use the same CRAN mirror
-CRAN_MIRROR <- "https://cran.r-project.org"
+CRAN_MIRROR <- Sys.getenv("CRAN_MIRROR", unset = "https://cran.r-project.org")
 
 # we always want these
 deps_to_install <- c(

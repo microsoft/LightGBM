@@ -6,8 +6,8 @@ set -e -E -u -o pipefail
 ARCH=$(uname -m)
 
 # set up R environment
-CRAN_MIRROR="https://cran.rstudio.com"
-R_LIB_PATH=~/Rlib
+export CRAN_MIRROR="https://cran.rstudio.com"
+export R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
