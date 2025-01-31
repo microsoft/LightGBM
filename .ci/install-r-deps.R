@@ -8,7 +8,7 @@ TEST_DEPS    <- ALL_DEPS || ("--test" %in% args)
 
 # force downloading of binary packages on macOS
 COMPILE_FROM_SOURCE <- "both"
-PACKAGE_TYPE <- "both"
+PACKAGE_TYPE <- getOption("pkgType")
 if (Sys.info()[["sysname"]] == "Darwin") {
     COMPILE_FROM_SOURCE <- "never"
     PACKAGE_TYPE <- "binary"
