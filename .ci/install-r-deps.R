@@ -8,10 +8,10 @@ TEST_DEPS    <- ALL_DEPS || ("--test" %in% args)
 
 # force downloading of binary packages on macOS
 COMPILE_FROM_SOURCE <- "both"
-# PACKAGE_TYPE <- getOption("pkgType")
-# TODO(jameslamb): is this important for R 3.6 Windows jobs?
-PACKAGE_TYPE <- "binary"
-if (Sys.info()[["sysname"]] == "Darwin") {
+PACKAGE_TYPE <- getOption("pkgType")
+# CRAN has precompiled binaries for macOS and Windows... prefer those,
+# for faster installation.
+if (Sys.info()[["sysname"]] == "Darwin" || .Platform$OS.type == "windows") {
     COMPILE_FROM_SOURCE <- "never"
     PACKAGE_TYPE <- "binary"
 }
