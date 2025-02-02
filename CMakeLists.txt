@@ -567,7 +567,8 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-
+  message(STATUS "------")
+  message(STATUS ${CUDA_ARCHS})
   set_target_properties(
     lightgbm_objs
     PROPERTIES
