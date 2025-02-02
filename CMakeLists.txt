@@ -224,21 +224,28 @@ if(USE_CUDA)
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "60" "61" "62" "70" "75")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.5")
         list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.8")
         list(APPEND CUDA_ARCHS "89")
         list(APPEND CUDA_ARCHS "90")
     endif()
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.8")
+        list(APPEND CUDA_ARCHS "100")
+        list(APPEND CUDA_ARCHS "120")
+    endif()
+    # Generate PTX for the most recent architecture for forwards compatibility
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    list(TRANSFORM CUDA_ARCHS APPEND "-real")
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
+    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -567,14 +574,14 @@ if(USE_CUDA)
   set_target_properties(
     lightgbm_objs
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_SEPARABLE_COMPILATION ON
   )
 
   set_target_properties(
     _lightgbm
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_RESOLVE_DEVICE_SYMBOLS ON
   )
 
@@ -582,7 +589,7 @@ if(USE_CUDA)
     set_target_properties(
       lightgbm
       PROPERTIES
-        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_ARCHITECTURES "${CUDA_ARCHS}"
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()

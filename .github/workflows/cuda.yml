@@ -86,7 +86,7 @@ jobs:
           - method: wheel
             compiler: gcc
             python_version: "3.11"
-            cuda_version: "12.6.1"
+            cuda_version: "12.8.0"
             linux_version: "ubuntu22.04"
             task: cuda
           - method: source
