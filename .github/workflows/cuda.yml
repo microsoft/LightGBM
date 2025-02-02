@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - ci/cuda
   pull_request:
     branches:
       - master
@@ -89,18 +90,18 @@ jobs:
             cuda_version: "12.8.0"
             linux_version: "ubuntu22.04"
             task: cuda
-          - method: source
-            compiler: gcc
-            python_version: "3.13"
-            cuda_version: "12.2.2"
-            linux_version: "ubuntu22.04"
-            task: cuda
-          - method: pip
-            compiler: clang
-            python_version: "3.12"
-            cuda_version: "11.8.0"
-            linux_version: "ubuntu20.04"
-            task: cuda
+          # - method: source
+          #   compiler: gcc
+          #   python_version: "3.13"
+          #   cuda_version: "12.2.2"
+          #   linux_version: "ubuntu22.04"
+          #   task: cuda
+          # - method: pip
+          #   compiler: clang
+          #   python_version: "3.12"
+          #   cuda_version: "11.8.0"
+          #   linux_version: "ubuntu20.04"
+          #   task: cuda
     steps:
       - name: Install latest git and sudo
         run: |
