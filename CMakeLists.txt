@@ -245,6 +245,7 @@ if(USE_CUDA)
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
     list(TRANSFORM CUDA_ARCHS APPEND "-real")
     list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
+    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -569,7 +570,7 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
-  message(STATUS "${CUDA_ARCHS}")
+
   set_target_properties(
     lightgbm_objs
     PROPERTIES
