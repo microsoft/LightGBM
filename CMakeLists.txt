@@ -225,7 +225,7 @@ if(USE_CUDA)
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "60" "61" "62" "70" "75")
     message(STATUS "---------------")
-    message(STATUS ${CUDA_VERSION})
+    message(STATUS CUDA_VERSION)
     if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
         list(APPEND CUDA_ARCHS "80")
     endif()
