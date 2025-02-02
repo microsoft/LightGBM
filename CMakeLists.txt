@@ -241,8 +241,10 @@ if(USE_CUDA)
         list(APPEND CUDA_ARCHS "100")
         list(APPEND CUDA_ARCHS "120")
     endif()
+    # Generate PTX for the most recent architecture for forwards compatibility
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    list(TRANSFORM CUDA_ARCHS APPEND "-real")
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -567,6 +569,7 @@ if(__INTEGRATE_OPENCL)
 endif()
 
 if(USE_CUDA)
+  message(STATUS "${CUDA_ARCHS}")
   set_target_properties(
     lightgbm_objs
     PROPERTIES
