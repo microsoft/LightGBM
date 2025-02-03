@@ -1,6 +1,6 @@
 [project]
 
-classifierss = [
+classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",

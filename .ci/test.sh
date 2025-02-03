@@ -117,12 +117,12 @@ if [[ $TASK == "lint" ]]; then
     source activate "${CONDA_ENV}"
     echo "Linting Python and bash code"
     bash ./.ci/lint-python-bash.sh || exit 1
-    # echo "Linting R code"
-    # Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
-    # echo "Linting C++ code"
-    # bash ./.ci/lint-cpp.sh || exit 1
-    # echo "Linting JavaScript code"
-    # bash ./.ci/lint-js.sh || exit 1
+    echo "Linting R code"
+    Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
+    echo "Linting C++ code"
+    bash ./.ci/lint-cpp.sh || exit 1
+    echo "Linting JavaScript code"
+    bash ./.ci/lint-js.sh || exit 1
     exit 0
 fi
 
