@@ -177,8 +177,6 @@ Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
 Rscript.exe --vanilla ".ci/install-r-deps.R" --build --test ; Assert-Output $?
-# $command_args_patch = "commandArgs <- function(...){c('--build', '--test')};"
-# Invoke-R-Code-Redirect-Stderr "$command_args_patch source('install-r-deps.R')" ; Assert-Output $?
 
 Write-Output "Building R-package"
 
