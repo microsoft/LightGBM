@@ -46,5 +46,6 @@ repos:
         exclude: (\.gitignore$)|(^\.editorconfig$)
   - repo: https://github.com/henryiii/validate-pyproject-schema-store
     rev: 2025.01.20
+    files: python-package/pyproject.toml$
     hooks:
       - id: validate-pyproject
