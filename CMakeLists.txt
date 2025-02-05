@@ -163,7 +163,7 @@ endif()
 
 if(USE_ROCM)
     enable_language(HIP)
-    set(USE_OPENMP ON CACHE BOOL "ROCM requires OpenMP" FORCE)
+    set(USE_OPENMP ON CACHE BOOL "ROCm requires OpenMP" FORCE)
 endif()
 
 if(USE_OPENMP)
