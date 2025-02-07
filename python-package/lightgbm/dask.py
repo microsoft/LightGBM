@@ -44,6 +44,7 @@ from .sklearn import (
     LGBMModel,
     LGBMRanker,
     LGBMRegressor,
+    _LGBM_ScikitCustomObjectiveFunction,
     _LGBM_ScikitEvalMetricType,
     _lgbmmodel_doc_custom_eval_note,
     _lgbmmodel_doc_fit,
@@ -1115,12 +1116,52 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     def __init__(
         self,
         *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
         client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMClassifier.__init__."""
         self.client = client
-        super().__init__(**kwargs)
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
 
     _base_doc = LGBMClassifier.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
@@ -1279,12 +1320,52 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     def __init__(
         self,
         *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
         client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRegressor.__init__."""
         self.client = client
-        super().__init__(**kwargs)
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
 
     _base_doc = LGBMRegressor.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
@@ -1407,12 +1488,52 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     def __init__(
         self,
         *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, "np.random.Generator"]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
         client: Optional[Client] = None,
         **kwargs: Any,
     ):
         """Docstring is inherited from the lightgbm.LGBMRanker.__init__."""
         self.client = client
-        super().__init__(**kwargs)
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
 
     _base_doc = LGBMRanker.__init__.__doc__
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
