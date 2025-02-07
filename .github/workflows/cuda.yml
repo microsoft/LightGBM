@@ -43,9 +43,12 @@ jobs:
                 software-properties-common
             # set up nvidia-docker
             curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" -y
+            sudo add-apt-repository -y \
+              "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
             curl -sL https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
-            curl -sL https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+            curl -sL \
+              https://nvidia.github.io/nvidia-docker/$(. /etc/os-release;echo $ID$VERSION_ID)/nvidia-docker.list \
+            | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
             sudo apt-get update
             sudo apt-get install --no-install-recommends -y \
                 containerd.io \
@@ -58,6 +61,7 @@ jobs:
         run: |
           exit 0
   test:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (${{ matrix.linux_version }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
     runs-on: [self-hosted, linux]
     needs: [restart-docker]
@@ -82,7 +86,7 @@ jobs:
           - method: wheel
             compiler: gcc
             python_version: "3.11"
-            cuda_version: "12.6.1"
+            cuda_version: "12.8.0"
             linux_version: "ubuntu22.04"
             task: cuda
           - method: source

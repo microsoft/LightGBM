@@ -402,7 +402,7 @@ This pattern will work with ``lightgbm > 4.5.0``.
 
         def predict(self, X, max_score: float = np.inf):
             preds = super().predict(X)
-            preds[np.where(preds > max_score)] = max_score
+            np.clip(preds, a_min=None, a_max=max_score, out=preds)
             return preds
 
     X, y = make_regression(n_samples=1_000, n_features=4)

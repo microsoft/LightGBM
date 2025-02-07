@@ -6,7 +6,10 @@ on:
 
 jobs:
   triggering-tests:
-    if: github.event.issue.pull_request && contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association) && startsWith(github.event.comment.body, '/gha run')
+    if: |
+      github.event.issue.pull_request &&
+      contains('OWNER,MEMBER,COLLABORATOR', github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '/gha run')
     runs-on: ubuntu-latest
     env:
       SECRETS_WORKFLOW: ${{ secrets.WORKFLOW }}
