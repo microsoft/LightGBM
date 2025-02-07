@@ -1166,7 +1166,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
 
@@ -1221,7 +1221,7 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
     _base_doc = _base_doc[: _base_doc.find("eval_group :")] + _base_doc[_base_doc.find("eval_metric :") :]
 
     # DaskLGBMClassifier support for callbacks and init_model is not tested
-    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+    fit.__doc__ = f"""{_base_doc[: _base_doc.find("callbacks :")]}**kwargs
         Other parameters passed through to ``LGBMClassifier.fit()``.
 
     Returns
@@ -1369,7 +1369,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
 
@@ -1424,7 +1424,7 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
     _base_doc = _base_doc[: _base_doc.find("eval_group :")] + _base_doc[_base_doc.find("eval_metric :") :]
 
     # DaskLGBMRegressor support for callbacks and init_model is not tested
-    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+    fit.__doc__ = f"""{_base_doc[: _base_doc.find("callbacks :")]}**kwargs
         Other parameters passed through to ``LGBMRegressor.fit()``.
 
     Returns
@@ -1536,7 +1536,7 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
     _before_kwargs, _kwargs, _after_kwargs = _base_doc.partition("**kwargs")  # type: ignore
     __init__.__doc__ = f"""
         {_before_kwargs}client : dask.distributed.Client or None, optional (default=None)
-        {' ':4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
+        {" ":4}Dask client. If ``None``, ``distributed.default_client()`` will be used at runtime. The Dask client used by this class will not be saved if the model object is pickled.
         {_kwargs}{_after_kwargs}
         """
 
@@ -1596,11 +1596,11 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         _base_doc[: _base_doc.find("feature_name :")]
         + "eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))\n"
         + f"{' ':8}The evaluation positions of the specified metric.\n"
-        + f"{' ':4}{_base_doc[_base_doc.find('feature_name :'):]}"
+        + f"{' ':4}{_base_doc[_base_doc.find('feature_name :') :]}"
     )
 
     # DaskLGBMRanker support for callbacks and init_model is not tested
-    fit.__doc__ = f"""{_base_doc[:_base_doc.find('callbacks :')]}**kwargs
+    fit.__doc__ = f"""{_base_doc[: _base_doc.find("callbacks :")]}**kwargs
         Other parameters passed through to ``LGBMRanker.fit()``.
 
     Returns

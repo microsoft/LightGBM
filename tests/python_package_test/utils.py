@@ -251,12 +251,12 @@ def assert_subtree_valid(root):
     right_child = root["right_child"]
     (l_w, l_c) = assert_subtree_valid(left_child)
     (r_w, r_c) = assert_subtree_valid(right_child)
-    assert (
-        abs(root["internal_weight"] - (l_w + r_w)) <= 1e-3
-    ), "root node's internal weight should be approximately the sum of its child nodes' internal weights"
-    assert (
-        root["internal_count"] == l_c + r_c
-    ), "root node's internal count should be exactly the sum of its child nodes' internal counts"
+    assert abs(root["internal_weight"] - (l_w + r_w)) <= 1e-3, (
+        "root node's internal weight should be approximately the sum of its child nodes' internal weights"
+    )
+    assert root["internal_count"] == l_c + r_c, (
+        "root node's internal count should be exactly the sum of its child nodes' internal counts"
+    )
     return (root["internal_weight"], root["internal_count"])
 
 
