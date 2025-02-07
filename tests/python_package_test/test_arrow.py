@@ -20,9 +20,9 @@ if os.getenv("ALLOW_SKIP_ARROW_TESTS") == "1":
 else:
     import pyarrow as pa  # type: ignore
 
-    assert (
-        lgb.compat.PYARROW_INSTALLED is True
-    ), "'pyarrow' and its dependencies must be installed to run the arrow tests"
+    assert lgb.compat.PYARROW_INSTALLED is True, (
+        "'pyarrow' and its dependencies must be installed to run the arrow tests"
+    )
 
 # ----------------------------------------------------------------------------------------------- #
 #                                            UTILITIES                                            #
