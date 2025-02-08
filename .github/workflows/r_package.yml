@@ -310,7 +310,7 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript ./.ci/install-r-deps.R --build --test
+          Rscript ./.ci/install-r-deps.R --build --test --exclude=testthat
           sh build-cran-package.sh
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at

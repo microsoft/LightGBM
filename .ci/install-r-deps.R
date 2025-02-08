@@ -1,10 +1,60 @@
-args <- commandArgs(trailingOnly = TRUE)
+# install R dependencies, using only base R
+#
+# Supported arguments:
+#
+#  --all                     Install all the 'Depends', 'Imports', 'LinkingTo', and 'Suggests' dependencies.
+#                            (automatically implies --build --test).
+#
+#  --build                   install the packages needed to build
+#
+#  --exclude=<pkg1,pkg2,...> Comma-delimited list of packages to NOT install.
+#
+#  --include=<pkg1,pkg2,...> Comma-delimited list of additional packages to install.
+#                            These will always be installed, unless also used in "--exclude".
+#
+#  --test                    install packages needed to run tests
+#
+
+
+# [description] Parse command line arguments into an R list.
+#               Returns a list where keys are arguments and values
+#               are either TRUE (for flags) or a vector of values passed via a
+#               comma-delimited list.
+.parse_args <- function(args) {
+    out <- list(
+        "--all"       = FALSE
+        , "--build"   = FALSE
+        , "--exclude" = character(0L)
+        , "--include" = character(0L)
+        , "--test"    = FALSE
+    )
+    for (arg in args) {
+        print(sprintf("arg: '%s'", arg))
+        parsed_arg <- unlist(strsplit(arg, "=", fixed = TRUE))
+        arg_name <- parsed_arg[[1L]]
+        if (!(arg_name %in% names(out))) {
+            stop(sprintf("Unrecognized argument: '%s'", arg_name))
+        }
+        if (length(parsed_arg) == 2L) {
+            # lists, like "--include=roxygen2,testthat"
+            values <- unlist(strsplit(parsed_arg[[2L]], ",", fixed = TRUE))
+            out[[arg_name]] <- values
+        } else {
+            # flags, like "--build"
+            out[[arg]] <- TRUE
+        }
+    }
+    return(out)
+}
+
+args <- .parse_args(
+    commandArgs(trailingOnly = TRUE)
+)
 
 # which dependencies to install
-ALL_DEPS     <- "--all" %in% args
-BUILD_DEPS   <- ALL_DEPS || ("--build" %in% args)
-ROXYGEN_DEPS <- ALL_DEPS || ("--roxygen" %in% args)
-TEST_DEPS    <- ALL_DEPS || ("--test" %in% args)
+ALL_DEPS     <- isTRUE(args[["--all"]])
+BUILD_DEPS   <- ALL_DEPS || isTRUE(args[["--build"]])
+TEST_DEPS    <- ALL_DEPS || isTRUE(args[["--test"]])
 
 # force downloading of binary packages on macOS
 COMPILE_FROM_SOURCE <- "both"
@@ -40,13 +90,6 @@ if (isTRUE(BUILD_DEPS)) {
     )
 }
 
-if (isTRUE(ROXYGEN_DEPS)) {
-    deps_to_install <- c(
-        deps_to_install
-        , "roxygen"
-    )
-}
-
 if (isTRUE(TEST_DEPS)) {
     deps_to_install <- c(
         deps_to_install
@@ -55,11 +98,17 @@ if (isTRUE(TEST_DEPS)) {
     )
 }
 
-# in some builds, {Matrix} is pre-installed to pin to an old version,
-# so we don't want to overwrite that
-if (requireNamespace("Matrix")) {
-    deps_to_install <- setdiff(deps_to_install, "Matrix")
-}
+# add packages passed through '--include'
+deps_to_install <- unique(c(
+    deps_to_install
+    , args[["--include"]]
+))
+
+# remove packages passed through '--exclude'
+deps_to_install <- setdiff(
+    x = deps_to_install
+    , args[["--exclude"]]
+)
 
 msg <- sprintf(
     "[install-r-deps] installing R packages: %s\n"

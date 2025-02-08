@@ -176,7 +176,7 @@ Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
-Rscript.exe --vanilla ".ci/install-r-deps.R" --build --test ; Assert-Output $?
+Rscript.exe --vanilla ".ci/install-r-deps.R" --build --include=processx --test ; Assert-Output $?
 
 Write-Output "Building R-package"
 

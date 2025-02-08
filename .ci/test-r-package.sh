@@ -113,7 +113,7 @@ Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib 
 Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
 # Manually install dependencies to avoid a CI-time dependency on devtools (for devtools::install_deps())
-Rscript --vanilla ./.ci/install-r-deps.R --build --test || exit 1
+Rscript --vanilla ./.ci/install-r-deps.R --build --test --exclude=Matrix || exit 1
 
 cd "${BUILD_DIRECTORY}"
 PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
