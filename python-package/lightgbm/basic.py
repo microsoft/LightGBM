@@ -27,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (
+    CFFI_INSTALLED,
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
@@ -380,7 +381,7 @@ def _list_to_1d_numpy(
         return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
         )
 
 
@@ -802,8 +803,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
     ]
     if bad_pandas_dtypes:
         raise ValueError(
-            'pandas dtypes must be int, float or bool.\n'
-            f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}'
+            f"pandas dtypes must be int, float or bool.\nFields with bad pandas dtypes: {', '.join(bad_pandas_dtypes)}"
         )
 
 
@@ -1706,8 +1706,8 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[np.ndarray, int]:
         """Predict for a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -2458,8 +2458,8 @@ class Dataset:
         ref_dataset: Optional[_DatasetHandle],
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -3297,7 +3297,7 @@ class Dataset:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(
-                        f"Cannot subset {type(self.data).__name__} type of raw data.\n" "Returning original raw data"
+                        f"Cannot subset {type(self.data).__name__} type of raw data.\nReturning original raw data"
                     )
             self._need_slice = False
         if self.data is None:
@@ -3717,7 +3717,7 @@ class Booster:
             self.model_from_string(model_str)
         else:
             raise TypeError(
-                "Need at least one training dataset or model file or model string " "to create Booster instance"
+                "Need at least one training dataset or model file or model string to create Booster instance"
             )
         self.params = params
 
@@ -4051,7 +4051,7 @@ class Booster:
         if not isinstance(data, Dataset):
             raise TypeError(f"Validation data should be Dataset instance, met {type(data).__name__}")
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, " "you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(
             _LIB.LGBM_BoosterAddValidData(
                 self._handle,
@@ -4137,7 +4137,7 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError(f"Training data should be Dataset instance, met {type(train_set).__name__}")
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, " "you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(
                 _LIB.LGBM_BoosterResetTrainingData(
