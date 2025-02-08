@@ -247,7 +247,7 @@ def plot_split_value_histogram(
 
     hist, split_bins = booster.get_split_value_histogram(feature=feature, bins=bins, xgboost_style=False)
     if np.count_nonzero(hist) == 0:
-        raise ValueError("Cannot plot split value histogram, " f"because feature {feature} was not used in splitting")
+        raise ValueError(f"Cannot plot split value histogram, because feature {feature} was not used in splitting")
     width = width_coef * (split_bins[1] - split_bins[0])
     centred = (split_bins[:-1] + split_bins[1:]) / 2
 
