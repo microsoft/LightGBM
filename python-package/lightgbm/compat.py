@@ -289,7 +289,6 @@ try:
     from pyarrow import ChunkedArray as pa_ChunkedArray
     from pyarrow import Table as pa_Table
     from pyarrow import chunked_array as pa_chunked_array
-    from pyarrow.cffi import ffi as arrow_cffi
     from pyarrow.types import is_boolean as arrow_is_boolean
     from pyarrow.types import is_floating as arrow_is_floating
     from pyarrow.types import is_integer as arrow_is_integer
@@ -316,19 +315,8 @@ except ImportError:
         def __init__(self, *args: Any, **kwargs: Any):
             pass
 
-    class arrow_cffi:  # type: ignore
-        """Dummy class for pyarrow.cffi.ffi."""
-
-        CData = None
-        addressof = None
-        cast = None
-        new = None
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
     class pa_compute:  # type: ignore
-        """Dummy class for pyarrow.compute."""
+        """Dummy class for pyarrow.compute module."""
 
         all = None
         equal = None
@@ -337,6 +325,24 @@ except ImportError:
     arrow_is_boolean = None
     arrow_is_integer = None
     arrow_is_floating = None
+
+
+"""cffi"""
+try:
+    from pyarrow.cffi import ffi as arrow_cffi
+
+    CFFI_INSTALLED = True
+except ImportError:
+    CFFI_INSTALLED = False
+
+    class arrow_cffi:  # type: ignore
+        """Dummy class for pyarrow.cffi.ffi."""
+
+        CData = None
+
+        def __init__(self, *args: Any, **kwargs: Any):
+            pass
+
 
 """cpu_count()"""
 try:
