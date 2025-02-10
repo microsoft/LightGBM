@@ -1789,7 +1789,7 @@ ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftes
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ac_mmprefetch}" >&5
 printf "%s\n" "${ac_mmprefetch}" >&6; }
 if test "${ac_mmprefetch}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_PREFETCH=1"
 fi
 
 ############
@@ -1824,7 +1824,7 @@ ${CXX} ${CPPFLAGS} ${CXXFLAGS} -o conftest conftest.cpp 2>/dev/null && ./conftes
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ac_mm_malloc}" >&5
 printf "%s\n" "${ac_mm_malloc}" >&6; }
 if test "${ac_mm_malloc}" = yes; then
-    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+    LGB_CPPFLAGS="${LGB_CPPFLAGS} -DMM_MALLOC=1"
 fi
 
 ##########
@@ -1850,11 +1850,11 @@ then
     # If Homebrew is found and libomp was installed with it, this code adds the necessary
     # flags for the compiler to find libomp headers and for the linker to find libomp.dylib.
     HOMEBREW_LIBOMP_PREFIX=""
-    if command -v brew &> /dev/null; then
+    if command -v brew >/dev/null 2>&1; then
         ac_brew_openmp=no
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether OpenMP was installed via Homebrew" >&5
 printf %s "checking whether OpenMP was installed via Homebrew... " >&6; }
-        brew --prefix libomp &>/dev/null && ac_brew_openmp=yes
+        brew --prefix libomp >/dev/null 2>&1 && ac_brew_openmp=yes
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ac_brew_openmp}" >&5
 printf "%s\n" "${ac_brew_openmp}" >&6; }
         if test "${ac_brew_openmp}" = yes; then

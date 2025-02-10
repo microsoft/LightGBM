@@ -3,10 +3,10 @@ name: R-package
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
 
 # automatically cancel in-progress builds if another commit is pushed
 concurrency:
@@ -18,6 +18,20 @@ env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   # on Debian-based images, avoid interactive prompts
   DEBIAN_FRONTEND: noninteractive
+  # Fix issues like the following that can show up running 'R CMD check' on
+  # specific clang versions:
+  #
+  #   * checking for detritus in the temp directory ... NOTE
+  #   Found the following files/directories:
+  #     ‘dsymutil-63923a’ ‘dsymutil-9aa721’ ‘dsymutil-b7e1bb’
+  #
+  # These are unlikely to show up in CRAN's checks. They come from
+  # 'dsymutil ---gen-reproducer' being run (not something LightGBM explicitly does).
+  #
+  # ref:
+  #   - https://github.com/llvm/llvm-project/issues/61920
+  #   - https://github.com/golang/go/issues/59026#issuecomment-1520487072
+  DSYMUTIL_REPRODUCER_PATH: /dev/null
   # parallelize compilation (extra important for Linux, where CRAN doesn't supply pre-compiled binaries)
   MAKEFLAGS: "-j4"
   # hack to get around this:
@@ -33,6 +47,7 @@ env:
 
 jobs:
   test:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} (${{ matrix.os }}, ${{ matrix.compiler }}, R ${{ matrix.r_version }}, ${{ matrix.build_type }})
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -230,7 +245,9 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          RDscript${{ matrix.r_customization }} -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat')"
+          RDscript${{ matrix.r_customization }} \
+            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
@@ -295,7 +312,9 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          Rscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl')"
+          Rscript \
+            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
           sh build-cran-package.sh
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at
@@ -344,7 +363,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, test-r-sanitizers, test-r-extra-checks]
     steps:
-    - name: Note that all tests succeeded
-      uses: re-actors/alls-green@v1.2.2
-      with:
-        jobs: ${{ toJSON(needs) }}
+      - name: Note that all tests succeeded
+        uses: re-actors/alls-green@v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

@@ -422,7 +422,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMat(const void* data,
  * \param data_type Type of ``data`` pointer, can be ``C_API_DTYPE_FLOAT32`` or ``C_API_DTYPE_FLOAT64``
  * \param nrow Number of rows
  * \param ncol Number of columns
- * \param is_row_major 1 for row-major, 0 for column-major
+ * \param is_row_major Pointer to the data layouts. 1 for row-major, 0 for column-major
  * \param parameters Additional parameters
  * \param reference Used to align bin mapper with other dataset, nullptr means isn't used
  * \param[out] out Created dataset
@@ -433,7 +433,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetCreateFromMats(int32_t nmat,
                                                  int data_type,
                                                  int32_t* nrow,
                                                  int32_t ncol,
-                                                 int is_row_major,
+                                                 int* is_row_major,
                                                  const char* parameters,
                                                  const DatasetHandle reference,
                                                  DatasetHandle* out);

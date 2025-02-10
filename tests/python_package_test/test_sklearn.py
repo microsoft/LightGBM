@@ -1425,9 +1425,9 @@ def test_getting_feature_names_in_np_input(estimator_class):
 def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     col_names = X.columns.to_list()
-    assert isinstance(col_names, list) and all(
-        isinstance(c, str) for c in col_names
-    ), "input data must have feature names for this test to cover the expected functionality"
+    assert isinstance(col_names, list) and all(isinstance(c, str) for c in col_names), (
+        "input data must have feature names for this test to cover the expected functionality"
+    )
     params = {"n_estimators": 2, "num_leaves": 7}
     if estimator_class is lgb.LGBMModel:
         model = estimator_class(**{**params, "objective": "binary"})
@@ -1488,6 +1488,12 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
         assert sklearn_tags.input_tags.allow_nan is True
         assert sklearn_tags.input_tags.sparse is True
         assert sklearn_tags.target_tags.one_d_labels is True
+        if estimator_class is lgb.LGBMClassifier:
+            assert sklearn_tags.estimator_type == "classifier"
+            assert sklearn_tags.classifier_tags.multi_class is True
+            assert sklearn_tags.classifier_tags.multi_label is False
+        elif estimator_class is lgb.LGBMRegressor:
+            assert sklearn_tags.estimator_type == "regressor"
 
 
 @pytest.mark.parametrize("task", all_tasks)

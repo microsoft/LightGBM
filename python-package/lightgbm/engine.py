@@ -581,15 +581,31 @@ def _agg_cv_result(
     raw_results: List[List[_LGBM_BoosterEvalMethodResultType]],
 ) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    cvmap: Dict[str, List[float]] = OrderedDict()
-    metric_type: Dict[str, bool] = {}
+    # build up 2 maps, of the form:
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): <is_higher_better>
+    # }
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): list[<metric_value>]
+    # }
+    #
+    metric_types: Dict[Tuple[str, str], bool] = OrderedDict()
+    metric_values: Dict[Tuple[str, str], List[float]] = OrderedDict()
     for one_result in raw_results:
-        for one_line in one_result:
-            key = f"{one_line[0]} {one_line[1]}"
-            metric_type[key] = one_line[3]
-            cvmap.setdefault(key, [])
-            cvmap[key].append(one_line[2])
-    return [("cv_agg", k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
+        for dataset_name, metric_name, metric_value, is_higher_better in one_result:
+            key = (dataset_name, metric_name)
+            metric_types[key] = is_higher_better
+            metric_values.setdefault(key, [])
+            metric_values[key].append(metric_value)
+
+    # turn that into a list of tuples of the form:
+    #
+    # [
+    #     (<dataset_name>, <metric_name>, mean(<values>), <is_higher_better>, std_dev(<values>))
+    # ]
+    return [(k[0], k[1], float(np.mean(v)), metric_types[k], float(np.std(v))) for k, v in metric_values.items()]
 
 
 def cv(
@@ -758,7 +774,7 @@ def cv(
     train_set._update_params(params)._set_predictor(predictor)
 
     results = defaultdict(list)
-    cvfolds = _make_n_folds(
+    cvbooster = _make_n_folds(
         full_data=train_set,
         folds=folds,
         nfold=nfold,
@@ -802,7 +818,7 @@ def cv(
         for cb in callbacks_before_iter:
             cb(
                 callback.CallbackEnv(
-                    model=cvfolds,
+                    model=cvbooster,
                     params=params,
                     iteration=i,
                     begin_iteration=0,
@@ -810,16 +826,16 @@ def cv(
                     evaluation_result_list=None,
                 )
             )
-        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
-        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
-        for _, key, mean, _, std in res:
-            results[f"{key}-mean"].append(mean)
-            results[f"{key}-stdv"].append(std)
+        cvbooster.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvbooster.eval_valid(feval))  # type: ignore[call-arg]
+        for dataset_name, metric_name, metric_mean, _, metric_std_dev in res:
+            results[f"{dataset_name} {metric_name}-mean"].append(metric_mean)
+            results[f"{dataset_name} {metric_name}-stdv"].append(metric_std_dev)
         try:
             for cb in callbacks_after_iter:
                 cb(
                     callback.CallbackEnv(
-                        model=cvfolds,
+                        model=cvbooster,
                         params=params,
                         iteration=i,
                         begin_iteration=0,
@@ -828,14 +844,14 @@ def cv(
                     )
                 )
         except callback.EarlyStopException as earlyStopException:
-            cvfolds.best_iteration = earlyStopException.best_iteration + 1
-            for bst in cvfolds.boosters:
-                bst.best_iteration = cvfolds.best_iteration
+            cvbooster.best_iteration = earlyStopException.best_iteration + 1
+            for bst in cvbooster.boosters:
+                bst.best_iteration = cvbooster.best_iteration
             for k in results:
-                results[k] = results[k][: cvfolds.best_iteration]
+                results[k] = results[k][: cvbooster.best_iteration]
             break
 
     if return_cvbooster:
-        results["cvbooster"] = cvfolds  # type: ignore[assignment]
+        results["cvbooster"] = cvbooster  # type: ignore[assignment]
 
     return dict(results)

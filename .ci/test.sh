@@ -64,8 +64,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
+# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
+# other implementations like pypy
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
@@ -146,8 +147,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     make -C docs html || exit 1
     if [[ $TASK == "check-links" ]]; then
         # check docs for broken links
-        pip install linkchecker
-        linkchecker --config=.linkcheckerrc ./docs/_build/html/*.html || exit 1
+        pip install 'linkchecker>=10.5.0'
+        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
         exit 0
     fi
     # check the consistency of parameters' descriptions and other stuff
@@ -333,6 +334,7 @@ matplotlib.use\(\"Agg\"\)\
         distributed \
         joblib \
         matplotlib-base \
+        pandas \
         psutil \
         pyarrow \
         python-graphviz \
