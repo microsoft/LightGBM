@@ -381,7 +381,7 @@ def _list_to_1d_numpy(
         return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
         )
 
 
@@ -803,8 +803,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
     ]
     if bad_pandas_dtypes:
         raise ValueError(
-            'pandas dtypes must be int, float or bool.\n'
-            f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}'
+            f"pandas dtypes must be int, float or bool.\nFields with bad pandas dtypes: {', '.join(bad_pandas_dtypes)}"
         )
 
 
@@ -3298,7 +3297,7 @@ class Dataset:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(
-                        f"Cannot subset {type(self.data).__name__} type of raw data.\n" "Returning original raw data"
+                        f"Cannot subset {type(self.data).__name__} type of raw data.\nReturning original raw data"
                     )
             self._need_slice = False
         if self.data is None:
@@ -3718,7 +3717,7 @@ class Booster:
             self.model_from_string(model_str)
         else:
             raise TypeError(
-                "Need at least one training dataset or model file or model string " "to create Booster instance"
+                "Need at least one training dataset or model file or model string to create Booster instance"
             )
         self.params = params
 
@@ -4052,7 +4051,7 @@ class Booster:
         if not isinstance(data, Dataset):
             raise TypeError(f"Validation data should be Dataset instance, met {type(data).__name__}")
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, " "you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(
             _LIB.LGBM_BoosterAddValidData(
                 self._handle,
@@ -4138,7 +4137,7 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError(f"Training data should be Dataset instance, met {type(train_set).__name__}")
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, " "you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(
                 _LIB.LGBM_BoosterResetTrainingData(

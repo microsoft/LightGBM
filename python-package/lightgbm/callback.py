@@ -393,7 +393,7 @@ class _EarlyStoppingCallback:
             if self.verbose:
                 best_score_str = "\t".join([_format_eval_result(x, show_stdv=True) for x in self.best_score_list[i]])
                 _log_info(
-                    "Did not meet early stopping. " f"Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}"
+                    f"Did not meet early stopping. Best iteration is:\n[{self.best_iter[i] + 1}]\t{best_score_str}"
                 )
                 if self.first_metric_only:
                     _log_info(f"Evaluated only: {metric_name}")
