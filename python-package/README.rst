@@ -9,7 +9,9 @@ Installation
 Preparation
 '''''''''''
 
-32-bit Python is not supported. Please install 64-bit version. If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
+32-bit Python is not supported.
+Please install 64-bit version.
+If you have a strong need to install with 32-bit Python, refer to `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__.
 
 |
 
@@ -20,11 +22,18 @@ Install from `PyPI <https://pypi.org/project/lightgbm>`_
 
     pip install lightgbm
 
-Compiled library that is included in the wheel file supports both **GPU** (don't confuse with CUDA version) and **CPU** versions out of the box. This feature is available only for **Windows** and **Linux** currently. To use **GPU** version you only need to install OpenCL Runtime libraries. For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required. If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging) you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <https://portablecl.org>`_ on **Linux**. Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
+Compiled library that is included in the wheel file supports both **GPU** (don't confuse with CUDA version) and **CPU** versions out of the box.
+This feature is available only for **Windows** and **Linux** currently.
+To use **GPU** version you only need to install OpenCL Runtime libraries.
+For NVIDIA and AMD GPU they are included in the ordinary drivers for your graphics card, so no action is required.
+If you would like your AMD or Intel CPU to act like a GPU (for testing and debugging),
+you can install `AMD APP SDK <https://github.com/microsoft/LightGBM/releases/download/v2.0.12/AMD-APP-SDKInstaller-v3.0.130.135-GA-windows-F-x64.exe>`_ on **Windows** and `PoCL <https://portablecl.org>`_ on **Linux**.
+Many modern Linux distributions provide packages for PoCL, look for ``pocl-opencl-icd`` on Debian-based distributions and ``pocl`` on RedHat-based distributions.
 
 For **Windows** users, `VC runtime <https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads>`_ is needed if **Visual Studio** is not installed.
 
-For **macOS** users, the **OpenMP** library is needed. You can install it by the following command: ``brew install libomp``.
+For **macOS** users, the **OpenMP** library is needed.
+You can install it by the following command: ``brew install libomp``.
 
 |
 
@@ -141,7 +150,8 @@ All requirements from `Build from Sources section <#build-from-sources>`__ apply
 
 For **macOS** users, the GPU version is not supported.
 
-**Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__. Almost always you also need to pass ``OpenCL_INCLUDE_DIR``, ``OpenCL_LIBRARY`` options for **Linux** and ``BOOST_ROOT``, ``BOOST_LIBRARYDIR`` options for **Windows** to **CMake** via ``pip`` options, like
+**Boost** and **OpenCL** are needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-gpu-version>`__.
+Almost always you also need to pass ``OpenCL_INCLUDE_DIR``, ``OpenCL_LIBRARY`` options for **Linux** and ``BOOST_ROOT``, ``BOOST_LIBRARYDIR`` options for **Windows** to **CMake** via ``pip`` options, like
 
 .. code:: sh
 
@@ -163,7 +173,8 @@ All available options that can be passed via ``cmake.define.{option}``.
 
 For more details see `FindBoost <https://cmake.org/cmake/help/latest/module/FindBoost.html>`__ and `FindOpenCL <https://cmake.org/cmake/help/latest/module/FindOpenCL.html>`__.
 
-Don't confuse with `CUDA version <#build-cuda-version>`__. To use the GPU version within Python, pass ``{"device": "gpu"}`` respectively in parameters.
+Don't confuse with `CUDA version <#build-cuda-version>`__.
+To use the GPU version within Python, pass ``{"device": "gpu"}`` respectively in parameters.
 
 |
 
@@ -180,7 +191,8 @@ For **macOS** and **Windows** users, the CUDA version is not supported.
 
 **CUDA** library is needed: details for installation can be found in `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#build-cuda-version>`__.
 
-Don't confuse with `GPU version <#build-gpu-version>`__. To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
+Don't confuse with `GPU version <#build-gpu-version>`__.
+To use the CUDA version within Python, pass ``{"device": "cuda"}`` respectively in parameters.
 
 |
 
@@ -194,7 +206,8 @@ Build with MinGW-w64 on Windows
 `MinGW-w64 <https://www.mingw-w64.org/>`_ should be installed first.
 
 It is recommended to use **Visual Studio** for its better multithreading efficiency in **Windows** for many-core systems
-(see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__ and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
+(see `Question 4 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#4-i-am-using-windows-should-i-use-visual-studio-or-mingw-for-compiling-lightgbm>`__
+and `Question 8 <https://github.com/microsoft/LightGBM/blob/master/docs/FAQ.rst#8-cpu-usage-is-low-like-10-in-windows-when-using-lightgbm-on-very-large-datasets-with-many-core-systems>`__).
 
 |
 
@@ -295,29 +308,44 @@ Run ``sh ./build-python.sh install --no-isolation`` to assume all build and inst
 
 |
 
-Run ``sh ./build-python.sh install --nomp`` to disable **OpenMP** support. All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --nomp`` to disable **OpenMP** support.
+All requirements from `Build Threadless Version section <#build-threadless-version>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --mpi`` to enable **MPI** support. All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mpi`` to enable **MPI** support.
+All requirements from `Build MPI Version section <#build-mpi-version>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --gpu`` to enable GPU support. All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well. To pass additional options to **CMake** use the following syntax: ``sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"``, see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
+Run ``sh ./build-python.sh install --gpu`` to enable GPU support.
+All requirements from `Build GPU Version section <#build-gpu-version>`__ apply for this installation option as well.
+To pass additional options to **CMake** use the following syntax: ``sh ./build-python.sh install --gpu --opencl-include-dir="/usr/local/cuda/include/"``,
+see `Build GPU Version section <#build-gpu-version>`__ for the complete list of them.
 
-Run ``sh ./build-python.sh install --cuda`` to enable CUDA support. All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --cuda`` to enable CUDA support.
+All requirements from `Build CUDA Version section <#build-cuda-version>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**. All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --mingw``, if you want to use **MinGW-w64** on **Windows** instead of **Visual Studio**.
+All requirements from `Build with MinGW-w64 on Windows section <#build-with-mingw-w64-on-windows>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version. All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version.
+All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --nohomebrew``, if you want to ignore Homebrew standard folders. All requirements from `Build without Searching in Homebrew Folders for Dependencies on macOS section <#build-without-searching-in-homebrew-folders-for-dependencies-on-macos>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --nohomebrew``, if you want to ignore Homebrew standard folders.
+All requirements from `Build without Searching in Homebrew Folders for Dependencies on macOS section <#build-without-searching-in-homebrew-folders-for-dependencies-on-macos>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines. All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines.
+All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --debug``, to enable debug mode. All requirements from `Build in Debug Mode section <#build-in-debug-mode>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --debug``, to enable debug mode.
+All requirements from `Build in Debug Mode section <#build-in-debug-mode>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers. All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
+Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers.
+All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
 
 |
 
-If you get any errors during installation or due to any other reasons, you may want to build dynamic library from sources by any method you prefer (see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__). For example, you can use ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__ from the repo.
+If you get any errors during installation or due to any other reasons,
+you may want to build dynamic library from sources by any method you prefer
+(see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst>`__).
+For example, you can use ``MSBuild`` tool and `solution file <https://github.com/microsoft/LightGBM/blob/master/windows/LightGBM.sln>`__ from the repo.
 
 .. code:: sh
 
