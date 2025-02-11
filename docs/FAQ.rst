@@ -413,6 +413,6 @@ This pattern will work with ``lightgbm > 4.5.0``.
     print(f"mean: {preds.mean():.2f}, max: {preds.max():.2f}")
     # mean: -6.81, max: 345.10
 
-    preds_trunc = reg_trunc.predict(X, max_score = preds.mean())
+    preds_trunc = reg_trunc.predict(X, max_score=preds.mean())
     print(f"mean: {preds_trunc.mean():.2f}, max: {preds_trunc.max():.2f}")
     # mean: -56.50, max: -6.81
