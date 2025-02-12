@@ -1382,7 +1382,6 @@ def test_machines_should_be_used_if_provided(task, cluster):
 )
 def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg(dask_est, sklearn_est):
     dask_spec = inspect.getfullargspec(dask_est)
-    sklearn_base_spec = inspect.getfullargspec(lgb.LGBMModel)
     sklearn_spec = inspect.getfullargspec(sklearn_est)
 
     # should not allow for any varargs
@@ -1395,13 +1394,13 @@ def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except
     assert dask_spec.varkw == "kwargs"
 
     # "client" should be the only different, and the final argument
-    assert dask_spec.kwonlyargs == [*sklearn_base_spec.kwonlyargs, *sklearn_spec.kwonlyargs, "client"]
+    assert dask_spec.kwonlyargs == [*sklearn_spec.kwonlyargs, "client"]
 
     # default values for all constructor arguments should be identical
     #
     # NOTE: if LGBMClassifier / LGBMRanker / LGBMRegressor ever override
     #       any of LGBMModel's constructor arguments, this will need to be updated
-    assert dask_spec.kwonlydefaults == {**sklearn_base_spec.kwonlydefaults, "client": None}
+    assert dask_spec.kwonlydefaults == {**sklearn_spec.kwonlydefaults, "client": None}
 
     # only positional argument should be 'self'
     assert dask_spec.args == sklearn_spec.args
