@@ -7,7 +7,7 @@ SOURCE_DIR <- args[[1L]]
 
 FILES_TO_LINT <- list.files(
     path = SOURCE_DIR
-    , pattern = "build_r.r$"
+    , pattern = "\\.r$|\\.rmd$"
     , all.files = TRUE
     , ignore.case = TRUE
     , full.names = TRUE
