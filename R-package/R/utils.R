@@ -34,7 +34,7 @@
 
     # If a parameter has multiple values, join those values together with commas.
     # trimws() is necessary because format() will pad to make strings the same width
-    val <- paste0(
+    val <- paste(
       trimws(
         format(
           x = unname(params[[i]])
@@ -46,7 +46,7 @@
     if (nchar(val) <= 0L) next # Skip join
 
     # Join key value
-    pair <- paste0(c(param_names[[i]], val), collapse = "=")
+    pair <- paste(c(param_names[[i]], val), collapse = "=")
     ret <- c(ret, pair)
 
   }
@@ -55,7 +55,7 @@
     return("")
   }
 
-  return(paste0(ret, collapse = " "))
+  return(paste(ret, collapse = " "))
 
 }
 
@@ -115,7 +115,7 @@
   # Turn indices 0-based and convert to string
   for (j in seq_along(interaction_constraints)) {
     interaction_constraints[[j]] <- paste0(
-      "[", paste0(interaction_constraints[[j]] - 1L, collapse = ","), "]"
+      "[", paste(interaction_constraints[[j]] - 1L, collapse = ","), "]"
     )
   }
   return(interaction_constraints)

@@ -5,7 +5,7 @@
         vapply(
             X = df
             , FUN = function(x) {
-                paste0(class(x), collapse = ",")
+                paste(class(x), collapse = ",")
             }
             , FUN.VALUE = character(1L)
         )
