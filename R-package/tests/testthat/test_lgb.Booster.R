@@ -955,7 +955,7 @@ test_that("Saving a model with unknown importance type fails", {
 
 .params_from_model_string <- function(model_str) {
     file_lines <- strsplit(model_str, "\n", fixed = TRUE)[[1L]]
-    start_indx <- which(file_list == "parameters:") + 1L
+    start_indx <- which(file_lines == "parameters:") + 1L
     blank_line_indices <- which(file_lines == "")
     end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
     params <- file_lines[start_indx: end_indx]
