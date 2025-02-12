@@ -1373,26 +1373,42 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
 
 @pytest.mark.parametrize(
-    "classes",
+    "dask_est,sklearn_est",
     [
         (lgb.DaskLGBMClassifier, lgb.LGBMClassifier),
         (lgb.DaskLGBMRegressor, lgb.LGBMRegressor),
         (lgb.DaskLGBMRanker, lgb.LGBMRanker),
     ],
 )
-def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg(classes):
-    dask_spec = inspect.getfullargspec(classes[0])
-    sklearn_spec = inspect.getfullargspec(classes[1])
+def test_dask_classes_and_sklearn_equivalents_have_identical_constructors_except_client_arg(dask_est, sklearn_est):
+    dask_spec = inspect.getfullargspec(dask_est)
+    sklearn_spec = inspect.getfullargspec(sklearn_est)
+
+    # should not allow for any varargs
     assert dask_spec.varargs == sklearn_spec.varargs
+    assert dask_spec.varargs is None
+
+    # the only varkw should be **kwargs,
+    # for pass-through to parent classes' __init__()
     assert dask_spec.varkw == sklearn_spec.varkw
-    assert dask_spec.kwonlyargs == sklearn_spec.kwonlyargs
-    assert dask_spec.kwonlydefaults == sklearn_spec.kwonlydefaults
+    assert dask_spec.varkw == "kwargs"
 
     # "client" should be the only different, and the final argument
-    assert dask_spec.args[:-1] == sklearn_spec.args
-    assert dask_spec.defaults[:-1] == sklearn_spec.defaults
-    assert dask_spec.args[-1] == "client"
-    assert dask_spec.defaults[-1] is None
+    assert dask_spec.kwonlyargs == [*sklearn_spec.kwonlyargs, "client"]
+
+    # default values for all constructor arguments should be identical
+    #
+    # NOTE: if LGBMClassifier / LGBMRanker / LGBMRegressor ever override
+    #       any of LGBMModel's constructor arguments, this will need to be updated
+    assert dask_spec.kwonlydefaults == {**sklearn_spec.kwonlydefaults, "client": None}
+
+    # only positional argument should be 'self'
+    assert dask_spec.args == sklearn_spec.args
+    assert dask_spec.args == ["self"]
+    assert dask_spec.defaults is None
+
+    # get_params() should be identical, except for "client"
+    assert dask_est().get_params() == {**sklearn_est().get_params(), "client": None}
 
 
 @pytest.mark.parametrize(
