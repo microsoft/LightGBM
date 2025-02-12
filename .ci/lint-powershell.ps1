@@ -53,4 +53,4 @@ $settings = @{
     }
 }
 
-Invoke-ScriptAnalyzer -Path "$env:BUILD_DIRECTORY/.ci" -Recurse -EnableExit -Settings $settings
+Invoke-ScriptAnalyzer -Path ./ -Recurse -EnableExit -Settings $settings

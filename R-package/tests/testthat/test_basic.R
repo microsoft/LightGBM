@@ -9,7 +9,7 @@ set.seed(708L)
 #               to an accumulator then returns the current value.
 #               This is used to mock the situation where an evaluation
 #               metric increases every iteration
-ACCUMULATOR_NAME <- "INCREASING_METRIC_ACUMULATOR"
+ACCUMULATOR_NAME <- "INCREASING_METRIC_ACCUMULATOR"
 assign(x = ACCUMULATOR_NAME, value = 0.0, envir = .GlobalEnv)
 
 .increasing_metric <- function(preds, dtrain) {
@@ -1777,7 +1777,7 @@ test_that("lgb.train() works with early stopping for regression with a metric th
     , early_stopping_rounds + 1L
   )
 
-  # Booster should understand thatt all three of these metrics should be minimized
+  # Booster should understand that all three of these metrics should be minimized
   eval_info <- bst$.__enclos_env__$private$get_eval_info()
   expect_identical(eval_info, c("mape", "rmse", "l1"))
   expect_identical(
@@ -2345,7 +2345,7 @@ test_that("early stopping works with lgb.cv()", {
   # never changes, its first iteration was the best oone
   expect_equal(bst$best_iter, 1L)
 
-  # best_score should be taken from the first metri
+  # best_score should be taken from the first metric
   expect_equal(bst$best_score, 0.2)
 
   # early stopping should have happened, since constant_metric was the first
