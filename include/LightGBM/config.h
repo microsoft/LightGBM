@@ -359,6 +359,7 @@ struct Config {
   int bagging_seed = 3;
 
   // desc = whether to do bagging sample by query
+  // desc = *New in version 4.6.0*
   bool bagging_by_query = false;
 
   // alias = sub_feature, colsample_bytree
