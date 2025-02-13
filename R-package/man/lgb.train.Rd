@@ -15,8 +15,6 @@ lgb.train(
   record = TRUE,
   eval_freq = 1L,
   init_model = NULL,
-  colnames = NULL,
-  categorical_feature = NULL,
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
@@ -82,10 +80,6 @@ printing of evaluation during training}
 
 \item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
-\item{colnames}{Deprecated. See "Deprecated Arguments" section below.}
-
-\item{categorical_feature}{Deprecated. See "Deprecated Arguments" section below.}
-
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
 fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
@@ -109,14 +103,6 @@ Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
              this function is focused on performance (e.g. speed, memory efficiency). It is also
              less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 }
-\section{Deprecated Arguments}{
-
-
-A future release of \code{lightgbm} will remove support for passing arguments
-\code{'categorical_feature'} and \code{'colnames'}. Pass those things to
-\code{lgb.Dataset} instead.
-}
-
 \section{Early Stopping}{
 
 

@@ -121,7 +121,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     pattern = "make_args_from_build_script <- character(0L)"
     , replacement = paste0(
       "make_args_from_build_script <- c(\""
-      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , paste(parsed_args[["make_args"]], collapse = "\", \"")
       , "\")"
     )
     , x = install_libs_content
@@ -167,7 +167,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
           , "make this faster."
         ))
       }
-      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      cmd <- paste0(cmd, " ", paste(args, collapse = " "))
       exit_code <- system(cmd)
     }
 
@@ -426,6 +426,6 @@ install_args <- c("CMD", "INSTALL", "--no-multiarch", "--with-keep.source", tarb
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command(install_cmd, install_args)
 } else {
-  cmd <- paste0(install_cmd, " ", paste0(install_args, collapse = " "))
+  cmd <- paste0(install_cmd, " ", paste(install_args, collapse = " "))
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }

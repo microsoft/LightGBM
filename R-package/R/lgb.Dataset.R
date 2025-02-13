@@ -457,7 +457,7 @@ Dataset <- R6::R6Class(
       if (!.is_null_handle(x = private$handle)) {
 
         # Merge names with tab separation
-        merged_name <- paste0(as.list(private$colnames), collapse = "\t")
+        merged_name <- paste(as.list(private$colnames), collapse = "\t")
         .Call(
           LGBM_DatasetSetFeatureNames_R
           , private$handle
