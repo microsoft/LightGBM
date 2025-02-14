@@ -44,7 +44,8 @@ void TestUtils::CreateRandomDenseData(
   std::vector<float>* labels,
   std::vector<float>* weights,
   std::vector<double>* init_scores,
-  std::vector<int32_t>* groups) {
+  std::vector<int32_t>* groups,
+  std::vector<int32_t>* positions) {
   Random rand(42);
   features->reserve(nrows * ncols);
 
@@ -54,7 +55,7 @@ void TestUtils::CreateRandomDenseData(
     }
   }
 
-  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
+  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups, positions);
 }
 
 /*!
@@ -71,7 +72,8 @@ void TestUtils::CreateRandomSparseData(
   std::vector<float>* labels,
   std::vector<float>* weights,
   std::vector<double>* init_scores,
-  std::vector<int32_t>* groups) {
+  std::vector<int32_t>* groups,
+  std::vector<int32_t>* positions) {
   Random rand(42);
   indptr->reserve(static_cast<int32_t>(nrows + 1));
   indices->reserve(static_cast<int32_t>(sparse_percent * nrows * ncols));
@@ -89,7 +91,7 @@ void TestUtils::CreateRandomSparseData(
     indptr->push_back(static_cast<int32_t>(indices->size() - 1));
   }
 
-  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups);
+  CreateRandomMetadata(nrows, nclasses, labels, weights, init_scores, groups, positions);
 }
 
 /*!
@@ -100,7 +102,8 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
   std::vector<float>* labels,
   std::vector<float>* weights,
   std::vector<double>* init_scores,
-  std::vector<int32_t>* groups) {
+  std::vector<int32_t>* groups,
+  std::vector<int32_t>* positions) {
   Random rand(42);
   labels->reserve(nrows);
   if (weights) {
@@ -112,8 +115,12 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
   if (groups) {
     groups->reserve(nrows);
   }
+  if (positions) {
+    positions->reserve(nrows);
+  }
 
   int32_t group = 0;
+  int32_t position = 0;
 
   for (int32_t row = 0; row < nrows; row++) {
     labels->push_back(rand.NextFloat());
@@ -128,8 +135,13 @@ void TestUtils::CreateRandomMetadata(int32_t nrows,
     if (groups) {
       if (rand.NextFloat() > 0.95) {
         group++;
+        position = 0;
       }
       groups->push_back(group);
+    }
+    if (positions) {
+      positions->push_back(position);
+      position++;
     }
   }
 }
@@ -143,7 +155,8 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
   const std::vector<float>* labels,
   const std::vector<float>* weights,
   const std::vector<double>* init_scores,
-  const std::vector<int32_t>* groups) {
+  const std::vector<int32_t>* groups,
+  const std::vector<int32_t>* positions) {
   int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -172,6 +185,11 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
     groups_ptr = groups->data();
   }
 
+  const int32_t* positions_ptr = nullptr;
+  if (positions) {
+    positions_ptr = positions->data();
+  }
+
   auto start_time = std::chrono::steady_clock::now();
 
   for (int32_t i = 0; i < nrows; i += batch_count) {
@@ -189,6 +207,7 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
                                               weights_ptr,
                                               init_scores_ptr,
                                               groups_ptr,
+                                              positions_ptr,
                                               0);
     EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsWithMetadata result code: " << result;
     if (result != 0) {
@@ -202,6 +221,9 @@ void TestUtils::StreamDenseDataset(DatasetHandle dataset_handle,
     }
     if (groups_ptr) {
       groups_ptr += batch_count;
+    }
+    if (positions_ptr) {
+      positions_ptr += batch_count;
     }
   }
 
@@ -219,7 +241,8 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
                                     const std::vector<float>* labels,
                                     const std::vector<float>* weights,
                                     const std::vector<double>* init_scores,
-                                    const std::vector<int32_t>* groups) {
+                                    const std::vector<int32_t>* groups,
+                                    const std::vector<int32_t>* positions) {
   int result = LGBM_DatasetSetWaitForManualFinish(dataset_handle, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetWaitForManualFinish result code: " << result;
 
@@ -242,6 +265,11 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
     groups_ptr = groups->data();
   }
 
+  const int32_t* positions_ptr = nullptr;
+  if (positions) {
+    positions_ptr = positions->data();
+  }
+
   auto start_time = std::chrono::steady_clock::now();
 
   // Use multiple threads to test concurrency
@@ -253,20 +281,21 @@ void TestUtils::StreamSparseDataset(DatasetHandle dataset_handle,
   threads.reserve(thread_count);
   for (int32_t t = 0; t < thread_count; ++t) {
     std::thread th(TestUtils::PushSparseBatch,
-                    dataset_handle,
-                    nrows,
-                    nclasses,
-                    batch_count,
-                    indptr,
-                    indptr_ptr,
-                    indices_ptr,
-                    values_ptr,
-                    labels_ptr,
-                    weights_ptr,
-                    init_scores,
-                    groups_ptr,
-                    thread_count,
-                    t);
+                   dataset_handle,
+                   nrows,
+                   nclasses,
+                   batch_count,
+                   indptr,
+                   indptr_ptr,
+                   indices_ptr,
+                   values_ptr,
+                   labels_ptr,
+                   weights_ptr,
+                   init_scores,
+                   groups_ptr,
+                   positions_ptr,
+                   thread_count,
+                   t);
     threads.push_back(std::move(th));
   }
 
@@ -293,6 +322,7 @@ void TestUtils::PushSparseBatch(DatasetHandle dataset_handle,
                                 const float* weights_ptr,
                                 const std::vector<double>* init_scores,
                                 const int32_t* groups_ptr,
+                                const int32_t* positions_ptr,
                                 int32_t thread_count,
                                 int32_t thread_id) {
   int32_t threadChunkSize = nrows / thread_count;
@@ -306,6 +336,9 @@ void TestUtils::PushSparseBatch(DatasetHandle dataset_handle,
   }
   if (groups_ptr) {
     groups_ptr += threadChunkSize * thread_id;
+  }
+  if (positions_ptr) {
+    positions_ptr += threadChunkSize * thread_id;
   }
 
   for (int32_t i = startIndex; i < stopIndex; i += batch_count) {
@@ -332,6 +365,7 @@ void TestUtils::PushSparseBatch(DatasetHandle dataset_handle,
                                                         weights_ptr,
                                                         init_scores_ptr,
                                                         groups_ptr,
+                                                        positions_ptr,
                                                         thread_id);
     EXPECT_EQ(0, result) << "LGBM_DatasetPushRowsByCSRWithMetadata result code: " << result;
     if (result != 0) {
@@ -346,15 +380,18 @@ void TestUtils::PushSparseBatch(DatasetHandle dataset_handle,
     if (groups_ptr) {
       groups_ptr += batch_count;
     }
+    if (positions_ptr) {
+      positions_ptr += batch_count;
+    }
   }
 }
-
 
 void TestUtils::AssertMetadata(const Metadata* metadata,
   const std::vector<float>* ref_labels,
   const std::vector<float>* ref_weights,
   const std::vector<double>* ref_init_scores,
-  const std::vector<int32_t>* ref_groups) {
+  const std::vector<int32_t>* ref_groups,
+  const std::vector<int32_t>* ref_positions) {
   const float* labels = metadata->label();
   auto nTotal = static_cast<int32_t>(ref_labels->size());
   for (auto i = 0; i < nTotal; i++) {
@@ -419,6 +456,21 @@ void TestUtils::AssertMetadata(const Metadata* metadata,
     }
   } else if (ref_groups) {
     FAIL() << "Expected non-null query_boundaries";
+  }
+
+  const int32_t* positions = metadata->positions();
+  if (positions) {
+    if (!ref_positions) {
+      FAIL() << "Expected null positions";
+    }
+    for (auto i = 0; i < nTotal; i++) {
+      EXPECT_EQ(ref_positions->at(i), positions[i]) << "Inserted data: " << ref_positions->at(i);
+      if (ref_positions->at(i) != positions[i]) {
+        FAIL() << "Mismatched positions";  // This forces an immediate failure, which EXPECT_EQ does not
+      }
+    }
+  } else if (ref_positions) {
+    FAIL() << "Expected non-null positions";
   }
 }
 
