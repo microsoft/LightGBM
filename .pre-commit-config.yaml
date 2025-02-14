@@ -44,3 +44,8 @@ repos:
       - id: typos
         args: ["--force-exclude"]
         exclude: (\.gitignore$)|(^\.editorconfig$)
+  - repo: https://github.com/henryiii/validate-pyproject-schema-store
+    rev: 2025.02.03
+    hooks:
+      - id: validate-pyproject
+        files: python-package/pyproject.toml$
