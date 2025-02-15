@@ -11,16 +11,19 @@ ARCH=$(uname -m)
 
 
 if [[ $OS_NAME == "macos" ]]; then
+    # Check https://github.com/actions/runner-images/tree/main/images/macos for available
+    # versions of Xcode
+    macos_ver=$(sw_vers --productVersion)
+    if [[ "${macos_ver}" =~ 13. ]]; then
+        xcode_path="/Applications/Xcode_14.3.app/Contents/Developer"
+    else
+        xcode_path="/Applications/Xcode_15.0.app/Contents/Developer"
+    fi
+    sudo xcode-select -s "${xcode_path}" || exit 1
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
-        if [[ $AZURE == "true" ]]; then
-            sudo xcode-select -s /Applications/Xcode_13.1.0.app/Contents/Developer || exit 1
-        fi
     else  # gcc
-        # Check https://github.com/actions/runner-images/tree/main/images/macos for available
-        # versions of Xcode
-        sudo xcode-select -s /Applications/Xcode_14.3.1.app/Contents/Developer || exit 1
-        brew install gcc
+        brew install 'gcc@12'
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
@@ -29,6 +32,25 @@ if [[ $OS_NAME == "macos" ]]; then
         brew install swig
     fi
 else  # Linux
+    if type -f apt > /dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y \
+            ca-certificates \
+            curl
+    else
+        sudo yum update -y
+        sudo yum install -y \
+            ca-certificates \
+            curl
+    fi
+    CMAKE_VERSION="3.30.0"
+    curl -O -L \
+        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" \
+    || exit 1
+    sudo mkdir /opt/cmake || exit 1
+    sudo sh "cmake-${CMAKE_VERSION}-linux-${ARCH}.sh" --skip-license --prefix=/opt/cmake || exit 1
+    sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake || exit 1
+
     if [[ $IN_UBUNTU_BASE_CONTAINER == "true" ]]; then
         # fixes error "unable to initialize frontend: Dialog"
         # https://github.com/moby/moby/issues/27988#issuecomment-462809153
@@ -40,9 +62,6 @@ else  # Linux
 
         sudo apt-get install --no-install-recommends -y \
             build-essential \
-            ca-certificates \
-            cmake \
-            curl \
             git \
             libcurl4 \
             libicu-dev \
@@ -117,31 +136,22 @@ else  # Linux
     fi
     if [[ $TASK == "cuda" ]]; then
         echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-        apt-get update
-        apt-get install --no-install-recommends -y \
-            curl \
-            lsb-release \
-            software-properties-common
         if [[ $COMPILER == "clang" ]]; then
+            apt-get update
             apt-get install --no-install-recommends -y \
                 clang \
                 libomp-dev
         fi
-        curl -sL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
-        apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" -y
-        apt-get update
-        apt-get install --no-install-recommends -y \
-            cmake
     fi
 fi
 
-if [[ "${TASK}" != "r-package" ]] && [[ "${TASK}" != "r-rchk" ]]; then
+if [[ "${TASK}" != "r-package" ]]; then
     if [[ $SETUP_CONDA != "false" ]]; then
         curl \
             -sL \
             -o miniforge.sh \
-            https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh
-        sh miniforge.sh -b -p $CONDA
+            "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-${ARCH}.sh"
+        sh miniforge.sh -b -p "${CONDA}"
     fi
     conda config --set always_yes yes --set changeps1 no
     conda update -q -y conda

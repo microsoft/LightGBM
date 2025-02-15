@@ -13,8 +13,14 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Altrep.h>
 
+#ifndef R_NO_REMAP
 #define R_NO_REMAP
+#endif
+
+#ifndef R_USE_C99_IN_CXX
 #define R_USE_C99_IN_CXX
+#endif
+
 #include <R_ext/Error.h>
 
 #include <string>
@@ -763,13 +769,32 @@ SEXP LGBM_BoosterRollbackOneIter_R(SEXP handle) {
   R_API_END();
 }
 
-SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle,
-  SEXP out) {
+SEXP LGBM_BoosterGetCurrentIteration_R(SEXP handle, SEXP out) {
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
   int out_iteration;
   CHECK_CALL(LGBM_BoosterGetCurrentIteration(R_ExternalPtrAddr(handle), &out_iteration));
   INTEGER(out)[0] = out_iteration;
+  return R_NilValue;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterNumModelPerIteration_R(SEXP handle, SEXP out) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int models_per_iter;
+  CHECK_CALL(LGBM_BoosterNumModelPerIteration(R_ExternalPtrAddr(handle), &models_per_iter));
+  INTEGER(out)[0] = models_per_iter;
+  return R_NilValue;
+  R_API_END();
+}
+
+SEXP LGBM_BoosterNumberOfTotalModel_R(SEXP handle, SEXP out) {
+  R_API_BEGIN();
+  _AssertBoosterHandleNotNull(handle);
+  int total_models;
+  CHECK_CALL(LGBM_BoosterNumberOfTotalModel(R_ExternalPtrAddr(handle), &total_models));
+  INTEGER(out)[0] = total_models;
   return R_NilValue;
   R_API_END();
 }
@@ -1431,6 +1456,8 @@ static const R_CallMethodDef CallEntries[] = {
   {"LGBM_BoosterUpdateOneIterCustom_R"           , (DL_FUNC) &LGBM_BoosterUpdateOneIterCustom_R           , 4},
   {"LGBM_BoosterRollbackOneIter_R"               , (DL_FUNC) &LGBM_BoosterRollbackOneIter_R               , 1},
   {"LGBM_BoosterGetCurrentIteration_R"           , (DL_FUNC) &LGBM_BoosterGetCurrentIteration_R           , 2},
+  {"LGBM_BoosterNumModelPerIteration_R"          , (DL_FUNC) &LGBM_BoosterNumModelPerIteration_R          , 2},
+  {"LGBM_BoosterNumberOfTotalModel_R"            , (DL_FUNC) &LGBM_BoosterNumberOfTotalModel_R            , 2},
   {"LGBM_BoosterGetUpperBoundValue_R"            , (DL_FUNC) &LGBM_BoosterGetUpperBoundValue_R            , 2},
   {"LGBM_BoosterGetLowerBoundValue_R"            , (DL_FUNC) &LGBM_BoosterGetLowerBoundValue_R            , 2},
   {"LGBM_BoosterGetEvalNames_R"                  , (DL_FUNC) &LGBM_BoosterGetEvalNames_R                  , 1},

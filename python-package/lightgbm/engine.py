@@ -3,7 +3,6 @@
 
 import copy
 import json
-import warnings
 from collections import OrderedDict, defaultdict
 from operator import attrgetter
 from pathlib import Path
@@ -15,17 +14,14 @@ from . import callback
 from .basic import (
     Booster,
     Dataset,
-    LGBMDeprecationWarning,
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
     _InnerPredictor,
     _LGBM_BoosterEvalMethodResultType,
     _LGBM_BoosterEvalMethodResultWithStandardDeviationType,
-    _LGBM_CategoricalFeatureConfiguration,
     _LGBM_CustomObjectiveFunction,
     _LGBM_EvalFunctionResultType,
-    _LGBM_FeatureNameConfiguration,
     _log_warning,
 )
 from .compat import SKLEARN_INSTALLED, _LGBMBaseCrossValidator, _LGBMGroupKFold, _LGBMStratifiedKFold
@@ -54,13 +50,60 @@ _LGBM_PreprocFunction = Callable[
 ]
 
 
-def _emit_dataset_kwarg_warning(calling_function: str, argname: str) -> None:
-    msg = (
-        f"Argument '{argname}' to {calling_function}() is deprecated and will be removed in "
-        f"a future release. Set '{argname}' when calling lightgbm.Dataset() instead. "
-        "See https://github.com/microsoft/LightGBM/issues/6435."
+def _choose_num_iterations(num_boost_round_kwarg: int, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Choose number of boosting rounds.
+
+    In ``train()`` and ``cv()``, there are multiple ways to provide configuration for
+    the number of boosting rounds to perform:
+
+      * the ``num_boost_round`` keyword argument
+      * any of the ``num_iterations`` or its aliases via the ``params`` dictionary
+
+    These should be preferred in the following order (first one found wins):
+
+      1. ``num_iterations`` provided via ``params`` (because it's the main parameter name)
+      2. any other aliases of ``num_iterations`` provided via ``params``
+      3. the ``num_boost_round`` keyword argument
+
+    This function handles that choice, and issuing helpful warnings in the cases where the
+    result might be surprising.
+
+    Returns
+    -------
+    params : dict
+        Parameters, with ``"num_iterations"`` set to the preferred value and all other
+        aliases of ``num_iterations`` removed.
+    """
+    num_iteration_configs_provided = {
+        alias: params[alias] for alias in _ConfigAliases.get("num_iterations") if alias in params
+    }
+
+    # now that the relevant information has been pulled out of params, it's safe to overwrite it
+    # with the content that should be used for training (i.e. with aliases resolved)
+    params = _choose_param_value(
+        main_param_name="num_iterations",
+        params=params,
+        default_value=num_boost_round_kwarg,
     )
-    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
+
+    # if there were not multiple boosting rounds configurations provided in params,
+    # then by definition they cannot have conflicting values... no need to warn
+    if len(num_iteration_configs_provided) <= 1:
+        return params
+
+    # if all the aliases have the same value, no need to warn
+    if len(set(num_iteration_configs_provided.values())) <= 1:
+        return params
+
+    # if this line is reached, lightgbm should warn
+    value_string = ", ".join(f"{alias}={val}" for alias, val in num_iteration_configs_provided.items())
+    _log_warning(
+        f"Found conflicting values for num_iterations provided via 'params': {value_string}. "
+        f"LightGBM will perform up to {params['num_iterations']} boosting rounds. "
+        "To be confident in the maximum number of boosting rounds LightGBM will perform and to "
+        "suppress this warning, modify 'params' so that only one of those is present."
+    )
+    return params
 
 
 def train(
@@ -71,8 +114,6 @@ def train(
     valid_names: Optional[List[str]] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
-    feature_name: _LGBM_FeatureNameConfiguration = "auto",
-    categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
     keep_training_booster: bool = False,
     callbacks: Optional[List[Callable]] = None,
 ) -> Booster:
@@ -114,21 +155,6 @@ def train(
         set the ``metric`` parameter to the string ``"None"`` in ``params``.
     init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
-    feature_name : list of str, or 'auto', optional (default="auto")
-        **Deprecated.** Set ``feature_name`` on ``train_set`` instead.
-        Feature names.
-        If 'auto' and data is pandas DataFrame, data columns names are used.
-    categorical_feature : list of str or int, or 'auto', optional (default="auto")
-        **Deprecated.** Set ``categorical_feature`` on ``train_set`` instead.
-        Categorical features.
-        If list of int, interpreted as indices.
-        If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
-        All values in categorical features will be cast to int32 and thus should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider using consecutive integers starting from zero.
-        All negative values in categorical features will be treated as missing values.
-        The output cannot be monotonically constrained with respect to a categorical feature.
-        Floating point numbers in categorical features will be rounded towards 0.
     keep_training_booster : bool, optional (default=False)
         Whether the returned Booster will be used to keep training.
         If False, the returned value will be converted into _InnerPredictor before returning.
@@ -169,9 +195,6 @@ def train(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"train() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
     if isinstance(valid_sets, list):
         for i, valid_item in enumerate(valid_sets):
             if not isinstance(valid_item, Dataset):
@@ -179,13 +202,6 @@ def train(
                     "Every item in valid_sets must be a Dataset object. "
                     f"Item {i} has type '{type(valid_item).__name__}'."
                 )
-
-    # raise deprecation warnings if necessary
-    # ref: https://github.com/microsoft/LightGBM/issues/6435
-    if categorical_feature != "auto":
-        _emit_dataset_kwarg_warning("train", "categorical_feature")
-    if feature_name != "auto":
-        _emit_dataset_kwarg_warning("train", "feature_name")
 
     # create predictor first
     params = copy.deepcopy(params)
@@ -198,11 +214,12 @@ def train(
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = "none"
-    for alias in _ConfigAliases.get("num_iterations"):
-        if alias in params:
-            num_boost_round = params.pop(alias)
-            _log_warning(f"Found `{alias}` in params. Will use it instead of argument")
-    params["num_iterations"] = num_boost_round
+
+    params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
+    num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
+
     # setting early stopping via global params should be possible
     params = _choose_param_value(
         main_param_name="early_stopping_round",
@@ -224,9 +241,7 @@ def train(
     else:
         init_iteration = 0
 
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(
-        categorical_feature
-    )
+    train_set._update_params(params)._set_predictor(predictor)
 
     is_valid_contain_train = False
     train_data_name = "training"
@@ -566,15 +581,31 @@ def _agg_cv_result(
     raw_results: List[List[_LGBM_BoosterEvalMethodResultType]],
 ) -> List[_LGBM_BoosterEvalMethodResultWithStandardDeviationType]:
     """Aggregate cross-validation results."""
-    cvmap: Dict[str, List[float]] = OrderedDict()
-    metric_type: Dict[str, bool] = {}
+    # build up 2 maps, of the form:
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): <is_higher_better>
+    # }
+    #
+    # OrderedDict{
+    #     (<dataset_name>, <metric_name>): list[<metric_value>]
+    # }
+    #
+    metric_types: Dict[Tuple[str, str], bool] = OrderedDict()
+    metric_values: Dict[Tuple[str, str], List[float]] = OrderedDict()
     for one_result in raw_results:
-        for one_line in one_result:
-            key = f"{one_line[0]} {one_line[1]}"
-            metric_type[key] = one_line[3]
-            cvmap.setdefault(key, [])
-            cvmap[key].append(one_line[2])
-    return [("cv_agg", k, float(np.mean(v)), metric_type[k], float(np.std(v))) for k, v in cvmap.items()]
+        for dataset_name, metric_name, metric_value, is_higher_better in one_result:
+            key = (dataset_name, metric_name)
+            metric_types[key] = is_higher_better
+            metric_values.setdefault(key, [])
+            metric_values[key].append(metric_value)
+
+    # turn that into a list of tuples of the form:
+    #
+    # [
+    #     (<dataset_name>, <metric_name>, mean(<values>), <is_higher_better>, std_dev(<values>))
+    # ]
+    return [(k[0], k[1], float(np.mean(v)), metric_types[k], float(np.std(v))) for k, v in metric_values.items()]
 
 
 def cv(
@@ -588,8 +619,6 @@ def cv(
     metrics: Optional[Union[str, List[str]]] = None,
     feval: Optional[Union[_LGBM_CustomMetricFunction, List[_LGBM_CustomMetricFunction]]] = None,
     init_model: Optional[Union[str, Path, Booster]] = None,
-    feature_name: _LGBM_FeatureNameConfiguration = "auto",
-    categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
     fpreproc: Optional[_LGBM_PreprocFunction] = None,
     seed: int = 0,
     callbacks: Optional[List[Callable]] = None,
@@ -645,21 +674,6 @@ def cv(
         set ``metrics`` to the string ``"None"``.
     init_model : str, pathlib.Path, Booster or None, optional (default=None)
         Filename of LightGBM model or Booster instance used for continue training.
-    feature_name : list of str, or 'auto', optional (default="auto")
-        **Deprecated.** Set ``feature_name`` on ``train_set`` instead.
-        Feature names.
-        If 'auto' and data is pandas DataFrame, data columns names are used.
-    categorical_feature : list of str or int, or 'auto', optional (default="auto")
-        **Deprecated.** Set ``categorical_feature`` on ``train_set`` instead.
-        Categorical features.
-        If list of int, interpreted as indices.
-        If list of str, interpreted as feature names (need to specify ``feature_name`` as well).
-        If 'auto' and data is pandas DataFrame, pandas unordered categorical columns are used.
-        All values in categorical features will be cast to int32 and thus should be less than int32 max value (2147483647).
-        Large values could be memory consuming. Consider using consecutive integers starting from zero.
-        All negative values in categorical features will be treated as missing values.
-        The output cannot be monotonically constrained with respect to a categorical feature.
-        Floating point numbers in categorical features will be rounded towards 0.
     fpreproc : callable or None, optional (default=None)
         Preprocessing function that takes (dtrain, dtest, params)
         and returns transformed versions of those.
@@ -713,16 +727,6 @@ def cv(
     if not isinstance(train_set, Dataset):
         raise TypeError(f"cv() only accepts Dataset object, train_set has type '{type(train_set).__name__}'.")
 
-    if num_boost_round <= 0:
-        raise ValueError(f"num_boost_round must be greater than 0. Got {num_boost_round}.")
-
-    # raise deprecation warnings if necessary
-    # ref: https://github.com/microsoft/LightGBM/issues/6435
-    if categorical_feature != "auto":
-        _emit_dataset_kwarg_warning("cv", "categorical_feature")
-    if feature_name != "auto":
-        _emit_dataset_kwarg_warning("cv", "feature_name")
-
     params = copy.deepcopy(params)
     params = _choose_param_value(
         main_param_name="objective",
@@ -733,11 +737,12 @@ def cv(
     if callable(params["objective"]):
         fobj = params["objective"]
         params["objective"] = "none"
-    for alias in _ConfigAliases.get("num_iterations"):
-        if alias in params:
-            _log_warning(f"Found '{alias}' in params. Will use it instead of 'num_boost_round' argument")
-            num_boost_round = params.pop(alias)
-    params["num_iterations"] = num_boost_round
+
+    params = _choose_num_iterations(num_boost_round_kwarg=num_boost_round, params=params)
+    num_boost_round = params["num_iterations"]
+    if num_boost_round <= 0:
+        raise ValueError(f"Number of boosting rounds must be greater than 0. Got {num_boost_round}.")
+
     # setting early stopping via global params should be possible
     params = _choose_param_value(
         main_param_name="early_stopping_round",
@@ -766,12 +771,10 @@ def cv(
             params.pop(metric_alias, None)
         params["metric"] = metrics
 
-    train_set._update_params(params)._set_predictor(predictor).set_feature_name(feature_name).set_categorical_feature(
-        categorical_feature
-    )
+    train_set._update_params(params)._set_predictor(predictor)
 
     results = defaultdict(list)
-    cvfolds = _make_n_folds(
+    cvbooster = _make_n_folds(
         full_data=train_set,
         folds=folds,
         nfold=nfold,
@@ -815,7 +818,7 @@ def cv(
         for cb in callbacks_before_iter:
             cb(
                 callback.CallbackEnv(
-                    model=cvfolds,
+                    model=cvbooster,
                     params=params,
                     iteration=i,
                     begin_iteration=0,
@@ -823,16 +826,16 @@ def cv(
                     evaluation_result_list=None,
                 )
             )
-        cvfolds.update(fobj=fobj)  # type: ignore[call-arg]
-        res = _agg_cv_result(cvfolds.eval_valid(feval))  # type: ignore[call-arg]
-        for _, key, mean, _, std in res:
-            results[f"{key}-mean"].append(mean)
-            results[f"{key}-stdv"].append(std)
+        cvbooster.update(fobj=fobj)  # type: ignore[call-arg]
+        res = _agg_cv_result(cvbooster.eval_valid(feval))  # type: ignore[call-arg]
+        for dataset_name, metric_name, metric_mean, _, metric_std_dev in res:
+            results[f"{dataset_name} {metric_name}-mean"].append(metric_mean)
+            results[f"{dataset_name} {metric_name}-stdv"].append(metric_std_dev)
         try:
             for cb in callbacks_after_iter:
                 cb(
                     callback.CallbackEnv(
-                        model=cvfolds,
+                        model=cvbooster,
                         params=params,
                         iteration=i,
                         begin_iteration=0,
@@ -841,14 +844,14 @@ def cv(
                     )
                 )
         except callback.EarlyStopException as earlyStopException:
-            cvfolds.best_iteration = earlyStopException.best_iteration + 1
-            for bst in cvfolds.boosters:
-                bst.best_iteration = cvfolds.best_iteration
+            cvbooster.best_iteration = earlyStopException.best_iteration + 1
+            for bst in cvbooster.boosters:
+                bst.best_iteration = cvbooster.best_iteration
             for k in results:
-                results[k] = results[k][: cvfolds.best_iteration]
+                results[k] = results[k][: cvbooster.best_iteration]
             break
 
     if return_cvbooster:
-        results["cvbooster"] = cvfolds  # type: ignore[assignment]
+        results["cvbooster"] = cvbooster  # type: ignore[assignment]
 
     return dict(results)

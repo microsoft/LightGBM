@@ -40,9 +40,24 @@ void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::s
 }
 
 void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
-  int verbosity = Config().verbosity;
-  GetFirstValueAsInt(params, "verbose", &verbosity);
-  GetFirstValueAsInt(params, "verbosity", &verbosity);
+  int verbosity = 1;
+
+  // if "verbosity" was found in params, prefer that to any other aliases
+  const auto verbosity_iter = params.find("verbosity");
+  if (verbosity_iter != params.end()) {
+    GetFirstValueAsInt(params, "verbosity", &verbosity);
+  } else {
+    // if "verbose" was found in params and "verbosity" was not, use that value
+    const auto verbose_iter = params.find("verbose");
+    if (verbose_iter != params.end()) {
+      GetFirstValueAsInt(params, "verbose", &verbosity);
+    } else {
+      // if "verbosity" and "verbose" were both missing from params, don't modify LightGBM's log level
+      return;
+    }
+  }
+
+  // otherwise, update LightGBM's log level based on the passed-in value
   if (verbosity < 0) {
     LightGBM::Log::ResetLogLevel(LightGBM::LogLevel::Fatal);
   } else if (verbosity == 0) {
@@ -382,7 +397,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     }
   }
   if (device_type == std::string("gpu")) {
-    // force col-wise for gpu, and cuda version
+    // force col-wise for gpu version
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
@@ -402,9 +417,9 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
   }
   // linear tree learner must be serial type and run on CPU device
   if (linear_tree) {
-    if (device_type != std::string("cpu")) {
+    if (device_type != std::string("cpu") && device_type != std::string("gpu")) {
       device_type = "cpu";
-      Log::Warning("Linear tree learner only works with CPU.");
+      Log::Warning("Linear tree learner only works with CPU and GPU. Falling back to CPU now.");
     }
     if (tree_learner != std::string("serial")) {
       tree_learner = "serial";
@@ -450,6 +465,11 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     data_sample_strategy = std::string("goss");
     Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
                  "To suppress this warning, set data_sample_strategy=goss instead.");
+  }
+
+  if (bagging_by_query && data_sample_strategy != std::string("bagging")) {
+    Log::Warning("bagging_by_query=true is only compatible with data_sample_strategy=bagging. Setting bagging_by_query=false.");
+    bagging_by_query = false;
   }
 }
 

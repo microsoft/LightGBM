@@ -623,6 +623,174 @@ test_that("Booster$update() throws an informative error if you provide a non-Dat
     }, regexp = "lgb.Booster.update: Only can use lgb.Dataset", fixed = TRUE)
 })
 
+test_that("Booster$num_trees_per_iter() works as expected", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees_per_iter(), 1L)
+  expect_equal(fit_binary$num_trees_per_iter(), 1L)
+  expect_equal(fit_class$num_trees_per_iter(), num_class)
+})
+
+test_that("Booster$num_trees() and $num_iter() works (no early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  num_class <- 3L
+  nrounds <- 10L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_reg)
+    , nrounds = nrounds
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X, label = y_binary)
+    , nrounds = nrounds
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X, label = y_class)
+    , nrounds = nrounds
+  )
+
+  expect_equal(fit_reg$num_trees(), nrounds)
+  expect_equal(fit_binary$num_trees(), nrounds)
+  expect_equal(fit_class$num_trees(), num_class * nrounds)
+
+  expect_equal(fit_reg$num_iter(), nrounds)
+  expect_equal(fit_binary$num_iter(), nrounds)
+  expect_equal(fit_class$num_iter(), nrounds)
+})
+
+test_that("Booster$num_trees() and $num_iter() work (with early stopping)", {
+  set.seed(708L)
+
+  X <- data.matrix(iris[2L:4L])
+  y_reg <- iris[, 1L]
+  y_binary <- as.integer(y_reg > median(y_reg))
+  y_class <- as.integer(iris[, 5L]) - 1L
+  train_ix <- c(1L:40L, 51L:90L, 101L:140L)
+  X_train <- X[train_ix, ]
+  X_valid <- X[-train_ix, ]
+
+  num_class <- 3L
+  nrounds <- 1000L
+  early_stopping <- 2L
+
+  # Regression and binary probabilistic classification (1 iteration = 1 tree)
+  fit_reg <- lgb.train(
+    params = list(
+      objective = "mse"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_reg[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_reg[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  fit_binary <- lgb.train(
+    params = list(
+      objective = "binary"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+    )
+    , data = lgb.Dataset(X_train, label = y_binary[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_binary[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  # Multiclass probabilistic classification (1 iteration = num_class trees)
+  fit_class <- lgb.train(
+    params = list(
+      objective = "multiclass"
+      , verbose = .LGB_VERBOSITY
+      , num_threads = .LGB_MAX_THREADS
+      , num_class = num_class
+    )
+    , data = lgb.Dataset(X_train, label = y_class[train_ix])
+    , valids = list(valid = lgb.Dataset(X_valid, label = y_class[-train_ix]))
+    , nrounds = nrounds
+    , early_stopping_round = early_stopping
+  )
+
+  expected_trees_reg <- fit_reg$best_iter + early_stopping
+  expected_trees_binary <- fit_binary$best_iter + early_stopping
+  expected_trees_class <- (fit_class$best_iter + early_stopping) * num_class
+
+  expect_equal(fit_reg$num_trees(), expected_trees_reg)
+  expect_equal(fit_binary$num_trees(), expected_trees_binary)
+  expect_equal(fit_class$num_trees(), expected_trees_class)
+
+  expect_equal(fit_reg$num_iter(), expected_trees_reg)
+  expect_equal(fit_binary$num_iter(), expected_trees_binary)
+  expect_equal(fit_class$num_iter(), expected_trees_class / num_class)
+})
+
 test_that("Booster should store parameters and Booster$reset_parameter() should update them", {
     data(agaricus.train, package = "lightgbm")
     dtrain <- lgb.Dataset(
@@ -720,7 +888,7 @@ test_that("Saving a model with different feature importance types works", {
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
-        start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
+        start_indx <- which(file_lines == "feature_importances:") + 1L
         blank_line_indices <- which(file_lines == "")
         end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
         importances <- file_lines[start_indx: end_indx]
@@ -787,7 +955,7 @@ test_that("Saving a model with unknown importance type fails", {
 
 .params_from_model_string <- function(model_str) {
     file_lines <- strsplit(model_str, "\n", fixed = TRUE)[[1L]]
-    start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
+    start_indx <- which(file_lines == "parameters:") + 1L
     blank_line_indices <- which(file_lines == "")
     end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
     params <- file_lines[start_indx: end_indx]
@@ -943,7 +1111,7 @@ test_that("all parameters are stored correctly with save_model_to_string()", {
     )
     all_param_entries <- c(non_default_param_entries, default_param_entries)
 
-    # parameters should match what was passed from the R package
+    # parameters should match what was passed from the R-package
     model_str <- bst$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
     .expect_in(all_param_entries, params_in_file)
@@ -1008,7 +1176,7 @@ test_that("early_stopping, num_iterations are stored correctly in model string e
     model_str <- bst$save_model_to_string()
     params_in_file <- .params_from_model_string(model_str = model_str)
 
-    # parameters should match what was passed from the R package, and the "main" (non-alias)
+    # parameters should match what was passed from the R-package, and the "main" (non-alias)
     # params values in `params` should be preferred to keyword argumentts or aliases
     expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
     expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
@@ -1238,7 +1406,7 @@ test_that("lgb.cv() correctly handles passing through params to the model file",
         model_str <- bst[["booster"]]$save_model_to_string()
         params_in_file <- .params_from_model_string(model_str = model_str)
 
-        # parameters should match what was passed from the R package, and the "main" (non-alias)
+        # parameters should match what was passed from the R-package, and the "main" (non-alias)
         # params values in `params` should be preferred to keyword argumentts or aliases
         expect_equal(sum(startsWith(params_in_file, "[num_iterations:")), 1L)
         expect_equal(sum(params_in_file == sprintf("[num_iterations: %s]", num_iterations)), 1L)
@@ -1364,7 +1532,7 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {
-      expect_true(any(grepl("^LightGBM Model$", printed_txt)))
+      expect_true(any(printed_txt == "LightGBM Model"))
       expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
     }
 

@@ -1,4 +1,3 @@
-
 loadNamespace("lintr")
 
 args <- commandArgs(
