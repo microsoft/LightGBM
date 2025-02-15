@@ -1385,6 +1385,8 @@ void DatasetLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_dat
             dataset->metadata_.SetWeightAt(i, static_cast<label_t>(inner_data.second));
           } else if (inner_data.first == group_idx_) {
             dataset->metadata_.SetQueryAt(i, static_cast<data_size_t>(inner_data.second));
+          } else if (inner_data.first == position_idx_) {
+            dataset->metadata_.SetPositionAt(i, static_cast<data_size_t>(inner_data.second));
           }
         }
       }

@@ -925,11 +925,11 @@ Dataset Parameters
 
    -  **Note**: index starts from ``0`` and it doesn't count the label column when passing type is ``int``, e.g. when label is column\_0 and query\_id is column\_1, the correct parameter is ``query=0``
 
-   -  ``position_column`` :raw-html:`<a id="group_column" title="Permalink to this parameter" href="#group_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``position``, ``position_id``
+-  ``position_column`` :raw-html:`<a id="position_column" title="Permalink to this parameter" href="#position_column">&#x1F517;&#xFE0E;</a>`, default = ``""``, type = int or string, aliases: ``position``, ``position_id``, ``position_column``
 
-   -  used to specify the position id column
+   -  used to specify the position/position id column
 
-   -  use number for index, e.g. ``position=0`` means column\_0 is the position
+   -  use number for index, e.g. ``position=0`` means column\_0 is the position id
 
    -  add a prefix ``name:`` for column name, e.g. ``position=name:position_id``
 
