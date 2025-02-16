@@ -252,8 +252,15 @@ class Metadata {
   * \return number of different position IDs
   */
   inline size_t num_position_ids() const {
-      size_t max = *std::max_element(positions_.begin(), positions_.end());
-      return max + 1;
+      if (!positions_.empty()) {
+        size_t max = *std::max_element(positions_.begin(), positions_.end());
+        return max + 1;
+      }
+      else
+      {
+        return 0;
+      }
+      
   }
 
   /*!

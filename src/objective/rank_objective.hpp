@@ -45,7 +45,6 @@ class RankingObjective : public ObjectiveFunction {
     // get position ids
     // get number of different position ids
     num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
-    Log::Info("Number of different position ids: %d", num_position_ids_);
     // get boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
