@@ -261,12 +261,9 @@ class Metadata {
       if (!positions_.empty()) {
         size_t max = *std::max_element(positions_.begin(), positions_.end());
         return max + 1;
-      }
-      else
-      {
+      } else {
         return 0;
       }
-      
   }
 
   /*!
