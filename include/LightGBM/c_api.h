@@ -249,7 +249,7 @@ LIGHTGBM_C_EXPORT int LGBM_DatasetPushRowsWithMetadata(DatasetHandle dataset,
                                                        const float* weight,
                                                        const double* init_score,
                                                        const int32_t* query,
-                                                       const int32_t* position, 
+                                                       const int32_t* position,
                                                        int32_t tid);
 
 /*!

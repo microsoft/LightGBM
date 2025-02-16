@@ -266,7 +266,6 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
       num_init_score_ = 0;
       Log::Fatal("Initial score size doesn't match data size");
     }
-    
   } else {
     if (!queries_.empty()) {
       Log::Fatal("Cannot used query_id for distributed training");
