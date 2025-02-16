@@ -2043,7 +2043,7 @@ class Dataset:
                 "use_missing",
                 "weight_column",
                 "position_column",
-                "zero_as_missing"
+                "zero_as_missing",
             )
             return {k: v for k, v in self.params.items() if k in dataset_params}
         else:
