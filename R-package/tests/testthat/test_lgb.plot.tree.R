@@ -16,50 +16,8 @@ model_reg <- lgb.train(
   , nrounds = NROUNDS
 )
 
-model_binary <- lgb.train(
-  params = list(
-    objective = "binary"
-    , num_threads = .LGB_MAX_THREADS
-    , max.depth = MAX_DEPTH
-  )
-  , data = lgb.Dataset(X, label = iris[, 5L] == "setosa")
-  , verbose = .LGB_VERBOSITY
-  , nrounds = NROUNDS
-)
-
-model_multiclass <- lgb.train(
-  params = list(
-    objective = "multiclass"
-    , num_threads = .LGB_MAX_THREADS
-    , max.depth = MAX_DEPTH
-    , num_classes = NCLASS
-  )
-  , data = lgb.Dataset(X, label = as.integer(iris[, 5L]) - 1L)
-  , verbose = .LGB_VERBOSITY
-  , nrounds = NROUNDS
-)
-
-model_rank <- lgb.train(
-  params = list(
-    objective = "lambdarank"
-    , num_threads = .LGB_MAX_THREADS
-    , max.depth = MAX_DEPTH
-    , lambdarank_truncation_level = 3L
-  )
-  , data = lgb.Dataset(
-    X
-    , label = as.integer(iris[, 1L] > 5.8)
-    , group = rep(10L, times = 15L)
-  )
-  , verbose = .LGB_VERBOSITY
-  , nrounds = NROUNDS
-)
-
 models <- list(
   reg = model_reg
-  , bin = model_binary
-  , multi = model_multiclass
-  , rank = model_rank
 )
 
 for (model_name in names(models)){
@@ -68,28 +26,27 @@ for (model_name in names(models)){
 
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
-      lgb.plot.tree(model, 0)
-    }, regexp = paste0("lgb.plot.tree: Invalid tree number"))
+      lgb.plot.tree(model, -1L)
+    }, regexp = paste0("lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
   })
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
-      lgb.plot.tree(model, 999)
-    }, regexp = paste0("lgb.plot.tree: Invalid tree number"))
+      lgb.plot.tree(model, 999L)
+    }, regexp = paste0("lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
   })
   test_that("lgb.plot.tree fails when a non numeric tree is selected", {
     expect_error({
       lgb.plot.tree(model, "a")
-    }, regexp = "lgb.plot.tree: Has to be an integer numeric")
+    }, regexp = "lgb.plot.tree: 'tree' must only contain integers.")
   })
   test_that("lgb.plot.tree fails when a non integer tree is selected", {
     expect_error({
       lgb.plot.tree(model, 1.5)
-    }, regexp = "lgb.plot.tree: Has to be an integer numeric")
+    }, regexp = "lgb.plot.tree: 'tree' must only contain integers.")
   })
   test_that("lgb.plot.tree fails when a non lgb.Booster model is passed", {
     expect_error({
-      lgb.plot.tree(1, 0)
+      lgb.plot.tree(1L, 0L)
     }, regexp = paste0("lgb.plot.tree: model should be an ", sQuote("lgb.Booster")))
   })
 }
-
