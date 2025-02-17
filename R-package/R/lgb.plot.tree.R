@@ -1,46 +1,114 @@
 #' @name lgb.plot.tree
-#' @title Plot a single LightGBM tree.
-#' @description The \code{lgb.plot.tree} function creates a DiagrammeR plot of a single LightGBM tree.
+#' @title Plot LightGBM trees.
+#' @description The \code{lgb.plot.tree} function creates a DiagrammeR plot of one or more LightGBM trees.
 #' @param model a \code{lgb.Booster} object.
-#' @param tree an integer specifying the tree to plot. This is 1-based, so e.g. a value of '7' means 'the 7th tree' (tree_index=6 in LightGBM's underlying representation).
+#' @param tree An integer vector of tree indices that should be visualized IMPORTANT:
+#' the tree index in lightgbm is zero-based, i.e. use tree = 0 for the first tree in a model.
 #' @param rules a list of rules to replace the split values with feature levels.
+#' @param render a logical flag for whether the graph should be rendered (see Value).
+#' @param plot_width the width of the diagram in pixels.
+#' @param plot_height the height of the diagram in pixels.
 #'
 #' @return
-#' The \code{lgb.plot.tree} function creates a DiagrammeR plot.
+#' When \code{render = TRUE}:
+#' returns a rendered graph object which is an \code{htmlwidget} of class \code{grViz}.
+#' Similar to ggplot objects, it needs to be printed to see it when not running from command line.
+#'
+#' When \code{render = FALSE}:
+#' silently returns a graph object which is of DiagrammeR's class \code{dgr_graph}.
+#' This could be useful if one wants to modify some of the graph attributes
+#' before rendering the graph with \code{\link[DiagrammeR]{render_graph}}.
 #'
 #' @details
-#' The \code{lgb.plot.tree} function creates a DiagrammeR plot of a single LightGBM tree. The tree is extracted from the model and displayed as a directed graph. The nodes are labelled with the feature, split value, gain, cover and value. The edges are labelled with the decision type and split value.
+#' The \code{lgb.plot.tree} function creates a DiagrammeR plot of a single LightGBM tree.
+#' The tree is extracted from the model and displayed as a directed graph.
+#' The nodes are labelled with the feature, split value, gain, count and value.
+#' The edges are labelled with the decision type and split value.
 #'
 #' @examples
 #' \donttest{
-#' # EXAMPLE: use the LightGBM example dataset to build a model with a single tree
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
+#' # Example One
 #' data(agaricus.train, package = "lightgbm")
 #' train <- agaricus.train
 #' dtrain <- lgb.Dataset(train$data, label = train$label)
-#' data(agaricus.test, package = "lightgbm")
-#' test <- agaricus.test
-#' dtest <- lgb.Dataset.create.valid(dtrain, test$data, label = test$label)
-#' # define model parameters and build a single tree
 #' params <- list(
-#'     objective = "regression",
-#'     min_data = 1L,
+#'   objective = "regression"
+#'   , metric = "l2"
+#'   , min_data = 1L
+#'   , learning_rate = 0.3
+#'   , num_leaves = 5L
 #' )
-#' valids <- list(test = dtest)
 #' model <- lgb.train(
-#'     params = params,
-#'     data = dtrain,
-#'     nrounds = 1L,
-#'     valids = valids,
-#'     early_stopping_rounds = 1L
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 5L
 #' )
-#' # plot the tree and compare to the tree table
-#' # trees start from 0 in lgb.model.dt.tree
-#' tree_table <- lgb.model.dt.tree(model)
-#' lgb.plot.tree(model, 0)
-#' }
 #'
+#' # Plot the first tree
+#' lgb.plot.tree(model, 0L)
+#'
+#' # Plot the first and fifth trees
+#' lgb.plot.tree(model, c(0L,4L))
+#'
+#' # Example Two - model uses categorical features
+#' data(bank, package = "lightgbm")
+#'
+#' # We are dividing the dataset into two: one train, one validation
+#' bank_train <- bank[1L:4000L, ]
+#' bank_test <- bank[4001L:4521L, ]
+#'
+#' # We must now transform the data to fit in LightGBM
+#' # For this task, we use lgb.convert_with_rules
+#' # The function transforms the data into a fittable data
+#' bank_rules <- lgb.convert_with_rules(data = bank_train)
+#' bank_train <- bank_rules$data
+#'
+#' # Remove 1 to label because it must be between 0 and 1
+#' bank_train$y <- bank_train$y - 1L
+#'
+#' # Data input to LightGBM must be a matrix, without the label
+#' my_data_train <- as.matrix(bank_train[, 1L:16L, with = FALSE])
+#'
+#' # Creating the LightGBM dataset with categorical features
+#' # The categorical features can be passed to lgb.train to not copy and paste a lot
+#' dtrain <- lgb.Dataset(
+#'   data = my_data_train
+#'   , label = bank_train$y
+#'   , categorical_feature = c(2L, 3L, 4L, 5L, 7L, 8L, 9L, 11L, 16L)
+#' )
+#'
+#' # Train the model with 5 training rounds
+#' params <- list(
+#'   objective = "binary"
+#'   , metric = "l2"
+#'   , learning_rate = 0.1
+#'   , num_leaves = 5L
+#' )
+#' model_bank <- lgb.train(
+#'   params = params
+#'   , data = dtrain
+#'   , nrounds = 5L
+#' )
+#'
+#' # Plot the first two trees in the model without specifying "rules"
+#' lgb.plot.tree(model_bank, tree = 0L:1L)
+#'
+#' # Plot the first two trees in the model specifying "rules"
+#' lgb.plot.tree(model_bank, rules = bank_rules$rules, tree = 0L:1L)
+#'
+#' }
+#' @importFrom data.table := fcoalesce fifelse setnames
+#' @importFrom DiagrammeR add_global_graph_attrs create_edge_df create_graph create_node_df render_graph
 #' @export
-lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
+lgb.plot.tree <- function(model = NULL,
+                          tree = NULL,
+                          rules = NULL,
+                          render = TRUE,
+                          plot_width = NULL,
+                          plot_height = NULL
+                          ) {
     # check model is lgb.Booster
     if (!.is_Booster(x = model)) {
         stop("lgb.plot.tree: model should be an ", sQuote("lgb.Booster"))
@@ -51,74 +119,81 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
             call. = FALSE
         )
     }
-    # tree must be numeric
-    if (!inherits(tree, "numeric")) {
-        stop("lgb.plot.tree: Has to be an integer numeric")
+    # tree must be integer or numeric
+    if (!inherits(tree, c('integer','numeric'))) {
+      stop(sprintf("lgb.plot.tree: 'tree' must only contain integers."))
     }
-    # tree must be integer
-    if (tree %% 1 != 0) {
-        stop("lgb.plot.tree: Has to be an integer numeric")
+    # all elements of tree must be integers
+    if (!all(tree %% 1L == 0L)) {
+      stop(sprintf("lgb.plot.tree: 'tree' must only contain integers."))
     }
     # extract data.table model structure
     modelDT <- lgb.model.dt.tree(model)
-    # check that tree is less than or equal to the maximum tree index in the model
-    if (tree > max(modelDT$tree_index) || tree < 1) {
-        warning("lgb.plot.tree: Value of 'tree' should be between 1 and the total number of trees in the model (", max(modelDT$tree_index), "). Got: ", tree, ".")
-        stop("lgb.plot.tree: Invalid tree number")
+    # check that all values of tree are greater than zero and less than or equal to the maximum tree index in the model
+    if (!all(tree >= 0L & tree <= max(modelDT$tree_index))) {
+      stop(
+        "lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one ("
+        , max(modelDT$tree_index)
+        , ")."
+        )
     }
-    # filter modelDT to just the rows for the selected tree
-    modelDT <- modelDT[tree_index == tree, ]
-    # change the column names to shorter more diagram friendly versions
+    # filter modelDT to just the rows for the selected trees
+    modelDT <- modelDT[tree_index %in% tree]
+    # change some column names to shorter and more diagram friendly versions
     data.table::setnames(modelDT
     , old = c("tree_index", "split_feature", "threshold", "split_gain")
-    , new = c("Tree", "Feature", "Split", "Gain"))
-    # assign leaf_value to the Value column in modelDT
-    modelDT[, Value := leaf_value]
-    # assign new values if NA
-    modelDT[is.na(Value), Value := internal_value]
-    modelDT[is.na(Gain), Gain := leaf_value]
+    , new = c("Tree", "Feature", "Split", "Gain")
+    )
+    # the output from "lgb.model.dt.tree" follows these rules
+    # "leaf_value" and "leaf_count" are only populated for leaves (NA for internal splits)
+    # "internal_value" and "internal_count" are only populated for splits (NA for leaves)
+    # for the diagram, combine leaf_value and internal_value into a single column called "Value"
+    modelDT[, Value := data.table::fcoalesce(leaf_value, internal_value)]
+    # for the diagram, combine leaf_count and internal_count into a single column called "Count"
+    modelDT[, Count := data.table::fcoalesce(leaf_count, internal_count)]
+    # "Feature" is only present for splits, it is NA for leaves
+    # Use the text "Leaf" to denote leaves in the diagram
     modelDT[is.na(Feature), Feature := "Leaf"]
-    # assign internal_count to Cover, and if Feature is "Leaf", assign leaf_count to Cover
-    modelDT[, Cover := internal_count][Feature == "Leaf", Cover := leaf_count]
-    # remove unnecessary columns
-    modelDT[, c("leaf_count", "internal_count", "leaf_value", "internal_value") := NULL]
-    # assign split_index to Node
+    # within each tree, "Node" holds a unique index for each split and leaf
+    # for splits, Node = split_index (already populated by lgb.model.dt.tree as an integer)
+    # for leaves, Node = max(split_index) for that tree, plus the leaf_index plus one
+    # plus one is needed as leaf_index starts at zero within each tree
     modelDT[, Node := split_index]
-    # find the maximum value of Node, if Node is NA, assign max_node + leaf_index + 1 to Node
-    max_node <- max(modelDT[["Node"]], na.rm = TRUE)
-    modelDT[is.na(Node), Node := max_node + leaf_index + 1]
-    # adding ID column
+    modelDT[, Node := data.table::fifelse(!is.na(Node), Node, max(Node, na.rm = TRUE) + leaf_index + 1L), by = Tree]
+    # create an ID column to uniquely identify each Node in the diagram (even if there are multiple trees)
+    # concatenate Tree and Node, e.g. "0-3" is the third node in the zeroth tree
     modelDT[, ID := paste(Tree, Node, sep = "-")]
-    # remove unnecessary columns
-    modelDT[, c("depth", "leaf_index") := NULL]
     modelDT[, parent := node_parent][is.na(parent), parent := leaf_parent]
-    modelDT[, c("node_parent", "leaf_parent", "split_index") := NULL]
-    # assign the IDs of the matching parent nodes to Yes and No
-    modelDT[, Yes := modelDT$ID[match(modelDT$Node, modelDT$parent)]]
-    modelDT <- modelDT[nrow(modelDT):1, ]
-    modelDT[, No := modelDT$ID[match(modelDT$Node, modelDT$parent)]]
+    # each split node is parent to two "descendent" nodes
+    # column "Yes" will hold the ID of the first descendent node
+    # column "No" will hold the ID of the second descendent node
+    modelDT[, Yes := ID[match(Node, parent)], by = Tree]
+    # reverse the order of modelDT
+    # so the match now finds the second descendent node
+    modelDT <- modelDT[rev(seq_len(.N))]
+    modelDT[, No := ID[match(Node, parent)], by = Tree]
     # which way do the NA's go (this path will get a thicker arrow)
-    # for categorical features, NA gets put into the zero group
-    modelDT[default_left == TRUE, Missing := Yes]
-    modelDT[default_left == FALSE, Missing := No]
-    modelDT[.zero_present(Split), Missing := Yes]
-    # create the label text
+    modelDT[default_left == "TRUE", Missing := Yes]
+    modelDT[default_left == "FALSE", Missing := No]
+    # create the label text for each node
+    # for leaves include the Gain, rounded to 6 s.f. for display
+    # round the Value to 6 s.f. for display
     modelDT[, label := paste0(
         Feature
-        , "\nCover: "
-        , Cover
-        , ifelse(Feature == "Leaf", "", "\nGain: "), ifelse(Feature == "Leaf"
-        , ""
-        , round(Gain, 4))
+        , "\nCount: "
+        , Count
+        , data.table::fifelse(Feature == "Leaf", "", "\nGain: ")
+        , data.table::fifelse(Feature == "Leaf", "", as.character(round(Gain, 6L)))
         , "\nValue: "
-        , round(Value, 4)
+        , round(Value, 6L)
     )]
-    # style the nodes - same format as xgboost
-    modelDT[Node == 0, label := paste0("Tree ", Tree, "\n", label)]
+    # ensure the initial split in each tree is correctly labelled
+    modelDT[Node == 0L, label := paste0("Tree ", Tree, "\n", label)]
+    # style nodes with rectangles for splits and ovals for leaves
     modelDT[, shape := "rectangle"][Feature == "Leaf", shape := "oval"]
+    # style Nodes with the same colours as xgboost's xgb.plot.trees
     modelDT[, filledcolor := "Beige"][Feature == "Leaf", filledcolor := "Khaki"]
-    # in order to draw the first tree on top:
-    modelDT <- modelDT[order(-Tree)]
+    # create the diagram nodes
     nodes <- DiagrammeR::create_node_df(
         n         = nrow(modelDT)
         , ID        = modelDT$ID
@@ -128,29 +203,43 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
         , data      = modelDT$Feature
         , fontcolor = "black"
     )
-    # round the edge labels to 4 s.f. if they are numeric
-    # as otherwise get too many decimal places and the diagram looks bad
-    # would rather not use suppressWarnings
-    numeric_idx <- suppressWarnings(!is.na(as.numeric(modelDT[["Split"]])))
-    modelDT[numeric_idx, Split := round(as.numeric(Split), 4)]
-    # replace indices with feature levels if rules supplied
-    
-    if (!is.null(rules)) {
-        for (f in names(rules)) {
-            modelDT[Feature == f & decision_type == "==", Split := .levels.to.names(Split, f, rules)]
-        }
+    # The Split column might be numeric or character (e.g. if categorical features are used)
+    # sometimes numeric <=0 splits are reported as <= 1.00000001800251e-35 or similar by lgb.model.dt.tree
+    # replace these with "0"
+    if (is.numeric(modelDT[["Split"]])) {
+      modelDT[abs(Split) < .Machine$double.eps, Split := 0.0]
     }
-    # replace long split names with a message
-    modelDT[nchar(Split) > 500, Split := "Split too long to render"]
-    # create the edge labels
+    # for categorical features, LightGBM labels the splits as a single integer or
+    # several integers separated by "||", e.g. "1" or "2||3||5"
+    # if "rules" supplied, the integers are replaced by their corresponding factor level
+    # to make the diagram easier to understand
+    if (!is.null(rules)) {
+      for (f in names(rules)) {
+        modelDT[Feature == f & decision_type == "==", Split := unlist(lapply(
+          Split,
+          function(x) paste(names(rules[[f]])[as.numeric(unlist(strsplit(x, "||", fixed = TRUE)))], collapse = "\n")
+        ))]
+      }
+    }
+    # replace very long splits with a message as otherwise diagram will be very tall
+    modelDT[nchar(Split) > 500L, Split := "Split too long to render"]
+    # create the edges
+    # define edgesDT to filter out leaf nodes
+    edgesDT <- modelDT[Feature != "Leaf"]
+    # create the edge data frame using edgesDT
     edges <- DiagrammeR::create_edge_df(
-        from = match(modelDT[Feature != "Leaf", c(ID)] %>% rep(2), modelDT$ID),
-        to = match(modelDT[Feature != "Leaf", c(Yes, No)], modelDT$ID),
-        label = modelDT[Feature != "Leaf", paste(decision_type, Split)] %>%
-            c(rep("", nrow(modelDT[Feature != "Leaf"]))),
-        style = modelDT[Feature != "Leaf", ifelse(Missing == Yes, "bold", "solid")] %>%
-            c(modelDT[Feature != "Leaf", ifelse(Missing == No, "bold", "solid")]),
-        rel = "leading_to"
+      from = match(rep(edgesDT[, ID], 2L), modelDT$ID),
+      to = match(edgesDT[, c(Yes, No)], modelDT$ID),
+      label = c(
+        edgesDT[, paste(decision_type, Split)],
+        rep("", nrow(edgesDT))
+      ),
+      # make the Missing edge bold
+      style = c(
+        edgesDT[, data.table::fifelse(Missing == Yes, "bold", "solid")],
+        edgesDT[, data.table::fifelse(Missing == No, "bold", "solid")]
+      ),
+      rel = "leading_to"
     )
     # create the graph
     graph <- DiagrammeR::create_graph(
@@ -176,29 +265,11 @@ lgb.plot.tree <- function(model = NULL, tree = NULL, rules = NULL) {
         , attr = c("color", "arrowsize", "arrowhead", "fontname")
         , value = c("DimGray", "1.5", "vee", "Helvetica")
     )
-    # render the graph
-    DiagrammeR::render_graph(graph)
-    return(invisible(NULL))
-}
-
-.zero_present <- function(x) {
-    sapply(strsplit(as.character(x), "||", fixed = TRUE), function(el) {
-        any(el == "0")
-    })
-    return(invisible(NULL))
-}
-
-.levels.to.names <- function(x, feature_name, rules) {
-    lvls <- sort(rules[[feature_name]])
-    result <- strsplit(x, "||", fixed = TRUE)
-    result <- lapply(result, as.numeric)
-    result <- lapply(result, .levels_to_names)
-    result <- lapply(result, paste, collapse = "\n")
-    result <- as.character(result)
-    return(invisible(NULL))
-}
-
-.levels_to_names <- function(x) {
-    names(lvls)[as.numeric(x)]
-    return(invisible(NULL))
+    # if 'render' is FALSE, return the graph object invisibly (without printing it)
+    if (!render) {
+      return(invisible(graph))
+    } else {
+      # if 'render' is TRUE, display the graph with specified width and height
+      DiagrammeR::render_graph(graph, width = plot_width, height = plot_height)
+    }
 }
