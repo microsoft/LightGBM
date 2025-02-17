@@ -1,5 +1,36 @@
 # CRAN Submission History
 
+## v4.6.0 - Submission 1 - (February 13, 2025)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This release fixed several issues reported by CRAN.
+Bashisms in `configure`
+
+```text
+possible bashism in configure.ac line 63 (should be VAR="${VAR}foo"):
+    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+possible bashism in configure.ac line 89 (should be VAR="${VAR}foo"):
+    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+```
+
+Compilation errors on GCC 15.
+
+```text
+io/json11.cpp:97:28: error: 'uint8_t' does not name a type
+   97 |     } else if (static_cast<uint8_t>(ch) == 0xe2 &&
+      |                            ^~~~~~~
+io/json11.cpp:97:28: note: 'uint8_t' is defined in header '<cstdint>'; this is probably fixable by adding '#include <cstdint>'
+io/json11.cpp:98:28: error: 'uint8_t' does not name a type
+   98 |                static_cast<uint8_t>(value[i + 1]) == 0x80 &&
+```
+
+This release contains fixes for those issues.
+
 ## v4.5.0 - Submission 1 - (July 25, 2024)
 
 ### CRAN response
