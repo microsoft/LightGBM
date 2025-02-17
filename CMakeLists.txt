@@ -5,8 +5,7 @@ option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
-option(USE_SANITIZER "Use santizer flags" OFF)
-option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
+option(USE_SANITIZER "Use sanitizer flags" OFF)
 set(
   ENABLED_SANITIZERS
   "address" "leak" "undefined"
@@ -15,7 +14,8 @@ set(
   "Semicolon separated list of sanitizer names, e.g., 'address;leak'. \
 Supported sanitizers are address, leak, undefined and thread."
 )
-option(BUILD_CLI "Build the 'lightbgm' command-line interface in addition to lib_lightgbm" ON)
+option(USE_HOMEBREW_FALLBACK "(macOS-only) also look in 'brew --prefix' for libraries (e.g. OpenMP)" ON)
+option(BUILD_CLI "Build the 'lightgbm' command-line interface in addition to lib_lightgbm" ON)
 option(BUILD_CPP_TEST "Build C++ tests with Google Test" OFF)
 option(BUILD_STATIC_LIB "Build static library" OFF)
 option(INSTALL_HEADERS "Install headers to CMAKE_INSTALL_PREFIX (e.g. '/usr/local/include')" ON)
@@ -224,21 +224,28 @@ if(USE_CUDA)
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "60" "61" "62" "70" "75")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.5")
         list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.8")
         list(APPEND CUDA_ARCHS "89")
         list(APPEND CUDA_ARCHS "90")
     endif()
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.8")
+        list(APPEND CUDA_ARCHS "100")
+        list(APPEND CUDA_ARCHS "120")
+    endif()
+    # Generate PTX for the most recent architecture for forwards compatibility
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    list(TRANSFORM CUDA_ARCHS APPEND "-real")
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
+    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -252,54 +259,6 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD 11)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
-
-    set(
-      BASE_DEFINES
-      -DPOWER_FEATURE_WORKGROUPS=12
-      -DUSE_CONSTANT_BUF=0
-    )
-    set(
-      ALLFEATS_DEFINES
-      ${BASE_DEFINES}
-      -DENABLE_ALL_FEATURES
-    )
-    set(
-      FULLDATA_DEFINES
-      ${ALLFEATS_DEFINES}
-      -DIGNORE_INDICES
-    )
-
-    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
-    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
-
-    function(add_histogram hsize hname hadd hconst hdir)
-      add_library(histo${hsize}${hname} OBJECT src/treelearner/kernels/histogram${hsize}.cu)
-      set_target_properties(
-        histo${hsize}${hname}
-        PROPERTIES
-          CUDA_SEPARABLE_COMPILATION ON
-          CUDA_ARCHITECTURES ${CUDA_ARCHS}
-      )
-      if(hadd)
-        list(APPEND histograms histo${hsize}${hname})
-        set(histograms ${histograms} PARENT_SCOPE)
-      endif()
-      target_compile_definitions(
-        histo${hsize}${hname}
-        PRIVATE
-        -DCONST_HESSIAN=${hconst}
-        ${hdir}
-      )
-    endfunction()
-
-    foreach(hsize _16_64_256)
-      add_histogram("${hsize}" "_sp_const" "True" "1" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "_sp" "True" "0" "${BASE_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp_const" "False" "1" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-allfeats_sp" "False" "0" "${ALLFEATS_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp_const" "True" "1" "${FULLDATA_DEFINES}")
-      add_histogram("${hsize}" "-fulldata_sp" "True" "0" "${FULLDATA_DEFINES}")
-    endforeach()
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -377,7 +336,8 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    # compiling 'fmt' on MSVC: "Unicode support requires compiling with /utf-8"
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /utf-8")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
@@ -615,14 +575,14 @@ if(USE_CUDA)
   set_target_properties(
     lightgbm_objs
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_SEPARABLE_COMPILATION ON
   )
 
   set_target_properties(
     _lightgbm
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_RESOLVE_DEVICE_SYMBOLS ON
   )
 
@@ -630,18 +590,10 @@ if(USE_CUDA)
     set_target_properties(
       lightgbm
       PROPERTIES
-        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_ARCHITECTURES "${CUDA_ARCHS}"
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
-
-  # histograms are list of object libraries. Linking object library to other
-  # object libraries only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on final targets here.
-  if(BUILD_CLI)
-    target_link_libraries(lightgbm PRIVATE ${histograms})
-  endif()
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
 if(WIN32)

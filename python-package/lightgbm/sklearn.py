@@ -488,6 +488,7 @@ class LGBMModel(_LGBMModelBase):
 
     def __init__(
         self,
+        *,
         boosting_type: str = "gbdt",
         num_leaves: int = 31,
         max_depth: int = -1,
@@ -671,6 +672,15 @@ class LGBMModel(_LGBMModelBase):
     # is >=1.6.
     # ref: https://github.com/microsoft/LightGBM/pull/6651
     def _more_tags(self) -> Dict[str, Any]:
+        check_sample_weight_str = (
+            "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
+            "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
+            "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
+            "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
+        )
+        # "check_sample_weight_equivalence" can be removed when lightgbm's
+        # minimum supported scikit-learn version is at least 1.6
+        # ref: https://github.com/scikit-learn/scikit-learn/pull/30137
         return {
             "allow_nan": True,
             "X_types": ["2darray", "sparse", "1dlabels"],
@@ -678,12 +688,9 @@ class LGBMModel(_LGBMModelBase):
                 "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
                 "cannot be set in __init__: "
                 "(see https://github.com/microsoft/LightGBM/issues/2628)",
-                "check_sample_weight_equivalence": (
-                    "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
-                    "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
-                    "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
-                    "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
-                ),
+                "check_sample_weight_equivalence": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_dense_data": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_sparse_data": check_sample_weight_str,
             },
         }
 
@@ -703,7 +710,6 @@ class LGBMModel(_LGBMModelBase):
         tags.input_tags.allow_nan = tags_dict["allow_nan"]
         tags.input_tags.sparse = "sparse" in tags_dict["X_types"]
         tags.target_tags.one_d_labels = "1dlabels" in tags_dict["X_types"]
-        tags._xfail_checks = tags_dict["_xfail_checks"]
         return tags
 
     def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
@@ -719,7 +725,7 @@ class LGBMModel(_LGBMModelBase):
         # take whatever tags are provided by BaseEstimator, then modify
         # them with LightGBM-specific values
         return self._update_sklearn_tags_from_dict(
-            tags=_LGBMModelBase.__sklearn_tags__(self),
+            tags=super().__sklearn_tags__(),
             tags_dict=self._more_tags(),
         )
 
@@ -740,7 +746,35 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
+        # Based on: https://github.com/dmlc/xgboost/blob/bd92b1c9c0db3e75ec3dfa513e1435d518bb535d/python-package/xgboost/sklearn.py#L941
+        # which was based on: https://stackoverflow.com/questions/59248211
+        #
+        # `get_params()` flows like this:
+        #
+        # 0. Get parameters in subclass (self.__class__) first, by using inspect.
+        # 1. Get parameters in all parent classes (especially `LGBMModel`).
+        # 2. Get whatever was passed via `**kwargs`.
+        # 3. Merge them.
+        #
+        # This needs to accommodate being called recursively in the following
+        # inheritance graphs (and similar for classification and ranking):
+        #
+        #   DaskLGBMRegressor -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #   (custom subclass) -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        (custom subclass) -> LGBMModel -> BaseEstimator
+        #                                             LGBMModel -> BaseEstimator
+        #
         params = super().get_params(deep=deep)
+        cp = copy.copy(self)
+        # If the immediate parent defines get_params(), use that.
+        if callable(getattr(cp.__class__.__bases__[0], "get_params", None)):
+            cp.__class__ = cp.__class__.__bases__[0]
+        # Otherwise, skip it and assume the next class will have it.
+        # This is here primarily for cases where the first class in MRO is a scikit-learn mixin.
+        else:
+            cp.__class__ = cp.__class__.__bases__[1]
+        params.update(cp.__class__.get_params(cp, deep))
         params.update(self._other_params)
         return params
 
@@ -1280,6 +1314,57 @@ class LGBMModel(_LGBMModelBase):
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
 
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
+
     def _more_tags(self) -> Dict[str, Any]:
         # handle the case where RegressorMixin possibly provides _more_tags()
         if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
@@ -1291,7 +1376,7 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        return super().__sklearn_tags__()
 
     def fit(  # type: ignore[override]
         self,
@@ -1339,6 +1424,57 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
 
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
+
     def _more_tags(self) -> Dict[str, Any]:
         # handle the case where ClassifierMixin possibly provides _more_tags()
         if callable(getattr(_LGBMClassifierBase, "_more_tags", None)):
@@ -1350,7 +1486,10 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         return tags
 
     def __sklearn_tags__(self) -> "_sklearn_Tags":
-        return LGBMModel.__sklearn_tags__(self)
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = True
+        tags.classifier_tags.multi_label = False
+        return tags
 
     def fit(  # type: ignore[override]
         self,
@@ -1545,6 +1684,57 @@ class LGBMRanker(LGBMModel):
         therefore this class is not really compatible with the sklearn ecosystem.
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
+
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
 
     def fit(  # type: ignore[override]
         self,

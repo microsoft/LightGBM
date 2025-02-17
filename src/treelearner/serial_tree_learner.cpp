@@ -735,24 +735,24 @@ int32_t SerialTreeLearner::ForceSplits(Tree* tree, int* left_leaf,
 
 std::set<int> SerialTreeLearner::FindAllForceFeatures(Json force_split_leaf_setting) {
   std::set<int> force_features;
-  std::queue<Json> force_split_leafs;
+  std::queue<Json> force_split_leaves;
 
-  force_split_leafs.push(force_split_leaf_setting);
+  force_split_leaves.push(force_split_leaf_setting);
 
-  while (!force_split_leafs.empty()) {
-    Json split_leaf = force_split_leafs.front();
-    force_split_leafs.pop();
+  while (!force_split_leaves.empty()) {
+    Json split_leaf = force_split_leaves.front();
+    force_split_leaves.pop();
 
     const int feature_index = split_leaf["feature"].int_value();
     const int feature_inner_index = train_data_->InnerFeatureIndex(feature_index);
     force_features.insert(feature_inner_index);
 
     if (split_leaf.object_items().count("left") > 0) {
-      force_split_leafs.push(split_leaf["left"]);
+      force_split_leaves.push(split_leaf["left"]);
     }
 
     if (split_leaf.object_items().count("right") > 0) {
-      force_split_leafs.push(split_leaf["right"]);
+      force_split_leaves.push(split_leaf["right"]);
     }
   }
 

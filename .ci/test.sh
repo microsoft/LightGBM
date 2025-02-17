@@ -42,7 +42,7 @@ else
     export MACOSX_DEPLOYMENT_TARGET=12.0
 fi
 
-if [[ "${TASK}" == "r-package" ]] || [[ "${TASK}" == "r-rchk" ]]; then
+if [[ "${TASK}" == "r-package" ]]; then
     bash "${BUILD_DIRECTORY}/.ci/test-r-package.sh" || exit 1
     exit 0
 fi
@@ -64,8 +64,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
+# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
+# other implementations like pypy
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
@@ -98,8 +99,12 @@ if [[ $TASK == "swig" ]]; then
 fi
 
 if [[ $TASK == "lint" ]]; then
+    pwsh -command "Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -SkipPublisherCheck"
+    echo "Linting PowerShell code"
+    pwsh -file ./.ci/lint-powershell.ps1 || exit 1
     conda create -q -y -n "${CONDA_ENV}" \
         "${CONDA_PYTHON_REQUIREMENT}" \
+        'biome>=1.9.3' \
         'cmakelint>=1.4.3' \
         'cpplint>=1.6.0' \
         'matplotlib-base>=3.9.1' \
@@ -110,12 +115,14 @@ if [[ $TASK == "lint" ]]; then
         'r-lintr>=3.1.2'
     # shellcheck disable=SC1091
     source activate "${CONDA_ENV}"
-    echo "Linting Python code"
-    bash ./.ci/lint-python.sh || exit 1
+    echo "Linting Python and bash code"
+    bash ./.ci/lint-python-bash.sh || exit 1
     echo "Linting R code"
     Rscript ./.ci/lint-r-code.R "${BUILD_DIRECTORY}" || exit 1
     echo "Linting C++ code"
     bash ./.ci/lint-cpp.sh || exit 1
+    echo "Linting JavaScript code"
+    bash ./.ci/lint-js.sh || exit 1
     exit 0
 fi
 
@@ -140,8 +147,8 @@ if [[ $TASK == "check-docs" ]] || [[ $TASK == "check-links" ]]; then
     make -C docs html || exit 1
     if [[ $TASK == "check-links" ]]; then
         # check docs for broken links
-        pip install linkchecker
-        linkchecker --config=.linkcheckerrc ./docs/_build/html/*.html || exit 1
+        pip install 'linkchecker>=10.5.0'
+        linkchecker --config=./docs/.linkcheckerrc ./docs/_build/html/*.html || exit 1
         exit 0
     fi
     # check the consistency of parameters' descriptions and other stuff
@@ -327,6 +334,7 @@ matplotlib.use\(\"Agg\"\)\
         distributed \
         joblib \
         matplotlib-base \
+        pandas \
         psutil \
         pyarrow \
         python-graphviz \

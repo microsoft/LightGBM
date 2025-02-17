@@ -67,7 +67,7 @@ CB_ENV <- R6::R6Class(
 
   }
 
-  return(paste0(msg, collapse = "  "))
+  return(paste(msg, collapse = "  "))
 
 }
 

@@ -46,7 +46,7 @@ class RankingObjective : public ObjectiveFunction {
     position_ids_ = metadata.position_ids();
     // get number of different position ids
     num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
-    // get boundries
+    // get boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
       Log::Fatal("Ranking tasks require query information");
@@ -204,7 +204,7 @@ class LambdarankNDCG : public RankingObjective {
     }
     const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
-    // start accmulate lambdas by pairs that contain at least one document above truncation level
+    // start accumulate lambdas by pairs that contain at least one document above truncation level
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {
