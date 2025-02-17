@@ -8,24 +8,6 @@ Predictor <- R6::R6Class(
   cloneable = FALSE,
   public = list(
 
-    # Finalize will free up the handles
-    finalize = function() {
-
-      # Check the need for freeing handle
-      if (private$need_free_handle) {
-
-        .Call(
-          LGBM_BoosterFree_R
-          , private$handle
-        )
-        private$handle <- NULL
-
-      }
-
-      return(invisible(NULL))
-
-    },
-
     # Initialize will create a starter model
     initialize = function(modelfile, params = list(), fast_predict_config = list()) {
       private$params <- .params2str(params = params)
@@ -530,6 +512,18 @@ Predictor <- R6::R6Class(
         .equal_or_both_null(private$fast_predict_config$start_iteration, start_iteration) &&
         .equal_or_both_null(private$fast_predict_config$num_iteration, num_iteration)
       )
+    }
+
+    # finalize() will free up the handles
+    , finalize = function() {
+      if (private$need_free_handle) {
+        .Call(
+          LGBM_BoosterFree_R
+          , private$handle
+        )
+        private$handle <- NULL
+      }
+      return(invisible(NULL))
     }
   )
 )

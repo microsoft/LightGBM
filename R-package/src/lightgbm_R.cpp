@@ -270,7 +270,7 @@ void _DatasetFinalizer(SEXP handle) {
 SEXP LGBM_NullBoosterHandleError_R() {
   Rf_error(
       "Attempting to use a Booster which no longer exists and/or cannot be restored. "
-      "This can happen if you have called Booster$finalize() "
+      "This can happen if the Booster's finalizer was called "
       "or if this Booster was saved through saveRDS() using 'serializable=FALSE'.");
   return R_NilValue;
 }
@@ -285,7 +285,7 @@ void _AssertDatasetHandleNotNull(SEXP handle) {
   if (Rf_isNull(handle) || !R_ExternalPtrAddr(handle)) {
     Rf_error(
       "Attempting to use a Dataset which no longer exists. "
-      "This can happen if you have called Dataset$finalize() or if this Dataset was saved with saveRDS(). "
+      "This can happen if the Dataset's finalizer was called or if this Dataset was saved with saveRDS(). "
       "To avoid this error in the future, use lgb.Dataset.save() or Dataset$save_binary() to save lightgbm Datasets.");
   }
 }
