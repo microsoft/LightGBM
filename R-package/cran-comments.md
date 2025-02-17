@@ -1,10 +1,10 @@
 # CRAN Submission History
 
-## v4.6.0 - Submission 1 - (TBD)
+## v4.6.0 - Submission 1 - (February 13, 2025)
 
 ### CRAN response
 
-TBD
+Accepted to CRAN
 
 ### Maintainer Notes
 
