@@ -225,11 +225,7 @@ void GBDT::Boosting() {
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
   if (config_->bagging_by_query) {
-    Log::Warning("before bagging");
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
-    Log::Warning("after bagging");
-    Log::Warning("data_sample_strategy_->num_sampled_queries() = %d", data_sample_strategy_->num_sampled_queries());
-    Log::Warning("data_sample_strategy_->sampled_query_indices() = %ld", data_sample_strategy_->sampled_query_indices());
     objective_function_->
       GetGradients(GetTrainingScore(&num_score), data_sample_strategy_->num_sampled_queries(), data_sample_strategy_->sampled_query_indices(), gradients_pointer_, hessians_pointer_);
   } else {
@@ -347,20 +343,15 @@ double GBDT::BoostFromAverage(int class_id, bool update_scorer) {
 
 bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
   Common::FunctionTimer fun_timer("GBDT::TrainOneIter", global_timer);
-  Log::Warning("TrainOneIter step -10");
   std::vector<double> init_scores(num_tree_per_iteration_, 0.0);
   // boosting first
   if (gradients == nullptr || hessians == nullptr) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
-    Log::Warning("TrainOneIter step -9.9");
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
-    Log::Warning("TrainOneIter step -9.8");
     objective_function_->SetDataIndices(data_sample_strategy_->bag_data_indices().data());
-    Log::Warning("TrainOneIter step -9.7");
     Boosting();
-    Log::Warning("TrainOneIter step -9.6");
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
   } else {
@@ -382,7 +373,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     }
   }
 
-  Log::Warning("TrainOneIter step -9");
   // bagging logic
   if (!config_->bagging_by_query) {
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
@@ -395,7 +385,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     ResetGradientBuffers();
   }
 
-  Log::Warning("TrainOneIter step -8");
   bool should_continue = false;
   for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
     const size_t offset = static_cast<size_t>(cur_tree_id) * num_data_;
@@ -413,11 +402,9 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         hess = hessians_pointer_ + offset;
       }
       bool is_first_tree = models_.size() < static_cast<size_t>(num_tree_per_iteration_);
-  Log::Warning("TrainOneIter step -7");
       new_tree.reset(tree_learner_->Train(grad, hess, is_first_tree));
     }
 
-    Log::Warning("TrainOneIter step 0");
 
     if (new_tree->num_leaves() > 1) {
       should_continue = true;
@@ -438,23 +425,18 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
         if (objective_function_ != nullptr && !config_->boost_from_average && !train_score_updater_->has_init_score()) {
           init_scores[cur_tree_id] = ObtainAutomaticInitialScore(objective_function_, cur_tree_id);
           // updates scores
-  Log::Warning("TrainOneIter step 0.1");
           train_score_updater_->AddScore(init_scores[cur_tree_id], cur_tree_id);
-  Log::Warning("TrainOneIter step 0.2");
           for (auto& score_updater : valid_score_updater_) {
             score_updater->AddScore(init_scores[cur_tree_id], cur_tree_id);
           }
-  Log::Warning("TrainOneIter step 0.3");
         }
         new_tree->AsConstantTree(init_scores[cur_tree_id]);
-  Log::Warning("TrainOneIter step 0.4");
       }
     }
     // add model
     models_.push_back(std::move(new_tree));
   }
 
-  Log::Warning("TrainOneIter step 1");
 
   if (!should_continue) {
     Log::Warning("Stopped training because there are no more leaves that meet the split requirements");
@@ -466,7 +448,6 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     return true;
   }
 
-  Log::Warning("TrainOneIter step 2");
   ++iter_;
   return false;
 }
@@ -511,9 +492,7 @@ bool GBDT::EvalAndCheckEarlyStopping() {
 void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
   Common::FunctionTimer fun_timer("GBDT::UpdateScore", global_timer);
   // update training score
-  Log::Warning("before update score 0");
   if (!data_sample_strategy_->is_use_subset()) {
-    Log::Warning("before update score 1");
     train_score_updater_->AddScore(tree_learner_.get(), tree, cur_tree_id);
 
     const data_size_t bag_data_cnt = data_sample_strategy_->bag_data_cnt();
@@ -529,20 +508,16 @@ void GBDT::UpdateScore(const Tree* tree, const int cur_tree_id) {
       }
       #endif  // USE_CUDA
     }
-    Log::Warning("before update score 2");
 
   } else {
-    Log::Warning("before update score 3");
     train_score_updater_->AddScore(tree, cur_tree_id);
   }
 
 
-  Log::Warning("before update score 4");
   // update validation score
   for (auto& score_updater : valid_score_updater_) {
     score_updater->AddScore(tree, cur_tree_id);
   }
-  Log::Warning("before update score 5");
 }
 
 #ifdef USE_CUDA

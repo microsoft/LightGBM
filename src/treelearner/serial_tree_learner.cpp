@@ -189,23 +189,17 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
   }
   share_state_->num_threads = num_threads;
 
-  Log::Warning("Train step 0");
-
   if (config_->use_quantized_grad) {
     gradient_discretizer_->DiscretizeGradients(num_data_, gradients_, hessians_);
   }
-
-  Log::Warning("Train step 1");
   // some initial works before training
   BeforeTrain();
 
-  Log::Warning("Train step 2");
   bool track_branch_features = !(config_->interaction_constraints_vector.empty());
   auto tree = std::unique_ptr<Tree>(new Tree(config_->num_leaves, track_branch_features, false));
   auto tree_ptr = tree.get();
   constraints_->ShareTreePointer(tree_ptr);
 
-  Log::Warning("Train step 3");
   // root leaf
   int left_leaf = 0;
   int cur_depth = 1;
@@ -214,10 +208,8 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
 
   int init_splits = ForceSplits(tree_ptr, &left_leaf, &right_leaf, &cur_depth);
 
-  Log::Warning("Train step 4");
   for (int split = init_splits; split < config_->num_leaves - 1; ++split) {
     // some initial works before finding best split
-  Log::Warning("Train step 5, split = %d", split);
     if (BeforeFindBestSplit(tree_ptr, left_leaf, right_leaf)) {
       // find best threshold for every feature
       FindBestSplits(tree_ptr);
@@ -232,18 +224,15 @@ Tree* SerialTreeLearner::Train(const score_t* gradients, const score_t *hessians
       break;
     }
     // split tree with best leaf
-  Log::Warning("Train step 6, split = %d", split);
     Split(tree_ptr, best_leaf, &left_leaf, &right_leaf);
     cur_depth = std::max(cur_depth, tree->leaf_depth(left_leaf));
   }
 
-  Log::Warning("Train step 7");
   if (config_->use_quantized_grad && config_->quant_train_renew_leaf) {
     gradient_discretizer_->RenewIntGradTreeOutput(tree.get(), config_, data_partition_.get(), gradients_, hessians_,
       [this] (int leaf_index) { return GetGlobalDataCountInLeaf(leaf_index); });
   }
 
-  Log::Warning("Train step 8");
   Log::Debug("Trained a tree with leaves = %d and depth = %d", tree->num_leaves(), cur_depth);
   return tree.release();
 }
@@ -292,28 +281,21 @@ Tree* SerialTreeLearner::FitByExistingTree(const Tree* old_tree, const std::vect
 void SerialTreeLearner::BeforeTrain() {
   Common::FunctionTimer fun_timer("SerialTreeLearner::BeforeTrain", global_timer);
   // reset histogram pool
-  Log::Warning("BeforeTrain step 0");
 
   histogram_pool_.ResetMap();
 
-  Log::Warning("BeforeTrain step 1");
   col_sampler_.ResetByTree();
-  Log::Warning("BeforeTrain step 1.1");
   train_data_->InitTrain(col_sampler_.is_feature_used_bytree(), share_state_.get());
-  Log::Warning("BeforeTrain step 1.2");
   // initialize data partition
   data_partition_->Init();
 
-  Log::Warning("BeforeTrain step 2");
   constraints_->Reset();
 
-  Log::Warning("BeforeTrain step 3");
   // reset the splits for leaves
   for (int i = 0; i < config_->num_leaves; ++i) {
     best_split_per_leaf_[i].Reset();
   }
 
-  Log::Warning("BeforeTrain step 4");
   // Sumup for root
   if (data_partition_->leaf_count(0) == num_data_) {
     // use all data
@@ -338,7 +320,6 @@ void SerialTreeLearner::BeforeTrain() {
     }
   }
 
-  Log::Warning("BeforeTrain step 5");
   // Log::Warning("smaller_leaf_splits_->leaf_index() = %d before train", smaller_leaf_splits_->leaf_index());
 
   larger_leaf_splits_->Init();
@@ -347,11 +328,9 @@ void SerialTreeLearner::BeforeTrain() {
     cegb_->BeforeTrain();
   }
 
-  Log::Warning("BeforeTrain step 6");
   if (config_->use_quantized_grad && config_->tree_learner != std::string("data")) {
     gradient_discretizer_->SetNumBitsInHistogramBin<false>(0, -1, data_partition_->leaf_count(0), 0);
   }
-  Log::Warning("BeforeTrain step 7");
 }
 
 bool SerialTreeLearner::BeforeFindBestSplit(const Tree* tree, int left_leaf, int right_leaf) {
@@ -414,12 +393,8 @@ void SerialTreeLearner::FindBestSplits(const Tree* tree, const std::set<int>* fo
   }
   bool use_subtract = parent_leaf_histogram_array_ != nullptr;
 
-  // Log::Warning("before ConstructHistograms");
   ConstructHistograms(is_feature_used, use_subtract);
-  // Log::Warning("after ConstructHistograms");
-  // Log::Warning("before FindBestSplitsFromHistograms");
   FindBestSplitsFromHistograms(is_feature_used, use_subtract, tree);
-  // Log::Warning("after FindBestSplitsFromHistograms");
 }
 
 void SerialTreeLearner::ConstructHistograms(
@@ -534,18 +509,16 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     }
   }
 
-  // Log::Warning("FindBestSplitsFromHistograms step 2");
 
+  // find splits
   OMP_INIT_EX();
-// find splits
-// #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
+  #pragma omp parallel for schedule(static) num_threads(share_state_->num_threads)
   for (int feature_index = 0; feature_index < num_features_; ++feature_index) {
     OMP_LOOP_EX_BEGIN();
     if (!is_feature_used[feature_index]) {
       continue;
     }
     const int tid = omp_get_thread_num();
-  // Log::Warning("FindBestSplitsFromHistograms step 2.1");
     if (config_->use_quantized_grad) {
       const uint8_t hist_bits_bin = gradient_discretizer_->GetHistBitsInLeaf<false>(smaller_leaf_splits_->leaf_index());
       const int64_t int_sum_gradient_and_hessian = smaller_leaf_splits_->int_sum_gradients_and_hessians();
@@ -566,7 +539,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
     }
     int real_fidx = train_data_->RealFeatureIndex(feature_index);
 
-  // Log::Warning("FindBestSplitsFromHistograms step 2.2");
     ComputeBestSplitForFeature(smaller_leaf_histogram_array_, feature_index,
                                real_fidx,
                                smaller_node_used_features[feature_index],
@@ -580,7 +552,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       continue;
     }
 
-  // Log::Warning("FindBestSplitsFromHistograms step 2.3");
     if (use_subtract) {
       if (config_->use_quantized_grad) {
         const int parent_index = std::min(smaller_leaf_splits_->leaf_index(), larger_leaf_splits_->leaf_index());
@@ -628,7 +599,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
       }
     }
 
-  // Log::Warning("FindBestSplitsFromHistograms step 2.4");
     ComputeBestSplitForFeature(larger_leaf_histogram_array_, feature_index,
                                real_fidx,
                                larger_node_used_features[feature_index],
@@ -641,7 +611,6 @@ void SerialTreeLearner::FindBestSplitsFromHistograms(
   OMP_THROW_EX();
 
   
-  // Log::Warning("FindBestSplitsFromHistograms step 3");
 
   auto smaller_best_idx = ArrayArgs<SplitInfo>::ArgMax(smaller_best);
   int leaf = smaller_leaf_splits_->leaf_index();

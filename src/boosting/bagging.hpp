@@ -34,7 +34,6 @@ class BaggingSampleStrategy : public SampleStrategy {
   void Bagging(int iter, TreeLearner* tree_learner, score_t* /*gradients*/, score_t* /*hessians*/) override {
     Common::FunctionTimer fun_timer("GBDT::Bagging", global_timer);
     // if need bagging
-    Log::Warning("bag_data_cnt_ = %d, num_data_ = %d", bag_data_cnt_, num_data_);
     if ((bag_data_cnt_ < num_data_ && iter % config_->bagging_freq == 0) ||
       need_re_bagging_) {
       need_re_bagging_ = false;

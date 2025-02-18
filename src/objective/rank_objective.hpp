@@ -616,10 +616,6 @@ class PairwiseLambdarankNDCG: public LambdarankNDCG {
   void GetGradients(const double* score_pairwise, const data_size_t num_sampled_queries, const data_size_t* sampled_query_indices,
                     score_t* gradients_pairwise, score_t* hessians_pairwise) const override {
     const data_size_t num_queries = (sampled_query_indices == nullptr ? num_queries_ : num_sampled_queries);
-    Log::Warning("sampled_query_indices = %ld", sampled_query_indices);
-    // for (data_size_t i = 0; i < num_sampled_queries; ++i) {
-    //   Log::Warning("sampled_query_indices[%d] = %d", i, sampled_query_indices[i]);
-    // }
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
     for (data_size_t i = 0; i < num_queries; ++i) {
       global_timer.Start("pairwise_lambdarank::GetGradients part 0");
