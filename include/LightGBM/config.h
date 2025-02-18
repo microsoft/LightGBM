@@ -1032,6 +1032,7 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   // desc = with ``different_relevance``, only consider pairs with difference relevance score
   // desc = with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+  // desc = with ``random_k``, each document will randomly form pairs with k other documents
   // desc = with ``all``, all pairs will be used
   std::string pairwise_lambdarank_train_pairing_approach = std::string("different_relevance");
 
@@ -1039,8 +1040,13 @@ struct Config {
   // desc = used only in ``pairwise_lambdarank`` application
   // desc = with ``different_relevance``, only consider pairs with difference relevance score
   // desc = with ``at_least_one_relevant``, only consider pairs with at least one relevant item
+  // desc = with ``random_k``, each document will randomly form pairs with k other documents
   // desc = with ``all``, all pairs will be used
   std::string pairwise_lambdarank_valid_pairing_approach = std::string("different_relevance");
+
+  // desc = number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k``
+  // desc = or pairwise_lambdarank_valid_pairing_approach = ``random_k`` with pairwise ranking
+  int pairwise_lambdarank_random_paring_k = 3;
 
   #ifndef __NVCC__
   #pragma endregion

@@ -225,7 +225,11 @@ void GBDT::Boosting() {
   // objective function will calculate gradients and hessians
   int64_t num_score = 0;
   if (config_->bagging_by_query) {
+    Log::Warning("before bagging");
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+    Log::Warning("after bagging");
+    Log::Warning("data_sample_strategy_->num_sampled_queries() = %d", data_sample_strategy_->num_sampled_queries());
+    Log::Warning("data_sample_strategy_->sampled_query_indices() = %ld", data_sample_strategy_->sampled_query_indices());
     objective_function_->
       GetGradients(GetTrainingScore(&num_score), data_sample_strategy_->num_sampled_queries(), data_sample_strategy_->sampled_query_indices(), gradients_pointer_, hessians_pointer_);
   } else {
@@ -350,9 +354,13 @@ bool GBDT::TrainOneIter(const score_t* gradients, const score_t* hessians) {
     for (int cur_tree_id = 0; cur_tree_id < num_tree_per_iteration_; ++cur_tree_id) {
       init_scores[cur_tree_id] = BoostFromAverage(cur_tree_id, true);
     }
+    Log::Warning("TrainOneIter step -9.9");
     data_sample_strategy_->Bagging(iter_, tree_learner_.get(), gradients_.data(), hessians_.data());
+    Log::Warning("TrainOneIter step -9.8");
     objective_function_->SetDataIndices(data_sample_strategy_->bag_data_indices().data());
+    Log::Warning("TrainOneIter step -9.7");
     Boosting();
+    Log::Warning("TrainOneIter step -9.6");
     gradients = gradients_pointer_;
     hessians = hessians_pointer_;
   } else {

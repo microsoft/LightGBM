@@ -5,6 +5,8 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/utils/common.h>
 
+#include <algorithm>
+#include <random>
 #include <set>
 #include <string>
 #include <vector>
@@ -853,7 +855,7 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
-data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach) {
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach, const data_size_t random_pairing_k) {
   num_queries_ = metadata.num_queries();
   label_.clear();
   positions_.clear();
@@ -918,22 +920,51 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
     pairwise_query_boundaries_.clear();
     pairwise_query_boundaries_.push_back(0);
     num_data_ = 0;
+
+    std::vector<data_size_t> random_k_selection_index;
+    if (pairing_approach == std::string("random_k")) {
+      data_size_t max_num_doc_per_query = 0;
+      for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
+        data_size_t num_doc = query_boundaries[query_index + 1] - query_boundaries[query_index];
+        max_num_doc_per_query = std::max(num_doc, max_num_doc_per_query);
+      }
+      random_k_selection_index.reserve(static_cast<size_t>(max_num_doc_per_query));
+    }
+
     for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
       const data_size_t query_start = query_boundaries[query_index];
       const data_size_t query_end = query_boundaries[query_index + 1];
+      const data_size_t num_doc_in_query = query_end - query_start;
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
-        const label_t label_i = label_[item_index_i];
-        for (data_size_t item_index_j = query_start; item_index_j < query_end; ++item_index_j) {
-          if (item_index_i == item_index_j) {
-            continue;
+        if (pairing_approach == std::string("random_k")) {
+          random_k_selection_index.clear();
+          for (data_size_t i = 0; i < num_doc_in_query; ++i) {
+            if (i != item_index_i - query_start) {
+              random_k_selection_index.push_back(i);
+            }
           }
-          const label_t label_j = label_[item_index_j];
-          if ((pairing_approach == std::string("all")) ||
-              (pairing_approach == std::string("different_relevance") && label_i != label_j) ||
-              (pairing_approach == std::string("at_least_one_relevant") && (label_i > 0 || label_j > 0))) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
-            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
+          const data_size_t num_selection = std::min(static_cast<data_size_t>(random_k_selection_index.size()), random_pairing_k);
+          std::random_shuffle(random_k_selection_index.begin(), random_k_selection_index.end());
+          std::sort(random_k_selection_index.begin(), random_k_selection_index.begin() + num_selection);
+          for (data_size_t i = 0; i < num_selection; ++i) {
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i - query_start, random_k_selection_index[i]));
+            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i, random_k_selection_index[i] + query_start));
             ++num_data_;
+          }
+        } else {
+          const label_t label_i = label_[item_index_i];
+          for (data_size_t item_index_j = query_start; item_index_j < query_end; ++item_index_j) {
+            if (item_index_i == item_index_j) {
+              continue;
+            }
+            const label_t label_j = label_[item_index_j];
+            if ((pairing_approach == std::string("all")) ||
+                (pairing_approach == std::string("different_relevance") && label_i != label_j) ||
+                (pairing_approach == std::string("at_least_one_relevant") && (label_i > 0 || label_j > 0))) {
+              paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i - query_start, item_index_j - query_start});
+              paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>{item_index_i, item_index_j});
+              ++num_data_;
+            }
           }
         }
       }

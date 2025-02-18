@@ -208,9 +208,10 @@ class Metadata {
   * \brief Build metadata for ranking with pairwise features from metadata of an existing ranking dataset
   * \param metadata Reference to metadata of the existing ranking dataset
   * \param pairing_approach The pairing approach of this dataset
+  * \param random_pairing_k The number of random pairs per document when using ``random_k`` pairing approach
   * \return The number of paired data
   */
-  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach);
+  data_size_t BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach, const data_size_t random_pairing_k);
 
   /*!
   * \brief Perform any extra operations after all data has been loaded
