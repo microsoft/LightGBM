@@ -1,18 +1,18 @@
-# install R dependencies, using only base R
+# Install R dependencies, using only base R.
 #
 # Supported arguments:
 #
-#  --all                     Install all the 'Depends', 'Imports', 'LinkingTo', and 'Suggests' dependencies.
+#  --all                     Install all the 'Depends', 'Imports', 'LinkingTo', and 'Suggests' dependencies
 #                            (automatically implies --build --test).
 #
-#  --build                   install the packages needed to build
+#  --build                   Install the packages needed to build.
 #
 #  --exclude=<pkg1,pkg2,...> Comma-delimited list of packages to NOT install.
 #
 #  --include=<pkg1,pkg2,...> Comma-delimited list of additional packages to install.
 #                            These will always be installed, unless also used in "--exclude".
 #
-#  --test                    install packages needed to run tests
+#  --test                    Install packages needed to run tests.
 #
 
 
@@ -29,7 +29,6 @@
         , "--test"    = FALSE
     )
     for (arg in args) {
-        print(sprintf("arg: '%s'", arg))
         parsed_arg <- unlist(strsplit(arg, "=", fixed = TRUE))
         arg_name <- parsed_arg[[1L]]
         if (!(arg_name %in% names(out))) {
