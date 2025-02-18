@@ -351,7 +351,7 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   }
 })
 
-test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
+test_that("Dataset's finalizer should not fail on an already-finalized Dataset", {
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
@@ -361,11 +361,11 @@ test_that("Dataset$finalize() should not fail on an already-finalized Dataset", 
   dtest$construct()
   expect_false(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
-  dtest$finalize()
+  dtest$.__enclos_env__$private$finalize()
   expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
   # calling finalize() a second time shouldn't cause any issues
-  dtest$finalize()
+  dtest$.__enclos_env__$private$finalize()
   expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 })
 
