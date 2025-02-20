@@ -272,6 +272,7 @@ jobs:
           - clang17
           - clang18
           - clang19
+          - clang20
           - gcc14
           - intel
           - rchk
