@@ -414,16 +414,14 @@ jobs:
       - script: |
           git clean -d -f -x
         displayName: 'Clean source directory'
-      # yamllint disable rule:line-length
       - script: |
           LGB_VER=$(head -n 1 VERSION.txt | sed "s/rc/-/g")
           R_LIB_PATH=~/Rlib
           export R_LIBS=${R_LIB_PATH}
           mkdir -p ${R_LIB_PATH}
-          RDscript -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl'),  lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())" || exit 1
+          RDscript .ci/install-r-deps.R --build --include=RhpcBLASctl || exit 1
           sh build-cran-package.sh --r-executable=RD || exit 1
           mv lightgbm_${LGB_VER}.tar.gz $(Build.ArtifactStagingDirectory)/lightgbm-${LGB_VER}-r-cran.tar.gz
-        # yamllint enable rule:line-length
         displayName: 'Build CRAN R-package'
       - task: PublishBuildArtifacts@1
         condition: succeeded()

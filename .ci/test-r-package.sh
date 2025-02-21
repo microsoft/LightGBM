@@ -6,8 +6,8 @@ set -e -E -u -o pipefail
 ARCH=$(uname -m)
 
 # set up R environment
-CRAN_MIRROR="https://cran.rstudio.com"
-R_LIB_PATH=~/Rlib
+export CRAN_MIRROR="https://cran.rstudio.com"
+export R_LIB_PATH=~/Rlib
 mkdir -p $R_LIB_PATH
 export R_LIBS=$R_LIB_PATH
 export PATH="$R_LIB_PATH/R/bin:$PATH"
@@ -112,15 +112,8 @@ Rscript --vanilla -e "install.packages('lattice', repos = '${CRAN_MIRROR}', lib 
 # ref: https://github.com/microsoft/LightGBM/issues/6433
 Rscript --vanilla -e "install.packages('https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz', repos = NULL, lib = '${R_LIB_PATH}')"
 
-# Manually install Depends and Imports libraries + 'knitr', 'markdown', 'RhpcBLASctl', 'testthat'
-# to avoid a CI-time dependency on devtools (for devtools::install_deps())
-packages="c('data.table', 'jsonlite', 'knitr', 'markdown', 'R6', 'RhpcBLASctl', 'testthat')"
-compile_from_source="both"
-if [[ $OS_NAME == "macos" ]]; then
-    packages+=", type = 'binary'"
-    compile_from_source="never"
-fi
-Rscript --vanilla -e "options(install.packages.compile.from.source = '${compile_from_source}'); install.packages(${packages}, repos = '${CRAN_MIRROR}', lib = '${R_LIB_PATH}', dependencies = c('Depends', 'Imports', 'LinkingTo'), Ncpus = parallel::detectCores())" || exit 1
+# Manually install dependencies to avoid a CI-time dependency on devtools (for devtools::install_deps())
+Rscript --vanilla ./.ci/install-r-deps.R --build --test --exclude=Matrix || exit 1
 
 cd "${BUILD_DIRECTORY}"
 PKG_TARBALL="lightgbm_$(head -1 VERSION.txt).tar.gz"
