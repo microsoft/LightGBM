@@ -64,7 +64,7 @@ LightGBM's Python-package supports distributed learning via `Dask`_. This integr
 
 .. warning::
 
-    Dask integration is only tested on Linux.
+    Dask integration is only tested on macOS and Linux.
 
 Dask Examples
 '''''''''''''
