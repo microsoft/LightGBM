@@ -27,6 +27,7 @@ import numpy as np
 import scipy.sparse
 
 from .compat import (
+    CFFI_INSTALLED,
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     arrow_cffi,
@@ -380,7 +381,7 @@ def _list_to_1d_numpy(
         return np.asarray(data, dtype=dtype)  # SparseArray should be supported as well
     else:
         raise TypeError(
-            f"Wrong type({type(data).__name__}) for {name}.\n" "It should be list, numpy 1-D array or pandas Series"
+            f"Wrong type({type(data).__name__}) for {name}.\nIt should be list, numpy 1-D array or pandas Series"
         )
 
 
@@ -802,8 +803,7 @@ def _check_for_bad_pandas_dtypes(pandas_dtypes_series: pd_Series) -> None:
     ]
     if bad_pandas_dtypes:
         raise ValueError(
-            'pandas dtypes must be int, float or bool.\n'
-            f'Fields with bad pandas dtypes: {", ".join(bad_pandas_dtypes)}'
+            f"pandas dtypes must be int, float or bool.\nFields with bad pandas dtypes: {', '.join(bad_pandas_dtypes)}"
         )
 
 
@@ -1706,8 +1706,8 @@ class _InnerPredictor:
         predict_type: int,
     ) -> Tuple[np.ndarray, int]:
         """Predict for a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot predict from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot predict from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -2126,6 +2126,8 @@ class Dataset:
                 categorical_feature=categorical_feature,
                 pandas_categorical=self.pandas_categorical,
             )
+        elif _is_pyarrow_table(data) and feature_name == "auto":
+            feature_name = data.column_names
 
         # process for args
         params = {} if params is None else params
@@ -2185,7 +2187,6 @@ class Dataset:
             self.__init_from_np2d(data, params_str, ref_dataset)
         elif _is_pyarrow_table(data):
             self.__init_from_pyarrow_table(data, params_str, ref_dataset)
-            feature_name = data.column_names
         elif isinstance(data, list) and len(data) > 0:
             if _is_list_of_numpy_arrays(data):
                 self.__init_from_list_np2d(data, params_str, ref_dataset)
@@ -2342,6 +2343,7 @@ class Dataset:
             ptr_data = (ctypes.POINTER(ctypes.c_double) * len(mats))()
         else:
             ptr_data = (ctypes.POINTER(ctypes.c_float) * len(mats))()
+        layouts = (ctypes.c_int * len(mats))()
 
         holders = []
         type_ptr_data = -1
@@ -2355,15 +2357,13 @@ class Dataset:
 
             nrow[i] = mat.shape[0]
 
-            if mat.dtype == np.float32 or mat.dtype == np.float64:
-                mats[i] = np.asarray(mat.reshape(mat.size), dtype=mat.dtype)
-            else:  # change non-float data to float data, need to copy
-                mats[i] = np.array(mat.reshape(mat.size), dtype=np.float32)
+            mat, layout = _np2d_to_np1d(mat)
 
-            chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mats[i])
+            chunk_ptr_data, chunk_type_ptr_data, holder = _c_float_array(mat)
             if type_ptr_data != -1 and chunk_type_ptr_data != type_ptr_data:
                 raise ValueError("Input chunks must have same type")
             ptr_data[i] = chunk_ptr_data
+            layouts[i] = layout
             type_ptr_data = chunk_type_ptr_data
             holders.append(holder)
 
@@ -2375,7 +2375,7 @@ class Dataset:
                 ctypes.c_int(type_ptr_data),
                 nrow.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
                 ctypes.c_int32(ncol),
-                ctypes.c_int(_C_API_IS_ROW_MAJOR),
+                layouts,
                 _c_str(params_str),
                 ref_dataset,
                 ctypes.byref(self._handle),
@@ -2458,8 +2458,8 @@ class Dataset:
         ref_dataset: Optional[_DatasetHandle],
     ) -> "Dataset":
         """Initialize data from a PyArrow table."""
-        if not PYARROW_INSTALLED:
-            raise LightGBMError("Cannot init dataframe from Arrow without `pyarrow` installed.")
+        if not (PYARROW_INSTALLED and CFFI_INSTALLED):
+            raise LightGBMError("Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed.")
 
         # Check that the input is valid: we only handle numbers (for now)
         if not all(arrow_is_integer(t) or arrow_is_floating(t) or arrow_is_boolean(t) for t in table.schema.types):
@@ -3297,7 +3297,7 @@ class Dataset:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
                     _log_warning(
-                        f"Cannot subset {type(self.data).__name__} type of raw data.\n" "Returning original raw data"
+                        f"Cannot subset {type(self.data).__name__} type of raw data.\nReturning original raw data"
                     )
             self._need_slice = False
         if self.data is None:
@@ -3717,7 +3717,7 @@ class Booster:
             self.model_from_string(model_str)
         else:
             raise TypeError(
-                "Need at least one training dataset or model file or model string " "to create Booster instance"
+                "Need at least one training dataset or model file or model string to create Booster instance"
             )
         self.params = params
 
@@ -4051,7 +4051,7 @@ class Booster:
         if not isinstance(data, Dataset):
             raise TypeError(f"Validation data should be Dataset instance, met {type(data).__name__}")
         if data._predictor is not self.__init_predictor:
-            raise LightGBMError("Add validation data failed, " "you should use same predictor for these data")
+            raise LightGBMError("Add validation data failed, you should use same predictor for these data")
         _safe_call(
             _LIB.LGBM_BoosterAddValidData(
                 self._handle,
@@ -4137,7 +4137,7 @@ class Booster:
             if not isinstance(train_set, Dataset):
                 raise TypeError(f"Training data should be Dataset instance, met {type(train_set).__name__}")
             if train_set._predictor is not self.__init_predictor:
-                raise LightGBMError("Replace training data failed, " "you should use same predictor for these data")
+                raise LightGBMError("Replace training data failed, you should use same predictor for these data")
             self.train_set = train_set
             _safe_call(
                 _LIB.LGBM_BoosterResetTrainingData(

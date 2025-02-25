@@ -2168,8 +2168,7 @@ def test_monotone_constraints(test_with_categorical_variable):
     trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
     for test_with_interaction_constraints in [True, False]:
         error_msg = (
-            "Model not correctly constrained "
-            f"(test_with_interaction_constraints={test_with_interaction_constraints})"
+            f"Model not correctly constrained (test_with_interaction_constraints={test_with_interaction_constraints})"
         )
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {
@@ -3909,12 +3908,14 @@ def test_predict_regression_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
@@ -3929,12 +3930,14 @@ def test_predict_binary_classification_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 1)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples,)
+    assert bst.predict(X, raw_score=True).shape == (n_samples,)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_features + 1)
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, 2)
 
@@ -3950,12 +3953,14 @@ def test_predict_multiclass_classification_output_shape():
     # 1-round model
     bst = lgb.train(params, dtrain, num_boost_round=1)
     assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes)
 
     # 2-round model
     bst = lgb.train(params, dtrain, num_boost_round=2)
     assert bst.predict(X).shape == (n_samples, n_classes)
+    assert bst.predict(X, raw_score=True).shape == (n_samples, n_classes)
     assert bst.predict(X, pred_contrib=True).shape == (n_samples, n_classes * (n_features + 1))
     assert bst.predict(X, pred_leaf=True).shape == (n_samples, n_classes * 2)
 

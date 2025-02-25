@@ -18,7 +18,7 @@ test_that("Feature penalties work properly", {
         num_leaves = 5L
         , learning_rate = 0.05
         , objective = "binary"
-        , feature_penalty = paste0(feature_penalties, collapse = ",")
+        , feature_penalty = paste(feature_penalties, collapse = ",")
         , metric = "binary_error"
         , num_threads = .LGB_MAX_THREADS
       )

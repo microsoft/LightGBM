@@ -230,21 +230,28 @@ if(USE_CUDA)
     # reference for mapping of CUDA toolkit component versions to supported architectures ("compute capabilities"):
     # https://en.wikipedia.org/wiki/CUDA#GPUs_supported
     set(CUDA_ARCHS "60" "61" "62" "70" "75")
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "110")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.0")
         list(APPEND CUDA_ARCHS "80")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "111")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.1")
         list(APPEND CUDA_ARCHS "86")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "115")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.5")
         list(APPEND CUDA_ARCHS "87")
     endif()
-    if(CUDA_VERSION VERSION_GREATER_EQUAL "118")
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "11.8")
         list(APPEND CUDA_ARCHS "89")
         list(APPEND CUDA_ARCHS "90")
     endif()
+    if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "12.8")
+        list(APPEND CUDA_ARCHS "100")
+        list(APPEND CUDA_ARCHS "120")
+    endif()
+    # Generate PTX for the most recent architecture for forwards compatibility
     list(POP_BACK CUDA_ARCHS CUDA_LAST_SUPPORTED_ARCH)
-    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}+PTX")
+    list(TRANSFORM CUDA_ARCHS APPEND "-real")
+    list(APPEND CUDA_ARCHS "${CUDA_LAST_SUPPORTED_ARCH}-real" "${CUDA_LAST_SUPPORTED_ARCH}-virtual")
+    message(STATUS "CUDA_ARCHITECTURES: ${CUDA_ARCHS}")
     if(USE_DEBUG)
       set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -g")
     else()
@@ -258,72 +265,6 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD 11)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
-
-    set(
-      BASE_DEFINES
-      -DPOWER_FEATURE_WORKGROUPS=12
-      -DUSE_CONSTANT_BUF=0
-    )
-    set(
-      ALLFEATS_DEFINES
-      ${BASE_DEFINES}
-      -DENABLE_ALL_FEATURES
-    )
-    set(
-      FULLDATA_DEFINES
-      ${ALLFEATS_DEFINES}
-      -DIGNORE_INDICES
-    )
-
-    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
-    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
-endif()
-
-if(USE_ROCM)
-    find_package(HIP)
-    include_directories(${HIP_INCLUDE_DIRS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
-    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
-
-    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
-    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
-    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
-    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
-    # avoid many warnings about missing overrides
-    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
-    # avoid warning: shift count >= width of type in feature_histogram.hpp
-    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
-    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
-
-    if(USE_DEBUG)
-      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
-    else()
-      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
-    endif()
-    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
-
-    add_definitions(-DUSE_CUDA)
-
-    set(
-      BASE_DEFINES
-      -DPOWER_FEATURE_WORKGROUPS=12
-      -DUSE_CONSTANT_BUF=0
-    )
-    set(
-      ALLFEATS_DEFINES
-      ${BASE_DEFINES}
-      -DENABLE_ALL_FEATURES
-    )
-    set(
-      FULLDATA_DEFINES
-      ${ALLFEATS_DEFINES}
-      -DIGNORE_INDICES
-    )
-
-    message(STATUS "ALLFEATS_DEFINES: ${ALLFEATS_DEFINES}")
-    message(STATUS "FULLDATA_DEFINES: ${FULLDATA_DEFINES}")
 endif()
 
 include(CheckCXXSourceCompiles)
@@ -401,7 +342,8 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    # compiling 'fmt' on MSVC: "Unicode support requires compiling with /utf-8"
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /utf-8")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48
@@ -639,14 +581,14 @@ if(USE_CUDA)
   set_target_properties(
     lightgbm_objs
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_SEPARABLE_COMPILATION ON
   )
 
   set_target_properties(
     _lightgbm
     PROPERTIES
-      CUDA_ARCHITECTURES ${CUDA_ARCHS}
+      CUDA_ARCHITECTURES "${CUDA_ARCHS}"
       CUDA_RESOLVE_DEVICE_SYMBOLS ON
   )
 
@@ -654,20 +596,10 @@ if(USE_CUDA)
     set_target_properties(
       lightgbm
       PROPERTIES
-        CUDA_ARCHITECTURES ${CUDA_ARCHS}
+        CUDA_ARCHITECTURES "${CUDA_ARCHS}"
         CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
   endif()
-endif()
-
-if(USE_ROCM OR USE_CUDA)
-  # histograms are list of object libraries. Linking object library to other
-  # object libraries only gets usage requirements, the linked objects won't be
-  # used. Thus we have to call target_link_libraries on final targets here.
-  if(BUILD_CLI)
-    target_link_libraries(lightgbm PRIVATE ${histograms})
-  endif()
-  target_link_libraries(_lightgbm PRIVATE ${histograms})
 endif()
 
 if(WIN32)
