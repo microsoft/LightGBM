@@ -8,17 +8,18 @@
 
 #ifdef USE_CUDA
 
+#include <pthread.h>
+
 #include <LightGBM/objective_function.h>
 #include <LightGBM/network.h>
 
-#include "cuda_score_updater.hpp"
-#include "nccl_gbdt_component.hpp"
+#include <memory>
+#include <vector>
 
 #include <LightGBM/cuda/cuda_nccl_topology.hpp>
 
-#include <pthread.h>
-#include <memory>
-#include <vector>
+#include "cuda_score_updater.hpp"
+#include "nccl_gbdt_component.hpp"
 
 #include "../gbdt.h"
 
