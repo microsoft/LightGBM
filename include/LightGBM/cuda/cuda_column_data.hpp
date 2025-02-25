@@ -40,11 +40,11 @@ class CUDAColumnData {
             const std::vector<uint8_t>& feature_mfb_is_na,
             const std::vector<int>& feature_to_column);
 
-  const void* GetColumnData(const int column_index) const { return data_by_column_[column_index]->RawData(); }
+  const uint8_t* GetColumnData(const int column_index) const { return data_by_column_[column_index]->RawData(); }
 
   void CopySubrow(const CUDAColumnData* full_set, const data_size_t* used_indices, const data_size_t num_used_indices);
 
-  void* const* cuda_data_by_column() const { return cuda_data_by_column_.RawData(); }
+  uint8_t* const* cuda_data_by_column() const { return cuda_data_by_column_.RawData(); }
 
   uint32_t feature_min_bin(const int feature_index) const { return feature_min_bin_[feature_index]; }
 
@@ -92,7 +92,7 @@ class CUDAColumnData {
 
  private:
   template <bool IS_SPARSE, bool IS_4BIT, typename BIN_TYPE>
-  void InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, CUDAVector<void>* out_column_data_pointer);
+  void InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, CUDAVector<uint8_t>* out_column_data_pointer);
 
   void LaunchCopySubrowKernel(void* const* in_cuda_data_by_column);
 
@@ -100,10 +100,10 @@ class CUDAColumnData {
 
   void ResizeWhenCopySubrow(const data_size_t num_used_indices);
 
-  std::vector<void*> GetDataByColumnPointers(const std::vector<std::unique_ptr<CUDAVector<void>>>& data_by_column) const {
-    std::vector<void*> data_by_column_pointers(data_by_column.size(), nullptr);
+  std::vector<uint8_t*> GetDataByColumnPointers(const std::vector<std::unique_ptr<CUDAVector<uint8_t>>>& data_by_column) const {
+    std::vector<uint8_t*> data_by_column_pointers(data_by_column.size(), nullptr);
     for (size_t i = 0; i < data_by_column.size(); ++i) {
-      data_by_column_pointers[i] = reinterpret_cast<void*>(data_by_column[i]->RawData());
+      data_by_column_pointers[i] = reinterpret_cast<uint8_t*>(data_by_column[i]->RawData());
     }
     return data_by_column_pointers;
   }
@@ -122,9 +122,9 @@ class CUDAColumnData {
   std::vector<uint8_t> feature_missing_is_na_;
   std::vector<uint8_t> feature_mfb_is_zero_;
   std::vector<uint8_t> feature_mfb_is_na_;
-  CUDAVector<void*> cuda_data_by_column_;
+  CUDAVector<uint8_t*> cuda_data_by_column_;
   std::vector<int> feature_to_column_;
-  std::vector<std::unique_ptr<CUDAVector<void>>> data_by_column_;
+  std::vector<std::unique_ptr<CUDAVector<uint8_t>>> data_by_column_;
 
   CUDAVector<uint8_t> cuda_column_bit_type_;
   CUDAVector<uint32_t> cuda_feature_min_bin_;

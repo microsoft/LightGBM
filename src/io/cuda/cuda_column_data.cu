@@ -18,7 +18,7 @@ __global__ void CopySubrowKernel_ColumnData(
   const data_size_t* cuda_used_indices,
   const data_size_t num_used_indices,
   const int num_column,
-  void** out_cuda_data_by_column) {
+  uint8_t** out_cuda_data_by_column) {
   const data_size_t local_data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (local_data_index < num_used_indices) {
     for (int column_index = 0; column_index < num_column; ++column_index) {

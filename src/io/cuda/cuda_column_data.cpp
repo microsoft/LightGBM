@@ -22,7 +22,7 @@ CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_
 CUDAColumnData::~CUDAColumnData() {}
 
 template <bool IS_SPARSE, bool IS_4BIT, typename BIN_TYPE>
-void CUDAColumnData::InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, CUDAVector<void>* out_column_data_pointer) {
+void CUDAColumnData::InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, CUDAVector<uint8_t>* out_column_data_pointer) {
   CUDAVector<BIN_TYPE> cuda_column_data;
   if (!IS_SPARSE) {
     if (IS_4BIT) {
@@ -72,7 +72,7 @@ void CUDAColumnData::Init(const int num_columns,
   feature_mfb_is_zero_ = feature_mfb_is_zero;
   feature_mfb_is_na_ = feature_mfb_is_na;
   for (int column_index = 0; column_index < num_columns_; ++column_index) {
-    data_by_column_.emplace_back(new CUDAVector<void>());
+    data_by_column_.emplace_back(new CUDAVector<uint8_t>());
   }
   OMP_INIT_EX();
   #pragma omp parallel num_threads(num_threads_)
@@ -139,7 +139,7 @@ void CUDAColumnData::CopySubrow(
     const size_t num_used_indices_size = static_cast<size_t>(num_used_indices);
     cuda_used_indices_.Resize(num_used_indices_size);
     for (int column_index = 0; column_index < num_columns_; ++column_index) {
-      data_by_column_.emplace_back(new CUDAVector<void>());
+      data_by_column_.emplace_back(new CUDAVector<uint8_t>());
     }
     OMP_INIT_EX();
     #pragma omp parallel num_threads(num_threads_)

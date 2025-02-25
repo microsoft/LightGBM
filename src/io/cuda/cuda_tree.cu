@@ -317,7 +317,7 @@ template <bool USE_INDICES>
 __global__ void AddPredictionToScoreKernel(
   // dataset information
   const data_size_t num_data,
-  void* const* cuda_data_by_column,
+  uint8_t* const* cuda_data_by_column,
   const uint8_t* cuda_column_bit_type,
   const uint32_t* cuda_feature_min_bin,
   const uint32_t* cuda_feature_max_bin,
