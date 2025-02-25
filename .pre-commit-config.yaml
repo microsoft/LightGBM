@@ -17,9 +17,14 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ["--strict"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.8.3
+    rev: v0.9.5
     hooks:
       # Run the linter.
       - id: ruff
@@ -34,8 +39,13 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/crate-ci/typos
-    rev: v1.28.3
+    rev: v1.29.5
     hooks:
       - id: typos
         args: ["--force-exclude"]
         exclude: (\.gitignore$)|(^\.editorconfig$)
+  - repo: https://github.com/henryiii/validate-pyproject-schema-store
+    rev: 2025.02.03
+    hooks:
+      - id: validate-pyproject
+        files: python-package/pyproject.toml$

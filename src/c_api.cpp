@@ -460,7 +460,7 @@ class Booster {
     *out_len = single_row_predictor->num_pred_in_one_row;
   }
 
-  Predictor CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
+  std::shared_ptr<Predictor> CreatePredictor(int start_iteration, int num_iteration, int predict_type, int ncol, const Config& config) const {
     if (!config.predict_disable_shape_check && ncol != boosting_->MaxFeatureIdx() + 1) {
       Log::Fatal("The number of features in data (%d) is not the same as it was in training data (%d).\n" \
                  "You can set ``predict_disable_shape_check=true`` to discard this error, but please be aware what you are doing.", ncol, boosting_->MaxFeatureIdx() + 1);
@@ -478,7 +478,7 @@ class Booster {
       is_raw_score = false;
     }
 
-    return Predictor(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
+    return std::make_shared<Predictor>(boosting_.get(), start_iteration, num_iteration, is_raw_score, is_predict_leaf, predict_contrib,
                         config.pred_early_stop, config.pred_early_stop_freq, config.pred_early_stop_margin);
   }
 
@@ -496,7 +496,7 @@ class Booster {
       predict_contrib = true;
     }
     int64_t num_pred_in_one_row = boosting_->NumPredictOneRow(start_iteration, num_iteration, is_predict_leaf, predict_contrib);
-    auto pred_fun = predictor.GetPredictFunction();
+    auto pred_fun = predictor->GetPredictFunction();
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int i = 0; i < nrow; ++i) {
@@ -517,7 +517,7 @@ class Booster {
                      int32_t** out_indices, void** out_data, int data_type,
                      bool* is_data_float32_ptr, int num_matrices) const {
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     std::vector<std::vector<std::unordered_map<int, double>>>& agg = *agg_ptr;
     OMP_INIT_EX();
     #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
@@ -652,7 +652,7 @@ class Booster {
     // Get the number of trees per iteration (for multiclass scenario we output multiple sparse matrices)
     int num_matrices = boosting_->NumModelPerIteration();
     auto predictor = CreatePredictor(start_iteration, num_iteration, predict_type, ncol, config);
-    auto pred_sparse_fun = predictor.GetPredictSparseFunction();
+    auto pred_sparse_fun = predictor->GetPredictSparseFunction();
     bool is_col_ptr_int32 = false;
     bool is_data_float32 = false;
     int num_output_cols = ncol + 1;
@@ -1309,7 +1309,7 @@ int LGBM_DatasetCreateFromMat(const void* data,
                                     data_type,
                                     &nrow,
                                     ncol,
-                                    is_row_major,
+                                    &is_row_major,
                                     parameters,
                                     reference,
                                     out);
@@ -1320,7 +1320,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
                                int data_type,
                                int32_t* nrow,
                                int32_t ncol,
-                               int is_row_major,
+                               int* is_row_major,
                                const char* parameters,
                                const DatasetHandle reference,
                                DatasetHandle* out) {
@@ -1337,7 +1337,7 @@ int LGBM_DatasetCreateFromMats(int32_t nmat,
 
   std::vector<std::function<std::vector<double>(int row_idx)>> get_row_fun;
   for (int j = 0; j < nmat; ++j) {
-    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major));
+    get_row_fun.push_back(RowFunctionFromDenseMatric(data[j], nrow[j], ncol, data_type, is_row_major[j]));
   }
 
   if (reference == nullptr) {

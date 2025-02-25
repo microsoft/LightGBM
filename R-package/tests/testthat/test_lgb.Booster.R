@@ -1,4 +1,4 @@
-test_that("Booster$finalize() should not fail", {
+test_that("Booster's finalizer should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
     dtrain <- lgb.Dataset(X, label = y)
@@ -15,11 +15,11 @@ test_that("Booster$finalize() should not fail", {
 
     expect_false(.is_null_handle(bst$.__enclos_env__$private$handle))
 
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 
     # calling finalize() a second time shouldn't cause any issues
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_true(.is_null_handle(bst$.__enclos_env__$private$handle))
 })
 
@@ -195,7 +195,7 @@ test_that("Loading a Booster from a text file works", {
     lgb.save(bst, model_file)
 
     # finalize the booster and destroy it so you know we aren't cheating
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -238,7 +238,7 @@ test_that("boosters with linear models at leaves can be written to text file and
     preds <- predict(bst, X)
     model_file <- tempfile(fileext = ".model")
     lgb.save(bst, model_file)
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -275,7 +275,7 @@ test_that("Loading a Booster from a string works", {
     model_string <- bst$save_model_to_string()
 
     # finalize the booster and destroy it so you know we aren't cheating
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -313,7 +313,7 @@ test_that("Saving a large model to string should work", {
     expect_gt(nchar(model_string), 1024L * 1024L)
 
     # finalize the booster and destroy it so you know we aren't cheating
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -383,7 +383,7 @@ test_that("If a string and a file are both passed to lgb.load() the file is used
     lgb.save(bst, model_file)
 
     # finalize the booster and destroy it so you know we aren't cheating
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -888,7 +888,7 @@ test_that("Saving a model with different feature importance types works", {
 
     .feat_importance_from_string <- function(model_string) {
         file_lines <- strsplit(model_string, "\n", fixed = TRUE)[[1L]]
-        start_indx <- which(grepl("^feature_importances\\:$", file_lines)) + 1L
+        start_indx <- which(file_lines == "feature_importances:") + 1L
         blank_line_indices <- which(file_lines == "")
         end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
         importances <- file_lines[start_indx: end_indx]
@@ -955,7 +955,7 @@ test_that("Saving a model with unknown importance type fails", {
 
 .params_from_model_string <- function(model_str) {
     file_lines <- strsplit(model_str, "\n", fixed = TRUE)[[1L]]
-    start_indx <- which(grepl("^parameters\\:$", file_lines)) + 1L
+    start_indx <- which(file_lines == "parameters:") + 1L
     blank_line_indices <- which(file_lines == "")
     end_indx <- blank_line_indices[blank_line_indices > start_indx][1L] - 1L
     params <- file_lines[start_indx: end_indx]
@@ -1508,7 +1508,7 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     preds <- predict(bst, X)
     model_file <- tempfile(fileext = ".rds")
     saveRDS(bst, file = model_file)
-    bst$finalize()
+    bst$.__enclos_env__$private$finalize()
     expect_null(bst$.__enclos_env__$private$handle)
     rm(bst)
 
@@ -1532,7 +1532,7 @@ test_that("Booster's print, show, and summary work correctly", {
     }
 
     .has_expected_content_for_finalized_model <- function(printed_txt) {
-      expect_true(any(grepl("^LightGBM Model$", printed_txt)))
+      expect_true(any(printed_txt == "LightGBM Model"))
       expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
     }
 
@@ -1562,7 +1562,7 @@ test_that("Booster's print, show, and summary work correctly", {
         .has_expected_content_for_fitted_model(log_txt)
 
         #--- should not fail for finalized models ---#
-        model$finalize()
+        model$.__enclos_env__$private$finalize()
 
         # print()
         log_txt <- capture.output({

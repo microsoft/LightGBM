@@ -11,16 +11,6 @@ Booster <- R6::R6Class(
     record_evals = list(),
     data_processor = NULL,
 
-    # Finalize will free up the handles
-    finalize = function() {
-      .Call(
-        LGBM_BoosterFree_R
-        , private$handle
-      )
-      private$handle <- NULL
-      return(invisible(NULL))
-    },
-
     # Initialize will create a starter booster
     initialize = function(params = list(),
                           train_set = NULL,
@@ -711,6 +701,17 @@ Booster <- R6::R6Class(
     set_objective_to_none = FALSE,
     train_set_version = 0L,
     fast_predict_config = list(),
+
+    # finalize() will free up the handles
+    finalize = function() {
+      .Call(
+        LGBM_BoosterFree_R
+        , private$handle
+      )
+      private$handle <- NULL
+      return(invisible(NULL))
+    },
+
     # Predict data
     inner_predict = function(idx) {
 

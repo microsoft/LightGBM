@@ -176,16 +176,7 @@ Remove-Item "$env:RTOOLS_MINGW_BIN/cmake.exe" -Force -ErrorAction Ignore
 Write-Output "Done installing CMake"
 
 Write-Output "Installing dependencies"
-$packages = -join @(
-    "c('data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'processx', 'R6', 'RhpcBLASctl', 'testthat'), ",
-    "dependencies = c('Imports', 'Depends', 'LinkingTo')"
-)
-$params = -join @(
-    "options(install.packages.check.source = 'no'); ",
-    "install.packages($packages, repos = '$env:CRAN_MIRROR', type = 'binary', ",
-    "lib = '$env:R_LIB_PATH', Ncpus = parallel::detectCores())"
-)
-Invoke-R-Code-Redirect-Stderr $params ; Assert-Output $?
+Rscript.exe --vanilla ".ci/install-r-deps.R" --build --include=processx --test ; Assert-Output $?
 
 Write-Output "Building R-package"
 
