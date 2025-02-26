@@ -835,7 +835,7 @@ __global__ void FixHistogramDiscretizedKernel(
   const int* cuda_need_fix_histogram_features,
   const uint32_t* cuda_need_fix_histogram_features_num_bin_aligned,
   const CUDALeafSplitsStruct* cuda_smaller_leaf_splits) {
-  __shared__ int64_t shared_mem_buffer[32];
+  __shared__ int64_t shared_mem_buffer[WARPSIZE];
   const unsigned int blockIdx_x = blockIdx.x;
   const int feature_index = cuda_need_fix_histogram_features[blockIdx_x];
   const uint32_t num_bin_aligned = cuda_need_fix_histogram_features_num_bin_aligned[blockIdx_x];

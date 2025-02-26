@@ -364,9 +364,9 @@ __device__ void FindBestSplitsDiscretizedForLeafKernelInner(
     }
   }
   __shared__ uint32_t best_thread_index;
-  __shared__ double shared_double_buffer[32];
-  __shared__ bool shared_bool_buffer[32];
-  __shared__ uint32_t shared_int_buffer[64];
+  __shared__ double shared_double_buffer[WARPSIZE];
+  __shared__ bool shared_bool_buffer[WARPSIZE];
+  __shared__ uint32_t shared_int_buffer[2 * WARPSIZE];  // need 2 * WARPSIZE since the actual ACC_HIST_TYPE could be long int
   const unsigned int threadIdx_x = threadIdx.x;
   const bool skip_sum = REVERSE ?
     (task->skip_default_bin && (task->num_bin - 1 - threadIdx_x) == static_cast<int>(task->default_bin)) :

@@ -267,6 +267,34 @@ if(USE_CUDA)
     endif()
 endif()
 
+if(USE_ROCM)
+    find_package(HIP)
+    include_directories(${HIP_INCLUDE_DIRS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
+
+    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
+    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
+    # avoid many warnings about missing overrides
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+    # avoid warning: shift count >= width of type in feature_histogram.hpp
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
+
+    if(USE_DEBUG)
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
+    else()
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    endif()
+    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
+
+    add_definitions(-DUSE_ROCM)
+endif()
+
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
 #include <xmmintrin.h>

@@ -1080,7 +1080,7 @@ __global__ void RenewDiscretizedTreeLeavesKernel(
   double* leaf_grad_stat_buffer,
   double* leaf_hess_stat_buffer,
   double* leaf_values) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const int leaf_index = static_cast<int>(blockIdx.x);
   const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
   const data_size_t num_data_in_leaf = leaf_num_data[leaf_index];
