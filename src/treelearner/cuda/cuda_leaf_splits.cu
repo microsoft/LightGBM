@@ -2,6 +2,7 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 
@@ -9,6 +10,7 @@
 
 #include "cuda_leaf_splits.hpp"
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 namespace LightGBM {
 
@@ -16,7 +18,7 @@ template <bool USE_INDICES>
 __global__ void CUDAInitValuesKernel1(const score_t* cuda_gradients, const score_t* cuda_hessians,
   const data_size_t num_data, const data_size_t* cuda_bagging_data_indices,
   double* cuda_sum_of_gradients, double* cuda_sum_of_hessians) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double gradient = 0.0f;
   double hessian = 0.0f;
@@ -43,7 +45,7 @@ __global__ void CUDAInitValuesKernel2(
   const data_size_t* cuda_data_indices_in_leaf,
   hist_t* cuda_hist_in_leaf,
   CUDALeafSplitsStruct* cuda_struct) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   double thread_sum_of_gradients = 0.0f;
   double thread_sum_of_hessians = 0.0f;
   for (int block_index = static_cast<int>(threadIdx.x); block_index < num_blocks_to_reduce; block_index += static_cast<int>(blockDim.x)) {
@@ -88,7 +90,7 @@ __global__ void CUDAInitValuesKernel3(const int16_t* cuda_gradients_and_hessians
   const score_t* grad_scale_pointer, const score_t* hess_scale_pointer) {
   const score_t grad_scale = *grad_scale_pointer;
   const score_t hess_scale = *hess_scale_pointer;
-  __shared__ int64_t shared_mem_buffer[32];
+  __shared__ int64_t shared_mem_buffer[WARPSIZE];
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   int64_t int_gradient = 0;
   int64_t int_hessian = 0;
@@ -119,7 +121,7 @@ __global__ void CUDAInitValuesKernel4(
   const data_size_t* cuda_data_indices_in_leaf,
   hist_t* cuda_hist_in_leaf,
   CUDALeafSplitsStruct* cuda_struct) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   double thread_sum_of_gradients = 0.0f;
   double thread_sum_of_hessians = 0.0f;
   int64_t thread_sum_of_gradients_hessians = 0;
