@@ -16,6 +16,10 @@ concurrency:
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
+  # :grimacing:
+  # ref: https://github.com/actions/checkout/issues/1809#issuecomment-2208352668
+  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
+  ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
 
 jobs:
   test-linux-aarch64:
