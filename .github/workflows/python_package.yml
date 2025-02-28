@@ -29,6 +29,12 @@ jobs:
         run: |
           echo "--- hey ---"
           echo $(pwd)
+          git clone \
+            --depth 5 \
+            --recursive \
+            ${{ github.repositoryUrl }} \
+            .
+          git checkout ${{ github.ref }}
           git status
           git branch -v
           git log -n 5
