@@ -25,38 +25,46 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        shell: bash
-        run: |
-          echo "--- hey ---"
-          echo $(pwd)
-          git clone \
-            --depth 5 \
-            --recursive \
-            ${{ github.repositoryUrl }} \
-            .
-          git checkout ${{ github.ref }}
-          git status
-          git branch -v
-          git log -n 5
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          submodules: true
       - name: Setup and run tests
         shell: bash
+        # this uses 'docker run' instead of just setting 'container:'
+        # because actions/checkout requires GLIBC 2.28 and that is too
+        # new for manylinux2014
+        env:
+          BUILD_DIRECTORY: /LightGBM
         run: |
-          export BUILD_DIRECTORY="$GITHUB_WORKSPACE"
-          export COMPILER=gcc
-          export CONDA=${HOME}/miniforge
-          export METHOD=wheel
-          export OS_NAME="linux"
-          export PATH=${CONDA}/bin:${PATH}
-          export PRODUCES_ARTIFACTS=true
-          export PYTHON_VERSION="3.13"
-          export TASK=bdist
-          $GITHUB_WORKSPACE/.ci/setup.sh || exit 1
-          $GITHUB_WORKSPACE/.ci/test.sh || exit 1
+          cat > ./docker-script.sh <<EOF
+          export CONDA=\$HOME/miniforge
+          export PATH=\$CONDA/bin:\$PATH
+          ${{ env.BUILD_DIRECTORY }}/.ci/setup.sh || exit 1
+          ${{ env.BUILD_DIRECTORY }}/.ci/test.sh || exit 1
+          EOF
+          IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
+          docker pull "${IMAGE_URI}" || exit 1
+          docker run \
+            --platform "${PLATFORM}" \
+            --rm \
+            --env AZURE=true \
+            --env BUILD_ARTIFACTSTAGINGDIRECTORY=${{ env.BUILD_DIRECTORY }}/artifacts/ \
+            --env COMPILER=gcc \
+            --env METHOD=wheel \
+            --env OS_NAME=linux \
+            --env PRODUCES_ARTIFACTS=true \
+            --env PYTHON_VERSION="3.13" \
+            --env TASK=bdist \
+            -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
+            -w ${{ env.BUILD_DIRECTORY }} \
+            -it lightgbm/vsts-agent:manylinux2014_aarch64 \
+            /bin/bash ./docker-script.sh
       - name: upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: linux-aarch64-wheel
-          path: dist/*.whl
+          path: artifacts/*.whl
   # test-macos:
   #   name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
   #   runs-on: ${{ matrix.os }}
