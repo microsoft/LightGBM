@@ -5,7 +5,6 @@ import inspect
 import socket
 from itertools import groupby
 from os import getenv
-from platform import machine
 from sys import platform
 from urllib.parse import urlparse
 

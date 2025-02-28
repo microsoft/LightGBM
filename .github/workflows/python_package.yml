@@ -48,7 +48,6 @@ jobs:
           docker run \
             --platform "${PLATFORM}" \
             --rm \
-            --env AZURE=true \
             --env BUILD_DIRECTORY=${{ env.BUILD_DIRECTORY }} \
             --env BUILD_ARTIFACTSTAGINGDIRECTORY=${{ env.BUILD_DIRECTORY }}/artifacts/ \
             --env COMPILER=gcc \
