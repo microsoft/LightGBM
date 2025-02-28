@@ -58,7 +58,7 @@ jobs:
             --env TASK=bdist \
             -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
             -w ${{ env.BUILD_DIRECTORY }} \
-            lightgbm/vsts-agent:manylinux2014_aarch64 \
+            "${IMAGE_URI}" \
             /bin/bash ./docker-script.sh
       - name: upload wheels
         uses: actions/upload-artifact@v4
