@@ -21,7 +21,6 @@ jobs:
   test-linux-aarch64:
     name: bdist wheel (ubuntu-24.04-arm)
     runs-on: ubuntu-24.04-arm
-    container: lightgbm/vsts-agent:manylinux2014_aarch64
     timeout-minutes: 60
     steps:
       - name: Checkout repository
