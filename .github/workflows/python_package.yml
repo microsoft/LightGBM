@@ -16,10 +16,6 @@ concurrency:
 env:
   CMAKE_BUILD_PARALLEL_LEVEL: 4
   SKBUILD_STRICT_CONFIG: true
-  # :grimacing:
-  # ref: https://github.com/actions/checkout/issues/1809#issuecomment-2208352668
-  ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION: node16
-  ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION: node16
 
 jobs:
   test-linux-aarch64:
@@ -29,10 +25,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 5
-          submodules: true
+        shell: bash
+        run: |
+          echo "--- hey ---"
+          echo $(pwd)
+          git status
+          git branch -v
+          git log -n 5
       - name: Setup and run tests
         shell: bash
         run: |
