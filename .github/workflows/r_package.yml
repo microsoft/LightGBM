@@ -245,9 +245,7 @@ jobs:
       - name: Install packages
         shell: bash
         run: |
-          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat')"
-          RDscript${{ matrix.r_customization }} \
-            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          RDscript${{ matrix.r_customization }} ./.ci/install-r-deps.R --build --test
           sh build-cran-package.sh --r-executable=RD${{ matrix.r_customization }}
           RD${{ matrix.r_customization }} CMD INSTALL lightgbm_*.tar.gz || exit 1
       - name: Run tests with sanitizers
@@ -272,6 +270,7 @@ jobs:
           - clang17
           - clang18
           - clang19
+          - clang20
           - gcc14
           - intel
           - rchk
@@ -312,9 +311,7 @@ jobs:
       - name: Install packages and run tests
         shell: bash
         run: |
-          R_LIBS="c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl')"
-          Rscript \
-            -e "install.packages(${R_LIBS}, repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+          Rscript ./.ci/install-r-deps.R --build --test --exclude=testthat
           sh build-cran-package.sh
 
           # 'rchk' isn't run through 'R CMD check', use the approach documented at
