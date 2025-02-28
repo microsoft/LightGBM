@@ -37,6 +37,7 @@ jobs:
           BUILD_DIRECTORY: /LightGBM
         run: |
           cat > ./docker-script.sh <<EOF
+          mkdir -p \$BUILD_ARTIFACTSTAGINGDIRECTORY
           export CONDA=\$HOME/miniforge
           export PATH=\$CONDA/bin:\$PATH
           ${{ env.BUILD_DIRECTORY }}/.ci/setup.sh || exit 1
