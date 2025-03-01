@@ -3863,7 +3863,6 @@ test_that("Evaluation metrics aren't printed as a single-element vector", {
 })
 
 test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data", {
-
   data("iris")
 
   ds <- lgb.Dataset(
@@ -3891,7 +3890,7 @@ test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data
     , valids = list(test = test)
   )
 
-  y_hat <- predict(model, newdata = test_mat) 
+  y_hat <- predict(model, newdata = test_mat)
   model_l2 <- model$eval_valid()[[1]]$value
   independent_l2 <- mean((test_label - y_hat) ** 2)
 
