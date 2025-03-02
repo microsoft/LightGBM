@@ -3866,15 +3866,15 @@ test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data
   data("iris")
 
   ds <- lgb.Dataset(
-    as.matrix(iris[, 1:3])
-    , label = iris[, 4]
+    as.matrix(iris[, seq_len(3L)])
+    , label = iris[, 4L]
   )
 
-  train <- lgb.slice.Dataset(ds, seq(1, 100))
-  test <- lgb.slice.Dataset(ds, seq(101, 150))
+  train <- lgb.slice.Dataset(ds, seq_len(100L))
+  test <- lgb.slice.Dataset(ds, seq_len(50L) + 100L)
 
-  test_mat <- as.matrix(iris[101:150, 1:3])
-  test_label <- iris[101:150, 4]
+  test_mat <- as.matrix(iris[seq_len(50L) + 100, seq_len(3L)])
+  test_label <- iris[seq_len(50L) + 100L, 4L]
 
   params <- list(
     metric = "l2"
@@ -3891,8 +3891,8 @@ test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data
   )
 
   y_hat <- predict(model, newdata = test_mat)
-  model_l2 <- model$eval_valid()[[1]]$value
-  independent_l2 <- mean((test_label - y_hat) ** 2)
+  model_l2 <- model$eval_valid()[[1L]]$value
+  independent_l2 <- mean((test_label - y_hat) ** 2.0)
 
   expect_equal(model_l2, independent_l2, tolerance = 0.0001)
 })
