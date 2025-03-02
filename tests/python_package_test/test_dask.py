@@ -15,8 +15,8 @@ import lightgbm as lgb
 
 from .utils import sklearn_multiclass_custom_objective
 
-if not platform.startswith("linux"):
-    pytest.skip("lightgbm.dask is currently supported in Linux environments", allow_module_level=True)
+if platform in {"cygwin", "win32"}:
+    pytest.skip("lightgbm.dask is not currently supported on Windows", allow_module_level=True)
 if not lgb.compat.DASK_INSTALLED:
     pytest.skip("Dask is not installed", allow_module_level=True)
 
@@ -55,6 +55,10 @@ pytestmark = [
     pytest.mark.skipif(getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface"),
     pytest.mark.skipif(getenv("TASK", "") == "gpu", reason="Fails to run with GPU interface"),
     pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Fails to run with CUDA interface"),
+    pytest.mark.skipif(
+        getenv("LGBM_SKIP_DASK_TESTS", "") == "true",
+        reason="Skipping lightgbm.dask tests (found env variable LGBM_SKIP_DASK_TESTS=true)",
+    ),
 ]
 
 
