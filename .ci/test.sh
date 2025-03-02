@@ -64,8 +64,9 @@ if [[ "$TASK" == "cpp-tests" ]]; then
     exit 0
 fi
 
-# including python=version[build=*cpython] to ensure that conda doesn't fall back to pypy
-CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*cpython]"
+# including python=version=[build=*_cp*] to ensure that conda prefers CPython and doesn't fall back to
+# other implementations like pypy
+CONDA_PYTHON_REQUIREMENT="python=${PYTHON_VERSION}[build=*_cp*]"
 
 if [[ $TASK == "if-else" ]]; then
     conda create -q -y -n "${CONDA_ENV}" "${CONDA_PYTHON_REQUIREMENT}" numpy
@@ -333,6 +334,7 @@ matplotlib.use\(\"Agg\"\)\
         distributed \
         joblib \
         matplotlib-base \
+        pandas \
         psutil \
         pyarrow \
         python-graphviz \

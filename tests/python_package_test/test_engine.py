@@ -2168,8 +2168,7 @@ def test_monotone_constraints(test_with_categorical_variable):
     trainset = generate_trainset_for_monotone_constraints_tests(test_with_categorical_variable)
     for test_with_interaction_constraints in [True, False]:
         error_msg = (
-            "Model not correctly constrained "
-            f"(test_with_interaction_constraints={test_with_interaction_constraints})"
+            f"Model not correctly constrained (test_with_interaction_constraints={test_with_interaction_constraints})"
         )
         for monotone_constraints_method in ["basic", "intermediate", "advanced"]:
             params = {

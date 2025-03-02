@@ -51,7 +51,7 @@ inst_dir <- file.path(R_PACKAGE_SOURCE, "inst", fsep = "/")
           , "make this faster."
         ))
       }
-      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      cmd <- paste0(cmd, " ", paste(args, collapse = " "))
       exit_code <- system(cmd)
     }
 

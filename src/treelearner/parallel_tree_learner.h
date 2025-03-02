@@ -47,7 +47,7 @@ class FeatureParallelTreeLearner: public TREELEARNER_T {
 /*!
 * \brief Data parallel learning algorithm.
 *        Workers use local data to construct histograms locally, then sync up global histograms.
-*        It is recommonded used when #data is large or #feature is small
+*        It is recommended used when #data is large or #feature is small
 */
 template <typename TREELEARNER_T>
 class DataParallelTreeLearner: public TREELEARNER_T {

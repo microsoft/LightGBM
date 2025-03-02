@@ -377,3 +377,42 @@ We strongly recommend installation from the ``conda-forge`` channel and not from
 For some specific examples, see `this comment <https://github.com/microsoft/LightGBM/issues/4948#issuecomment-1013766397>`__.
 
 In addition, as of ``lightgbm==4.4.0``, the ``conda-forge`` package automatically supports CUDA-based GPU acceleration.
+
+5. How do I subclass ``scikit-learn`` estimators?
+-------------------------------------------------
+
+For ``lightgbm <= 4.5.0``, copy all of the constructor arguments from the corresponding
+``lightgbm`` class into the constructor of your custom estimator.
+
+For later versions, just ensure that the constructor of your custom estimator calls ``super().__init__()``.
+
+Consider the example below, which implements a regressor that allows creation of truncated predictions.
+This pattern will work with ``lightgbm > 4.5.0``.
+
+.. code-block:: python
+
+    import numpy as np
+    from lightgbm import LGBMRegressor
+    from sklearn.datasets import make_regression
+
+    class TruncatedRegressor(LGBMRegressor):
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+
+        def predict(self, X, max_score: float = np.inf):
+            preds = super().predict(X)
+            np.clip(preds, a_min=None, a_max=max_score, out=preds)
+            return preds
+
+    X, y = make_regression(n_samples=1_000, n_features=4)
+
+    reg_trunc = TruncatedRegressor().fit(X, y)
+
+    preds = reg_trunc.predict(X)
+    print(f"mean: {preds.mean():.2f}, max: {preds.max():.2f}")
+    # mean: -6.81, max: 345.10
+
+    preds_trunc = reg_trunc.predict(X, max_score=preds.mean())
+    print(f"mean: {preds_trunc.mean():.2f}, max: {preds_trunc.max():.2f}")
+    # mean: -56.50, max: -6.81
