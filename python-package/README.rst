@@ -51,7 +51,7 @@ To install all dependencies needed to use ``PyArrow`` in LightGBM, append ``[arr
 Use LightGBM with Dask
 **********************
 
-Warning: Dask-package is only tested on Linux.
+Warning: Dask-package is only tested on macOS and Linux.
 
 To install all dependencies needed to use ``lightgbm.dask``, append ``[dask]``.
 
@@ -72,8 +72,8 @@ To install all dependencies needed to use ``pandas`` in LightGBM, append ``[pand
 
 |
 
-Use LightGBM with Matplotlib and Graphviz
-*****************************************
+Use LightGBM Plotting Capabilities
+**********************************
 
 To install all dependencies needed to use ``lightgbm.plotting``, append ``[plotting]``.
 
@@ -226,17 +226,6 @@ It is **strongly not recommended** to use this version of LightGBM!
 
 |
 
-Build without Searching in Homebrew Folders for Dependencies on macOS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_HOMEBREW_FALLBACK=OFF
-
-Use this option to stop looking into Homebrew standard folders for finding dependencies (e.g. OpenMP) during the build on macOS.
-
-|
-
 Build with Time Costs Output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -245,30 +234,6 @@ Build with Time Costs Output
     pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_TIMETAG=ON
 
 Use this option to make LightGBM output time costs for different internal routines, to investigate and benchmark its performance.
-
-|
-
-Build in Debug Mode
-~~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_DEBUG=ON --config-settings=cmake.build-type=Debug
-
-Use this mode to make LightGBM perform more checks internally and disable all compiler optimizations.
-
-|
-
-Build with Sanitizers
-~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: sh
-
-    pip install lightgbm --no-binary lightgbm --config-settings=cmake.define.USE_SANITIZER=ON --config-settings=cmake.define.ENABLED_SANITIZERS="address;leak;undefined"
-
-Use this option to build LightGBM with compiler sanitizers.
-
-For more details see `Installation Guide <https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#sanitizers>`__.
 
 |
 
@@ -328,17 +293,8 @@ All requirements from `Build with MinGW-w64 on Windows section <#build-with-ming
 Run ``sh ./build-python.sh install --bit32``, if you want to use 32-bit version.
 All requirements from `Build 32-bit Version with 32-bit Python section <#build-32-bit-version-with-32-bit-python>`__ apply for this installation option as well.
 
-Run ``sh ./build-python.sh install --nohomebrew``, if you want to ignore Homebrew standard folders.
-All requirements from `Build without Searching in Homebrew Folders for Dependencies on macOS section <#build-without-searching-in-homebrew-folders-for-dependencies-on-macos>`__ apply for this installation option as well.
-
 Run ``sh ./build-python.sh install --time-costs``, if you want to output time costs for different internal routines.
 All requirements from `Build with Time Costs Output section <#build-with-time-costs-output>`__ apply for this installation option as well.
-
-Run ``sh ./build-python.sh install --debug``, to enable debug mode.
-All requirements from `Build in Debug Mode section <#build-in-debug-mode>`__ apply for this installation option as well.
-
-Run ``sh ./build-python.sh install --sanitizers="address;leak;undefined"``, to enable compiler sanitizers.
-All requirements from `Build with Sanitizers section <#build-with-sanitizers>`__ apply for this installation option as well.
 
 |
 
