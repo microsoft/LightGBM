@@ -3873,7 +3873,7 @@ test_that("lgb.train() can use slices of an lgb.Dataset for train and valid data
   train <- lgb.slice.Dataset(ds, seq_len(100L))
   test <- lgb.slice.Dataset(ds, seq_len(50L) + 100L)
 
-  test_mat <- as.matrix(iris[seq_len(50L) + 100, seq_len(3L)])
+  test_mat <- as.matrix(iris[seq_len(50L) + 100L, seq_len(3L)])
   test_label <- iris[seq_len(50L) + 100L, 4L]
 
   params <- list(
