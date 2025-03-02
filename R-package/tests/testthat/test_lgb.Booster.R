@@ -1658,8 +1658,8 @@ test_that("Booster's print, show, and summary work correctly when objective is n
   data("iris")
   model <- lgb.train(
       data = lgb.Dataset(
-          as.matrix(iris[, 1:3])
-          , label = iris[, 4]
+          as.matrix(iris[, seq_len(3L)])
+          , label = iris[, 4L]
       )
       , verbose = .LGB_VERBOSITY
       , nrounds = 5L
