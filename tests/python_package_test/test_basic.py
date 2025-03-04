@@ -999,10 +999,10 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     assert filecmp.cmp(one_path, several_path)
 
 
-def test_string_serialized_params_retrieval():
+def test_string_serialized_params_retrieval(rng):
     # Random train data
-    train_x = np.random.rand(500, 20)
-    train_y = np.random.randint(0, 1, 500)
+    train_x = rng.random((500, 20))
+    train_y = rng.integers(0, 1, 500)
     train_data = lgb.Dataset(train_x, train_y)
 
     # Parameters
