@@ -87,6 +87,9 @@ Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
          in \code{params}, that metric will be considered the "first" one. If you omit \code{metric},
          a default metric will be used based on your choice for the parameter \code{obj} (keyword argument)
          or \code{objective} (passed into \code{params}).
+
+         \bold{NOTE:} if using \code{boosting_type="dart"}, any early stopping configuration will be ignored
+         and early stopping will not be performed.
 }
 
 \section{Model serialization}{
