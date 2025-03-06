@@ -1539,7 +1539,7 @@ def test_string_serialized_params_retrieval(rng):
         new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
 
     assert new_model.params["boosting"] == "gbdt"
-    assert new_model.params["deterministic"]  # Linter doesn't like boolean compare
+    assert new_model.params["deterministic"] is True
     assert new_model.params["feature_contri"] == [0.5] * train_x.shape[1]
     assert new_model.params["interaction_constraints"] == [[0, 1], [0]]
     assert new_model.params["objective"] == "binary"
