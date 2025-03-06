@@ -1026,9 +1026,6 @@ def test_string_serialized_params_retrieval(rng):
     new_model = lgb.Booster(model_str=model_serialized)
 
     assert(new_model.params) # Check not empty dict
-    # check the params we provided
-    print(new_model.params)
-    print(params)
     for k, v in params.items():
         assert(k in new_model.params)
         assert(new_model.params[k] == v)
