@@ -1498,7 +1498,8 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     assert bst.params["categorical_feature"] == [1, 2]
 
     # check that passing parameters to the constructor raises warning and ignores them
-    with pytest.warns(UserWarning, match="Ignoring params argument"):
+    with pytest.warns(UserWarning,
+                      match="Ignoring params argument, using parameters from model file."):
         bst2 = lgb.Booster(params={"num_leaves": 7}, model_file=model_file)
     assert bst.params == bst2.params
 
@@ -1535,7 +1536,9 @@ def test_string_serialized_params_retrieval(rng):
     model_serialized = model.model_to_string()
 
     # load a new model with the string
-    new_model = lgb.Booster(model_str=model_serialized)
+    with pytest.warns(UserWarning,
+                      match="Ignoring params argument, using parameters from model string."):
+        new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
 
     assert(new_model.params) # Check not empty dict
     for k, v in params.items():
