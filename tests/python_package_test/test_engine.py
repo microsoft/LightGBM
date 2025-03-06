@@ -1540,7 +1540,6 @@ def test_string_serialized_params_retrieval(rng):
                       match="Ignoring params argument, using parameters from model string."):
         new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
 
-    assert(new_model.params) # Check not empty dict
     assert(new_model.params["boosting"] == "gbdt")
     assert(new_model.params["deterministic"])  # Linter doesn't like boolean compare
     assert(new_model.params["feature_contri"] == [0.5] * train_x.shape[1])
