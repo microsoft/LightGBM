@@ -1008,6 +1008,9 @@ def test_string_serialized_params_retrieval(rng):
     # Parameters
     params = {
         "boosting": "gbdt",
+        "deterministic": true,
+        "feature_contri": [0.5] * train_x.shape[1],
+        "interaction_constraints": [[0, 1], [0]],
         "objective": "binary",
         "metric": ["auc"],
         "num_leaves": 31,
