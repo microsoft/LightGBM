@@ -1511,7 +1511,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
 
 def test_string_serialized_params_retrieval(rng):
     # Random train data
-    train_x = rng.random((500, 20))
+    train_x = rng.random((500, 3))
     train_y = rng.integers(0, 1, 500)
     train_data = lgb.Dataset(train_x, train_y)
 
