@@ -997,4 +997,3 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
     lgb.Dataset(mat)._dump_text(one_path)
 
     assert filecmp.cmp(one_path, several_path)
-
