@@ -1541,9 +1541,18 @@ def test_string_serialized_params_retrieval(rng):
         new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
 
     assert(new_model.params) # Check not empty dict
-    for k, v in params.items():
-        assert(k in new_model.params)
-        assert(new_model.params[k] == v)
+    assert(new_model.params["boosting"] == "gbdt")
+    assert(new_model.params["deterministic"] == True)
+    assert(new_model.params["feature_contri"] == [0.5] * train_x.shape[1])
+    assert(new_model.params["interaction_constraints"] == [[0, 1], [0]])
+    assert(new_model.params["objective"] == "binary")
+    assert(new_model.params["metric"] == ["auc"])
+    assert(new_model.params["num_leaves"] == 7)
+    assert(new_model.params["learning_rate"] == 0.05)
+    assert(new_model.params["feature_fraction"] == 0.9)
+    assert(new_model.params["bagging_fraction"] == 0.8)
+    assert(new_model.params["bagging_freq"] == 5)
+    assert(new_model.params["verbosity"] == -100)
 
 
 def test_save_load_copy_pickle(tmp_path):
