@@ -1498,8 +1498,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     assert bst.params["categorical_feature"] == [1, 2]
 
     # check that passing parameters to the constructor raises warning and ignores them
-    with pytest.warns(UserWarning,
-                      match="Ignoring params argument, using parameters from model file."):
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model file."):
         bst2 = lgb.Booster(params={"num_leaves": 7}, model_file=model_file)
     assert bst.params == bst2.params
 
@@ -1536,22 +1535,21 @@ def test_string_serialized_params_retrieval(rng):
     model_serialized = model.model_to_string()
 
     # load a new model with the string
-    with pytest.warns(UserWarning,
-                      match="Ignoring params argument, using parameters from model string."):
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model string."):
         new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
 
-    assert(new_model.params["boosting"] == "gbdt")
-    assert(new_model.params["deterministic"])  # Linter doesn't like boolean compare
-    assert(new_model.params["feature_contri"] == [0.5] * train_x.shape[1])
-    assert(new_model.params["interaction_constraints"] == [[0, 1], [0]])
-    assert(new_model.params["objective"] == "binary")
-    assert(new_model.params["metric"] == ["auc"])
-    assert(new_model.params["num_leaves"] == 7)
-    assert(new_model.params["learning_rate"] == 0.05)
-    assert(new_model.params["feature_fraction"] == 0.9)
-    assert(new_model.params["bagging_fraction"] == 0.8)
-    assert(new_model.params["bagging_freq"] == 5)
-    assert(new_model.params["verbosity"] == -100)
+    assert new_model.params["boosting"] == "gbdt"
+    assert new_model.params["deterministic"]  # Linter doesn't like boolean compare
+    assert new_model.params["feature_contri"] == [0.5] * train_x.shape[1]
+    assert new_model.params["interaction_constraints"] == [[0, 1], [0]]
+    assert new_model.params["objective"] == "binary"
+    assert new_model.params["metric"] == ["auc"]
+    assert new_model.params["num_leaves"] == 7
+    assert new_model.params["learning_rate"] == 0.05
+    assert new_model.params["feature_fraction"] == 0.9
+    assert new_model.params["bagging_fraction"] == 0.8
+    assert new_model.params["bagging_freq"] == 5
+    assert new_model.params["verbosity"] == -100
 
 
 def test_save_load_copy_pickle(tmp_path):
