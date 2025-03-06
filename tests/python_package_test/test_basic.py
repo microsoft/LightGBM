@@ -1013,7 +1013,7 @@ def test_string_serialized_params_retrieval(rng):
         "interaction_constraints": [[0, 1], [0]],
         "objective": "binary",
         "metric": ["auc"],
-        "num_leaves": 31,
+        "num_leaves": 7
         "learning_rate": 0.05,
         "feature_fraction": 0.9,
         "bagging_fraction": 0.8,
@@ -1022,7 +1022,7 @@ def test_string_serialized_params_retrieval(rng):
     }
 
     # train a model and serialize it to a string in memory
-    model = lgb.train(params, train_data)
+    model = lgb.train(params, train_data, num_boost_round=2)
     model_serialized = model.model_to_string()
 
     # load a new model with the string
