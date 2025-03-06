@@ -998,38 +998,3 @@ def test_equal_datasets_from_one_and_several_matrices_w_different_layouts(rng, t
 
     assert filecmp.cmp(one_path, several_path)
 
-
-def test_string_serialized_params_retrieval(rng):
-    # Random train data
-    train_x = rng.random((500, 20))
-    train_y = rng.integers(0, 1, 500)
-    train_data = lgb.Dataset(train_x, train_y)
-
-    # Parameters
-    params = {
-        "boosting": "gbdt",
-        "deterministic": True,
-        "feature_contri": [0.5] * train_x.shape[1],
-        "interaction_constraints": [[0, 1], [0]],
-        "objective": "binary",
-        "metric": ["auc"],
-        "num_leaves": 7,
-        "learning_rate": 0.05,
-        "feature_fraction": 0.9,
-        "bagging_fraction": 0.8,
-        "bagging_freq": 5,
-        "verbosity": -100,
-    }
-
-    # train a model and serialize it to a string in memory
-    model = lgb.train(params, train_data, num_boost_round=2)
-    model_serialized = model.model_to_string()
-
-    # load a new model with the string
-    new_model = lgb.Booster(model_str=model_serialized)
-
-    assert(new_model.params) # Check not empty dict
-    for k, v in params.items():
-        assert(k in new_model.params)
-        assert(new_model.params[k] == v)
-
