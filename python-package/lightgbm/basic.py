@@ -3715,6 +3715,9 @@ class Booster:
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
+            if params:
+                _log_warning("Ignoring params argument, using parameters from model string.")
+            params = self._get_loaded_param()
         else:
             raise TypeError(
                 "Need at least one training dataset or model file or model string to create Booster instance"
