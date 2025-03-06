@@ -1008,12 +1008,12 @@ def test_string_serialized_params_retrieval(rng):
     # Parameters
     params = {
         "boosting": "gbdt",
-        "deterministic": true,
+        "deterministic": True,
         "feature_contri": [0.5] * train_x.shape[1],
         "interaction_constraints": [[0, 1], [0]],
         "objective": "binary",
         "metric": ["auc"],
-        "num_leaves": 7
+        "num_leaves": 7,
         "learning_rate": 0.05,
         "feature_fraction": 0.9,
         "bagging_fraction": 0.8,
