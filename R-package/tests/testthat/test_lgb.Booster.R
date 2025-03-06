@@ -1,70 +1,3 @@
-.have_same_handle <- function(model, other_model) {
-  expect_equal(
-    model$.__enclos_env__$private$handle
-    , other_model$.__enclos_env__$private$handle
-  )
-}
-
-.has_expected_content_for_fitted_model <- function(printed_txt) {
-  expect_true(any(startsWith(printed_txt, "LightGBM Model")))
-  expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
-}
-
-.has_expected_content_for_finalized_model <- function(printed_txt) {
-  expect_true(any(printed_txt == "LightGBM Model"))
-  expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
-}
-
-.check_methods_work <- function(model) {
-
-   #--- should work for fitted models --- #
-
-   # print()
-   log_txt <- capture.output({
-     ret <- print(model)
-   })
-   .have_same_handle(ret, model)
-   .has_expected_content_for_fitted_model(log_txt)
-
-   # show()
-   log_txt <- capture.output({
-     ret <- show(model)
-   })
-   expect_null(ret)
-   .has_expected_content_for_fitted_model(log_txt)
-
-   # summary()
-   log_txt <- capture.output({
-     ret <- summary(model)
-   })
-   .have_same_handle(ret, model)
-   .has_expected_content_for_fitted_model(log_txt)
-
-   #--- should not fail for finalized models ---#
-   model$.__enclos_env__$private$finalize()
-
-   # print()
-   log_txt <- capture.output({
-     ret <- print(model)
-   })
-   .has_expected_content_for_finalized_model(log_txt)
-
-   # show()
-   .have_same_handle(ret, model)
-   log_txt <- capture.output({
-     ret <- show(model)
-   })
-   expect_null(ret)
-   .has_expected_content_for_finalized_model(log_txt)
-
-   # summary()
-   log_txt <- capture.output({
-     ret <- summary(model)
-   })
-   .have_same_handle(ret, model)
-   .has_expected_content_for_finalized_model(log_txt)
-}
-
 test_that("Booster's finalizer should not fail", {
     X <- as.matrix(as.integer(iris[, "Species"]), ncol = 1L)
     y <- iris[["Sepal.Length"]]
@@ -1585,6 +1518,73 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     expect_identical(preds, preds2)
 })
 
+.have_same_handle <- function(model, other_model) {
+  expect_equal(
+    model$.__enclos_env__$private$handle
+    , other_model$.__enclos_env__$private$handle
+  )
+}
+
+.has_expected_content_for_fitted_model <- function(printed_txt) {
+  expect_true(any(startsWith(printed_txt, "LightGBM Model")))
+  expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
+}
+
+.has_expected_content_for_finalized_model <- function(printed_txt) {
+  expect_true(any(printed_txt == "LightGBM Model"))
+  expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
+}
+
+.check_methods_work <- function(model) {
+
+   #--- should work for fitted models --- #
+
+   # print()
+   log_txt <- capture.output({
+     ret <- print(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_fitted_model(log_txt)
+
+   # show()
+   log_txt <- capture.output({
+     ret <- show(model)
+   })
+   expect_null(ret)
+   .has_expected_content_for_fitted_model(log_txt)
+
+   # summary()
+   log_txt <- capture.output({
+     ret <- summary(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_fitted_model(log_txt)
+
+   #--- should not fail for finalized models ---#
+   model$.__enclos_env__$private$finalize()
+
+   # print()
+   log_txt <- capture.output({
+     ret <- print(model)
+   })
+   .has_expected_content_for_finalized_model(log_txt)
+
+   # show()
+   .have_same_handle(ret, model)
+   log_txt <- capture.output({
+     ret <- show(model)
+   })
+   expect_null(ret)
+   .has_expected_content_for_finalized_model(log_txt)
+
+   # summary()
+   log_txt <- capture.output({
+     ret <- summary(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_finalized_model(log_txt)
+}
+
 test_that("Booster's print, show, and summary work correctly for built-in objectives", {
     data("mtcars")
     model <- lgb.train(
@@ -1665,6 +1665,9 @@ test_that("Booster's print, show, and summary work correctly when objective is n
       , nrounds = 5L
       , params = list(num_threads = .LGB_MAX_THREADS)
   )
+
+  log_txt <- capture.output(print(model))
+  expect_true(any("Objective: (default)" == log_txt))
 
   .check_methods_work(model)
 })

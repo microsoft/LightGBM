@@ -1236,7 +1236,7 @@ print.lgb.Booster <- function(x, ...) {
   if (!handle_is_null) {
     obj <- x$params$objective
     if (is.null(obj)) {
-      obj <- x$.__enclos_env__$private$get_eval_info()
+      obj <- "(default)"
     }
     if (obj == "none") {
       obj <- "custom"
