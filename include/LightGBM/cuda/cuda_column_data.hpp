@@ -94,7 +94,7 @@ class CUDAColumnData {
   template <bool IS_SPARSE, bool IS_4BIT, typename BIN_TYPE>
   void InitOneColumnData(const void* in_column_data, BinIterator* bin_iterator, CUDAVector<uint8_t>* out_column_data_pointer);
 
-  void LaunchCopySubrowKernel(void* const* in_cuda_data_by_column);
+  void LaunchCopySubrowKernel(uint8_t* const* in_cuda_data_by_column);
 
   void InitColumnMetaInfo();
 
