@@ -313,7 +313,7 @@ void CUDADataPartition::ResetConfig(const Config* config, hist_t* cuda_hist) {
   num_threads_ = OMP_NUM_THREADS();
   num_leaves_ = config->num_leaves;
   cuda_hist_ = cuda_hist;
-  cuda_leaf_data_end_.Resize(static_cast<size_t>(num_leaves_));
+  cuda_leaf_data_start_.Resize(static_cast<size_t>(num_leaves_));
   cuda_leaf_data_end_.Resize(static_cast<size_t>(num_leaves_));
   cuda_leaf_num_data_.Resize(static_cast<size_t>(num_leaves_));
   cuda_hist_pool_.Resize(static_cast<size_t>(num_leaves_));
