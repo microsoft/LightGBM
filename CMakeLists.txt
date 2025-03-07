@@ -565,7 +565,7 @@ endif()
 
 if(USE_CUDA)
   target_link_libraries(lightgbm_objs PUBLIC ${NCCL_LIBRARY})
-endif(USE_CUDA)
+endif()
 
 if(__INTEGRATE_OPENCL)
   # targets OpenCL and Boost are added in IntegratedOpenCL.cmake
