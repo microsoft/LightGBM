@@ -27,12 +27,14 @@ for (model_name in names(models)){
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
       lgb.plot.tree(model, -1L)
-    }, regexp = paste0("lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
+    }, regexp = paste0(
+      "lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
   })
   test_that("lgb.plot.tree fails when a non existing tree is selected", {
     expect_error({
       lgb.plot.tree(model, 999L)
-    }, regexp = paste0("lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
+    }, regexp = paste0(
+      "lgb.plot.tree: All values of 'tree' should be between 0 and the total number of trees in the model minus one"))
   })
   test_that("lgb.plot.tree fails when a non numeric tree is selected", {
     expect_error({

@@ -102,12 +102,12 @@
 #' @importFrom data.table := fcoalesce fifelse setnames
 #' @importFrom DiagrammeR add_global_graph_attrs create_edge_df create_graph create_node_df render_graph
 #' @export
-lgb.plot.tree <- function(model = NULL,
-                          tree = NULL,
-                          rules = NULL,
-                          render = TRUE,
-                          plot_width = NULL,
-                          plot_height = NULL
+lgb.plot.tree <- function(model
+                          , tree
+                          , rules = NULL
+                          , render = TRUE
+                          , plot_width = NULL
+                          , plot_height = NULL
                           ) {
     # check model is lgb.Booster
     if (!.is_Booster(x = model)) {
@@ -119,12 +119,8 @@ lgb.plot.tree <- function(model = NULL,
             call. = FALSE
         )
     }
-    # tree must be integer or numeric
-    if (!inherits(tree, c('integer','numeric'))) {
-      stop(sprintf("lgb.plot.tree: 'tree' must only contain integers."))
-    }
     # all elements of tree must be integers
-    if (!all(tree %% 1L == 0L)) {
+    if (!inherits(tree, c("integer", "numeric")) || !all(tree %% 1L == 0L)) {
       stop(sprintf("lgb.plot.tree: 'tree' must only contain integers."))
     }
     # extract data.table model structure
@@ -140,9 +136,10 @@ lgb.plot.tree <- function(model = NULL,
     # filter modelDT to just the rows for the selected trees
     modelDT <- modelDT[tree_index %in% tree]
     # change some column names to shorter and more diagram friendly versions
-    data.table::setnames(modelDT
-    , old = c("tree_index", "split_feature", "threshold", "split_gain")
-    , new = c("Tree", "Feature", "Split", "Gain")
+    data.table::setnames(
+      modelDT
+      , old = c("tree_index", "split_feature", "threshold", "split_gain")
+      , new = c("Tree", "Feature", "Split", "Gain")
     )
     # the output from "lgb.model.dt.tree" follows these rules
     # "leaf_value" and "leaf_count" are only populated for leaves (NA for internal splits)
