@@ -500,6 +500,7 @@ def _validate_eval_set_Xy(eval_set, eval_X, eval_y):
     if eval_set is not None:
         msg = "The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead."
         warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
+        return eval_set
     if (eval_X is None) != (eval_y is None):
         raise ValueError("You must specify eval_X and eval_y, not just one of them.")
     if eval_set is None and eval_X is not None:
@@ -511,6 +512,7 @@ def _validate_eval_set_Xy(eval_set, eval_X, eval_y):
             eval_set = (eval_X, eval_y)
         else:
             eval_set = list(zip(eval_X, eval_y))
+    return eval_set
 
 
 class LGBMModel(_LGBMModelBase):
