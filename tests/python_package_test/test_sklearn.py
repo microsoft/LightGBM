@@ -2058,7 +2058,7 @@ def test_eval_set_deprecation():
     gbm = lgb.LGBMRegressor()
     msg = "The argument 'eval_set' is deprecated.*"
     with pytest.warns(LGBMDeprecationWarning, match=msg):
-        gbm.fit(X_train, y_train, eval_set=(X_test, y_test))
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
 
 
 def test_eval_X_eval_y_eval_set_equivalence():
@@ -2067,7 +2067,7 @@ def test_eval_X_eval_y_eval_set_equivalence():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
     cbs = [lgb.early_stopping(2)]
     gbm1 = lgb.LGBMRegressor()
-    gbm1.fit(X_train, y_train, eval_set=(X_test, y_test), callbacks=cbs)
+    gbm1.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=cbs)
     gbm2 = lgb.LGBMRegressor()
     gbm2.fit(X_train, y_train, eval_X=X_test, eval_y=y_test, callbacks=cbs)
     np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
