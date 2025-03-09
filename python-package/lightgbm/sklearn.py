@@ -2,6 +2,7 @@
 """Scikit-learn wrapper interface for LightGBM."""
 
 import copy
+import warnings
 from inspect import signature
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
@@ -13,6 +14,7 @@ from .basic import (
     _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
+    LGBMDeprecationWarning,
     LightGBMError,
     _choose_param_value,
     _ConfigAliases,
@@ -338,11 +340,16 @@ _lgbmmodel_doc_fit = """
         sum(group) = n_samples.
         For example, if you have a 100-document dataset with ``group = [10, 20, 40, 10, 10, 10]``, that means that you have 6 groups,
         where the first 10 records are in the first group, records 11-30 are in the second group, records 31-70 are in the third group, etc.
-    eval_set : list or None, optional (default=None)
+    eval_set : list or None, optional (default=None) (deprecated)
         A list of (X, y) tuple pairs to use as validation sets.
+        This is deprecated, use `eval_X` and `eval_y` instead.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
-    eval_sample_weight : {eval_sample_weight_shape}
+    eval_X : {X_shape} or tuple or None, optional (default=None)
+        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
+    eval_y : {y_shape} or tuple or None, optional (default=None)
+        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
+    eval_sample_weight : {eval_sample_weight_shape} or tuple or None (default=None)
         Weights of eval data. Weights should be non-negative.
     eval_class_weight : list or None, optional (default=None)
         Class weights of eval data.
@@ -913,6 +920,8 @@ class LGBMModel(_LGBMModelBase):
         group: Optional[_LGBM_GroupType] = None,
         eval_set: Optional[List[_LGBM_ScikitValidSet]] = None,
         eval_names: Optional[List[str]] = None,
+        eval_X: Optional[Union[_LGBM_ScikitMatrixLike, Tuple[_LGBM_ScikitMatrixLike]]] = None,
+        eval_y: Optional[Union[_LGBM_LabelType, Tuple[_LGBM_LabelType]]] = None,
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_class_weight: Optional[List[float]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
@@ -987,6 +996,20 @@ class LGBMModel(_LGBMModelBase):
         )
 
         valid_sets: List[Dataset] = []
+        if eval_set is not None:
+            msg = "The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead."
+            warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
+        if (eval_X is None) != (eval_y is None):
+            raise ValueError("You must specify eval_X and eval_y, not just one of them.")
+        if eval_set is None and eval_X is not None:
+            if isinstance(eval_X, tuple) != isinstance(eval_y, tuple):
+                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+            if isinstance(eval_X, tuple) and len(eval_X) != len(eval_y):
+                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+            if not isinstance(eval_X, tuple):
+                eval_set = (eval_X, eval_y)
+            else:
+                eval_set = list(zip(eval_X, eval_y))
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
