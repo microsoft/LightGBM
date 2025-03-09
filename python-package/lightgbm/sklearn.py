@@ -490,6 +490,29 @@ def _extract_evaluation_meta_data(
         raise TypeError(f"{name} should be dict or list")
 
 
+def _validate_eval_set_Xy(eval_set, eval_X, eval_y):
+    """Validate eval args.
+
+    Returns
+    -------
+    eval_set
+    """
+    if eval_set is not None:
+        msg = "The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead."
+        warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
+    if (eval_X is None) != (eval_y is None):
+        raise ValueError("You must specify eval_X and eval_y, not just one of them.")
+    if eval_set is None and eval_X is not None:
+        if isinstance(eval_X, tuple) != isinstance(eval_y, tuple):
+            raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+        if isinstance(eval_X, tuple) and len(eval_X) != len(eval_y):
+            raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
+        if not isinstance(eval_X, tuple):
+            eval_set = (eval_X, eval_y)
+        else:
+            eval_set = list(zip(eval_X, eval_y))
+
+
 class LGBMModel(_LGBMModelBase):
     """Implementation of the scikit-learn API for LightGBM."""
 
@@ -996,20 +1019,7 @@ class LGBMModel(_LGBMModelBase):
         )
 
         valid_sets: List[Dataset] = []
-        if eval_set is not None:
-            msg = "The argument 'eval_set' is deprecated, use 'eval_X' and 'eval_y' instead."
-            warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
-        if (eval_X is None) != (eval_y is None):
-            raise ValueError("You must specify eval_X and eval_y, not just one of them.")
-        if eval_set is None and eval_X is not None:
-            if isinstance(eval_X, tuple) != isinstance(eval_y, tuple):
-                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
-            if isinstance(eval_X, tuple) and len(eval_X) != len(eval_y):
-                raise ValueError("If eval_X is a tuple, y_val must be a tuple of same length, and vice versa.")
-            if not isinstance(eval_X, tuple):
-                eval_set = (eval_X, eval_y)
-            else:
-                eval_set = list(zip(eval_X, eval_y))
+        eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
         if eval_set is not None:
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
