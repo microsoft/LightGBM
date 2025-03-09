@@ -321,11 +321,11 @@ def _train_part(
             kwargs["eval_class_weight"] = [eval_class_weight[i] for i in eval_component_idx]
 
     if local_eval_set is None:
-        local_eval_X=None
-        local_eval_y=None
+        local_eval_X = None
+        local_eval_y = None
     else:
-        local_eval_X=(X for X, y in local_eval_set),
-        local_eval_y=(y for X, y in local_eval_set),
+        local_eval_X = ((X for X, y in local_eval_set),)
+        local_eval_y = ((y for X, y in local_eval_set),)
 
     model = model_factory(**params)
     if remote_socket is not None:
