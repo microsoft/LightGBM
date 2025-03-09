@@ -49,6 +49,7 @@ from .sklearn import (
     _lgbmmodel_doc_custom_eval_note,
     _lgbmmodel_doc_fit,
     _lgbmmodel_doc_predict,
+    _validate_eval_set_Xy,
 )
 
 __all__ = [
@@ -318,6 +319,13 @@ def _train_part(
         if eval_class_weight:
             kwargs["eval_class_weight"] = [eval_class_weight[i] for i in eval_component_idx]
 
+    if local_eval_set is None:
+        local_eval_X = None
+        local_eval_y = None
+    else:
+        local_eval_X = ((X for X, y in local_eval_set),)
+        local_eval_y = ((y for X, y in local_eval_set),)
+
     model = model_factory(**params)
     if remote_socket is not None:
         remote_socket.release()
@@ -329,7 +337,8 @@ def _train_part(
                 sample_weight=weight,
                 init_score=init_score,
                 group=group,
-                eval_set=local_eval_set,
+                eval_X=local_eval_X,
+                eval_y=local_eval_y,
                 eval_sample_weight=local_eval_sample_weight,
                 eval_init_score=local_eval_init_score,
                 eval_group=local_eval_group,
@@ -342,7 +351,8 @@ def _train_part(
                 label,
                 sample_weight=weight,
                 init_score=init_score,
-                eval_set=local_eval_set,
+                eval_X=local_eval_X,
+                eval_y=local_eval_y,
                 eval_sample_weight=local_eval_sample_weight,
                 eval_init_score=local_eval_init_score,
                 eval_names=local_eval_names,
@@ -422,6 +432,8 @@ def _train(
     group: Optional[_DaskVectorLike] = None,
     eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
     eval_names: Optional[List[str]] = None,
+    eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+    eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
     eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
     eval_class_weight: Optional[List[Union[dict, str]]] = None,
     eval_init_score: Optional[List[_DaskCollection]] = None,
@@ -461,6 +473,10 @@ def _train(
         of ``evals_result_`` and ``best_score_`` will be empty dictionaries.
     eval_names : list of str, or None, optional (default=None)
         Names of eval_set.
+    eval_X : Dask Array or Dask DataFrame, tuple thereof or None, optional (default=None)
+        Feature matrix or tuple thereof, e.g. `(X_val0, X_val1)`, to use as validation sets.
+    eval_y : Dask Array or Dask DataFrame, tuple thereof or None, optional (default=None)
+        Target values or tuple thereof, i.g. `(y_val0, y_val1)`, to use as validation sets.
     eval_sample_weight : list of Dask Array or Dask Series, or None, optional (default=None)
         Weights for each validation set in eval_set. Weights should be non-negative.
     eval_class_weight : list of dict or str, or None, optional (default=None)
@@ -570,6 +586,7 @@ def _train(
         for i in range(n_parts):
             parts[i]["init_score"] = init_score_parts[i]
 
+    eval_set = _validate_eval_set_Xy(eval_set=eval_set, eval_X=eval_X, eval_y=eval_y)
     # evals_set will to be re-constructed into smaller lists of (X, y) tuples, where
     # X and y are each delayed sub-lists of original eval dask Collections.
     if eval_set:
@@ -1049,6 +1066,8 @@ class _DaskLGBMModel:
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
@@ -1076,6 +1095,8 @@ class _DaskLGBMModel:
             group=group,
             eval_set=eval_set,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
@@ -1182,6 +1203,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
         init_score: Optional[_DaskCollection] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_class_weight: Optional[List[Union[dict, str]]] = None,
         eval_init_score: Optional[List[_DaskCollection]] = None,
@@ -1197,6 +1220,8 @@ class DaskLGBMClassifier(LGBMClassifier, _DaskLGBMModel):
             init_score=init_score,
             eval_set=eval_set,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_class_weight=eval_class_weight,
             eval_init_score=eval_init_score,
@@ -1386,6 +1411,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
         init_score: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
@@ -1400,6 +1427,8 @@ class DaskLGBMRegressor(LGBMRegressor, _DaskLGBMModel):
             init_score=init_score,
             eval_set=eval_set,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
             eval_metric=eval_metric,
@@ -1555,6 +1584,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
         group: Optional[_DaskVectorLike] = None,
         eval_set: Optional[List[Tuple[_DaskMatrixLike, _DaskCollection]]] = None,
         eval_names: Optional[List[str]] = None,
+        eval_X: Optional[Union[_DaskMatrixLike, Tuple[_DaskMatrixLike]]] = None,
+        eval_y: Optional[Union[_DaskCollection, Tuple[_DaskCollection]]] = None,
         eval_sample_weight: Optional[List[_DaskVectorLike]] = None,
         eval_init_score: Optional[List[_DaskVectorLike]] = None,
         eval_group: Optional[List[_DaskVectorLike]] = None,
@@ -1572,6 +1603,8 @@ class DaskLGBMRanker(LGBMRanker, _DaskLGBMModel):
             group=group,
             eval_set=eval_set,
             eval_names=eval_names,
+            eval_X=eval_X,
+            eval_y=eval_y,
             eval_sample_weight=eval_sample_weight,
             eval_init_score=eval_init_score,
             eval_group=eval_group,

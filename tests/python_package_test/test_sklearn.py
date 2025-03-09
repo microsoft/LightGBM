@@ -22,6 +22,7 @@ from sklearn.utils.estimator_checks import parametrize_with_checks as sklearn_pa
 from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
+from lightgbm.basic import LGBMDeprecationWarning
 from lightgbm.compat import (
     DASK_INSTALLED,
     DATATABLE_INSTALLED,
@@ -2043,3 +2044,36 @@ def test_classifier_fit_detects_classes_every_time():
         assert model.objective_ == "multiclass"
         model.fit(X, y_bin)
         assert model.objective_ == "binary"
+
+
+def test_eval_set_deprecation():
+    """Test use of eval_set raises deprecation warning."""
+    X, y = make_synthetic_regression(n_samples=10)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+    gbm = lgb.LGBMRegressor()
+    msg = "The argument 'eval_set' is deprecated.*"
+    with pytest.warns(LGBMDeprecationWarning, match=msg):
+        gbm.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+
+
+def test_eval_X_eval_y_eval_set_equivalence():
+    """Test that eval_X and eval_y are equivalent to eval_set."""
+    X, y = make_synthetic_regression()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+    cbs = [lgb.early_stopping(2)]
+    gbm1 = lgb.LGBMRegressor()
+    gbm1.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=cbs)
+    gbm2 = lgb.LGBMRegressor()
+    gbm2.fit(X_train, y_train, eval_X=X_test, eval_y=y_test, callbacks=cbs)
+    np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
+
+    # 2 evaluation sets
+    n = X_test.shape[0]
+    X_test1, X_test2 = X_test[: n // 2], X_test[n // 2 :]
+    y_test1, y_test2 = y_test[: n // 2], y_test[n // 2 :]
+    gbm1 = lgb.LGBMRegressor()
+    gbm1.fit(X_train, y_train, eval_set=[(X_test1, y_test1), (X_test2, y_test2)], callbacks=cbs)
+    gbm2 = lgb.LGBMRegressor()
+    gbm2.fit(X_train, y_train, eval_X=(X_test1, X_test2), eval_y=(y_test1, y_test2), callbacks=cbs)
+    np.testing.assert_allclose(gbm1.predict(X), gbm2.predict(X))
+    assert gbm1.evals_result_["valid_0"]["l2"][0] == pytest.approx(gbm2.evals_result_["valid_0"]["l2"][0])
