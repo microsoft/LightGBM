@@ -833,8 +833,8 @@ def _train(
 
 
 def _predict_part(
-    *,
     part: _DaskPart,
+    *,
     model: LGBMModel,
     raw_score: bool,
     pred_proba: bool,
