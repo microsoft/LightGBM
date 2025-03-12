@@ -184,14 +184,9 @@ lgb.train <- function(params = list(),
         next
       }
 
-      # Update parameters
+      # Update parameters, data
       valid_data$update_params(params)
-
-      # No need to set reference if one exists
-      if (is.null(valid_data$.__enclos_env__$private$reference)) {
-        valid_data$set_reference(data)
-      }
-
+      valid_data$set_reference(data)
       reduced_valid_sets[[key]] <- valid_data
 
     }
