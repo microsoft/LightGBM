@@ -308,7 +308,9 @@ void Config::Set(const std::unordered_map<std::string, std::string>& params) {
 }
 
 bool CheckMultiClassObjective(const std::string& objective) {
-  return (objective == std::string("multiclass") || objective == std::string("multiclassova"));
+  return (objective == std::string("multiclass") 
+          || objective == std::string("multiclassova") 
+          || objective == std::string("sbg"));
 }
 
 void Config::CheckParamConflict(const std::unordered_map<std::string, std::string>& params) {

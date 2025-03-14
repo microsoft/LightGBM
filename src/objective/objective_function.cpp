@@ -9,6 +9,7 @@
 #include "rank_objective.hpp"
 #include "regression_objective.hpp"
 #include "xentropy_objective.hpp"
+#include "netflix_objective.hpp"
 
 #include "cuda/cuda_binary_objective.hpp"
 #include "cuda/cuda_multiclass_objective.hpp"
@@ -59,6 +60,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     } else if (type == std::string("tweedie")) {
       Log::Warning("Objective tweedie is not implemented in cuda version. Fall back to boosting on CPU.");
       return new RegressionTweedieLoss(config);
+    } else if (type == std::string("sbg")) {
+      return new sBGObjective(config);  
     } else if (type == std::string("custom")) {
       Log::Warning("Using customized objective with cuda. This requires copying gradients from CPU to GPU, which can be slow.");
       return nullptr;
@@ -142,6 +145,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
     return new RegressionGammaLoss(strs);
   } else if (type == std::string("tweedie")) {
     return new RegressionTweedieLoss(strs);
+  } else if (type == std::string("sbg")) {
+    return new sBGObjective(strs);    
   } else if (type == std::string("custom")) {
     return nullptr;
   }

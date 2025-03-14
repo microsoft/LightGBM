@@ -10,6 +10,7 @@
 #include "rank_metric.hpp"
 #include "regression_metric.hpp"
 #include "xentropy_metric.hpp"
+#include "netflix_metric.hpp"
 
 #include "cuda/cuda_binary_metric.hpp"
 #include "cuda/cuda_regression_metric.hpp"
@@ -125,6 +126,8 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new GammaDevianceMetric(config);
     } else if (type == std::string("tweedie")) {
       return new TweedieMetric(config);
+    } else if (type == std::string("sbg")) {
+      return new sBGMetric(config);
     }
   #ifdef USE_CUDA
   }

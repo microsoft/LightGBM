@@ -116,6 +116,8 @@ class Metadata {
   void SetWeights(const label_t* weights, data_size_t len);
   void SetWeights(const ArrowChunkedArray& array);
 
+  void SetWeights2(const label_t* weights, data_size_t len);
+
   void SetQuery(const data_size_t* query, data_size_t len);
   void SetQuery(const ArrowChunkedArray& array);
 
@@ -216,6 +218,18 @@ class Metadata {
   inline const label_t* weights() const {
     if (!weights_.empty()) {
       return weights_.data();
+    } else {
+      return nullptr;
+    }
+  }
+
+  /*!
+  * \brief Get weights2, if not exists, will return nullptr
+  * \return Pointer of weights2
+  */
+  inline const label_t* weights2() const {
+    if (!weights2_.empty()) {
+      return weights2_.data();
     } else {
       return nullptr;
     }
@@ -369,6 +383,8 @@ class Metadata {
   std::vector<label_t> label_;
   /*! \brief Weights data */
   std::vector<label_t> weights_;
+  /*! \brief Secondary Weights data */
+  std::vector<label_t> weights2_;
   /*! \brief Positions data */
   std::vector<data_size_t> positions_;
   /*! \brief Position identifiers */

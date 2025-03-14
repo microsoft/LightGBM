@@ -930,6 +930,12 @@ bool Dataset::SetFloatField(const char* field_name, const float* field_data,
 #else
     metadata_.SetWeights(field_data, num_element);
 #endif
+  } else if (name == std::string("weight2") || name == std::string("weights2")) {
+    #ifdef LABEL_T_USE_DOUBLE
+    Log::Fatal("Don't support LABEL_T_USE_DOUBLE");
+    #else
+    metadata_.SetWeights2(field_data, num_element);
+    #endif
   } else {
     return false;
   }
