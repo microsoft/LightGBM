@@ -100,6 +100,8 @@ ObjectiveFunction* ObjectiveFunction::CreateObjectiveFunction(const std::string&
       return new RegressionGammaLoss(config);
     } else if (type == std::string("tweedie")) {
       return new RegressionTweedieLoss(config);
+    } else if (type == std::string("sbg")) {
+      return new sBGObjective(config);  
     } else if (type == std::string("custom")) {
       return nullptr;
     }
