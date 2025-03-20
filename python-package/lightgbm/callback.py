@@ -468,6 +468,11 @@ def early_stopping(
     To check only the first metric set ``first_metric_only`` to True.
     The index of iteration that has the best performance will be saved in the ``best_iteration`` attribute of a model.
 
+    .. note::
+
+        If using ``boosting_type="dart"``, this callback has no effect and early stopping
+        will not be performed.
+
     Parameters
     ----------
     stopping_rounds : int
