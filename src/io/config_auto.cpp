@@ -315,7 +315,10 @@ const std::unordered_set<std::string>& Config::parameter_set() {
   "pairwise_lambdarank_hard_pairwise_preference",
   "pairwise_lambdarank_train_pairing_approach",
   "pairwise_lambdarank_valid_pairing_approach",
-  "pairwise_lambdarank_random_paring_k",
+  "pairwise_lambdarank_random_train_pairing_k",
+  "pairwise_lambdarank_random_valid_pairing_k",
+  "pairwise_lambdarank_top_train_pairing_n",
+  "pairwise_lambdarank_top_valid_pairing_n",
   "metric",
   "metric_freq",
   "is_provide_training_metric",
@@ -655,7 +658,13 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "pairwise_lambdarank_valid_pairing_approach", &pairwise_lambdarank_valid_pairing_approach);
 
-  GetInt(params, "pairwise_lambdarank_random_paring_k", &pairwise_lambdarank_random_paring_k);
+  GetInt(params, "pairwise_lambdarank_random_train_pairing_k", &pairwise_lambdarank_random_train_pairing_k);
+
+  GetInt(params, "pairwise_lambdarank_random_valid_pairing_k", &pairwise_lambdarank_random_valid_pairing_k);
+
+  GetInt(params, "pairwise_lambdarank_top_train_pairing_n", &pairwise_lambdarank_top_train_pairing_n);
+
+  GetInt(params, "pairwise_lambdarank_top_valid_pairing_n", &pairwise_lambdarank_top_valid_pairing_n);
 
   GetInt(params, "metric_freq", &metric_freq);
   CHECK_GT(metric_freq, 0);
@@ -809,7 +818,10 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[pairwise_lambdarank_hard_pairwise_preference: " << pairwise_lambdarank_hard_pairwise_preference << "]\n";
   str_buf << "[pairwise_lambdarank_train_pairing_approach: " << pairwise_lambdarank_train_pairing_approach << "]\n";
   str_buf << "[pairwise_lambdarank_valid_pairing_approach: " << pairwise_lambdarank_valid_pairing_approach << "]\n";
-  str_buf << "[pairwise_lambdarank_random_paring_k: " << pairwise_lambdarank_random_paring_k << "]\n";
+  str_buf << "[pairwise_lambdarank_random_train_pairing_k: " << pairwise_lambdarank_random_train_pairing_k << "]\n";
+  str_buf << "[pairwise_lambdarank_random_valid_pairing_k: " << pairwise_lambdarank_random_valid_pairing_k << "]\n";
+  str_buf << "[pairwise_lambdarank_top_train_pairing_n: " << pairwise_lambdarank_top_train_pairing_n << "]\n";
+  str_buf << "[pairwise_lambdarank_top_valid_pairing_n: " << pairwise_lambdarank_top_valid_pairing_n << "]\n";
   str_buf << "[eval_at: " << Common::Join(eval_at, ",") << "]\n";
   str_buf << "[multi_error_top_k: " << multi_error_top_k << "]\n";
   str_buf << "[auc_mu_weights: " << Common::Join(auc_mu_weights, ",") << "]\n";
@@ -960,7 +972,10 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"pairwise_lambdarank_hard_pairwise_preference", {}},
     {"pairwise_lambdarank_train_pairing_approach", {}},
     {"pairwise_lambdarank_valid_pairing_approach", {}},
-    {"pairwise_lambdarank_random_paring_k", {}},
+    {"pairwise_lambdarank_random_train_pairing_k", {}},
+    {"pairwise_lambdarank_random_valid_pairing_k", {}},
+    {"pairwise_lambdarank_top_train_pairing_n", {}},
+    {"pairwise_lambdarank_top_valid_pairing_n", {}},
     {"metric", {"metrics", "metric_types"}},
     {"metric_freq", {"output_freq"}},
     {"is_provide_training_metric", {"training_metric", "is_training_metric", "train_metric"}},
@@ -1114,7 +1129,10 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"pairwise_lambdarank_hard_pairwise_preference", "bool"},
     {"pairwise_lambdarank_train_pairing_approach", "string"},
     {"pairwise_lambdarank_valid_pairing_approach", "string"},
-    {"pairwise_lambdarank_random_paring_k", "int"},
+    {"pairwise_lambdarank_random_train_pairing_k", "int"},
+    {"pairwise_lambdarank_random_valid_pairing_k", "int"},
+    {"pairwise_lambdarank_top_train_pairing_n", "int"},
+    {"pairwise_lambdarank_top_valid_pairing_n", "int"},
     {"metric", "vector<string>"},
     {"metric_freq", "int"},
     {"is_provide_training_metric", "bool"},

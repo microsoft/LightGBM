@@ -1033,6 +1033,7 @@ struct Config {
   // desc = with ``different_relevance``, only consider pairs with difference relevance score
   // desc = with ``at_least_one_relevant``, only consider pairs with at least one relevant item
   // desc = with ``random_k``, each document will randomly form pairs with k other documents
+  // desc = with ``top_n_random_k``, documents will form pairs with top n relevant documents, and with randomly selected k other documents
   // desc = with ``all``, all pairs will be used
   std::string pairwise_lambdarank_train_pairing_approach = std::string("different_relevance");
 
@@ -1044,9 +1045,21 @@ struct Config {
   // desc = with ``all``, all pairs will be used
   std::string pairwise_lambdarank_valid_pairing_approach = std::string("different_relevance");
 
-  // desc = number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k``
-  // desc = or pairwise_lambdarank_valid_pairing_approach = ``random_k`` with pairwise ranking
-  int pairwise_lambdarank_random_paring_k = 3;
+  // desc = number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k`` or ``top_n_random_k``
+  // desc = with pairwise ranking for training dataset
+  int pairwise_lambdarank_random_train_pairing_k = 3;
+
+  // desc = number of randomly pairing when using pairwise_lambdarank_validation_pairing_approach = ``random_k`` or ``top_n_random_k``
+  // desc = with pairwise ranking for validation dataset
+  int pairwise_lambdarank_random_valid_pairing_k = 3;
+
+  // desc = number of top n pairing when using pairwise_lambdarank_train_pairing_approach = ``top_n_random_k``
+  // desc = with pairwise ranking for training dataset
+  int pairwise_lambdarank_top_train_pairing_n = 3;
+
+  // desc = number of top n pairing when using pairwise_lambdarank_validation_pairing_approach = ``top_n_random_k``
+  // desc = pairwise ranking for validation dataset
+  int pairwise_lambdarank_top_valid_pairing_n = 3;
 
   #ifndef __NVCC__
   #pragma endregion

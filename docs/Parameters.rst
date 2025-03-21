@@ -1268,6 +1268,8 @@ Objective Parameters
 
    -  with ``random_k``, each document will randomly form pairs with k other documents
 
+   -  with ``top_n_random_k``, documents will form pairs with top n relevant documents, and with randomly selected k other documents
+
    -  with ``all``, all pairs will be used
 
 -  ``pairwise_lambdarank_valid_pairing_approach`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_approach" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_approach">&#x1F517;&#xFE0E;</a>`, default = ``std::string("different_relevance")``, type = string
@@ -1284,11 +1286,29 @@ Objective Parameters
 
    -  with ``all``, all pairs will be used
 
--  ``pairwise_lambdarank_random_paring_k`` :raw-html:`<a id="pairwise_lambdarank_random_paring_k" title="Permalink to this parameter" href="#pairwise_lambdarank_random_paring_k">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+-  ``pairwise_lambdarank_random_train_pairing_k`` :raw-html:`<a id="pairwise_lambdarank_random_train_pairing_k" title="Permalink to this parameter" href="#pairwise_lambdarank_random_train_pairing_k">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
 
-   -  number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k``
+   -  number of randomly pairing when using pairwise_lambdarank_train_pairing_approach = ``random_k`` or ``top_n_random_k``
 
-   -  or pairwise_lambdarank_valid_pairing_approach = ``random_k`` with pairwise ranking
+   -  with pairwise ranking for training dataset
+
+-  ``pairwise_lambdarank_random_valid_pairing_k`` :raw-html:`<a id="pairwise_lambdarank_random_valid_pairing_k" title="Permalink to this parameter" href="#pairwise_lambdarank_random_valid_pairing_k">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of randomly pairing when using pairwise_lambdarank_validation_pairing_approach = ``random_k`` or ``top_n_random_k``
+
+   -  with pairwise ranking for validation dataset
+
+-  ``pairwise_lambdarank_top_train_pairing_n`` :raw-html:`<a id="pairwise_lambdarank_top_train_pairing_n" title="Permalink to this parameter" href="#pairwise_lambdarank_top_train_pairing_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_train_pairing_approach = ``top_n_random_k``
+
+   -  with pairwise ranking for training dataset
+
+-  ``pairwise_lambdarank_top_valid_pairing_n`` :raw-html:`<a id="pairwise_lambdarank_top_valid_pairing_n" title="Permalink to this parameter" href="#pairwise_lambdarank_top_valid_pairing_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+
+   -  number of top n pairing when using pairwise_lambdarank_validation_pairing_approach = ``top_n_random_k``
+
+   -  pairwise ranking for validation dataset
 
 Metric Parameters
 -----------------

@@ -855,7 +855,7 @@ size_t Metadata::SizesInByte() const {
   return size;
 }
 
-data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach, const data_size_t random_pairing_k) {
+data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, const std::string& pairing_approach, const data_size_t random_pairing_k, const data_size_t top_pairing_n) {
   num_queries_ = metadata.num_queries();
   label_.clear();
   positions_.clear();
@@ -922,7 +922,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
     num_data_ = 0;
 
     std::vector<data_size_t> random_k_selection_index;
-    if (pairing_approach == std::string("random_k")) {
+    if (pairing_approach == std::string("random_k") || pairing_approach == std::string("top_n_random_k")) {
       data_size_t max_num_doc_per_query = 0;
       for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
         data_size_t num_doc = query_boundaries[query_index + 1] - query_boundaries[query_index];
@@ -945,6 +945,24 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           }
           const data_size_t num_selection = std::min(static_cast<data_size_t>(random_k_selection_index.size()), random_pairing_k);
           std::random_shuffle(random_k_selection_index.begin(), random_k_selection_index.end());
+          std::sort(random_k_selection_index.begin(), random_k_selection_index.begin() + num_selection);
+          for (data_size_t i = 0; i < num_selection; ++i) {
+            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i - query_start, random_k_selection_index[i]));
+            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i, random_k_selection_index[i] + query_start));
+            ++num_data_;
+          }
+        } else if (pairing_approach == std::string("top_n_random_k")) {
+          random_k_selection_index.clear();
+          for (data_size_t i = 0; i < num_doc_in_query; ++i) {
+            if (i != item_index_i - query_start) {
+              random_k_selection_index.push_back(i);
+            }
+          }
+          std::sort(random_k_selection_index.begin(), random_k_selection_index.end(), [this, query_start] (data_size_t i, data_size_t j) { return label_[query_start + i] > label_[query_start + j]; });
+          const data_size_t num_selection = std::min(static_cast<data_size_t>(random_k_selection_index.size()), random_pairing_k + top_pairing_n);
+          if (top_pairing_n < static_cast<data_size_t>(random_k_selection_index.size())) {
+            std::random_shuffle(random_k_selection_index.begin() + top_pairing_n, random_k_selection_index.end());
+          }
           std::sort(random_k_selection_index.begin(), random_k_selection_index.begin() + num_selection);
           for (data_size_t i = 0; i < num_selection; ++i) {
             paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i - query_start, random_k_selection_index[i]));
