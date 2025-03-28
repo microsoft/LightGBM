@@ -1536,7 +1536,7 @@ def test_string_serialized_params_retrieval(rng):
 
     # load a new model with the string
     with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model string."):
-        new_model = lgb.Booster(params={"num_leaves": 7}, model_str=model_serialized)
+        new_model = lgb.Booster(params={"num_leaves": 32}, model_str=model_serialized)
 
     assert new_model.params["boosting"] == "gbdt"
     assert new_model.params["deterministic"] is True
