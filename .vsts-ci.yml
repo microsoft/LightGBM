@@ -27,7 +27,7 @@ resources:
   # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container
   containers:
   - container: linux-artifact-builder
-    image: lightgbm/vsts-agent:manylinux_2_28_x86_64
+    image: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
     mountReadOnly:
       work: false
       externals: true
