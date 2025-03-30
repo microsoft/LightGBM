@@ -329,7 +329,10 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
     node = bst.dump_model()["tree_info"][0]["tree_structure"]
     while "decision_type" in node:
         direction = lgb.plotting._determine_direction_for_numeric_split(
-            case_with_zero[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+            fval=case_with_zero[0][node["split_feature"]],
+            threshold=node["threshold"],
+            missing_type_str=node["missing_type"],
+            default_left=node["default_left"],
         )
         node = node["left_child"] if direction == "left" else node["right_child"]
     assert node["leaf_index"] == expected_leaf_zero
@@ -340,7 +343,10 @@ def test_numeric_split_direction(use_missing, zero_as_missing):
         node = bst.dump_model()["tree_info"][0]["tree_structure"]
         while "decision_type" in node:
             direction = lgb.plotting._determine_direction_for_numeric_split(
-                case_with_nan[0][node["split_feature"]], node["threshold"], node["missing_type"], node["default_left"]
+                fval=case_with_nan[0][node["split_feature"]],
+                threshold=node["threshold"],
+                missing_type_str=node["missing_type"],
+                default_left=node["default_left"],
             )
             node = node["left_child"] if direction == "left" else node["right_child"]
         assert node["leaf_index"] == expected_leaf_nan
@@ -377,10 +383,10 @@ def test_example_case_in_tree_digraph():
             edge_to_node = [e for e in gbody if f"-> split{split_index}" in e]
             if node["decision_type"] == "<=":
                 direction = lgb.plotting._determine_direction_for_numeric_split(
-                    example_case[0][node["split_feature"]],
-                    node["threshold"],
-                    node["missing_type"],
-                    node["default_left"],
+                    fval=example_case[0][node["split_feature"]],
+                    threshold=node["threshold"],
+                    missing_type_str=node["missing_type"],
+                    default_left=node["default_left"],
                 )
             else:
                 makes_categorical_splits = True
