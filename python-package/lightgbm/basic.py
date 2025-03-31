@@ -248,10 +248,11 @@ def register_logger(
     if not _has_method(logger, info_method_name) or not _has_method(logger, warning_method_name):
         raise TypeError(f"Logger must provide '{info_method_name}' and '{warning_method_name}' method")
 
-    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME
+    global _LOGGER, _INFO_METHOD_NAME, _WARNING_METHOD_NAME, _LOG_KWARGS
     _LOGGER = logger
     _INFO_METHOD_NAME = info_method_name
     _WARNING_METHOD_NAME = warning_method_name
+    _LOG_KWARGS = {"stacklevel": 2} if isinstance(logger, logging.Logger) else {}
 
 
 def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], None]:
@@ -272,16 +273,16 @@ def _normalize_native_string(func: Callable[[str], None]) -> Callable[[str], Non
 
 
 def _log_info(msg: str) -> None:
-    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg, **_LOG_KWARGS)
 
 
 def _log_warning(msg: str) -> None:
-    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg)
+    getattr(_LOGGER, _WARNING_METHOD_NAME)(msg, **_LOG_KWARGS)
 
 
 @_normalize_native_string
 def _log_native(msg: str) -> None:
-    getattr(_LOGGER, _INFO_METHOD_NAME)(msg)
+    getattr(_LOGGER, _INFO_METHOD_NAME)(msg, **_LOG_KWARGS)
 
 
 def _log_callback(msg: bytes) -> None:
