@@ -413,6 +413,11 @@ class Booster {
     boosting_->RefitTree(leaf_preds, nrow, ncol);
   }
 
+  void RefitTreeManual(int tree_idx, const double *vals, const int vals_size) {
+    UNIQUE_LOCK(mutex_)
+    boosting_->RefitTreeManual(tree_idx, vals, vals_size);
+  }
+
   bool TrainOneIter(const score_t* gradients, const score_t* hessians) {
     UNIQUE_LOCK(mutex_)
     return boosting_->TrainOneIter(gradients, hessians);
@@ -2058,6 +2063,17 @@ int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t n
   ref_booster->Refit(leaf_preds, nrow, ncol);
   API_END();
 }
+
+int LGBM_BoosterRefitTreeManual(BoosterHandle handle,
+                                int tree_idx,
+                                const double *vals,
+                                const int vals_size) {
+  API_BEGIN();
+  Booster* ref_booster = reinterpret_cast<Booster*>(handle);
+  ref_booster->RefitTreeManual(tree_idx, vals, vals_size);
+  API_END();
+}
+
 
 int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
   API_BEGIN();
