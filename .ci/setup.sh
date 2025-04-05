@@ -22,7 +22,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
     else  # gcc
-        brew install 'gcc@12'
+        brew install 'gcc@14'
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi

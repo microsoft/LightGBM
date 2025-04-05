@@ -18,14 +18,14 @@ Remove-Item $env:TMPDIR -Force -Recurse -ErrorAction Ignore
 
 if ($env:TASK -eq "r-package") {
     & .\.ci\test-r-package-windows.ps1 ; Assert-Output $?
-    Exit 0
+    exit 0
 }
 
 if ($env:TASK -eq "cpp-tests") {
     cmake -B build -S . -DBUILD_CPP_TEST=ON -DUSE_DEBUG=ON -A x64
     cmake --build build --target testlightgbm --config Debug ; Assert-Output $?
     .\Debug\testlightgbm.exe ; Assert-Output $?
-    Exit 0
+    exit 0
 }
 
 if ($env:TASK -eq "swig") {
@@ -59,7 +59,7 @@ if ($env:TASK -eq "swig") {
     if ($env:AZURE -eq "true") {
         cp ./build/lightgbmlib.jar $env:BUILD_ARTIFACTSTAGINGDIRECTORY/lightgbmlib_win.jar ; Assert-Output $?
     }
-    Exit 0
+    exit 0
 }
 
 # setup for Python

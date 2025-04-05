@@ -26,7 +26,7 @@ fi
 PY_MINOR_VER=$(python -c "import sys; print(sys.version_info.minor)")
 if [ "$PY_MINOR_VER" -gt 7 ]; then
     echo "pydistcheck..."
-    pip install 'pydistcheck>=0.7.0'
+    pip install 'pydistcheck>=0.9.1'
     if { test "${TASK}" = "cuda" || test "${METHOD}" = "wheel"; }; then
         pydistcheck \
             --inspect \
