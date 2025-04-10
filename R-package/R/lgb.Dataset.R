@@ -24,12 +24,13 @@ NULL
 # [description] A more robust version of identical() for checking lgb.Dataset equivalence
 # [return] A single boolean.
 .datasets_are_equal <- function(ds1, ds2) {
-  handler1 <- ds1$.__enclos_env__$private$get_handle
-  handler2 <- ds2$.__enclos_env__$private$get_handle
-  if (is.null(handler1) || is.null(handler2)) {
+  if (!.is_Dataset(ds1) || !.is_Dataset(ds2)) {
     return(FALSE)
   }
-  return(identical(handler1(), handler2()))
+  return(identical(
+    ds1$.__enclos_env__$private$handle
+    , ds2$.__enclos_env__$private$handle
+  ))
 }
 
 #' @importFrom methods is
