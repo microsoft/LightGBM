@@ -73,9 +73,7 @@ cmake.args = [
 build.verbose = false
 cmake.build-type = "Release"
 build.targets = ["_lightgbm"]
-# stripping binaries should be turned back on once this is fixed:
-# https://github.com/jameslamb/pydistcheck/issues/235
-install.strip = false
+install.strip = true
 logging.level = "INFO"
 sdist.reproducible = true
 wheel.py-api = "py3"
