@@ -1518,74 +1518,74 @@ test_that("boosters with linear models at leaves can be written to RDS and re-lo
     expect_identical(preds, preds2)
 })
 
-test_that("Booster's print, show, and summary work correctly", {
-    .have_same_handle <- function(model, other_model) {
-       expect_equal(
-         model$.__enclos_env__$private$handle
-         , other_model$.__enclos_env__$private$handle
-       )
-    }
+.have_same_handle <- function(model, other_model) {
+  expect_equal(
+    model$.__enclos_env__$private$handle
+    , other_model$.__enclos_env__$private$handle
+  )
+}
 
-    .has_expected_content_for_fitted_model <- function(printed_txt) {
-      expect_true(any(startsWith(printed_txt, "LightGBM Model")))
-      expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
-    }
+.has_expected_content_for_fitted_model <- function(printed_txt) {
+  expect_true(any(startsWith(printed_txt, "LightGBM Model")))
+  expect_true(any(startsWith(printed_txt, "Fitted to dataset")))
+}
 
-    .has_expected_content_for_finalized_model <- function(printed_txt) {
-      expect_true(any(printed_txt == "LightGBM Model"))
-      expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
-    }
+.has_expected_content_for_finalized_model <- function(printed_txt) {
+  expect_true(any(printed_txt == "LightGBM Model"))
+  expect_true(any(grepl("Booster handle is invalid", printed_txt, fixed = TRUE)))
+}
 
-    .check_methods_work <- function(model) {
+.check_methods_work <- function(model) {
 
-        #--- should work for fitted models --- #
+   #--- should work for fitted models --- #
 
-        # print()
-        log_txt <- capture.output({
-          ret <- print(model)
-        })
-        .have_same_handle(ret, model)
-        .has_expected_content_for_fitted_model(log_txt)
+   # print()
+   log_txt <- capture.output({
+     ret <- print(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_fitted_model(log_txt)
 
-        # show()
-        log_txt <- capture.output({
-          ret <- show(model)
-        })
-        expect_null(ret)
-        .has_expected_content_for_fitted_model(log_txt)
+   # show()
+   log_txt <- capture.output({
+     ret <- show(model)
+   })
+   expect_null(ret)
+   .has_expected_content_for_fitted_model(log_txt)
 
-        # summary()
-        log_txt <- capture.output({
-          ret <- summary(model)
-        })
-        .have_same_handle(ret, model)
-        .has_expected_content_for_fitted_model(log_txt)
+   # summary()
+   log_txt <- capture.output({
+     ret <- summary(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_fitted_model(log_txt)
 
-        #--- should not fail for finalized models ---#
-        model$.__enclos_env__$private$finalize()
+   #--- should not fail for finalized models ---#
+   model$.__enclos_env__$private$finalize()
 
-        # print()
-        log_txt <- capture.output({
-          ret <- print(model)
-        })
-        .has_expected_content_for_finalized_model(log_txt)
+   # print()
+   log_txt <- capture.output({
+     ret <- print(model)
+   })
+   .has_expected_content_for_finalized_model(log_txt)
 
-        # show()
-        .have_same_handle(ret, model)
-        log_txt <- capture.output({
-          ret <- show(model)
-        })
-        expect_null(ret)
-        .has_expected_content_for_finalized_model(log_txt)
+   # show()
+   .have_same_handle(ret, model)
+   log_txt <- capture.output({
+     ret <- show(model)
+   })
+   expect_null(ret)
+   .has_expected_content_for_finalized_model(log_txt)
 
-        # summary()
-        log_txt <- capture.output({
-          ret <- summary(model)
-        })
-        .have_same_handle(ret, model)
-        .has_expected_content_for_finalized_model(log_txt)
-    }
+   # summary()
+   log_txt <- capture.output({
+     ret <- summary(model)
+   })
+   .have_same_handle(ret, model)
+   .has_expected_content_for_finalized_model(log_txt)
+}
 
+test_that("Booster's print, show, and summary work correctly for built-in objectives", {
     data("mtcars")
     model <- lgb.train(
         params = list(
@@ -1616,9 +1616,9 @@ test_that("Booster's print, show, and summary work correctly", {
         , nrounds = 5L
     )
     .check_methods_work(model)
+})
 
-
-    # with custom objective
+test_that("Booster's print, show, and summary work correctly for custom objective", {
     .logregobj <- function(preds, dtrain) {
         labels <- get_field(dtrain, "label")
         preds <- 1.0 / (1.0 + exp(-preds))
@@ -1638,6 +1638,7 @@ test_that("Booster's print, show, and summary work correctly", {
         ))
     }
 
+    data("iris")
     model <- lgb.train(
         data = lgb.Dataset(
             as.matrix(iris[, -5L])
@@ -1651,6 +1652,24 @@ test_that("Booster's print, show, and summary work correctly", {
     )
 
     .check_methods_work(model)
+})
+
+test_that("Booster's print, show, and summary work correctly when objective is not provided", {
+  data("iris")
+  model <- lgb.train(
+      data = lgb.Dataset(
+          as.matrix(iris[, seq_len(3L)])
+          , label = iris[, 4L]
+      )
+      , verbose = .LGB_VERBOSITY
+      , nrounds = 5L
+      , params = list(num_threads = .LGB_MAX_THREADS)
+  )
+
+  log_txt <- capture.output(print(model))
+  expect_true(any(log_txt == "Objective: (default)"))
+
+  .check_methods_work(model)
 })
 
 test_that("LGBM_BoosterGetNumFeature_R returns correct outputs", {
