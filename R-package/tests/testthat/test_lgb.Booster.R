@@ -1667,7 +1667,7 @@ test_that("Booster's print, show, and summary work correctly when objective is n
   )
 
   log_txt <- capture.output(print(model))
-  expect_true(any("Objective: (default)" == log_txt))
+  expect_true(any(log_txt == "Objective: (default)"))
 
   .check_methods_work(model)
 })
