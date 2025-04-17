@@ -143,6 +143,8 @@ lightgbm-transform (feature transformation binding): https://github.com/microsof
 
 `vaex-ml` (Python DataFrame library with its own interface to LightGBM): https://github.com/vaexio/vaex
 
+LightGBM NuGet](https://www.nuget.org/packages/LightGBM): The official LightGBM package for .NET, providing bindings to use LightGBM from C# and other .NET languages.
+
 Support
 -------
 
