@@ -24,7 +24,7 @@ repos:
         args: ["--strict"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.9.5
+    rev: v0.9.10
     hooks:
       # Run the linter.
       - id: ruff
@@ -39,13 +39,13 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/crate-ci/typos
-    rev: v1.29.5
+    rev: v1.30.2
     hooks:
       - id: typos
         args: ["--force-exclude"]
         exclude: (\.gitignore$)|(^\.editorconfig$)
   - repo: https://github.com/henryiii/validate-pyproject-schema-store
-    rev: 2025.02.03
+    rev: 2025.03.10
     hooks:
       - id: validate-pyproject
         files: python-package/pyproject.toml$

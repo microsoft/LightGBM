@@ -3799,6 +3799,22 @@ def test_linear_single_leaf():
     assert log_loss(y_train, y_pred) < 0.661
 
 
+def test_linear_raises_informative_errors_on_unsupported_params():
+    X, y = make_synthetic_regression()
+    with pytest.raises(lgb.basic.LightGBMError, match="Cannot use regression_l1 objective when fitting linear trees"):
+        lgb.train(
+            train_set=lgb.Dataset(X, label=y),
+            params={"linear_tree": True, "objective": "regression_l1"},
+            num_boost_round=1,
+        )
+    with pytest.raises(lgb.basic.LightGBMError, match="zero_as_missing must be false when fitting linear trees"):
+        lgb.train(
+            train_set=lgb.Dataset(X, label=y),
+            params={"linear_tree": True, "zero_as_missing": True},
+            num_boost_round=1,
+        )
+
+
 def test_predict_with_start_iteration():
     def inner_test(X, y, params, early_stopping_rounds):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
