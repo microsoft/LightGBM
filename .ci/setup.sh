@@ -3,7 +3,6 @@
 set -e -E -u -o pipefail
 
 # defaults
-AZURE=${AZURE:-"false"}
 IN_UBUNTU_BASE_CONTAINER=${IN_UBUNTU_BASE_CONTAINER:-"false"}
 SETUP_CONDA=${SETUP_CONDA:-"true"}
 
@@ -23,7 +22,7 @@ if [[ $OS_NAME == "macos" ]]; then
     if  [[ $COMPILER == "clang" ]]; then
         brew install libomp
     else  # gcc
-        brew install 'gcc@12'
+        brew install 'gcc@14'
     fi
     if [[ $TASK == "mpi" ]]; then
         brew install open-mpi
