@@ -1063,12 +1063,12 @@ struct Config {
   int pairwise_lambdarank_valid_pairing_top_n = 3;
 
   // desc = number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
-  // desc = pairwise ranking for validation dataset
-  int pairwise_lambdarank_valid_pairing_relevance_n = 3;
+  // desc = pairwise ranking for training dataset
+  int pairwise_lambdarank_train_pairing_relevance_m = 3;
 
   // desc = number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
   // desc = pairwise ranking for validation dataset
-  int pairwise_lambdarank_valid_pairing_relevance_n = 3;
+  int pairwise_lambdarank_valid_pairing_relevance_m = 3;
 
   #ifndef __NVCC__
   #pragma endregion

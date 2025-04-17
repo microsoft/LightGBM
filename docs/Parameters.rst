@@ -1312,13 +1312,13 @@ Objective Parameters
 
    -  pairwise ranking for validation dataset
 
--  ``pairwise_lambdarank_valid_pairing_relevance_n`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_relevance_n" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_relevance_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+-  ``pairwise_lambdarank_train_pairing_relevance_m`` :raw-html:`<a id="pairwise_lambdarank_train_pairing_relevance_m" title="Permalink to this parameter" href="#pairwise_lambdarank_train_pairing_relevance_m">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
 
    -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
 
-   -  pairwise ranking for validation dataset
+   -  pairwise ranking for training dataset
 
--  ``pairwise_lambdarank_valid_pairing_relevance_n`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_relevance_n" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_relevance_n">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
+-  ``pairwise_lambdarank_valid_pairing_relevance_m`` :raw-html:`<a id="pairwise_lambdarank_valid_pairing_relevance_m" title="Permalink to this parameter" href="#pairwise_lambdarank_valid_pairing_relevance_m">&#x1F517;&#xFE0E;</a>`, default = ``3``, type = int
 
    -  number of top n pairing when using pairwise_lambdarank_valid_pairing_approach = ``relevance_m_top_n_random_k``
 

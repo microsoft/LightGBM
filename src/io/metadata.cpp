@@ -921,14 +921,13 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
     pairwise_query_boundaries_.push_back(0);
     num_data_ = 0;
 
-    std::vector<data_size_t> random_k_selection_index;
-    if (pairing_approach == std::string("random_k") || pairing_approach == std::string("top_n_random_k")) {
-      data_size_t max_num_doc_per_query = 0;
-      for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
-        data_size_t num_doc = query_boundaries[query_index + 1] - query_boundaries[query_index];
-        max_num_doc_per_query = std::max(num_doc, max_num_doc_per_query);
+    data_size_t local_relevance_pairing_m = relevance_pairing_m;
+    data_size_t local_top_pairing_n = top_pairing_n;
+    if (pairing_approach == std::string("top_n_random_k") || pairing_approach == std::string("random_k")) {
+      local_relevance_pairing_m = 0;
+      if (pairing_approach == std::string("random_k")) {
+        local_top_pairing_n = 0;
       }
-      random_k_selection_index.reserve(static_cast<size_t>(max_num_doc_per_query));
     }
 
     for (data_size_t query_index = 0; query_index < metadata.num_queries(); ++query_index) {
@@ -942,48 +941,16 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
       std::sort(sorted_indices_by_relevance.begin(), sorted_indices_by_relevance.end(), [this, query_start] (data_size_t i, data_size_t j) { return label_[query_start + i] > label_[query_start + j]; });
       std::vector<std::pair<data_size_t, data_size_t>> selected_pairs;
       for (data_size_t item_index_i = query_start; item_index_i < query_end; ++item_index_i) {
-        if (pairing_approach == std::string("random_k")) {
-          random_k_selection_index.clear();
-          for (data_size_t i = 0; i < num_doc_in_query; ++i) {
-            if (i != item_index_i - query_start) {
-              random_k_selection_index.push_back(i);
-            }
-          }
-          const data_size_t num_selection = std::min(static_cast<data_size_t>(random_k_selection_index.size()), random_pairing_k);
-          std::random_shuffle(random_k_selection_index.begin(), random_k_selection_index.end());
-          std::sort(random_k_selection_index.begin(), random_k_selection_index.begin() + num_selection);
-          for (data_size_t i = 0; i < num_selection; ++i) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i - query_start, random_k_selection_index[i]));
-            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i, random_k_selection_index[i] + query_start));
-            ++num_data_;
-          }
-        } else if (pairing_approach == std::string("top_n_random_k")) {
-          random_k_selection_index.clear();
-          for (data_size_t i = 0; i < num_doc_in_query; ++i) {
-            if (i != item_index_i - query_start) {
-              random_k_selection_index.push_back(i);
-            }
-          }
-          std::sort(random_k_selection_index.begin(), random_k_selection_index.end(), [this, query_start] (data_size_t i, data_size_t j) { return label_[query_start + i] > label_[query_start + j]; });
-          const data_size_t num_selection = std::min(static_cast<data_size_t>(random_k_selection_index.size()), random_pairing_k + top_pairing_n);
-          if (top_pairing_n < static_cast<data_size_t>(random_k_selection_index.size())) {
-            std::random_shuffle(random_k_selection_index.begin() + top_pairing_n, random_k_selection_index.end());
-          }
-          std::sort(random_k_selection_index.begin(), random_k_selection_index.begin() + num_selection);
-          for (data_size_t i = 0; i < num_selection; ++i) {
-            paired_ranking_item_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i - query_start, random_k_selection_index[i]));
-            paired_ranking_item_global_index_map_.push_back(std::pair<data_size_t, data_size_t>(item_index_i, random_k_selection_index[i] + query_start));
-            ++num_data_;
-          }
-        } else if (pairing_approach == std::string("relevance_m_top_n_random_k")) {
+        if (pairing_approach == std::string("relevance_m_top_n_random_k") || pairing_approach == std::string("top_n_random_k") || pairing_approach == std::string("random_k")) {
           data_size_t selected_m = 0;
           std::vector<bool> selected(num_doc_in_query, false);
           for (data_size_t i = 0; i < num_doc_in_query; ++i) {
-            if (!selected[i] && sorted_indices_by_relevance[i] != item_index_i && label_[query_start + i] != label_[query_start + sorted_indices_by_relevance[i]]) {
-              selected_pairs.push_back({i, sorted_indices_by_relevance[i]});
-              selected_pairs.push_back({sorted_indices_by_relevance[i], i});
+            if (!selected[i] && sorted_indices_by_relevance[i] + query_start != item_index_i && label_[item_index_i] != label_[query_start + sorted_indices_by_relevance[i]]) {
+              selected_pairs.push_back({item_index_i - query_start, sorted_indices_by_relevance[i]});
+              selected_pairs.push_back({sorted_indices_by_relevance[i], item_index_i - query_start});
               ++selected_m;
-              if (selected_m == relevance_pairing_m) {
+              selected[i] = true;
+              if (selected_m == local_relevance_pairing_m) {
                 break;
               }
             }
@@ -991,11 +958,11 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           data_size_t selected_n = 0;
           std::vector<data_size_t> unselected_items;
           for (data_size_t i = 0; i < num_doc_in_query; ++i) {
-            if (!selected[i] && sorted_indices_by_relevance[i] != item_index_i) {
-              selected_pairs.push_back({i, sorted_indices_by_relevance[i]});
-              selected_pairs.push_back({sorted_indices_by_relevance[i], i});
+            if (!selected[i] && sorted_indices_by_relevance[i] + query_start != item_index_i) {
+              selected_pairs.push_back({item_index_i - query_start, sorted_indices_by_relevance[i]});
+              selected_pairs.push_back({sorted_indices_by_relevance[i], item_index_i - query_start});
               ++selected_n;
-              if (selected_n == top_pairing_n) {
+              if (selected_n == local_top_pairing_n) {
                 break;
               }
             } else {
@@ -1005,9 +972,9 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           data_size_t selected_k = 0;
           std::random_shuffle(unselected_items.begin(), unselected_items.end());
           for (data_size_t i = 0; i < static_cast<data_size_t>(unselected_items.size()); ++i) {
-            if (unselected_items[i] != item_index_i) {
-              selected_pairs.push_back({i, unselected_items[i]});
-              selected_pairs.push_back({unselected_items[i], i});
+            if (unselected_items[i] + query_start != item_index_i) {
+              selected_pairs.push_back({item_index_i - query_start, unselected_items[i]});
+              selected_pairs.push_back({unselected_items[i], item_index_i - query_start});
               ++selected_k;
               if (selected_k == random_pairing_k) {
                 break;

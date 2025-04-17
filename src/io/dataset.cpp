@@ -908,7 +908,8 @@ void Dataset::CreatePairWiseRankingData(const Dataset* dataset, const bool is_va
   const std::string& pairing_approach = is_validation ? config.pairwise_lambdarank_valid_pairing_approach : config.pairwise_lambdarank_train_pairing_approach;
   const int pairwise_lambdarank_random_pairing_k = is_validation ? config.pairwise_lambdarank_valid_pairing_random_k : config.pairwise_lambdarank_train_pairing_random_k;
   const int pairwise_lambdarank_top_pairing_n = is_validation ? config.pairwise_lambdarank_valid_pairing_top_n : config.pairwise_lambdarank_train_pairing_top_n;
-  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), pairing_approach, pairwise_lambdarank_random_pairing_k, pairwise_lambdarank_top_pairing_n);
+  const int pairwise_lambdarank_relevance_pairing_m = is_validation ? config.pairwise_lambdarank_valid_pairing_relevance_m : config.pairwise_lambdarank_train_pairing_relevance_m;
+  num_data_ = metadata_.BuildPairwiseFeatureRanking(dataset->metadata(), pairing_approach, pairwise_lambdarank_random_pairing_k, pairwise_lambdarank_top_pairing_n, pairwise_lambdarank_relevance_pairing_m);
 
   feature_groups_.clear();
   num_features_ = dataset->num_features_ * 2;
