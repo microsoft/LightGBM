@@ -55,10 +55,6 @@ pytestmark = [
     pytest.mark.skipif(getenv("TASK", "") == "mpi", reason="Fails to run with MPI interface"),
     pytest.mark.skipif(getenv("TASK", "") == "gpu", reason="Fails to run with GPU interface"),
     pytest.mark.skipif(getenv("TASK", "") == "cuda", reason="Fails to run with CUDA interface"),
-    pytest.mark.skipif(
-        getenv("LGBM_SKIP_DASK_TESTS", "") == "true",
-        reason="Skipping lightgbm.dask tests (found env variable LGBM_SKIP_DASK_TESTS=true)",
-    ),
 ]
 
 
