@@ -271,22 +271,25 @@ def test_add_features_throws_if_num_data_unequal(rng):
     X2 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
     d2 = lgb.Dataset(X2).construct()
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot add features from other Dataset with a different number of rows"
+    ):
         d1.add_features_from(d2)
 
 
 def test_add_features_throws_if_datasets_unconstructed(rng):
     X1 = rng.uniform(size=(100, 1))
     X2 = rng.uniform(size=(100, 1))
-    with pytest.raises(ValueError):
+    err_msg = "Both source and target Datasets must be constructed before adding features"
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1)
         d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1).construct()
         d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1)
         d2 = lgb.Dataset(X2).construct()
         d1.add_features_from(d2)
