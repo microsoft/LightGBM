@@ -4125,8 +4125,8 @@ class Booster:
         Returns
         -------
         is_finished : bool
-            Whether there were no possible splits meeting the splitting criteria. No
-            more training to be done.
+            Whether there were no possible splits meeting the splitting criteria, that
+            is, there is no more training to be done.
         """
         # need reset training data
         if train_set is None and self.train_set_version != self.train_set.version:
