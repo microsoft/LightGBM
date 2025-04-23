@@ -3293,6 +3293,8 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
+                elif isinstance(self.data, pa_Table):
+                    self.data = self.data.take(self.used_indices)
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
@@ -3521,6 +3523,51 @@ class Dataset:
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
                 elif isinstance(other.data, dt_DataTable):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                else:
+                    self.data = None
+            elif isinstance(self.data, pa_Table):
+                if not PYARROW_INSTALLED:
+                    raise LightGBMError(
+                        "Cannot add features to pyarrow.Table type of raw data "
+                        "without pyarrow installed. "
+                        "Install pyarrow and restart your session."
+                    )
+                if isinstance(other.data, np.ndarray):
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa_Array.from_numpy(other.data[:, i]) for i in range(other.data.shape[1])],
+                        ]
+                    )
+                elif isinstance(other.data, scipy.sparse.spmatrix):
+                    other_array = other.data.toarray()
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa_Array.from_numpy(other_array[:, i]) for i in range(other_array.shape[1])],
+                        ]
+                    )
+                elif isinstance(other.data, pd_DataFrame):
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[
+                                pa_Array.from_numpy(other.data.iloc[:, i].values)
+                                for i in range(len(other.data.columns))
+                            ],
+                        ]
+                    )
+                elif isinstance(other.data, dt_DataTable):
+                    _emit_datatable_deprecation_warning()
+                    other_array = other.data.to_numpy()
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa_Array.from_numpy(other_array[:, i]) for i in range(other_array.shape[1])],
+                        ]
+                    )
+                elif isinstance(other.data, pa_Table):
+                    self.data = pa_Table.from_arrays([*self.data.columns, *other.data.columns])
                 else:
                     self.data = None
             else:
