@@ -50,7 +50,7 @@ _LGBM_PreprocFunction = Callable[
 ]
 
 
-def _choose_num_iterations(num_boost_round_kwarg: int, params: Dict[str, Any]) -> Dict[str, Any]:
+def _choose_num_iterations(*, num_boost_round_kwarg: int, params: Dict[str, Any]) -> Dict[str, Any]:
     """Choose number of boosting rounds.
 
     In ``train()`` and ``cv()``, there are multiple ways to provide configuration for
@@ -396,7 +396,13 @@ class CVBooster:
         for model_str in models["boosters"]:
             self.boosters.append(Booster(model_str=model_str))
 
-    def _to_dict(self, num_iteration: Optional[int], start_iteration: int, importance_type: str) -> Dict[str, Any]:
+    def _to_dict(
+        self,
+        *,
+        num_iteration: Optional[int],
+        start_iteration: int,
+        importance_type: str,
+    ) -> Dict[str, Any]:
         """Serialize CVBooster to dict."""
         models_str = []
         for booster in self.boosters:
@@ -467,7 +473,9 @@ class CVBooster:
         str_repr : str
             JSON string representation of CVBooster.
         """
-        return json.dumps(self._to_dict(num_iteration, start_iteration, importance_type))
+        return json.dumps(
+            self._to_dict(num_iteration=num_iteration, start_iteration=start_iteration, importance_type=importance_type)
+        )
 
     def save_model(
         self,
@@ -499,12 +507,18 @@ class CVBooster:
             Returns self.
         """
         with open(filename, "w") as file:
-            json.dump(self._to_dict(num_iteration, start_iteration, importance_type), file)
+            json.dump(
+                self._to_dict(
+                    num_iteration=num_iteration, start_iteration=start_iteration, importance_type=importance_type
+                ),
+                file,
+            )
 
         return self
 
 
 def _make_n_folds(
+    *,
     full_data: Dataset,
     folds: Optional[Union[Iterable[Tuple[np.ndarray, np.ndarray]], _LGBMBaseCrossValidator]],
     nfold: int,
