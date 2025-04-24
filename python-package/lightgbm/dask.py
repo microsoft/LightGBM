@@ -180,6 +180,7 @@ def _pad_eval_names(lgbm_model: LGBMModel, required_names: List[str]) -> LGBMMod
 
 
 def _train_part(
+    *,
     params: Dict[str, Any],
     model_factory: Type[LGBMModel],
     list_of_parts: List[Dict[str, _DaskPart]],
@@ -412,6 +413,7 @@ def _machines_to_worker_map(machines: str, worker_addresses: Iterable[str]) -> D
 
 
 def _train(
+    *,
     client: Client,
     data: _DaskMatrixLike,
     label: _DaskCollection,
@@ -832,6 +834,7 @@ def _train(
 
 def _predict_part(
     part: _DaskPart,
+    *,
     model: LGBMModel,
     raw_score: bool,
     pred_proba: bool,
@@ -870,6 +873,7 @@ def _predict_part(
 
 
 def _predict(
+    *,
     model: LGBMModel,
     data: _DaskMatrixLike,
     client: Client,
@@ -1041,6 +1045,7 @@ class _DaskLGBMModel:
 
     def _lgb_dask_fit(
         self,
+        *,
         model_factory: Type[LGBMModel],
         X: _DaskMatrixLike,
         y: _DaskCollection,
