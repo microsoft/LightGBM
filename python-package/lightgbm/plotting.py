@@ -425,6 +425,7 @@ def plot_metric(
 
 
 def _determine_direction_for_numeric_split(
+    *,
     fval: float,
     threshold: float,
     missing_type_str: str,
@@ -450,6 +451,7 @@ def _determine_direction_for_categorical_split(fval: float, thresholds: str) -> 
 
 
 def _to_graphviz(
+    *,
     tree_info: Dict[str, Any],
     show_info: List[str],
     feature_names: Union[List[str], None],
