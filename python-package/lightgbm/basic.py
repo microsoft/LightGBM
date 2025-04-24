@@ -46,6 +46,9 @@ from .compat import (
     pd_Series,
 )
 
+if PYARROW_INSTALLED:
+    import pyarrow as pa
+
 if TYPE_CHECKING:
     from typing import Literal
 
@@ -3482,6 +3485,22 @@ class Dataset:
                 elif isinstance(other.data, dt_DataTable):
                     _emit_datatable_deprecation_warning()
                     self.data = np.hstack((self.data, other.data.to_numpy()))
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    else:
+                        self.data = np.hstack(
+                            (
+                                self.data,
+                                np.column_stack(
+                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                                ),
+                            )
+                        )
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3493,6 +3512,23 @@ class Dataset:
                 elif isinstance(other.data, dt_DataTable):
                     _emit_datatable_deprecation_warning()
                     self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    else:
+                        self.data = scipy.sparse.hstack(
+                            (
+                                self.data,
+                                np.column_stack(
+                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                                ),
+                            ),
+                            format=sparse_format,
+                        )
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3511,6 +3547,27 @@ class Dataset:
                 elif isinstance(other.data, dt_DataTable):
                     _emit_datatable_deprecation_warning()
                     self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    else:
+                        self.data = concat(
+                            (
+                                self.data,
+                                pd_DataFrame(
+                                    {
+                                        other.data.column_names[i]: other.data.column(i).to_numpy()
+                                        for i in range(len(other.data.column_names))
+                                    }
+                                ),
+                            ),
+                            axis=1,
+                            ignore_index=True,
+                        )
                 else:
                     self.data = None
             elif isinstance(self.data, dt_DataTable):
@@ -3523,6 +3580,24 @@ class Dataset:
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
                 elif isinstance(other.data, dt_DataTable):
                     self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    else:
+                        self.data = dt_DataTable(
+                            np.hstack(
+                                (
+                                    self.data.to_numpy(),
+                                    np.column_stack(
+                                        [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                                    ),
+                                )
+                            )
+                        )
                 else:
                     self.data = None
             elif isinstance(self.data, pa_Table):
@@ -3536,26 +3611,32 @@ class Dataset:
                     self.data = pa_Table.from_arrays(
                         [
                             *self.data.columns,
-                            *[pa_Array.from_numpy(other.data[:, i]) for i in range(other.data.shape[1])],
-                        ]
+                            *[pa.array(other.data[:, i]) for i in range(other.data.shape[1])],
+                        ],
+                        names=[
+                            *self.data.column_names,
+                            *[f"D{len(self.data.column_names) + i + 1}" for i in range(other.data.shape[1])],
+                        ],
                     )
                 elif isinstance(other.data, scipy.sparse.spmatrix):
                     other_array = other.data.toarray()
                     self.data = pa_Table.from_arrays(
                         [
                             *self.data.columns,
-                            *[pa_Array.from_numpy(other_array[:, i]) for i in range(other_array.shape[1])],
-                        ]
+                            *[pa.array(other_array[:, i]) for i in range(other_array.shape[1])],
+                        ],
+                        names=[
+                            *self.data.column_names,
+                            *[f"D{len(self.data.column_names) + i + 1}" for i in range(other_array.shape[1])],
+                        ],
                     )
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = pa_Table.from_arrays(
                         [
                             *self.data.columns,
-                            *[
-                                pa_Array.from_numpy(other.data.iloc[:, i].values)
-                                for i in range(len(other.data.columns))
-                            ],
-                        ]
+                            *[pa.array(other.data.iloc[:, i].values) for i in range(len(other.data.columns))],
+                        ],
+                        names=[*self.data.column_names, *map(str, other.data.columns.tolist())],
                     )
                 elif isinstance(other.data, dt_DataTable):
                     _emit_datatable_deprecation_warning()
@@ -3563,11 +3644,15 @@ class Dataset:
                     self.data = pa_Table.from_arrays(
                         [
                             *self.data.columns,
-                            *[pa_Array.from_numpy(other_array[:, i]) for i in range(other_array.shape[1])],
-                        ]
+                            *[pa.array(other_array[:, i]) for i in range(other_array.shape[1])],
+                        ],
+                        names=[*self.data.column_names, *other.data.names],
                     )
                 elif isinstance(other.data, pa_Table):
-                    self.data = pa_Table.from_arrays([*self.data.columns, *other.data.columns])
+                    self.data = pa_Table.from_arrays(
+                        [*self.data.columns, *other.data.columns],
+                        names=[*self.data.column_names, *other.data.column_names],
+                    )
                 else:
                     self.data = None
             else:
