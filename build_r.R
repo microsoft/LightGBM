@@ -121,7 +121,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     pattern = "make_args_from_build_script <- character(0L)"
     , replacement = paste0(
       "make_args_from_build_script <- c(\""
-      , paste0(parsed_args[["make_args"]], collapse = "\", \"")
+      , paste(parsed_args[["make_args"]], collapse = "\", \"")
       , "\")"
     )
     , x = install_libs_content
@@ -167,7 +167,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
           , "make this faster."
         ))
       }
-      cmd <- paste0(cmd, " ", paste0(args, collapse = " "))
+      cmd <- paste0(cmd, " ", paste(args, collapse = " "))
       exit_code <- system(cmd)
     }
 
@@ -321,7 +321,7 @@ for (submodule in list.dirs(
   , recursive = FALSE
 )) {
   # compute/ is a submodule with boost, only needed if
-  # building the R package with GPU support;
+  # building the R-package with GPU support;
   # eigen/ has a special treatment due to licensing aspects
   if ((submodule == "compute" && !USING_GPU) || submodule == "eigen") {
     next
@@ -398,42 +398,6 @@ description_contents <- gsub(
 )
 writeLines(description_contents, DESCRIPTION_FILE)
 
-# CMake-based builds can't currently use R's builtin routine registration,
-# so have to update NAMESPACE manually, with a statement like this:
-#
-# useDynLib(lib_lightgbm, LGBM_DatasetCreateFromFile_R, ...)
-#
-# See https://cran.r-project.org/doc/manuals/r-release/R-exts.html#useDynLib for
-# documentation of this approach, where the NAMESPACE file uses a statement like
-# useDynLib(foo, myRoutine, myOtherRoutine)
-NAMESPACE_FILE <- file.path(TEMP_R_DIR, "NAMESPACE")
-namespace_contents <- readLines(NAMESPACE_FILE)
-dynlib_line <- grep(
-  pattern = "^useDynLib"
-  , x = namespace_contents
-)
-
-c_api_contents <- readLines(file.path(TEMP_SOURCE_DIR, "src", "lightgbm_R.h"))
-c_api_contents <- c_api_contents[startsWith(c_api_contents, "LIGHTGBM_C_EXPORT")]
-c_api_contents <- gsub(
-  pattern = "LIGHTGBM_C_EXPORT SEXP "
-  , replacement = ""
-  , x = c_api_contents
-  , fixed = TRUE
-)
-c_api_symbols <- gsub(
-  pattern = "\\(.*"
-  , replacement = ""
-  , x = c_api_contents
-)
-dynlib_statement <- paste0(
-  "useDynLib(lib_lightgbm, "
-  , toString(c_api_symbols)
-  , ")"
-)
-namespace_contents[dynlib_line] <- dynlib_statement
-writeLines(namespace_contents, NAMESPACE_FILE)
-
 # NOTE: --keep-empty-dirs is necessary to keep the deep paths expected
 #       by CMake while also meeting the CRAN req to create object files
 #       on demand
@@ -462,6 +426,6 @@ install_args <- c("CMD", "INSTALL", "--no-multiarch", "--with-keep.source", tarb
 if (INSTALL_AFTER_BUILD) {
   .run_shell_command(install_cmd, install_args)
 } else {
-  cmd <- paste0(install_cmd, " ", paste0(install_args, collapse = " "))
+  cmd <- paste0(install_cmd, " ", paste(install_args, collapse = " "))
   print(sprintf("Skipping installation. Install the package with command '%s'", cmd))
 }

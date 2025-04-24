@@ -351,7 +351,7 @@ test_that("Dataset$update_params() works correctly for recognized Dataset parame
   }
 })
 
-test_that("Dataset$finalize() should not fail on an already-finalized Dataset", {
+test_that("Dataset's finalizer should not fail on an already-finalized Dataset", {
   dtest <- lgb.Dataset(
     data = test_data
     , label = test_label
@@ -361,11 +361,11 @@ test_that("Dataset$finalize() should not fail on an already-finalized Dataset", 
   dtest$construct()
   expect_false(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
-  dtest$finalize()
+  dtest$.__enclos_env__$private$finalize()
   expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 
   # calling finalize() a second time shouldn't cause any issues
-  dtest$finalize()
+  dtest$.__enclos_env__$private$finalize()
   expect_true(.is_null_handle(dtest$.__enclos_env__$private$handle))
 })
 
@@ -439,6 +439,35 @@ test_that("lgb.Dataset: should be able to run lgb.cv() immediately after using l
 
   expect_true(methods::is(bst, "lgb.CVBooster"))
 })
+
+test_that("lgb.Dataset: should be able to be used in lgb.cv() when constructed with categorical feature indices", {
+  data("mtcars")
+  y <- mtcars$mpg
+  x <- as.matrix(mtcars[, -1L])
+  categorical_feature <- which(names(mtcars) %in% c("cyl", "vs", "am", "gear", "carb")) - 1L
+  dtrain <- lgb.Dataset(
+    data = x
+    , label = y
+    , categorical_feature = categorical_feature
+    , free_raw_data = TRUE
+    , params = list(num_threads = .LGB_MAX_THREADS)
+  )
+  # constructing the Dataset frees the raw data
+  dtrain$construct()
+  params <- list(
+    objective = "regression"
+    , num_leaves = 2L
+    , verbose = .LGB_VERBOSITY
+    , num_threads = .LGB_MAX_THREADS
+  )
+  # cv should reuse the same categorical features without checking the indices
+  bst <- lgb.cv(params = params, data = dtrain, stratified = FALSE, nrounds = 1L)
+  expect_equal(
+    unlist(bst$boosters[[1L]]$booster$params$categorical_feature)
+    , categorical_feature - 1L  # 0-based
+  )
+})
+
 
 test_that("lgb.Dataset: should be able to use and retrieve long feature names", {
   # set one feature to a value longer than the default buffer size used
@@ -620,4 +649,13 @@ test_that("lgb.Dataset can be constructed with categorical features and without 
   expect_error({
     lgb.Dataset(raw_mat, categorical_feature = 2L)$construct()
   }, regexp = "supplied a too large value in categorical_feature: 2 but only 1 features")
+})
+
+test_that("lgb.Dataset.slice fails with a categorical feature index greater than the number of features", {
+  data <- matrix(runif(100L), nrow = 50L, ncol = 2L)
+  ds <- lgb.Dataset(data = data, categorical_feature = 3L)
+  subset <- ds$slice(1L:20L)
+  expect_error({
+    subset$construct()
+  }, regexp = "supplied a too large value in categorical_feature: 3 but only 2 features")
 })

@@ -46,7 +46,7 @@ class RankingObjective : public ObjectiveFunction {
     position_ids_ = metadata.position_ids();
     // get number of different position ids
     num_position_ids_ = static_cast<data_size_t>(metadata.num_position_ids());
-    // get boundries
+    // get boundaries
     query_boundaries_ = metadata.query_boundaries();
     if (query_boundaries_ == nullptr) {
       Log::Fatal("Ranking tasks require query information");
@@ -56,19 +56,21 @@ class RankingObjective : public ObjectiveFunction {
     pos_biases_.resize(num_position_ids_, 0.0);
   }
 
-  void GetGradients(const double* score, score_t* gradients,
-                    score_t* hessians) const override {
+  void GetGradients(const double* score, const data_size_t num_sampled_queries, const data_size_t* sampled_query_indices,
+                    score_t* gradients, score_t* hessians) const override {
+    const data_size_t num_queries = (sampled_query_indices == nullptr ? num_queries_ : num_sampled_queries);
 #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(guided)
-    for (data_size_t i = 0; i < num_queries_; ++i) {
-      const data_size_t start = query_boundaries_[i];
-      const data_size_t cnt = query_boundaries_[i + 1] - query_boundaries_[i];
+    for (data_size_t i = 0; i < num_queries; ++i) {
+      const data_size_t query_index = (sampled_query_indices == nullptr ? i : sampled_query_indices[i]);
+      const data_size_t start = query_boundaries_[query_index];
+      const data_size_t cnt = query_boundaries_[query_index + 1] - query_boundaries_[query_index];
       std::vector<double> score_adjusted;
       if (num_position_ids_ > 0) {
         for (data_size_t j = 0; j < cnt; ++j) {
           score_adjusted.push_back(score[start + j] + pos_biases_[positions_[start + j]]);
         }
       }
-      GetGradientsForOneQuery(i, cnt, label_ + start, num_position_ids_ > 0 ? score_adjusted.data() : score + start,
+      GetGradientsForOneQuery(query_index, cnt, label_ + start, num_position_ids_ > 0 ? score_adjusted.data() : score + start,
                               gradients + start, hessians + start);
       if (weights_ != nullptr) {
         for (data_size_t j = 0; j < cnt; ++j) {
@@ -82,6 +84,10 @@ class RankingObjective : public ObjectiveFunction {
     if (num_position_ids_ > 0) {
       UpdatePositionBiasFactors(gradients, hessians);
     }
+  }
+
+  void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
+    GetGradients(score, num_queries_, nullptr, gradients, hessians);
   }
 
   virtual void GetGradientsForOneQuery(data_size_t query_id, data_size_t cnt,
@@ -198,7 +204,7 @@ class LambdarankNDCG : public RankingObjective {
     }
     const double worst_score = score[sorted_idx[worst_idx]];
     double sum_lambdas = 0.0;
-    // start accmulate lambdas by pairs that contain at least one document above truncation level
+    // start accumulate lambdas by pairs that contain at least one document above truncation level
     for (data_size_t i = 0; i < cnt - 1 && i < truncation_level_; ++i) {
       if (score[sorted_idx[i]] == kMinScore) { continue; }
       for (data_size_t j = i + 1; j < cnt; ++j) {

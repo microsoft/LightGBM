@@ -23,6 +23,7 @@
 #include <LightGBM/utils/log.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>

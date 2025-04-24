@@ -31,8 +31,7 @@ inline ArrowChunkedArray::Iterator<T> ArrowChunkedArray::end() const {
 /* ---------------------------------- ITERATOR IMPLEMENTATION ---------------------------------- */
 
 template <typename T>
-ArrowChunkedArray::Iterator<T>::Iterator(const ArrowChunkedArray& array,
-                                         getter_fn get,
+ArrowChunkedArray::Iterator<T>::Iterator(const ArrowChunkedArray& array, getter_fn get,
                                          int64_t ptr_chunk)
     : array_(array), get_(get), ptr_chunk_(ptr_chunk) {
   this->ptr_offset_ = 0;
@@ -41,7 +40,7 @@ ArrowChunkedArray::Iterator<T>::Iterator(const ArrowChunkedArray& array,
 template <typename T>
 T ArrowChunkedArray::Iterator<T>::operator*() const {
   auto chunk = array_.chunks_[ptr_chunk_];
-  return static_cast<T>(get_(chunk, ptr_offset_));
+  return get_(chunk, ptr_offset_);
 }
 
 template <typename T>
@@ -54,7 +53,7 @@ T ArrowChunkedArray::Iterator<T>::operator[](I idx) const {
   auto chunk = array_.chunks_[chunk_idx];
 
   auto ptr_offset = static_cast<int64_t>(idx) - array_.chunk_offsets_[chunk_idx];
-  return static_cast<T>(get_(chunk, ptr_offset));
+  return get_(chunk, ptr_offset);
 }
 
 template <typename T>
@@ -147,11 +146,28 @@ struct ArrayIndexAccessor {
     if (validity == nullptr || (validity[buffer_idx / 8] & (1 << (buffer_idx % 8)))) {
       // In case the index is valid, we take it from the data buffer
       auto data = static_cast<const T*>(array->buffers[1]);
-      return static_cast<double>(data[buffer_idx]);
+      return static_cast<V>(data[buffer_idx]);
     }
 
     // In case the index is not valid, we return a default value
-    return arrow_primitive_missing_value<T>();
+    return arrow_primitive_missing_value<V>();
+  }
+};
+
+template <typename V>
+struct ArrayIndexAccessor<bool, V> {
+  V operator()(const ArrowArray* array, size_t idx) {
+    // Custom implementation for booleans as values are bit-packed:
+    // https://arrow.apache.org/docs/cpp/api/datatype.html#_CPPv4N5arrow4Type4type4BOOLE
+    auto buffer_idx = idx + array->offset;
+    auto validity = static_cast<const char*>(array->buffers[0]);
+    if (validity == nullptr || (validity[buffer_idx / 8] & (1 << (buffer_idx % 8)))) {
+      // In case the index is valid, we have to take the appropriate bit from the buffer
+      auto data = static_cast<const char*>(array->buffers[1]);
+      auto value = (data[buffer_idx / 8] & (1 << (buffer_idx % 8))) >> (buffer_idx % 8);
+      return static_cast<V>(value);
+    }
+    return arrow_primitive_missing_value<V>();
   }
 };
 
@@ -180,6 +196,8 @@ std::function<T(const ArrowArray*, size_t)> get_index_accessor(const char* dtype
       return ArrayIndexAccessor<float, T>();
     case 'g':
       return ArrayIndexAccessor<double, T>();
+    case 'b':
+      return ArrayIndexAccessor<bool, T>();
     default:
       throw std::invalid_argument("unsupported Arrow datatype");
   }

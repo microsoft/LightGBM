@@ -20,8 +20,7 @@ int OMP_NUM_THREADS() {
     default_num_threads = LGBM_DEFAULT_NUM_THREADS;
   } else {
     // otherwise, default to OpenMP-global config
-    #pragma omp single
-    { default_num_threads = omp_get_max_threads(); }
+    default_num_threads = omp_get_max_threads();
   }
 
   // ensure that if LGBM_SetMaxThreads() was ever called, LightGBM doesn't

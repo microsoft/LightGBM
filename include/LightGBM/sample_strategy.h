@@ -55,6 +55,10 @@ class SampleStrategy {
 
   bool NeedResizeGradients() const { return need_resize_gradients_; }
 
+  virtual data_size_t num_sampled_queries() const { return 0; }
+
+  virtual const data_size_t* sampled_query_indices() const { return nullptr; }
+
  protected:
   const Config* config_;
   const Dataset* train_data_;

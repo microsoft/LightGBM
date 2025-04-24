@@ -1,14 +1,16 @@
 # coding: utf-8
 """Scikit-learn wrapper interface for LightGBM."""
+
 import copy
 from inspect import signature
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse
 
 from .basic import (
+    _MULTICLASS_OBJECTIVES,
     Booster,
     Dataset,
     LightGBMError,
@@ -29,27 +31,30 @@ from .compat import (
     SKLEARN_INSTALLED,
     LGBMNotFittedError,
     _LGBMAssertAllFinite,
-    _LGBMCheckArray,
     _LGBMCheckClassificationTargets,
     _LGBMCheckSampleWeight,
-    _LGBMCheckXY,
     _LGBMClassifierBase,
     _LGBMComputeSampleWeight,
     _LGBMCpuCount,
     _LGBMLabelEncoder,
     _LGBMModelBase,
     _LGBMRegressorBase,
+    _LGBMValidateData,
+    _sklearn_version,
     dt_DataTable,
-    np_random_Generator,
     pd_DataFrame,
 )
 from .engine import train
 
+if TYPE_CHECKING:
+    from .compat import _sklearn_Tags
+
+
 __all__ = [
-    'LGBMClassifier',
-    'LGBMModel',
-    'LGBMRanker',
-    'LGBMRegressor',
+    "LGBMClassifier",
+    "LGBMModel",
+    "LGBMRanker",
+    "LGBMRegressor",
 ]
 
 _LGBM_ScikitMatrixLike = Union[
@@ -57,58 +62,58 @@ _LGBM_ScikitMatrixLike = Union[
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
-    scipy.sparse.spmatrix
+    scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
     # f(labels, preds)
     Callable[
         [Optional[np.ndarray], np.ndarray],
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[np.ndarray, np.ndarray],
     ],
     # f(labels, preds, weights)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[np.ndarray, np.ndarray],
     ],
     # f(labels, preds, weights, group)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
-        Tuple[np.ndarray, np.ndarray]
+        Tuple[np.ndarray, np.ndarray],
     ],
 ]
 _LGBM_ScikitCustomEvalFunction = Union[
     # f(labels, preds)
     Callable[
         [Optional[np.ndarray], np.ndarray],
-        _LGBM_EvalFunctionResultType
+        _LGBM_EvalFunctionResultType,
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray],
-        List[_LGBM_EvalFunctionResultType]
+        List[_LGBM_EvalFunctionResultType],
     ],
     # f(labels, preds, weights)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
-        _LGBM_EvalFunctionResultType
+        _LGBM_EvalFunctionResultType,
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray]],
-        List[_LGBM_EvalFunctionResultType]
+        List[_LGBM_EvalFunctionResultType],
     ],
     # f(labels, preds, weights, group)
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
-        _LGBM_EvalFunctionResultType
+        _LGBM_EvalFunctionResultType,
     ],
     Callable[
         [Optional[np.ndarray], np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
-        List[_LGBM_EvalFunctionResultType]
-    ]
+        List[_LGBM_EvalFunctionResultType],
+    ],
 ]
 _LGBM_ScikitEvalMetricType = Union[
     str,
     _LGBM_ScikitCustomEvalFunction,
-    List[Union[str, _LGBM_ScikitCustomEvalFunction]]
+    List[Union[str, _LGBM_ScikitCustomEvalFunction]],
 ]
 _LGBM_ScikitValidSet = Tuple[_LGBM_ScikitMatrixLike, _LGBM_LabelType]
 
@@ -119,7 +124,7 @@ def _get_group_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarray
         "Estimators in lightgbm.sklearn should only retrieve query groups from a constructed Dataset. "
         "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
     )
-    assert (group is None or isinstance(group, np.ndarray)), error_msg
+    assert group is None or isinstance(group, np.ndarray), error_msg
     return group
 
 
@@ -139,7 +144,7 @@ def _get_weight_from_constructed_dataset(dataset: Dataset) -> Optional[np.ndarra
         "Estimators in lightgbm.sklearn should only retrieve weights from a constructed Dataset. "
         "If you're seeing this message, it's a bug in lightgbm. Please report it at https://github.com/microsoft/LightGBM/issues."
     )
-    assert (weight is None or isinstance(weight, np.ndarray)), error_msg
+    assert weight is None or isinstance(weight, np.ndarray), error_msg
     return weight
 
 
@@ -189,7 +194,11 @@ class _ObjectiveFunctionWrapper:
         """
         self.func = func
 
-    def __call__(self, preds: np.ndarray, dataset: Dataset) -> Tuple[np.ndarray, np.ndarray]:
+    def __call__(
+        self,
+        preds: np.ndarray,
+        dataset: Dataset,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """Call passed function with appropriate arguments.
 
         Parameters
@@ -271,7 +280,7 @@ class _EvalFunctionWrapper:
     def __call__(
         self,
         preds: np.ndarray,
-        dataset: Dataset
+        dataset: Dataset,
     ) -> Union[_LGBM_EvalFunctionResultType, List[_LGBM_EvalFunctionResultType]]:
         """Call passed function with appropriate arguments.
 
@@ -310,8 +319,7 @@ class _EvalFunctionWrapper:
 # documentation templates for LGBMModel methods are shared between the classes in
 # this module and those in the ``dask`` module
 
-_lgbmmodel_doc_fit = (
-    """
+_lgbmmodel_doc_fit = """
     Build a gradient boosting model from the training set (X, y).
 
     Parameters
@@ -372,7 +380,6 @@ _lgbmmodel_doc_fit = (
     self : LGBMModel
         Returns self.
     """
-)
 
 _lgbmmodel_doc_custom_eval_note = """
     Note
@@ -405,8 +412,7 @@ _lgbmmodel_doc_custom_eval_note = """
             Is eval result higher better, e.g. AUC is ``is_higher_better``.
 """
 
-_lgbmmodel_doc_predict = (
-    """
+_lgbmmodel_doc_predict = """
     {description}
 
     Parameters
@@ -451,7 +457,30 @@ _lgbmmodel_doc_predict = (
     X_SHAP_values : {X_SHAP_values_shape}
         If ``pred_contrib=True``, the feature contributions for each sample.
     """
-)
+
+
+def _extract_evaluation_meta_data(
+    *,
+    collection: Optional[Union[Dict[Any, Any], List[Any]]],
+    name: str,
+    i: int,
+) -> Optional[Any]:
+    """Try to extract the ith element of one of the ``eval_*`` inputs."""
+    if collection is None:
+        return None
+    elif isinstance(collection, list):
+        # It's possible, for example, to pass 3 eval sets through `eval_set`,
+        # but only 1 init_score through `eval_init_score`.
+        #
+        # This if-else accounts for that possibility.
+        if len(collection) > i:
+            return collection[i]
+        else:
+            return None
+    elif isinstance(collection, dict):
+        return collection.get(i, None)
+    else:
+        raise TypeError(f"{name} should be dict or list")
 
 
 class LGBMModel(_LGBMModelBase):
@@ -459,7 +488,8 @@ class LGBMModel(_LGBMModelBase):
 
     def __init__(
         self,
-        boosting_type: str = 'gbdt',
+        *,
+        boosting_type: str = "gbdt",
         num_leaves: int = 31,
         max_depth: int = -1,
         learning_rate: float = 0.1,
@@ -467,18 +497,18 @@ class LGBMModel(_LGBMModelBase):
         subsample_for_bin: int = 200000,
         objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
         class_weight: Optional[Union[Dict, str]] = None,
-        min_split_gain: float = 0.,
+        min_split_gain: float = 0.0,
         min_child_weight: float = 1e-3,
         min_child_samples: int = 20,
-        subsample: float = 1.,
+        subsample: float = 1.0,
         subsample_freq: int = 0,
-        colsample_bytree: float = 1.,
-        reg_alpha: float = 0.,
-        reg_lambda: float = 0.,
-        random_state: Optional[Union[int, np.random.RandomState, 'np.random.Generator']] = None,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
         n_jobs: Optional[int] = None,
-        importance_type: str = 'split',
-        **kwargs
+        importance_type: str = "split",
+        **kwargs: Any,
     ):
         r"""Construct a gradient boosting model.
 
@@ -492,6 +522,7 @@ class LGBMModel(_LGBMModelBase):
             Maximum tree leaves for base learners.
         max_depth : int, optional (default=-1)
             Maximum tree depth for base learners, <=0 means no limit.
+            If setting this to a positive value, consider also changing ``num_leaves`` to ``<= 2^max_depth``.
         learning_rate : float, optional (default=0.1)
             Boosting learning rate.
             You can use ``callbacks`` parameter of ``fit`` method to shrink/adapt learning rate
@@ -598,8 +629,10 @@ class LGBMModel(_LGBMModelBase):
         and grad and hess should be returned in the same format.
         """
         if not SKLEARN_INSTALLED:
-            raise LightGBMError('scikit-learn is required for lightgbm.sklearn. '
-                                'You must install scikit-learn and restart your session to use this module.')
+            raise LightGBMError(
+                "scikit-learn is required for lightgbm.sklearn. "
+                "You must install scikit-learn and restart your session to use this module."
+            )
 
         self.boosting_type = boosting_type
         self.objective = objective
@@ -634,17 +667,67 @@ class LGBMModel(_LGBMModelBase):
         self._n_classes: int = -1
         self.set_params(**kwargs)
 
+    # scikit-learn 1.6 introduced an __sklearn__tags() method intended to replace _more_tags().
+    # _more_tags() can be removed whenever lightgbm's minimum supported scikit-learn version
+    # is >=1.6.
+    # ref: https://github.com/microsoft/LightGBM/pull/6651
     def _more_tags(self) -> Dict[str, Any]:
+        check_sample_weight_str = (
+            "In LightGBM, setting a sample's weight to 0 can produce a different result than omitting the sample. "
+            "Such samples intentionally still affect count-based measures like 'min_data_in_leaf' "
+            "(https://github.com/microsoft/LightGBM/issues/5626#issuecomment-1712706678) and the estimated distribution "
+            "of features for Dataset construction (see https://github.com/microsoft/LightGBM/issues/5553)."
+        )
+        # "check_sample_weight_equivalence" can be removed when lightgbm's
+        # minimum supported scikit-learn version is at least 1.6
+        # ref: https://github.com/scikit-learn/scikit-learn/pull/30137
         return {
-            'allow_nan': True,
-            'X_types': ['2darray', 'sparse', '1dlabels'],
-            '_xfail_checks': {
-                'check_no_attributes_set_in_init':
-                'scikit-learn incorrectly asserts that private attributes '
-                'cannot be set in __init__: '
-                '(see https://github.com/microsoft/LightGBM/issues/2628)'
-            }
+            "allow_nan": True,
+            "X_types": ["2darray", "sparse", "1dlabels"],
+            "_xfail_checks": {
+                "check_no_attributes_set_in_init": "scikit-learn incorrectly asserts that private attributes "
+                "cannot be set in __init__: "
+                "(see https://github.com/microsoft/LightGBM/issues/2628)",
+                "check_sample_weight_equivalence": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_dense_data": check_sample_weight_str,
+                "check_sample_weight_equivalence_on_sparse_data": check_sample_weight_str,
+            },
         }
+
+    @staticmethod
+    def _update_sklearn_tags_from_dict(
+        *,
+        tags: "_sklearn_Tags",
+        tags_dict: Dict[str, Any],
+    ) -> "_sklearn_Tags":
+        """Update ``sklearn.utils.Tags`` inherited from ``scikit-learn`` base classes.
+
+        ``scikit-learn`` 1.6 introduced a dataclass-based interface for estimator tags.
+        ref: https://github.com/scikit-learn/scikit-learn/pull/29677
+
+        This method handles updating that instance based on the value in ``self._more_tags()``.
+        """
+        tags.input_tags.allow_nan = tags_dict["allow_nan"]
+        tags.input_tags.sparse = "sparse" in tags_dict["X_types"]
+        tags.target_tags.one_d_labels = "1dlabels" in tags_dict["X_types"]
+        return tags
+
+    def __sklearn_tags__(self) -> Optional["_sklearn_Tags"]:
+        # _LGBMModelBase.__sklearn_tags__() cannot be called unconditionally,
+        # because that method isn't defined for scikit-learn<1.6
+        if not hasattr(_LGBMModelBase, "__sklearn_tags__"):
+            err_msg = (
+                "__sklearn_tags__() should not be called when using scikit-learn<1.6. "
+                f"Detected version: {_sklearn_version}"
+            )
+            raise AttributeError(err_msg)
+
+        # take whatever tags are provided by BaseEstimator, then modify
+        # them with LightGBM-specific values
+        return self._update_sklearn_tags_from_dict(
+            tags=super().__sklearn_tags__(),
+            tags_dict=self._more_tags(),
+        )
 
     def __sklearn_is_fitted__(self) -> bool:
         return getattr(self, "fitted_", False)
@@ -663,7 +746,35 @@ class LGBMModel(_LGBMModelBase):
         params : dict
             Parameter names mapped to their values.
         """
+        # Based on: https://github.com/dmlc/xgboost/blob/bd92b1c9c0db3e75ec3dfa513e1435d518bb535d/python-package/xgboost/sklearn.py#L941
+        # which was based on: https://stackoverflow.com/questions/59248211
+        #
+        # `get_params()` flows like this:
+        #
+        # 0. Get parameters in subclass (self.__class__) first, by using inspect.
+        # 1. Get parameters in all parent classes (especially `LGBMModel`).
+        # 2. Get whatever was passed via `**kwargs`.
+        # 3. Merge them.
+        #
+        # This needs to accommodate being called recursively in the following
+        # inheritance graphs (and similar for classification and ranking):
+        #
+        #   DaskLGBMRegressor -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #   (custom subclass) -> LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        LGBMRegressor     -> LGBMModel -> BaseEstimator
+        #                        (custom subclass) -> LGBMModel -> BaseEstimator
+        #                                             LGBMModel -> BaseEstimator
+        #
         params = super().get_params(deep=deep)
+        cp = copy.copy(self)
+        # If the immediate parent defines get_params(), use that.
+        if callable(getattr(cp.__class__.__bases__[0], "get_params", None)):
+            cp.__class__ = cp.__class__.__bases__[0]
+        # Otherwise, skip it and assume the next class will have it.
+        # This is here primarily for cases where the first class in MRO is a scikit-learn mixin.
+        else:
+            cp.__class__ = cp.__class__.__bases__[1]
+        params.update(cp.__class__.get_params(cp, deep))
         params.update(self._other_params)
         return params
 
@@ -703,8 +814,8 @@ class LGBMModel(_LGBMModelBase):
         assert stage in {"fit", "predict"}
         params = self.get_params()
 
-        params.pop('objective', None)
-        for alias in _ConfigAliases.get('objective'):
+        params.pop("objective", None)
+        for alias in _ConfigAliases.get("objective"):
             if alias in params:
                 obj = params.pop(alias)
                 _log_warning(f"Found '{alias}' in params. Will use it instead of 'objective' argument")
@@ -725,33 +836,31 @@ class LGBMModel(_LGBMModelBase):
                     raise ValueError("Unknown LGBMModel type.")
         if callable(self._objective):
             if stage == "fit":
-                params['objective'] = _ObjectiveFunctionWrapper(self._objective)
+                params["objective"] = _ObjectiveFunctionWrapper(self._objective)
             else:
-                params['objective'] = 'None'
+                params["objective"] = "None"
         else:
-            params['objective'] = self._objective
+            params["objective"] = self._objective
 
-        params.pop('importance_type', None)
-        params.pop('n_estimators', None)
-        params.pop('class_weight', None)
+        params.pop("importance_type", None)
+        params.pop("n_estimators", None)
+        params.pop("class_weight", None)
 
-        if isinstance(params['random_state'], np.random.RandomState):
-            params['random_state'] = params['random_state'].randint(np.iinfo(np.int32).max)
-        elif isinstance(params['random_state'], np_random_Generator):
-            params['random_state'] = int(
-                params['random_state'].integers(np.iinfo(np.int32).max)
-            )
+        if isinstance(params["random_state"], np.random.RandomState):
+            params["random_state"] = params["random_state"].randint(np.iinfo(np.int32).max)
+        elif isinstance(params["random_state"], np.random.Generator):
+            params["random_state"] = int(params["random_state"].integers(np.iinfo(np.int32).max))
         if self._n_classes > 2:
-            for alias in _ConfigAliases.get('num_class'):
+            for alias in _ConfigAliases.get("num_class"):
                 params.pop(alias, None)
-            params['num_class'] = self._n_classes
-        if hasattr(self, '_eval_at'):
+            params["num_class"] = self._n_classes
+        if hasattr(self, "_eval_at"):
             eval_at = self._eval_at
-            for alias in _ConfigAliases.get('eval_at'):
+            for alias in _ConfigAliases.get("eval_at"):
                 if alias in params:
                     _log_warning(f"Found '{alias}' in params. Will use it instead of 'eval_at' argument")
                     eval_at = params.pop(alias)
-            params['eval_at'] = eval_at
+            params["eval_at"] = eval_at
 
         # register default metric for consistency with callable eval_metric case
         original_metric = self._objective if isinstance(self._objective, str) else None
@@ -809,10 +918,10 @@ class LGBMModel(_LGBMModelBase):
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
         eval_group: Optional[List[_LGBM_GroupType]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        feature_name: _LGBM_FeatureNameConfiguration = "auto",
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None
+        init_model: Optional[Union[str, Path, Booster, "LGBMModel"]] = None,
     ) -> "LGBMModel":
         """Docstring is set after definition, using a template."""
         params = self._process_params(stage="fit")
@@ -832,16 +941,30 @@ class LGBMModel(_LGBMModelBase):
         eval_metrics_builtin = [m for m in eval_metric_list if isinstance(m, str)]
 
         # concatenate metric from params (or default if not provided in params) and eval_metric
-        params['metric'] = [params['metric']] if isinstance(params['metric'], (str, type(None))) else params['metric']
-        params['metric'] = [e for e in eval_metrics_builtin if e not in params['metric']] + params['metric']
-        params['metric'] = [metric for metric in params['metric'] if metric is not None]
+        params["metric"] = [params["metric"]] if isinstance(params["metric"], (str, type(None))) else params["metric"]
+        params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
+        params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            _X, _y = _LGBMCheckXY(X, y, accept_sparse=True, force_all_finite=False, ensure_min_samples=2)
+            _X, _y = _LGBMValidateData(
+                self,
+                X,
+                y,
+                reset=True,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row and 1-row inputs
+                ensure_min_samples=2,
+            )
             if sample_weight is not None:
                 sample_weight = _LGBMCheckSampleWeight(sample_weight, _X)
         else:
             _X, _y = X, y
+
+            # for other data types, setting n_features_in_ is handled by _LGBMValidateData() in the branch above
+            self.n_features_in_ = _X.shape[1]
 
         if self._class_weight is None:
             self._class_weight = self.class_weight
@@ -852,27 +975,19 @@ class LGBMModel(_LGBMModelBase):
             else:
                 sample_weight = np.multiply(sample_weight, class_sample_weight)
 
-        self._n_features = _X.shape[1]
-        # copy for consistency
-        self._n_features_in = self._n_features
-
-        train_set = Dataset(data=_X, label=_y, weight=sample_weight, group=group,
-                            init_score=init_score, categorical_feature=categorical_feature,
-                            params=params)
+        train_set = Dataset(
+            data=_X,
+            label=_y,
+            weight=sample_weight,
+            group=group,
+            init_score=init_score,
+            categorical_feature=categorical_feature,
+            feature_name=feature_name,
+            params=params,
+        )
 
         valid_sets: List[Dataset] = []
         if eval_set is not None:
-
-            def _get_meta_data(collection, name, i):
-                if collection is None:
-                    return None
-                elif isinstance(collection, list):
-                    return collection[i] if len(collection) > i else None
-                elif isinstance(collection, dict):
-                    return collection.get(i, None)
-                else:
-                    raise TypeError(f"{name} should be dict or list")
-
             if isinstance(eval_set, tuple):
                 eval_set = [eval_set]
             for i, valid_data in enumerate(eval_set):
@@ -880,8 +995,16 @@ class LGBMModel(_LGBMModelBase):
                 if valid_data[0] is X and valid_data[1] is y:
                     valid_set = train_set
                 else:
-                    valid_weight = _get_meta_data(eval_sample_weight, 'eval_sample_weight', i)
-                    valid_class_weight = _get_meta_data(eval_class_weight, 'eval_class_weight', i)
+                    valid_weight = _extract_evaluation_meta_data(
+                        collection=eval_sample_weight,
+                        name="eval_sample_weight",
+                        i=i,
+                    )
+                    valid_class_weight = _extract_evaluation_meta_data(
+                        collection=eval_class_weight,
+                        name="eval_class_weight",
+                        i=i,
+                    )
                     if valid_class_weight is not None:
                         if isinstance(valid_class_weight, dict) and self._class_map is not None:
                             valid_class_weight = {self._class_map[k]: v for k, v in valid_class_weight.items()}
@@ -890,11 +1013,25 @@ class LGBMModel(_LGBMModelBase):
                             valid_weight = valid_class_sample_weight
                         else:
                             valid_weight = np.multiply(valid_weight, valid_class_sample_weight)
-                    valid_init_score = _get_meta_data(eval_init_score, 'eval_init_score', i)
-                    valid_group = _get_meta_data(eval_group, 'eval_group', i)
-                    valid_set = Dataset(data=valid_data[0], label=valid_data[1], weight=valid_weight,
-                                        group=valid_group, init_score=valid_init_score,
-                                        categorical_feature='auto', params=params)
+                    valid_init_score = _extract_evaluation_meta_data(
+                        collection=eval_init_score,
+                        name="eval_init_score",
+                        i=i,
+                    )
+                    valid_group = _extract_evaluation_meta_data(
+                        collection=eval_group,
+                        name="eval_group",
+                        i=i,
+                    )
+                    valid_set = Dataset(
+                        data=valid_data[0],
+                        label=valid_data[1],
+                        weight=valid_weight,
+                        group=valid_group,
+                        init_score=valid_init_score,
+                        categorical_feature="auto",
+                        params=params,
+                    )
 
                 valid_sets.append(valid_set)
 
@@ -917,9 +1054,15 @@ class LGBMModel(_LGBMModelBase):
             valid_names=eval_names,
             feval=eval_metrics_callable,  # type: ignore[arg-type]
             init_model=init_model,
-            feature_name=feature_name,
-            callbacks=callbacks
+            callbacks=callbacks,
         )
+
+        # This populates the property self.n_features_, the number of features in the fitted model,
+        # and so should only be set after fitting.
+        #
+        # The related property self._n_features_in, which populates self.n_features_in_,
+        # is set BEFORE fitting.
+        self._n_features = self._Booster.num_feature()
 
         self._evals_result = evals_result
         self._best_iteration = self._Booster.best_iteration
@@ -932,16 +1075,20 @@ class LGBMModel(_LGBMModelBase):
         del train_set, valid_sets
         return self
 
-    fit.__doc__ = _lgbmmodel_doc_fit.format(
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-        y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
-        sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
-        init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-        group_shape="numpy array, pandas Series, list of int or float, or None, optional (default=None)",
-        eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
-        eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
-        eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)"
-    ) + "\n\n" + _lgbmmodel_doc_custom_eval_note
+    fit.__doc__ = (
+        _lgbmmodel_doc_fit.format(
+            X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
+            sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
+            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
+            group_shape="numpy array, pandas Series, list of int or float, or None, optional (default=None)",
+            eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
+            eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
+            eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)",
+        )
+        + "\n\n"
+        + _lgbmmodel_doc_custom_eval_note
+    )
 
     def predict(
         self,
@@ -952,19 +1099,28 @@ class LGBMModel(_LGBMModelBase):
         pred_leaf: bool = False,
         pred_contrib: bool = False,
         validate_features: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
         if not isinstance(X, (pd_DataFrame, dt_DataTable)):
-            X = _LGBMCheckArray(X, accept_sparse=True, force_all_finite=False)
-        n_features = X.shape[1]
-        if self._n_features != n_features:
-            raise ValueError("Number of features of the model must "
-                             f"match the input. Model n_features_ is {self._n_features} and "
-                             f"input n_features is {n_features}")
-        # retrive original params that possibly can be used in both training and prediction
+            X = _LGBMValidateData(
+                self,
+                X,
+                # 'y' being omitted = run scikit-learn's check_array() instead of check_X_y()
+                #
+                # Prevent scikit-learn from deleting or modifying attributes like 'feature_names_in_' and 'n_features_in_'.
+                # These shouldn't be changed at predict() time.
+                reset=False,
+                # allow any input type (this validation is done further down, in lgb.Dataset())
+                accept_sparse=True,
+                # do not raise an error if Inf of NaN values are found (LightGBM handles these internally)
+                ensure_all_finite=False,
+                # raise an error on 0-row inputs
+                ensure_min_samples=1,
+            )
+        # retrieve original params that possibly can be used in both training and prediction
         # and then overwrite them (considering aliases) with params that were passed directly in prediction
         predict_params = self._process_params(stage="predict")
         for alias in _ConfigAliases.get_by_alias(
@@ -975,7 +1131,7 @@ class LGBMModel(_LGBMModelBase):
             "num_iteration",
             "pred_leaf",
             "pred_contrib",
-            *kwargs.keys()
+            *kwargs.keys(),
         ):
             predict_params.pop(alias, None)
         predict_params.update(kwargs)
@@ -986,53 +1142,75 @@ class LGBMModel(_LGBMModelBase):
         predict_params["num_threads"] = self._process_n_jobs(predict_params["num_threads"])
 
         return self._Booster.predict(  # type: ignore[union-attr]
-            X, raw_score=raw_score, start_iteration=start_iteration, num_iteration=num_iteration,
-            pred_leaf=pred_leaf, pred_contrib=pred_contrib, validate_features=validate_features,
-            **predict_params
+            X,
+            raw_score=raw_score,
+            start_iteration=start_iteration,
+            num_iteration=num_iteration,
+            pred_leaf=pred_leaf,
+            pred_contrib=pred_contrib,
+            validate_features=validate_features,
+            **predict_params,
         )
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
+        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects",
     )
 
     @property
     def n_features_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No n_features found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No n_features found. Need to call fit beforehand.")
         return self._n_features
 
     @property
     def n_features_in_(self) -> int:
         """:obj:`int`: The number of features of fitted model."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No n_features_in found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No n_features_in found. Need to call fit beforehand.")
         return self._n_features_in
+
+    @n_features_in_.setter
+    def n_features_in_(self, value: int) -> None:
+        """Set number of features found in passed-in dataset.
+
+        Starting with ``scikit-learn`` 1.6, ``scikit-learn`` expects to be able to directly
+        set this property in functions like ``validate_data()``.
+
+        .. note::
+
+            Do not call ``estimator.n_features_in_ = some_int`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        self._n_features_in = value
 
     @property
     def best_score_(self) -> _LGBM_BoosterBestScoreType:
         """:obj:`dict`: The best score of fitted model."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No best_score found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No best_score found. Need to call fit beforehand.")
         return self._best_score
 
     @property
     def best_iteration_(self) -> int:
         """:obj:`int`: The best iteration of fitted model if ``early_stopping()`` callback has been specified."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No best_iteration found. Need to call fit with early_stopping callback beforehand.')
+            raise LGBMNotFittedError(
+                "No best_iteration found. Need to call fit with early_stopping callback beforehand."
+            )
         return self._best_iteration
 
     @property
     def objective_(self) -> Union[str, _LGBM_ScikitCustomObjectiveFunction]:
         """:obj:`str` or :obj:`callable`: The concrete objective used while fitting this model."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No objective found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No objective found. Need to call fit beforehand.")
         return self._objective  # type: ignore[return-value]
 
     @property
@@ -1041,11 +1219,11 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
-        
+
         .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No n_estimators found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No n_estimators found. Need to call fit beforehand.")
         return self._Booster.current_iteration()  # type: ignore
 
     @property
@@ -1054,25 +1232,25 @@ class LGBMModel(_LGBMModelBase):
 
         This might be less than parameter ``n_estimators`` if early stopping was enabled or
         if boosting stopped early due to limits on complexity like ``min_gain_to_split``.
-        
+
         .. versionadded:: 4.0.0
         """
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No n_iter found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No n_iter found. Need to call fit beforehand.")
         return self._Booster.current_iteration()  # type: ignore
 
     @property
     def booster_(self) -> Booster:
         """Booster: The underlying Booster of this model."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No booster found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No booster found. Need to call fit beforehand.")
         return self._Booster  # type: ignore[return-value]
 
     @property
     def evals_result_(self) -> _EvalResultDict:
         """:obj:`dict`: The evaluation results if validation sets have been specified."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No results found. Need to call fit with eval_set beforehand.')
+            raise LGBMNotFittedError("No results found. Need to call fit with eval_set beforehand.")
         return self._evals_result
 
     @property
@@ -1085,19 +1263,120 @@ class LGBMModel(_LGBMModelBase):
             to configure the type of importance values to be extracted.
         """
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No feature_importances found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No feature_importances found. Need to call fit beforehand.")
         return self._Booster.feature_importance(importance_type=self.importance_type)  # type: ignore[union-attr]
 
     @property
     def feature_name_(self) -> List[str]:
-        """:obj:`list` of shape = [n_features]: The names of features."""
+        """:obj:`list` of shape = [n_features]: The names of features.
+
+        .. note::
+
+            If input does not contain feature names, they will be added during fitting in the format ``Column_0``, ``Column_1``, ..., ``Column_N``.
+        """
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No feature_name found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No feature_name found. Need to call fit beforehand.")
         return self._Booster.feature_name()  # type: ignore[union-attr]
+
+    @property
+    def feature_names_in_(self) -> np.ndarray:
+        """:obj:`array` of shape = [n_features]: scikit-learn compatible version of ``.feature_name_``.
+
+        .. versionadded:: 4.5.0
+        """
+        if not self.__sklearn_is_fitted__():
+            raise LGBMNotFittedError("No feature_names_in_ found. Need to call fit beforehand.")
+        return np.array(self.feature_name_)
+
+    @feature_names_in_.deleter
+    def feature_names_in_(self) -> None:
+        """Intercept calls to delete ``feature_names_in_``.
+
+        Some code paths in ``scikit-learn`` try to delete the ``feature_names_in_`` attribute
+        on estimators when a new training dataset that doesn't have features is passed.
+        LightGBM automatically assigns feature names to such datasets
+        (like ``Column_0``, ``Column_1``, etc.) and so does not want that behavior.
+
+        However, that behavior is coupled to ``scikit-learn`` automatically updating
+        ``n_features_in_`` in those same code paths, which is necessary for compliance
+        with its API (via argument ``reset`` to functions like ``validate_data()`` and
+        ``check_array()``).
+
+        .. note::
+
+            Do not call ``del estimator.feature_names_in_`` or anything else that invokes
+            this method. It is only here for compatibility with ``scikit-learn`` validation
+            functions used internally in ``lightgbm``.
+        """
+        pass
 
 
 class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
     """LightGBM regressor."""
+
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
+
+    def _more_tags(self) -> Dict[str, Any]:
+        # handle the case where RegressorMixin possibly provides _more_tags()
+        if callable(getattr(_LGBMRegressorBase, "_more_tags", None)):
+            tags = _LGBMRegressorBase._more_tags(self)
+        else:
+            tags = {}
+        # override those with LightGBM-specific preferences
+        tags.update(LGBMModel._more_tags(self))
+        return tags
+
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
+        return super().__sklearn_tags__()
 
     def fit(  # type: ignore[override]
         self,
@@ -1110,10 +1389,10 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
         eval_sample_weight: Optional[List[_LGBM_WeightType]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        feature_name: _LGBM_FeatureNameConfiguration = "auto",
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
     ) -> "LGBMRegressor":
         """Docstring is inherited from the LGBMModel."""
         super().fit(
@@ -1129,21 +1408,88 @@ class LGBMRegressor(_LGBMRegressorBase, LGBMModel):
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             callbacks=callbacks,
-            init_model=init_model
+            init_model=init_model,
         )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRegressor")  # type: ignore
-    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
-                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
-    _base_doc = (_base_doc[:_base_doc.find('eval_class_weight :')]
-                 + _base_doc[_base_doc.find('eval_init_score :'):])
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
-                   + _base_doc[_base_doc.find('eval_metric :'):])
+    _base_doc = (
+        _base_doc[: _base_doc.find("group :")]  # type: ignore
+        + _base_doc[_base_doc.find("eval_set :") :]
+    )  # type: ignore
+    _base_doc = _base_doc[: _base_doc.find("eval_class_weight :")] + _base_doc[_base_doc.find("eval_init_score :") :]
+    fit.__doc__ = _base_doc[: _base_doc.find("eval_group :")] + _base_doc[_base_doc.find("eval_metric :") :]
 
 
 class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
     """LightGBM classifier."""
+
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
+
+    def _more_tags(self) -> Dict[str, Any]:
+        # handle the case where ClassifierMixin possibly provides _more_tags()
+        if callable(getattr(_LGBMClassifierBase, "_more_tags", None)):
+            tags = _LGBMClassifierBase._more_tags(self)
+        else:
+            tags = {}
+        # override those with LightGBM-specific preferences
+        tags.update(LGBMModel._more_tags(self))
+        return tags
+
+    def __sklearn_tags__(self) -> "_sklearn_Tags":
+        tags = super().__sklearn_tags__()
+        tags.classifier_tags.multi_class = True
+        tags.classifier_tags.multi_label = False
+        return tags
 
     def fit(  # type: ignore[override]
         self,
@@ -1157,10 +1503,10 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         eval_class_weight: Optional[List[float]] = None,
         eval_init_score: Optional[List[_LGBM_InitScoreType]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
-        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        feature_name: _LGBM_FeatureNameConfiguration = "auto",
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
     ) -> "LGBMClassifier":
         """Docstring is inherited from the LGBMModel."""
         _LGBMAssertAllFinite(y)
@@ -1185,18 +1531,18 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
                 eval_metric_list = [eval_metric]
             else:
                 eval_metric_list = []
-            if self._n_classes > 2:
+            if self.__is_multiclass:
                 for index, metric in enumerate(eval_metric_list):
-                    if metric in {'logloss', 'binary_logloss'}:
+                    if metric in {"logloss", "binary_logloss"}:
                         eval_metric_list[index] = "multi_logloss"
-                    elif metric in {'error', 'binary_error'}:
+                    elif metric in {"error", "binary_error"}:
                         eval_metric_list[index] = "multi_error"
             else:
                 for index, metric in enumerate(eval_metric_list):
-                    if metric in {'logloss', 'multi_logloss'}:
-                        eval_metric_list[index] = 'binary_logloss'
-                    elif metric in {'error', 'multi_error'}:
-                        eval_metric_list[index] = 'binary_error'
+                    if metric in {"logloss", "multi_logloss"}:
+                        eval_metric_list[index] = "binary_logloss"
+                    elif metric in {"error", "multi_error"}:
+                        eval_metric_list[index] = "binary_error"
             eval_metric = eval_metric_list
 
         # do not modify args, as it causes errors in model selection tools
@@ -1225,15 +1571,16 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             callbacks=callbacks,
-            init_model=init_model
+            init_model=init_model,
         )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMClassifier")  # type: ignore
-    _base_doc = (_base_doc[:_base_doc.find('group :')]  # type: ignore
-                 + _base_doc[_base_doc.find('eval_set :'):])  # type: ignore
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_group :')]
-                   + _base_doc[_base_doc.find('eval_metric :'):])
+    _base_doc = (
+        _base_doc[: _base_doc.find("group :")]  # type: ignore
+        + _base_doc[_base_doc.find("eval_set :") :]
+    )  # type: ignore
+    fit.__doc__ = _base_doc[: _base_doc.find("eval_group :")] + _base_doc[_base_doc.find("eval_metric :") :]
 
     def predict(
         self,
@@ -1244,7 +1591,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_leaf: bool = False,
         pred_contrib: bool = False,
         validate_features: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """Docstring is inherited from the LGBMModel."""
         result = self.predict_proba(
@@ -1255,7 +1602,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             validate_features=validate_features,
-            **kwargs
+            **kwargs,
         )
         if callable(self._objective) or raw_score or pred_leaf or pred_contrib:
             return result
@@ -1274,7 +1621,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
         pred_leaf: bool = False,
         pred_contrib: bool = False,
         validate_features: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """Docstring is set after definition, using a template."""
         result = super().predict(
@@ -1285,40 +1632,47 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
             pred_leaf=pred_leaf,
             pred_contrib=pred_contrib,
             validate_features=validate_features,
-            **kwargs
+            **kwargs,
         )
         if callable(self._objective) and not (raw_score or pred_leaf or pred_contrib):
-            _log_warning("Cannot compute class probabilities or labels "
-                         "due to the usage of customized objective function.\n"
-                         "Returning raw scores instead.")
+            _log_warning(
+                "Cannot compute class probabilities or labels "
+                "due to the usage of customized objective function.\n"
+                "Returning raw scores instead."
+            )
             return result
-        elif self._n_classes > 2 or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
+        elif self.__is_multiclass or raw_score or pred_leaf or pred_contrib:  # type: ignore [operator]
             return result
         else:
-            return np.vstack((1. - result, result)).transpose()
+            return np.vstack((1.0 - result, result)).transpose()
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame , scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_probability",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
-        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects"
+        X_SHAP_values_shape="array-like of shape = [n_samples, n_features + 1] or shape = [n_samples, (n_features + 1) * n_classes] or list with n_classes length of such objects",
     )
 
     @property
     def classes_(self) -> np.ndarray:
         """:obj:`array` of shape = [n_classes]: The class label array."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No classes found. Need to call fit beforehand.")
         return self._classes  # type: ignore[return-value]
 
     @property
     def n_classes_(self) -> int:
         """:obj:`int`: The number of classes."""
         if not self.__sklearn_is_fitted__():
-            raise LGBMNotFittedError('No classes found. Need to call fit beforehand.')
+            raise LGBMNotFittedError("No classes found. Need to call fit beforehand.")
         return self._n_classes
+
+    @property
+    def __is_multiclass(self) -> bool:
+        """:obj:`bool`:  Indicator of whether the classifier is used for multiclass."""
+        return self._n_classes > 2 or (isinstance(self._objective, str) and self._objective in _MULTICLASS_OBJECTIVES)
 
 
 class LGBMRanker(LGBMModel):
@@ -1330,6 +1684,57 @@ class LGBMRanker(LGBMModel):
         therefore this class is not really compatible with the sklearn ecosystem.
         Please use this class mainly for training and applying ranking models in common sklearnish way.
     """
+
+    # NOTE: all args from LGBMModel.__init__() are intentionally repeated here for
+    #       docs, help(), and tab completion.
+    def __init__(
+        self,
+        *,
+        boosting_type: str = "gbdt",
+        num_leaves: int = 31,
+        max_depth: int = -1,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100,
+        subsample_for_bin: int = 200000,
+        objective: Optional[Union[str, _LGBM_ScikitCustomObjectiveFunction]] = None,
+        class_weight: Optional[Union[Dict, str]] = None,
+        min_split_gain: float = 0.0,
+        min_child_weight: float = 1e-3,
+        min_child_samples: int = 20,
+        subsample: float = 1.0,
+        subsample_freq: int = 0,
+        colsample_bytree: float = 1.0,
+        reg_alpha: float = 0.0,
+        reg_lambda: float = 0.0,
+        random_state: Optional[Union[int, np.random.RandomState, np.random.Generator]] = None,
+        n_jobs: Optional[int] = None,
+        importance_type: str = "split",
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(
+            boosting_type=boosting_type,
+            num_leaves=num_leaves,
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            subsample_for_bin=subsample_for_bin,
+            objective=objective,
+            class_weight=class_weight,
+            min_split_gain=min_split_gain,
+            min_child_weight=min_child_weight,
+            min_child_samples=min_child_samples,
+            subsample=subsample,
+            subsample_freq=subsample_freq,
+            colsample_bytree=colsample_bytree,
+            reg_alpha=reg_alpha,
+            reg_lambda=reg_lambda,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            importance_type=importance_type,
+            **kwargs,
+        )
+
+    __init__.__doc__ = LGBMModel.__init__.__doc__
 
     def fit(  # type: ignore[override]
         self,
@@ -1345,10 +1750,10 @@ class LGBMRanker(LGBMModel):
         eval_group: Optional[List[_LGBM_GroupType]] = None,
         eval_metric: Optional[_LGBM_ScikitEvalMetricType] = None,
         eval_at: Union[List[int], Tuple[int, ...]] = (1, 2, 3, 4, 5),
-        feature_name: _LGBM_FeatureNameConfiguration = 'auto',
-        categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
+        feature_name: _LGBM_FeatureNameConfiguration = "auto",
+        categorical_feature: _LGBM_CategoricalFeatureConfiguration = "auto",
         callbacks: Optional[List[Callable]] = None,
-        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None
+        init_model: Optional[Union[str, Path, Booster, LGBMModel]] = None,
     ) -> "LGBMRanker":
         """Docstring is inherited from the LGBMModel."""
         # check group data
@@ -1360,12 +1765,16 @@ class LGBMRanker(LGBMModel):
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
             elif len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
-            elif (isinstance(eval_group, dict)
-                  and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
-                  or isinstance(eval_group, list)
-                  and any(group is None for group in eval_group)):
-                raise ValueError("Should set group for all eval datasets for ranking task; "
-                                 "if you use dict, the index should start from 0")
+            elif (
+                isinstance(eval_group, dict)
+                and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
+                or isinstance(eval_group, list)
+                and any(group is None for group in eval_group)
+            ):
+                raise ValueError(
+                    "Should set group for all eval datasets for ranking task; "
+                    "if you use dict, the index should start from 0"
+                )
 
         self._eval_at = eval_at
         super().fit(
@@ -1383,15 +1792,17 @@ class LGBMRanker(LGBMModel):
             feature_name=feature_name,
             categorical_feature=categorical_feature,
             callbacks=callbacks,
-            init_model=init_model
+            init_model=init_model,
         )
         return self
 
     _base_doc = LGBMModel.fit.__doc__.replace("self : LGBMModel", "self : LGBMRanker")  # type: ignore
-    fit.__doc__ = (_base_doc[:_base_doc.find('eval_class_weight :')]  # type: ignore
-                   + _base_doc[_base_doc.find('eval_init_score :'):])  # type: ignore
+    fit.__doc__ = (
+        _base_doc[: _base_doc.find("eval_class_weight :")]  # type: ignore
+        + _base_doc[_base_doc.find("eval_init_score :") :]
+    )  # type: ignore
     _base_doc = fit.__doc__
-    _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition('feature_name :')
+    _before_feature_name, _feature_name, _after_feature_name = _base_doc.partition("feature_name :")
     fit.__doc__ = f"""{_before_feature_name}eval_at : list or tuple of int, optional (default=(1, 2, 3, 4, 5))
         The evaluation positions of the specified metric.
     {_feature_name}{_after_feature_name}"""

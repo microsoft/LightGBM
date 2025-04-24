@@ -16,8 +16,15 @@
 #include <string>
 
 #ifdef LGB_R_BUILD
+
+#ifndef R_NO_REMAP
 #define R_NO_REMAP
+#endif
+
+#ifndef R_USE_C99_IN_CXX
 #define R_USE_C99_IN_CXX
+#endif
+
 #include <R_ext/Print.h>
 extern "C" void R_FlushConsole(void);
 #endif

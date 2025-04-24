@@ -9,6 +9,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <functional>
@@ -144,7 +145,7 @@ class BinMapper {
 
   /*!
   * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  * \return Maximum categorical value for categorical features, 0 for numerical features
   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {
