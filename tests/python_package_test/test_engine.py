@@ -1498,7 +1498,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     assert bst.params["categorical_feature"] == [1, 2]
 
     # check that passing parameters to the constructor raises warning and ignores them
-    with pytest.warns(UserWarning, match="Ignoring params argument"):
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model file."):
         bst2 = lgb.Booster(params={"num_leaves": 7}, model_file=model_file)
     assert bst.params == bst2.params
 
@@ -1506,6 +1506,50 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     orig_preds = orig_bst.predict(X)
     preds = bst.predict(X)
     np.testing.assert_allclose(preds, orig_preds)
+
+
+def test_string_serialized_params_retrieval(rng):
+    # Random train data
+    train_x = rng.random((500, 3))
+    train_y = rng.integers(0, 1, 500)
+    train_data = lgb.Dataset(train_x, train_y)
+
+    # Parameters
+    params = {
+        "boosting": "gbdt",
+        "deterministic": True,
+        "feature_contri": [0.5] * train_x.shape[1],
+        "interaction_constraints": [[0, 1], [0]],
+        "objective": "binary",
+        "metric": ["auc"],
+        "num_leaves": 7,
+        "learning_rate": 0.05,
+        "feature_fraction": 0.9,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "verbosity": -100,
+    }
+
+    # train a model and serialize it to a string in memory
+    model = lgb.train(params, train_data, num_boost_round=2)
+    model_serialized = model.model_to_string()
+
+    # load a new model with the string
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model string."):
+        new_model = lgb.Booster(params={"num_leaves": 32}, model_str=model_serialized)
+
+    assert new_model.params["boosting"] == "gbdt"
+    assert new_model.params["deterministic"] is True
+    assert new_model.params["feature_contri"] == [0.5] * train_x.shape[1]
+    assert new_model.params["interaction_constraints"] == [[0, 1], [0]]
+    assert new_model.params["objective"] == "binary"
+    assert new_model.params["metric"] == ["auc"]
+    assert new_model.params["num_leaves"] == 7
+    assert new_model.params["learning_rate"] == 0.05
+    assert new_model.params["feature_fraction"] == 0.9
+    assert new_model.params["bagging_fraction"] == 0.8
+    assert new_model.params["bagging_freq"] == 5
+    assert new_model.params["verbosity"] == -100
 
 
 def test_save_load_copy_pickle(tmp_path):
@@ -3797,6 +3841,22 @@ def test_linear_single_leaf():
     bst = lgb.train(params, train_data, num_boost_round=5)
     y_pred = bst.predict(X_train)
     assert log_loss(y_train, y_pred) < 0.661
+
+
+def test_linear_raises_informative_errors_on_unsupported_params():
+    X, y = make_synthetic_regression()
+    with pytest.raises(lgb.basic.LightGBMError, match="Cannot use regression_l1 objective when fitting linear trees"):
+        lgb.train(
+            train_set=lgb.Dataset(X, label=y),
+            params={"linear_tree": True, "objective": "regression_l1"},
+            num_boost_round=1,
+        )
+    with pytest.raises(lgb.basic.LightGBMError, match="zero_as_missing must be false when fitting linear trees"):
+        lgb.train(
+            train_set=lgb.Dataset(X, label=y),
+            params={"linear_tree": True, "zero_as_missing": True},
+            num_boost_round=1,
+        )
 
 
 def test_predict_with_start_iteration():

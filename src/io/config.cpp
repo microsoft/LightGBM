@@ -428,7 +428,7 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     if (zero_as_missing) {
       Log::Fatal("zero_as_missing must be false when fitting linear trees.");
     }
-    if (objective == std::string("regresson_l1")) {
+    if (objective == std::string("regression_l1")) {
       Log::Fatal("Cannot use regression_l1 objective when fitting linear trees.");
     }
   }
