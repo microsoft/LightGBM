@@ -598,16 +598,6 @@ struct Config {
   // desc = any two features can only appear in the same tree only if there exists a constraint containing both features
   std::string tree_interaction_constraints = "";
 
-  // check = >= 0.0
-  // desc = controls how many features can appear in the same tree
-  // desc = by default (max_tree_interactions = 0) interaction constraints are disabled
-  int max_tree_interactions = 0;
-
-  // check = >= 0.0
-  // desc = controls how many features interactions can be added to the final model
-  // desc = by default no limit is imposed on the interaction with max_interactions = 0
-  int max_interactions = 0;
-
   // alias = verbose
   // desc = controls the level of LightGBM's verbosity
   // desc = ``< 0``: Fatal, ``= 0``: Error (Warning), ``= 1``: Info, ``> 1``: Debug

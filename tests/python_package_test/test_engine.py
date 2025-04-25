@@ -3651,8 +3651,8 @@ def test_tree_interaction_constraints():
             inter_found.add(tuple(sorted(feat_used)))
         for feats_found in inter_found:
             found = False
-            for real_contraints in tree_interaction_constraints:
-                if set(feats_found) <= set(real_contraints):
+            for real_constraints in tree_interaction_constraints:
+                if set(feats_found) <= set(real_constraints):
                     found = True
                     break
             assert found is True
@@ -3660,7 +3660,7 @@ def test_tree_interaction_constraints():
     X, y = make_synthetic_regression(n_samples=400, n_features=30)
     num_features = X.shape[1]
     train_data = lgb.Dataset(X, label=y)
-    # check that tree constraint containing all features is equivalent to no constraint
+    # check that tree constraint containing all features is equivalent to no constraints.
     params = {"verbose": -1, "seed": 0}
     est = lgb.train(params, train_data, num_boost_round=10)
     pred1 = est.predict(X)
@@ -3689,96 +3689,7 @@ def test_tree_interaction_constraints():
     check_consistency(est, tree_interaction_constraints)
 
 
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Interaction constraints are not yet supported on the CUDA version"
-)
-def test_max_tree_interactions():
-    def check_n_interactions(est):
-        feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
-        tree_df = est.trees_to_dataframe()
-        max_n_interactions = 0
-        for tree_index in tree_df["tree_index"].unique():
-            tree_df_per_index = tree_df[tree_df["tree_index"] == tree_index]
-            feat_used = [
-                feat_to_index[feat] for feat in tree_df_per_index["split_feature"].unique() if feat is not None
-            ]
-            max_n_interactions = max(max_n_interactions, len(feat_used))
-        assert max_n_interactions <= est.params["max_tree_interactions"]
-
-    X, y = make_synthetic_regression(n_samples=400, n_features=30)
-    train_data = lgb.Dataset(X, label=y)
-    # check that limiting the number of interaction to the number of features is equivalent to no constraint
-    params = {"verbose": -1, "seed": 0}
-    est = lgb.train(params, train_data, num_boost_round=100)
-    pred1 = est.predict(X)
-    est = lgb.train(dict(params, max_tree_interactions=400), train_data, num_boost_round=100)
-    pred2 = est.predict(X)
-
-    check_n_interactions(est)
-    np.testing.assert_allclose(pred1, pred2)
-
-    # check that the forest has only 1 interaction per tree
-    max_tree_interactions = 1
-    new_params = dict(params, max_tree_interactions=max_tree_interactions)
-    est = lgb.train(new_params, train_data, num_boost_round=100)
-    check_n_interactions(est)
-
-    #  check that the forest has at most 10 features that interact in a tree
-    max_tree_interactions = 10
-    new_params = dict(params, max_tree_interactions=max_tree_interactions)
-    est = lgb.train(new_params, train_data, num_boost_round=100)
-    check_n_interactions(est)
-
-
-@pytest.mark.skipif(
-    getenv("TASK", "") == "cuda", reason="Interaction constraints are not yet supported on the CUDA version"
-)
-def test_max_interactions():
-    def check_interactions(est, max_interactions):
-        feat_to_index = {feat: i for i, feat in enumerate(est.feature_name())}
-        tree_df = est.trees_to_dataframe()
-        inter_found = set()
-        for tree_index in tree_df["tree_index"].unique():
-            tree_df_per_index = tree_df[tree_df["tree_index"] == tree_index]
-            feat_used = [
-                feat_to_index[feat] for feat in tree_df_per_index["split_feature"].unique() if feat is not None
-            ]
-            add_inter = True
-            for inter in inter_found:
-                if set(feat_used) <= set(inter):  # the interaction found is a subset of another interaction
-                    add_inter = False
-            if add_inter:
-                inter_found.add(tuple(sorted(feat_used)))
-        assert len(inter_found) <= max_interactions
-
-    X, y = make_synthetic_regression(n_samples=400, n_features=30)
-    train_data = lgb.Dataset(X, label=y)
-    # check that limiting the number of distinct interactions to the number of trees is equivalent to no constraint
-    params = {"verbose": -1, "seed": 0}
-    est = lgb.train(params, train_data, num_boost_round=100)
-    pred1 = est.predict(X)
-
-    max_interactions = 100
-    est = lgb.train(dict(params, max_interactions=max_interactions), train_data, num_boost_round=100)
-    pred2 = est.predict(X)
-
-    check_interactions(est, max_interactions)
-    np.testing.assert_allclose(pred1, pred2)
-
-    # check that the forest has only 1 interaction
-    max_interactions = 1
-    new_params = dict(params, max_interactions=max_interactions)
-    est = lgb.train(new_params, train_data, num_boost_round=100)
-    check_interactions(est, max_interactions)
-
-    #  check that the forest has at most 10 interactions
-    max_interactions = 10
-    new_params = dict(params, max_interactions=max_interactions)
-    est = lgb.train(new_params, train_data, num_boost_round=100)
-    check_interactions(est, max_interactions)
-
-
-def test_linear_trees_num_threads():
+def test_linear_trees_num_threads(rng_fixed_seed):
     # check that number of threads does not affect result
     x = np.arange(0, 1000, 0.1)
     y = 2 * x + rng_fixed_seed.normal(loc=0, scale=0.1, size=(len(x),))

@@ -306,7 +306,6 @@ def train(
     booster.best_iteration = 0
 
     # start training
-    interactions_used = set()
     for i in range(init_iteration, init_iteration + num_boost_round):
         for cb in callbacks_before_iter:
             cb(
@@ -323,15 +322,6 @@ def train(
         booster.update(fobj=fobj)
 
         evaluation_result_list: List[_LGBM_BoosterEvalMethodResultType] = []
-        if params.get("max_interactions", 0) > 0:
-            interaction_used = booster.dump_model(num_iteration=1, start_iteration=i)["tree_info"][0]["tree_features"]
-            interaction_used.sort()
-            interactions_used.add(tuple(interaction_used))
-
-            if len(interactions_used) == params["max_interactions"]:
-                params["tree_interaction_constraints"] = [list(feats) for feats in interactions_used]
-                params["max_interactions"] = 0
-                booster.reset_parameter(params)
         # check evaluation result.
         if valid_sets is not None:
             if is_valid_contain_train:
