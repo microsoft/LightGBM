@@ -685,11 +685,15 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     elif isinstance(y, list) and isinstance(y[0], list):
-        with pytest.raises(TypeError):
+        with pytest.raises(
+            TypeError, match=r"Wrong type\(list\) for list\.\nIt should be list, numpy 1-D array or pandas Series"
+        ):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object"
+        ):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name="list")
