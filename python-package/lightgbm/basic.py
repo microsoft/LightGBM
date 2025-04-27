@@ -3227,7 +3227,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
