@@ -73,7 +73,7 @@ repos:
         # FIXME: Propagate the mypy exit code once all typing issues in this project are fixed.
         #  Once this is done, we can also set `pass_filenames: true`.
         #  Tracking issue: https://github.com/microsoft/LightGBM/issues/3756
-        entry: pixi run -e lint mypy --config-file=./python-package/pyproject.toml . || true
+        entry: pixi run -e lint "mypy --config-file=./python-package/pyproject.toml . || true"
         language: system
         types: [python]
         require_serial: true
