@@ -1076,7 +1076,7 @@ class LGBMModel(_LGBMModelBase):
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
             X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
             sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
             init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
             group_shape="numpy array, pandas Series, pyarrow Array, pyarrow ChunkedArray, list of int or float, or None, optional (default=None)",
