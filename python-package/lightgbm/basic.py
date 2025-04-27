@@ -3240,7 +3240,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
