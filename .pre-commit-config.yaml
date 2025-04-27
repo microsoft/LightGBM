@@ -12,40 +12,133 @@ exclude: |
   |R-package/man/.*Rd$
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+  - repo: local
     hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        args: ["--strict"]
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    # Ruff version.
-    rev: v0.9.10
-    hooks:
-      # Run the linter.
+      # ensure pixi environments are up to date
+      - id: pixi-install
+        name: pixi-install
+        entry: pixi install -e lint
+        language: system
+        always_run: true
+        require_serial: true
+        pass_filenames: false
+      # ------------------------------------------ C++ ------------------------------------------ #
+      # cpplint
+      - id: cpplint
+        name: cpplint
+        entry: >-
+          pixi run -e lint cpplint
+            --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length
+            --recursive ./src ./include ./R-package ./swig ./tests
+        language: system
+        types_or: [c, c++]
+        require_serial: true
+        pass_filenames: false
+      # cmakelint
+      - id: cmakelint
+        name: cmakelint
+        entry: >-
+          pixi run -e lint cmakelint --linelength=120
+            --filter=-convention/filename,-package/stdargs,-readability/wonkycase
+        language: system
+        types: [cmake]
+        require_serial: true
+      # openmp-pragmas
+      - id: openmp-pragmas
+        name: openmp-pragmas
+        entry: pixi run -e lint sh .ci/lint/lint-openmp-pragmas.sh
+        language: system
+        types_or: [c, c++]
+        require_serial: true
+        pass_filenames: false
+      # ----------------------------------------- PYTHON ---------------------------------------- #
+      # ruff
       - id: ruff
-        args: ["--config", "python-package/pyproject.toml"]
+        name: ruff
+        entry: >-
+          pixi run -e lint ruff check --fix --exit-non-zero-on-fix --force-exclude
+          --config python-package/pyproject.toml
+        language: system
         types_or: [python, jupyter]
-      # Run the formatter.
+        require_serial: true
       - id: ruff-format
-        args: ["--config", "python-package/pyproject.toml"]
+        name: ruff-format
+        entry: pixi run -e lint ruff format --force-exclude --config python-package/pyproject.toml
+        language: system
         types_or: [python, jupyter]
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
-    hooks:
-      - id: shellcheck
-  - repo: https://github.com/crate-ci/typos
-    rev: v1.30.2
-    hooks:
-      - id: typos
-        args: ["--force-exclude"]
-        exclude: (\.gitignore$)|(^\.editorconfig$)
-  - repo: https://github.com/henryiii/validate-pyproject-schema-store
-    rev: 2025.03.10
-    hooks:
+        require_serial: true
+      # mypy
+      - id: mypy
+        name: mypy
+        # FIXME: Propagate the mypy exit code once all typing issues in this project are fixed.
+        #  Tracking issue: https://github.com/microsoft/LightGBM/issues/3756
+        entry: pixi run -e lint sh -c "mypy --config-file=./python-package/pyproject.toml %@ || true"
+        language: system
+        types: [python]
+        require_serial: true
+        files: ^python-package/
+      # validate-pyproject
       - id: validate-pyproject
-        files: python-package/pyproject.toml$
+        name: validate-pyproject
+        entry: pixi run -e lint validate-pyproject
+        language: python
+        files: ^python-package/pyproject.toml$
+      # ------------------------------------------- R ------------------------------------------- #
+      # R lint
+      - id: r-lintr
+        name: r-lintr
+        entry: pixi run -e lint Rscript .ci/lint/lint-r-code.R .
+        language: system
+        types: [r]
+        require_serial: true
+        pass_filenames: false
+      # ------------------------------------------ MISC ----------------------------------------- #
+      # biome
+      - id: biome
+        name: biome
+        entry: pixi run -e lint biome ci --config-path=./biome.json --diagnostic-level=info --error-on-warnings ./
+        language: system
+        types_or: [javascript, json]
+        require_serial: true
+        pass_filenames: false
+      # yamllint
+      - id: yamllint
+        name: yamllint
+        entry: pixi run -e lint yamllint
+        language: system
+        types: [yaml]
+      # shellcheck
+      - id: shellcheck
+        name: shellcheck
+        entry: pixi run -e lint shellcheck
+        language: system
+        types: [text, shell]
+        exclude: ^\.envrc$
+      # powershell
+      - id: powershell
+        name: powershell
+        entry: pixi run -e lint pwsh .ci/lint/lint-powershell.ps1
+        language: system
+        types: [powershell]
+        require_serial: true
+        pass_filenames: false
+      # ---------------------------------------- GENERAL ---------------------------------------- #
+      # pre-commit-hooks
+      - id: trailing-whitespace-fixer
+        name: trailing-whitespace-fixer
+        entry: pixi run -e lint trailing-whitespace-fixer
+        language: system
+        types: [text]
+      - id: end-of-file-fixer
+        name: end-of-file-fixer
+        entry: pixi run -e lint end-of-file-fixer
+        language: system
+        types: [text]
+      # typos
+      - id: typos
+        name: typos
+        entry: pixi run -e lint typos --force-exclude
+        language: system
+        types: [text]
+        require_serial: true
+        exclude: (\.gitignore$)|(^\.editorconfig$)

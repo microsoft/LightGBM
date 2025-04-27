@@ -1,0 +1,46 @@
+[workspace]
+channels = ["conda-forge"]
+name = "lightgbm"
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+
+# ----------------------------------------------------------------------------------------------- #
+#                                             LINTING                                             #
+# ----------------------------------------------------------------------------------------------- #
+
+[feature.lint.dependencies]
+biome = ">=1.9.3"
+clang-format = "*"
+cmakelint = ">=1.4.3"
+cpplint = ">=1.6.0"
+mypy = ">=1.11.1"
+pre-commit = ">=3.8.0"
+pre-commit-hooks = "*"
+r-lintr = ">=3.1.2"
+ruff = "*"
+shellcheck = "*"
+typos = "*"
+validate-pyproject = "*"
+yamllint = "*"
+
+# These dependencies are used for mypy. Ideally, we would actually use the `python` feature but
+# type checking actually fails if we include all dependencies.
+matplotlib-base = ">=3.9.1"
+pyarrow-core = ">=17.0"
+scikit-learn = ">=1.5.2"
+
+# FIXME: Once https://github.com/conda-forge/powershell-feedstock/issues/1 lands, this dependency
+#  should be added non-conditionally for all platforms. This alleviates the need to globally
+#  install `pwsh`.
+[feature.lint.target.win-64.dependencies]
+powershell = "*"
+
+[feature.lint.tasks]
+lint = "pre-commit run --all-files"
+
+# ----------------------------------------------------------------------------------------------- #
+#                                           ENVIRONMENTS                                          #
+# ----------------------------------------------------------------------------------------------- #
+
+[environments]
+default = ["lint"]
+lint = ["lint"]
