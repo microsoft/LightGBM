@@ -341,7 +341,7 @@ def train(
                 )
         except callback.EarlyStopException as earlyStopException:
             booster.best_iteration = earlyStopException.best_iteration + 1
-            evaluation_result_list = earlyStopException.best_score
+            evaluation_result_list = [item if len(item) == 4 else item[:4] for item in earlyStopException.best_score]
             break
     booster.best_score = defaultdict(OrderedDict)
     for dataset_name, eval_name, score, _ in evaluation_result_list:
