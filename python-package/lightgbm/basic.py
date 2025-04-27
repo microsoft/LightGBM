@@ -1100,7 +1100,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
