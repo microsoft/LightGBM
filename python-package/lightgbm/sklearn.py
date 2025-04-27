@@ -41,7 +41,6 @@ from .compat import (
     _LGBMRegressorBase,
     _LGBMValidateData,
     _sklearn_version,
-    dt_DataTable,
     pd_DataFrame,
 )
 from .engine import train
@@ -58,7 +57,6 @@ __all__ = [
 ]
 
 _LGBM_ScikitMatrixLike = Union[
-    dt_DataTable,
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
@@ -945,7 +943,7 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
+        if not isinstance(X, pd_DataFrame):
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1077,7 +1075,7 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
             y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
             sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
             init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
@@ -1104,7 +1102,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, (pd_DataFrame, dt_DataTable)):
+        if not isinstance(X, pd_DataFrame):
             X = _LGBMValidateData(
                 self,
                 X,
@@ -1154,7 +1152,7 @@ class LGBMModel(_LGBMModelBase):
 
     predict.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted value for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_result",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",
@@ -1648,7 +1646,7 @@ class LGBMClassifier(_LGBMClassifierBase, LGBMModel):
 
     predict_proba.__doc__ = _lgbmmodel_doc_predict.format(
         description="Return the predicted probability for each class for each sample.",
-        X_shape="numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+        X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
         output_name="predicted_probability",
         predicted_result_shape="array-like of shape = [n_samples] or shape = [n_samples, n_classes]",
         X_leaves_shape="array-like of shape = [n_samples, n_trees] or shape = [n_samples, n_trees * n_classes]",

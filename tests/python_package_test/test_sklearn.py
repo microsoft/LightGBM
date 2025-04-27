@@ -24,10 +24,8 @@ from sklearn.utils.validation import check_is_fitted
 import lightgbm as lgb
 from lightgbm.compat import (
     DASK_INSTALLED,
-    DATATABLE_INSTALLED,
     PANDAS_INSTALLED,
     _sklearn_version,
-    dt_DataTable,
     pd_DataFrame,
     pd_Series,
 )
@@ -1883,14 +1881,12 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
         assert preds.shape[0] == y.shape[0]
 
 
-@pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
+@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame"])
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
 def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
-        pytest.skip("datatable is not installed")
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -1902,9 +1898,7 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task '{task}'")
 
     X_valid = X * 2
-    if X_type == "dt_DataTable":
-        X = dt_DataTable(X)
-    elif X_type == "list2d":
+    if X_type == "list2d":
         X = X.tolist()
     elif X_type == "scipy_csc":
         X = scipy.sparse.csc_matrix(X)
@@ -1960,22 +1954,18 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task: '{task}'")
 
 
-@pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
+@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_DataFrame", "pd_Series"])
 @pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series"])
 def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
-        pytest.skip("datatable is not installed")
     X, y, g = _create_data(task="ranking", n_samples=1_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
     init_score = np.full_like(y, np.mean(y))
     X_valid = X * 2
 
-    if X_type == "dt_DataTable":
-        X = dt_DataTable(X)
-    elif X_type == "list2d":
+    if X_type == "list2d":
         X = X.tolist()
     elif X_type == "scipy_csc":
         X = scipy.sparse.csc_matrix(X)
