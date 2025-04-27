@@ -36,7 +36,7 @@ try:
         # validate_data() was added in scikit-learn 1.6, this function roughly imitates it for older versions.
         # It can be removed when lightgbm's minimum scikit-learn version is at least 1.6.
         def validate_data(
-            _estimator,
+            _estimator: Any,
             X: Any,
             y: Any = "no_validation",
             accept_sparse: bool = True,
@@ -44,7 +44,7 @@ try:
             ensure_all_finite: bool = False,
             ensure_min_samples: int = 1,
             # trap other keyword arguments that only work on scikit-learn >=1.6, like 'reset'
-            **ignored_kwargs,
+            **ignored_kwargs: Any,
         ) -> Any:
             # it's safe to import _num_features unconditionally because:
             #
