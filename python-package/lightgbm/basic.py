@@ -3253,7 +3253,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
