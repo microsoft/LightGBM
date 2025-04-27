@@ -35,7 +35,6 @@ from .compat import (
     arrow_is_floating,
     arrow_is_integer,
     concat,
-    dt_DataTable,
     pa_Array,
     pa_chunked_array,
     pa_ChunkedArray,
@@ -116,7 +115,6 @@ _LGBM_TrainDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
@@ -137,7 +135,6 @@ _LGBM_PredictDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     pa_Table,
 ]
@@ -575,15 +572,6 @@ class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
-
-
-def _emit_datatable_deprecation_warning() -> None:
-    msg = (
-        "Support for 'datatable' in LightGBM is deprecated, and will be removed in a future release. "
-        "To avoid this warning, convert 'datatable' inputs to a supported format "
-        "(for example, use the 'to_numpy()' method)."
-    )
-    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 class _ConfigAliases:
@@ -1112,7 +1100,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1221,14 +1209,6 @@ class _InnerPredictor:
                 raise ValueError("Cannot convert data list to numpy array.") from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
-                start_iteration=start_iteration,
-                num_iteration=num_iteration,
-                predict_type=predict_type,
-            )
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            preds, nrow = self.__pred_for_np2d(
-                mat=data.to_numpy(),
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
@@ -1790,7 +1770,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2196,9 +2176,6 @@ class Dataset:
                 raise TypeError("Data list can only be of ndarray or Sequence")
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -2619,7 +2596,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -3276,7 +3253,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3288,9 +3265,6 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
@@ -3477,9 +3451,6 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3488,9 +3459,6 @@ class Dataset:
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3506,21 +3474,6 @@ class Dataset:
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
-                else:
-                    self.data = None
-            elif isinstance(self.data, dt_DataTable):
-                _emit_datatable_deprecation_warning()
-                if isinstance(other.data, np.ndarray):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif isinstance(other.data, scipy.sparse.spmatrix):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -4717,7 +4670,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4798,7 +4751,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
