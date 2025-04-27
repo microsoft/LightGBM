@@ -192,7 +192,6 @@ class DART : public GBDT {
         if (!config_->uniform_drop) {
           sum_weight_ -=
               tree_weight_[i - num_init_iteration_] * (1.0f / (k + config_->learning_rate));
-          ;
           tree_weight_[i - num_init_iteration_] *= (k / (k + config_->learning_rate));
         }
       }

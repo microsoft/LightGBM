@@ -50,7 +50,6 @@ void Linkers::MpiAbortIfIsParallel() {
     if (IsMpiInitialized()) {
       std::cerr << "Aborting MPI communication." << std::endl << std::flush;
       MPI_SAFE_CALL(MPI_Abort(MPI_COMM_WORLD, -1));
-      ;
     }
   } catch (...) {
     std::cerr << "Exception was raised before aborting MPI. Aborting process..." << std::endl
