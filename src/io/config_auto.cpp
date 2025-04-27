@@ -1,4 +1,3 @@
-// clang-format off
 /*!
  * Copyright (c) 2018 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
@@ -1082,4 +1081,3 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
 }
 
 }  // namespace LightGBM
-// clang-format on
