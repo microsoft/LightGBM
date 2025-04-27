@@ -17,7 +17,7 @@
 namespace LightGBM {
 
 template <typename TREE_LEARNER_TYPE>
-class LinearTreeLearner: public TREE_LEARNER_TYPE {
+class LinearTreeLearner : public TREE_LEARNER_TYPE {
  public:
   explicit LinearTreeLearner(const Config* config) : TREE_LEARNER_TYPE(config) {}
 
@@ -25,25 +25,26 @@ class LinearTreeLearner: public TREE_LEARNER_TYPE {
 
   void InitLinear(const Dataset* train_data, const int max_leaves) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
+  Tree* Train(const score_t* gradients, const score_t* hessians, bool is_first_tree) override;
 
   /*! \brief Create array mapping dataset to leaf index, used for linear trees */
   void GetLeafMap(Tree* tree) const;
 
-  template<bool HAS_NAN>
-  void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients, const score_t* hessians, bool is_first_tree) const;
+  template <bool HAS_NAN>
+  void CalculateLinear(Tree* tree, bool is_refit, const score_t* gradients,
+                       const score_t* hessians, bool is_first_tree) const;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients,
+                          const score_t* hessians) const override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) const override;
 
-  void AddPredictionToScore(const Tree* tree,
-                            double* out_score) const override {
+  void AddPredictionToScore(const Tree* tree, double* out_score) const override {
     CHECK_LE(tree->num_leaves(), this->data_partition_->num_leaves());
     bool has_nan = false;
     if (any_nan_) {
-      for (int i = 0; i < tree->num_leaves() - 1 ; ++i) {
+      for (int i = 0; i < tree->num_leaves() - 1; ++i) {
         // use split_feature because split_feature_inner doesn't work when refitting existing tree
         if (contains_nan_[this->train_data_->InnerFeatureIndex(tree->split_feature(i))]) {
           has_nan = true;
@@ -58,7 +59,7 @@ class LinearTreeLearner: public TREE_LEARNER_TYPE {
     }
   }
 
-  template<bool HAS_NAN>
+  template <bool HAS_NAN>
   void AddPredictionToScoreInner(const Tree* tree, double* out_score) const {
     int num_leaves = tree->num_leaves();
     std::vector<double> leaf_const(num_leaves);
@@ -76,7 +77,8 @@ class LinearTreeLearner: public TREE_LEARNER_TYPE {
       leaf_num_features[leaf_num] = static_cast<int>(feat_ptr[leaf_num].size());
     }
     OMP_INIT_EX();
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) if (this->num_data_ > 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static) if (this->num_data_ > 1024)
     for (int i = 0; i < this->num_data_; ++i) {
       OMP_LOOP_EX_BEGIN();
       int leaf_num = leaf_map_[i];
@@ -126,4 +128,4 @@ class LinearTreeLearner: public TREE_LEARNER_TYPE {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_
+#endif  // LightGBM_TREELEARNER_LINEAR_TREE_LEARNER_H_

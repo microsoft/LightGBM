@@ -95,13 +95,11 @@ static void dump(const string &value, string *out) {
       char buf[8];
       snprintf(buf, sizeof buf, "\\u%04x", ch);
       *out += buf;
-    } else if (static_cast<uint8_t>(ch) == 0xe2 &&
-               static_cast<uint8_t>(value[i + 1]) == 0x80 &&
+    } else if (static_cast<uint8_t>(ch) == 0xe2 && static_cast<uint8_t>(value[i + 1]) == 0x80 &&
                static_cast<uint8_t>(value[i + 2]) == 0xa8) {
       *out += "\\u2028";
       i += 2;
-    } else if (static_cast<uint8_t>(ch) == 0xe2 &&
-               static_cast<uint8_t>(value[i + 1]) == 0x80 &&
+    } else if (static_cast<uint8_t>(ch) == 0xe2 && static_cast<uint8_t>(value[i + 1]) == 0x80 &&
                static_cast<uint8_t>(value[i + 2]) == 0xa9) {
       *out += "\\u2029";
       i += 2;
@@ -167,12 +165,8 @@ class Value : public JsonValue {
 class JsonDouble final : public Value<Json::NUMBER, double> {
   double number_value() const override { return m_value; }
   int int_value() const override { return static_cast<int>(m_value); }
-  bool equals(const JsonValue *other) const override {
-    return m_value == other->number_value();
-  }
-  bool less(const JsonValue *other) const override {
-    return m_value < other->number_value();
-  }
+  bool equals(const JsonValue *other) const override { return m_value == other->number_value(); }
+  bool less(const JsonValue *other) const override { return m_value < other->number_value(); }
 
  public:
   explicit JsonDouble(double value) : Value(value) {}
@@ -181,12 +175,8 @@ class JsonDouble final : public Value<Json::NUMBER, double> {
 class JsonInt final : public Value<Json::NUMBER, int> {
   double number_value() const override { return m_value; }
   int int_value() const override { return m_value; }
-  bool equals(const JsonValue *other) const override {
-    return m_value == other->number_value();
-  }
-  bool less(const JsonValue *other) const override {
-    return m_value < other->number_value();
-  }
+  bool equals(const JsonValue *other) const override { return m_value == other->number_value(); }
+  bool less(const JsonValue *other) const override { return m_value < other->number_value(); }
 
  public:
   explicit JsonInt(int value) : Value(value) {}
@@ -268,12 +258,9 @@ Json::Json(const string &value) : m_ptr(make_shared<JsonString>(value)) {}
 Json::Json(string &&value) : m_ptr(make_shared<JsonString>(std::move(value))) {}
 Json::Json(const char *value) : m_ptr(make_shared<JsonString>(value)) {}
 Json::Json(const Json::array &values) : m_ptr(make_shared<JsonArray>(values)) {}
-Json::Json(Json::array &&values)
-    : m_ptr(make_shared<JsonArray>(std::move(values))) {}
-Json::Json(const Json::object &values)
-    : m_ptr(make_shared<JsonObject>(values)) {}
-Json::Json(Json::object &&values)
-    : m_ptr(make_shared<JsonObject>(std::move(values))) {}
+Json::Json(Json::array &&values) : m_ptr(make_shared<JsonArray>(std::move(values))) {}
+Json::Json(const Json::object &values) : m_ptr(make_shared<JsonObject>(values)) {}
+Json::Json(Json::object &&values) : m_ptr(make_shared<JsonObject>(std::move(values))) {}
 
 /* * * * * * * * * * * * * * * * * * * *
  * Accessors
@@ -285,9 +272,7 @@ int Json::int_value() const { return m_ptr->int_value(); }
 bool Json::bool_value() const { return m_ptr->bool_value(); }
 const string &Json::string_value() const { return m_ptr->string_value(); }
 const vector<Json> &Json::array_items() const { return m_ptr->array_items(); }
-const map<string, Json> &Json::object_items() const {
-  return m_ptr->object_items();
-}
+const map<string, Json> &Json::object_items() const { return m_ptr->object_items(); }
 const Json &Json::operator[](size_t i) const { return (*m_ptr)[i]; }
 const Json &Json::operator[](const string &key) const { return (*m_ptr)[key]; }
 
@@ -295,16 +280,10 @@ double JsonValue::number_value() const { return 0; }
 int JsonValue::int_value() const { return 0; }
 bool JsonValue::bool_value() const { return false; }
 const string &JsonValue::string_value() const { return statics().empty_string; }
-const vector<Json> &JsonValue::array_items() const {
-  return statics().empty_vector;
-}
-const map<string, Json> &JsonValue::object_items() const {
-  return statics().empty_map;
-}
+const vector<Json> &JsonValue::array_items() const { return statics().empty_vector; }
+const map<string, Json> &JsonValue::object_items() const { return statics().empty_map; }
 const Json &JsonValue::operator[](size_t) const { return static_null(); }
-const Json &JsonValue::operator[](const string &) const {
-  return static_null();
-}
+const Json &JsonValue::operator[](const string &) const { return static_null(); }
 
 const Json &JsonObject::operator[](const string &key) const {
   auto iter = m_value.find(key);
@@ -330,8 +309,7 @@ bool Json::operator==(const Json &other) const {
 
 bool Json::operator<(const Json &other) const {
   if (m_ptr == other.m_ptr) return false;
-  if (m_ptr->type() != other.m_ptr->type())
-    return m_ptr->type() < other.m_ptr->type();
+  if (m_ptr->type() != other.m_ptr->type()) return m_ptr->type() < other.m_ptr->type();
 
   return m_ptr->less(other.m_ptr.get());
 }
@@ -392,8 +370,7 @@ struct JsonParser final {
    * Advance until the current character is non-whitespace.
    */
   void consume_whitespace() {
-    while (str[i] == ' ' || str[i] == '\r' || str[i] == '\n' || str[i] == '\t')
-      i++;
+    while (str[i] == ' ' || str[i] == '\r' || str[i] == '\n' || str[i] == '\t') i++;
   }
 
   /* consume_comment()
@@ -404,8 +381,7 @@ struct JsonParser final {
     bool comment_found = false;
     if (str[i] == '/') {
       i++;
-      if (i == str_len)
-        return fail("Unexpected end of input after start of comment", false);
+      if (i == str_len) return fail("Unexpected end of input after start of comment", false);
       if (str[i] == '/') {  // inline comment
         i++;
         // advance until next line, or end of input
@@ -416,14 +392,12 @@ struct JsonParser final {
       } else if (str[i] == '*') {  // multiline comment
         i++;
         if (i > str_len - 2)
-          return fail("Unexpected end of input inside multi-line comment",
-                      false);
+          return fail("Unexpected end of input inside multi-line comment", false);
         // advance until closing tokens
         while (!(str[i] == '*' && str[i + 1] == '/')) {
           i++;
           if (i > str_len - 2)
-            return fail("Unexpected end of input inside multi-line comment",
-                        false);
+            return fail("Unexpected end of input inside multi-line comment", false);
         }
         i += 2;
         comment_found = true;
@@ -467,7 +441,7 @@ struct JsonParser final {
    *
    * Encode pt as UTF-8 and add it to out.
    */
-  void encode_utf8(int64_t pt, string* out) {
+  void encode_utf8(int64_t pt, string *out) {
     if (pt < 0) return;
 
     if (pt < 0x80) {
@@ -504,8 +478,7 @@ struct JsonParser final {
         return out;
       }
 
-      if (in_range<int64_t>(ch, 0, 0x1f))
-        return fail("Unescaped " + esc(ch) + " in string", "");
+      if (in_range<int64_t>(ch, 0, 0x1f)) return fail("Unescaped " + esc(ch) + " in string", "");
 
       // The usual case: non-escaped characters
       if (ch != '\\') {
@@ -535,8 +508,7 @@ struct JsonParser final {
             return fail("Bad \\u escape: " + esc, "");
         }
 
-        int64_t codepoint =
-            static_cast<int64_t>(strtol(esc.data(), nullptr, 16));
+        int64_t codepoint = static_cast<int64_t>(strtol(esc.data(), nullptr, 16));
 
         // JSON specifies that characters outside the BMP shall be encoded as a
         // pair of 4-hex-digit \u escapes encoding their surrogate pair
@@ -547,9 +519,7 @@ struct JsonParser final {
             in_range<int64_t>(codepoint, 0xDC00, 0xDFFF)) {
           // Reassemble the two surrogate pairs into one astral-plane character,
           // per the UTF-16 algorithm.
-          encode_utf8((((last_escaped_codepoint - 0xD800) << 10) |
-                       (codepoint - 0xDC00)) +
-                          0x10000,
+          encode_utf8((((last_escaped_codepoint - 0xD800) << 10) | (codepoint - 0xDC00)) + 0x10000,
                       &out);
           last_escaped_codepoint = -1;
         } else {
@@ -594,8 +564,7 @@ struct JsonParser final {
     // Integer part
     if (str[i] == '0') {
       i++;
-      if (in_range(str[i], '0', '9'))
-        return fail("Leading 0s not permitted in numbers");
+      if (in_range(str[i], '0', '9')) return fail("Leading 0s not permitted in numbers");
     } else if (in_range(str[i], '1', '9')) {
       i++;
       while (in_range(str[i], '0', '9')) i++;
@@ -604,8 +573,7 @@ struct JsonParser final {
     }
 
     if (str[i] != '.' && str[i] != 'e' && str[i] != 'E' &&
-        (i - start_pos) <=
-            static_cast<size_t>(std::numeric_limits<int>::digits10)) {
+        (i - start_pos) <= static_cast<size_t>(std::numeric_limits<int>::digits10)) {
       return Json(std::atoi(str + start_pos));
     }
 
@@ -624,8 +592,7 @@ struct JsonParser final {
 
       if (str[i] == '+' || str[i] == '-') i++;
 
-      if (!in_range(str[i], '0', '9'))
-        return fail("At least one digit required in exponent");
+      if (!in_range(str[i], '0', '9')) return fail("At least one digit required in exponent");
 
       while (in_range(str[i], '0', '9')) i++;
     }
@@ -733,15 +700,13 @@ Json Json::parse(const string &in, string *err, JsonParse strategy) {
   // Check for any trailing garbage
   parser.consume_garbage();
   if (parser.failed) return Json();
-  if (parser.i != in.size())
-    return parser.fail("Unexpected trailing " + esc(in[parser.i]));
+  if (parser.i != in.size()) return parser.fail("Unexpected trailing " + esc(in[parser.i]));
 
   return result;
 }
 
 // Documented in json11.hpp
-vector<Json> Json::parse_multi(const string &in,
-                               std::string::size_type *parser_stop_pos,
+vector<Json> Json::parse_multi(const string &in, std::string::size_type *parser_stop_pos,
                                string *err, JsonParse strategy) {
   JsonParser parser{in.c_str(), in.size(), 0, err, false, strategy};
   *parser_stop_pos = 0;

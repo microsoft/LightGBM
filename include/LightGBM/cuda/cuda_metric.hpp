@@ -15,9 +15,9 @@
 namespace LightGBM {
 
 template <typename HOST_METRIC>
-class CUDAMetricInterface: public HOST_METRIC {
+class CUDAMetricInterface : public HOST_METRIC {
  public:
-  explicit CUDAMetricInterface(const Config& config): HOST_METRIC(config) {
+  explicit CUDAMetricInterface(const Config& config) : HOST_METRIC(config) {
     cuda_labels_ = nullptr;
     cuda_weights_ = nullptr;
     const int gpu_device_id = config.gpu_device_id >= 0 ? config.gpu_device_id : 0;

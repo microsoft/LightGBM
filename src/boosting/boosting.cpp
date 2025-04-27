@@ -26,8 +26,9 @@ bool Boosting::LoadFileToBoosting(Boosting* boosting, const char* filename) {
       return false;
     }
   }
-  std::chrono::duration<double, std::milli> delta = (std::chrono::steady_clock::now() - start_time);
-  Log::Debug("Time for loading model: %f seconds", 1e-3*delta);
+  std::chrono::duration<double, std::milli> delta =
+      (std::chrono::steady_clock::now() - start_time);
+  Log::Debug("Time for loading model: %f seconds", 1e-3 * delta);
   return true;
 }
 

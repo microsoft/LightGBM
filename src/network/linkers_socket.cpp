@@ -105,7 +105,9 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
       }
     }
     if (client_ips_.size() >= static_cast<size_t>(num_machines_)) {
-      Log::Warning("machine_list size is larger than the parameter num_machines, ignoring redundant entries");
+      Log::Warning(
+          "machine_list size is larger than the parameter num_machines, ignoring redundant "
+          "entries");
       break;
     }
     str_after_split[0] = Common::Trim(str_after_split[0]);
@@ -114,11 +116,13 @@ void Linkers::ParseMachineList(const std::string& machines, const std::string& f
     client_ports_.push_back(atoi(str_after_split[1].c_str()));
   }
   if (client_ips_.empty()) {
-    Log::Fatal("Cannot find any ip and port.\n"
-               "Please check machine_list_filename or machines parameter");
+    Log::Fatal(
+        "Cannot find any ip and port.\n"
+        "Please check machine_list_filename or machines parameter");
   }
   if (client_ips_.size() != static_cast<size_t>(num_machines_)) {
-    Log::Warning("World size is larger than the machine_list size, change world size to %zu", client_ips_.size());
+    Log::Warning("World size is larger than the machine_list size, change world size to %zu",
+                 client_ips_.size());
     num_machines_ = static_cast<int>(client_ips_.size());
   }
 }
@@ -158,7 +162,8 @@ void Linkers::ListenThread(int incoming_cnt) {
     int* ptr_in_rank = reinterpret_cast<int*>(buffer);
     int in_rank = *ptr_in_rank;
     if (in_rank < 0 || in_rank >= num_machines_) {
-      Log::Fatal("Invalid rank %d found during initialization of linkers. The world size is %d.", in_rank, num_machines_);
+      Log::Fatal("Invalid rank %d found during initialization of linkers. The world size is %d.",
+                 in_rank, num_machines_);
     }
     // add new socket
     SetLinker(in_rank, handler);
@@ -187,8 +192,10 @@ void Linkers::Construct() {
   listener_->Listen(incoming_cnt);
   std::thread listen_thread(&Linkers::ListenThread, this, incoming_cnt);
   const int connect_fail_constant_factor = 20;
-  const int connect_fail_retries_scale_factor = static_cast<int>(num_machines_ / connect_fail_constant_factor);
-  const int connect_fail_retry_cnt = std::max(connect_fail_constant_factor, connect_fail_retries_scale_factor);
+  const int connect_fail_retries_scale_factor =
+      static_cast<int>(num_machines_ / connect_fail_constant_factor);
+  const int connect_fail_retry_cnt =
+      std::max(connect_fail_constant_factor, connect_fail_retries_scale_factor);
   const int connect_fail_retry_first_delay_interval = 200;  // 0.2 s
   const float connect_fail_retry_delay_factor = 1.3f;
   // start connect
@@ -205,10 +212,12 @@ void Linkers::Construct() {
           SetLinker(out_rank, cur_socket);
           break;
         } else {
-          Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank, connect_fail_delay_time);
+          Log::Warning("Connecting to rank %d failed, waiting for %d milliseconds", out_rank,
+                       connect_fail_delay_time);
           cur_socket.Close();
           std::this_thread::sleep_for(std::chrono::milliseconds(connect_fail_delay_time));
-          connect_fail_delay_time = static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
+          connect_fail_delay_time =
+              static_cast<int>(connect_fail_delay_time * connect_fail_retry_delay_factor);
         }
       }
     }

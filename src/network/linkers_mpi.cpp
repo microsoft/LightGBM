@@ -11,10 +11,10 @@ namespace LightGBM {
 Linkers::Linkers(Config) {
   is_init_ = false;
   int argc = 0;
-  char**argv = nullptr;
+  char** argv = nullptr;
   int flag = 0;
   MPI_SAFE_CALL(MPI_Initialized(&flag));  // test if MPI has been initialized
-  if (!flag) {  // if MPI not started, start it
+  if (!flag) {                            // if MPI not started, start it
     MPI_SAFE_CALL(MPI_Init_thread(&argc, &argv, MPI_THREAD_SERIALIZED, &flag));
   }
   MPI_SAFE_CALL(MPI_Comm_size(MPI_COMM_WORLD, &num_machines_));
@@ -27,8 +27,9 @@ Linkers::Linkers(Config) {
 }
 
 Linkers::~Linkers() {
-  // Don't call MPI_Finalize() here: If the destructor was called because only this node had an exception, calling MPI_Finalize() will cause all nodes to hang.
-  // Instead we will handle finalize/abort for MPI in main().
+  // Don't call MPI_Finalize() here: If the destructor was called because only this node had an
+  // exception, calling MPI_Finalize() will cause all nodes to hang. Instead we will handle
+  // finalize/abort for MPI in main().
 }
 
 bool Linkers::IsMpiInitialized() {
@@ -48,11 +49,12 @@ void Linkers::MpiAbortIfIsParallel() {
   try {
     if (IsMpiInitialized()) {
       std::cerr << "Aborting MPI communication." << std::endl << std::flush;
-      MPI_SAFE_CALL(MPI_Abort(MPI_COMM_WORLD, -1));;
+      MPI_SAFE_CALL(MPI_Abort(MPI_COMM_WORLD, -1));
+      ;
     }
-  }
-  catch (...) {
-    std::cerr << "Exception was raised before aborting MPI. Aborting process..." << std::endl << std::flush;
+  } catch (...) {
+    std::cerr << "Exception was raised before aborting MPI. Aborting process..." << std::endl
+              << std::flush;
     abort();
   }
 }

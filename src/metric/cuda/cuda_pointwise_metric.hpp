@@ -19,9 +19,10 @@
 namespace LightGBM {
 
 template <typename HOST_METRIC, typename CUDA_METRIC>
-class CUDAPointwiseMetricInterface: public CUDAMetricInterface<HOST_METRIC> {
+class CUDAPointwiseMetricInterface : public CUDAMetricInterface<HOST_METRIC> {
  public:
-  explicit CUDAPointwiseMetricInterface(const Config& config): CUDAMetricInterface<HOST_METRIC>(config), num_class_(config.num_class) {}
+  explicit CUDAPointwiseMetricInterface(const Config& config)
+      : CUDAMetricInterface<HOST_METRIC>(config), num_class_(config.num_class) {}
 
   virtual ~CUDAPointwiseMetricInterface() {}
 

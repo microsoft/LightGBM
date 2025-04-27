@@ -30,40 +30,40 @@
 
 namespace LightGBM {
 
-  // label should be in interval [0, 1];
-  // prob should be in interval (0, 1); prob is clipped if needed
-  inline static double XentLoss(label_t label, double prob) {
-    const double log_arg_epsilon = 1.0e-12;
-    double a = label;
-    if (prob > log_arg_epsilon) {
-      a *= std::log(prob);
-    } else {
-      a *= std::log(log_arg_epsilon);
-    }
-    double b = 1.0f - label;
-    if (1.0f - prob > log_arg_epsilon) {
-      b *= std::log(1.0f - prob);
-    } else {
-      b *= std::log(log_arg_epsilon);
-    }
-    return - (a + b);
+// label should be in interval [0, 1];
+// prob should be in interval (0, 1); prob is clipped if needed
+inline static double XentLoss(label_t label, double prob) {
+  const double log_arg_epsilon = 1.0e-12;
+  double a = label;
+  if (prob > log_arg_epsilon) {
+    a *= std::log(prob);
+  } else {
+    a *= std::log(log_arg_epsilon);
   }
+  double b = 1.0f - label;
+  if (1.0f - prob > log_arg_epsilon) {
+    b *= std::log(1.0f - prob);
+  } else {
+    b *= std::log(log_arg_epsilon);
+  }
+  return -(a + b);
+}
 
-  // hhat >(=) 0 assumed; and weight > 0 required; but not checked here
-  inline static double XentLambdaLoss(label_t label, label_t weight, double hhat) {
-    return XentLoss(label, 1.0f - std::exp(-weight * hhat));
-  }
+// hhat >(=) 0 assumed; and weight > 0 required; but not checked here
+inline static double XentLambdaLoss(label_t label, label_t weight, double hhat) {
+  return XentLoss(label, 1.0f - std::exp(-weight * hhat));
+}
 
-  // Computes the (negative) entropy for label p; p should be in interval [0, 1];
-  // This is used to presum the KL-divergence offset term (to be _added_ to the cross-entropy loss).
-  // NOTE: x*log(x) = 0 for x=0,1; so only add when in (0, 1); avoid log(0)*0
-  inline static double YentLoss(double p) {
-    double hp = 0.0;
-    if (p > 0) hp += p * std::log(p);
-    double q = 1.0f - p;
-    if (q > 0) hp += q * std::log(q);
-    return hp;
-  }
+// Computes the (negative) entropy for label p; p should be in interval [0, 1];
+// This is used to presum the KL-divergence offset term (to be _added_ to the cross-entropy loss).
+// NOTE: x*log(x) = 0 for x=0,1; so only add when in (0, 1); avoid log(0)*0
+inline static double YentLoss(double p) {
+  double hp = 0.0;
+  if (p > 0) hp += p * std::log(p);
+  double q = 1.0f - p;
+  if (q > 0) hp += q * std::log(q);
+  return hp;
+}
 
 //
 // CrossEntropyMetric : "xentropy" : (optional) weights are used linearly
@@ -82,51 +82,59 @@ class CrossEntropyMetric : public Metric {
     CHECK_NOTNULL(label_);
 
     // ensure that labels are in interval [0, 1], interval ends included
-    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
-    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_,
+                                                 GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check", GetName()[0].c_str(),
+              __func__);
 
     // check that weights are non-negative and sum is positive
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr),
+                              &sum_weights_);
       if (minw < 0.0f) {
-        Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(), __func__);
+        Log::Fatal("[%s:%s]: (metric) weights not allowed to be negative", GetName()[0].c_str(),
+                   __func__);
       }
     }
 
     // check weight sum (may fail to be zero)
     if (sum_weights_ <= 0.0f) {
-      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", __func__, GetName()[0].c_str(), sum_weights_);
+      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", __func__, GetName()[0].c_str(),
+                 sum_weights_);
     }
     Log::Info("[%s:%s]: sum-of-weights = %f", GetName()[0].c_str(), __func__, sum_weights_);
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
+          sum_loss +=
+              XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]) *
+                      weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
           sum_loss += XentLoss(label_[i], p);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
@@ -138,9 +146,7 @@ class CrossEntropyMetric : public Metric {
     return std::vector<double>(1, loss);
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
   double factor_to_bigger_better() const override {
     return -1.0f;  // negative means smaller loss is better, positive means larger loss is better
@@ -160,8 +166,8 @@ class CrossEntropyMetric : public Metric {
 };
 
 //
-// CrossEntropyLambdaMetric : "xentlambda" : (optional) weights have a different meaning than for "xentropy"
-// ATTENTION: Supposed to be used when the objective also is "xentlambda"
+// CrossEntropyLambdaMetric : "xentlambda" : (optional) weights have a different meaning than for
+// "xentropy" ATTENTION: Supposed to be used when the objective also is "xentlambda"
 //
 class CrossEntropyLambdaMetric : public Metric {
  public:
@@ -175,30 +181,35 @@ class CrossEntropyLambdaMetric : public Metric {
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
-    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_,
+                                                 GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check", GetName()[0].c_str(),
+              __func__);
 
     // check all weights are strictly positive; throw error if not
     if (weights_ != nullptr) {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), static_cast<label_t*>(nullptr));
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr),
+                              static_cast<label_t*>(nullptr));
       if (minw <= 0.0f) {
-        Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(), __func__);
+        Log::Fatal("[%s:%s]: (metric) all weights must be positive", GetName()[0].c_str(),
+                   __func__);
       }
     }
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log1p(std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = std::log1p(std::exp(score[i]));  // auto-convert
           sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
@@ -206,17 +217,19 @@ class CrossEntropyLambdaMetric : public Metric {
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
+          objective->ConvertOutput(&score[i],
+                                   &hhat);  // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLambdaLoss(label_[i], 1.0f, hhat);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double hhat = 0;
-          objective->ConvertOutput(&score[i], &hhat);  // NOTE: this only works if objective = "xentlambda"
+          objective->ConvertOutput(&score[i],
+                                   &hhat);  // NOTE: this only works if objective = "xentlambda"
           sum_loss += XentLambdaLoss(label_[i], weights_[i], hhat);
         }
       }
@@ -224,13 +237,9 @@ class CrossEntropyLambdaMetric : public Metric {
     return std::vector<double>(1, sum_loss / static_cast<double>(num_data_));
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return -1.0f;
-  }
+  double factor_to_bigger_better() const override { return -1.0f; }
 
  private:
   /*! \brief Number of data points */
@@ -258,22 +267,27 @@ class KullbackLeiblerDivergence : public Metric {
     weights_ = metadata.weights();
 
     CHECK_NOTNULL(label_);
-    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_, GetName()[0].c_str());
-    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check",  GetName()[0].c_str(), __func__);
+    Common::CheckElementsIntervalClosed<label_t>(label_, 0.0f, 1.0f, num_data_,
+                                                 GetName()[0].c_str());
+    Log::Info("[%s:%s]: (metric) labels passed interval [0, 1] check", GetName()[0].c_str(),
+              __func__);
 
     if (weights_ == nullptr) {
       sum_weights_ = static_cast<double>(num_data_);
     } else {
       label_t minw;
-      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr), &sum_weights_);
+      Common::ObtainMinMaxSum(weights_, num_data_, &minw, static_cast<label_t*>(nullptr),
+                              &sum_weights_);
       if (minw < 0.0f) {
-        Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(), __func__);
+        Log::Fatal("[%s:%s]: (metric) at least one weight is negative", GetName()[0].c_str(),
+                   __func__);
       }
     }
 
     // check weight sum
     if (sum_weights_ <= 0.0f) {
-      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", GetName()[0].c_str(), __func__, sum_weights_);
+      Log::Fatal("[%s:%s]: sum-of-weights = %f is non-positive", GetName()[0].c_str(), __func__,
+                 sum_weights_);
     }
 
     Log::Info("[%s:%s]: sum-of-weights = %f", GetName()[0].c_str(), __func__, sum_weights_);
@@ -295,30 +309,33 @@ class KullbackLeiblerDivergence : public Metric {
     Log::Info("%s offset term = %f", GetName()[0].c_str(), presum_label_entropy_);
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
+          sum_loss +=
+              XentLoss(label_[i], score[i]);  // NOTE: does not work unless score is a probability
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
-          sum_loss += XentLoss(label_[i], score[i]) * weights_[i];  // NOTE: does not work unless score is a probability
+          sum_loss += XentLoss(label_[i], score[i]) *
+                      weights_[i];  // NOTE: does not work unless score is a probability
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
           sum_loss += XentLoss(label_[i], p);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           double p = 0;
           objective->ConvertOutput(&score[i], &p);
@@ -330,13 +347,9 @@ class KullbackLeiblerDivergence : public Metric {
     return std::vector<double>(1, loss);
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return -1.0f;
-  }
+  double factor_to_bigger_better() const override { return -1.0f; }
 
  private:
   /*! \brief Number of data points */

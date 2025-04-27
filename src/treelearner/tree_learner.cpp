@@ -12,8 +12,9 @@
 
 namespace LightGBM {
 
-TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type,
-                                            const Config* config, const bool boosting_on_cuda) {
+TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type,
+                                            const std::string& device_type, const Config* config,
+                                            const bool boosting_on_cuda) {
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       if (config->linear_tree) {

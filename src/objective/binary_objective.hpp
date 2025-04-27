@@ -16,12 +16,11 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective function for binary classification
-*/
-class BinaryLogloss: public ObjectiveFunction {
+ * \brief Objective function for binary classification
+ */
+class BinaryLogloss : public ObjectiveFunction {
  public:
-  explicit BinaryLogloss(const Config& config,
-                         std::function<bool(label_t)> is_pos = nullptr)
+  explicit BinaryLogloss(const Config& config, std::function<bool(label_t)> is_pos = nullptr)
       : deterministic_(config.deterministic) {
     sigmoid_ = static_cast<double>(config.sigmoid);
     if (sigmoid_ <= 0.0) {
@@ -38,8 +37,7 @@ class BinaryLogloss: public ObjectiveFunction {
     }
   }
 
-  explicit BinaryLogloss(const std::vector<std::string>& strs)
-      : deterministic_(false) {
+  explicit BinaryLogloss(const std::vector<std::string>& strs) : deterministic_(false) {
     sigmoid_ = -1;
     for (auto str : strs) {
       auto tokens = Common::Split(str.c_str(), ':');
@@ -62,8 +60,9 @@ class BinaryLogloss: public ObjectiveFunction {
     weights_ = metadata.weights();
     data_size_t cnt_positive = 0;
     data_size_t cnt_negative = 0;
-    // count for positive and negative samples
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:cnt_positive, cnt_negative)
+// count for positive and negative samples
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) \
+    reduction(+ : cnt_positive, cnt_negative)
     for (data_size_t i = 0; i < num_data_; ++i) {
       if (is_pos_(label_[i])) {
         ++cnt_positive;
@@ -107,7 +106,7 @@ class BinaryLogloss: public ObjectiveFunction {
       return;
     }
     if (weights_ == nullptr) {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -117,10 +116,11 @@ class BinaryLogloss: public ObjectiveFunction {
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight);
-        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
+        hessians[i] =
+            static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight);
       }
     } else {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
       for (data_size_t i = 0; i < num_data_; ++i) {
         // get label and label weights
         const int is_pos = is_pos_(label_[i]);
@@ -130,7 +130,8 @@ class BinaryLogloss: public ObjectiveFunction {
         const double response = -label * sigmoid_ / (1.0f + std::exp(label * sigmoid_ * score[i]));
         const double abs_response = fabs(response);
         gradients[i] = static_cast<score_t>(response * label_weight * weights_[i]);
-        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) * label_weight * weights_[i]);
+        hessians[i] = static_cast<score_t>(abs_response * (sigmoid_ - abs_response) *
+                                           label_weight * weights_[i]);
       }
     }
   }
@@ -140,14 +141,16 @@ class BinaryLogloss: public ObjectiveFunction {
     double suml = 0.0f;
     double sumw = 0.0f;
     if (weights_ != nullptr) {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml, sumw) if (!deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) \
+    reduction(+ : suml, sumw) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]) * weights_[i];
         sumw += weights_[i];
       }
     } else {
       sumw = static_cast<double>(num_data_);
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:suml) if (!deterministic_)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) \
+    reduction(+ : suml) if (!deterministic_)
       for (data_size_t i = 0; i < num_data_; ++i) {
         suml += is_pos_(label_[i]);
       }
@@ -164,13 +167,9 @@ class BinaryLogloss: public ObjectiveFunction {
     return initscore;
   }
 
-  bool ClassNeedTrain(int /*class_id*/) const override {
-    return need_train_;
-  }
+  bool ClassNeedTrain(int /*class_id*/) const override { return need_train_; }
 
-  const char* GetName() const override {
-    return "binary";
-  }
+  const char* GetName() const override { return "binary"; }
 
   void ConvertOutput(const double* input, double* output) const override {
     output[0] = 1.0f / (1.0f + std::exp(-sigmoid_ * input[0]));
@@ -213,4 +212,4 @@ class BinaryLogloss: public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_
+#endif  // LightGBM_OBJECTIVE_BINARY_OBJECTIVE_HPP_

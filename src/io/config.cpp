@@ -13,7 +13,8 @@
 
 namespace LightGBM {
 
-void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv) {
+void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params,
+                    const char* kv) {
   std::vector<std::string> tmp_strs = Common::Split(kv, '=');
   if (tmp_strs.size() == 2 || tmp_strs.size() == 1) {
     std::string key = Common::RemoveQuotationSymbol(Common::Trim(tmp_strs[0]));
@@ -29,7 +30,8 @@ void Config::KV2Map(std::unordered_map<std::string, std::vector<std::string>>* p
   }
 }
 
-void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::string>>& params, std::string key, int* out) {
+void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::string>>& params,
+                        std::string key, int* out) {
   const auto pair = params.find(key);
   if (pair != params.end()) {
     auto candidate = pair->second[0].c_str();
@@ -39,7 +41,8 @@ void GetFirstValueAsInt(const std::unordered_map<std::string, std::vector<std::s
   }
 }
 
-void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params) {
+void Config::SetVerbosity(
+    const std::unordered_map<std::string, std::vector<std::string>>& params) {
   int verbosity = 1;
 
   // if "verbosity" was found in params, prefer that to any other aliases
@@ -52,7 +55,8 @@ void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std:
     if (verbose_iter != params.end()) {
       GetFirstValueAsInt(params, "verbose", &verbosity);
     } else {
-      // if "verbosity" and "verbose" were both missing from params, don't modify LightGBM's log level
+      // if "verbosity" and "verbose" were both missing from params, don't modify LightGBM's log
+      // level
       return;
     }
   }
@@ -69,16 +73,16 @@ void Config::SetVerbosity(const std::unordered_map<std::string, std::vector<std:
   }
 }
 
-void Config::KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out) {
+void Config::KeepFirstValues(
+    const std::unordered_map<std::string, std::vector<std::string>>& params,
+    std::unordered_map<std::string, std::string>* out) {
   for (auto pair = params.begin(); pair != params.end(); ++pair) {
     auto name = pair->first.c_str();
     auto values = pair->second;
     out->emplace(name, values[0]);
     for (size_t i = 1; i < pair->second.size(); ++i) {
-      Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s",
-        name, values[0].c_str(),
-        name, values[i].c_str(),
-        name, values[0].c_str());
+      Log::Warning("%s is set=%s, %s=%s will be ignored. Current value: %s=%s", name,
+                   values[0].c_str(), name, values[i].c_str(), name, values[0].c_str());
     }
   }
 }
@@ -96,7 +100,8 @@ std::unordered_map<std::string, std::string> Config::Str2Map(const char* paramet
   return params;
 }
 
-void GetBoostingType(const std::unordered_map<std::string, std::string>& params, std::string* boosting) {
+void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
+                     std::string* boosting) {
   std::string value;
   if (Config::GetString(params, "boosting", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -114,7 +119,8 @@ void GetBoostingType(const std::unordered_map<std::string, std::string>& params,
   }
 }
 
-void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& params, std::string* strategy) {
+void GetDataSampleStrategy(const std::unordered_map<std::string, std::string>& params,
+                           std::string* strategy) {
   std::string value;
   if (Config::GetString(params, "data_sample_strategy", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -141,7 +147,8 @@ void ParseMetrics(const std::string& value, std::vector<std::string>* out_metric
   }
 }
 
-void GetObjectiveType(const std::unordered_map<std::string, std::string>& params, std::string* objective) {
+void GetObjectiveType(const std::unordered_map<std::string, std::string>& params,
+                      std::string* objective) {
   std::string value;
   if (Config::GetString(params, "objective", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -149,7 +156,8 @@ void GetObjectiveType(const std::unordered_map<std::string, std::string>& params
   }
 }
 
-void GetMetricType(const std::unordered_map<std::string, std::string>& params, const std::string& objective, std::vector<std::string>* metric) {
+void GetMetricType(const std::unordered_map<std::string, std::string>& params,
+                   const std::string& objective, std::vector<std::string>* metric) {
   std::string value;
   if (Config::GetString(params, "metric", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -167,8 +175,8 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
     if (value == std::string("train") || value == std::string("training")) {
       *task = TaskType::kTrain;
-    } else if (value == std::string("predict") || value == std::string("prediction")
-               || value == std::string("test")) {
+    } else if (value == std::string("predict") || value == std::string("prediction") ||
+               value == std::string("test")) {
       *task = TaskType::kPredict;
     } else if (value == std::string("convert_model")) {
       *task = TaskType::kConvertModel;
@@ -182,7 +190,8 @@ void GetTaskType(const std::unordered_map<std::string, std::string>& params, Tas
   }
 }
 
-void GetDeviceType(const std::unordered_map<std::string, std::string>& params, std::string* device_type) {
+void GetDeviceType(const std::unordered_map<std::string, std::string>& params,
+                   std::string* device_type) {
   std::string value;
   if (Config::GetString(params, "device_type", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -198,7 +207,8 @@ void GetDeviceType(const std::unordered_map<std::string, std::string>& params, s
   }
 }
 
-void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params, std::string* tree_learner) {
+void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& params,
+                        std::string* tree_learner) {
   std::string value;
   if (Config::GetString(params, "tree_learner", &value)) {
     std::transform(value.begin(), value.end(), value.begin(), Common::tolower);
@@ -219,25 +229,34 @@ void GetTreeLearnerType(const std::unordered_map<std::string, std::string>& para
 void Config::GetAucMuWeights() {
   if (auc_mu_weights.empty()) {
     // equal weights for all classes
-    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 1));
+    auc_mu_weights_matrix =
+        std::vector<std::vector<double>>(num_class, std::vector<double>(num_class, 1));
     for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
       auc_mu_weights_matrix[i][i] = 0;
     }
   } else {
-    auc_mu_weights_matrix = std::vector<std::vector<double>> (num_class, std::vector<double>(num_class, 0));
+    auc_mu_weights_matrix =
+        std::vector<std::vector<double>>(num_class, std::vector<double>(num_class, 0));
     if (auc_mu_weights.size() != static_cast<size_t>(num_class * num_class)) {
-      Log::Fatal("auc_mu_weights must have %d elements, but found %zu", num_class * num_class, auc_mu_weights.size());
+      Log::Fatal("auc_mu_weights must have %d elements, but found %zu", num_class * num_class,
+                 auc_mu_weights.size());
     }
     for (size_t i = 0; i < static_cast<size_t>(num_class); ++i) {
       for (size_t j = 0; j < static_cast<size_t>(num_class); ++j) {
         if (i == j) {
           auc_mu_weights_matrix[i][j] = 0;
           if (std::fabs(auc_mu_weights[i * num_class + j]) > kZeroThreshold) {
-            Log::Info("AUC-mu matrix must have zeros on diagonal. Overwriting value in position %zu of auc_mu_weights with 0.", i * num_class + j);
+            Log::Info(
+                "AUC-mu matrix must have zeros on diagonal. Overwriting value in position %zu of "
+                "auc_mu_weights with 0.",
+                i * num_class + j);
           }
         } else {
           if (std::fabs(auc_mu_weights[i * num_class + j]) < kZeroThreshold) {
-            Log::Fatal("AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero value in position %zu of auc_mu_weights.", i * num_class + j);
+            Log::Fatal(
+                "AUC-mu matrix must have non-zero values for non-diagonal entries. Found zero "
+                "value in position %zu of auc_mu_weights.",
+                i * num_class + j);
           }
           auc_mu_weights_matrix[i][j] = auc_mu_weights[i * num_class + j];
         }
@@ -250,7 +269,8 @@ void Config::GetInteractionConstraints() {
   if (interaction_constraints == "") {
     interaction_constraints_vector = std::vector<std::vector<int>>();
   } else {
-    interaction_constraints_vector = Common::StringToArrayofArrays<int>(interaction_constraints, '[', ']', ',');
+    interaction_constraints_vector =
+        Common::StringToArrayofArrays<int>(interaction_constraints, '[', ']', ',');
   }
 }
 
@@ -314,11 +334,13 @@ bool CheckMultiClassObjective(const std::string& objective) {
 void Config::CheckParamConflict(const std::unordered_map<std::string, std::string>& params) {
   // check if objective, metric, and num_class match
   int num_class_check = num_class;
-  bool objective_type_multiclass = CheckMultiClassObjective(objective) || (objective == std::string("custom") && num_class_check > 1);
+  bool objective_type_multiclass = CheckMultiClassObjective(objective) ||
+                                   (objective == std::string("custom") && num_class_check > 1);
 
   if (objective_type_multiclass) {
     if (num_class_check <= 1) {
-      Log::Fatal("Number of classes should be specified and greater than 1 for multiclass training");
+      Log::Fatal(
+          "Number of classes should be specified and greater than 1 for multiclass training");
     }
   } else {
     if (task == TaskType::kTrain && num_class_check != 1) {
@@ -326,13 +348,12 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     }
   }
   for (std::string metric_type : metric) {
-    bool metric_type_multiclass = (CheckMultiClassObjective(metric_type)
-                                   || metric_type == std::string("multi_logloss")
-                                   || metric_type == std::string("multi_error")
-                                   || metric_type == std::string("auc_mu")
-                                   || (metric_type == std::string("custom") && num_class_check > 1));
-    if ((objective_type_multiclass && !metric_type_multiclass)
-        || (!objective_type_multiclass && metric_type_multiclass)) {
+    bool metric_type_multiclass =
+        (CheckMultiClassObjective(metric_type) || metric_type == std::string("multi_logloss") ||
+         metric_type == std::string("multi_error") || metric_type == std::string("auc_mu") ||
+         (metric_type == std::string("custom") && num_class_check > 1));
+    if ((objective_type_multiclass && !metric_type_multiclass) ||
+        (!objective_type_multiclass && metric_type_multiclass)) {
       Log::Fatal("Multiclass objective and metrics don't match");
     }
   }
@@ -353,42 +374,45 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
 
   if (is_single_tree_learner || tree_learner == std::string("feature")) {
     is_data_based_parallel = false;
-  } else if (tree_learner == std::string("data")
-             || tree_learner == std::string("voting")) {
+  } else if (tree_learner == std::string("data") || tree_learner == std::string("voting")) {
     is_data_based_parallel = true;
-    if (histogram_pool_size >= 0
-        && tree_learner == std::string("data")) {
-      Log::Warning("Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
-                   "Will disable this to reduce communication costs",
-                   histogram_pool_size);
+    if (histogram_pool_size >= 0 && tree_learner == std::string("data")) {
+      Log::Warning(
+          "Histogram LRU queue was enabled (histogram_pool_size=%f).\n"
+          "Will disable this to reduce communication costs",
+          histogram_pool_size);
       // Change pool size to -1 (no limit) when using data parallel to reduce communication costs
       histogram_pool_size = -1;
     }
   }
   if (is_data_based_parallel) {
     if (!forcedsplits_filename.empty()) {
-      Log::Fatal("Don't support forcedsplits in %s tree learner",
-                 tree_learner.c_str());
+      Log::Fatal("Don't support forcedsplits in %s tree learner", tree_learner.c_str());
     }
   }
 
   // max_depth defaults to -1, so max_depth>0 implies "you explicitly overrode the default"
   //
-  // Changing max_depth while leaving num_leaves at its default (31) can lead to 2 undesirable situations:
+  // Changing max_depth while leaving num_leaves at its default (31) can lead to 2 undesirable
+  // situations:
   //
   //   * (0 <= max_depth <= 4) it's not possible to produce a tree with 31 leaves
   //     - this block reduces num_leaves to 2^max_depth
-  //   * (max_depth > 4) 31 leaves is less than a full depth-wise tree, which might lead to underfitting
+  //   * (max_depth > 4) 31 leaves is less than a full depth-wise tree, which might lead to
+  //   underfitting
   //     - this block warns about that
   // ref: https://github.com/microsoft/LightGBM/issues/2898#issuecomment-1002860601
   if (max_depth > 0 && (params.count("num_leaves") == 0 || params.at("num_leaves").empty())) {
     double full_num_leaves = std::pow(2, max_depth);
     if (full_num_leaves > num_leaves) {
-      Log::Warning("Provided parameters constrain tree depth (max_depth=%d) without explicitly setting 'num_leaves'. "
-                   "This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<=%.0f) in params. "
-                   "Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model complexity.",
-                   max_depth,
-                   full_num_leaves);
+      Log::Warning(
+          "Provided parameters constrain tree depth (max_depth=%d) without explicitly setting "
+          "'num_leaves'. "
+          "This can lead to underfitting. To resolve this warning, pass 'num_leaves' (<=%.0f) in "
+          "params. "
+          "Alternatively, pass (max_depth=-1) and just use 'num_leaves' to constrain model "
+          "complexity.",
+          max_depth, full_num_leaves);
     }
 
     if (full_num_leaves < num_leaves) {
@@ -401,10 +425,13 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     force_col_wise = true;
     force_row_wise = false;
     if (deterministic) {
-      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+      Log::Warning(
+          "Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
     if (use_quantized_grad) {
-      Log::Warning("Quantized training is not supported by GPU tree learner. Switch to full precision training.");
+      Log::Warning(
+          "Quantized training is not supported by GPU tree learner. Switch to full precision "
+          "training.");
       use_quantized_grad = false;
     }
   } else if (device_type == std::string("cuda")) {
@@ -412,7 +439,8 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
     force_col_wise = false;
     force_row_wise = true;
     if (deterministic) {
-      Log::Warning("Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
+      Log::Warning(
+          "Although \"deterministic\" is set, the results ran by GPU may be non-deterministic.");
     }
   }
   // linear tree learner must be serial type and run on CPU device
@@ -432,23 +460,35 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
       Log::Fatal("Cannot use regression_l1 objective when fitting linear trees.");
     }
   }
-  // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the split is calculated
-  // the count is calculated using the proportion of hessian in the leaf which is rounded up to nearest int, so it can
-  // be 1 when there is actually no data in the leaf. In rare cases this can cause a bug because with path smoothing the
-  // calculated split gain can be positive even with zero gradient and hessian.
+  // min_data_in_leaf must be at least 2 if path smoothing is active. This is because when the
+  // split is calculated the count is calculated using the proportion of hessian in the leaf which
+  // is rounded up to nearest int, so it can be 1 when there is actually no data in the leaf. In
+  // rare cases this can cause a bug because with path smoothing the calculated split gain can be
+  // positive even with zero gradient and hessian.
   if (path_smooth > kEpsilon && min_data_in_leaf < 2) {
     min_data_in_leaf = 2;
-    Log::Warning("min_data_in_leaf has been increased to 2 because this is required when path smoothing is active.");
+    Log::Warning(
+        "min_data_in_leaf has been increased to 2 because this is required when path smoothing is "
+        "active.");
   }
-  if (is_parallel && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
-    // In distributed mode, local node doesn't have histograms on all features, cannot perform "intermediate" monotone constraints.
-    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints in distributed learning, auto set to \"basic\" method.");
+  if (is_parallel && (monotone_constraints_method == std::string("intermediate") ||
+                      monotone_constraints_method == std::string("advanced"))) {
+    // In distributed mode, local node doesn't have histograms on all features, cannot perform
+    // "intermediate" monotone constraints.
+    Log::Warning(
+        "Cannot use \"intermediate\" or \"advanced\" monotone constraints in distributed "
+        "learning, auto set to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
-  if (feature_fraction_bynode != 1.0 && (monotone_constraints_method == std::string("intermediate") || monotone_constraints_method == std::string("advanced"))) {
-    // "intermediate" monotone constraints need to recompute splits. If the features are sampled when computing the
-    // split initially, then the sampling needs to be recorded or done once again, which is currently not supported
-    Log::Warning("Cannot use \"intermediate\" or \"advanced\" monotone constraints with feature fraction different from 1, auto set monotone constraints to \"basic\" method.");
+  if (feature_fraction_bynode != 1.0 &&
+      (monotone_constraints_method == std::string("intermediate") ||
+       monotone_constraints_method == std::string("advanced"))) {
+    // "intermediate" monotone constraints need to recompute splits. If the features are sampled
+    // when computing the split initially, then the sampling needs to be recorded or done once
+    // again, which is currently not supported
+    Log::Warning(
+        "Cannot use \"intermediate\" or \"advanced\" monotone constraints with feature fraction "
+        "different from 1, auto set monotone constraints to \"basic\" method.");
     monotone_constraints_method = "basic";
   }
   if (max_depth > 0 && monotone_penalty >= max_depth) {
@@ -463,12 +503,16 @@ void Config::CheckParamConflict(const std::unordered_map<std::string, std::strin
   if (boosting == std::string("goss")) {
     boosting = std::string("gbdt");
     data_sample_strategy = std::string("goss");
-    Log::Warning("Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as boosting=gbdt, data_sample_strategy=goss."
-                 "To suppress this warning, set data_sample_strategy=goss instead.");
+    Log::Warning(
+        "Found boosting=goss. For backwards compatibility reasons, LightGBM interprets this as "
+        "boosting=gbdt, data_sample_strategy=goss."
+        "To suppress this warning, set data_sample_strategy=goss instead.");
   }
 
   if (bagging_by_query && data_sample_strategy != std::string("bagging")) {
-    Log::Warning("bagging_by_query=true is only compatible with data_sample_strategy=bagging. Setting bagging_by_query=false.");
+    Log::Warning(
+        "bagging_by_query=true is only compatible with data_sample_strategy=bagging. Setting "
+        "bagging_by_query=false.");
     bagging_by_query = false;
   }
 }

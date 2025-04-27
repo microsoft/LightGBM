@@ -9,8 +9,11 @@
 
 namespace LightGBM {
 
-CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iteration, const bool boosting_on_cuda):
-  ScoreUpdater(data, num_tree_per_iteration), num_threads_per_block_(1024), boosting_on_cuda_(boosting_on_cuda) {
+CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iteration,
+                                   const bool boosting_on_cuda)
+    : ScoreUpdater(data, num_tree_per_iteration),
+      num_threads_per_block_(1024),
+      boosting_on_cuda_(boosting_on_cuda) {
   num_data_ = data->num_data();
   int64_t total_size = static_cast<int64_t>(num_data_) * num_tree_per_iteration;
   InitCUDA(total_size);
@@ -18,8 +21,8 @@ CUDAScoreUpdater::CUDAScoreUpdater(const Dataset* data, int num_tree_per_iterati
   const double* init_score = data->metadata().init_score();
   // if exists initial score, will start from it
   if (init_score != nullptr) {
-    if ((data->metadata().num_init_score() % num_data_) != 0
-        || (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
+    if ((data->metadata().num_init_score() % num_data_) != 0 ||
+        (data->metadata().num_init_score() / num_data_) != num_tree_per_iteration) {
       Log::Fatal("Number of class for initial score error");
     }
     has_init_score_ = true;
@@ -48,7 +51,8 @@ inline void CUDAScoreUpdater::AddScore(double val, int cur_tree_id) {
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   LaunchAddScoreConstantKernel(val, offset);
   if (!boosting_on_cuda_) {
-    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset,
+                                     static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
 }
 
@@ -57,26 +61,30 @@ inline void CUDAScoreUpdater::AddScore(const Tree* tree, int cur_tree_id) {
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   tree->AddPredictionToScore(data_, num_data_, cuda_score_ + offset);
   if (!boosting_on_cuda_) {
-    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset,
+                                     static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
 }
 
-inline void CUDAScoreUpdater::AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) {
+inline void CUDAScoreUpdater::AddScore(const TreeLearner* tree_learner, const Tree* tree,
+                                       int cur_tree_id) {
   Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   tree_learner->AddPredictionToScore(tree, cuda_score_ + offset);
   if (!boosting_on_cuda_) {
-    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset,
+                                     static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
 }
 
 inline void CUDAScoreUpdater::AddScore(const Tree* tree, const data_size_t* data_indices,
-                      data_size_t data_cnt, int cur_tree_id) {
+                                       data_size_t data_cnt, int cur_tree_id) {
   Common::FunctionTimer fun_timer("ScoreUpdater::AddScore", global_timer);
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   tree->AddPredictionToScore(data_, data_indices, data_cnt, cuda_score_ + offset);
   if (!boosting_on_cuda_) {
-    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset,
+                                     static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
 }
 
@@ -85,7 +93,8 @@ inline void CUDAScoreUpdater::MultiplyScore(double val, int cur_tree_id) {
   const size_t offset = static_cast<size_t>(num_data_) * cur_tree_id;
   LaunchMultiplyScoreConstantKernel(val, offset);
   if (!boosting_on_cuda_) {
-    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset, static_cast<size_t>(num_data_), __FILE__, __LINE__);
+    CopyFromCUDADeviceToHost<double>(score_.data() + offset, cuda_score_ + offset,
+                                     static_cast<size_t>(num_data_), __FILE__, __LINE__);
   }
 }
 
