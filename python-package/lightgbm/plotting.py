@@ -136,7 +136,7 @@ def plot_importance(
             _check_not_tuple_of_2_elements(figsize, "figsize")
         _, ax = plt.subplots(1, 1, figsize=figsize, dpi=dpi)
 
-    ylocs = np.arange(len(values))
+    ylocs = np.arange(len(values), dtype=np.float64)
     ax.barh(ylocs, values, align="center", height=height, **kwargs)
 
     for x, y in zip(values, ylocs):
