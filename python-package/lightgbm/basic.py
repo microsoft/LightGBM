@@ -3286,7 +3286,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
