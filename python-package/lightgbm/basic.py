@@ -3214,7 +3214,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
