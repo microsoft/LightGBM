@@ -2596,7 +2596,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
