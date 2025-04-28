@@ -470,6 +470,39 @@ def test_get_data_arrow_table():
         assert original_table[column].equals(returned_data[column])
 
 
+def test_add_features_from_arrow_table():
+    table1 = pa.Table.from_arrays(
+        [pa.array([1, 2, 3, 4, 5], type=pa.int32()), pa.array([0.1, 0.2, 0.3, 0.4, 0.5], type=pa.float32())],
+        names=["feature1", "feature2"],
+    )
+
+    table2 = pa.Table.from_arrays(
+        [
+            pa.array([10, 20, 30, 40, 50], type=pa.int64()),
+            pa.array([1.1, 1.2, 1.3, 1.4, 1.5], type=pa.float64()),
+            pa.array([True, False, True, False, True], type=pa.bool_()),
+        ],
+        names=["feature3", "feature4", "feature5"],
+    )
+
+    dataset1 = lgb.Dataset(table1, free_raw_data=False)
+    dataset2 = lgb.Dataset(table2, free_raw_data=False)
+
+    dataset1.construct()
+    dataset2.construct()
+
+    dataset1.add_features_from(dataset2)
+    combined_data = dataset1.get_data()
+    assert isinstance(combined_data, pa.Table)
+    assert combined_data.num_columns == table1.num_columns + table2.num_columns
+    assert set(combined_data.column_names) == set(table1.column_names + table2.column_names)
+    assert combined_data.num_rows == table1.num_rows
+    for column in table1.column_names:
+        assert combined_data[column].equals(table1[column])
+    for column in table2.column_names:
+        assert combined_data[column].equals(table2[column])
+
+
 def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
     with pytest.raises(
         lgb.basic.LightGBMError, match="Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed."
