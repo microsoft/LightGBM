@@ -22,8 +22,8 @@ typos = "*"
 validate-pyproject = "*"
 yamllint = "*"
 
-# These dependencies are used for mypy. Ideally, we would actually use the `python` feature but
-# type checking actually fails if we include all dependencies.
+# These dependencies are used for mypy. Once we manage all Python dependencies via pixi, we should
+# use the full dependency list instead.
 matplotlib-base = ">=3.9.1"
 pyarrow-core = ">=17.0"
 scikit-learn = ">=1.5.2"
