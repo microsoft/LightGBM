@@ -35,7 +35,6 @@ from .compat import (
     arrow_is_floating,
     arrow_is_integer,
     concat,
-    dt_DataTable,
     pa_Array,
     pa_chunked_array,
     pa_ChunkedArray,
@@ -119,7 +118,6 @@ _LGBM_TrainDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
@@ -140,7 +138,6 @@ _LGBM_PredictDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     pa_Table,
 ]
@@ -578,15 +575,6 @@ class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
-
-
-def _emit_datatable_deprecation_warning() -> None:
-    msg = (
-        "Support for 'datatable' in LightGBM is deprecated, and will be removed in a future release. "
-        "To avoid this warning, convert 'datatable' inputs to a supported format "
-        "(for example, use the 'to_numpy()' method)."
-    )
-    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 class _ConfigAliases:
@@ -1115,7 +1103,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1224,14 +1212,6 @@ class _InnerPredictor:
                 raise ValueError("Cannot convert data list to numpy array.") from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
-                start_iteration=start_iteration,
-                num_iteration=num_iteration,
-                predict_type=predict_type,
-            )
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            preds, nrow = self.__pred_for_np2d(
-                mat=data.to_numpy(),
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
@@ -1793,7 +1773,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2199,9 +2179,6 @@ class Dataset:
                 raise TypeError("Data list can only be of ndarray or Sequence")
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -2622,7 +2599,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -3279,7 +3256,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3291,9 +3268,6 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif isinstance(self.data, pa_Table):
@@ -3482,9 +3456,6 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = np.hstack((self.data, other.data.to_numpy()))
                 elif isinstance(other.data, pa_Table):
                     if not PYARROW_INSTALLED:
                         raise LightGBMError(
@@ -3508,9 +3479,6 @@ class Dataset:
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 elif isinstance(other.data, pa_Table):
                     if not PYARROW_INSTALLED:
                         raise LightGBMError(
@@ -3542,9 +3510,6 @@ class Dataset:
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pa_Table):
                     if not PYARROW_INSTALLED:
                         raise LightGBMError(
@@ -3564,35 +3529,6 @@ class Dataset:
                         ),
                         axis=1,
                         ignore_index=True,
-                    )
-                else:
-                    self.data = None
-            elif isinstance(self.data, dt_DataTable):
-                _emit_datatable_deprecation_warning()
-                if isinstance(other.data, np.ndarray):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif isinstance(other.data, scipy.sparse.spmatrix):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
-                elif isinstance(other.data, pa_Table):
-                    if not PYARROW_INSTALLED:
-                        raise LightGBMError(
-                            "Cannot add features to pyarrow.Table type of raw data "
-                            "without pyarrow installed. "
-                            "Install pyarrow and restart your session."
-                        )
-                    self.data = dt_DataTable(
-                        np.hstack(
-                            (
-                                self.data.to_numpy(),
-                                np.column_stack(
-                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
-                                ),
-                            )
-                        )
                     )
                 else:
                     self.data = None
@@ -3633,16 +3569,6 @@ class Dataset:
                             *[pa.array(other.data.iloc[:, i].values) for i in range(len(other.data.columns))],
                         ],
                         names=[*self.data.column_names, *map(str, other.data.columns.tolist())],
-                    )
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    other_array = other.data.to_numpy()
-                    self.data = pa_Table.from_arrays(
-                        [
-                            *self.data.columns,
-                            *[pa.array(other_array[:, i]) for i in range(other_array.shape[1])],
-                        ],
-                        names=[*self.data.column_names, *other.data.names],
                     )
                 elif isinstance(other.data, pa_Table):
                     self.data = pa_Table.from_arrays(
@@ -3843,6 +3769,9 @@ class Booster:
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
+            if params:
+                _log_warning("Ignoring params argument, using parameters from model string.")
+            params = self._get_loaded_param()
         else:
             raise TypeError(
                 "Need at least one training dataset or model file or model string to create Booster instance"
@@ -4842,7 +4771,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4923,7 +4852,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray

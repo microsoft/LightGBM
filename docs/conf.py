@@ -100,7 +100,6 @@ autodoc_default_options = {
 autodoc_mock_imports = [
     "dask",
     "dask.distributed",
-    "datatable",
     "graphviz",
     "matplotlib",
     "numpy",
