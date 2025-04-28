@@ -3492,15 +3492,14 @@ class Dataset:
                             "without pyarrow installed. "
                             "Install pyarrow and restart your session."
                         )
-                    else:
-                        self.data = np.hstack(
-                            (
-                                self.data,
-                                np.column_stack(
-                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
-                                ),
-                            )
+                    self.data = np.hstack(
+                        (
+                            self.data,
+                            np.column_stack(
+                                [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                            ),
                         )
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3519,16 +3518,15 @@ class Dataset:
                             "without pyarrow installed. "
                             "Install pyarrow and restart your session."
                         )
-                    else:
-                        self.data = scipy.sparse.hstack(
-                            (
-                                self.data,
-                                np.column_stack(
-                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
-                                ),
+                    self.data = scipy.sparse.hstack(
+                        (
+                            self.data,
+                            np.column_stack(
+                                [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
                             ),
-                            format=sparse_format,
-                        )
+                        ),
+                        format=sparse_format,
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3554,20 +3552,19 @@ class Dataset:
                             "without pyarrow installed. "
                             "Install pyarrow and restart your session."
                         )
-                    else:
-                        self.data = concat(
-                            (
-                                self.data,
-                                pd_DataFrame(
-                                    {
-                                        other.data.column_names[i]: other.data.column(i).to_numpy()
-                                        for i in range(len(other.data.column_names))
-                                    }
-                                ),
+                    self.data = concat(
+                        (
+                            self.data,
+                            pd_DataFrame(
+                                {
+                                    other.data.column_names[i]: other.data.column(i).to_numpy()
+                                    for i in range(len(other.data.column_names))
+                                }
                             ),
-                            axis=1,
-                            ignore_index=True,
-                        )
+                        ),
+                        axis=1,
+                        ignore_index=True,
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, dt_DataTable):
@@ -3587,17 +3584,16 @@ class Dataset:
                             "without pyarrow installed. "
                             "Install pyarrow and restart your session."
                         )
-                    else:
-                        self.data = dt_DataTable(
-                            np.hstack(
-                                (
-                                    self.data.to_numpy(),
-                                    np.column_stack(
-                                        [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
-                                    ),
-                                )
+                    self.data = dt_DataTable(
+                        np.hstack(
+                            (
+                                self.data.to_numpy(),
+                                np.column_stack(
+                                    [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                                ),
                             )
                         )
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, pa_Table):
