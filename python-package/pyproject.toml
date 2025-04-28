@@ -163,6 +163,8 @@ select = [
     "T",
     # pycodestyle (warnings)
     "W",
+    # superfluous-else-raise
+    "RET506",
 ]
 
 [tool.ruff.lint.per-file-ignores]
