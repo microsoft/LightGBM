@@ -1761,9 +1761,9 @@ class LGBMRanker(LGBMModel):
         if eval_set is not None:
             if eval_group is None:
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
-            elif len(eval_group) != len(eval_set):
+            if len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
-            elif (
+            if (
                 isinstance(eval_group, dict)
                 and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
                 or isinstance(eval_group, list)

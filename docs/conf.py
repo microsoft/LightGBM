@@ -254,8 +254,7 @@ def generate_doxygen_xml(app: Sphinx) -> None:
         output = "\n".join([i.decode("utf-8") for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
+        print(output)
     except BaseException as e:
         raise Exception(f"An error has occurred while executing Doxygen\n{e}")
 
@@ -303,9 +302,8 @@ def generate_r_docs(app: Sphinx) -> None:
         output = "\n".join([i for i in (stdout, stderr) if i is not None])
         if process.returncode != 0:
             raise RuntimeError(output)
-        else:
-            print(output)
-            print("Done building R-package documentation")
+        print(output)
+        print("Done building R-package documentation")
     except BaseException as e:
         raise Exception(f"An error has occurred while generating documentation for R-package\n{e}")
 
@@ -345,7 +343,8 @@ def setup(app: Sphinx) -> None:
         if first_run:
             app.connect("builder-inited", generate_r_docs)
         app.connect(
-            "build-finished", lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R")
+            "build-finished",
+            lambda app, _: copytree(CURR_PATH.parent / "lightgbm_r" / "docs", Path(app.outdir) / "R"),
         )
     app.connect("builder-inited", replace_reference_to_r_docs)
     app.add_transform(InternalRefTransform)
