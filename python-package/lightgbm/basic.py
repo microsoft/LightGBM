@@ -1130,7 +1130,7 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        elif isinstance(data, pd_DataFrame) and validate_features:
+        if isinstance(data, pd_DataFrame) and validate_features:
             data_names = [str(x) for x in data.columns]
             ptr_names = (ctypes.c_char_p * len(data_names))()
             ptr_names[:] = [x.encode("utf-8") for x in data_names]
@@ -5097,8 +5097,7 @@ class Booster:
                 if split_feature == feature:
                     if isinstance(root["threshold"], str):
                         raise LightGBMError("Cannot compute split value histogram for the categorical feature")
-                    else:
-                        values.append(root["threshold"])
+                    values.append(root["threshold"])
                 add(root["left_child"])
                 add(root["right_child"])
 

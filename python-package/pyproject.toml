@@ -157,6 +157,8 @@ select = [
     "PL",
     # flake8-return: unnecessary assignment before return
     "RET504",
+    # flake8-return: superfluous-else-raise
+    "RET506",
     # flake8-simplify: use dict.get() instead of an if-else block
     "SIM401",
     # flake8-print
