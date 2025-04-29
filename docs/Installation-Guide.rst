@@ -33,8 +33,8 @@ than all previous releases, and "older" than all future releases.
 For more details on why LightGBM uses EffVer instead of other schemes like semantic versioning,
 see https://jacobtomlinson.dev/effver/.
 
-Notes
-~~~~~
+General Installation Notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 All instructions below are aimed at compiling the 64-bit version of LightGBM.
 It is worth compiling the 32-bit version only in very rare special cases involving environmental limitations.
