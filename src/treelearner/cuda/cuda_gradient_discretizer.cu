@@ -22,7 +22,7 @@ __global__ void ReduceMinMaxKernel(
   score_t* grad_max_block_buffer,
   score_t* hess_min_block_buffer,
   score_t* hess_max_block_buffer) {
-  __shared__ score_t shared_mem_buffer[32];
+  __shared__ score_t shared_mem_buffer[WARPSIZE];
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   score_t grad_max_val = kMinScore;
   score_t grad_min_val = kMaxScore;
@@ -56,7 +56,7 @@ __global__ void ReduceBlockMinMaxKernel(
   score_t* grad_max_block_buffer,
   score_t* hess_min_block_buffer,
   score_t* hess_max_block_buffer) {
-  __shared__ score_t shared_mem_buffer[32];
+  __shared__ score_t shared_mem_buffer[WARPSIZE];
   score_t grad_max_val = kMinScore;
   score_t grad_min_val = kMaxScore;
   score_t hess_max_val = kMinScore;
