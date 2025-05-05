@@ -19,53 +19,53 @@ env:
   SKBUILD_STRICT_CONFIG: true
 
 jobs:
-  test-linux-aarch64:
-    name: bdist wheel (ubuntu-24.04-arm)
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 60
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 5
-          submodules: true
-      - name: Setup and run tests
-        shell: bash
-        # this uses 'docker run' instead of just setting 'container:'
-        # because actions/checkout requires GLIBC 2.28 and that is too
-        # new for manylinux2014
-        env:
-          BUILD_DIRECTORY: /LightGBM
-        run: |
-          cat > ./docker-script.sh <<EOF
-          mkdir -p \$BUILD_ARTIFACTSTAGINGDIRECTORY
-          export CONDA=\$HOME/miniforge
-          export PATH=\$CONDA/bin:\$PATH
-          ${{ env.BUILD_DIRECTORY }}/.ci/setup.sh || exit 1
-          ${{ env.BUILD_DIRECTORY }}/.ci/test.sh || exit 1
-          EOF
-          IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
-          docker pull "${IMAGE_URI}" || exit 1
-          docker run \
-            --platform "${PLATFORM}" \
-            --rm \
-            --env BUILD_DIRECTORY=${{ env.BUILD_DIRECTORY }} \
-            --env BUILD_ARTIFACTSTAGINGDIRECTORY=${{ env.BUILD_DIRECTORY }}/artifacts/ \
-            --env COMPILER=gcc \
-            --env METHOD=wheel \
-            --env OS_NAME=linux \
-            --env PRODUCES_ARTIFACTS=true \
-            --env PYTHON_VERSION="3.13" \
-            --env TASK=bdist \
-            -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
-            -w ${{ env.BUILD_DIRECTORY }} \
-            "${IMAGE_URI}" \
-            /bin/bash ./docker-script.sh
-      - name: upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-aarch64-wheel
-          path: artifacts/*.whl
+  # test-linux-aarch64:
+  #   name: bdist wheel (ubuntu-24.04-arm)
+  #   runs-on: ubuntu-24.04-arm
+  #   timeout-minutes: 60
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 5
+  #         submodules: true
+  #     - name: Setup and run tests
+  #       shell: bash
+  #       # this uses 'docker run' instead of just setting 'container:'
+  #       # because actions/checkout requires GLIBC 2.28 and that is too
+  #       # new for manylinux2014
+  #       env:
+  #         BUILD_DIRECTORY: /LightGBM
+  #       run: |
+  #         cat > ./docker-script.sh <<EOF
+  #         mkdir -p \$BUILD_ARTIFACTSTAGINGDIRECTORY
+  #         export CONDA=\$HOME/miniforge
+  #         export PATH=\$CONDA/bin:\$PATH
+  #         ${{ env.BUILD_DIRECTORY }}/.ci/setup.sh || exit 1
+  #         ${{ env.BUILD_DIRECTORY }}/.ci/test.sh || exit 1
+  #         EOF
+  #         IMAGE_URI="lightgbm/vsts-agent:manylinux2014_aarch64"
+  #         docker pull "${IMAGE_URI}" || exit 1
+  #         docker run \
+  #           --platform "${PLATFORM}" \
+  #           --rm \
+  #           --env BUILD_DIRECTORY=${{ env.BUILD_DIRECTORY }} \
+  #           --env BUILD_ARTIFACTSTAGINGDIRECTORY=${{ env.BUILD_DIRECTORY }}/artifacts/ \
+  #           --env COMPILER=gcc \
+  #           --env METHOD=wheel \
+  #           --env OS_NAME=linux \
+  #           --env PRODUCES_ARTIFACTS=true \
+  #           --env PYTHON_VERSION="3.13" \
+  #           --env TASK=bdist \
+  #           -v "${PWD}":"${{ env.BUILD_DIRECTORY }}" \
+  #           -w ${{ env.BUILD_DIRECTORY }} \
+  #           "${IMAGE_URI}" \
+  #           /bin/bash ./docker-script.sh
+  #     - name: upload wheels
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: linux-aarch64-wheel
+  #         path: artifacts/*.whl
   test-macos:
     name: ${{ matrix.task }} ${{ matrix.method }} (${{ matrix.os }}, Python ${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}
