@@ -41,6 +41,7 @@ from .compat import (
     _LGBMRegressorBase,
     _LGBMValidateData,
     _sklearn_version,
+    pa_Table,
     pd_DataFrame,
 )
 from .engine import train
@@ -60,6 +61,7 @@ _LGBM_ScikitMatrixLike = Union[
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
+    pa_Table,
     scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -1075,7 +1077,7 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            X_shape="numpy array, pandas DataFrame, pyarrow Table, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
             y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
             sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples] or None, optional (default=None)",
             init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",

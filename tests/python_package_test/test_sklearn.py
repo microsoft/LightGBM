@@ -25,7 +25,11 @@ import lightgbm as lgb
 from lightgbm.compat import (
     DASK_INSTALLED,
     PANDAS_INSTALLED,
+    PYARROW_INSTALLED,
     _sklearn_version,
+    pa_Array,
+    pa_ChunkedArray,
+    pa_Table,
     pd_DataFrame,
     pd_Series,
 )
@@ -1881,12 +1885,14 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
         assert preds.shape[0] == y.shape[0]
 
 
-@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
-@pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame"])
+@pytest.mark.parametrize("X_type", ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"])
+@pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"])
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
 def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow is not installed")
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -1906,6 +1912,8 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         X = scipy.sparse.csr_matrix(X)
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
+    elif X_type == "pa_Table":
+        X = pa_Table(X)
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
@@ -1929,6 +1937,20 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
             init_score = pd_DataFrame(init_score)
         else:
             init_score = pd_Series(init_score)
+    elif y_type == "pa_Array":
+        y = pa_Array(y)
+        weights = pa_Array(weights)
+        if task == "multiclass-classification":
+            init_score = pa_Table(init_score)
+        else:
+            init_score = pa_Array(init_score)
+    elif y_type == "pa_ChunkedArray":
+        y = pa_ChunkedArray(y)
+        weights = pa_ChunkedArray(weights)
+        if task == "multiclass-classification":
+            init_score = pa_Table(init_score)
+        else:
+            init_score = pa_ChunkedArray(init_score)
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
