@@ -1913,7 +1913,8 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
     elif X_type == "pd_DataFrame":
         X = pd_DataFrame(X)
     elif X_type == "pa_Table":
-        X = pa_Table(X)
+        X = pd_DataFrame(X)
+        X = pa_Table.from_pandas(X)
     elif X_type != "numpy":
         raise ValueError(f"Unrecognized X_type: '{X_type}'")
 
