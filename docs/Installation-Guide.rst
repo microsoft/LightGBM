@@ -30,6 +30,10 @@ When built from source on an unreleased commit, this version takes the following
 That ``.99`` is added to ensure that a version built from an unreleased commit is considered "newer"
 than all previous releases, and "older" than all future releases.
 
+.. _nightly-builds:
+
+You can find such artifacts from the latest successful build on the ``master`` branch (nightly builds) here: |download artifacts|.
+
 For more details on why LightGBM uses EffVer instead of other schemes like semantic versioning,
 see https://jacobtomlinson.dev/effver/.
 
@@ -75,10 +79,6 @@ These values refer to the following supported sanitizers:
 Please note, that ThreadSanitizer cannot be used together with other sanitizers.
 For more info and additional sanitizers' parameters please refer to the `following docs`_.
 It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
-
-.. _nightly-builds:
-
-You can download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
     :depth: 1
