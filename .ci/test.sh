@@ -297,7 +297,7 @@ fi
 cmake --build build --target _lightgbm -j4 || exit 1
 
 sh ./build-python.sh install --precompile || exit 1
-pytest ./tests || exit 1
+pytest ./tests -vv || exit 1
 
 if [[ $TASK == "regular" ]]; then
     if [[ $PRODUCES_ARTIFACTS == "true" ]]; then
