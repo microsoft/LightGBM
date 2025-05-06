@@ -1887,16 +1887,28 @@ def _get_expected_failed_tests(estimator):
 
 @pytest.mark.parametrize("X_type", ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"])
-@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
-def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
-    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
+@pytest.mark.parametrize("g_type", [None, "list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"])
+@pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression", "ranking"])
+def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(
+    X_type,
+    y_type,
+    g_type,
+    task,
+    rng,
+):
+    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
+    if task != "ranking" and g_type is not None:
+        pytest.skip("Different g_type is used only with 'ranking' task")
+    if task == "ranking" and g_type is None:
+        pytest.skip("Concrete g_type is required with 'ranking' task")
+
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
-    if task == "binary-classification" or task == "regression":
+    if task in {"binary-classification", "regression", "ranking"}:
         init_score = np.full_like(y, np.mean(y))
     elif task == "multiclass-classification":
         init_score = np.outer(y, np.array([0.1, 0.2, 0.7]))
@@ -1954,16 +1966,33 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
+    if g_type == "list1d_float":
+        g = g.astype("float").tolist()
+    elif g_type == "list1d_int":
+        g = g.astype("int").tolist()
+    elif g_type == "pd_Series":
+        g = pd_Series(g)
+    elif g_type == "pa_Array":
+        g = pa_array(g)
+    elif g_type == "pa_ChunkedArray":
+        g = pa_chunked_array([g])
+    elif g_type != "numpy":
+        raise ValueError(f"Unrecognized g_type: '{g_type}'")
+
     model = task_to_model_factory[task](n_estimators=10, verbose=-1)
-    model.fit(
-        X=X,
-        y=y,
-        sample_weight=weights,
-        init_score=init_score,
-        eval_set=[(X_valid, y)],
-        eval_sample_weight=[weights],
-        eval_init_score=[init_score],
-    )
+    params_fit = {
+        "X": X,
+        "y": y,
+        "sample_weight": weights,
+        "init_score": init_score,
+        "eval_set": [(X_valid, y)],
+        "eval_sample_weight": [weights],
+        "eval_init_score": [init_score],
+    }
+    if task == "ranking":
+        params_fit["group"] = g
+        params_fit["eval_group"] = [g]
+    model.fit(**params_fit)
 
     preds = model.predict(X)
     if task == "binary-classification":
@@ -1972,72 +2001,10 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         assert accuracy_score(y, preds) >= 0.99
     elif task == "regression":
         assert r2_score(y, preds) > 0.86
+    elif task == "ranking":
+        assert spearmanr(preds, y).correlation >= 0.99
     else:
         raise ValueError(f"Unrecognized task: '{task}'")
-
-
-# @pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
-# @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_DataFrame", "pd_Series"])
-# @pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series"])
-# def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type, rng):
-#     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
-#         pytest.skip("pandas is not installed")
-#     X, y, g = _create_data(task="ranking", n_samples=1_000)
-#     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
-#     init_score = np.full_like(y, np.mean(y))
-#     X_valid = X * 2
-
-#     if X_type == "list2d":
-#         X = X.tolist()
-#     elif X_type == "scipy_csc":
-#         X = scipy.sparse.csc_matrix(X)
-#     elif X_type == "scipy_csr":
-#         X = scipy.sparse.csr_matrix(X)
-#     elif X_type == "pd_DataFrame":
-#         X = pd_DataFrame(X)
-#     elif X_type != "numpy":
-#         raise ValueError(f"Unrecognized X_type: '{X_type}'")
-
-#     # make weights and init_score same types as y, just to avoid
-#     # a huge number of combinations and therefore test cases
-#     if y_type == "list1d":
-#         y = y.tolist()
-#         weights = weights.tolist()
-#         init_score = init_score.tolist()
-#     elif y_type == "pd_DataFrame":
-#         y = pd_DataFrame(y)
-#         weights = pd_Series(weights)
-#         init_score = pd_Series(init_score)
-#     elif y_type == "pd_Series":
-#         y = pd_Series(y)
-#         weights = pd_Series(weights)
-#         init_score = pd_Series(init_score)
-#     elif y_type != "numpy":
-#         raise ValueError(f"Unrecognized y_type: '{y_type}'")
-
-#     if g_type == "list1d_float":
-#         g = g.astype("float").tolist()
-#     elif g_type == "list1d_int":
-#         g = g.astype("int").tolist()
-#     elif g_type == "pd_Series":
-#         g = pd_Series(g)
-#     elif g_type != "numpy":
-#         raise ValueError(f"Unrecognized g_type: '{g_type}'")
-
-#     model = task_to_model_factory["ranking"](n_estimators=10, verbose=-1)
-#     model.fit(
-#         X=X,
-#         y=y,
-#         sample_weight=weights,
-#         init_score=init_score,
-#         group=g,
-#         eval_set=[(X_valid, y)],
-#         eval_sample_weight=[weights],
-#         eval_init_score=[init_score],
-#         eval_group=[g],
-#     )
-#     preds = model.predict(X)
-#     assert spearmanr(preds, y).correlation >= 0.99
 
 
 # def test_classifier_fit_detects_classes_every_time():
