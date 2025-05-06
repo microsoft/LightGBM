@@ -1945,12 +1945,12 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         else:
             init_score = pa_array(init_score)
     elif y_type == "pa_ChunkedArray":
-        y = pa_chunked_array(y)
-        weights = pa_chunked_array(weights)
+        y = pa_chunked_array(pa_array(y))
+        weights = pa_chunked_array(pa_array(weights))
         if task == "multiclass-classification":
             init_score = pa_Table.from_pandas(pd_DataFrame(init_score))
         else:
-            init_score = pa_chunked_array(init_score)
+            init_score = pa_chunked_array(pa_array(init_score))
     elif y_type != "numpy":
         raise ValueError(f"Unrecognized y_type: '{y_type}'")
 
