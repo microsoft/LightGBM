@@ -27,9 +27,9 @@ from lightgbm.compat import (
     PANDAS_INSTALLED,
     PYARROW_INSTALLED,
     _sklearn_version,
-    pa_Table,
     pa_array,
     pa_chunked_array,
+    pa_Table,
     pd_DataFrame,
     pd_Series,
 )
