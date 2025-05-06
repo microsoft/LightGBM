@@ -1887,9 +1887,9 @@ def _get_expected_failed_tests(estimator):
 
 @pytest.mark.parametrize("X_type", ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"])
-@pytest.mark.parametrize("g_type", [None, "list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"])
+@pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"])
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression", "ranking"])
-def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(
+def test_classification_regression_and_ranking_minimally_work_with_all_accepted_data_types(
     X_type,
     y_type,
     g_type,
@@ -1900,10 +1900,8 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         pytest.skip("pandas is not installed")
     if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
         pytest.skip("pyarrow is not installed")
-    if task != "ranking" and g_type is not None:
+    if task != "ranking" and g_type != "numpy":
         pytest.skip("Different g_type is used only with 'ranking' task")
-    if task == "ranking" and g_type is None:
-        pytest.skip("Concrete g_type is required with 'ranking' task")
 
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
