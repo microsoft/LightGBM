@@ -1076,10 +1076,10 @@ class LGBMModel(_LGBMModelBase):
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
             X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
-            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples]",
-            sample_weight_shape="numpy array, pandas Series, list of int or float of shape = [n_samples] or None, optional (default=None)",
-            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
-            group_shape="numpy array, pandas Series, list of int or float, or None, optional (default=None)",
+            y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
+            sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples] or None, optional (default=None)",
+            init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
+            group_shape="numpy array, pandas Series, pyarrow Array, pyarrow ChunkedArray, list of int or float, or None, optional (default=None)",
             eval_sample_weight_shape="list of array (same types as ``sample_weight`` supports), or None, optional (default=None)",
             eval_init_score_shape="list of array (same types as ``init_score`` supports), or None, optional (default=None)",
             eval_group_shape="list of array (same types as ``group`` supports), or None, optional (default=None)",
@@ -1761,9 +1761,9 @@ class LGBMRanker(LGBMModel):
         if eval_set is not None:
             if eval_group is None:
                 raise ValueError("Eval_group cannot be None when eval_set is not None")
-            elif len(eval_group) != len(eval_set):
+            if len(eval_group) != len(eval_set):
                 raise ValueError("Length of eval_group should be equal to eval_set")
-            elif (
+            if (
                 isinstance(eval_group, dict)
                 and any(i not in eval_group or eval_group[i] is None for i in range(len(eval_group)))
                 or isinstance(eval_group, list)

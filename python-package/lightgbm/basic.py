@@ -1103,7 +1103,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1133,7 +1133,7 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        elif isinstance(data, pd_DataFrame) and validate_features:
+        if isinstance(data, pd_DataFrame) and validate_features:
             data_names = [str(x) for x in data.columns]
             ptr_names = (ctypes.c_char_p * len(data_names))()
             ptr_names[:] = [x.encode("utf-8") for x in data_names]
@@ -2599,7 +2599,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2744,7 +2744,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             The data to be set.
 
         Returns
@@ -3217,7 +3217,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3230,7 +3230,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3243,7 +3243,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3256,7 +3256,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3291,7 +3291,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4771,7 +4771,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4852,7 +4852,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
@@ -5198,8 +5198,7 @@ class Booster:
                 if split_feature == feature:
                     if isinstance(root["threshold"], str):
                         raise LightGBMError("Cannot compute split value histogram for the categorical feature")
-                    else:
-                        values.append(root["threshold"])
+                    values.append(root["threshold"])
                 add(root["left_child"])
                 add(root["right_child"])
 
