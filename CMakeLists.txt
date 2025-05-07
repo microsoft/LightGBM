@@ -336,7 +336,8 @@ if(WIN32)
 endif()
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP")
+    # compiling 'fmt' on MSVC: "Unicode support requires compiling with /utf-8"
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /MP /utf-8")
     if(__BUILD_FOR_R)
         # MSVC does not like this commit:
         # https://github.com/wch/r-source/commit/fb52ac1a610571fcb8ac92d886b9fefcffaa7d48

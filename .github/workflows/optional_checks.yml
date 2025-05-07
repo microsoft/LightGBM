@@ -16,6 +16,7 @@ jobs:
           fetch-depth: 5
           submodules: false
       - name: Check that all tests succeeded
+        shell: bash
         run: |
             workflows=(
                 "R valgrind tests;r-valgrind"
@@ -23,7 +24,7 @@ jobs:
             for i in "${workflows[@]}"; do
                 workflow_name=${i%;*}
                 comment="The last reported status from workflow \"$workflow_name\" is failure."
-                comment+=" Commit fixes and rerun the workflow."
+                comment="${comment} Commit fixes and rerun the workflow."
                 trigger_phrase=${i#*;}
                 python \
                     "$GITHUB_WORKSPACE/.ci/get-workflow-status.py" \

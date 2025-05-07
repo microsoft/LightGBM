@@ -1,4 +1,5 @@
 # coding: utf-8
+import inspect
 import itertools
 import math
 import re
@@ -22,10 +23,9 @@ from sklearn.utils.validation import check_is_fitted
 
 import lightgbm as lgb
 from lightgbm.compat import (
-    DATATABLE_INSTALLED,
+    DASK_INSTALLED,
     PANDAS_INSTALLED,
     _sklearn_version,
-    dt_DataTable,
     pd_DataFrame,
     pd_Series,
 )
@@ -81,6 +81,30 @@ class UnpicklableCallback:
 
     def __call__(self, env):
         env.model.attr_set_inside_callback = env.iteration * 10
+
+
+class ExtendedLGBMClassifier(lgb.LGBMClassifier):
+    """Class for testing that inheriting from LGBMClassifier works"""
+
+    def __init__(self, *, some_other_param: str = "lgbm-classifier", **kwargs):
+        self.some_other_param = some_other_param
+        super().__init__(**kwargs)
+
+
+class ExtendedLGBMRanker(lgb.LGBMRanker):
+    """Class for testing that inheriting from LGBMRanker works"""
+
+    def __init__(self, *, some_other_param: str = "lgbm-ranker", **kwargs):
+        self.some_other_param = some_other_param
+        super().__init__(**kwargs)
+
+
+class ExtendedLGBMRegressor(lgb.LGBMRegressor):
+    """Class for testing that inheriting from LGBMRegressor works"""
+
+    def __init__(self, *, some_other_param: str = "lgbm-regressor", **kwargs):
+        self.some_other_param = some_other_param
+        super().__init__(**kwargs)
 
 
 def custom_asymmetric_obj(y_true, y_pred):
@@ -473,6 +497,193 @@ def test_clone_and_property():
     assert clf.n_classes_ == 2
     assert isinstance(clf.booster_, lgb.Booster)
     assert isinstance(clf.feature_importances_, np.ndarray)
+
+
+@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))
+def test_estimators_all_have_the_same_kwargs_and_defaults(estimator):
+    base_spec = inspect.getfullargspec(lgb.LGBMModel)
+    subclass_spec = inspect.getfullargspec(estimator)
+
+    # should not allow for any varargs
+    assert subclass_spec.varargs == base_spec.varargs
+    assert subclass_spec.varargs is None
+
+    # the only varkw should be **kwargs,
+    assert subclass_spec.varkw == base_spec.varkw
+    assert subclass_spec.varkw == "kwargs"
+
+    # default values for all constructor arguments should be identical
+    #
+    # NOTE: if LGBMClassifier / LGBMRanker / LGBMRegressor ever override
+    #       any of LGBMModel's constructor arguments, this will need to be updated
+    assert subclass_spec.kwonlydefaults == base_spec.kwonlydefaults
+
+    # only positional argument should be 'self'
+    assert subclass_spec.args == base_spec.args
+    assert subclass_spec.args == ["self"]
+    assert subclass_spec.defaults is None
+
+    # get_params() should be identical
+    assert estimator().get_params() == lgb.LGBMModel().get_params()
+
+
+def test_subclassing_get_params_works():
+    expected_params = {
+        "boosting_type": "gbdt",
+        "class_weight": None,
+        "colsample_bytree": 1.0,
+        "importance_type": "split",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "min_child_samples": 20,
+        "min_child_weight": 0.001,
+        "min_split_gain": 0.0,
+        "n_estimators": 100,
+        "n_jobs": None,
+        "num_leaves": 31,
+        "objective": None,
+        "random_state": None,
+        "reg_alpha": 0.0,
+        "reg_lambda": 0.0,
+        "subsample": 1.0,
+        "subsample_for_bin": 200000,
+        "subsample_freq": 0,
+    }
+
+    # Overrides, used to test that passing through **kwargs works as expected.
+    #
+    # why these?
+    #
+    #  - 'n_estimators' directly matches a keyword arg for the scikit-learn estimators
+    #  - 'eta' is a parameter alias for 'learning_rate'
+    overrides = {"n_estimators": 13, "eta": 0.07}
+
+    # lightgbm-official classes
+    for est in [lgb.LGBMModel, lgb.LGBMClassifier, lgb.LGBMRanker, lgb.LGBMRegressor]:
+        assert est().get_params() == expected_params
+        assert est(**overrides).get_params() == {
+            **expected_params,
+            "eta": 0.07,
+            "n_estimators": 13,
+            "learning_rate": 0.1,
+        }
+
+    if DASK_INSTALLED:
+        for est in [lgb.DaskLGBMClassifier, lgb.DaskLGBMRanker, lgb.DaskLGBMRegressor]:
+            assert est().get_params() == {
+                **expected_params,
+                "client": None,
+            }
+            assert est(**overrides).get_params() == {
+                **expected_params,
+                "eta": 0.07,
+                "n_estimators": 13,
+                "learning_rate": 0.1,
+                "client": None,
+            }
+
+    # custom sub-classes
+    assert ExtendedLGBMClassifier().get_params() == {**expected_params, "some_other_param": "lgbm-classifier"}
+    assert ExtendedLGBMClassifier(**overrides).get_params() == {
+        **expected_params,
+        "eta": 0.07,
+        "n_estimators": 13,
+        "learning_rate": 0.1,
+        "some_other_param": "lgbm-classifier",
+    }
+    assert ExtendedLGBMRanker().get_params() == {
+        **expected_params,
+        "some_other_param": "lgbm-ranker",
+    }
+    assert ExtendedLGBMRanker(**overrides).get_params() == {
+        **expected_params,
+        "eta": 0.07,
+        "n_estimators": 13,
+        "learning_rate": 0.1,
+        "some_other_param": "lgbm-ranker",
+    }
+    assert ExtendedLGBMRegressor().get_params() == {
+        **expected_params,
+        "some_other_param": "lgbm-regressor",
+    }
+    assert ExtendedLGBMRegressor(**overrides).get_params() == {
+        **expected_params,
+        "eta": 0.07,
+        "n_estimators": 13,
+        "learning_rate": 0.1,
+        "some_other_param": "lgbm-regressor",
+    }
+
+
+@pytest.mark.parametrize("task", all_tasks)
+def test_subclassing_works(task):
+    # param values to make training deterministic and
+    # just train a small, cheap model
+    params = {
+        "deterministic": True,
+        "force_row_wise": True,
+        "n_jobs": 1,
+        "n_estimators": 5,
+        "num_leaves": 11,
+        "random_state": 708,
+    }
+
+    X, y, g = _create_data(task=task)
+    if task == "ranking":
+        est = lgb.LGBMRanker(**params).fit(X, y, group=g)
+        est_sub = ExtendedLGBMRanker(**params).fit(X, y, group=g)
+    elif task.endswith("classification"):
+        est = lgb.LGBMClassifier(**params).fit(X, y)
+        est_sub = ExtendedLGBMClassifier(**params).fit(X, y)
+    else:
+        est = lgb.LGBMRegressor(**params).fit(X, y)
+        est_sub = ExtendedLGBMRegressor(**params).fit(X, y)
+
+    np.testing.assert_allclose(est.predict(X), est_sub.predict(X))
+
+
+@pytest.mark.parametrize(
+    "estimator_to_task",
+    [
+        (lgb.LGBMClassifier, "binary-classification"),
+        (ExtendedLGBMClassifier, "binary-classification"),
+        (lgb.LGBMRanker, "ranking"),
+        (ExtendedLGBMRanker, "ranking"),
+        (lgb.LGBMRegressor, "regression"),
+        (ExtendedLGBMRegressor, "regression"),
+    ],
+)
+def test_parameter_aliases_are_handled_correctly(estimator_to_task):
+    estimator, task = estimator_to_task
+    # scikit-learn estimators should remember every parameter passed
+    # via keyword arguments in the estimator constructor, but then
+    # only pass the correct value down to LightGBM's C++ side
+    params = {
+        "eta": 0.08,
+        "num_iterations": 3,
+        "num_leaves": 5,
+    }
+    X, y, g = _create_data(task=task)
+    mod = estimator(**params)
+    if task == "ranking":
+        mod.fit(X, y, group=g)
+    else:
+        mod.fit(X, y)
+
+    # scikit-learn get_params()
+    p = mod.get_params()
+    assert p["eta"] == 0.08
+    assert p["learning_rate"] == 0.1
+
+    # lgb.Booster's 'params' attribute
+    p = mod.booster_.params
+    assert p["eta"] == 0.08
+    assert p["learning_rate"] == 0.1
+
+    # Config in the 'LightGBM::Booster' on the C++ side
+    p = mod.booster_._get_loaded_param()
+    assert p["learning_rate"] == 0.1
+    assert "eta" not in p
 
 
 def test_joblib(tmp_path):
@@ -1463,7 +1674,10 @@ def _get_expected_failed_tests(estimator):
     return estimator._more_tags()["_xfail_checks"]
 
 
-@parametrize_with_checks([lgb.LGBMClassifier(), lgb.LGBMRegressor()], expected_failed_checks=_get_expected_failed_tests)
+@parametrize_with_checks(
+    [ExtendedLGBMClassifier(), ExtendedLGBMRegressor(), lgb.LGBMClassifier(), lgb.LGBMRegressor()],
+    expected_failed_checks=_get_expected_failed_tests,
+)
 def test_sklearn_integration(estimator, check):
     estimator.set_params(min_child_samples=1, min_data_in_bin=1)
     check(estimator)
@@ -1667,14 +1881,12 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
         assert preds.shape[0] == y.shape[0]
 
 
-@pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
+@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame"])
 @pytest.mark.parametrize("task", ["binary-classification", "multiclass-classification", "regression"])
 def test_classification_and_regression_minimally_work_with_all_all_accepted_data_types(X_type, y_type, task, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("dt_") for t in [X_type, y_type]) and not DATATABLE_INSTALLED:
-        pytest.skip("datatable is not installed")
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -1686,9 +1898,7 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task '{task}'")
 
     X_valid = X * 2
-    if X_type == "dt_DataTable":
-        X = dt_DataTable(X)
-    elif X_type == "list2d":
+    if X_type == "list2d":
         X = X.tolist()
     elif X_type == "scipy_csc":
         X = scipy.sparse.csc_matrix(X)
@@ -1744,22 +1954,18 @@ def test_classification_and_regression_minimally_work_with_all_all_accepted_data
         raise ValueError(f"Unrecognized task: '{task}'")
 
 
-@pytest.mark.parametrize("X_type", ["dt_DataTable", "list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
+@pytest.mark.parametrize("X_type", ["list2d", "numpy", "scipy_csc", "scipy_csr", "pd_DataFrame"])
 @pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_DataFrame", "pd_Series"])
 @pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series"])
 def test_ranking_minimally_works_with_all_all_accepted_data_types(X_type, y_type, g_type, rng):
     if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
         pytest.skip("pandas is not installed")
-    if any(t.startswith("dt_") for t in [X_type, y_type, g_type]) and not DATATABLE_INSTALLED:
-        pytest.skip("datatable is not installed")
     X, y, g = _create_data(task="ranking", n_samples=1_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
     init_score = np.full_like(y, np.mean(y))
     X_valid = X * 2
 
-    if X_type == "dt_DataTable":
-        X = dt_DataTable(X)
-    elif X_type == "list2d":
+    if X_type == "list2d":
         X = X.tolist()
     elif X_type == "scipy_csc":
         X = scipy.sparse.csc_matrix(X)
