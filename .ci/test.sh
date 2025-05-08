@@ -76,6 +76,7 @@ if_else_test() {
     ../../lightgbm_org config=$2 output_result=origin.pred
 
     cd "$BUILD_DIRECTORY"
+    rm build -rf
     cmake -B build -S . || exit 1
     cmake --build build --target lightgbm -j4 || exit 1
     cd "$BUILD_DIRECTORY/tests/cpp_tests"
