@@ -456,6 +456,31 @@ def test_arrow_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
+def test_get_data_arrow_table():
+    original_table = generate_simple_arrow_table()
+    dataset = lgb.Dataset(original_table, free_raw_data=False)
+    dataset.construct()
+
+    returned_data = dataset.get_data()
+    assert isinstance(returned_data, pa.Table)
+    assert returned_data.schema == original_table.schema
+    assert returned_data.shape == original_table.shape
+
+    for column_name in original_table.column_names:
+        original_column = original_table[column_name]
+        returned_column = returned_data[column_name]
+
+        assert original_column.type == returned_column.type
+        assert original_column.num_chunks == returned_column.num_chunks
+
+        for i in range(original_column.num_chunks):
+            original_chunk = original_column.chunk(i)
+            returned_chunk = returned_column.chunk(i)
+            assert original_chunk.equals(returned_chunk)
+
+        assert original_column.equals(returned_column)
+
+
 def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
     with pytest.raises(
         lgb.basic.LightGBMError, match="Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed."
