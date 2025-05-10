@@ -481,6 +481,33 @@ def test_get_data_arrow_table():
         assert original_column.equals(returned_column)
 
 
+def test_get_data_arrow_table_subset(rng):
+    original_table = generate_simple_arrow_table()
+    dataset = lgb.Dataset(original_table, free_raw_data=False)
+    dataset.construct()
+
+    used_indices = rng.choice(a=original_table.shape[0], size=original_table.shape[0] // 3, replace=False)
+    subset_dataset = dataset.subset(used_indices).construct()
+    expected_subset = original_table.take(used_indices)
+    subset_data = subset_dataset.get_data()
+    assert subset_data.schema == expected_subset.schema
+    assert subset_data.shape == expected_subset.shape
+    assert len(subset_data) == len(used_indices)
+    for column_name in expected_subset.column_names:
+        original_column = expected_subset[column_name]
+        returned_column = subset_data[column_name]
+
+        assert original_column.type == returned_column.type
+        assert original_column.num_chunks == returned_column.num_chunks
+
+        for i in range(original_column.num_chunks):
+            original_chunk = original_column.chunk(i)
+            returned_chunk = returned_column.chunk(i)
+            assert original_chunk.equals(returned_chunk)
+
+        assert original_column.equals(returned_column)
+
+
 def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
     with pytest.raises(
         lgb.basic.LightGBMError, match="Cannot init Dataset from Arrow without 'pyarrow' and 'cffi' installed."
