@@ -1986,7 +1986,7 @@ def run_minimal_test(X_type, y_type, g_type, task, rng):
     elif task == "regression":
         assert r2_score(y, preds) > 0.86
     elif task == "ranking":
-        assert spearmanr(preds, y).correlation >= 9.99
+        assert spearmanr(preds, y).correlation >= 0.99
     else:
         raise ValueError(f"Unrecognized task: '{task}'")
 
