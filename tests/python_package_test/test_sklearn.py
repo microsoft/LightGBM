@@ -58,6 +58,9 @@ task_to_model_factory = {
     "regression": lgb.LGBMRegressor,
 }
 all_tasks = tuple(task_to_model_factory.keys())
+all_x_types = ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"]
+all_y_types = ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"]
+all_group_types = ["list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"]
 
 
 def _create_data(task, n_samples=100, n_features=4):
@@ -1885,24 +1888,7 @@ def test_predict_rejects_inputs_with_incorrect_number_of_features(predict_disabl
         assert preds.shape[0] == y.shape[0]
 
 
-@pytest.mark.parametrize("X_type", ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"])
-@pytest.mark.parametrize("y_type", ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"])
-@pytest.mark.parametrize("g_type", ["list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"])
-@pytest.mark.parametrize("task", all_tasks)
-def test_classification_regression_and_ranking_minimally_work_with_all_accepted_data_types(
-    X_type,
-    y_type,
-    g_type,
-    task,
-    rng,
-):
-    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
-        pytest.skip("pandas is not installed")
-    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
-        pytest.skip("pyarrow is not installed")
-    if task != "ranking" and g_type != "numpy":
-        pytest.skip("Different g_type is used only with 'ranking' task")
-
+def run_minimal_test(X_type, y_type, g_type, task, rng):
     X, y, g = _create_data(task, n_samples=2_000)
     weights = np.abs(rng.standard_normal(size=(y.shape[0],)))
 
@@ -2000,9 +1986,43 @@ def test_classification_regression_and_ranking_minimally_work_with_all_accepted_
     elif task == "regression":
         assert r2_score(y, preds) > 0.86
     elif task == "ranking":
-        assert spearmanr(preds, y).correlation >= 0.99
+        assert spearmanr(preds, y).correlation >= 9.99
     else:
         raise ValueError(f"Unrecognized task: '{task}'")
+
+
+@pytest.mark.parametrize("X_type", all_x_types)
+@pytest.mark.parametrize("y_type", all_y_types)
+@pytest.mark.parametrize("task", [t for t in all_tasks if t != "ranking"])
+def test_classification_and_regression_minimally_work_with_all_accepted_data_types(
+    X_type,
+    y_type,
+    task,
+    rng,
+):
+    if any(t.startswith("pd_") for t in [X_type, y_type]) and not PANDAS_INSTALLED:
+        pytest.skip("pandas is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type]) and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow is not installed")
+
+    run_minimal_test(X_type=X_type, y_type=y_type, g_type="numpy", task=task, rng=rng)
+
+
+@pytest.mark.parametrize("X_type", all_x_types)
+@pytest.mark.parametrize("y_type", all_y_types)
+@pytest.mark.parametrize("g_type", all_group_types)
+def test_ranking_minimally_works_with_all_accepted_data_types(
+    X_type,
+    y_type,
+    g_type,
+    rng,
+):
+    if any(t.startswith("pd_") for t in [X_type, y_type, g_type]) and not PANDAS_INSTALLED:
+        pytest.skip("pandas is not installed")
+    if any(t.startswith("pa_") for t in [X_type, y_type, g_type]) and not PYARROW_INSTALLED:
+        pytest.skip("pyarrow is not installed")
+
+    run_minimal_test(X_type=X_type, y_type=y_type, g_type=g_type, task="ranking", rng=rng)
 
 
 def test_classifier_fit_detects_classes_every_time():
