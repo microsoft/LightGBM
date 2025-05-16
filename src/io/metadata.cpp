@@ -945,26 +945,26 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           data_size_t selected_m = 0;
           std::vector<bool> selected(num_doc_in_query, false);
           for (data_size_t i = 0; i < num_doc_in_query; ++i) {
+            if (selected_m == local_relevance_pairing_m) {
+              break;
+            }
             if (!selected[i] && sorted_indices_by_relevance[i] + query_start != item_index_i && label_[item_index_i] != label_[query_start + sorted_indices_by_relevance[i]]) {
               selected_pairs.push_back({item_index_i - query_start, sorted_indices_by_relevance[i]});
               selected_pairs.push_back({sorted_indices_by_relevance[i], item_index_i - query_start});
               ++selected_m;
               selected[i] = true;
-              if (selected_m == local_relevance_pairing_m) {
-                break;
-              }
             }
           }
           data_size_t selected_n = 0;
           std::vector<data_size_t> unselected_items;
           for (data_size_t i = 0; i < num_doc_in_query; ++i) {
+            if (selected_n == local_relevance_pairing_m) {
+              break;
+            }
             if (!selected[i] && sorted_indices_by_relevance[i] + query_start != item_index_i) {
               selected_pairs.push_back({item_index_i - query_start, sorted_indices_by_relevance[i]});
               selected_pairs.push_back({sorted_indices_by_relevance[i], item_index_i - query_start});
               ++selected_n;
-              if (selected_n == local_top_pairing_n) {
-                break;
-              }
             } else {
               unselected_items.push_back(sorted_indices_by_relevance[i]);
             }
@@ -972,13 +972,13 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           data_size_t selected_k = 0;
           std::random_shuffle(unselected_items.begin(), unselected_items.end());
           for (data_size_t i = 0; i < static_cast<data_size_t>(unselected_items.size()); ++i) {
+            if (selected_n == local_relevance_pairing_m) {
+              break;
+            }
             if (unselected_items[i] + query_start != item_index_i) {
               selected_pairs.push_back({item_index_i - query_start, unselected_items[i]});
               selected_pairs.push_back({unselected_items[i], item_index_i - query_start});
               ++selected_k;
-              if (selected_k == random_pairing_k) {
-                break;
-              }
             }
           }
         } else {
@@ -999,7 +999,7 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
         }
       }
 
-      if (pairing_approach == std::string("relevance_m_top_n_random_k")) {
+      if (pairing_approach == std::string("relevance_m_top_n_random_k") || pairing_approach == std::string("top_n_random_k") || pairing_approach == std::string("random_k")) {
         std::sort(selected_pairs.begin(), selected_pairs.end(), [] (std::pair<data_size_t, data_size_t> i, std::pair<data_size_t, data_size_t> j) { return i.first < j.first || (i.first == j.first && i.second < j.second); });
         auto new_end = std::unique(selected_pairs.begin(), selected_pairs.end());
         selected_pairs.resize(new_end - selected_pairs.begin());
