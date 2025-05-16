@@ -685,7 +685,7 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     elif isinstance(y, list) and isinstance(y[0], list):
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="expected 1D array"):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
