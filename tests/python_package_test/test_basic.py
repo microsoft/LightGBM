@@ -689,7 +689,7 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="cannot be converted"):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
         return
     result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name="list")
