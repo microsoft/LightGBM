@@ -958,21 +958,25 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           data_size_t selected_n = 0;
           std::vector<data_size_t> unselected_items;
           for (data_size_t i = 0; i < num_doc_in_query; ++i) {
-            if (selected_n == local_relevance_pairing_m) {
+            if (selected_n == local_top_pairing_n) {
               break;
             }
             if (!selected[i] && sorted_indices_by_relevance[i] + query_start != item_index_i) {
               selected_pairs.push_back({item_index_i - query_start, sorted_indices_by_relevance[i]});
               selected_pairs.push_back({sorted_indices_by_relevance[i], item_index_i - query_start});
+              selected[i] = true;
               ++selected_n;
-            } else {
+            }
+          }
+          for (data_size_t i = 0; i < num_doc_in_query; ++i) {
+            if (!selected[i]) {
               unselected_items.push_back(sorted_indices_by_relevance[i]);
             }
           }
           data_size_t selected_k = 0;
           std::random_shuffle(unselected_items.begin(), unselected_items.end());
           for (data_size_t i = 0; i < static_cast<data_size_t>(unselected_items.size()); ++i) {
-            if (selected_n == local_relevance_pairing_m) {
+            if (selected_k == random_pairing_k) {
               break;
             }
             if (unselected_items[i] + query_start != item_index_i) {
@@ -1010,9 +1014,9 @@ data_size_t Metadata::BuildPairwiseFeatureRanking(const Metadata& metadata, cons
           ++num_data_;
         }
       }
-
       pairwise_query_boundaries_.push_back(num_data_);
     }
+    Log::Warning("num_data_ = %d", num_data_);
   } else {
     // TODO(shiyu1994)
     Log::Fatal("Not implemented.");
