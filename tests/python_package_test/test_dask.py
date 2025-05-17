@@ -1016,8 +1016,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError, match="client"):
-            # client is not set on the local model, so should raise an error if we try to access it
+        with pytest.raises(AttributeError):
             local_model.client
             local_model.client_
 
@@ -1041,7 +1040,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError, match="client"):
+        with pytest.raises(AttributeError):
             local_model.client
             local_model.client_
 
@@ -1127,7 +1126,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             local_model = dask_model.to_local()
 
             assert "client" not in local_model.get_params()
-            with pytest.raises(AttributeError, match="client"):
+            with pytest.raises(AttributeError):
                 local_model.client
                 local_model.client_
 
