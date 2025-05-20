@@ -202,25 +202,6 @@ try:
 except ImportError:
     GRAPHVIZ_INSTALLED = False
 
-"""datatable"""
-try:
-    import datatable
-
-    if hasattr(datatable, "Frame"):
-        dt_DataTable = datatable.Frame
-    else:
-        dt_DataTable = datatable.DataTable
-    DATATABLE_INSTALLED = True
-except ImportError:
-    DATATABLE_INSTALLED = False
-
-    class dt_DataTable:  # type: ignore
-        """Dummy class for datatable.DataTable."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-
 """dask"""
 try:
     from dask import delayed
