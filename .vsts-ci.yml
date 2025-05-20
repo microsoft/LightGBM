@@ -148,82 +148,82 @@ jobs:
   #         pathtoPublish: '$(Build.ArtifactStagingDirectory)'
   #         artifactName: PackageAssets
   #         artifactType: container
-  ################
-  # Linux_latest #
-  ################
-  - job: Linux_latest
-    variables:
-      COMPILER: clang-17
-      DEBIAN_FRONTEND: 'noninteractive'
-      IN_UBUNTU_BASE_CONTAINER: 'true'
-      OS_NAME: 'linux'
-      SETUP_CONDA: 'true'
-    pool: mariner-20240410-0
-    container: ubuntu-latest
-    strategy:
-      matrix:
-        regular:
-          TASK: regular
-        sdist:
-          TASK: sdist
-        bdist:
-          TASK: bdist
-          PYTHON_VERSION: '3.11'
-        inference:
-          TASK: if-else
-        mpi_source:
-          TASK: mpi
-          METHOD: source
-        mpi_pip:
-          TASK: mpi
-          METHOD: pip
-          PYTHON_VERSION: '3.12'
-        mpi_wheel:
-          TASK: mpi
-          METHOD: wheel
-          PYTHON_VERSION: '3.10'
-        gpu_source:
-          TASK: gpu
-          METHOD: source
-          PYTHON_VERSION: '3.12'
-        gpu_pip:
-          TASK: gpu
-          METHOD: pip
-          PYTHON_VERSION: '3.11'
-        gpu_wheel:
-          TASK: gpu
-          METHOD: wheel
-          PYTHON_VERSION: '3.10'
-        cpp_tests:
-          TASK: cpp-tests
-          METHOD: with-sanitizers
-    steps:
-      - script: |
-          echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
-          CONDA=$HOME/miniforge
-          echo "##vso[task.setvariable variable=CONDA]$CONDA"
-          echo "##vso[task.prependpath]$CONDA/bin"
-        displayName: 'Set variables'
-      # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
-      - script: |
-          /tmp/docker exec -t -u 0 ci-container \
-          sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
-        displayName: 'Install sudo'
-      - script: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends git
-          git clean -d -f -x
-        displayName: 'Clean source directory'
-      - task: Bash@3
-        displayName: Setup
-        inputs:
-          filePath: $(Build.SourcesDirectory)/.ci/setup.sh
-          targetType: 'filePath'
-      - task: Bash@3
-        displayName: Test
-        inputs:
-          filePath: $(Build.SourcesDirectory)/.ci/test.sh
-          targetType: 'filePath'
+  # ################
+  # # Linux_latest #
+  # ################
+  # - job: Linux_latest
+  #   variables:
+  #     COMPILER: clang-17
+  #     DEBIAN_FRONTEND: 'noninteractive'
+  #     IN_UBUNTU_BASE_CONTAINER: 'true'
+  #     OS_NAME: 'linux'
+  #     SETUP_CONDA: 'true'
+  #   pool: mariner-20240410-0
+  #   container: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       regular:
+  #         TASK: regular
+  #       sdist:
+  #         TASK: sdist
+  #       bdist:
+  #         TASK: bdist
+  #         PYTHON_VERSION: '3.11'
+  #       inference:
+  #         TASK: if-else
+  #       mpi_source:
+  #         TASK: mpi
+  #         METHOD: source
+  #       mpi_pip:
+  #         TASK: mpi
+  #         METHOD: pip
+  #         PYTHON_VERSION: '3.12'
+  #       mpi_wheel:
+  #         TASK: mpi
+  #         METHOD: wheel
+  #         PYTHON_VERSION: '3.10'
+  #       gpu_source:
+  #         TASK: gpu
+  #         METHOD: source
+  #         PYTHON_VERSION: '3.12'
+  #       gpu_pip:
+  #         TASK: gpu
+  #         METHOD: pip
+  #         PYTHON_VERSION: '3.11'
+  #       gpu_wheel:
+  #         TASK: gpu
+  #         METHOD: wheel
+  #         PYTHON_VERSION: '3.10'
+  #       cpp_tests:
+  #         TASK: cpp-tests
+  #         METHOD: with-sanitizers
+  #   steps:
+  #     - script: |
+  #         echo "##vso[task.setvariable variable=BUILD_DIRECTORY]$BUILD_SOURCESDIRECTORY"
+  #         CONDA=$HOME/miniforge
+  #         echo "##vso[task.setvariable variable=CONDA]$CONDA"
+  #         echo "##vso[task.prependpath]$CONDA/bin"
+  #       displayName: 'Set variables'
+  #     # https://github.com/microsoft/azure-pipelines-agent/issues/2043#issuecomment-687983301
+  #     - script: |
+  #         /tmp/docker exec -t -u 0 ci-container \
+  #         sh -c "apt-get update && apt-get -o Dpkg::Options::="--force-confold" -y install sudo"
+  #       displayName: 'Install sudo'
+  #     - script: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y --no-install-recommends git
+  #         git clean -d -f -x
+  #       displayName: 'Clean source directory'
+  #     - task: Bash@3
+  #       displayName: Setup
+  #       inputs:
+  #         filePath: $(Build.SourcesDirectory)/.ci/setup.sh
+  #         targetType: 'filePath'
+  #     - task: Bash@3
+  #       displayName: Test
+  #       inputs:
+  #         filePath: $(Build.SourcesDirectory)/.ci/test.sh
+  #         targetType: 'filePath'
   #########
   # macOS #
   #########
@@ -365,9 +365,9 @@ jobs:
   ###########
   - job: Package
     dependsOn:
-      # TODO: add 'Linux' jobs back when https://github.com/microsoft/LightGBM/issues/6918 is resolved
+      # TODO: add jobs back when https://github.com/microsoft/LightGBM/issues/6918 is resolved
       # - Linux
-      - Linux_latest
+      # - Linux_latest
       - macOS
       - Windows
       - R_artifact
