@@ -58,9 +58,9 @@ task_to_model_factory = {
     "regression": lgb.LGBMRegressor,
 }
 all_tasks = tuple(task_to_model_factory.keys())
-all_x_types = ["list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr"]
-all_y_types = ["list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray"]
-all_group_types = ["list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray"]
+all_x_types = ("list2d", "numpy", "pd_DataFrame", "pa_Table", "scipy_csc", "scipy_csr")
+all_y_types = ("list1d", "numpy", "pd_Series", "pd_DataFrame", "pa_Array", "pa_ChunkedArray")
+all_group_types = ("list1d_float", "list1d_int", "numpy", "pd_Series", "pa_Array", "pa_ChunkedArray")
 
 
 def _create_data(task, n_samples=100, n_features=4):
