@@ -13,6 +13,10 @@ void SynchronizeCUDADevice(const char* file, const int line) {
   gpuAssert(cudaDeviceSynchronize(), file, line);
 }
 
+void SynchronizeCUDAStream(cudaStream_t cuda_stream, const char* file, const int line) {
+  gpuAssert(cudaStreamSynchronize(cuda_stream), file, line);
+}
+
 void PrintLastCUDAError() {
   const char* error_name = cudaGetErrorName(cudaGetLastError());
   Log::Fatal(error_name);
@@ -30,6 +34,24 @@ int GetCUDADevice(const char* file, int line) {
   int cur_gpu_device_id = 0;
   CUDASUCCESS_OR_FATAL_OUTER(cudaGetDevice(&cur_gpu_device_id));
   return cur_gpu_device_id;
+}
+
+cudaStream_t CUDAStreamCreate() {
+  cudaStream_t cuda_stream;
+  CUDASUCCESS_OR_FATAL(cudaStreamCreate(&cuda_stream));
+  return cuda_stream;
+}
+
+void CUDAStreamDestroy(cudaStream_t cuda_stream) {
+  CUDASUCCESS_OR_FATAL(cudaStreamDestroy(cuda_stream));
+}
+
+void NCCLGroupStart() {
+  NCCLCHECK(ncclGroupStart());
+}
+
+void NCCLGroupEnd() {
+  NCCLCHECK(ncclGroupEnd());
 }
 
 }  // namespace LightGBM
