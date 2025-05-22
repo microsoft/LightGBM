@@ -2868,10 +2868,13 @@ def test_metrics():
         assert len(res) == 2
         assert "valid error-mean" in res
         # multiclass metric alias with custom one with invalid class_num
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_dummy_obj_class_1_verbose, metrics=obj_multi_alias, feval=constant_metric)
         # multiclass default metric without num_class
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(
+            lgb.basic.LightGBMError,
+            match="Number of classes should be specified and greater than 1 for multiclass training",
+        ):
             get_cv_result(params_obj_verbose)
         for metric_multi_alias in obj_multi_aliases + ["multi_logloss"]:
             # multiclass metric alias
@@ -2883,11 +2886,11 @@ def test_metrics():
         assert len(res) == 2
         assert "valid multi_error-mean" in res
         # non-valid metric for multiclass objective
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_obj_class_3_verbose, metrics="binary_logloss")
     params_class_3_verbose = {"num_class": 3, "verbose": -1}
     # non-default num_class for default objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Number of classes must be 1 for non-multiclass training"):
         get_cv_result(params_class_3_verbose)
     # no metric with non-default num_class for custom objective
     res = get_cv_result(params_dummy_obj_class_3_verbose)
@@ -2902,7 +2905,7 @@ def test_metrics():
     assert len(res) == 2
     assert "valid multi_error-mean" in res
     # binary metric with non-default num_class for custom objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
         get_cv_result(params_dummy_obj_class_3_verbose, metrics="binary_error")
 
 
