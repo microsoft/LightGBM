@@ -3161,9 +3161,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
     hist, bins = gbm.get_split_value_histogram(0, bins=999)
     assert len(hist) == 999
     assert len(bins) == 1000
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=-1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=0)
     hist, bins = gbm.get_split_value_histogram(0, bins=1)
     assert len(hist) == 1
@@ -3197,7 +3197,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
         np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot compute split value histogram for the categorical feature"
+    ):
         gbm.get_split_value_histogram(2)
 
 
