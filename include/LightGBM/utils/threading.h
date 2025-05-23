@@ -19,20 +19,17 @@ namespace LightGBM {
 class Threading {
  public:
   template <typename INDEX_T>
-  static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block,
-                               int* out_nblock, INDEX_T* block_size) {
+  static inline void BlockInfo(INDEX_T cnt, INDEX_T min_cnt_per_block, int* out_nblock,
+                               INDEX_T* block_size) {
     int num_threads = OMP_NUM_THREADS();
-    BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
-                       block_size);
+    BlockInfo<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock, block_size);
   }
 
   template <typename INDEX_T>
-  static inline void BlockInfo(int num_threads, INDEX_T cnt,
-                               INDEX_T min_cnt_per_block, int* out_nblock,
-                               INDEX_T* block_size) {
+  static inline void BlockInfo(int num_threads, INDEX_T cnt, INDEX_T min_cnt_per_block,
+                               int* out_nblock, INDEX_T* block_size) {
     *out_nblock = std::min<int>(
-        num_threads,
-        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
+        num_threads, static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
     if (*out_nblock > 1) {
       *block_size = SIZE_ALIGNED((cnt + (*out_nblock) - 1) / (*out_nblock));
     } else {
@@ -41,34 +38,29 @@ class Threading {
   }
 
   template <typename INDEX_T>
-  static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt,
-                                        INDEX_T min_cnt_per_block,
+  static inline void BlockInfoForceSize(int num_threads, INDEX_T cnt, INDEX_T min_cnt_per_block,
                                         int* out_nblock, INDEX_T* block_size) {
     *out_nblock = std::min<int>(
-        num_threads,
-        static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
+        num_threads, static_cast<int>((cnt + min_cnt_per_block - 1) / min_cnt_per_block));
     if (*out_nblock > 1) {
       *block_size = (cnt + (*out_nblock) - 1) / (*out_nblock);
       // force the block size to the times of min_cnt_per_block
-      *block_size = (*block_size + min_cnt_per_block - 1) / min_cnt_per_block *
-                    min_cnt_per_block;
+      *block_size = (*block_size + min_cnt_per_block - 1) / min_cnt_per_block * min_cnt_per_block;
     } else {
       *block_size = cnt;
     }
   }
 
   template <typename INDEX_T>
-  static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block,
-                                        int* out_nblock, INDEX_T* block_size) {
+  static inline void BlockInfoForceSize(INDEX_T cnt, INDEX_T min_cnt_per_block, int* out_nblock,
+                                        INDEX_T* block_size) {
     int num_threads = OMP_NUM_THREADS();
-    BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock,
-                                block_size);
+    BlockInfoForceSize<INDEX_T>(num_threads, cnt, min_cnt_per_block, out_nblock, block_size);
   }
 
   template <typename INDEX_T>
-  static inline int For(
-      INDEX_T start, INDEX_T end, INDEX_T min_block_size,
-      const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
+  static inline int For(INDEX_T start, INDEX_T end, INDEX_T min_block_size,
+                        const std::function<void(int, INDEX_T, INDEX_T)>& inner_fun) {
     int n_block = 1;
     INDEX_T num_inner = end - start;
     BlockInfo<INDEX_T>(num_inner, min_block_size, &n_block, &num_inner);
@@ -79,7 +71,7 @@ class Threading {
       INDEX_T inner_start = start + num_inner * i;
       INDEX_T inner_end = std::min(end, inner_start + num_inner);
       if (inner_start < inner_end) {
-          inner_fun(i, inner_start, inner_end);
+        inner_fun(i, inner_start, inner_end);
       }
       OMP_LOOP_EX_END();
     }
@@ -114,19 +106,17 @@ class ParallelPartitionRunner {
     }
   }
 
-  template<bool FORCE_SIZE>
-  INDEX_T Run(
-      INDEX_T cnt,
-      const std::function<INDEX_T(int, INDEX_T, INDEX_T, INDEX_T*, INDEX_T*)>& func,
-      INDEX_T* out) {
+  template <bool FORCE_SIZE>
+  INDEX_T Run(INDEX_T cnt,
+              const std::function<INDEX_T(int, INDEX_T, INDEX_T, INDEX_T*, INDEX_T*)>& func,
+              INDEX_T* out) {
     int nblock = 1;
     INDEX_T inner_size = cnt;
     if (FORCE_SIZE) {
-      Threading::BlockInfoForceSize<INDEX_T>(num_threads_, cnt, min_block_size_,
-                                             &nblock, &inner_size);
+      Threading::BlockInfoForceSize<INDEX_T>(num_threads_, cnt, min_block_size_, &nblock,
+                                             &inner_size);
     } else {
-      Threading::BlockInfo<INDEX_T>(num_threads_, cnt, min_block_size_, &nblock,
-                                    &inner_size);
+      Threading::BlockInfo<INDEX_T>(num_threads_, cnt, min_block_size_, &nblock, &inner_size);
     }
 
     OMP_INIT_EX();
@@ -147,8 +137,7 @@ class ParallelPartitionRunner {
         right_ptr = right_.data() + cur_start;
       }
       // split data inner, reduce the times of function called
-      INDEX_T cur_left_count =
-          func(i, cur_start, cur_cnt, left_ptr, right_ptr);
+      INDEX_T cur_left_count = func(i, cur_start, cur_cnt, left_ptr, right_ptr);
       if (!TWO_BUFFER) {
         // reverse for one buffer
         std::reverse(left_ptr + cur_left_count, left_ptr + cur_cnt);
@@ -170,8 +159,7 @@ class ParallelPartitionRunner {
     auto right_start = out + left_cnt;
 #pragma omp parallel for schedule(static, 1) num_threads(num_threads_)
     for (int i = 0; i < nblock; ++i) {
-      std::copy_n(left_.data() + offsets_[i], left_cnts_[i],
-                  out + left_write_pos_[i]);
+      std::copy_n(left_.data() + offsets_[i], left_cnts_[i], out + left_write_pos_[i]);
       if (TWO_BUFFER) {
         std::copy_n(right_.data() + offsets_[i], right_cnts_[i],
                     right_start + right_write_pos_[i]);

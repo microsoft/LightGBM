@@ -45,8 +45,7 @@ class ColSampler {
       used_cnt_bytree_ = static_cast<int>(valid_feature_indices_.size());
     } else {
       need_reset_bytree_ = true;
-      used_cnt_bytree_ =
-          GetCnt(valid_feature_indices_.size(), fraction_bytree_);
+      used_cnt_bytree_ = GetCnt(valid_feature_indices_.size(), fraction_bytree_);
     }
     ResetByTree();
   }
@@ -65,21 +64,20 @@ class ColSampler {
       used_cnt_bytree_ = static_cast<int>(valid_feature_indices_.size());
     } else {
       need_reset_bytree_ = true;
-      used_cnt_bytree_ =
-          GetCnt(valid_feature_indices_.size(), fraction_bytree_);
+      used_cnt_bytree_ = GetCnt(valid_feature_indices_.size(), fraction_bytree_);
     }
     ResetByTree();
   }
 
   void ResetByTree() {
     if (need_reset_bytree_) {
-      std::memset(is_feature_used_.data(), 0,
-                  sizeof(int8_t) * is_feature_used_.size());
-      used_feature_indices_ = random_.Sample(
-          static_cast<int>(valid_feature_indices_.size()), used_cnt_bytree_);
+      std::memset(is_feature_used_.data(), 0, sizeof(int8_t) * is_feature_used_.size());
+      used_feature_indices_ =
+          random_.Sample(static_cast<int>(valid_feature_indices_.size()), used_cnt_bytree_);
       int omp_loop_size = static_cast<int>(used_feature_indices_.size());
 
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (omp_loop_size >= 1024)
       for (int i = 0; i < omp_loop_size; ++i) {
         int used_feature = valid_feature_indices_[used_feature_indices_[i]];
         int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
@@ -100,7 +98,9 @@ class ColSampler {
           allowed_features.insert(constraint.begin(), constraint.end());
         }
         for (int feat : branch_features) {
-          if (constraint.count(feat) == 0) { break; }
+          if (constraint.count(feat) == 0) {
+            break;
+          }
           ++num_feat_found;
           if (num_feat_found == static_cast<int>(branch_features.size())) {
             allowed_features.insert(constraint.begin(), constraint.end());
@@ -136,13 +136,15 @@ class ColSampler {
             filtered_feature_indices.push_back(feat_ind);
           }
         }
-        used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
+        used_feature_cnt =
+            std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
         allowed_used_feature_indices = &filtered_feature_indices;
       }
       auto sampled_indices = random_.Sample(
           static_cast<int>((*allowed_used_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (omp_loop_size >= 1024)
       for (int i = 0; i < omp_loop_size; ++i) {
         int used_feature =
             valid_feature_indices_[(*allowed_used_feature_indices)[sampled_indices[i]]];
@@ -150,8 +152,7 @@ class ColSampler {
         ret[inner_feature_index] = 1;
       }
     } else {
-      auto used_feature_cnt =
-          GetCnt(valid_feature_indices_.size(), fraction_bynode_);
+      auto used_feature_cnt = GetCnt(valid_feature_indices_.size(), fraction_bynode_);
       std::vector<int>* allowed_valid_feature_indices;
       std::vector<int> filtered_feature_indices;
       if (interaction_constraints_.empty()) {
@@ -163,12 +164,14 @@ class ColSampler {
           }
         }
         allowed_valid_feature_indices = &filtered_feature_indices;
-        used_feature_cnt = std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
+        used_feature_cnt =
+            std::min(used_feature_cnt, static_cast<int>(filtered_feature_indices.size()));
       }
       auto sampled_indices = random_.Sample(
           static_cast<int>((*allowed_valid_feature_indices).size()), used_feature_cnt);
       int omp_loop_size = static_cast<int>(sampled_indices.size());
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (omp_loop_size >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (omp_loop_size >= 1024)
       for (int i = 0; i < omp_loop_size; ++i) {
         int used_feature = (*allowed_valid_feature_indices)[sampled_indices[i]];
         int inner_feature_index = train_data_->InnerFeatureIndex(used_feature);
@@ -178,13 +181,9 @@ class ColSampler {
     return ret;
   }
 
-  const std::vector<int8_t>& is_feature_used_bytree() const {
-    return is_feature_used_;
-  }
+  const std::vector<int8_t>& is_feature_used_bytree() const { return is_feature_used_; }
 
-  void SetIsFeatureUsedByTree(int fid, bool val) {
-    is_feature_used_[fid] = val;
-  }
+  void SetIsFeatureUsedByTree(int fid, bool val) { is_feature_used_[fid] = val; }
 
  private:
   const Dataset* train_data_;

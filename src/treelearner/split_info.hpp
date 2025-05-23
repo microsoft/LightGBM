@@ -17,8 +17,8 @@
 namespace LightGBM {
 
 /*!
-* \brief Used to store some information for gain split point
-*/
+ * \brief Used to store some information for gain split point
+ */
 struct SplitInfo {
  public:
   /*! \brief Feature index */
@@ -53,7 +53,9 @@ struct SplitInfo {
   bool default_left = true;
   int8_t monotone_type = 0;
   inline static int Size(int max_cat_threshold) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t) + sizeof(int64_t)*2;
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 +
+           sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t) +
+           sizeof(int64_t) * 2;
   }
 
   inline void CopyTo(char* buffer) const {
@@ -135,7 +137,7 @@ struct SplitInfo {
     gain = kMinScore;
   }
 
-  inline bool operator > (const SplitInfo& si) const {
+  inline bool operator>(const SplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -165,7 +167,7 @@ struct SplitInfo {
   }
 
   /*! \brief test if a candidate SplitInfo is equivalent to this one */
-  inline bool operator == (const SplitInfo& si) const {
+  inline bool operator==(const SplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -230,7 +232,7 @@ struct LightSplitInfo {
     buffer += sizeof(gain);
   }
 
-  inline bool operator > (const LightSplitInfo& si) const {
+  inline bool operator>(const LightSplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -260,7 +262,7 @@ struct LightSplitInfo {
   }
 
   /*! \brief test if a candidate LightSplitInfo is equivalent to this one */
-  inline bool operator == (const LightSplitInfo& si) const {
+  inline bool operator==(const LightSplitInfo& si) const {
     double local_gain = this->gain;
     double other_gain = si.gain;
     // replace nan with -inf
@@ -291,4 +293,4 @@ struct LightSplitInfo {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_TREELEARNER_SPLIT_INFO_HPP_
+#endif  // LightGBM_TREELEARNER_SPLIT_INFO_HPP_

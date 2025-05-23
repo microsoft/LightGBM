@@ -13,8 +13,8 @@
 
 namespace LightGBM {
 
-CUDABinaryLogloss::CUDABinaryLogloss(const Config& config):
-CUDAObjectiveInterface<BinaryLogloss>(config), ova_class_id_(-1) {
+CUDABinaryLogloss::CUDABinaryLogloss(const Config& config)
+    : CUDAObjectiveInterface<BinaryLogloss>(config), ova_class_id_(-1) {
   cuda_label_ = nullptr;
   cuda_ova_label_ = nullptr;
   cuda_weights_ = nullptr;
@@ -23,12 +23,13 @@ CUDAObjectiveInterface<BinaryLogloss>(config), ova_class_id_(-1) {
   cuda_label_weights_ = nullptr;
 }
 
-CUDABinaryLogloss::CUDABinaryLogloss(const Config& config, const int ova_class_id):
-CUDAObjectiveInterface<BinaryLogloss>(config), ova_class_id_(ova_class_id) {
+CUDABinaryLogloss::CUDABinaryLogloss(const Config& config, const int ova_class_id)
+    : CUDAObjectiveInterface<BinaryLogloss>(config), ova_class_id_(ova_class_id) {
   is_pos_ = [ova_class_id](label_t label) { return static_cast<int>(label) == ova_class_id; };
 }
 
-CUDABinaryLogloss::CUDABinaryLogloss(const std::vector<std::string>& strs): CUDAObjectiveInterface<BinaryLogloss>(strs) {}
+CUDABinaryLogloss::CUDABinaryLogloss(const std::vector<std::string>& strs)
+    : CUDAObjectiveInterface<BinaryLogloss>(strs) {}
 
 CUDABinaryLogloss::~CUDABinaryLogloss() {
   DeallocateCUDAMemory<label_t>(&cuda_ova_label_, __FILE__, __LINE__);
@@ -43,7 +44,8 @@ void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
     cuda_label_ = metadata.cuda_metadata()->cuda_label();
     cuda_ova_label_ = nullptr;
   } else {
-    InitCUDAMemoryFromHostMemory<label_t>(&cuda_ova_label_, metadata.cuda_metadata()->cuda_label(), static_cast<size_t>(num_data), __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemory<label_t>(&cuda_ova_label_, metadata.cuda_metadata()->cuda_label(),
+                                          static_cast<size_t>(num_data), __FILE__, __LINE__);
     LaunchResetOVACUDALabelKernel();
     cuda_label_ = cuda_ova_label_;
   }
@@ -53,7 +55,8 @@ void CUDABinaryLogloss::Init(const Metadata& metadata, data_size_t num_data) {
   AllocateCUDAMemory<double>(&cuda_sum_weights_, 1, __FILE__, __LINE__);
   SetCUDAMemory<double>(cuda_sum_weights_, 0, 1, __FILE__, __LINE__);
   if (label_weights_[0] != 1.0f || label_weights_[1] != 1.0f) {
-    InitCUDAMemoryFromHostMemory<double>(&cuda_label_weights_, label_weights_, 2, __FILE__, __LINE__);
+    InitCUDAMemoryFromHostMemory<double>(&cuda_label_weights_, label_weights_, 2, __FILE__,
+                                         __LINE__);
   } else {
     cuda_label_weights_ = nullptr;
   }

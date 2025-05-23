@@ -21,7 +21,8 @@ TEST(Serialization, JustWorks) {
   // Load some test data
   DatasetHandle dataset_handle;
   const char* params = "max_bin=15";
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &dataset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params,
+                                                  &dataset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* dataset;
@@ -43,12 +44,10 @@ TEST(Serialization, JustWorks) {
 
       // Deserialize the reference
       DatasetHandle deserialized_dataset_handle;
-      result = LGBM_DatasetCreateFromSerializedReference(buffer->Data(),
-                                                         static_cast<int32_t>(buffer->GetSize()),
-                                                         dataset->num_data(),
-                                                         0,  // num_classes
-                                                         params,
-                                                         &deserialized_dataset_handle);
+      result = LGBM_DatasetCreateFromSerializedReference(
+          buffer->Data(), static_cast<int32_t>(buffer->GetSize()), dataset->num_data(),
+          0,  // num_classes
+          params, &deserialized_dataset_handle);
       EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSerializedReference result code: " << result;
 
       // Confirm 1 successful API call

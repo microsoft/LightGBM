@@ -97,18 +97,15 @@ class Json final {
   template <
       class M,
       typename std::enable_if<
-          std::is_constructible<
-              std::string, decltype(std::declval<M>().begin()->first)>::value &&
-              std::is_constructible<
-                  Json, decltype(std::declval<M>().begin()->second)>::value,
+          std::is_constructible<std::string, decltype(std::declval<M>().begin()->first)>::value &&
+              std::is_constructible<Json, decltype(std::declval<M>().begin()->second)>::value,
           int>::type = 0>
   explicit Json(const M &m) : Json(object(m.begin(), m.end())) {}
 
   // Implicit constructor: vector-like objects (std::list, std::vector,
   // std::set, etc)
   template <class V, typename std::enable_if<
-                         std::is_constructible<
-                             Json, decltype(*std::declval<V>().begin())>::value,
+                         std::is_constructible<Json, decltype(*std::declval<V>().begin())>::value,
                          int>::type = 0>
   explicit Json(const V &v) : Json(array(v.begin(), v.end())) {}
 
@@ -160,8 +157,7 @@ class Json final {
   // Parse. If parse fails, return Json() and assign an error message to err.
   static Json parse(const std::string &in, std::string *err,
                     JsonParse strategy = JsonParse::STANDARD);
-  static Json parse(const char *in, std::string *err,
-                    JsonParse strategy = JsonParse::STANDARD) {
+  static Json parse(const char *in, std::string *err, JsonParse strategy = JsonParse::STANDARD) {
     if (in) {
       return parse(std::string(in), err, strategy);
     } else {
@@ -170,13 +166,12 @@ class Json final {
     }
   }
   // Parse multiple objects, concatenated or separated by whitespace
-  static std::vector<Json> parse_multi(
-      const std::string &in, std::string::size_type *parser_stop_pos,
-      std::string *err, JsonParse strategy = JsonParse::STANDARD);
+  static std::vector<Json> parse_multi(const std::string &in,
+                                       std::string::size_type *parser_stop_pos, std::string *err,
+                                       JsonParse strategy = JsonParse::STANDARD);
 
-  static inline std::vector<Json> parse_multi(
-      const std::string &in, std::string *err,
-      JsonParse strategy = JsonParse::STANDARD) {
+  static inline std::vector<Json> parse_multi(const std::string &in, std::string *err,
+                                              JsonParse strategy = JsonParse::STANDARD) {
     std::string::size_type parser_stop_pos;
     return parse_multi(in, &parser_stop_pos, err, strategy);
   }

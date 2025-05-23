@@ -25,18 +25,19 @@ namespace LightGBM {
 
 #define CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE (1024)
 
-class CUDAGradientDiscretizer: public GradientDiscretizer {
+class CUDAGradientDiscretizer : public GradientDiscretizer {
  public:
-  CUDAGradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed, bool is_constant_hessian, bool stochastic_roudning):
-    GradientDiscretizer(num_grad_quant_bins, num_trees, random_seed, is_constant_hessian, stochastic_roudning) {
+  CUDAGradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed,
+                          bool is_constant_hessian, bool stochastic_roudning)
+      : GradientDiscretizer(num_grad_quant_bins, num_trees, random_seed, is_constant_hessian,
+                            stochastic_roudning) {}
+
+  void DiscretizeGradients(const data_size_t num_data, const score_t* input_gradients,
+                           const score_t* input_hessians) override;
+
+  const int8_t* discretized_gradients_and_hessians() const override {
+    return discretized_gradients_and_hessians_.RawData();
   }
-
-  void DiscretizeGradients(
-    const data_size_t num_data,
-    const score_t* input_gradients,
-    const score_t* input_hessians) override;
-
-  const int8_t* discretized_gradients_and_hessians() const override { return discretized_gradients_and_hessians_.RawData(); }
 
   double grad_scale() const override {
     Log::Fatal("grad_scale() of CUDAGradientDiscretizer should not be called.");
@@ -52,11 +53,12 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
 
   const score_t* hess_scale_ptr() const { return hess_max_block_buffer_.RawData(); }
 
-  void Init(const data_size_t num_data, const int num_leaves,
-    const int num_features, const Dataset* train_data) override {
+  void Init(const data_size_t num_data, const int num_leaves, const int num_features,
+            const Dataset* train_data) override {
     GradientDiscretizer::Init(num_data, num_leaves, num_features, train_data);
     discretized_gradients_and_hessians_.Resize(num_data * 2);
-    num_reduce_blocks_ = (num_data + CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE - 1) / CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE;
+    num_reduce_blocks_ = (num_data + CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE - 1) /
+                         CUDA_GRADIENT_DISCRETIZER_BLOCK_SIZE;
     grad_min_block_buffer_.Resize(num_reduce_blocks_);
     grad_max_block_buffer_.Resize(num_reduce_blocks_);
     hess_min_block_buffer_.Resize(num_reduce_blocks_);
@@ -72,15 +74,17 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
     const int num_threads = OMP_NUM_THREADS();
 
     std::mt19937 random_values_use_start_eng = std::mt19937(random_seed_);
-    std::uniform_int_distribution<data_size_t> random_values_use_start_dist = std::uniform_int_distribution<data_size_t>(0, num_data);
+    std::uniform_int_distribution<data_size_t> random_values_use_start_dist =
+        std::uniform_int_distribution<data_size_t>(0, num_data);
     for (int tree_index = 0; tree_index < num_trees_; ++tree_index) {
-      random_values_use_start[tree_index] = random_values_use_start_dist(random_values_use_start_eng);
+      random_values_use_start[tree_index] =
+          random_values_use_start_dist(random_values_use_start_eng);
     }
 
     int num_blocks = 0;
     data_size_t block_size = 0;
     Threading::BlockInfo<data_size_t>(num_data, 512, &num_blocks, &block_size);
-    #pragma omp parallel for schedule(static, 1) num_threads(num_threads)
+#pragma omp parallel for schedule(static, 1) num_threads(num_threads)
     for (int thread_id = 0; thread_id < num_blocks; ++thread_id) {
       const data_size_t start = thread_id * block_size;
       const data_size_t end = std::min(start + block_size, num_data);
@@ -94,9 +98,15 @@ class CUDAGradientDiscretizer: public GradientDiscretizer {
       }
     }
 
-    CopyFromHostToCUDADevice<score_t>(gradient_random_values_.RawData(), gradient_random_values.data(), gradient_random_values.size(), __FILE__, __LINE__);
-    CopyFromHostToCUDADevice<score_t>(hessian_random_values_.RawData(), hessian_random_values.data(), hessian_random_values.size(), __FILE__, __LINE__);
-    CopyFromHostToCUDADevice<int>(random_values_use_start_.RawData(), random_values_use_start.data(), random_values_use_start.size(), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<score_t>(gradient_random_values_.RawData(),
+                                      gradient_random_values.data(), gradient_random_values.size(),
+                                      __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<score_t>(hessian_random_values_.RawData(),
+                                      hessian_random_values.data(), hessian_random_values.size(),
+                                      __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<int>(random_values_use_start_.RawData(),
+                                  random_values_use_start.data(), random_values_use_start.size(),
+                                  __FILE__, __LINE__);
     iter_ = 0;
   }
 

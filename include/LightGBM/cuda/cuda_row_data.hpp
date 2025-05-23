@@ -31,22 +31,22 @@ namespace LightGBM {
 
 class CUDARowData {
  public:
-  CUDARowData(const Dataset* train_data,
-              const TrainingShareStates* train_share_state,
-              const int gpu_device_id,
-              const bool gpu_use_dp);
+  CUDARowData(const Dataset* train_data, const TrainingShareStates* train_share_state,
+              const int gpu_device_id, const bool gpu_use_dp);
 
   ~CUDARowData();
 
-  void Init(const Dataset* train_data,
-            TrainingShareStates* train_share_state);
+  void Init(const Dataset* train_data, TrainingShareStates* train_share_state);
 
-  void CopySubrow(const CUDARowData* full_set, const data_size_t* used_indices, const data_size_t num_used_indices);
+  void CopySubrow(const CUDARowData* full_set, const data_size_t* used_indices,
+                  const data_size_t num_used_indices);
 
-  void CopySubcol(const CUDARowData* full_set, const std::vector<int8_t>& is_feature_used, const Dataset* train_data);
+  void CopySubcol(const CUDARowData* full_set, const std::vector<int8_t>& is_feature_used,
+                  const Dataset* train_data);
 
   void CopySubrowAndSubcol(const CUDARowData* full_set, const data_size_t* used_indices,
-    const data_size_t num_used_indices, const std::vector<bool>& is_feature_used, const Dataset* train_data);
+                           const data_size_t num_used_indices,
+                           const std::vector<bool>& is_feature_used, const Dataset* train_data);
 
   template <typename BIN_TYPE>
   const BIN_TYPE* GetBin() const;
@@ -69,7 +69,9 @@ class CUDARowData {
 
   uint8_t row_ptr_bit_type() const { return row_ptr_bit_type_; }
 
-  const int* cuda_feature_partition_column_index_offsets() const { return cuda_feature_partition_column_index_offsets_; }
+  const int* cuda_feature_partition_column_index_offsets() const {
+    return cuda_feature_partition_column_index_offsets_;
+  }
 
   const uint32_t* cuda_column_hist_offsets() const { return cuda_column_hist_offsets_; }
 
@@ -81,20 +83,18 @@ class CUDARowData {
   void DivideCUDAFeatureGroups(const Dataset* train_data, TrainingShareStates* share_state);
 
   template <typename BIN_TYPE>
-  void GetDenseDataPartitioned(const BIN_TYPE* row_wise_data, std::vector<BIN_TYPE>* partitioned_data);
+  void GetDenseDataPartitioned(const BIN_TYPE* row_wise_data,
+                               std::vector<BIN_TYPE>* partitioned_data);
 
   template <typename BIN_TYPE, typename ROW_PTR_TYPE>
-  void GetSparseDataPartitioned(const BIN_TYPE* row_wise_data,
-    const ROW_PTR_TYPE* row_ptr,
-    std::vector<std::vector<BIN_TYPE>>* partitioned_data,
-    std::vector<std::vector<ROW_PTR_TYPE>>* partitioned_row_ptr,
-    std::vector<ROW_PTR_TYPE>* partition_ptr);
+  void GetSparseDataPartitioned(const BIN_TYPE* row_wise_data, const ROW_PTR_TYPE* row_ptr,
+                                std::vector<std::vector<BIN_TYPE>>* partitioned_data,
+                                std::vector<std::vector<ROW_PTR_TYPE>>* partitioned_row_ptr,
+                                std::vector<ROW_PTR_TYPE>* partition_ptr);
 
   template <typename BIN_TYPE, typename ROW_PTR_TYPE>
-  void InitSparseData(const BIN_TYPE* host_data,
-                      const ROW_PTR_TYPE* host_row_ptr,
-                      BIN_TYPE** cuda_data,
-                      ROW_PTR_TYPE** cuda_row_ptr,
+  void InitSparseData(const BIN_TYPE* host_data, const ROW_PTR_TYPE* host_row_ptr,
+                      BIN_TYPE** cuda_data, ROW_PTR_TYPE** cuda_row_ptr,
                       ROW_PTR_TYPE** cuda_partition_ptr);
 
   /*! \brief number of threads to use */
@@ -127,11 +127,13 @@ class CUDARowData {
   data_size_t num_used_indices_;
   /*! \brief used when bagging with subset, number of total elements */
   uint64_t num_total_elements_;
-  /*! \brief used when bagging with column subset, the size of maximum number of feature partitions */
+  /*! \brief used when bagging with column subset, the size of maximum number of feature partitions
+   */
   int cur_num_feature_partition_buffer_size_;
   /*! \brief CUDA device ID */
   int gpu_device_id_;
-  /*! \brief index of partitions with large bins that its histogram cannot fit into shared memory, each large bin partition contains a single column */
+  /*! \brief index of partitions with large bins that its histogram cannot fit into shared memory,
+   * each large bin partition contains a single column */
   std::vector<int> large_bin_partitions_;
   /*! \brief index of partitions with small bins */
   std::vector<int> small_bin_partitions_;

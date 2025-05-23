@@ -125,8 +125,7 @@ class basic_shared_mutex : private detail::shared_mutex_base<RwLockPolicy> {
 using shared_mutex = basic_shared_mutex<YAMC_RWLOCK_SCHED_DEFAULT>;
 
 template <typename RwLockPolicy>
-class basic_shared_timed_mutex
-    : private detail::shared_mutex_base<RwLockPolicy> {
+class basic_shared_timed_mutex : private detail::shared_mutex_base<RwLockPolicy> {
   using base = detail::shared_mutex_base<RwLockPolicy>;
 
   using base::cv_;
@@ -151,8 +150,7 @@ class basic_shared_timed_mutex
   }
 
   template <typename Clock, typename Duration>
-  bool do_try_lock_sharedwait(
-      const std::chrono::time_point<Clock, Duration>& tp) {
+  bool do_try_lock_sharedwait(const std::chrono::time_point<Clock, Duration>& tp) {
     std::unique_lock<decltype(mtx_)> lk(mtx_);
     while (RwLockPolicy::wait_rlock(state_)) {
       if (cv_.wait_until(lk, tp) == std::cv_status::timeout) {
@@ -198,8 +196,7 @@ class basic_shared_timed_mutex
   }
 
   template <typename Clock, typename Duration>
-  bool try_lock_shared_until(
-      const std::chrono::time_point<Clock, Duration>& tp) {
+  bool try_lock_shared_until(const std::chrono::time_point<Clock, Duration>& tp) {
     return do_try_lock_sharedwait(tp);
   }
 };

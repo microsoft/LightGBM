@@ -111,9 +111,7 @@ struct WriterPrefer {
     ++(s->nwriter);
   }
 
-  static bool wait_wlock(const state& s) {
-    return ((s.nwriter & locked) || 0 < s.nreader);
-  }
+  static bool wait_wlock(const state& s) { return ((s.nwriter & locked) || 0 < s.nreader); }
 
   static void after_wait_wlock(state* s) {
     assert(0 < (s->nwriter & wait_mask));
