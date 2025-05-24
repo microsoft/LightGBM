@@ -1,6 +1,45 @@
 Installation Guide
 ==================
 
+Versioning
+~~~~~~~~~~
+
+LightGBM releases use a 3-part version number, with this format:
+
+.. code::
+
+   {major}.{minor}.{patch}
+
+This version follows a scheme called Intended Effort Versioning ("Effver" for short).
+Changes to a component of the version indicate how much effort it will likely take to update
+code using a previous version.
+
+* ``major`` = updating will require significant effort
+* ``minor`` = some effort
+* ``patch`` = no or very little effort
+
+This means that **new minor versions can contain breaking changes**, but these are typically
+small or limited to less-frequently-used parts of the project.
+
+When built from source on an unreleased commit, this version takes the following form:
+
+.. code::
+
+   {major}.{minor}.{patch}.99
+
+That ``.99`` is added to ensure that a version built from an unreleased commit is considered "newer"
+than all previous releases, and "older" than all future releases.
+
+.. _nightly-builds:
+
+You can find such artifacts from the latest successful build on the ``master`` branch (nightly builds) here: |download artifacts|.
+
+For more details on why LightGBM uses EffVer instead of other schemes like semantic versioning,
+see https://jacobtomlinson.dev/effver/.
+
+General Installation Notes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 All instructions below are aimed at compiling the 64-bit version of LightGBM.
 It is worth compiling the 32-bit version only in very rare special cases involving environmental limitations.
 The 32-bit version is slow and untested, so use it at your own risk and don't forget to adjust some of the commands below when installing.
@@ -40,10 +79,6 @@ These values refer to the following supported sanitizers:
 Please note, that ThreadSanitizer cannot be used together with other sanitizers.
 For more info and additional sanitizers' parameters please refer to the `following docs`_.
 It is very useful to build `C++ unit tests <#build-c-unit-tests>`__ with sanitizers.
-
-.. _nightly-builds:
-
-You can download the artifacts of the latest successful build on master branch (nightly builds) here: |download artifacts|.
 
 .. contents:: **Contents**
     :depth: 1
