@@ -1524,7 +1524,8 @@ def test_check_is_fitted():
     rnk = lgb.LGBMRanker(n_estimators=5)
     models = (est, clf, reg, rnk)
     for model in models:
-        with pytest.raises(lgb.compat.LGBMNotFittedError):
+        err_msg = f"This {type(model).__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+        with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
             check_is_fitted(model)
     est.fit(X, y)
     clf.fit(X, y)
@@ -1623,7 +1624,8 @@ def test_getting_feature_names_in_np_input(estimator_class):
         model = estimator_class(**{**params, "objective": "binary"})
     else:
         model = estimator_class(**params)
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
+    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
         check_is_fitted(model)
     if isinstance(model, lgb.LGBMRanker):
         model.fit(X, y, group=[X.shape[0]])
@@ -1644,7 +1646,8 @@ def test_getting_feature_names_in_pd_input(estimator_class):
         model = estimator_class(**{**params, "objective": "binary"})
     else:
         model = estimator_class(**params)
-    with pytest.raises(lgb.compat.LGBMNotFittedError):
+    err_msg = f"This {estimator_class.__name__} instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator."
+    with pytest.raises(lgb.compat.LGBMNotFittedError, match=err_msg):
         check_is_fitted(model)
     if isinstance(model, lgb.LGBMRanker):
         model.fit(X, y, group=[X.shape[0]])
