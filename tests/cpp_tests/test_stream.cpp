@@ -15,18 +15,11 @@ using LightGBM::Dataset;
 using LightGBM::Log;
 using LightGBM::TestUtils;
 
-void test_stream_dense(
-  int8_t creation_type,
-  DatasetHandle ref_dataset_handle,
-  int32_t nrows,
-  int32_t ncols,
-  int32_t nclasses,
-  int batch_count,
-  const std::vector<double>* features,
-  const std::vector<float>* labels,
-  const std::vector<float>* weights,
-  const std::vector<double>* init_scores,
-  const std::vector<int32_t>* groups) {
+void test_stream_dense(int8_t creation_type, DatasetHandle ref_dataset_handle, int32_t nrows,
+                       int32_t ncols, int32_t nclasses, int batch_count,
+                       const std::vector<double>* features, const std::vector<float>* labels,
+                       const std::vector<float>* weights, const std::vector<double>* init_scores,
+                       const std::vector<int32_t>* groups) {
   Log::Info("Streaming %d rows dense data with a batch size of %d", nrows, batch_count);
   DatasetHandle dataset_handle = nullptr;
   Dataset* dataset = nullptr;
@@ -42,7 +35,10 @@ void test_stream_dense(
     int result = 0;
     switch (creation_type) {
       case 0: {
-        Log::Info("Creating Dataset using LGBM_DatasetCreateFromSampledColumn, %d rows dense data with a batch size of %d", nrows, batch_count);
+        Log::Info(
+            "Creating Dataset using LGBM_DatasetCreateFromSampledColumn, %d rows dense data with "
+            "a batch size of %d",
+            nrows, batch_count);
 
         // construct sample data first (use all data for convenience and since size is small)
         std::vector<std::vector<double>> sample_values(ncols);
@@ -68,24 +64,21 @@ void test_stream_dense(
         }
 
         result = LGBM_DatasetCreateFromSampledColumn(
-          sample_values_ptrs.data(),
-          sample_idx_ptrs.data(),
-          ncols,
-          sample_sizes.data(),
-          nrows,
-          nrows,
-          nrows,
-          "max_bin=15",
-          &dataset_handle);
+            sample_values_ptrs.data(), sample_idx_ptrs.data(), ncols, sample_sizes.data(), nrows,
+            nrows, nrows, "max_bin=15", &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
-        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores, has_queries, nclasses, 1, -1);
+        result = LGBM_DatasetInitStreaming(dataset_handle, has_weights, has_init_scores,
+                                           has_queries, nclasses, 1, -1);
         EXPECT_EQ(0, result) << "LGBM_DatasetInitStreaming result code: " << result;
         break;
       }
 
       case 1:
-        Log::Info("Creating Dataset using LGBM_DatasetCreateByReference, %d rows dense data with a batch size of %d", nrows, batch_count);
+        Log::Info(
+            "Creating Dataset using LGBM_DatasetCreateByReference, %d rows dense data with a "
+            "batch size of %d",
+            nrows, batch_count);
         result = LGBM_DatasetCreateByReference(ref_dataset_handle, nrows, &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
         break;
@@ -93,28 +86,15 @@ void test_stream_dense(
 
     dataset = static_cast<Dataset*>(dataset_handle);
 
-    Log::Info("Streaming dense dataset, %d rows dense data with a batch size of %d", nrows, batch_count);
-    TestUtils::StreamDenseDataset(
-      dataset_handle,
-      nrows,
-      ncols,
-      nclasses,
-      batch_count,
-      features,
-      labels,
-      weights,
-      init_scores,
-      groups);
+    Log::Info("Streaming dense dataset, %d rows dense data with a batch size of %d", nrows,
+              batch_count);
+    TestUtils::StreamDenseDataset(dataset_handle, nrows, ncols, nclasses, batch_count, features,
+                                  labels, weights, init_scores, groups);
 
     dataset->FinishLoad();
 
-    TestUtils::AssertMetadata(&dataset->metadata(),
-                              labels,
-                              weights,
-                              init_scores,
-                              groups);
-  }
-  catch (std::exception& ex) {
+    TestUtils::AssertMetadata(&dataset->metadata(), labels, weights, init_scores, groups);
+  } catch (std::exception& ex) {
     succeeded = false;
     exceptionText = std::string(ex.what());
   }
@@ -129,20 +109,12 @@ void test_stream_dense(
   }
 }
 
-void test_stream_sparse(
-  int8_t creation_type,
-  DatasetHandle ref_dataset_handle,
-  int32_t nrows,
-  int32_t ncols,
-  int32_t nclasses,
-  int batch_count,
-  const std::vector<int32_t>* indptr,
-  const std::vector<int32_t>* indices,
-  const std::vector<double>* vals,
-  const std::vector<float>* labels,
-  const std::vector<float>* weights,
-  const std::vector<double>* init_scores,
-  const std::vector<int32_t>* groups) {
+void test_stream_sparse(int8_t creation_type, DatasetHandle ref_dataset_handle, int32_t nrows,
+                        int32_t ncols, int32_t nclasses, int batch_count,
+                        const std::vector<int32_t>* indptr, const std::vector<int32_t>* indices,
+                        const std::vector<double>* vals, const std::vector<float>* labels,
+                        const std::vector<float>* weights, const std::vector<double>* init_scores,
+                        const std::vector<int32_t>* groups) {
   Log::Info("Streaming %d rows sparse data with a batch size of %d", nrows, batch_count);
   DatasetHandle dataset_handle = nullptr;
   Dataset* dataset = nullptr;
@@ -158,7 +130,10 @@ void test_stream_sparse(
     int result = 0;
     switch (creation_type) {
       case 0: {
-        Log::Info("Creating Dataset using LGBM_DatasetCreateFromSampledColumn, %d rows sparse data with a batch size of %d", nrows, batch_count);
+        Log::Info(
+            "Creating Dataset using LGBM_DatasetCreateFromSampledColumn, %d rows sparse data with "
+            "a batch size of %d",
+            nrows, batch_count);
 
         std::vector<std::vector<double>> sample_values(ncols);
         std::vector<std::vector<int>> sample_idx(ncols);
@@ -185,15 +160,8 @@ void test_stream_sparse(
         }
 
         result = LGBM_DatasetCreateFromSampledColumn(
-          sample_values_ptrs.data(),
-          sample_idx_ptrs.data(),
-          ncols,
-          sample_sizes.data(),
-          nrows,
-          nrows,
-          nrows,
-          "max_bin=15",
-          &dataset_handle);
+            sample_values_ptrs.data(), sample_idx_ptrs.data(), ncols, sample_sizes.data(), nrows,
+            nrows, nrows, "max_bin=15", &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateFromSampledColumn result code: " << result;
 
         dataset = static_cast<Dataset*>(dataset_handle);
@@ -202,7 +170,10 @@ void test_stream_sparse(
       }
 
       case 1:
-        Log::Info("Creating Dataset using LGBM_DatasetCreateByReference, %d rows sparse data with a batch size of %d", nrows, batch_count);
+        Log::Info(
+            "Creating Dataset using LGBM_DatasetCreateByReference, %d rows sparse data with a "
+            "batch size of %d",
+            nrows, batch_count);
         result = LGBM_DatasetCreateByReference(ref_dataset_handle, nrows, &dataset_handle);
         EXPECT_EQ(0, result) << "LGBM_DatasetCreateByReference result code: " << result;
         break;
@@ -210,29 +181,15 @@ void test_stream_sparse(
 
     dataset = static_cast<Dataset*>(dataset_handle);
 
-    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows, batch_count);
-    TestUtils::StreamSparseDataset(
-      dataset_handle,
-      nrows,
-      nclasses,
-      batch_count,
-      indptr,
-      indices,
-      vals,
-      labels,
-      weights,
-      init_scores,
-      groups);
+    Log::Info("Streaming sparse dataset, %d rows sparse data with a batch size of %d", nrows,
+              batch_count);
+    TestUtils::StreamSparseDataset(dataset_handle, nrows, nclasses, batch_count, indptr, indices,
+                                   vals, labels, weights, init_scores, groups);
 
     dataset->FinishLoad();
 
-    TestUtils::AssertMetadata(&dataset->metadata(),
-                              labels,
-                              weights,
-                              init_scores,
-                              groups);
-  }
-  catch (std::exception& ex) {
+    TestUtils::AssertMetadata(&dataset->metadata(), labels, weights, init_scores, groups);
+  } catch (std::exception& ex) {
     succeeded = false;
     exceptionText = std::string(ex.what());
   }
@@ -252,7 +209,8 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   DatasetHandle ref_dataset_handle;
   const char* params = "max_bin=15";
   // Use the smaller ".test" data because we don't care about the actual data and it's smaller
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_dataset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params,
+                                                  &ref_dataset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* ref_dataset = static_cast<Dataset*>(ref_dataset_handle);
@@ -266,9 +224,11 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   unused_init_scores.resize(noriginalrows * nclasses);
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
-  result = LGBM_DatasetSetField(ref_dataset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
+  result = LGBM_DatasetSetField(ref_dataset_handle, "init_score", unused_init_scores.data(),
+                                noriginalrows * nclasses, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;
-  result = LGBM_DatasetSetField(ref_dataset_handle, "group", unused_groups.data(), noriginalrows, 2);
+  result =
+      LGBM_DatasetSetField(ref_dataset_handle, "group", unused_groups.data(), noriginalrows, 2);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField group result code: " << result;
 
   // Now use the reference dataset schema to make some testable Datasets with N rows each
@@ -281,16 +241,18 @@ TEST(Stream, PushDenseRowsWithMetadata) {
   std::vector<int32_t> groups;
 
   Log::Info("Creating random data");
-  TestUtils::CreateRandomDenseData(nrows, ncols, nclasses, &features, &labels, &weights, &init_scores, &groups);
+  TestUtils::CreateRandomDenseData(nrows, ncols, nclasses, &features, &labels, &weights,
+                                   &init_scores, &groups);
 
-  const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
-  const std::vector<int8_t> creation_types = { 0, 1 };
+  const std::vector<int32_t> batch_counts = {1, nrows / 100, nrows / 10, nrows};
+  const std::vector<int8_t> creation_types = {0, 1};
 
   for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
     for (size_t j = 0; j < batch_counts.size(); ++j) {
       auto type = creation_types[i];
       auto batch_count = batch_counts[j];
-      test_stream_dense(type, ref_dataset_handle, nrows, ncols, nclasses, batch_count, &features, &labels, &weights, &init_scores, &groups);
+      test_stream_dense(type, ref_dataset_handle, nrows, ncols, nclasses, batch_count, &features,
+                        &labels, &weights, &init_scores, &groups);
     }
   }
 
@@ -303,7 +265,8 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   DatasetHandle ref_dataset_handle;
   const char* params = "max_bin=15";
   // Use the smaller ".test" data because we don't care about the actual data and it's smaller
-  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params, &ref_dataset_handle);
+  int result = TestUtils::LoadDatasetFromExamples("binary_classification/binary.test", params,
+                                                  &ref_dataset_handle);
   EXPECT_EQ(0, result) << "LoadDatasetFromExamples result code: " << result;
 
   Dataset* ref_dataset = static_cast<Dataset*>(ref_dataset_handle);
@@ -317,9 +280,11 @@ TEST(Stream, PushSparseRowsWithMetadata) {
   unused_init_scores.resize(noriginalrows * nclasses);
   std::vector<int32_t> unused_groups;
   unused_groups.assign(noriginalrows, 1);
-  result = LGBM_DatasetSetField(ref_dataset_handle, "init_score", unused_init_scores.data(), noriginalrows * nclasses, 1);
+  result = LGBM_DatasetSetField(ref_dataset_handle, "init_score", unused_init_scores.data(),
+                                noriginalrows * nclasses, 1);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField init_score result code: " << result;
-  result = LGBM_DatasetSetField(ref_dataset_handle, "group", unused_groups.data(), noriginalrows, 2);
+  result =
+      LGBM_DatasetSetField(ref_dataset_handle, "group", unused_groups.data(), noriginalrows, 2);
   EXPECT_EQ(0, result) << "LGBM_DatasetSetField group result code: " << result;
 
   // Now use the reference dataset schema to make some testable Datasets with N rows each
@@ -335,16 +300,18 @@ TEST(Stream, PushSparseRowsWithMetadata) {
 
   Log::Info("Creating random data");
   float sparse_percent = .1f;
-  TestUtils::CreateRandomSparseData(nrows, ncols, nclasses, sparse_percent, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+  TestUtils::CreateRandomSparseData(nrows, ncols, nclasses, sparse_percent, &indptr, &indices,
+                                    &vals, &labels, &weights, &init_scores, &groups);
 
-  const std::vector<int32_t> batch_counts = { 1, nrows / 100, nrows / 10, nrows };
-  const std::vector<int8_t> creation_types = { 0, 1 };
+  const std::vector<int32_t> batch_counts = {1, nrows / 100, nrows / 10, nrows};
+  const std::vector<int8_t> creation_types = {0, 1};
 
   for (size_t i = 0; i < creation_types.size(); ++i) {  // from sampled data or reference
     for (size_t j = 0; j < batch_counts.size(); ++j) {
       auto type = creation_types[i];
       auto batch_count = batch_counts[j];
-      test_stream_sparse(type, ref_dataset_handle, nrows, ncols, nclasses, batch_count, &indptr, &indices, &vals, &labels, &weights, &init_scores, &groups);
+      test_stream_sparse(type, ref_dataset_handle, nrows, ncols, nclasses, batch_count, &indptr,
+                         &indices, &vals, &labels, &weights, &init_scores, &groups);
     }
   }
 

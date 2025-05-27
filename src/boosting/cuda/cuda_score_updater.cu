@@ -9,10 +9,8 @@
 
 namespace LightGBM {
 
-__global__ void AddScoreConstantKernel(
-  const double val,
-  const data_size_t num_data,
-  double* score) {
+__global__ void AddScoreConstantKernel(const double val, const data_size_t num_data,
+                                       double* score) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     score[data_index] += val;
@@ -22,13 +20,12 @@ __global__ void AddScoreConstantKernel(
 void CUDAScoreUpdater::LaunchAddScoreConstantKernel(const double val, const size_t offset) {
   const int num_blocks = (num_data_ + num_threads_per_block_) / num_threads_per_block_;
   Log::Debug("Adding init score = %lf", val);
-  AddScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, num_data_, cuda_score_ + offset);
+  AddScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, num_data_,
+                                                                 cuda_score_ + offset);
 }
 
-__global__ void MultiplyScoreConstantKernel(
-  const double val,
-  const data_size_t num_data,
-  double* score) {
+__global__ void MultiplyScoreConstantKernel(const double val, const data_size_t num_data,
+                                            double* score) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     score[data_index] *= val;
@@ -37,7 +34,8 @@ __global__ void MultiplyScoreConstantKernel(
 
 void CUDAScoreUpdater::LaunchMultiplyScoreConstantKernel(const double val, const size_t offset) {
   const int num_blocks = (num_data_ + num_threads_per_block_) / num_threads_per_block_;
-  MultiplyScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, num_data_, cuda_score_ + offset);
+  MultiplyScoreConstantKernel<<<num_blocks, num_threads_per_block_>>>(val, num_data_,
+                                                                      cuda_score_ + offset);
 }
 
 }  // namespace LightGBM

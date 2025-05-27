@@ -23,7 +23,7 @@ namespace LightGBM {
 
 #define CUDA_SINGLE_GPU_TREE_LEARNER_BLOCK_SIZE (1024)
 
-class CUDASingleGPUTreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner : public SerialTreeLearner {
  public:
   explicit CUDASingleGPUTreeLearner(const Config* config, const bool boosting_on_cuda);
 
@@ -31,21 +31,24 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void Init(const Dataset* train_data, bool is_constant_hessian) override;
 
-  void ResetTrainingData(const Dataset* train_data,
-                         bool is_constant_hessian) override;
+  void ResetTrainingData(const Dataset* train_data, bool is_constant_hessian) override;
 
-  Tree* Train(const score_t* gradients, const score_t *hessians, bool is_first_tree) override;
+  Tree* Train(const score_t* gradients, const score_t* hessians, bool is_first_tree) override;
 
-  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices, data_size_t num_data) override;
+  void SetBaggingData(const Dataset* subset, const data_size_t* used_indices,
+                      data_size_t num_data) override;
 
   void AddPredictionToScore(const Tree* tree, double* out_score) const override;
 
-  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj, std::function<double(const label_t*, int)> residual_getter,
-                       data_size_t total_num_data, const data_size_t* bag_indices, data_size_t bag_cnt, const double* train_score) const override;
+  void RenewTreeOutput(Tree* tree, const ObjectiveFunction* obj,
+                       std::function<double(const label_t*, int)> residual_getter,
+                       data_size_t total_num_data, const data_size_t* bag_indices,
+                       data_size_t bag_cnt, const double* train_score) const override;
 
   void ResetConfig(const Config* config) override;
 
-  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients, const score_t* hessians) const override;
+  Tree* FitByExistingTree(const Tree* old_tree, const score_t* gradients,
+                          const score_t* hessians) const override;
 
   Tree* FitByExistingTree(const Tree* old_tree, const std::vector<int>& leaf_pred,
                           const score_t* gradients, const score_t* hessians) const override;
@@ -55,11 +58,14 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
  protected:
   void BeforeTrain() override;
 
-  void ReduceLeafStat(CUDATree* old_tree, const score_t* gradients, const score_t* hessians, const data_size_t* num_data_in_leaf) const;
+  void ReduceLeafStat(CUDATree* old_tree, const score_t* gradients, const score_t* hessians,
+                      const data_size_t* num_data_in_leaf) const;
 
-  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians, const data_size_t* num_data_in_leaf,
-    const int* leaf_parent, const int* left_child, const int* right_child,
-    const int num_leaves, const data_size_t num_data, double* cuda_leaf_value, const double shrinkage_rate) const;
+  void LaunchReduceLeafStatKernel(const score_t* gradients, const score_t* hessians,
+                                  const data_size_t* num_data_in_leaf, const int* leaf_parent,
+                                  const int* left_child, const int* right_child,
+                                  const int num_leaves, const data_size_t num_data,
+                                  double* cuda_leaf_value, const double shrinkage_rate) const;
 
   void ConstructBitsetForCategoricalSplit(const CUDASplitInfo* best_split_info);
 
@@ -69,10 +75,9 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
   void SelectFeatureByNode(const Tree* tree);
 
-  #ifdef DEBUG
-  void CheckSplitValid(
-    const int left_leaf, const int right_leaf);
-  #endif  // DEBUG
+#ifdef DEBUG
+  void CheckSplitValid(const int left_leaf, const int right_leaf);
+#endif  // DEBUG
 
   void RenewDiscretizedTreeLeaves(CUDATree* cuda_tree);
 
@@ -134,12 +139,12 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
   /*! \brief whether boosting is done on CUDA */
   bool boosting_on_cuda_;
 
-  #ifdef DEBUG
+#ifdef DEBUG
   /*! \brief gradients on CPU */
   std::vector<score_t> host_gradients_;
   /*! \brief hessians on CPU */
   std::vector<score_t> host_hessians_;
-  #endif  // DEBUG
+#endif  // DEBUG
 };
 
 }  // namespace LightGBM
@@ -150,13 +155,15 @@ class CUDASingleGPUTreeLearner: public SerialTreeLearner {
 
 namespace LightGBM {
 
-class CUDASingleGPUTreeLearner: public SerialTreeLearner {
+class CUDASingleGPUTreeLearner : public SerialTreeLearner {
  public:
-    #pragma warning(disable : 4702)
-    explicit CUDASingleGPUTreeLearner(const Config* tree_config, const bool /*boosting_on_cuda*/) : SerialTreeLearner(tree_config) {
-      Log::Fatal("CUDA Tree Learner was not enabled in this build.\n"
-                 "Please recompile with CMake option -DUSE_CUDA=1");
-    }
+#pragma warning(disable : 4702)
+  explicit CUDASingleGPUTreeLearner(const Config* tree_config, const bool /*boosting_on_cuda*/)
+      : SerialTreeLearner(tree_config) {
+    Log::Fatal(
+        "CUDA Tree Learner was not enabled in this build.\n"
+        "Please recompile with CMake option -DUSE_CUDA=1");
+  }
 };
 
 }  // namespace LightGBM

@@ -19,16 +19,9 @@
 
 namespace LightGBM {
 
-enum BinType {
-  NumericalBin,
-  CategoricalBin
-};
+enum BinType { NumericalBin, CategoricalBin };
 
-enum MissingType {
-  None,
-  Zero,
-  NaN
-};
+enum MissingType { None, Zero, NaN };
 
 typedef double hist_t;
 typedef int32_t int_hist_t;
@@ -45,7 +38,8 @@ const double kSparseThreshold = 0.7;
 #define GET_GRAD(hist, i) hist[(i) << 1]
 #define GET_HESS(hist, i) hist[((i) << 1) + 1]
 
-inline static void HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+inline static void HistogramSumReducer(const char* src, char* dst, int type_size,
+                                       comm_size_t len) {
   comm_size_t used_size = 0;
   const hist_t* p1;
   hist_t* p2;
@@ -60,28 +54,30 @@ inline static void HistogramSumReducer(const char* src, char* dst, int type_size
   }
 }
 
-inline static void Int32HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+inline static void Int32HistogramSumReducer(const char* src, char* dst, int type_size,
+                                            comm_size_t len) {
   const int64_t* src_ptr = reinterpret_cast<const int64_t*>(src);
   int64_t* dst_ptr = reinterpret_cast<int64_t*>(dst);
   const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
-  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (comm_size_t i = 0; i < steps; ++i) {
     dst_ptr[i] += src_ptr[i];
   }
 }
 
-inline static void Int16HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+inline static void Int16HistogramSumReducer(const char* src, char* dst, int type_size,
+                                            comm_size_t len) {
   const int32_t* src_ptr = reinterpret_cast<const int32_t*>(src);
   int32_t* dst_ptr = reinterpret_cast<int32_t*>(dst);
   const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
-  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+#pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
   for (comm_size_t i = 0; i < steps; ++i) {
     dst_ptr[i] += src_ptr[i];
   }
 }
 
 /*! \brief This class used to convert feature values into bin,
-*          and store some meta information for bin*/
+ *          and store some meta information for bin*/
 class BinMapper {
  public:
   BinMapper();
@@ -125,16 +121,16 @@ class BinMapper {
   inline double sparse_rate() const { return sparse_rate_; }
 
   /*!
-  * \brief Save binary data to file
-  * \param file File want to write
-  */
+   * \brief Save binary data to file
+   * \param file File want to write
+   */
   void SaveBinaryToFile(BinaryWriter* writer) const;
 
   /*!
-  * \brief Mapping bin into feature value
-  * \param bin
-  * \return Feature value of this bin
-  */
+   * \brief Mapping bin into feature value
+   * \param bin
+   * \return Feature value of this bin
+   */
   inline double BinToValue(uint32_t bin) const {
     if (bin_type_ == BinType::NumericalBin) {
       return bin_upper_bound_[bin];
@@ -144,9 +140,9 @@ class BinMapper {
   }
 
   /*!
-  * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features
-  */
+   * \brief Maximum categorical value
+   * \return Maximum categorical value for categorical features, 0 for numerical features
+   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {
       return 0;
@@ -161,66 +157,65 @@ class BinMapper {
   }
 
   /*!
-  * \brief Get sizes in byte of this object
-  */
+   * \brief Get sizes in byte of this object
+   */
   size_t SizesInByte() const;
 
   /*!
-  * \brief Mapping feature value into bin
-  * \param value
-  * \return bin for this feature value
-  */
+   * \brief Mapping feature value into bin
+   * \param value
+   * \return bin for this feature value
+   */
   inline uint32_t ValueToBin(double value) const;
 
   /*!
-  * \brief Get the default bin when value is 0
-  * \return default bin
-  */
-  inline uint32_t GetDefaultBin() const {
-    return default_bin_;
-  }
+   * \brief Get the default bin when value is 0
+   * \return default bin
+   */
+  inline uint32_t GetDefaultBin() const { return default_bin_; }
 
-  inline uint32_t GetMostFreqBin() const {
-    return most_freq_bin_;
-  }
+  inline uint32_t GetMostFreqBin() const { return most_freq_bin_; }
 
   /*!
-  * \brief Construct feature value to bin mapper according feature values
-  * \param values (Sampled) values of this feature, Note: not include zero.
-  * \param num_values number of values.
-  * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
-  * \param max_bin The maximal number of bin
-  * \param min_data_in_bin min number of data in one bin
-  * \param min_split_data
-  * \param pre_filter
-  * \param bin_type Type of this bin
-  * \param use_missing True to enable missing value handle
-  * \param zero_as_missing True to use zero as missing value
-  * \param forced_upper_bounds Vector of split points that must be used (if this has size less than max_bin, remaining splits are found by the algorithm)
-  */
-  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin, int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
-               bool use_missing, bool zero_as_missing, const std::vector<double>& forced_upper_bounds);
+   * \brief Construct feature value to bin mapper according feature values
+   * \param values (Sampled) values of this feature, Note: not include zero.
+   * \param num_values number of values.
+   * \param total_sample_cnt number of total sample count, equal with values.size() + num_zeros
+   * \param max_bin The maximal number of bin
+   * \param min_data_in_bin min number of data in one bin
+   * \param min_split_data
+   * \param pre_filter
+   * \param bin_type Type of this bin
+   * \param use_missing True to enable missing value handle
+   * \param zero_as_missing True to use zero as missing value
+   * \param forced_upper_bounds Vector of split points that must be used (if this has size less
+   * than max_bin, remaining splits are found by the algorithm)
+   */
+  void FindBin(double* values, int num_values, size_t total_sample_cnt, int max_bin,
+               int min_data_in_bin, int min_split_data, bool pre_filter, BinType bin_type,
+               bool use_missing, bool zero_as_missing,
+               const std::vector<double>& forced_upper_bounds);
 
   /*!
-  * \brief Serializing this object to buffer
-  * \param buffer The destination
-  */
+   * \brief Serializing this object to buffer
+   * \param buffer The destination
+   */
   void CopyTo(char* buffer) const;
 
   /*!
-  * \brief Deserializing this object from buffer
-  * \param buffer The source
-  */
+   * \brief Deserializing this object from buffer
+   * \param buffer The source
+   */
   void CopyFrom(const char* buffer);
 
   /*!
-  * \brief Get bin types
-  */
+   * \brief Get bin types
+   */
   inline BinType bin_type() const { return bin_type_; }
 
   /*!
-  * \brief Get bin info
-  */
+   * \brief Get bin info
+   */
   inline std::string bin_info_string() const {
     if (bin_type_ == BinType::CategoricalBin) {
       return Common::Join(bin_2_categorical_, ":");
@@ -262,10 +257,10 @@ class BinMapper {
 class BinIterator {
  public:
   /*!
-  * \brief Get bin data on specific row index
-  * \param idx Index of this data
-  * \return Bin data
-  */
+   * \brief Get bin data on specific row index
+   * \param idx Index of this data
+   * \return Bin data
+   */
   virtual uint32_t Get(data_size_t idx) = 0;
   virtual uint32_t RawGet(data_size_t idx) = 0;
   virtual void Reset(data_size_t idx) = 0;
@@ -273,56 +268,59 @@ class BinIterator {
 };
 
 /*!
-* \brief Interface for bin data. This class will store bin data for one feature.
-*        unlike OrderedBin, this class will store data by original order.
-*        Note that it may cause cache misses when construct histogram,
-*        but it doesn't need to re-order operation, So it will be faster than OrderedBin for dense feature
-*/
+ * \brief Interface for bin data. This class will store bin data for one feature.
+ *        unlike OrderedBin, this class will store data by original order.
+ *        Note that it may cause cache misses when construct histogram,
+ *        but it doesn't need to re-order operation, So it will be faster than OrderedBin for dense
+ * feature
+ */
 class Bin {
  public:
   /*! \brief virtual destructor */
   virtual ~Bin() {}
   /*!
-  * \brief Initialize for pushing.  By default, no action needed.
-  * \param num_thread The number of external threads that will be calling the push APIs
-  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
-  */
-  virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) { }
+   * \brief Initialize for pushing.  By default, no action needed.
+   * \param num_thread The number of external threads that will be calling the push APIs
+   * \param omp_max_threads The maximum number of OpenMP threads to allocate for
+   */
+  virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) {}
   /*!
-  * \brief Push one record
-  * \param tid Thread id
-  * \param idx Index of record
-  * \param value bin value of record
-  */
+   * \brief Push one record
+   * \param tid Thread id
+   * \param idx Index of record
+   * \param value bin value of record
+   */
   virtual void Push(int tid, data_size_t idx, uint32_t value) = 0;
 
-  virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices, data_size_t num_used_indices) = 0;
+  virtual void CopySubrow(const Bin* full_bin, const data_size_t* used_indices,
+                          data_size_t num_used_indices) = 0;
   /*!
-  * \brief Get bin iterator of this bin for specific feature
-  * \param min_bin min_bin of current used feature
-  * \param max_bin max_bin of current used feature
-  * \param most_freq_bin
-  * \return Iterator of this bin
-  */
-  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin) const = 0;
+   * \brief Get bin iterator of this bin for specific feature
+   * \param min_bin min_bin of current used feature
+   * \param max_bin max_bin of current used feature
+   * \param most_freq_bin
+   * \return Iterator of this bin
+   */
+  virtual BinIterator* GetIterator(uint32_t min_bin, uint32_t max_bin,
+                                   uint32_t most_freq_bin) const = 0;
 
   /*!
-  * \brief Save binary data to file
-  * \param file File want to write
-  */
+   * \brief Save binary data to file
+   * \param file File want to write
+   */
   virtual void SaveBinaryToFile(BinaryWriter* writer) const = 0;
 
   /*!
-  * \brief Load from memory
-  * \param memory
-  * \param local_used_indices
-  */
+   * \brief Load from memory
+   * \param memory
+   * \param local_used_indices
+   */
   virtual void LoadFromMemory(const void* memory,
-    const std::vector<data_size_t>& local_used_indices) = 0;
+                              const std::vector<data_size_t>& local_used_indices) = 0;
 
   /*!
-  * \brief Get sizes in byte of this object
-  */
+   * \brief Get sizes in byte of this object
+   */
   virtual size_t SizesInByte() const = 0;
 
   /*! \brief Number of all data */
@@ -336,147 +334,152 @@ class Bin {
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
-  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get gradients,
-           which is not cache friendly, since the access of memory is not continuous.
-  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
-  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
+  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get
+  gradients, which is not cache friendly, since the access of memory is not continuous.
+  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by
+  data_indices.
+  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for
+  ordered_hessians).
   * \param data_indices Used data indices in current leaf
   * \param start start index in data_indices
   * \param end end index in data_indices
-  * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
-  * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is ordered_hessians[i]
+  * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is
+  ordered_gradients[i]
+  * \param ordered_hessians Pointer to hessians, the data_indices[i]-th data's hessian is
+  ordered_hessians[i]
   * \param out Output Result
   */
-  virtual void ConstructHistogram(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                                  data_size_t end, const score_t* ordered_gradients,
+                                  const score_t* ordered_hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+                                  const score_t* ordered_gradients,
+                                  const score_t* ordered_hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt8(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+  virtual void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start,
+                                      data_size_t end, const score_t* ordered_gradients,
+                                      const score_t* ordered_hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+                                      const score_t* ordered_gradients,
+                                      const score_t* ordered_hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt16(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+  virtual void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* ordered_gradients,
+                                       const score_t* ordered_hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+                                       const score_t* ordered_gradients,
+                                       const score_t* ordered_hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt32(
-    const data_size_t* data_indices, data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+  virtual void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* ordered_gradients,
+                                       const score_t* ordered_hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
-    const score_t* ordered_gradients, const score_t* ordered_hessians,
-    hist_t* out) const = 0;
+                                       const score_t* ordered_gradients,
+                                       const score_t* ordered_hessians, hist_t* out) const = 0;
 
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
-  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get gradients,
-  which is not cache friendly, since the access of memory is not continuous.
-  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by data_indices.
-  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for ordered_hessians).
+  *        The naive solution is using gradients[data_indices[i]] for data_indices[i] to get
+  gradients, which is not cache friendly, since the access of memory is not continuous.
+  *        ordered_gradients and ordered_hessians are preprocessed, and they are re-ordered by
+  data_indices.
+  *        Ordered_gradients[i] is aligned with data_indices[i]'s gradients (same for
+  ordered_hessians).
   * \param data_indices Used data indices in current leaf
   * \param start start index in data_indices
   * \param end end index in data_indices
-  * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is ordered_gradients[i]
+  * \param ordered_gradients Pointer to gradients, the data_indices[i]-th data's gradient is
+  ordered_gradients[i]
   * \param out Output Result
   */
-  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start, data_size_t end,
-                                  const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                                  data_size_t end, const score_t* ordered_gradients,
+                                  hist_t* out) const = 0;
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start, data_size_t end,
-                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start,
+                                      data_size_t end, const score_t* ordered_gradients,
+                                      hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
-                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+                                      const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start, data_size_t end,
-                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* ordered_gradients,
+                                       hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
                                        const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start, data_size_t end,
-                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+  virtual void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* ordered_gradients,
+                                       hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
                                        const score_t* ordered_gradients, hist_t* out) const = 0;
 
-  virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
-                            uint32_t default_bin, uint32_t most_freq_bin,
-                            MissingType missing_type, bool default_left,
-                            uint32_t threshold, const data_size_t* data_indices,
-                            data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const = 0;
+  virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin, uint32_t default_bin,
+                            uint32_t most_freq_bin, MissingType missing_type, bool default_left,
+                            uint32_t threshold, const data_size_t* data_indices, data_size_t cnt,
+                            data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
-  virtual data_size_t SplitCategorical(
-      uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
-      const uint32_t* threshold, int num_threshold,
-      const data_size_t* data_indices, data_size_t cnt,
-      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+  virtual data_size_t SplitCategorical(uint32_t min_bin, uint32_t max_bin, uint32_t most_freq_bin,
+                                       const uint32_t* threshold, int num_threshold,
+                                       const data_size_t* data_indices, data_size_t cnt,
+                                       data_size_t* lte_indices,
+                                       data_size_t* gt_indices) const = 0;
 
-  virtual data_size_t Split(uint32_t max_bin, uint32_t default_bin,
-                            uint32_t most_freq_bin, MissingType missing_type,
-                            bool default_left, uint32_t threshold,
+  virtual data_size_t Split(uint32_t max_bin, uint32_t default_bin, uint32_t most_freq_bin,
+                            MissingType missing_type, bool default_left, uint32_t threshold,
                             const data_size_t* data_indices, data_size_t cnt,
-                            data_size_t* lte_indices,
-                            data_size_t* gt_indices) const = 0;
+                            data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
 
-  virtual data_size_t SplitCategorical(
-      uint32_t max_bin, uint32_t most_freq_bin, const uint32_t* threshold,
-      int num_threshold, const data_size_t* data_indices, data_size_t cnt,
-      data_size_t* lte_indices, data_size_t* gt_indices) const = 0;
+  virtual data_size_t SplitCategorical(uint32_t max_bin, uint32_t most_freq_bin,
+                                       const uint32_t* threshold, int num_threshold,
+                                       const data_size_t* data_indices, data_size_t cnt,
+                                       data_size_t* lte_indices,
+                                       data_size_t* gt_indices) const = 0;
 
   /*!
-  * \brief After pushed all feature data, call this could have better refactor for bin data
-  */
+   * \brief After pushed all feature data, call this could have better refactor for bin data
+   */
   virtual void FinishLoad() = 0;
 
   /*!
-  * \brief Create object for bin data of one feature, used for dense feature
-  * \param num_data Total number of data
-  * \param num_bin Number of bin
-  * \return The bin data object
-  */
+   * \brief Create object for bin data of one feature, used for dense feature
+   * \param num_data Total number of data
+   * \param num_bin Number of bin
+   * \return The bin data object
+   */
   static Bin* CreateDenseBin(data_size_t num_data, int num_bin);
 
   /*!
-  * \brief Create object for bin data of one feature, used for sparse feature
-  * \param num_data Total number of data
-  * \param num_bin Number of bin
-  * \return The bin data object
-  */
+   * \brief Create object for bin data of one feature, used for sparse feature
+   * \param num_data Total number of data
+   * \param num_bin Number of bin
+   * \return The bin data object
+   */
   static Bin* CreateSparseBin(data_size_t num_data, int num_bin);
 
   /*!
-  * \brief Deep copy the bin
-  */
+   * \brief Deep copy the bin
+   */
   virtual Bin* Clone() = 0;
 
-  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, std::vector<BinIterator*>* bin_iterator, const int num_threads) const = 0;
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse,
+                                     std::vector<BinIterator*>* bin_iterator,
+                                     const int num_threads) const = 0;
 
-  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse, BinIterator** bin_iterator) const = 0;
+  virtual const void* GetColWiseData(uint8_t* bit_type, bool* is_sparse,
+                                     BinIterator** bin_iterator) const = 0;
 };
-
 
 class MultiValBin {
  public:
@@ -492,95 +495,73 @@ class MultiValBin {
 
   virtual void PushOneRow(int tid, data_size_t idx, const std::vector<uint32_t>& values) = 0;
 
-  virtual void CopySubrow(const MultiValBin* full_bin,
-                          const data_size_t* used_indices,
+  virtual void CopySubrow(const MultiValBin* full_bin, const data_size_t* used_indices,
                           data_size_t num_used_indices) = 0;
 
-  virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin,
-                                  int num_feature,
+  virtual MultiValBin* CreateLike(data_size_t num_data, int num_bin, int num_feature,
                                   double estimate_element_per_row,
                                   const std::vector<uint32_t>& offsets) const = 0;
 
-  virtual void CopySubcol(const MultiValBin* full_bin,
-                          const std::vector<int>& used_feature_index,
-                          const std::vector<uint32_t>& lower,
-                          const std::vector<uint32_t>& upper,
+  virtual void CopySubcol(const MultiValBin* full_bin, const std::vector<int>& used_feature_index,
+                          const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,
                           const std::vector<uint32_t>& delta) = 0;
 
   virtual void ReSize(data_size_t num_data, int num_bin, int num_feature,
                       double estimate_element_per_row, const std::vector<uint32_t>& offsets) = 0;
 
-  virtual void CopySubrowAndSubcol(
-      const MultiValBin* full_bin, const data_size_t* used_indices,
-      data_size_t num_used_indices, const std::vector<int>& used_feature_index,
-      const std::vector<uint32_t>& lower, const std::vector<uint32_t>& upper,
-      const std::vector<uint32_t>& delta) = 0;
+  virtual void CopySubrowAndSubcol(const MultiValBin* full_bin, const data_size_t* used_indices,
+                                   data_size_t num_used_indices,
+                                   const std::vector<int>& used_feature_index,
+                                   const std::vector<uint32_t>& lower,
+                                   const std::vector<uint32_t>& upper,
+                                   const std::vector<uint32_t>& delta) = 0;
 
-  virtual void ConstructHistogram(const data_size_t* data_indices,
-                                  data_size_t start, data_size_t end,
-                                  const score_t* gradients,
-                                  const score_t* hessians,
-                                  hist_t* out) const = 0;
+  virtual void ConstructHistogram(const data_size_t* data_indices, data_size_t start,
+                                  data_size_t end, const score_t* gradients,
+                                  const score_t* hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogram(data_size_t start, data_size_t end,
-                                  const score_t* gradients,
-                                  const score_t* hessians,
-                                  hist_t* out) const = 0;
+  virtual void ConstructHistogram(data_size_t start, data_size_t end, const score_t* gradients,
+                                  const score_t* hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramOrdered(const data_size_t* data_indices,
-                                         data_size_t start, data_size_t end,
-                                         const score_t* ordered_gradients,
-                                         const score_t* ordered_hessians,
-                                         hist_t* out) const = 0;
+  virtual void ConstructHistogramOrdered(const data_size_t* data_indices, data_size_t start,
+                                         data_size_t end, const score_t* ordered_gradients,
+                                         const score_t* ordered_hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt32(const data_size_t* data_indices,
-                                       data_size_t start, data_size_t end,
-                                       const score_t* gradients,
-                                       const score_t* hessians,
-                                       hist_t* out) const = 0;
+  virtual void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* gradients,
+                                       const score_t* hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
-                                       const score_t* gradients,
-                                       const score_t* hessians,
+                                       const score_t* gradients, const score_t* hessians,
                                        hist_t* out) const = 0;
 
-  virtual void ConstructHistogramOrderedInt32(const data_size_t* data_indices,
-                                              data_size_t start, data_size_t end,
-                                              const score_t* ordered_gradients,
+  virtual void ConstructHistogramOrderedInt32(const data_size_t* data_indices, data_size_t start,
+                                              data_size_t end, const score_t* ordered_gradients,
                                               const score_t* ordered_hessians,
                                               hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt16(const data_size_t* data_indices,
-                                       data_size_t start, data_size_t end,
-                                       const score_t* gradients,
-                                       const score_t* hessians,
-                                       hist_t* out) const = 0;
+  virtual void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start,
+                                       data_size_t end, const score_t* gradients,
+                                       const score_t* hessians, hist_t* out) const = 0;
 
   virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
-                                       const score_t* gradients,
-                                       const score_t* hessians,
+                                       const score_t* gradients, const score_t* hessians,
                                        hist_t* out) const = 0;
 
-  virtual void ConstructHistogramOrderedInt16(const data_size_t* data_indices,
-                                              data_size_t start, data_size_t end,
-                                              const score_t* ordered_gradients,
+  virtual void ConstructHistogramOrderedInt16(const data_size_t* data_indices, data_size_t start,
+                                              data_size_t end, const score_t* ordered_gradients,
                                               const score_t* ordered_hessians,
                                               hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt8(const data_size_t* data_indices,
-                                      data_size_t start, data_size_t end,
-                                      const score_t* gradients,
-                                      const score_t* hessians,
-                                      hist_t* out) const = 0;
+  virtual void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start,
+                                      data_size_t end, const score_t* gradients,
+                                      const score_t* hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
-                                      const score_t* gradients,
-                                      const score_t* hessians,
-                                      hist_t* out) const = 0;
+  virtual void ConstructHistogramInt8(data_size_t start, data_size_t end, const score_t* gradients,
+                                      const score_t* hessians, hist_t* out) const = 0;
 
-  virtual void ConstructHistogramOrderedInt8(const data_size_t* data_indices,
-                                             data_size_t start, data_size_t end,
-                                             const score_t* ordered_gradients,
+  virtual void ConstructHistogramOrderedInt8(const data_size_t* data_indices, data_size_t start,
+                                             data_size_t end, const score_t* ordered_gradients,
                                              const score_t* ordered_hessians,
                                              hist_t* out) const = 0;
 
@@ -588,25 +569,24 @@ class MultiValBin {
 
   virtual bool IsSparse() = 0;
 
-  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin,
-                                        int num_feature, double sparse_rate, const std::vector<uint32_t>& offsets);
+  static MultiValBin* CreateMultiValBin(data_size_t num_data, int num_bin, int num_feature,
+                                        double sparse_rate, const std::vector<uint32_t>& offsets);
 
-  static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin,
-                                             int num_feature, const std::vector<uint32_t>& offsets);
+  static MultiValBin* CreateMultiValDenseBin(data_size_t num_data, int num_bin, int num_feature,
+                                             const std::vector<uint32_t>& offsets);
 
-  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin, double estimate_element_per_row);
+  static MultiValBin* CreateMultiValSparseBin(data_size_t num_data, int num_bin,
+                                              double estimate_element_per_row);
 
   static constexpr double multi_val_bin_sparse_threshold = 0.25f;
 
   virtual MultiValBin* Clone() = 0;
 
-  #ifdef USE_CUDA
-  virtual const void* GetRowWiseData(uint8_t* bit_type,
-    size_t* total_size,
-    bool* is_sparse,
-    const void** out_data_ptr,
-    uint8_t* data_ptr_bit_type) const = 0;
-  #endif  // USE_CUDA
+#ifdef USE_CUDA
+  virtual const void* GetRowWiseData(uint8_t* bit_type, size_t* total_size, bool* is_sparse,
+                                     const void** out_data_ptr,
+                                     uint8_t* data_ptr_bit_type) const = 0;
+#endif  // USE_CUDA
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {
@@ -651,4 +631,4 @@ inline uint32_t BinMapper::ValueToBin(double value) const {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_BIN_H_
+#endif  // LightGBM_BIN_H_

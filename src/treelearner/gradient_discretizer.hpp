@@ -21,7 +21,8 @@ namespace LightGBM {
 
 class GradientDiscretizer {
  public:
-  GradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed, bool is_constant_hessian, const bool stochastic_rounding) {
+  GradientDiscretizer(int num_grad_quant_bins, int num_trees, int random_seed,
+                      bool is_constant_hessian, const bool stochastic_rounding) {
     num_grad_quant_bins_ = num_grad_quant_bins;
     iter_ = 0;
     num_trees_ = num_trees;
@@ -32,31 +33,24 @@ class GradientDiscretizer {
 
   virtual ~GradientDiscretizer() {}
 
-  virtual void DiscretizeGradients(
-    const data_size_t num_data,
-    const score_t* input_gradients,
-    const score_t* input_hessians);
+  virtual void DiscretizeGradients(const data_size_t num_data, const score_t* input_gradients,
+                                   const score_t* input_hessians);
 
   virtual const int8_t* discretized_gradients_and_hessians() const {
     return discretized_gradients_and_hessians_vector_.data();
   }
 
-  virtual double grad_scale() const {
-    return gradient_scale_;
-  }
+  virtual double grad_scale() const { return gradient_scale_; }
 
-  virtual double hess_scale() const {
-    return hessian_scale_;
-  }
+  virtual double hess_scale() const { return hessian_scale_; }
 
-  virtual void Init(
-    const data_size_t num_data, const int num_leaves,
-    const int num_features, const Dataset* train_data);
+  virtual void Init(const data_size_t num_data, const int num_leaves, const int num_features,
+                    const Dataset* train_data);
 
   template <bool IS_GLOBAL>
-  void SetNumBitsInHistogramBin(
-    const int left_leaf_index, const int right_leaf_index,
-    const data_size_t num_data_in_left_leaf, const data_size_t num_data_in_right_leaf);
+  void SetNumBitsInHistogramBin(const int left_leaf_index, const int right_leaf_index,
+                                const data_size_t num_data_in_left_leaf,
+                                const data_size_t num_data_in_right_leaf);
 
   template <bool IS_GLOBAL>
   int8_t GetHistBitsInLeaf(const int leaf_index) {
@@ -81,9 +75,9 @@ class GradientDiscretizer {
   }
 
   void RenewIntGradTreeOutput(
-    Tree* tree, const Config* config, const DataPartition* data_partition,
-    const score_t* gradients, const score_t* hessians,
-    const std::function<data_size_t(int)>& leaf_index_to_global_num_data);
+      Tree* tree, const Config* config, const DataPartition* data_partition,
+      const score_t* gradients, const score_t* hessians,
+      const std::function<data_size_t(int)>& leaf_index_to_global_num_data);
 
   int32_t* GetChangeHistBitsBuffer(const int feature_index) {
     return change_hist_bits_buffer_[feature_index].data();

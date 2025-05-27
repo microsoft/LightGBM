@@ -15,25 +15,19 @@
 
 namespace LightGBM {
 /*!
-* \brief Metric for regression task.
-* Use static class "PointWiseLossCalculator" to calculate loss point-wise
-*/
-template<typename PointWiseLossCalculator>
-class RegressionMetric: public Metric {
+ * \brief Metric for regression task.
+ * Use static class "PointWiseLossCalculator" to calculate loss point-wise
+ */
+template <typename PointWiseLossCalculator>
+class RegressionMetric : public Metric {
  public:
-  explicit RegressionMetric(const Config& config) :config_(config) {
-  }
+  explicit RegressionMetric(const Config& config) : config_(config) {}
 
-  virtual ~RegressionMetric() {
-  }
+  virtual ~RegressionMetric() {}
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return -1.0f;
-  }
+  double factor_to_bigger_better() const override { return -1.0f; }
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     name_.emplace_back(PointWiseLossCalculator::Name());
@@ -55,25 +49,27 @@ class RegressionMetric: public Metric {
     }
   }
 
-  std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override {
+  std::vector<double> Eval(const double* score,
+                           const ObjectiveFunction* objective) const override {
     double sum_loss = 0.0f;
     if (objective == nullptr) {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
-          sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_) * weights_[i];
+          sum_loss +=
+              PointWiseLossCalculator::LossOnPoint(label_[i], score[i], config_) * weights_[i];
         }
       }
     } else {
       if (weights_ == nullptr) {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           double t = 0;
@@ -81,7 +77,7 @@ class RegressionMetric: public Metric {
           sum_loss += PointWiseLossCalculator::LossOnPoint(label_[i], t, config_);
         }
       } else {
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum_loss)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum_loss)
         for (data_size_t i = 0; i < num_data_; ++i) {
           // add loss
           double t = 0;
@@ -98,8 +94,7 @@ class RegressionMetric: public Metric {
     return sum_loss / sum_weights;
   }
 
-  inline static void CheckLabel(label_t) {
-  }
+  inline static void CheckLabel(label_t) {}
 
  protected:
   /*! \brief Number of data */
@@ -116,12 +111,12 @@ class RegressionMetric: public Metric {
 };
 
 /*! \brief RMSE loss for regression task */
-class RMSEMetric: public RegressionMetric<RMSEMetric> {
+class RMSEMetric : public RegressionMetric<RMSEMetric> {
  public:
-  explicit RMSEMetric(const Config& config) :RegressionMetric<RMSEMetric>(config) {}
+  explicit RMSEMetric(const Config& config) : RegressionMetric<RMSEMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
-    return (score - label)*(score - label);
+    return (score - label) * (score - label);
   }
 
   inline static double AverageLoss(double sum_loss, double sum_weights) {
@@ -129,30 +124,25 @@ class RMSEMetric: public RegressionMetric<RMSEMetric> {
     return std::sqrt(sum_loss / sum_weights);
   }
 
-  inline static const char* Name() {
-    return "rmse";
-  }
+  inline static const char* Name() { return "rmse"; }
 };
 
 /*! \brief L2 loss for regression task */
-class L2Metric: public RegressionMetric<L2Metric> {
+class L2Metric : public RegressionMetric<L2Metric> {
  public:
-  explicit L2Metric(const Config& config) :RegressionMetric<L2Metric>(config) {}
+  explicit L2Metric(const Config& config) : RegressionMetric<L2Metric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
-    return (score - label)*(score - label);
+    return (score - label) * (score - label);
   }
 
-  inline static const char* Name() {
-    return "l2";
-  }
+  inline static const char* Name() { return "l2"; }
 };
 
 /*! \brief Quantile loss for regression task */
 class QuantileMetric : public RegressionMetric<QuantileMetric> {
  public:
-  explicit QuantileMetric(const Config& config) :RegressionMetric<QuantileMetric>(config) {
-  }
+  explicit QuantileMetric(const Config& config) : RegressionMetric<QuantileMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     double delta = label - score;
@@ -163,30 +153,24 @@ class QuantileMetric : public RegressionMetric<QuantileMetric> {
     }
   }
 
-  inline static const char* Name() {
-    return "quantile";
-  }
+  inline static const char* Name() { return "quantile"; }
 };
 
-
 /*! \brief L1 loss for regression task */
-class L1Metric: public RegressionMetric<L1Metric> {
+class L1Metric : public RegressionMetric<L1Metric> {
  public:
-  explicit L1Metric(const Config& config) :RegressionMetric<L1Metric>(config) {}
+  explicit L1Metric(const Config& config) : RegressionMetric<L1Metric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     return std::fabs(score - label);
   }
-  inline static const char* Name() {
-    return "l1";
-  }
+  inline static const char* Name() { return "l1"; }
 };
 
 /*! \brief Huber loss for regression task */
-class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
+class HuberLossMetric : public RegressionMetric<HuberLossMetric> {
  public:
-  explicit HuberLossMetric(const Config& config) :RegressionMetric<HuberLossMetric>(config) {
-  }
+  explicit HuberLossMetric(const Config& config) : RegressionMetric<HuberLossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double diff = score - label;
@@ -197,17 +181,14 @@ class HuberLossMetric: public RegressionMetric<HuberLossMetric> {
     }
   }
 
-  inline static const char* Name() {
-    return "huber";
-  }
+  inline static const char* Name() { return "huber"; }
 };
 
 /*! \brief Fair loss for regression task */
 // http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
-class FairLossMetric: public RegressionMetric<FairLossMetric> {
+class FairLossMetric : public RegressionMetric<FairLossMetric> {
  public:
-  explicit FairLossMetric(const Config& config) :RegressionMetric<FairLossMetric>(config) {
-  }
+  explicit FairLossMetric(const Config& config) : RegressionMetric<FairLossMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double x = std::fabs(score - label);
@@ -215,16 +196,13 @@ class FairLossMetric: public RegressionMetric<FairLossMetric> {
     return c * x - c * c * std::log1p(x / c);
   }
 
-  inline static const char* Name() {
-    return "fair";
-  }
+  inline static const char* Name() { return "fair"; }
 };
 
 /*! \brief Poisson regression loss for regression task */
-class PoissonMetric: public RegressionMetric<PoissonMetric> {
+class PoissonMetric : public RegressionMetric<PoissonMetric> {
  public:
-  explicit PoissonMetric(const Config& config) :RegressionMetric<PoissonMetric>(config) {
-  }
+  explicit PoissonMetric(const Config& config) : RegressionMetric<PoissonMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double eps = 1e-10f;
@@ -233,74 +211,56 @@ class PoissonMetric: public RegressionMetric<PoissonMetric> {
     }
     return score - label * std::log(score);
   }
-  inline static const char* Name() {
-    return "poisson";
-  }
+  inline static const char* Name() { return "poisson"; }
 };
-
 
 /*! \brief MAPE regression loss for regression task */
 class MAPEMetric : public RegressionMetric<MAPEMetric> {
  public:
-  explicit MAPEMetric(const Config& config) :RegressionMetric<MAPEMetric>(config) {
-  }
+  explicit MAPEMetric(const Config& config) : RegressionMetric<MAPEMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     return std::fabs((label - score)) / std::max(1.0f, std::fabs(label));
   }
-  inline static const char* Name() {
-    return "mape";
-  }
+  inline static const char* Name() { return "mape"; }
 };
 
 class GammaMetric : public RegressionMetric<GammaMetric> {
  public:
-  explicit GammaMetric(const Config& config) :RegressionMetric<GammaMetric>(config) {
-  }
+  explicit GammaMetric(const Config& config) : RegressionMetric<GammaMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double psi = 1.0;
     const double theta = -1.0 / score;
     const double a = psi;
     const double b = -Common::SafeLog(-theta);
-    const double c = 1. / psi * Common::SafeLog(label / psi) - Common::SafeLog(label) - 0;  // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
+    const double c = 1. / psi * Common::SafeLog(label / psi) - Common::SafeLog(label) -
+                     0;  // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
     return -((label * theta - b) / a + c);
   }
-  inline static const char* Name() {
-    return "gamma";
-  }
+  inline static const char* Name() { return "gamma"; }
 
-  inline static void CheckLabel(label_t label) {
-    CHECK_GT(label, 0);
-  }
+  inline static void CheckLabel(label_t label) { CHECK_GT(label, 0); }
 };
-
 
 class GammaDevianceMetric : public RegressionMetric<GammaDevianceMetric> {
  public:
-  explicit GammaDevianceMetric(const Config& config) :RegressionMetric<GammaDevianceMetric>(config) {
-  }
+  explicit GammaDevianceMetric(const Config& config)
+      : RegressionMetric<GammaDevianceMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config&) {
     const double epsilon = 1.0e-9;
     const double tmp = label / (score + epsilon);
     return tmp - Common::SafeLog(tmp) - 1;
   }
-  inline static const char* Name() {
-    return "gamma_deviance";
-  }
-  inline static double AverageLoss(double sum_loss, double) {
-    return sum_loss * 2;
-  }
-  inline static void CheckLabel(label_t label) {
-    CHECK_GT(label, 0);
-  }
+  inline static const char* Name() { return "gamma_deviance"; }
+  inline static double AverageLoss(double sum_loss, double) { return sum_loss * 2; }
+  inline static void CheckLabel(label_t label) { CHECK_GT(label, 0); }
 };
 
 class TweedieMetric : public RegressionMetric<TweedieMetric> {
  public:
-  explicit TweedieMetric(const Config& config) :RegressionMetric<TweedieMetric>(config) {
-  }
+  explicit TweedieMetric(const Config& config) : RegressionMetric<TweedieMetric>(config) {}
 
   inline static double LossOnPoint(label_t label, double score, const Config& config) {
     const double rho = config.tweedie_variance_power;
@@ -312,11 +272,8 @@ class TweedieMetric : public RegressionMetric<TweedieMetric> {
     const double b = std::exp((2 - rho) * std::log(score)) / (2 - rho);
     return -a + b;
   }
-  inline static const char* Name() {
-    return "tweedie";
-  }
+  inline static const char* Name() { return "tweedie"; }
 };
 
-
 }  // namespace LightGBM
-#endif   // LightGBM_METRIC_REGRESSION_METRIC_HPP_
+#endif  // LightGBM_METRIC_REGRESSION_METRIC_HPP_

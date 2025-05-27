@@ -21,9 +21,9 @@ Metadata::Metadata() {
   position_load_from_file_ = false;
   query_load_from_file_ = false;
   init_score_load_from_file_ = false;
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   cuda_metadata_ = nullptr;
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 }
 
 void Metadata::Init(const char* data_filename) {
@@ -36,8 +36,7 @@ void Metadata::Init(const char* data_filename) {
   LoadInitialScore(data_filename_);
 }
 
-Metadata::~Metadata() {
-}
+Metadata::~Metadata() {}
 
 void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
   num_data_ = num_data;
@@ -56,7 +55,9 @@ void Metadata::Init(data_size_t num_data, int weight_idx, int query_idx) {
       Log::Info("Using query id in data file, ignoring the additional query file");
       query_boundaries_.clear();
     }
-    if (!query_weights_.empty()) { query_weights_.clear(); }
+    if (!query_weights_.empty()) {
+      query_weights_.clear();
+    }
     queries_ = std::vector<data_size_t>(num_data_, 0);
     query_load_from_file_ = false;
   }
@@ -70,7 +71,8 @@ void Metadata::InitByReference(data_size_t num_data, const Metadata* reference) 
   Init(num_data, has_weights, has_init_scores, has_queries, nclasses);
 }
 
-void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores, int32_t has_queries, int32_t nclasses) {
+void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_scores,
+                    int32_t has_queries, int32_t nclasses) {
   num_data_ = num_data;
   label_ = std::vector<label_t>(num_data_);
   if (has_weights) {
@@ -97,11 +99,13 @@ void Metadata::Init(data_size_t num_data, int32_t has_weights, int32_t has_init_
   }
 }
 
-void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, data_size_t num_used_indices) {
+void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices,
+                    data_size_t num_used_indices) {
   num_data_ = num_used_indices;
 
   label_ = std::vector<label_t>(num_used_indices);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_used_indices >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_used_indices >= 1024)
   for (data_size_t i = 0; i < num_used_indices; ++i) {
     label_[i] = fullset.label_[used_indices[i]];
   }
@@ -109,7 +113,8 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
   if (!fullset.weights_.empty()) {
     weights_ = std::vector<label_t>(num_used_indices);
     num_weights_ = num_used_indices;
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_used_indices >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_used_indices >= 1024)
     for (data_size_t i = 0; i < num_used_indices; ++i) {
       weights_[i] = fullset.weights_[used_indices[i]];
     }
@@ -121,7 +126,7 @@ void Metadata::Init(const Metadata& fullset, const data_size_t* used_indices, da
     int num_class = static_cast<int>(fullset.num_init_score_ / fullset.num_data_);
     init_score_ = std::vector<double>(static_cast<size_t>(num_used_indices) * num_class);
     num_init_score_ = static_cast<int64_t>(num_used_indices) * num_class;
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int k = 0; k < num_class; ++k) {
       const size_t offset_dest = static_cast<size_t>(k) * num_data_;
       const size_t offset_src = static_cast<size_t>(k) * fullset.num_data_;
@@ -173,7 +178,8 @@ void Metadata::PartitionLabel(const std::vector<data_size_t>& used_indices) {
   auto old_label = label_;
   num_data_ = static_cast<data_size_t>(used_indices.size());
   label_ = std::vector<label_t>(num_data_);
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_data_ >= 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = old_label[used_indices[i]];
   }
@@ -208,9 +214,10 @@ void Metadata::CalculateQueryBoundaries() {
   }
 }
 
-void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data_size_t>& used_data_indices) {
+void Metadata::CheckOrPartition(data_size_t num_all_data,
+                                const std::vector<data_size_t>& used_data_indices) {
   if (used_data_indices.empty()) {
-     CalculateQueryBoundaries();
+    CalculateQueryBoundaries();
     // check weights
     if (!weights_.empty() && num_weights_ != num_data_) {
       weights_.clear();
@@ -274,7 +281,7 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
         auto old_positions = positions_;
         num_positions_ = num_data_;
         positions_ = std::vector<data_size_t>(num_data_);
-        #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512)
         for (int i = 0; i < static_cast<int>(used_data_indices.size()); ++i) {
           positions_[i] = old_positions[used_data_indices[i]];
         }
@@ -299,7 +306,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
           if (used_data_indices[data_idx] > start) {
             continue;
           } else if (used_data_indices[data_idx] == start) {
-            if (num_used_data >= data_idx + len && used_data_indices[data_idx + len - 1] == end - 1) {
+            if (num_used_data >= data_idx + len &&
+                used_data_indices[data_idx + len - 1] == end - 1) {
               used_query.push_back(qid);
               data_idx += len;
             } else {
@@ -351,7 +359,8 @@ void Metadata::CheckOrPartition(data_size_t num_all_data, const std::vector<data
   }
   if (num_queries_ > 0) {
     Log::Debug("Number of queries in %s: %i. Average number of rows per query: %f.",
-      data_filename_.c_str(), static_cast<int>(num_queries_), static_cast<double>(num_data_) / num_queries_);
+               data_filename_.c_str(), static_cast<int>(num_queries_),
+               static_cast<double>(num_data_) / num_queries_);
   }
 }
 
@@ -372,17 +381,18 @@ void Metadata::SetInitScoresFromIterator(It first, It last) {
   }
   num_init_score_ = last - first;
 
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_init_score_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_init_score_ >= 1024)
   for (int64_t i = 0; i < num_init_score_; ++i) {
     init_score_[i] = Common::AvoidInf(first[i]);
   }
   init_score_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetInitScore(init_score_.data(), init_score_.size());
   }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 }
 
 void Metadata::SetInitScore(const double* init_score, data_size_t len) {
@@ -393,7 +403,8 @@ void Metadata::SetInitScore(const ArrowChunkedArray& array) {
   SetInitScoresFromIterator(array.begin<double>(), array.end<double>());
 }
 
-void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index, data_size_t len, data_size_t source_size) {
+void Metadata::InsertInitScores(const double* init_scores, data_size_t start_index,
+                                data_size_t len, data_size_t source_size) {
   if (num_init_score_ <= 0) {
     Log::Fatal("Inserting initial score data into dataset with no initial scores");
   }
@@ -401,13 +412,16 @@ void Metadata::InsertInitScores(const double* init_scores, data_size_t start_ind
     // Note that len here is row count, not num_init_score, so we compare against num_data
     Log::Fatal("Inserted initial score data is too large for dataset");
   }
-  if (init_score_.empty()) { init_score_.resize(num_init_score_); }
+  if (init_score_.empty()) {
+    init_score_.resize(num_init_score_);
+  }
 
   int nclasses = num_init_score_classes();
 
   for (int32_t col = 0; col < nclasses; ++col) {
     int32_t dest_offset = num_data_ * col + start_index;
-    // We need to use source_size here, because len might not equal size (due to a partially loaded dataset)
+    // We need to use source_size here, because len might not equal size (due to a partially loaded
+    // dataset)
     int32_t source_offset = source_size * col;
     memcpy(init_score_.data() + dest_offset, init_scores + source_offset, sizeof(double) * len);
   }
@@ -425,16 +439,17 @@ void Metadata::SetLabelsFromIterator(It first, It last) {
     label_.resize(num_data_);
   }
 
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_data_ >= 1024)
   for (data_size_t i = 0; i < num_data_; ++i) {
     label_[i] = Common::AvoidInf(first[i]);
   }
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetLabel(label_.data(), label_.size());
   }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 }
 
 void Metadata::SetLabel(const label_t* label, data_size_t len) {
@@ -455,7 +470,9 @@ void Metadata::InsertLabels(const label_t* labels, data_size_t start_index, data
   if (start_index + len > num_data_) {
     Log::Fatal("Inserted label data is too large for dataset");
   }
-  if (label_.empty()) { label_.resize(num_data_); }
+  if (label_.empty()) {
+    label_.resize(num_data_);
+  }
 
   memcpy(label_.data() + start_index, labels, sizeof(label_t) * len);
 
@@ -479,18 +496,19 @@ void Metadata::SetWeightsFromIterator(It first, It last) {
   }
   num_weights_ = num_data_;
 
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_weights_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_weights_ >= 1024)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     weights_[i] = Common::AvoidInf(first[i]);
   }
   CalculateQueryWeights();
   weight_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     cuda_metadata_->SetWeights(weights_.data(), weights_.size());
   }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 }
 
 void Metadata::SetWeights(const label_t* weights, data_size_t len) {
@@ -511,7 +529,9 @@ void Metadata::InsertWeights(const label_t* weights, data_size_t start_index, da
   if (start_index + len > num_weights_) {
     Log::Fatal("Inserted weight data is too large for dataset");
   }
-  if (weights_.empty()) { weights_.resize(num_weights_); }
+  if (weights_.empty()) {
+    weights_.resize(num_weights_);
+  }
 
   memcpy(weights_.data() + start_index, weights, sizeof(label_t) * len);
 
@@ -530,7 +550,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
   }
 
   data_size_t sum = 0;
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+:sum)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) reduction(+ : sum)
   for (data_size_t i = 0; i < static_cast<data_size_t>(last - first); ++i) {
     sum += first[i];
   }
@@ -547,7 +567,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
   CalculateQueryWeights();
   query_load_from_file_ = false;
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   if (cuda_metadata_ != nullptr) {
     if (query_weights_.size() > 0) {
       CHECK_EQ(query_weights_.size(), static_cast<size_t>(num_queries_));
@@ -556,7 +576,7 @@ void Metadata::SetQueriesFromIterator(It first, It last) {
       cuda_metadata_->SetQuery(query_boundaries_.data(), nullptr, num_queries_);
     }
   }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 }
 
 void Metadata::SetQuery(const data_size_t* query, data_size_t len) {
@@ -575,9 +595,9 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
     num_positions_ = 0;
     return;
   }
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   Log::Fatal("Positions in learning to rank is not supported in CUDA version yet.");
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
   if (num_data_ != len) {
     Log::Fatal("Positions size (%i) doesn't match data size (%i)", len, num_data_);
   }
@@ -602,13 +622,15 @@ void Metadata::SetPosition(const data_size_t* positions, data_size_t len) {
 
   Log::Debug("number of unique positions found = %ld", position_ids_.size());
 
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_positions_ >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 512) if (num_positions_ >= 1024)
   for (data_size_t i = 0; i < num_positions_; ++i) {
     positions_[i] = map_id2pos.at(positions[i]);
   }
 }
 
-void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index, data_size_t len) {
+void Metadata::InsertQueries(const data_size_t* queries, data_size_t start_index,
+                             data_size_t len) {
   if (!queries) {
     Log::Fatal("Passed null queries");
   }
@@ -638,7 +660,7 @@ void Metadata::LoadWeights() {
   Log::Info("Loading weights...");
   num_weights_ = static_cast<data_size_t>(reader.Lines().size());
   weights_ = std::vector<label_t>(num_weights_);
-  #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
   for (data_size_t i = 0; i < num_weights_; ++i) {
     double tmp_weight = 0.0f;
     Common::Atof(reader.Lines()[i].c_str(), &tmp_weight);
@@ -693,7 +715,7 @@ void Metadata::LoadInitialScore(const std::string& data_filename) {
 
   init_score_ = std::vector<double>(num_init_score_);
   if (num_class == 1) {
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_line; ++i) {
       double tmp = 0.0f;
       Common::Atof(reader.Lines()[i].c_str(), &tmp);
@@ -701,7 +723,7 @@ void Metadata::LoadInitialScore(const std::string& data_filename) {
     }
   } else {
     std::vector<std::string> oneline_init_score;
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_line; ++i) {
       double tmp = 0.0f;
       oneline_init_score = Common::Split(reader.Lines()[i].c_str(), '\t');
@@ -710,7 +732,8 @@ void Metadata::LoadInitialScore(const std::string& data_filename) {
       }
       for (int k = 0; k < num_class; ++k) {
         Common::Atof(oneline_init_score[k].c_str(), &tmp);
-        init_score_[static_cast<size_t>(k) * num_line + i] = Common::AvoidInf(static_cast<double>(tmp));
+        init_score_[static_cast<size_t>(k) * num_line + i] =
+            Common::AvoidInf(static_cast<double>(tmp));
       }
     }
   }
@@ -755,12 +778,8 @@ void Metadata::CalculateQueryWeights() {
   }
 }
 
-void Metadata::InsertAt(data_size_t start_index,
-  data_size_t count,
-  const float* labels,
-  const float* weights,
-  const double* init_scores,
-  const int32_t* queries) {
+void Metadata::InsertAt(data_size_t start_index, data_size_t count, const float* labels,
+                        const float* weights, const double* init_scores, const int32_t* queries) {
   if (num_data_ < count + start_index) {
     Log::Fatal("Length of metadata is too long to append #data");
   }
@@ -776,9 +795,7 @@ void Metadata::InsertAt(data_size_t start_index,
   }
 }
 
-void Metadata::FinishLoad() {
-  CalculateQueryBoundaries();
-}
+void Metadata::FinishLoad() { CalculateQueryBoundaries(); }
 
 #ifdef USE_CUDA
 void Metadata::CreateCUDAMetadata(const int gpu_device_id) {
@@ -797,24 +814,29 @@ void Metadata::LoadFromMemory(const void* memory) {
   num_queries_ = *(reinterpret_cast<const data_size_t*>(mem_ptr));
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(num_queries_));
 
-  if (!label_.empty()) { label_.clear(); }
+  if (!label_.empty()) {
+    label_.clear();
+  }
   label_ = std::vector<label_t>(num_data_);
   std::memcpy(label_.data(), mem_ptr, sizeof(label_t) * num_data_);
   mem_ptr += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_data_);
 
   if (num_weights_ > 0) {
-    if (!weights_.empty()) { weights_.clear(); }
+    if (!weights_.empty()) {
+      weights_.clear();
+    }
     weights_ = std::vector<label_t>(num_weights_);
     std::memcpy(weights_.data(), mem_ptr, sizeof(label_t) * num_weights_);
     mem_ptr += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_weights_);
     weight_load_from_file_ = true;
   }
   if (num_queries_ > 0) {
-    if (!query_boundaries_.empty()) { query_boundaries_.clear(); }
+    if (!query_boundaries_.empty()) {
+      query_boundaries_.clear();
+    }
     query_boundaries_ = std::vector<data_size_t>(num_queries_ + 1);
     std::memcpy(query_boundaries_.data(), mem_ptr, sizeof(data_size_t) * (num_queries_ + 1));
-    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(data_size_t) *
-                                              (num_queries_ + 1));
+    mem_ptr += VirtualFileWriter::AlignedSize(sizeof(data_size_t) * (num_queries_ + 1));
     query_load_from_file_ = true;
   }
   CalculateQueryWeights();
@@ -829,12 +851,12 @@ void Metadata::SaveBinaryToFile(BinaryWriter* writer) const {
     writer->AlignedWrite(weights_.data(), sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    writer->AlignedWrite(query_boundaries_.data(),
-                         sizeof(data_size_t) * (num_queries_ + 1));
+    writer->AlignedWrite(query_boundaries_.data(), sizeof(data_size_t) * (num_queries_ + 1));
   }
   if (num_init_score_ > 0) {
-    Log::Warning("Please note that `init_score` is not saved in binary file.\n"
-      "If you need it, please set it again after loading Dataset.");
+    Log::Warning(
+        "Please note that `init_score` is not saved in binary file.\n"
+        "If you need it, please set it again after loading Dataset.");
   }
 }
 
@@ -847,11 +869,9 @@ size_t Metadata::SizesInByte() const {
     size += VirtualFileWriter::AlignedSize(sizeof(label_t) * num_weights_);
   }
   if (!query_boundaries_.empty()) {
-    size += VirtualFileWriter::AlignedSize(sizeof(data_size_t) *
-                                           (num_queries_ + 1));
+    size += VirtualFileWriter::AlignedSize(sizeof(data_size_t) * (num_queries_ + 1));
   }
   return size;
 }
-
 
 }  // namespace LightGBM

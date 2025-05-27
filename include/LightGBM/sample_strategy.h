@@ -22,13 +22,19 @@ namespace LightGBM {
 
 class SampleStrategy {
  public:
-  SampleStrategy() : balanced_bagging_(false), bagging_runner_(0, bagging_rand_block_), need_resize_gradients_(false) {}
+  SampleStrategy()
+      : balanced_bagging_(false),
+        bagging_runner_(0, bagging_rand_block_),
+        need_resize_gradients_(false) {}
 
   virtual ~SampleStrategy() {}
 
-  static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data, const ObjectiveFunction* objective_function, int num_tree_per_iteration);
+  static SampleStrategy* CreateSampleStrategy(const Config* config, const Dataset* train_data,
+                                              const ObjectiveFunction* objective_function,
+                                              int num_tree_per_iteration);
 
-  virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients, score_t* hessians) = 0;
+  virtual void Bagging(int iter, TreeLearner* tree_learner, score_t* gradients,
+                       score_t* hessians) = 0;
 
   virtual void ResetSampleConfig(const Config* config, bool is_change_dataset) = 0;
 
@@ -36,11 +42,14 @@ class SampleStrategy {
 
   data_size_t bag_data_cnt() const { return bag_data_cnt_; }
 
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>& bag_data_indices() { return bag_data_indices_; }
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>&
+  bag_data_indices() {
+    return bag_data_indices_;
+  }
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   CUDAVector<data_size_t>& cuda_bag_data_indices() { return cuda_bag_data_indices_; }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 
   void UpdateObjectiveFunction(const ObjectiveFunction* objective_function) {
     objective_function_ = objective_function;
@@ -63,7 +72,8 @@ class SampleStrategy {
   const Config* config_;
   const Dataset* train_data_;
   const ObjectiveFunction* objective_function_;
-  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>> bag_data_indices_;
+  std::vector<data_size_t, Common::AlignmentAllocator<data_size_t, kAlignedSize>>
+      bag_data_indices_;
   data_size_t bag_data_cnt_;
   data_size_t num_data_;
   int num_tree_per_iteration_;
@@ -76,10 +86,10 @@ class SampleStrategy {
   /*! \brief whether need to resize the gradient vectors */
   bool need_resize_gradients_;
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   /*! \brief Buffer for bag_data_indices_ on GPU, used only with cuda */
   CUDAVector<data_size_t> cuda_bag_data_indices_;
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 };
 
 }  // namespace LightGBM

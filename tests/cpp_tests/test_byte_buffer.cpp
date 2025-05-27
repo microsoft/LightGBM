@@ -10,7 +10,6 @@
 
 using LightGBM::ByteBuffer;
 
-
 TEST(ByteBuffer, JustWorks) {
   std::unique_ptr<ByteBuffer> buffer;
   buffer.reset(new ByteBuffer());
@@ -58,7 +57,7 @@ TEST(ByteBuffer, JustWorks) {
   EXPECT_EQ(doubleVal, serializedDouble);
 
   const int charSize = 3;
-  char charArrayVal[charSize] = { 'a', 'b', 'c' };
+  char charArrayVal[charSize] = {'a', 'b', 'c'};
   cumulativeSize += charSize;
   buffer->Write(charArrayVal, charSize);
   EXPECT_EQ(cumulativeSize, buffer->GetSize());

@@ -38,9 +38,7 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
     return file.Init();
   }
 
-  size_t Read(void* buffer, size_t bytes) const {
-    return fread(buffer, 1, bytes, file_);
-  }
+  size_t Read(void* buffer, size_t bytes) const { return fread(buffer, 1, bytes, file_); }
 
   size_t Write(const void* buffer, size_t bytes) {
     return fwrite(buffer, bytes, 1, file_) == 1 ? bytes : 0;
@@ -52,13 +50,11 @@ struct LocalFile : VirtualFileReader, VirtualFileWriter {
   const std::string mode_;
 };
 
-std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(
-    const std::string& filename) {
+std::unique_ptr<VirtualFileReader> VirtualFileReader::Make(const std::string& filename) {
   return std::unique_ptr<VirtualFileReader>(new LocalFile(filename, "rb"));
 }
 
-std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(
-    const std::string& filename) {
+std::unique_ptr<VirtualFileWriter> VirtualFileWriter::Make(const std::string& filename) {
   return std::unique_ptr<VirtualFileWriter>(new LocalFile(filename, "wb"));
 }
 

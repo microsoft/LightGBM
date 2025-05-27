@@ -20,23 +20,25 @@
 namespace LightGBM {
 
 template <typename HOST_METRIC, typename CUDA_METRIC>
-class CUDARegressionMetricInterface: public CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC> {
+class CUDARegressionMetricInterface
+    : public CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC> {
  public:
-  explicit CUDARegressionMetricInterface(const Config& config):
-    CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>(config) {}
+  explicit CUDARegressionMetricInterface(const Config& config)
+      : CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>(config) {}
 
   virtual ~CUDARegressionMetricInterface() {}
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
 };
 
-class CUDARMSEMetric: public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric> {
+class CUDARMSEMetric : public CUDARegressionMetricInterface<RMSEMetric, CUDARMSEMetric> {
  public:
   explicit CUDARMSEMetric(const Config& config);
 
   virtual ~CUDARMSEMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     return (score - label) * (score - label);
   }
 };
@@ -47,12 +49,14 @@ class CUDAL2Metric : public CUDARegressionMetricInterface<L2Metric, CUDAL2Metric
 
   virtual ~CUDAL2Metric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     return (score - label) * (score - label);
   }
 };
 
-class CUDAQuantileMetric : public CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric> {
+class CUDAQuantileMetric
+    : public CUDARegressionMetricInterface<QuantileMetric, CUDAQuantileMetric> {
  public:
   explicit CUDAQuantileMetric(const Config& config);
 
@@ -67,9 +71,7 @@ class CUDAQuantileMetric : public CUDARegressionMetricInterface<QuantileMetric, 
     }
   }
 
-  double GetParamFromConfig() const override {
-    return alpha_;
-  }
+  double GetParamFromConfig() const override { return alpha_; }
 
  private:
   const double alpha_;
@@ -81,18 +83,20 @@ class CUDAL1Metric : public CUDARegressionMetricInterface<L1Metric, CUDAL1Metric
 
   virtual ~CUDAL1Metric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     return std::fabs(score - label);
   }
 };
 
-class CUDAHuberLossMetric : public CUDARegressionMetricInterface<HuberLossMetric, CUDAHuberLossMetric> {
+class CUDAHuberLossMetric
+    : public CUDARegressionMetricInterface<HuberLossMetric, CUDAHuberLossMetric> {
  public:
   explicit CUDAHuberLossMetric(const Config& config);
 
   virtual ~CUDAHuberLossMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double alpha) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double alpha) {
     const double diff = score - label;
     if (std::abs(diff) <= alpha) {
       return 0.5f * diff * diff;
@@ -101,28 +105,26 @@ class CUDAHuberLossMetric : public CUDARegressionMetricInterface<HuberLossMetric
     }
   }
 
-  double GetParamFromConfig() const override {
-    return alpha_;
-  }
+  double GetParamFromConfig() const override { return alpha_; }
+
  private:
   const double alpha_;
 };
 
-class CUDAFairLossMetric : public CUDARegressionMetricInterface<FairLossMetric, CUDAFairLossMetric> {
+class CUDAFairLossMetric
+    : public CUDARegressionMetricInterface<FairLossMetric, CUDAFairLossMetric> {
  public:
   explicit CUDAFairLossMetric(const Config& config);
 
   virtual ~CUDAFairLossMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double fair_c) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score, double fair_c) {
     const double x = std::fabs(score - label);
-    const double c =  fair_c;
+    const double c = fair_c;
     return c * x - c * c * std::log1p(x / c);
   }
 
-  double GetParamFromConfig() const override {
-    return fair_c_;
-  }
+  double GetParamFromConfig() const override { return fair_c_; }
 
  private:
   const double fair_c_;
@@ -134,7 +136,8 @@ class CUDAPoissonMetric : public CUDARegressionMetricInterface<PoissonMetric, CU
 
   virtual ~CUDAPoissonMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     const double eps = 1e-10f;
     if (score < eps) {
       score = eps;
@@ -149,7 +152,8 @@ class CUDAMAPEMetric : public CUDARegressionMetricInterface<MAPEMetric, CUDAMAPE
 
   virtual ~CUDAMAPEMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     return std::fabs((label - score)) / fmax(1.0f, std::fabs(label));
   }
 };
@@ -160,23 +164,27 @@ class CUDAGammaMetric : public CUDARegressionMetricInterface<GammaMetric, CUDAGa
 
   virtual ~CUDAGammaMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     const double psi = 1.0;
     const double theta = -1.0 / score;
     const double a = psi;
     const double b = -SafeLog(-theta);
-    const double c = 1. / psi * SafeLog(label / psi) - SafeLog(label) - 0;  // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
+    const double c = 1. / psi * SafeLog(label / psi) - SafeLog(label) -
+                     0;  // 0 = std::lgamma(1.0 / psi) = std::lgamma(1.0);
     return -((label * theta - b) / a + c);
   }
 };
 
-class CUDAGammaDevianceMetric : public CUDARegressionMetricInterface<GammaDevianceMetric, CUDAGammaDevianceMetric> {
+class CUDAGammaDevianceMetric
+    : public CUDARegressionMetricInterface<GammaDevianceMetric, CUDAGammaDevianceMetric> {
  public:
   explicit CUDAGammaDevianceMetric(const Config& config);
 
   virtual ~CUDAGammaDevianceMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double /*alpha*/) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double /*alpha*/) {
     const double epsilon = 1.0e-9;
     const double tmp = label / (score + epsilon);
     return tmp - SafeLog(tmp) - 1;
@@ -189,7 +197,8 @@ class CUDATweedieMetric : public CUDARegressionMetricInterface<TweedieMetric, CU
 
   virtual ~CUDATweedieMetric() {}
 
-  __device__ inline static double MetricOnPointCUDA(label_t label, double score,  double tweedie_variance_power) {
+  __device__ inline static double MetricOnPointCUDA(label_t label, double score,
+                                                    double tweedie_variance_power) {
     const double rho = tweedie_variance_power;
     const double eps = 1e-10f;
     if (score < eps) {
@@ -200,9 +209,7 @@ class CUDATweedieMetric : public CUDARegressionMetricInterface<TweedieMetric, CU
     return -a + b;
   }
 
-  double GetParamFromConfig() const override {
-    return tweedie_variance_power_;
-  }
+  double GetParamFromConfig() const override { return tweedie_variance_power_; }
 
  private:
   const double tweedie_variance_power_;

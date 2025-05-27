@@ -14,7 +14,7 @@
 
 namespace LightGBM {
 
-class CUDAScoreUpdater: public ScoreUpdater {
+class CUDAScoreUpdater : public ScoreUpdater {
  public:
   CUDAScoreUpdater(const Dataset* data, int num_tree_per_iteration, const bool boosting_on_cuda);
 
@@ -24,10 +24,11 @@ class CUDAScoreUpdater: public ScoreUpdater {
 
   inline void AddScore(const Tree* tree, int cur_tree_id) override;
 
-  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree, int cur_tree_id) override;
+  inline void AddScore(const TreeLearner* tree_learner, const Tree* tree,
+                       int cur_tree_id) override;
 
-  inline void AddScore(const Tree* tree, const data_size_t* data_indices,
-                       data_size_t data_cnt, int cur_tree_id) override;
+  inline void AddScore(const Tree* tree, const data_size_t* data_indices, data_size_t data_cnt,
+                       int cur_tree_id) override;
 
   inline void MultiplyScore(double val, int cur_tree_id) override;
 

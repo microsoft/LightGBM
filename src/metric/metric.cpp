@@ -17,7 +17,7 @@
 namespace LightGBM {
 
 Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   if (config.device_type == std::string("cuda") && config.boosting == std::string("gbdt")) {
     if (type == std::string("l2")) {
       return new CUDAL2Metric(config);
@@ -36,37 +36,55 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("binary_logloss")) {
       return new CUDABinaryLoglossMetric(config);
     } else if (type == std::string("binary_error")) {
-      Log::Warning("Metric binary_error is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric binary_error is not implemented in cuda version. Fall back to evaluation on "
+          "CPU.");
       return new BinaryErrorMetric(config);
     } else if (type == std::string("auc")) {
-      Log::Warning("Metric auc is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric auc is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new AUCMetric(config);
     } else if (type == std::string("average_precision")) {
-      Log::Warning("Metric average_precision is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric average_precision is not implemented in cuda version. Fall back to evaluation "
+          "on CPU.");
       return new AveragePrecisionMetric(config);
     } else if (type == std::string("auc_mu")) {
-      Log::Warning("Metric auc_mu is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric auc_mu is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new AucMuMetric(config);
     } else if (type == std::string("ndcg")) {
-      Log::Warning("Metric ndcg is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric ndcg is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new NDCGMetric(config);
     } else if (type == std::string("map")) {
-      Log::Warning("Metric map is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric map is not implemented in cuda version. Fall back to evaluation on CPU.");
       return new MapMetric(config);
     } else if (type == std::string("multi_logloss")) {
-      Log::Warning("Metric multi_logloss is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric multi_logloss is not implemented in cuda version. Fall back to evaluation on "
+          "CPU.");
       return new MultiSoftmaxLoglossMetric(config);
     } else if (type == std::string("multi_error")) {
-      Log::Warning("Metric multi_error is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric multi_error is not implemented in cuda version. Fall back to evaluation on "
+          "CPU.");
       return new MultiErrorMetric(config);
     } else if (type == std::string("cross_entropy")) {
-      Log::Warning("Metric cross_entropy is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric cross_entropy is not implemented in cuda version. Fall back to evaluation on "
+          "CPU.");
       return new CrossEntropyMetric(config);
     } else if (type == std::string("cross_entropy_lambda")) {
-      Log::Warning("Metric cross_entropy_lambda is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric cross_entropy_lambda is not implemented in cuda version. Fall back to "
+          "evaluation on CPU.");
       return new CrossEntropyLambdaMetric(config);
     } else if (type == std::string("kullback_leibler")) {
-      Log::Warning("Metric kullback_leibler is not implemented in cuda version. Fall back to evaluation on CPU.");
+      Log::Warning(
+          "Metric kullback_leibler is not implemented in cuda version. Fall back to evaluation on "
+          "CPU.");
       return new KullbackLeiblerDivergence(config);
     } else if (type == std::string("mape")) {
       return new CUDAMAPEMetric(config);
@@ -78,7 +96,7 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
       return new CUDATweedieMetric(config);
     }
   } else {
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
     if (type == std::string("l2")) {
       return new L2Metric(config);
     } else if (type == std::string("rmse")) {
@@ -126,9 +144,9 @@ Metric* Metric::CreateMetric(const std::string& type, const Config& config) {
     } else if (type == std::string("tweedie")) {
       return new TweedieMetric(config);
     }
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
   return nullptr;
 }
 
