@@ -41,6 +41,7 @@ from .compat import (
     _LGBMRegressorBase,
     _LGBMValidateData,
     _sklearn_version,
+    pa_Table,
     pd_DataFrame,
 )
 from .engine import train
@@ -60,6 +61,7 @@ _LGBM_ScikitMatrixLike = Union[
     List[Union[List[float], List[int]]],
     np.ndarray,
     pd_DataFrame,
+    pa_Table,
     scipy.sparse.spmatrix,
 ]
 _LGBM_ScikitCustomObjectiveFunction = Union[
@@ -943,7 +945,7 @@ class LGBMModel(_LGBMModelBase):
         params["metric"] = [e for e in eval_metrics_builtin if e not in params["metric"]] + params["metric"]
         params["metric"] = [metric for metric in params["metric"] if metric is not None]
 
-        if not isinstance(X, pd_DataFrame):
+        if not isinstance(X, (pd_DataFrame, pa_Table)):
             _X, _y = _LGBMValidateData(
                 self,
                 X,
@@ -1075,7 +1077,7 @@ class LGBMModel(_LGBMModelBase):
 
     fit.__doc__ = (
         _lgbmmodel_doc_fit.format(
-            X_shape="numpy array, pandas DataFrame, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
+            X_shape="numpy array, pandas DataFrame, pyarrow Table, scipy.sparse, list of lists of int or float of shape = [n_samples, n_features]",
             y_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples]",
             sample_weight_shape="numpy array, pandas Series, list of int or float, pyarrow Array, pyarrow ChunkedArray of shape = [n_samples] or None, optional (default=None)",
             init_score_shape="numpy array, pandas DataFrame, pandas Series, list of int or float, list of lists, pyarrow Array, pyarrow ChunkedArray, pyarrow Table of shape = [n_samples] or shape = [n_samples * n_classes] (for multi-class task) or shape = [n_samples, n_classes] (for multi-class task) or None, optional (default=None)",
@@ -1102,7 +1104,7 @@ class LGBMModel(_LGBMModelBase):
         """Docstring is set after definition, using a template."""
         if not self.__sklearn_is_fitted__():
             raise LGBMNotFittedError("Estimator not fitted, call fit before exploiting the model.")
-        if not isinstance(X, pd_DataFrame):
+        if not isinstance(X, (pd_DataFrame, pa_Table)):
             X = _LGBMValidateData(
                 self,
                 X,
