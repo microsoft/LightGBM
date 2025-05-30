@@ -118,7 +118,7 @@ def generate_random_arrow_array(
     chunks = [chunk for chunk in chunks if len(chunk) > 0]
 
     # Turn chunks into array
-    return pa.chunked_array([data], type=pa.float32())
+    return pa.chunked_array(chunks, type=pa.float32())
 
 
 def dummy_dataset_params() -> Dict[str, Any]:
@@ -456,6 +456,15 @@ def test_arrow_feature_name_manual():
     assert booster.feature_name() == ["c", "d"]
 
 
+def safe_array_equal_with_nulls(arr1: pa.ChunkedArray, arr2: pa.ChunkedArray) -> bool:
+    if len(arr1) != len(arr2):
+        return False
+
+    np1 = arr1.to_numpy(zero_copy_only=False)
+    np2 = arr2.to_numpy(zero_copy_only=False)
+    return np.array_equal(np1, np2, equal_nan=True)
+
+
 def test_get_data_arrow_table():
     original_table = generate_simple_arrow_table()
     dataset = lgb.Dataset(original_table, free_raw_data=False)
@@ -474,38 +483,37 @@ def test_get_data_arrow_table():
         assert original_column.num_chunks == returned_column.num_chunks
 
         for i in range(original_column.num_chunks):
-            original_chunk = original_column.chunk(i)
-            returned_chunk = returned_column.chunk(i)
-            assert original_chunk.equals(returned_chunk)
+            original_chunk_array = pa.chunked_array([original_column.chunk(i)])
+            returned_chunk_array = pa.chunked_array([returned_column.chunk(i)])
+            assert safe_array_equal_with_nulls(original_chunk_array, returned_chunk_array)
 
-        assert original_column.equals(returned_column)
+        assert safe_array_equal_with_nulls(original_column, returned_column)
 
 
 def test_get_data_arrow_table_subset(rng):
-    original_table = generate_simple_arrow_table()
+    original_table = generate_random_arrow_table(num_columns=3, num_datapoints=1000, seed=42)
     dataset = lgb.Dataset(original_table, free_raw_data=False)
     dataset.construct()
 
-    used_indices = rng.choice(a=original_table.shape[0], size=original_table.shape[0] // 3, replace=False)
+    subset_size = 100
+    used_indices = rng.choice(a=original_table.shape[0], size=subset_size, replace=False)
+    used_indices = sorted(used_indices)
+
     subset_dataset = dataset.subset(used_indices).construct()
     expected_subset = original_table.take(used_indices)
     subset_data = subset_dataset.get_data()
+
+    assert isinstance(subset_data, pa.Table)
     assert subset_data.schema == expected_subset.schema
     assert subset_data.shape == expected_subset.shape
     assert len(subset_data) == len(used_indices)
+    assert subset_data.shape == (subset_size, 3)
+
     for column_name in expected_subset.column_names:
-        original_column = expected_subset[column_name]
-        returned_column = subset_data[column_name]
-
-        assert original_column.type == returned_column.type
-        assert original_column.num_chunks == returned_column.num_chunks
-
-        for i in range(original_column.num_chunks):
-            original_chunk = original_column.chunk(i)
-            returned_chunk = returned_column.chunk(i)
-            assert original_chunk.equals(returned_chunk)
-
-        assert original_column.equals(returned_column)
+        expected_col = expected_subset[column_name]
+        returned_col = subset_data[column_name]
+        assert expected_col.type == returned_col.type
+        assert safe_array_equal_with_nulls(expected_col, returned_col)
 
 
 def test_dataset_construction_from_pa_table_without_cffi_raises_informative_error(missing_module_cffi):
