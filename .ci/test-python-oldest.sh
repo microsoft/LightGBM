@@ -12,7 +12,7 @@ set -e -E -u -o pipefail
 echo "installing lightgbm's dependencies"
 pip install \
   'cffi==1.15.1' \
-  'numpy==1.19.0' \
+  'numpy==1.19.3' \
   'pandas==1.1.3' \
   'pyarrow==6.0.1' \
   'scikit-learn==0.24.2' \
