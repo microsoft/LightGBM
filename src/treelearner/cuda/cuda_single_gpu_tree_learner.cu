@@ -180,7 +180,7 @@ __global__ void CalcBitsetLenKernel(const CUDASplitInfo* best_split_info, size_t
   size_t len = 0;
   if (i < best_split_info->num_cat_threshold) {
     const T val = vals[i];
-    len = (val / 32) + 1;
+    len = (val / WARPSIZE) + 1;
   }
   const size_t block_max_len = ShuffleReduceMax<size_t>(len, shared_mem_buffer, blockDim.x);
   if (threadIdx.x == 0) {
@@ -212,7 +212,7 @@ __global__ void CUDAConstructBitsetKernel(const CUDASplitInfo* best_split_info, 
   if (i < best_split_info->num_cat_threshold) {
     const T val = vals[i];
     // can use add instead of or here, because each bit will only be added once
-    atomicAdd_system(out + (val / 32), (0x1 << (val % 32)));
+    atomicAdd_system(out + (val / WARPSIZE), (0x1 << (val % WARPSIZE)));
   }
 }
 

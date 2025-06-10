@@ -527,7 +527,7 @@ __global__ void GetGradientsKernel_RankXENDCG_GlobalMemory(
     double* cuda_params_buffer_pointer = cuda_params_buffer + item_index_start;
     const data_size_t block_reduce_size = query_item_count > 1024 ? 1024 : query_item_count;
     // assert that warpSize == 32, so we use buffer size 1024 / 32 = 32
-    __shared__ double shared_buffer[WARPSIZE];
+    __shared__ double shared_buffer[1024 / WARPSIZE];
     __shared__ double reduce_result;
     if (query_item_count <= 1) {
       for (data_size_t i = 0; i <= query_item_count; ++i) {
