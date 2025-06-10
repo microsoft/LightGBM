@@ -1034,19 +1034,19 @@ void CUDADataPartition::LaunchSplitInnerKernel(
 
   if (nccl_communicator_ != nullptr) {
     if (use_quantized_grad_) {
-      SplitTreeStructureKernel<true, true><<<4, 5, 0, cuda_streams_[0]>>>(SPLI_TREE_ARGS);
+      SplitTreeStructureKernel<true, true><<<4, 5, 0, cuda_streams_[0]>>>(SPLIT_TREE_ARGS);
     } else {
-      SplitTreeStructureKernel<true, false><<<4, 5, 0, cuda_streams_[0]>>>(SPLI_TREE_ARGS);
+      SplitTreeStructureKernel<true, false><<<4, 5, 0, cuda_streams_[0]>>>(SPLIT_TREE_ARGS);
     }
   } else {
     if (use_quantized_grad_) {
-      SplitTreeStructureKernel<false, true><<<4, 5, 0, cuda_streams_[0]>>>(SPLI_TREE_ARGS);
+      SplitTreeStructureKernel<false, true><<<4, 5, 0, cuda_streams_[0]>>>(SPLIT_TREE_ARGS);
     } else {
-      SplitTreeStructureKernel<false, false><<<4, 5, 0, cuda_streams_[0]>>>(SPLI_TREE_ARGS);
+      SplitTreeStructureKernel<false, false><<<4, 5, 0, cuda_streams_[0]>>>(SPLIT_TREE_ARGS);
     }
   }
 
-#undef SPLI_TREE_ARGS
+#undef SPLIT_TREE_ARGS
   global_timer.Stop("CUDADataPartition::SplitTreeStructureKernel");
   std::vector<int> cpu_split_info_buffer(18);
   const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
