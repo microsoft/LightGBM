@@ -43,7 +43,7 @@ class NCCLTopology {
       }
     }
     if (!gpu_list_.empty() && num_gpu_ != static_cast<int>(gpu_list_.size())) {
-      Log::Warning("num_gpu_ = %d is different from the number of valid device IDs in gpu_device_list (%d), using %d GPUs instead.", \
+      Log::Warning("num_gpu = %d is different from the number of valid device IDs in gpu_device_list (%d), using %d GPUs instead.", \
                   num_gpu_, static_cast<int>(gpu_list_.size()), static_cast<int>(gpu_list_.size()));
       num_gpu_ = static_cast<int>(gpu_list_.size());
     }
