@@ -1498,7 +1498,7 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     assert bst.params["categorical_feature"] == [1, 2]
 
     # check that passing parameters to the constructor raises warning and ignores them
-    with pytest.warns(UserWarning, match="Ignoring params argument"):
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model file."):
         bst2 = lgb.Booster(params={"num_leaves": 7}, model_file=model_file)
     assert bst.params == bst2.params
 
@@ -1506,6 +1506,50 @@ def test_parameters_are_loaded_from_model_file(tmp_path, capsys, rng):
     orig_preds = orig_bst.predict(X)
     preds = bst.predict(X)
     np.testing.assert_allclose(preds, orig_preds)
+
+
+def test_string_serialized_params_retrieval(rng):
+    # Random train data
+    train_x = rng.random((500, 3))
+    train_y = rng.integers(0, 1, 500)
+    train_data = lgb.Dataset(train_x, train_y)
+
+    # Parameters
+    params = {
+        "boosting": "gbdt",
+        "deterministic": True,
+        "feature_contri": [0.5] * train_x.shape[1],
+        "interaction_constraints": [[0, 1], [0]],
+        "objective": "binary",
+        "metric": ["auc"],
+        "num_leaves": 7,
+        "learning_rate": 0.05,
+        "feature_fraction": 0.9,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "verbosity": -100,
+    }
+
+    # train a model and serialize it to a string in memory
+    model = lgb.train(params, train_data, num_boost_round=2)
+    model_serialized = model.model_to_string()
+
+    # load a new model with the string
+    with pytest.warns(UserWarning, match="Ignoring params argument, using parameters from model string."):
+        new_model = lgb.Booster(params={"num_leaves": 32}, model_str=model_serialized)
+
+    assert new_model.params["boosting"] == "gbdt"
+    assert new_model.params["deterministic"] is True
+    assert new_model.params["feature_contri"] == [0.5] * train_x.shape[1]
+    assert new_model.params["interaction_constraints"] == [[0, 1], [0]]
+    assert new_model.params["objective"] == "binary"
+    assert new_model.params["metric"] == ["auc"]
+    assert new_model.params["num_leaves"] == 7
+    assert new_model.params["learning_rate"] == 0.05
+    assert new_model.params["feature_fraction"] == 0.9
+    assert new_model.params["bagging_fraction"] == 0.8
+    assert new_model.params["bagging_freq"] == 5
+    assert new_model.params["verbosity"] == -100
 
 
 def test_save_load_copy_pickle(tmp_path):
@@ -2824,10 +2868,13 @@ def test_metrics():
         assert len(res) == 2
         assert "valid error-mean" in res
         # multiclass metric alias with custom one with invalid class_num
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_dummy_obj_class_1_verbose, metrics=obj_multi_alias, feval=constant_metric)
         # multiclass default metric without num_class
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(
+            lgb.basic.LightGBMError,
+            match="Number of classes should be specified and greater than 1 for multiclass training",
+        ):
             get_cv_result(params_obj_verbose)
         for metric_multi_alias in obj_multi_aliases + ["multi_logloss"]:
             # multiclass metric alias
@@ -2839,11 +2886,11 @@ def test_metrics():
         assert len(res) == 2
         assert "valid multi_error-mean" in res
         # non-valid metric for multiclass objective
-        with pytest.raises(lgb.basic.LightGBMError):
+        with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
             get_cv_result(params_obj_class_3_verbose, metrics="binary_logloss")
     params_class_3_verbose = {"num_class": 3, "verbose": -1}
     # non-default num_class for default objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Number of classes must be 1 for non-multiclass training"):
         get_cv_result(params_class_3_verbose)
     # no metric with non-default num_class for custom objective
     res = get_cv_result(params_dummy_obj_class_3_verbose)
@@ -2858,7 +2905,7 @@ def test_metrics():
     assert len(res) == 2
     assert "valid multi_error-mean" in res
     # binary metric with non-default num_class for custom objective
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(lgb.basic.LightGBMError, match="Multiclass objective and metrics don't match"):
         get_cv_result(params_dummy_obj_class_3_verbose, metrics="binary_error")
 
 
@@ -3114,9 +3161,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
     hist, bins = gbm.get_split_value_histogram(0, bins=999)
     assert len(hist) == 999
     assert len(bins) == 1000
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=-1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="`bins` must be positive, when an integer"):
         gbm.get_split_value_histogram(0, bins=0)
     hist, bins = gbm.get_split_value_histogram(0, bins=1)
     assert len(hist) == 1
@@ -3150,7 +3197,9 @@ def test_get_split_value_histogram(rng_fixed_seed):
         np.testing.assert_array_equal(hist_vals[mask], hist[:, 1])
         np.testing.assert_allclose(bin_edges[1:][mask], hist[:, 0])
     # test histogram is disabled for categorical features
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot compute split value histogram for the categorical feature"
+    ):
         gbm.get_split_value_histogram(2)
 
 

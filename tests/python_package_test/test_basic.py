@@ -271,22 +271,25 @@ def test_add_features_throws_if_num_data_unequal(rng):
     X2 = rng.uniform(size=(10, 1))
     d1 = lgb.Dataset(X1).construct()
     d2 = lgb.Dataset(X2).construct()
-    with pytest.raises(lgb.basic.LightGBMError):
+    with pytest.raises(
+        lgb.basic.LightGBMError, match="Cannot add features from other Dataset with a different number of rows"
+    ):
         d1.add_features_from(d2)
 
 
 def test_add_features_throws_if_datasets_unconstructed(rng):
     X1 = rng.uniform(size=(100, 1))
     X2 = rng.uniform(size=(100, 1))
-    with pytest.raises(ValueError):
+    err_msg = "Both source and target Datasets must be constructed before adding features"
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1)
         d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1).construct()
         d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=err_msg):
         d1 = lgb.Dataset(X1)
         d2 = lgb.Dataset(X2).construct()
         d1.add_features_from(d2)
@@ -672,6 +675,8 @@ def test_list_to_1d_numpy(collection, dtype, rng):
         "2d_list": [[1], [2]],
     }
     y = collection2y[collection]
+    custom_name = "my_custom_variable"
+
     if collection.startswith("pd"):
         if not PANDAS_INSTALLED:
             pytest.skip("pandas is not installed")
@@ -679,17 +684,23 @@ def test_list_to_1d_numpy(collection, dtype, rng):
             y = pd_Series(y)
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match="column-vector"):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
+            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
     elif isinstance(y, list) and isinstance(y[0], list):
-        with pytest.raises(TypeError):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
+        err_msg = (
+            rf"Wrong type\(list\) for {custom_name}.\n"
+            r"It should be list, numpy 1-D array or pandas Series"
+        )
+        with pytest.raises(TypeError, match=err_msg):
+            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
     elif isinstance(y, pd_Series) and y.dtype == object:
-        with pytest.raises(ValueError):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name="list")
+        with pytest.raises(
+            ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object"
+        ):
+            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
-    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name="list")
+    result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name=custom_name)
     assert result.size == 10
     assert result.dtype == dtype
 
