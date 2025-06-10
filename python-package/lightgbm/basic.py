@@ -35,7 +35,6 @@ from .compat import (
     arrow_is_floating,
     arrow_is_integer,
     concat,
-    dt_DataTable,
     pa_Array,
     pa_chunked_array,
     pa_ChunkedArray,
@@ -116,7 +115,6 @@ _LGBM_TrainDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     "Sequence",
     List["Sequence"],
@@ -137,7 +135,6 @@ _LGBM_PredictDataType = Union[
     Path,
     np.ndarray,
     pd_DataFrame,
-    dt_DataTable,
     scipy.sparse.spmatrix,
     pa_Table,
 ]
@@ -575,15 +572,6 @@ class LGBMDeprecationWarning(FutureWarning):
     """Custom deprecation warning."""
 
     pass
-
-
-def _emit_datatable_deprecation_warning() -> None:
-    msg = (
-        "Support for 'datatable' in LightGBM is deprecated, and will be removed in a future release. "
-        "To avoid this warning, convert 'datatable' inputs to a supported format "
-        "(for example, use the 'to_numpy()' method)."
-    )
-    warnings.warn(msg, category=LGBMDeprecationWarning, stacklevel=2)
 
 
 class _ConfigAliases:
@@ -1112,7 +1100,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1142,7 +1130,7 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        elif isinstance(data, pd_DataFrame) and validate_features:
+        if isinstance(data, pd_DataFrame) and validate_features:
             data_names = [str(x) for x in data.columns]
             ptr_names = (ctypes.c_char_p * len(data_names))()
             ptr_names[:] = [x.encode("utf-8") for x in data_names]
@@ -1221,14 +1209,6 @@ class _InnerPredictor:
                 raise ValueError("Cannot convert data list to numpy array.") from err
             preds, nrow = self.__pred_for_np2d(
                 mat=data,
-                start_iteration=start_iteration,
-                num_iteration=num_iteration,
-                predict_type=predict_type,
-            )
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            preds, nrow = self.__pred_for_np2d(
-                mat=data.to_numpy(),
                 start_iteration=start_iteration,
                 num_iteration=num_iteration,
                 predict_type=predict_type,
@@ -1790,7 +1770,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2196,9 +2176,6 @@ class Dataset:
                 raise TypeError("Data list can only be of ndarray or Sequence")
         elif isinstance(data, Sequence):
             self.__init_from_seqs([data], ref_dataset)
-        elif isinstance(data, dt_DataTable):
-            _emit_datatable_deprecation_warning()
-            self.__init_from_np2d(data.to_numpy(), params_str, ref_dataset)
         else:
             try:
                 csr = scipy.sparse.csr_matrix(data)
@@ -2619,7 +2596,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2764,7 +2741,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             The data to be set.
 
         Returns
@@ -3237,7 +3214,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3250,7 +3227,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3263,7 +3240,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3276,7 +3253,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3288,9 +3265,6 @@ class Dataset:
                     self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, pd_DataFrame):
                     self.data = self.data.iloc[self.used_indices].copy()
-                elif isinstance(self.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = self.data[self.used_indices, :]
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
@@ -3312,7 +3286,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -3477,9 +3451,6 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = np.hstack((self.data, other.data.to_numpy()))
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3488,9 +3459,6 @@ class Dataset:
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = scipy.sparse.hstack((self.data, other.data.to_numpy()), format=sparse_format)
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3506,21 +3474,6 @@ class Dataset:
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
-                elif isinstance(other.data, dt_DataTable):
-                    _emit_datatable_deprecation_warning()
-                    self.data = concat((self.data, pd_DataFrame(other.data.to_numpy())), axis=1, ignore_index=True)
-                else:
-                    self.data = None
-            elif isinstance(self.data, dt_DataTable):
-                _emit_datatable_deprecation_warning()
-                if isinstance(other.data, np.ndarray):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data)))
-                elif isinstance(other.data, scipy.sparse.spmatrix):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.toarray())))
-                elif isinstance(other.data, pd_DataFrame):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.values)))
-                elif isinstance(other.data, dt_DataTable):
-                    self.data = dt_DataTable(np.hstack((self.data.to_numpy(), other.data.to_numpy())))
                 else:
                     self.data = None
             else:
@@ -3715,6 +3668,9 @@ class Booster:
             params = self._get_loaded_param()
         elif model_str is not None:
             self.model_from_string(model_str)
+            if params:
+                _log_warning("Ignoring params argument, using parameters from model string.")
+            params = self._get_loaded_param()
         else:
             raise TypeError(
                 "Need at least one training dataset or model file or model string to create Booster instance"
@@ -4371,7 +4327,7 @@ class Booster:
             self.add_valid(data, name)
             data_idx = self.__num_dataset - 1
 
-        return self.__inner_eval(name, data_idx, feval)
+        return self.__inner_eval(data_name=name, data_idx=data_idx, feval=feval)
 
     def eval_train(
         self,
@@ -4405,7 +4361,7 @@ class Booster:
         result : list
             List with (train_dataset_name, eval_name, eval_result, is_higher_better) tuples.
         """
-        return self.__inner_eval(self._train_data_name, 0, feval)
+        return self.__inner_eval(data_name=self._train_data_name, data_idx=0, feval=feval)
 
     def eval_valid(
         self,
@@ -4442,7 +4398,7 @@ class Booster:
         return [
             item
             for i in range(1, self.__num_dataset)
-            for item in self.__inner_eval(self.name_valid_sets[i - 1], i, feval)
+            for item in self.__inner_eval(data_name=self.name_valid_sets[i - 1], data_idx=i, feval=feval)
         ]
 
     def save_model(
@@ -4714,7 +4670,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table, H2O DataTable's Frame (deprecated) or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4795,7 +4751,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, H2O DataTable's Frame (deprecated), scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
@@ -5141,8 +5097,7 @@ class Booster:
                 if split_feature == feature:
                     if isinstance(root["threshold"], str):
                         raise LightGBMError("Cannot compute split value histogram for the categorical feature")
-                    else:
-                        values.append(root["threshold"])
+                    values.append(root["threshold"])
                 add(root["left_child"])
                 add(root["right_child"])
 
@@ -5169,6 +5124,7 @@ class Booster:
 
     def __inner_eval(
         self,
+        *,
         data_name: str,
         data_idx: int,
         feval: Optional[Union[_LGBM_CustomEvalFunction, List[_LGBM_CustomEvalFunction]]],
