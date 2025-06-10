@@ -203,7 +203,7 @@ __global__ void ReduceGradKernel(
   double* cuda_sum_of_hessians,
   int64_t* cuda_sum_of_gradients_hessians,
   const data_size_t num_data) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   double thread_sum_of_gradients = 0.0f;
   double thread_sum_of_hessians = 0.0f;
   int64_t thread_sum_of_gradients_hessians = 0;
