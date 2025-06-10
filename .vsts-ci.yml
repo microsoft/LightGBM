@@ -364,8 +364,9 @@ jobs:
   ###########
   - job: Package
     dependsOn:
-      - Linux
-      - Linux_latest
+      # TODO: add jobs back when https://github.com/microsoft/LightGBM/issues/6918 is resolved
+      # - Linux
+      # - Linux_latest
       - macOS
       - Windows
       - R_artifact
@@ -405,19 +406,20 @@ jobs:
         inputs:
           artifactName: R-package
           downloadPath: $(Build.SourcesDirectory)/R
-      - script: |
-          python "$(Build.SourcesDirectory)/.ci/create-nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
-        displayName: 'Create NuGet configuration files'
-      - task: NuGetCommand@2
-        inputs:
-          command: pack
-          packagesToPack: '$(Build.SourcesDirectory)/.ci/nuget/*.nuspec'
-          packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
-      - task: PublishBuildArtifacts@1
-        inputs:
-          pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
-          artifactName: NuGet
-          artifactType: container
+      # TODO: add scripts back when https://github.com/microsoft/LightGBM/issues/6918 is resolved
+      # - script: |
+      #     python "$(Build.SourcesDirectory)/.ci/create-nuget.py" "$(Build.SourcesDirectory)/binaries/PackageAssets"
+      #   displayName: 'Create NuGet configuration files'
+      # - task: NuGetCommand@2
+      #   inputs:
+      #     command: pack
+      #     packagesToPack: '$(Build.SourcesDirectory)/.ci/nuget/*.nuspec'
+      #     packDestination: '$(Build.ArtifactStagingDirectory)/nuget'
+      # - task: PublishBuildArtifacts@1
+      #   inputs:
+      #     pathtoPublish: '$(Build.ArtifactStagingDirectory)/nuget'
+      #     artifactName: NuGet
+      #     artifactType: container
       - task: GitHubRelease@0
         displayName: 'Create GitHub Release'
         condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
@@ -428,10 +430,11 @@ jobs:
           target: '$(Build.SourceVersion)'
           tagSource: 'auto'
           title: '$(Build.SourceBranchName)'
+          # TODO: add '$(Build.ArtifactStagingDirectory)/nuget/*.nupkg' artifact
+          # back when https://github.com/microsoft/LightGBM/issues/6918 is resolved
           assets: |
             $(Build.SourcesDirectory)/binaries/PackageAssets/*
             $(Build.SourcesDirectory)/R/R-package/*
-            $(Build.ArtifactStagingDirectory)/nuget/*.nupkg
             $(Build.ArtifactStagingDirectory)/archives/*
           assetUploadMode: 'delete'
           isDraft: true
