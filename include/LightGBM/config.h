@@ -1138,7 +1138,7 @@ struct Config {
   // check = >0
   // desc = number of GPUs
   // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
-  // desc = When <= 0, only 1 GPU will be used
+  // desc = if ``0``, only 1 GPU will be used
   int num_gpu = 1;
 
   #ifndef __NVCC__
