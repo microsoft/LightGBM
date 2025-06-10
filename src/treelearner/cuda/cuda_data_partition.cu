@@ -1019,7 +1019,7 @@ void CUDADataPartition::LaunchSplitInnerKernel(
 
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
 
-#define SPLI_TREE_ARGS \
+#define SPLIT_TREE_ARGS \
   left_leaf_index, right_leaf_index, \
   cuda_block_data_to_left_offset_.RawData(), \
   cuda_block_data_to_right_offset_.RawData(), cuda_leaf_data_start_.RawData(), cuda_leaf_data_end_.RawData(), \
