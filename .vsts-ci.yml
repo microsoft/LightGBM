@@ -157,7 +157,7 @@ jobs:
       IN_UBUNTU_BASE_CONTAINER: 'true'
       OS_NAME: 'linux'
       SETUP_CONDA: 'true'
-    pool: mariner-20240410-0
+    pool: lgb_agent_pool_ado
     container: ubuntu-latest
     strategy:
       matrix:
