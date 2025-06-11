@@ -465,7 +465,7 @@ Dataset <- R6::R6Class(
       # Check if attribute key is in the known attribute list
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
-          "Dataset$get_field(): field_name must one of the following: "
+          "Dataset$get_field(): field_name must be one of the following: "
           , toString(sQuote(.INFO_KEYS()))
         )
       }
@@ -516,7 +516,7 @@ Dataset <- R6::R6Class(
       # Check if attribute key is in the known attribute list
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
-          "Dataset$set_field(): field_name must one of the following: "
+          "Dataset$set_field(): field_name must be one of the following: "
           , toString(sQuote(.INFO_KEYS()))
         )
       }
