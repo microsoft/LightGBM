@@ -48,7 +48,7 @@ test_that("lgb.Dataset: get_field & set_field", {
   # any other label should error
   expect_error(
     set_field(dtest, "asdf", test_label),
-    regexp = "Dataset\\$set_field\\(\\): field_name must one of the following: ‘label’, ‘weight’, ‘init_score’, ‘group’"
+    regexp = "Dataset\\$set_field\\(\\): field_name must one of the following: ['‘]label['’], ['‘]weight['’], ['‘]init_score['’], ['‘]group['’]"  # nolint: line_length.
   )
 })
 
@@ -184,7 +184,7 @@ test_that("lgb.Dataset: colnames", {
   expect_equal(colnames(dtest), colnames(test_data))
   expect_error({
     colnames(dtest) <- "asdf"
-  }, regexp = "can't assign ‘1’ colnames to an lgb.Dataset with ‘126’ columns")
+  }, regexp = "can't assign ['‘]1['’] colnames to an lgb.Dataset with ['‘]126['’] columns")
   new_names <- make.names(seq_len(ncol(test_data)))
   expect_silent({
     colnames(dtest) <- new_names
