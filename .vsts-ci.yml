@@ -34,7 +34,7 @@ resources:
         tools: true
         tasks: true
     - container: ubuntu-latest
-      image: lightgbm.azurecr.io/ubuntu:22.04
+      image: mcr.microsoft.com/mirror/docker/library/ubuntu:22.04
       options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
       mountReadOnly:
         work: false
