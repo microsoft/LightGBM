@@ -293,6 +293,6 @@ References
 
 .. _Optimization of collective communication operations in MPICH: https://web.cels.anl.gov/~thakur/papers/ijhpca-coll.pdf
 
-.. _A Communication-Efficient Parallel Algorithm for Decision Tree: http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree
+.. _A Communication-Efficient Parallel Algorithm for Decision Tree: https://proceedings.neurips.cc/paper/2016/hash/10a5ab2db37feedfdeaab192ead4ac0e-Abstract.html
 
 .. _GPU Acceleration for Large-scale Tree Boosting: https://arxiv.org/abs/1706.08359
