@@ -46,10 +46,10 @@ Dataset <- R6::R6Class(
 
       # validate inputs early to avoid unnecessary computation
       if (!(is.null(reference) || .is_Dataset(reference))) {
-          stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset"))
+          stop("lgb.Dataset: If provided, reference must be a ", sQuote("lgb.Dataset", q = FALSE))
       }
       if (!(is.null(predictor) || .is_Predictor(predictor))) {
-          stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor"))
+          stop("lgb.Dataset: If provided, predictor must be a ", sQuote("lgb.Predictor", q = FALSE))
       }
 
       info <- list()
@@ -152,7 +152,7 @@ Dataset <- R6::R6Class(
             if (sum(is.na(cate_indices)) > 0L) {
               stop(
                 "lgb.Dataset.construct: supplied an unknown feature in categorical_feature: "
-                , sQuote(private$categorical_feature[is.na(cate_indices)])
+                , sQuote(private$categorical_feature[is.na(cate_indices)], q = FALSE)
               )
             }
 
@@ -250,7 +250,7 @@ Dataset <- R6::R6Class(
           # Unknown data type
           stop(
             "lgb.Dataset.construct: does not support constructing from "
-            , sQuote(class(private$raw_data))
+            , sQuote(class(private$raw_data), q = FALSE)
           )
 
         }
@@ -466,7 +466,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$get_field(): field_name must be one of the following: "
-          , toString(sQuote(.INFO_KEYS()))
+          , toString(sQuote(.INFO_KEYS(), q = FALSE))
         )
       }
 
@@ -517,7 +517,7 @@ Dataset <- R6::R6Class(
       if (!is.character(field_name) || length(field_name) != 1L || !field_name %in% .INFO_KEYS()) {
         stop(
           "Dataset$set_field(): field_name must be one of the following: "
-          , toString(sQuote(.INFO_KEYS()))
+          , toString(sQuote(.INFO_KEYS(), q = FALSE))
         )
       }
 
@@ -1024,7 +1024,7 @@ dimnames.lgb.Dataset <- function(x) {
 
   # Check if invalid element list
   if (!identical(class(value), "list") || length(value) != 2L) {
-    stop("invalid ", sQuote("value"), " given: must be a list of two elements")
+    stop("invalid ", sQuote("value", q = FALSE), " given: must be a list of two elements")
   }
 
   # Check for unknown row names
@@ -1043,9 +1043,9 @@ dimnames.lgb.Dataset <- function(x) {
   if (ncol(x) != length(value[[2L]])) {
     stop(
       "can't assign "
-      , sQuote(length(value[[2L]]))
+      , sQuote(length(value[[2L]]), q = FALSE)
       , " colnames to an lgb.Dataset with "
-      , sQuote(ncol(x))
+      , sQuote(ncol(x), q = FALSE)
       , " columns"
     )
   }

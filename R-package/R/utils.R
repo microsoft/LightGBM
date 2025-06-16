@@ -95,7 +95,7 @@
     if (any(bad)) {
       stop(
         "unknown feature(s) in interaction_constraints: "
-        , toString(sQuote(constraint[bad], q = "'"))
+        , toString(sQuote(constraint[bad], q = FALSE))
       )
     }
 
