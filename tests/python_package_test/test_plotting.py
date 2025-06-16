@@ -154,7 +154,9 @@ def test_plot_split_value_histogram(params, breast_cancer_split, train_data):
     assert ax2.patches[2].get_facecolor() == (0, 0.5, 0, 1.0)  # g
     assert ax2.patches[3].get_facecolor() == (0, 0, 1.0, 1.0)  # b
 
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="Cannot plot split value histogram, because feature 0 was not used in splitting"
+    ):
         lgb.plot_split_value_histogram(gbm0, 0)  # was not used in splitting
 
 
@@ -166,7 +168,7 @@ def test_plot_tree(breast_cancer_split):
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.plot_tree(gbm, tree_index=83)
 
     ax = lgb.plot_tree(gbm, tree_index=3, figsize=(15, 8), show_info=["split_gain"])
@@ -184,7 +186,7 @@ def test_create_tree_digraph(tmp_path, breast_cancer_split):
     gbm = lgb.LGBMClassifier(n_estimators=10, num_leaves=3, verbose=-1, monotone_constraints=constraints)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -229,7 +231,7 @@ def test_tree_with_categories_below_max_category_values(tmp_path):
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
@@ -274,7 +276,7 @@ def test_tree_with_categories_above_max_category_values(tmp_path):
     gbm = lgb.LGBMClassifier(**params)
     gbm.fit(X_train, y_train)
 
-    with pytest.raises(IndexError):
+    with pytest.raises(IndexError, match="tree_index is out of range."):
         lgb.create_tree_digraph(gbm, tree_index=83)
 
     graph = lgb.create_tree_digraph(
