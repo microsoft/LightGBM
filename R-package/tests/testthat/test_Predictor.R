@@ -192,7 +192,7 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
       , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsCMatrix"  # nolint: line_length.
     )
     expect_error(
-      predict(bst, SmatR, type = "contrib"),
+      predict(bst, SmatR, type = "contrib")
       , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsRMatrix" # nolint: line_length.
     )
 })
