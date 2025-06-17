@@ -47,9 +47,9 @@ test_that("lgb.Dataset: get_field & set_field", {
 
   # any other label should error
   expect_error(
-    set_field(dtest, "asdf", test_label),
-    regexp = "Dataset$set_field(): field_name must be one of the following: 'label', 'weight', 'init_score', 'group'",  # nolint: line_length.
-    fixed = TRUE
+    set_field(dtest, "asdf", test_label)
+    , regexp = "Dataset$set_field(): field_name must be one of the following: 'label', 'weight', 'init_score', 'group'",  # nolint: line_length
+    , fixed = TRUE
   )
 })
 
