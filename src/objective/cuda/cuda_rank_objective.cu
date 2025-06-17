@@ -409,7 +409,7 @@ __global__ void GetGradientsKernel_RankXENDCG_SharedMemory(
     const data_size_t block_reduce_size = query_item_count >= 1024 ? 1024 : query_item_count;
     __shared__ double shared_rho[SHARED_MEMORY_SIZE];
     // assert that warpSize == 32
-    __shared__ double shared_buffer[WARPSIZE];
+    __shared__ double shared_buffer[1024 / WARPSIZE];
     __shared__ double shared_params[SHARED_MEMORY_SIZE];
     __shared__ score_t shared_lambdas[SHARED_MEMORY_SIZE];
     __shared__ double reduce_result;
