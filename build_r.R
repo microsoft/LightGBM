@@ -24,7 +24,7 @@ TEMP_SOURCE_DIR <- file.path(TEMP_R_DIR, "src")
     , "make_args" = character(0L)
   )
   for (arg in args) {
-    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path
+    if (any(grepl("^\\-j[0-9]+", arg))) {  # nolint: non_portable_path.
         out_list[["make_args"]] <- arg
     } else if (any(grepl("=", arg, fixed = TRUE))) {
       split_arg <- strsplit(arg, "=", fixed = TRUE)[[1L]]
@@ -147,7 +147,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint: undesirable_function
+        require("processx")  # nolint: undesirable_function.
       })
     })
     if (has_processx && on_windows) {
