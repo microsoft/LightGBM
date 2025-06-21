@@ -147,7 +147,7 @@ if (length(parsed_args[["make_args"]]) > 0L) {
     on_windows <- .Platform$OS.type == "windows"
     has_processx <- suppressMessages({
       suppressWarnings({
-        require("processx")  # nolint: undesirable_function.
+        require("processx")  # nolint: undesirable_function, unused_import.
       })
     })
     if (has_processx && on_windows) {
