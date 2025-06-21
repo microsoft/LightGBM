@@ -7,7 +7,7 @@
 #include <iostream>
 
 #ifdef USE_MPI
-  #include "network/linkers.h"
+#include "network/linkers.h"
 #endif
 
 int main(int argc, char** argv) {
@@ -21,16 +21,13 @@ int main(int argc, char** argv) {
 #endif
 
     success = true;
-  }
-  catch (const std::exception& ex) {
+  } catch (const std::exception& ex) {
     std::cerr << "Met Exceptions:" << std::endl;
     std::cerr << ex.what() << std::endl;
-  }
-  catch (const std::string& ex) {
+  } catch (const std::string& ex) {
     std::cerr << "Met Exceptions:" << std::endl;
     std::cerr << ex << std::endl;
-  }
-  catch (...) {
+  } catch (...) {
     std::cerr << "Unknown Exceptions" << std::endl;
   }
 

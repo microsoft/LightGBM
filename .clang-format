@@ -1,0 +1,4 @@
+BasedOnStyle: Google
+ColumnLimit: 99
+# Sorting includes currently breaks the code so we have to disable it
+SortIncludes: Never

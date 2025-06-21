@@ -28,12 +28,8 @@ namespace LightGBM {
 
 class CUDADataPartition {
  public:
-  CUDADataPartition(
-    const Dataset* train_data,
-    const int num_total_bin,
-    const int num_leaves,
-    const int num_threads,
-    hist_t* cuda_hist);
+  CUDADataPartition(const Dataset* train_data, const int num_total_bin, const int num_leaves,
+                    const int num_threads, hist_t* cuda_hist);
 
   ~CUDADataPartition();
 
@@ -42,29 +38,19 @@ class CUDADataPartition {
   void BeforeTrain();
 
   void Split(
-    // input best split info
-    const CUDASplitInfo* best_split_info,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    const int leaf_best_split_feature,
-    const uint32_t leaf_best_split_threshold,
-    const uint32_t* categorical_bitset,
-    const int categorical_bitset_len,
-    const uint8_t leaf_best_split_default_left,
-    const data_size_t num_data_in_leaf,
-    const data_size_t leaf_data_start,
-    // for leaf information update
-    CUDALeafSplitsStruct* smaller_leaf_splits,
-    CUDALeafSplitsStruct* larger_leaf_splits,
-    // gather information for CPU, used for launching kernels
-    data_size_t* left_leaf_num_data,
-    data_size_t* right_leaf_num_data,
-    data_size_t* left_leaf_start,
-    data_size_t* right_leaf_start,
-    double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians,
-    double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+      // input best split info
+      const CUDASplitInfo* best_split_info, const int left_leaf_index, const int right_leaf_index,
+      const int leaf_best_split_feature, const uint32_t leaf_best_split_threshold,
+      const uint32_t* categorical_bitset, const int categorical_bitset_len,
+      const uint8_t leaf_best_split_default_left, const data_size_t num_data_in_leaf,
+      const data_size_t leaf_data_start,
+      // for leaf information update
+      CUDALeafSplitsStruct* smaller_leaf_splits, CUDALeafSplitsStruct* larger_leaf_splits,
+      // gather information for CPU, used for launching kernels
+      data_size_t* left_leaf_num_data, data_size_t* right_leaf_num_data,
+      data_size_t* left_leaf_start, data_size_t* right_leaf_start,
+      double* left_leaf_sum_of_hessians, double* right_leaf_sum_of_hessians,
+      double* left_leaf_sum_of_gradients, double* right_leaf_sum_of_gradients);
 
   void UpdateTrainScore(const Tree* tree, double* cuda_scores);
 
@@ -78,9 +64,8 @@ class CUDADataPartition {
 
   void ResetByLeafPred(const std::vector<int>& leaf_pred, int num_leaves);
 
-  void ReduceLeafGradStat(
-    const score_t* gradients, const score_t* hessians,
-    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
+  void ReduceLeafGradStat(const score_t* gradients, const score_t* hessians, CUDATree* tree,
+                          double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
 
   data_size_t root_num_data() const {
     if (use_bagging_) {
@@ -103,192 +88,138 @@ class CUDADataPartition {
  private:
   void CalcBlockDim(const data_size_t num_data_in_leaf);
 
-  void GenDataToLeftBitVector(
-    const data_size_t num_data_in_leaf,
-    const int split_feature_index,
-    const uint32_t split_threshold,
-    const uint32_t* categorical_bitset,
-    const int categorical_bitset_len,
-    const uint8_t split_default_left,
-    const data_size_t leaf_data_start,
-    const int left_leaf_index,
-    const int right_leaf_index);
+  void GenDataToLeftBitVector(const data_size_t num_data_in_leaf, const int split_feature_index,
+                              const uint32_t split_threshold, const uint32_t* categorical_bitset,
+                              const int categorical_bitset_len, const uint8_t split_default_left,
+                              const data_size_t leaf_data_start, const int left_leaf_index,
+                              const int right_leaf_index);
 
   void SplitInner(
-    // input best split info
-    const data_size_t num_data_in_leaf,
-    const CUDASplitInfo* best_split_info,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    // for leaf splits information update
-    CUDALeafSplitsStruct* smaller_leaf_splits,
-    CUDALeafSplitsStruct* larger_leaf_splits,
-    // gather information for CPU, used for launching kernels
-    data_size_t* left_leaf_num_data,
-    data_size_t* right_leaf_num_data,
-    data_size_t* left_leaf_start,
-    data_size_t* right_leaf_start,
-    double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians,
-    double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+      // input best split info
+      const data_size_t num_data_in_leaf, const CUDASplitInfo* best_split_info,
+      const int left_leaf_index, const int right_leaf_index,
+      // for leaf splits information update
+      CUDALeafSplitsStruct* smaller_leaf_splits, CUDALeafSplitsStruct* larger_leaf_splits,
+      // gather information for CPU, used for launching kernels
+      data_size_t* left_leaf_num_data, data_size_t* right_leaf_num_data,
+      data_size_t* left_leaf_start, data_size_t* right_leaf_start,
+      double* left_leaf_sum_of_hessians, double* right_leaf_sum_of_hessians,
+      double* left_leaf_sum_of_gradients, double* right_leaf_sum_of_gradients);
 
   // kernel launch functions
   void LaunchFillDataIndicesBeforeTrain();
 
   void LaunchSplitInnerKernel(
-    // input best split info
-    const data_size_t num_data_in_leaf,
-    const CUDASplitInfo* best_split_info,
-    const int left_leaf_index,
-    const int right_leaf_index,
-    // for leaf splits information update
-    CUDALeafSplitsStruct* smaller_leaf_splits,
-    CUDALeafSplitsStruct* larger_leaf_splits,
-    // gather information for CPU, used for launching kernels
-    data_size_t* left_leaf_num_data,
-    data_size_t* right_leaf_num_data,
-    data_size_t* left_leaf_start,
-    data_size_t* right_leaf_start,
-    double* left_leaf_sum_of_hessians,
-    double* right_leaf_sum_of_hessians,
-    double* left_leaf_sum_of_gradients,
-    double* right_leaf_sum_of_gradients);
+      // input best split info
+      const data_size_t num_data_in_leaf, const CUDASplitInfo* best_split_info,
+      const int left_leaf_index, const int right_leaf_index,
+      // for leaf splits information update
+      CUDALeafSplitsStruct* smaller_leaf_splits, CUDALeafSplitsStruct* larger_leaf_splits,
+      // gather information for CPU, used for launching kernels
+      data_size_t* left_leaf_num_data, data_size_t* right_leaf_num_data,
+      data_size_t* left_leaf_start, data_size_t* right_leaf_start,
+      double* left_leaf_sum_of_hessians, double* right_leaf_sum_of_hessians,
+      double* left_leaf_sum_of_gradients, double* right_leaf_sum_of_gradients);
 
-  void LaunchGenDataToLeftBitVectorKernel(
-    const data_size_t num_data_in_leaf,
-    const int split_feature_index,
-    const uint32_t split_threshold,
-    const uint8_t split_default_left,
-    const data_size_t leaf_data_start,
-    const int left_leaf_index,
-    const int right_leaf_index);
+  void LaunchGenDataToLeftBitVectorKernel(const data_size_t num_data_in_leaf,
+                                          const int split_feature_index,
+                                          const uint32_t split_threshold,
+                                          const uint8_t split_default_left,
+                                          const data_size_t leaf_data_start,
+                                          const int left_leaf_index, const int right_leaf_index);
 
   void LaunchGenDataToLeftBitVectorCategoricalKernel(
-    const data_size_t num_data_in_leaf,
-    const int split_feature_index,
-    const uint32_t* bitset,
-    const int bitset_len,
-    const uint8_t split_default_left,
-    const data_size_t leaf_data_start,
-    const int left_leaf_index,
-    const int right_leaf_index);
+      const data_size_t num_data_in_leaf, const int split_feature_index, const uint32_t* bitset,
+      const int bitset_len, const uint8_t split_default_left, const data_size_t leaf_data_start,
+      const int left_leaf_index, const int right_leaf_index);
 
-#define GenDataToLeftBitVectorKernel_PARAMS \
-  const BIN_TYPE* column_data, \
-  const data_size_t num_data_in_leaf, \
-  const data_size_t* data_indices_in_leaf, \
-  const uint32_t th, \
-  const uint32_t t_zero_bin, \
-  const uint32_t max_bin, \
-  const uint32_t min_bin, \
-  const uint8_t split_default_to_left, \
-  const uint8_t split_missing_default_to_left
+#define GenDataToLeftBitVectorKernel_PARAMS                                                  \
+  const BIN_TYPE *column_data, const data_size_t num_data_in_leaf,                           \
+      const data_size_t *data_indices_in_leaf, const uint32_t th, const uint32_t t_zero_bin, \
+      const uint32_t max_bin, const uint32_t min_bin, const uint8_t split_default_to_left,   \
+      const uint8_t split_missing_default_to_left
 
   template <typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool missing_is_zero,
-    const bool missing_is_na,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_bin_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchGenDataToLeftBitVectorKernelInner(GenDataToLeftBitVectorKernel_PARAMS,
+                                               const bool missing_is_zero,
+                                               const bool missing_is_na, const bool mfb_is_zero,
+                                               const bool mfb_is_na, const bool max_bin_to_left,
+                                               const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner0(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool missing_is_na,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_bin_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchGenDataToLeftBitVectorKernelInner0(GenDataToLeftBitVectorKernel_PARAMS,
+                                                const bool missing_is_na, const bool mfb_is_zero,
+                                                const bool mfb_is_na, const bool max_bin_to_left,
+                                                const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner1(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_bin_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchGenDataToLeftBitVectorKernelInner1(GenDataToLeftBitVectorKernel_PARAMS,
+                                                const bool mfb_is_zero, const bool mfb_is_na,
+                                                const bool max_bin_to_left,
+                                                const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner2(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool mfb_is_na,
-    const bool max_bin_to_left,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner2(GenDataToLeftBitVectorKernel_PARAMS,
+                                                const bool mfb_is_na, const bool max_bin_to_left,
+                                                const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner3(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool max_bin_to_left,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner3(GenDataToLeftBitVectorKernel_PARAMS,
+                                                const bool max_bin_to_left,
+                                                const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
-  void LaunchGenDataToLeftBitVectorKernelInner4(
-    GenDataToLeftBitVectorKernel_PARAMS,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+  void LaunchGenDataToLeftBitVectorKernelInner4(GenDataToLeftBitVectorKernel_PARAMS,
+                                                const bool is_single_feature_in_column);
 
 #undef GenDataToLeftBitVectorKernel_PARAMS
 
-#define UpdateDataIndexToLeafIndexKernel_PARAMS \
-  const BIN_TYPE* column_data, \
-  const data_size_t num_data_in_leaf, \
-  const data_size_t* data_indices_in_leaf, \
-  const uint32_t th, \
-  const uint32_t t_zero_bin, \
-  const uint32_t max_bin_ref, \
-  const uint32_t min_bin_ref, \
-  const int left_leaf_index, \
-  const int right_leaf_index, \
-  const int default_leaf_index, \
-  const int missing_default_leaf_index
+#define UpdateDataIndexToLeafIndexKernel_PARAMS                                              \
+  const BIN_TYPE *column_data, const data_size_t num_data_in_leaf,                           \
+      const data_size_t *data_indices_in_leaf, const uint32_t th, const uint32_t t_zero_bin, \
+      const uint32_t max_bin_ref, const uint32_t min_bin_ref, const int left_leaf_index,     \
+      const int right_leaf_index, const int default_leaf_index,                              \
+      const int missing_default_leaf_index
 
   template <typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool missing_is_zero,
-    const bool missing_is_na,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchUpdateDataIndexToLeafIndexKernel(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                              const bool missing_is_zero, const bool missing_is_na,
+                                              const bool mfb_is_zero, const bool mfb_is_na,
+                                              const bool max_to_left,
+                                              const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel_Inner0(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool missing_is_na,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner0(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                     const bool missing_is_na,
+                                                     const bool mfb_is_zero, const bool mfb_is_na,
+                                                     const bool max_to_left,
+                                                     const bool is_single_feature_in_column);
 
   template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel_Inner1(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool mfb_is_zero,
-    const bool mfb_is_na,
-    const bool max_to_left,
-    const bool is_single_feature_in_column);
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner1(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                     const bool mfb_is_zero, const bool mfb_is_na,
+                                                     const bool max_to_left,
+                                                     const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel_Inner2(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool mfb_is_na,
-    const bool max_to_left,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner2(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                     const bool mfb_is_na, const bool max_to_left,
+                                                     const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool max_to_left,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner3(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                     const bool max_to_left,
+                                                     const bool is_single_feature_in_column);
 
-  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
-  void LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
-    UpdateDataIndexToLeafIndexKernel_PARAMS,
-    const bool is_single_feature_in_column);
+  template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+            bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+  void LaunchUpdateDataIndexToLeafIndexKernel_Inner4(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                     const bool is_single_feature_in_column);
 
 #undef UpdateDataIndexToLeafIndexKernel_PARAMS
 
@@ -296,9 +227,9 @@ class CUDADataPartition {
 
   void LaunchFillDataIndexToLeafIndex();
 
-  void LaunchReduceLeafGradStat(
-    const score_t* gradients, const score_t* hessians,
-    CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const;
+  void LaunchReduceLeafGradStat(const score_t* gradients, const score_t* hessians, CUDATree* tree,
+                                double* leaf_grad_stat_buffer,
+                                double* leaf_hess_state_buffer) const;
 
   // Host memory
 
@@ -346,7 +277,6 @@ class CUDADataPartition {
   /*! \brief cuda streams used for asynchronizing kernel computing and memory copy */
   std::vector<cudaStream_t> cuda_streams_;
 
-
   // CUDA memory, held by this object
 
   // tree structure information
@@ -371,7 +301,8 @@ class CUDADataPartition {
   data_size_t* cuda_block_data_to_left_offset_;
   /*! \brief prefix sum of number of data going to right in all blocks */
   data_size_t* cuda_block_data_to_right_offset_;
-  /*! \brief buffer for splitting data indices, will be copied back to cuda_data_indices_ after split */
+  /*! \brief buffer for splitting data indices, will be copied back to cuda_data_indices_ after
+   * split */
   data_size_t* cuda_out_data_indices_in_leaf_;
 
   // split tree structure algorithm related
@@ -379,9 +310,9 @@ class CUDADataPartition {
   int* cuda_split_info_buffer_;
 
   // dataset information
-  /*! \brief number of data in training set, for initialization of cuda_leaf_num_data_ and cuda_leaf_data_end_ */
+  /*! \brief number of data in training set, for initialization of cuda_leaf_num_data_ and
+   * cuda_leaf_data_end_ */
   data_size_t* cuda_num_data_;
-
 
   // CUDA memory, held by other object
 

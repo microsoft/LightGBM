@@ -28,53 +28,43 @@ __device__ bool IsZeroCUDA(double fval);
 class CUDATree : public Tree {
  public:
   /*!
-  * \brief Constructor
-  * \param max_leaves The number of max leaves
-  * \param track_branch_features Whether to keep track of ancestors of leaf nodes
-  * \param is_linear Whether the tree has linear models at each leaf
-  */
+   * \brief Constructor
+   * \param max_leaves The number of max leaves
+   * \param track_branch_features Whether to keep track of ancestors of leaf nodes
+   * \param is_linear Whether the tree has linear models at each leaf
+   */
   explicit CUDATree(int max_leaves, bool track_branch_features, bool is_linear,
-    const int gpu_device_id, const bool has_categorical_feature);
+                    const int gpu_device_id, const bool has_categorical_feature);
 
   explicit CUDATree(const Tree* host_tree);
 
   ~CUDATree() noexcept;
 
-  int Split(const int leaf_index,
-            const int real_feature_index,
-            const double real_threshold,
-            const MissingType missing_type,
-            const CUDASplitInfo* cuda_split_info);
+  int Split(const int leaf_index, const int real_feature_index, const double real_threshold,
+            const MissingType missing_type, const CUDASplitInfo* cuda_split_info);
 
-  int SplitCategorical(
-    const int leaf_index,
-    const int real_feature_index,
-    const MissingType missing_type,
-    const CUDASplitInfo* cuda_split_info,
-    uint32_t* cuda_bitset,
-    size_t cuda_bitset_len,
-    uint32_t* cuda_bitset_inner,
-    size_t cuda_bitset_inner_len);
+  int SplitCategorical(const int leaf_index, const int real_feature_index,
+                       const MissingType missing_type, const CUDASplitInfo* cuda_split_info,
+                       uint32_t* cuda_bitset, size_t cuda_bitset_len, uint32_t* cuda_bitset_inner,
+                       size_t cuda_bitset_inner_len);
 
   /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  void AddPredictionToScore(const Dataset* data,
-                            data_size_t num_data,
+   * \brief Adding prediction value of this tree model to scores
+   * \param data The dataset
+   * \param num_data Number of total data
+   * \param score Will add prediction to score
+   */
+  void AddPredictionToScore(const Dataset* data, data_size_t num_data,
                             double* score) const override;
 
   /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param used_data_indices Indices of used data
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  void AddPredictionToScore(const Dataset* data,
-                            const data_size_t* used_data_indices,
+   * \brief Adding prediction value of this tree model to scores
+   * \param data The dataset
+   * \param used_data_indices Indices of used data
+   * \param num_data Number of total data
+   * \param score Will add prediction to score
+   */
+  void AddPredictionToScore(const Dataset* data, const data_size_t* used_data_indices,
                             data_size_t num_data, double* score) const override;
 
   inline void AsConstantTree(double val, int count) override;
@@ -114,30 +104,23 @@ class CUDATree : public Tree {
 
   void InitCUDA();
 
-  void LaunchSplitKernel(const int leaf_index,
-                         const int real_feature_index,
-                         const double real_threshold,
-                         const MissingType missing_type,
+  void LaunchSplitKernel(const int leaf_index, const int real_feature_index,
+                         const double real_threshold, const MissingType missing_type,
                          const CUDASplitInfo* cuda_split_info);
 
-  void LaunchSplitCategoricalKernel(
-    const int leaf_index,
-    const int real_feature_index,
-    const MissingType missing_type,
-    const CUDASplitInfo* cuda_split_info,
-    size_t cuda_bitset_len,
-    size_t cuda_bitset_inner_len);
+  void LaunchSplitCategoricalKernel(const int leaf_index, const int real_feature_index,
+                                    const MissingType missing_type,
+                                    const CUDASplitInfo* cuda_split_info, size_t cuda_bitset_len,
+                                    size_t cuda_bitset_inner_len);
 
-  void LaunchAddPredictionToScoreKernel(const Dataset* data,
-                                        const data_size_t* used_data_indices,
+  void LaunchAddPredictionToScoreKernel(const Dataset* data, const data_size_t* used_data_indices,
                                         data_size_t num_data, double* score) const;
 
   void LaunchShrinkageKernel(const double rate);
 
   void LaunchAddBiasKernel(const double val);
 
-  void RecordBranchFeatures(const int left_leaf_index,
-                            const int right_leaf_index,
+  void RecordBranchFeatures(const int left_leaf_index, const int right_leaf_index,
                             const int real_feature_index);
 
   int* cuda_left_child_;

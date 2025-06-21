@@ -16,7 +16,8 @@ namespace LightGBM {
 
 class DatasetLoader {
  public:
-  LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun, int num_class, const char* filename);
+  LIGHTGBM_EXPORT DatasetLoader(const Config& io_config, const PredictFunction& predict_fun,
+                                int num_class, const char* filename);
 
   LIGHTGBM_EXPORT ~DatasetLoader();
 
@@ -26,14 +27,14 @@ class DatasetLoader {
     return LoadFromFile(filename, 0, 1);
   }
 
-  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename, const Dataset* train_data);
+  LIGHTGBM_EXPORT Dataset* LoadFromFileAlignWithOtherDataset(const char* filename,
+                                                             const Dataset* train_data);
 
-  LIGHTGBM_EXPORT Dataset* LoadFromSerializedReference(const char* buffer, size_t buffer_size, data_size_t num_data, int32_t num_classes);
+  LIGHTGBM_EXPORT Dataset* LoadFromSerializedReference(const char* buffer, size_t buffer_size,
+                                                       data_size_t num_data, int32_t num_classes);
 
-  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values,
-                                                   int** sample_indices,
-                                                   int num_col,
-                                                   const int* num_per_col,
+  LIGHTGBM_EXPORT Dataset* ConstructFromSampleData(double** sample_values, int** sample_indices,
+                                                   int num_col, const int* num_per_col,
                                                    size_t total_sample_size,
                                                    data_size_t num_local_data,
                                                    int64_t num_dist_data);
@@ -43,31 +44,43 @@ class DatasetLoader {
   /*! \brief Disable copy */
   DatasetLoader(const DatasetLoader&) = delete;
 
-  static std::vector<std::vector<double>> GetForcedBins(std::string forced_bins_path, int num_total_features,
-                                                        const std::unordered_set<int>& categorical_features);
+  static std::vector<std::vector<double>> GetForcedBins(
+      std::string forced_bins_path, int num_total_features,
+      const std::unordered_set<int>& categorical_features);
 
  private:
   void LoadHeaderFromMemory(Dataset* dataset, const char* buffer);
 
-  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  Dataset* LoadFromBinFile(const char* data_filename, const char* bin_filename, int rank,
+                           int num_machines, int* num_global_data,
+                           std::vector<data_size_t>* used_data_indices);
 
   void SetHeader(const char* filename);
 
   void CheckDataset(const Dataset* dataset, bool is_load_from_binary);
 
-  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> LoadTextDataToMemory(const char* filename, const Metadata& metadata,
+                                                int rank, int num_machines, int* num_global_data,
+                                                std::vector<data_size_t>* used_data_indices);
 
   std::vector<std::string> SampleTextDataFromMemory(const std::vector<std::string>& data);
 
-  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata, int rank, int num_machines, int* num_global_data, std::vector<data_size_t>* used_data_indices);
+  std::vector<std::string> SampleTextDataFromFile(const char* filename, const Metadata& metadata,
+                                                  int rank, int num_machines, int* num_global_data,
+                                                  std::vector<data_size_t>* used_data_indices);
 
-  void ConstructBinMappersFromTextData(int rank, int num_machines, const std::vector<std::string>& sample_data, const Parser* parser, Dataset* dataset);
+  void ConstructBinMappersFromTextData(int rank, int num_machines,
+                                       const std::vector<std::string>& sample_data,
+                                       const Parser* parser, Dataset* dataset);
 
   /*! \brief Extract local features from memory */
-  void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset);
+  void ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser,
+                                 Dataset* dataset);
 
   /*! \brief Extract local features from file */
-  void ExtractFeaturesFromFile(const char* filename, const Parser* parser, const std::vector<data_size_t>& used_data_indices, Dataset* dataset);
+  void ExtractFeaturesFromFile(const char* filename, const Parser* parser,
+                               const std::vector<data_size_t>& used_data_indices,
+                               Dataset* dataset);
 
   /*! \brief Check can load from binary file */
   std::string CheckCanLoadFromBin(const char* filename);
@@ -80,7 +93,9 @@ class DatasetLoader {
    * \param max_bin max_bin from Config
    * \param max_bin_by_feature max_bin_by_feature from Config
    */
-  void CheckCategoricalFeatureNumBin(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers, const int max_bin, const std::vector<int>& max_bin_by_feature) const;
+  void CheckCategoricalFeatureNumBin(const std::vector<std::unique_ptr<BinMapper>>& bin_mappers,
+                                     const int max_bin,
+                                     const std::vector<int>& max_bin_by_feature) const;
 
   const Config& config_;
   /*! \brief Random generator*/

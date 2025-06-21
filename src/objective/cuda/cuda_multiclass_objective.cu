@@ -28,9 +28,9 @@ __device__ void SoftmaxCUDA(double* softmax_buffer, int len) {
 
 template <bool USE_WEIGHT>
 __global__ void GetGradientsKernel_MulticlassSoftmax(
-  const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights,
-  const double factor, const int num_class, const data_size_t num_data,
-  double* cuda_softmax_buffer, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
+    const double* cuda_scores, const label_t* cuda_labels, const label_t* cuda_weights,
+    const double factor, const int num_class, const data_size_t num_data,
+    double* cuda_softmax_buffer, score_t* cuda_out_gradients, score_t* cuda_out_hessians) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     const data_size_t offset = data_index * num_class;
@@ -66,21 +66,28 @@ __global__ void GetGradientsKernel_MulticlassSoftmax(
   }
 }
 
-void CUDAMulticlassSoftmax::LaunchGetGradientsKernel(const double* scores, score_t* gradients, score_t* hessians) const {
-  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
+void CUDAMulticlassSoftmax::LaunchGetGradientsKernel(const double* scores, score_t* gradients,
+                                                     score_t* hessians) const {
+  const int num_blocks =
+      (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
   if (cuda_weights_ == nullptr) {
-    GetGradientsKernel_MulticlassSoftmax<false><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
-      scores, cuda_labels_, cuda_weights_, factor_, num_class_, num_data_,
-      cuda_softmax_buffer_.RawData(), gradients, hessians);
+    GetGradientsKernel_MulticlassSoftmax<false>
+        <<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
+            scores, cuda_labels_, cuda_weights_, factor_, num_class_, num_data_,
+            cuda_softmax_buffer_.RawData(), gradients, hessians);
   } else {
-    GetGradientsKernel_MulticlassSoftmax<true><<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
-      scores, cuda_labels_, cuda_weights_, factor_, num_class_, num_data_,
-      cuda_softmax_buffer_.RawData(), gradients, hessians);
+    GetGradientsKernel_MulticlassSoftmax<true>
+        <<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
+            scores, cuda_labels_, cuda_weights_, factor_, num_class_, num_data_,
+            cuda_softmax_buffer_.RawData(), gradients, hessians);
   }
 }
 
-__global__ void ConvertOutputCUDAKernel_MulticlassSoftmax(
-  const int num_class, const data_size_t num_data, const double* input, double* cuda_softmax_buffer, double* output) {
+__global__ void ConvertOutputCUDAKernel_MulticlassSoftmax(const int num_class,
+                                                          const data_size_t num_data,
+                                                          const double* input,
+                                                          double* cuda_softmax_buffer,
+                                                          double* output) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     const data_size_t offset = data_index * num_class;
@@ -95,11 +102,13 @@ __global__ void ConvertOutputCUDAKernel_MulticlassSoftmax(
   }
 }
 
-const double* CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(
-  const data_size_t num_data, const double* input, double* output) const {
-  const int num_blocks = (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
+const double* CUDAMulticlassSoftmax::LaunchConvertOutputCUDAKernel(const data_size_t num_data,
+                                                                   const double* input,
+                                                                   double* output) const {
+  const int num_blocks =
+      (num_data_ + GET_GRADIENTS_BLOCK_SIZE_MULTICLASS - 1) / GET_GRADIENTS_BLOCK_SIZE_MULTICLASS;
   ConvertOutputCUDAKernel_MulticlassSoftmax<<<num_blocks, GET_GRADIENTS_BLOCK_SIZE_MULTICLASS>>>(
-    num_class_, num_data, input, cuda_softmax_buffer_.RawData(), output);
+      num_class_, num_data, input, cuda_softmax_buffer_.RawData(), output);
   return output;
 }
 

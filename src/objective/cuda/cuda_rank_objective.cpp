@@ -13,24 +13,29 @@
 
 namespace LightGBM {
 
-CUDALambdarankNDCG::CUDALambdarankNDCG(const Config& config): CUDALambdaRankObjectiveInterface<LambdarankNDCG>(config) {}
+CUDALambdarankNDCG::CUDALambdarankNDCG(const Config& config)
+    : CUDALambdaRankObjectiveInterface<LambdarankNDCG>(config) {}
 
-CUDALambdarankNDCG::CUDALambdarankNDCG(const std::vector<std::string>& strs): CUDALambdaRankObjectiveInterface<LambdarankNDCG>(strs) {}
+CUDALambdarankNDCG::CUDALambdarankNDCG(const std::vector<std::string>& strs)
+    : CUDALambdaRankObjectiveInterface<LambdarankNDCG>(strs) {}
 
 CUDALambdarankNDCG::~CUDALambdarankNDCG() {}
 
 void CUDALambdarankNDCG::Init(const Metadata& metadata, data_size_t num_data) {
   CUDALambdaRankObjectiveInterface<LambdarankNDCG>::Init(metadata, num_data);
   cuda_inverse_max_dcgs_.Resize(this->inverse_max_dcgs_.size());
-  CopyFromHostToCUDADevice(cuda_inverse_max_dcgs_.RawData(), this->inverse_max_dcgs_.data(), this->inverse_max_dcgs_.size(), __FILE__, __LINE__);
+  CopyFromHostToCUDADevice(cuda_inverse_max_dcgs_.RawData(), this->inverse_max_dcgs_.data(),
+                           this->inverse_max_dcgs_.size(), __FILE__, __LINE__);
   cuda_label_gain_.Resize(this->label_gain_.size());
-  CopyFromHostToCUDADevice(cuda_label_gain_.RawData(), this->label_gain_.data(), this->label_gain_.size(), __FILE__, __LINE__);
+  CopyFromHostToCUDADevice(cuda_label_gain_.RawData(), this->label_gain_.data(),
+                           this->label_gain_.size(), __FILE__, __LINE__);
 }
 
+CUDARankXENDCG::CUDARankXENDCG(const Config& config)
+    : CUDALambdaRankObjectiveInterface<RankXENDCG>(config) {}
 
-CUDARankXENDCG::CUDARankXENDCG(const Config& config): CUDALambdaRankObjectiveInterface<RankXENDCG>(config) {}
-
-CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs): CUDALambdaRankObjectiveInterface<RankXENDCG>(strs) {}
+CUDARankXENDCG::CUDARankXENDCG(const std::vector<std::string>& strs)
+    : CUDALambdaRankObjectiveInterface<RankXENDCG>(strs) {}
 
 CUDARankXENDCG::~CUDARankXENDCG() {}
 
@@ -49,7 +54,7 @@ void CUDARankXENDCG::Init(const Metadata& metadata, data_size_t num_data) {
 void CUDARankXENDCG::GenerateItemRands() const {
   const int num_threads = OMP_NUM_THREADS();
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads)
+#pragma omp parallel for schedule(static) num_threads(num_threads)
   for (data_size_t i = 0; i < num_queries_; ++i) {
     OMP_LOOP_EX_BEGIN();
     const data_size_t start = query_boundaries_[i];
