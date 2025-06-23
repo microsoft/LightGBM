@@ -102,11 +102,10 @@ jobs:
             task: r-package
             compiler: MSVC
             toolchain: MSVC
-            r_version: 4.3
+            r_version: 3.6
             build_type: cmake
             container: null
-          # Visual Studio 2025
-          - os: windows-2025
+          - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
