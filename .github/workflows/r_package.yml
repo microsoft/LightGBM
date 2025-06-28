@@ -97,15 +97,14 @@ jobs:
             r_version: 4.3
             build_type: cmake
             container: null
-          # Visual Studio 2019
-          - os: windows-2019
+          # Visual Studio 2022
+          - os: windows-2022
             task: r-package
             compiler: MSVC
             toolchain: MSVC
             r_version: 3.6
             build_type: cmake
             container: null
-          # Visual Studio 2022
           - os: windows-2022
             task: r-package
             compiler: MSVC
