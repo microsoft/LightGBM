@@ -21,6 +21,18 @@ NULL
   return(c("label", "weight", "init_score", "group"))
 }
 
+# [description] A more robust version of identical() for checking lgb.Dataset equivalence
+# [return] A single boolean.
+.datasets_are_equal <- function(ds1, ds2) {
+  if (!.is_Dataset(ds1) || !.is_Dataset(ds2)) {
+    return(FALSE)
+  }
+  return(identical(
+    ds1$.__enclos_env__$private$handle
+    , ds2$.__enclos_env__$private$handle
+  ))
+}
+
 #' @importFrom methods is
 #' @importFrom R6 R6Class
 #' @importFrom utils modifyList
@@ -647,7 +659,12 @@ Dataset <- R6::R6Class(
     set_reference = function(reference) {
 
       # setting reference to this same Dataset object doesn't require any changes
-      if (identical(private$reference, reference)) {
+      if (.datasets_are_equal(private$reference, reference)) {
+        return(invisible(self))
+      }
+
+      # The new reference and the existing object may be slices of a parent dataset
+      if (.datasets_are_equal(private$reference, reference$.__enclos_env__$private$reference)) {
         return(invisible(self))
       }
 
