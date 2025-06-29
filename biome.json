@@ -1,6 +1,6 @@
 {
     "files": {
-        "ignore": [".mypy_cache/"]
+        "ignore": [".mypy_cache/", ".pixi/"]
     },
     "formatter": {
         "enabled": true,

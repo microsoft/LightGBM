@@ -463,3 +463,7 @@ dask-worker-space/
 *.pub
 *.rdp
 *_rsa
+
+# pixi environments
+.pixi
+*.egg-info
