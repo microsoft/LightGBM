@@ -13,40 +13,38 @@
 namespace LightGBM {
 
 /*!
-* \brief A wrapper for random generator
-*/
+ * \brief A wrapper for random generator
+ */
 class CUDARandom {
  public:
   /*!
-  * \brief Set specific seed
-  */
-  __device__ void SetSeed(int seed) {
-    x = seed;
-  }
+   * \brief Set specific seed
+   */
+  __device__ void SetSeed(int seed) { x = seed; }
   /*!
-  * \brief Generate random integer, int16 range. [0, 65536]
-  * \param lower_bound lower bound
-  * \param upper_bound upper bound
-  * \return The random integer between [lower_bound, upper_bound)
-  */
+   * \brief Generate random integer, int16 range. [0, 65536]
+   * \param lower_bound lower bound
+   * \param upper_bound upper bound
+   * \return The random integer between [lower_bound, upper_bound)
+   */
   __device__ inline int NextShort(int lower_bound, int upper_bound) {
     return (RandInt16()) % (upper_bound - lower_bound) + lower_bound;
   }
 
   /*!
-  * \brief Generate random integer, int32 range
-  * \param lower_bound lower bound
-  * \param upper_bound upper bound
-  * \return The random integer between [lower_bound, upper_bound)
-  */
+   * \brief Generate random integer, int32 range
+   * \param lower_bound lower bound
+   * \param upper_bound upper bound
+   * \return The random integer between [lower_bound, upper_bound)
+   */
   __device__ inline int NextInt(int lower_bound, int upper_bound) {
     return (RandInt32()) % (upper_bound - lower_bound) + lower_bound;
   }
 
   /*!
-  * \brief Generate random float data
-  * \return The random float between [0.0, 1.0)
-  */
+   * \brief Generate random float data
+   * \return The random float between [0.0, 1.0)
+   */
   __device__ inline float NextFloat() {
     // get random float in [0,1)
     return static_cast<float>(RandInt16()) / (32768.0f);
@@ -65,7 +63,6 @@ class CUDARandom {
 
   unsigned int x = 123456789;
 };
-
 
 }  // namespace LightGBM
 

@@ -75,4 +75,4 @@ struct VirtualFileReader {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_FILE_IO_H_
+#endif  // LightGBM_UTILS_FILE_IO_H_

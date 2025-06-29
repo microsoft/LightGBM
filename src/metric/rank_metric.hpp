@@ -16,7 +16,7 @@
 
 namespace LightGBM {
 
-class NDCGMetric:public Metric {
+class NDCGMetric : public Metric {
  public:
   explicit NDCGMetric(const Config& config) {
     // get eval position
@@ -28,8 +28,7 @@ class NDCGMetric:public Metric {
     DCGCalculator::Init(label_gain);
   }
 
-  ~NDCGMetric() {
-  }
+  ~NDCGMetric() {}
   void Init(const Metadata& metadata, data_size_t num_data) override {
     for (auto k : eval_at_) {
       name_.emplace_back(std::string("ndcg@") + std::to_string(k));
@@ -56,8 +55,8 @@ class NDCGMetric:public Metric {
       }
     }
     inverse_max_dcgs_.resize(num_queries_);
-    // cache the inverse max DCG for all queries, used to calculate NDCG
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+// cache the inverse max DCG for all queries, used to calculate NDCG
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (data_size_t i = 0; i < num_queries_; ++i) {
       inverse_max_dcgs_[i].resize(eval_at_.size(), 0.0f);
       DCGCalculator::CalMaxDCG(eval_at_, label_ + query_boundaries_[i],
@@ -75,13 +74,9 @@ class NDCGMetric:public Metric {
     }
   }
 
-  const std::vector<std::string>& GetName() const override {
-    return name_;
-  }
+  const std::vector<std::string>& GetName() const override { return name_; }
 
-  double factor_to_bigger_better() const override {
-    return 1.0f;
-  }
+  double factor_to_bigger_better() const override { return 1.0f; }
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction*) const override {
     int num_threads = OMP_NUM_THREADS();
@@ -92,7 +87,7 @@ class NDCGMetric:public Metric {
     }
     std::vector<double> tmp_dcg(eval_at_.size(), 0.0f);
     if (query_weights_ == nullptr) {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -112,7 +107,7 @@ class NDCGMetric:public Metric {
         }
       }
     } else {
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) firstprivate(tmp_dcg)
       for (data_size_t i = 0; i < num_queries_; ++i) {
         const int tid = omp_get_thread_num();
         // if all doc in this query are all negative, let its NDCG=1
@@ -166,4 +161,4 @@ class NDCGMetric:public Metric {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_METRIC_RANK_METRIC_HPP_
+#endif  // LightGBM_METRIC_RANK_METRIC_HPP_

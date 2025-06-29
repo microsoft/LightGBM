@@ -43,12 +43,11 @@ template <typename Mutex>
 class shared_lock {
   void locking_precondition(const char* emsg) {
     if (pm_ == nullptr) {
-      throw std::system_error(
-          std::make_error_code(std::errc::operation_not_permitted), emsg);
+      throw std::system_error(std::make_error_code(std::errc::operation_not_permitted), emsg);
     }
     if (owns_) {
-      throw std::system_error(
-          std::make_error_code(std::errc::resource_deadlock_would_occur), emsg);
+      throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur),
+                              emsg);
     }
   }
 
@@ -79,15 +78,13 @@ class shared_lock {
   }
 
   template <typename Clock, typename Duration>
-  shared_lock(const mutex_type& m,
-              const std::chrono::time_point<Clock, Duration>& abs_time) {
+  shared_lock(const mutex_type& m, const std::chrono::time_point<Clock, Duration>& abs_time) {
     pm_ = &m;
     owns_ = m.try_lock_shared_until(abs_time);
   }
 
   template <typename Rep, typename Period>
-  shared_lock(const mutex_type& m,
-              const std::chrono::duration<Rep, Period>& rel_time) {
+  shared_lock(const mutex_type& m, const std::chrono::duration<Rep, Period>& rel_time) {
     pm_ = &m;
     owns_ = m.try_lock_shared_for(rel_time);
   }
@@ -141,8 +138,7 @@ class shared_lock {
   }
 
   template <typename Clock, typename Duration>
-  bool try_lock_until(
-      const std::chrono::time_point<Clock, Duration>& abs_time) {
+  bool try_lock_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
     locking_precondition("shared_lock::try_lock_until");
     return (owns_ = pm_->try_lock_shared_until(abs_time));
   }
@@ -150,9 +146,8 @@ class shared_lock {
   void unlock() {
     assert(pm_ != nullptr);
     if (!owns_) {
-      throw std::system_error(
-          std::make_error_code(std::errc::operation_not_permitted),
-          "shared_lock::unlock");
+      throw std::system_error(std::make_error_code(std::errc::operation_not_permitted),
+                              "shared_lock::unlock");
     }
     pm_->unlock_shared();
     owns_ = false;
@@ -187,8 +182,7 @@ namespace std {
 
 /// std::swap() specialization for yamc::shared_lock<Mutex> type
 template <typename Mutex>
-void swap(yamc::shared_lock<Mutex>& lhs,
-          yamc::shared_lock<Mutex>& rhs) noexcept {
+void swap(yamc::shared_lock<Mutex>& lhs, yamc::shared_lock<Mutex>& rhs) noexcept {
   lhs.swap(rhs);
 }
 

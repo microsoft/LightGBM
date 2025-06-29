@@ -19,7 +19,7 @@ struct PredictionEarlyStopInstance {
   using FunctionType = std::function<bool(const double*, int)>;
 
   FunctionType callback_function;  // callback function itself
-  int          round_period;       // call callback_function every `runPeriod` iterations
+  int round_period;                // call callback_function every `runPeriod` iterations
 };
 
 struct PredictionEarlyStopConfig {
@@ -28,9 +28,9 @@ struct PredictionEarlyStopConfig {
 };
 
 /// Create an early stopping algorithm of type `type`, with given round_period and margin threshold
-LIGHTGBM_EXPORT PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(const std::string& type,
-                                                                              const PredictionEarlyStopConfig& config);
+LIGHTGBM_EXPORT PredictionEarlyStopInstance CreatePredictionEarlyStopInstance(
+    const std::string& type, const PredictionEarlyStopConfig& config);
 
-}   // namespace LightGBM
+}  // namespace LightGBM
 
 #endif  // LIGHTGBM_PREDICTION_EARLY_STOP_H_

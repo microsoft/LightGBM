@@ -30,16 +30,16 @@ class FeatureGroup {
   friend TrainingShareStates;
   friend MultiValBinWrapper;
   /*!
-  * \brief Constructor
-  * \param num_feature number of features of this group
-  * \param bin_mappers Bin mapper for features
-  * \param num_data Total number of data
-  * \param is_enable_sparse True if enable sparse feature
-  */
+   * \brief Constructor
+   * \param num_feature number of features of this group
+   * \param bin_mappers Bin mapper for features
+   * \param num_data Total number of data
+   * \param is_enable_sparse True if enable sparse feature
+   */
   FeatureGroup(int num_feature, int8_t is_multi_val,
-    std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data, int group_id) :
-    num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
+               std::vector<std::unique_ptr<BinMapper>>* bin_mappers, data_size_t num_data,
+               int group_id)
+      : num_feature_(num_feature), is_multi_val_(is_multi_val > 0), is_sparse_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), num_feature);
     auto& ref_bin_mappers = *bin_mappers;
     double sum_sparse_rate = 0.0f;
@@ -60,7 +60,7 @@ class FeatureGroup {
     // however, we should force to leave one bin, if dense multi val bin is the first bin
     // and its first feature has most freq bin > 0
     if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
-      bin_mappers_[0]->GetMostFreqBin() > 0) {
+        bin_mappers_[0]->GetMostFreqBin() > 0) {
       num_total_bin_ = 1;
     }
     bin_offsets_.emplace_back(num_total_bin_);
@@ -90,8 +90,8 @@ class FeatureGroup {
     CreateBinData(num_data, is_multi_val_, !is_sparse_, is_sparse_);
   }
 
-  FeatureGroup(std::vector<std::unique_ptr<BinMapper>>* bin_mappers,
-    data_size_t num_data) : num_feature_(1), is_multi_val_(false) {
+  FeatureGroup(std::vector<std::unique_ptr<BinMapper>>* bin_mappers, data_size_t num_data)
+      : num_feature_(1), is_multi_val_(false) {
     CHECK_EQ(static_cast<int>(bin_mappers->size()), 1);
     // use bin at zero to store default_bin
     num_total_bin_ = 1;
@@ -117,10 +117,8 @@ class FeatureGroup {
    * \param local_used_indices Local used indices, empty means using all data
    * \param group_id Id of group
    */
-  FeatureGroup(const void* memory,
-               data_size_t num_all_data,
-               const std::vector<data_size_t>& local_used_indices,
-               int group_id) {
+  FeatureGroup(const void* memory, data_size_t num_all_data,
+               const std::vector<data_size_t>& local_used_indices, int group_id) {
     // Load the definition schema first
     const char* memory_ptr = LoadDefinitionFromMemory(memory, group_id);
 
@@ -189,7 +187,7 @@ class FeatureGroup {
     // however, we should force to leave one bin, if dense multi val bin is the first bin
     // and its first feature has most freq bin > 0
     if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
-      bin_mappers_[0]->GetMostFreqBin() > 0) {
+        bin_mappers_[0]->GetMostFreqBin() > 0) {
       num_total_bin_ = 1;
     }
     bin_offsets_.emplace_back(num_total_bin_);
@@ -214,9 +212,11 @@ class FeatureGroup {
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(
+              Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         } else {
-          multi_bin_data_.emplace_back(Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(
+              Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         }
       }
     } else {
@@ -229,10 +229,10 @@ class FeatureGroup {
   }
 
   /*!
-  * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
-  * \param num_thread The number of external threads that will be calling the push APIs
-  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
-  */
+   * \brief Initialize for pushing in a streaming fashion.  By default, no action needed.
+   * \param num_thread The number of external threads that will be calling the push APIs
+   * \param omp_max_threads The maximum number of OpenMP threads to allocate for
+   */
   void InitStreaming(int32_t num_thread, int32_t omp_max_threads) {
     if (is_multi_val_) {
       for (int i = 0; i < num_feature_; ++i) {
@@ -276,21 +276,25 @@ class FeatureGroup {
     }
   }
 
-  inline void CopySubrow(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices) {
+  inline void CopySubrow(const FeatureGroup* full_feature, const data_size_t* used_indices,
+                         data_size_t num_used_indices) {
     if (!is_multi_val_) {
       bin_data_->CopySubrow(full_feature->bin_data_.get(), used_indices, num_used_indices);
     } else {
       for (int i = 0; i < num_feature_; ++i) {
-        multi_bin_data_[i]->CopySubrow(full_feature->multi_bin_data_[i].get(), used_indices, num_used_indices);
+        multi_bin_data_[i]->CopySubrow(full_feature->multi_bin_data_[i].get(), used_indices,
+                                       num_used_indices);
       }
     }
   }
 
-  inline void CopySubrowByCol(const FeatureGroup* full_feature, const data_size_t* used_indices, data_size_t num_used_indices, int fidx) {
+  inline void CopySubrowByCol(const FeatureGroup* full_feature, const data_size_t* used_indices,
+                              data_size_t num_used_indices, int fidx) {
     if (!is_multi_val_) {
       bin_data_->CopySubrow(full_feature->bin_data_.get(), used_indices, num_used_indices);
     } else {
-      multi_bin_data_[fidx]->CopySubrow(full_feature->multi_bin_data_[fidx].get(), used_indices, num_used_indices);
+      multi_bin_data_[fidx]->CopySubrow(full_feature->multi_bin_data_[fidx].get(), used_indices,
+                                        num_used_indices);
     }
   }
 
@@ -318,7 +322,7 @@ class FeatureGroup {
     // however, we should force to leave one bin, if dense multi val bin is the first bin
     // and its first feature has most freq bin > 0
     if (group_id == 0 && num_feature_ > 0 && is_dense_multi_val_ &&
-      bin_mappers_[0]->GetMostFreqBin() > 0) {
+        bin_mappers_[0]->GetMostFreqBin() > 0) {
       num_total_bin_ = 1;
     }
     bin_offsets_.emplace_back(num_total_bin_);
@@ -354,8 +358,7 @@ class FeatureGroup {
       int addi = bin_mappers_[sub_feature]->GetMostFreqBin() == 0 ? 0 : 1;
       uint32_t min_bin = 1;
       uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
-      return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin,
-                                                       most_freq_bin);
+      return multi_bin_data_[sub_feature]->GetIterator(min_bin, max_bin, most_freq_bin);
     }
   }
 
@@ -384,9 +387,7 @@ class FeatureGroup {
     return bin_data_->GetIterator(min_bin, max_bin, most_freq_bin);
   }
 
-  inline size_t FeatureGroupSizesInByte() {
-    return bin_data_->SizesInByte();
-  }
+  inline size_t FeatureGroupSizesInByte() { return bin_data_->SizesInByte(); }
 
   inline void* FeatureGroupData() {
     if (is_multi_val_) {
@@ -395,11 +396,9 @@ class FeatureGroup {
     return bin_data_->get_data();
   }
 
-  inline data_size_t Split(int sub_feature, const uint32_t* threshold,
-                           int num_threshold, bool default_left,
-                           const data_size_t* data_indices, data_size_t cnt,
-                           data_size_t* lte_indices,
-                           data_size_t* gt_indices) const {
+  inline data_size_t Split(int sub_feature, const uint32_t* threshold, int num_threshold,
+                           bool default_left, const data_size_t* data_indices, data_size_t cnt,
+                           data_size_t* lte_indices, data_size_t* gt_indices) const {
     uint32_t default_bin = bin_mappers_[sub_feature]->GetDefaultBin();
     uint32_t most_freq_bin = bin_mappers_[sub_feature]->GetMostFreqBin();
     if (!is_multi_val_) {
@@ -408,23 +407,21 @@ class FeatureGroup {
       if (bin_mappers_[sub_feature]->bin_type() == BinType::NumericalBin) {
         auto missing_type = bin_mappers_[sub_feature]->missing_type();
         if (num_feature_ == 1) {
-          return bin_data_->Split(max_bin, default_bin, most_freq_bin,
-                                  missing_type, default_left, *threshold,
-                                  data_indices, cnt, lte_indices, gt_indices);
+          return bin_data_->Split(max_bin, default_bin, most_freq_bin, missing_type, default_left,
+                                  *threshold, data_indices, cnt, lte_indices, gt_indices);
         } else {
-          return bin_data_->Split(min_bin, max_bin, default_bin, most_freq_bin,
-                                  missing_type, default_left, *threshold,
-                                  data_indices, cnt, lte_indices, gt_indices);
+          return bin_data_->Split(min_bin, max_bin, default_bin, most_freq_bin, missing_type,
+                                  default_left, *threshold, data_indices, cnt, lte_indices,
+                                  gt_indices);
         }
       } else {
         if (num_feature_ == 1) {
-          return bin_data_->SplitCategorical(max_bin, most_freq_bin, threshold,
-                                             num_threshold, data_indices, cnt,
-                                             lte_indices, gt_indices);
+          return bin_data_->SplitCategorical(max_bin, most_freq_bin, threshold, num_threshold,
+                                             data_indices, cnt, lte_indices, gt_indices);
         } else {
-          return bin_data_->SplitCategorical(
-              min_bin, max_bin, most_freq_bin, threshold, num_threshold,
-              data_indices, cnt, lte_indices, gt_indices);
+          return bin_data_->SplitCategorical(min_bin, max_bin, most_freq_bin, threshold,
+                                             num_threshold, data_indices, cnt, lte_indices,
+                                             gt_indices);
         }
       }
     } else {
@@ -432,13 +429,13 @@ class FeatureGroup {
       uint32_t max_bin = bin_mappers_[sub_feature]->num_bin() - 1 + addi;
       if (bin_mappers_[sub_feature]->bin_type() == BinType::NumericalBin) {
         auto missing_type = bin_mappers_[sub_feature]->missing_type();
-        return multi_bin_data_[sub_feature]->Split(
-            max_bin, default_bin, most_freq_bin, missing_type, default_left,
-            *threshold, data_indices, cnt, lte_indices, gt_indices);
+        return multi_bin_data_[sub_feature]->Split(max_bin, default_bin, most_freq_bin,
+                                                   missing_type, default_left, *threshold,
+                                                   data_indices, cnt, lte_indices, gt_indices);
       } else {
-        return multi_bin_data_[sub_feature]->SplitCategorical(
-            max_bin, most_freq_bin, threshold, num_threshold, data_indices, cnt,
-            lte_indices, gt_indices);
+        return multi_bin_data_[sub_feature]->SplitCategorical(max_bin, most_freq_bin, threshold,
+                                                              num_threshold, data_indices, cnt,
+                                                              lte_indices, gt_indices);
       }
     }
   }
@@ -504,8 +501,7 @@ class FeatureGroup {
   FeatureGroup& operator=(const FeatureGroup&) = delete;
 
   /*! \brief Deep copy */
-  FeatureGroup(const FeatureGroup& other, bool should_handle_dense_mv,
-    int group_id) {
+  FeatureGroup(const FeatureGroup& other, bool should_handle_dense_mv, int group_id) {
     num_feature_ = other.num_feature_;
     is_multi_val_ = other.is_multi_val_;
     is_dense_multi_val_ = other.is_dense_multi_val_;
@@ -538,24 +534,21 @@ class FeatureGroup {
     }
   }
 
-  const void* GetColWiseData(const int sub_feature_index,
-    uint8_t* bit_type,
-    bool* is_sparse,
-    std::vector<BinIterator*>* bin_iterator,
-    const int num_threads) const {
+  const void* GetColWiseData(const int sub_feature_index, uint8_t* bit_type, bool* is_sparse,
+                             std::vector<BinIterator*>* bin_iterator,
+                             const int num_threads) const {
     if (sub_feature_index >= 0) {
       CHECK(is_multi_val_);
-      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
+      return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator,
+                                                                num_threads);
     } else {
       CHECK(!is_multi_val_);
       return bin_data_->GetColWiseData(bit_type, is_sparse, bin_iterator, num_threads);
     }
   }
 
-  const void* GetColWiseData(const int sub_feature_index,
-    uint8_t* bit_type,
-    bool* is_sparse,
-    BinIterator** bin_iterator) const {
+  const void* GetColWiseData(const int sub_feature_index, uint8_t* bit_type, bool* is_sparse,
+                             BinIterator** bin_iterator) const {
     if (sub_feature_index >= 0) {
       CHECK(is_multi_val_);
       return multi_bin_data_[sub_feature_index]->GetColWiseData(bit_type, is_sparse, bin_iterator);
@@ -589,8 +582,8 @@ class FeatureGroup {
       for (int i = 0; i < num_feature_; ++i) {
         int addi = bin_mappers_[i]->GetMostFreqBin() == 0 ? 0 : 1;
         if (bin_mappers_[i]->sparse_rate() >= kSparseThreshold) {
-          multi_bin_data_.emplace_back(Bin::CreateSparseBin(
-              num_data, bin_mappers_[i]->num_bin() + addi));
+          multi_bin_data_.emplace_back(
+              Bin::CreateSparseBin(num_data, bin_mappers_[i]->num_bin() + addi));
         } else {
           multi_bin_data_.emplace_back(
               Bin::CreateDenseBin(num_data, bin_mappers_[i]->num_bin() + addi));
@@ -598,9 +591,8 @@ class FeatureGroup {
       }
       is_multi_val_ = true;
     } else {
-      if (force_sparse ||
-          (!force_dense && num_feature_ == 1 &&
-           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
+      if (force_sparse || (!force_dense && num_feature_ == 1 &&
+                           bin_mappers_[0]->sparse_rate() >= kSparseThreshold)) {
         is_sparse_ = true;
         bin_data_.reset(Bin::CreateSparseBin(num_data, num_total_bin_));
       } else {

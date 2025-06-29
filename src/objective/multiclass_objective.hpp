@@ -19,15 +19,16 @@
 
 namespace LightGBM {
 /*!
-* \brief Objective function for multiclass classification, use softmax as objective functions
-*/
-class MulticlassSoftmax: public ObjectiveFunction {
+ * \brief Objective function for multiclass classification, use softmax as objective functions
+ */
+class MulticlassSoftmax : public ObjectiveFunction {
  public:
   explicit MulticlassSoftmax(const Config& config) {
     num_class_ = config.num_class;
     // This factor is to rescale the redundant form of K-classification, to the non-redundant form.
-    // In the traditional settings of K-classification, there is one redundant class, whose output is set to 0 (like the class 0 in binary classification).
-    // This is from the Friedman GBDT paper.
+    // In the traditional settings of K-classification, there is one redundant class, whose output
+    // is set to 0 (like the class 0 in binary classification). This is from the Friedman GBDT
+    // paper.
     factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
@@ -47,8 +48,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     factor_ = static_cast<double>(num_class_) / (num_class_ - 1.0f);
   }
 
-  ~MulticlassSoftmax() {
-  }
+  ~MulticlassSoftmax() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -86,7 +86,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
   void GetGradients(const double* score, score_t* gradients, score_t* hessians) const override {
     if (weights_ == nullptr) {
       std::vector<double> rec;
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -107,7 +107,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
       }
     } else {
       std::vector<double> rec;
-      #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static) private(rec)
       for (data_size_t i = 0; i < num_data_; ++i) {
         rec.resize(num_class_);
         for (int k = 0; k < num_class_; ++k) {
@@ -123,7 +123,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
           } else {
             gradients[idx] = static_cast<score_t>(p * weights_[i]);
           }
-          hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p))* weights_[i]);
+          hessians[idx] = static_cast<score_t>((factor_ * p * (1.0f - p)) * weights_[i]);
         }
       }
     }
@@ -133,9 +133,7 @@ class MulticlassSoftmax: public ObjectiveFunction {
     Common::Softmax(input, output, num_class_);
   }
 
-  const char* GetName() const override {
-    return "multiclass";
-  }
+  const char* GetName() const override { return "multiclass"; }
 
   std::string ToString() const override {
     std::stringstream str_buf;
@@ -157,8 +155,8 @@ class MulticlassSoftmax: public ObjectiveFunction {
   }
 
   bool ClassNeedTrain(int class_id) const override {
-    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon
-        || std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
+    if (std::fabs(class_init_probs_[class_id]) <= kEpsilon ||
+        std::fabs(class_init_probs_[class_id]) >= 1.0 - kEpsilon) {
       return false;
     } else {
       return true;
@@ -181,15 +179,16 @@ class MulticlassSoftmax: public ObjectiveFunction {
 };
 
 /*!
-* \brief Objective function for multiclass classification, use one-vs-all binary objective function
-*/
-class MulticlassOVA: public ObjectiveFunction {
+ * \brief Objective function for multiclass classification, use one-vs-all binary objective
+ * function
+ */
+class MulticlassOVA : public ObjectiveFunction {
  public:
   explicit MulticlassOVA(const Config& config) {
     num_class_ = config.num_class;
     for (int i = 0; i < num_class_; ++i) {
       binary_loss_.emplace_back(
-        new BinaryLogloss(config, [i](label_t label) { return static_cast<int>(label) == i; }));
+          new BinaryLogloss(config, [i](label_t label) { return static_cast<int>(label) == i; }));
     }
     sigmoid_ = config.sigmoid;
   }
@@ -215,8 +214,7 @@ class MulticlassOVA: public ObjectiveFunction {
     }
   }
 
-  ~MulticlassOVA() {
-  }
+  ~MulticlassOVA() {}
 
   void Init(const Metadata& metadata, data_size_t num_data) override {
     num_data_ = num_data;
@@ -232,9 +230,7 @@ class MulticlassOVA: public ObjectiveFunction {
     }
   }
 
-  const char* GetName() const override {
-    return "multiclassova";
-  }
+  const char* GetName() const override { return "multiclassova"; }
 
   void ConvertOutput(const double* input, double* output) const override {
     for (int i = 0; i < num_class_; ++i) {
@@ -276,4 +272,4 @@ class MulticlassOVA: public ObjectiveFunction {
 };
 
 }  // namespace LightGBM
-#endif   // LightGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_
+#endif  // LightGBM_OBJECTIVE_MULTICLASS_OBJECTIVE_HPP_

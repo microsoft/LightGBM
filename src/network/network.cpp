@@ -20,12 +20,11 @@ THREAD_LOCAL std::unique_ptr<Linkers> Network::linkers_;
 THREAD_LOCAL BruckMap Network::bruck_map_;
 THREAD_LOCAL RecursiveHalvingMap Network::recursive_halving_map_;
 THREAD_LOCAL std::vector<comm_size_t> Network::block_start_;
-THREAD_LOCAL std::vector<comm_size_t>  Network::block_len_;
+THREAD_LOCAL std::vector<comm_size_t> Network::block_len_;
 THREAD_LOCAL comm_size_t Network::buffer_size_ = 0;
 THREAD_LOCAL std::vector<char> Network::buffer_;
 THREAD_LOCAL ReduceScatterFunction Network::reduce_scatter_ext_fun_ = nullptr;
 THREAD_LOCAL AllgatherFunction Network::allgather_ext_fun_ = nullptr;
-
 
 void Network::Init(Config config) {
   if (config.num_machines > 1) {
@@ -42,8 +41,8 @@ void Network::Init(Config config) {
   }
 }
 
-void Network::Init(int num_machines, int rank,
-                   ReduceScatterFunction reduce_scatter_ext_fun, AllgatherFunction allgather_ext_fun) {
+void Network::Init(int num_machines, int rank, ReduceScatterFunction reduce_scatter_ext_fun,
+                   AllgatherFunction allgather_ext_fun) {
   if (num_machines > 1) {
     rank_ = rank;
     num_machines_ = num_machines;
@@ -65,7 +64,8 @@ void Network::Dispose() {
   allgather_ext_fun_ = nullptr;
 }
 
-void Network::Allreduce(char* input, comm_size_t input_size, int type_size, char* output, const ReduceFunction& reducer) {
+void Network::Allreduce(char* input, comm_size_t input_size, int type_size, char* output,
+                        const ReduceFunction& reducer) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initialize the network interface first");
   }
@@ -87,12 +87,14 @@ void Network::Allreduce(char* input, comm_size_t input_size, int type_size, char
   }
   block_len_[num_machines_ - 1] = input_size - block_start_[num_machines_ - 1];
   // do reduce scatter
-  ReduceScatter(input, input_size, type_size, block_start_.data(), block_len_.data(), output, input_size, reducer);
+  ReduceScatter(input, input_size, type_size, block_start_.data(), block_len_.data(), output,
+                input_size, reducer);
   // do all gather
   Allgather(output, block_start_.data(), block_len_.data(), output, input_size);
 }
 
-void Network::AllreduceByAllGather(char* input, comm_size_t input_size, int type_size, char* output, const ReduceFunction& reducer) {
+void Network::AllreduceByAllGather(char* input, comm_size_t input_size, int type_size,
+                                   char* output, const ReduceFunction& reducer) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initialize the network interface first");
   }
@@ -105,14 +107,15 @@ void Network::AllreduceByAllGather(char* input, comm_size_t input_size, int type
     block_len_[i] = input_size;
   }
   // need use buffer here, since size of "output" is smaller than size after all gather
-  if (input_size*num_machines_ > buffer_size_) {
-    buffer_size_ = input_size*num_machines_;
+  if (input_size * num_machines_ > buffer_size_) {
+    buffer_size_ = input_size * num_machines_;
     buffer_.resize(buffer_size_);
   }
 
   Allgather(input, block_start_.data(), block_len_.data(), buffer_.data(), all_size);
   for (int i = 1; i < num_machines_; ++i) {
-    reducer(buffer_.data() + block_start_[i], buffer_.data() + block_start_[0], type_size, input_size);
+    reducer(buffer_.data() + block_start_[i], buffer_.data() + block_start_[0], type_size,
+            input_size);
   }
   // copy back
   std::memcpy(output, buffer_.data(), input_size);
@@ -134,12 +137,14 @@ void Network::Allgather(char* input, comm_size_t send_size, char* output) {
   Allgather(input, block_start_.data(), block_len_.data(), output, send_size * num_machines_);
 }
 
-void Network::Allgather(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size) {
+void Network::Allgather(char* input, const comm_size_t* block_start, const comm_size_t* block_len,
+                        char* output, comm_size_t all_size) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initialize the network interface first");
   }
   if (allgather_ext_fun_ != nullptr) {
-    return allgather_ext_fun_(input, block_len[rank_], block_start, block_len, num_machines_, output, all_size);
+    return allgather_ext_fun_(input, block_len[rank_], block_start, block_len, num_machines_,
+                              output, all_size);
   }
   const comm_size_t kRingThreshold = 10 * 1024 * 1024;  // 10MB
   const int kRingNodeThreshold = 64;
@@ -153,7 +158,8 @@ void Network::Allgather(char* input, const comm_size_t* block_start, const comm_
   }
 }
 
-void Network::AllgatherBruck(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t all_size) {
+void Network::AllgatherBruck(char* input, const comm_size_t* block_start,
+                             const comm_size_t* block_len, char* output, comm_size_t all_size) {
   comm_size_t write_pos = 0;
   // use output as receive buffer
   std::memcpy(output, input, block_len[rank_]);
@@ -175,7 +181,8 @@ void Network::AllgatherBruck(char* input, const comm_size_t* block_start, const 
       need_recv_len += block_len[(rank_ + accumulated_block + j) % num_machines_];
     }
     // send and recv at same time
-    linkers_->SendRecv(out_rank, output, need_send_len, in_rank, output + write_pos, need_recv_len);
+    linkers_->SendRecv(out_rank, output, need_send_len, in_rank, output + write_pos,
+                       need_recv_len);
     write_pos += need_recv_len;
     accumulated_block += cur_block_size;
   }
@@ -185,7 +192,8 @@ void Network::AllgatherBruck(char* input, const comm_size_t* block_start, const 
   std::reverse<char*>(output + block_start[rank_], output + all_size);
 }
 
-void Network::AllgatherRecursiveDoubling(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t) {
+void Network::AllgatherRecursiveDoubling(char* input, const comm_size_t* block_start,
+                                         const comm_size_t* block_len, char* output, comm_size_t) {
   // use output as receive buffer
   std::memcpy(output + block_start[rank_], input, block_len[rank_]);
   for (int i = 0; i < bruck_map_.k; ++i) {
@@ -208,12 +216,13 @@ void Network::AllgatherRecursiveDoubling(char* input, const comm_size_t* block_s
       need_recv_len += block_len[(target_vrank + j)];
     }
     // send and recv at same time
-    linkers_->SendRecv(target, output + block_start[vrank], need_send_len,
-                       target, output + block_start[target_vrank], need_recv_len);
+    linkers_->SendRecv(target, output + block_start[vrank], need_send_len, target,
+                       output + block_start[target_vrank], need_recv_len);
   }
 }
 
-void Network::AllgatherRing(char* input, const comm_size_t* block_start, const comm_size_t* block_len, char* output, comm_size_t) {
+void Network::AllgatherRing(char* input, const comm_size_t* block_start,
+                            const comm_size_t* block_len, char* output, comm_size_t) {
   // use output as receive buffer
   std::memcpy(output + block_start[rank_], input, block_len[rank_]);
   int out_rank = (rank_ + 1) % num_machines_;
@@ -222,32 +231,36 @@ void Network::AllgatherRing(char* input, const comm_size_t* block_start, const c
   int in_block = in_rank;
   for (int i = 1; i < num_machines_; ++i) {
     // send and recv at same time
-    linkers_->SendRecv(out_rank, output + block_start[out_block], block_len[out_block],
-                       in_rank, output + block_start[in_block], block_len[in_block]);
+    linkers_->SendRecv(out_rank, output + block_start[out_block], block_len[out_block], in_rank,
+                       output + block_start[in_block], block_len[in_block]);
     out_block = (out_block - 1 + num_machines_) % num_machines_;
     in_block = (in_block - 1 + num_machines_) % num_machines_;
   }
 }
 
 void Network::ReduceScatter(char* input, comm_size_t input_size, int type_size,
-                            const comm_size_t* block_start, const comm_size_t* block_len, char* output,
-                            comm_size_t output_size, const ReduceFunction& reducer) {
+                            const comm_size_t* block_start, const comm_size_t* block_len,
+                            char* output, comm_size_t output_size, const ReduceFunction& reducer) {
   if (num_machines_ <= 1) {
     Log::Fatal("Please initialize the network interface first");
   }
   if (reduce_scatter_ext_fun_ != nullptr) {
-    return reduce_scatter_ext_fun_(input, input_size, type_size, block_start, block_len, num_machines_, output, output_size, reducer);
+    return reduce_scatter_ext_fun_(input, input_size, type_size, block_start, block_len,
+                                   num_machines_, output, output_size, reducer);
   }
   const comm_size_t kRingThreshold = 10 * 1024 * 1024;  // 10MB
   if (recursive_halving_map_.is_power_of_2 || input_size < kRingThreshold) {
-    ReduceScatterRecursiveHalving(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
+    ReduceScatterRecursiveHalving(input, input_size, type_size, block_start, block_len, output,
+                                  output_size, reducer);
   } else {
-    ReduceScatterRing(input, input_size, type_size, block_start, block_len, output, output_size, reducer);
+    ReduceScatterRing(input, input_size, type_size, block_start, block_len, output, output_size,
+                      reducer);
   }
 }
 
 void Network::ReduceScatterRecursiveHalving(char* input, comm_size_t input_size, int type_size,
-                                            const comm_size_t* block_start, const comm_size_t* block_len, char* output,
+                                            const comm_size_t* block_start,
+                                            const comm_size_t* block_len, char* output,
                                             comm_size_t, const ReduceFunction& reducer) {
   if (!recursive_halving_map_.is_power_of_2) {
     if (recursive_halving_map_.type == RecursiveHalvingNodeType::Other) {
@@ -278,7 +291,8 @@ void Network::ReduceScatterRecursiveHalving(char* input, comm_size_t input_size,
         need_recv_cnt += block_len[recv_block_start + j];
       }
       // send and recv at same time
-      linkers_->SendRecv(target, input + block_start[send_block_start], send_size, target, output, need_recv_cnt);
+      linkers_->SendRecv(target, input + block_start[send_block_start], send_size, target, output,
+                         need_recv_cnt);
       // reduce
       reducer(output, input + block_start[recv_block_start], type_size, need_recv_cnt);
     }
@@ -301,15 +315,15 @@ void Network::ReduceScatterRecursiveHalving(char* input, comm_size_t input_size,
 }
 
 void Network::ReduceScatterRing(char* input, comm_size_t, int type_size,
-                                const comm_size_t* block_start, const comm_size_t* block_len, char* output,
-                                comm_size_t, const ReduceFunction& reducer) {
+                                const comm_size_t* block_start, const comm_size_t* block_len,
+                                char* output, comm_size_t, const ReduceFunction& reducer) {
   const int out_rank = (rank_ + 1) % num_machines_;
   const int in_rank = (rank_ - 1 + num_machines_) % num_machines_;
   int out_block = in_rank;
   int in_block = (in_rank - 1 + num_machines_) % num_machines_;
   for (int i = 1; i < num_machines_; ++i) {
-    linkers_->SendRecv(out_rank, input + block_start[out_block], block_len[out_block],
-                       in_rank, output, block_len[in_block]);
+    linkers_->SendRecv(out_rank, input + block_start[out_block], block_len[out_block], in_rank,
+                       output, block_len[in_block]);
     reducer(output, input + block_start[in_block], type_size, block_len[in_block]);
     out_block = (out_block - 1 + num_machines_) % num_machines_;
     in_block = (in_block - 1 + num_machines_) % num_machines_;
@@ -317,12 +331,8 @@ void Network::ReduceScatterRing(char* input, comm_size_t, int type_size,
   std::memcpy(output, input + block_start[rank_], block_len[rank_]);
 }
 
-int Network::rank() {
-  return rank_;
-}
+int Network::rank() { return rank_; }
 
-int Network::num_machines() {
-  return num_machines_;
-}
+int Network::num_machines() { return num_machines_; }
 
 }  // namespace LightGBM

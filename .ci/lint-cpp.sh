@@ -4,7 +4,7 @@ set -e -E -u -o pipefail
 
 echo "running cpplint"
 cpplint \
-    --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length \
+    --filter=-build/c++11,-build/include_subdir,-build/header_guard,-whitespace/line_length,-readability/braces \
     --recursive ./src ./include ./R-package ./swig ./tests \
 || exit 1
 echo "done running cpplint"

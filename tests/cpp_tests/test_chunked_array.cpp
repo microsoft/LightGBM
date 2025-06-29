@@ -18,26 +18,22 @@ template <typename T>
 testing::AssertionResult are_vectors_equal(const std::vector<T> &a, const std::vector<T> &b) {
   if (a.size() != b.size()) {
     return testing::AssertionFailure()
-      << "Vectors differ in size: "
-      << a.size() << " != " << b.size();
+           << "Vectors differ in size: " << a.size() << " != " << b.size();
   }
 
   for (size_t i = 0; i < a.size(); ++i) {
     if (a[i] != b[i]) {
       return testing::AssertionFailure()
-        << "Vectors differ at least at position " << i << ": "
-        << a[i] << " != " << b[i];
+             << "Vectors differ at least at position " << i << ": " << a[i] << " != " << b[i];
     }
   }
 
   return testing::AssertionSuccess();
 }
 
-
 class ChunkedArrayTest : public testing::Test {
  protected:
-  void SetUp() override {
-  }
+  void SetUp() override {}
 
   void add_items_to_array(const std::vector<int> &vec, ChunkedArray<int> *ca) {
     for (auto v : vec) {
@@ -49,7 +45,8 @@ class ChunkedArrayTest : public testing::Test {
     Ensures that if coalesce_to() is called upon the ChunkedArray,
     it would yield the same contents as vec
   */
-  testing::AssertionResult coalesced_output_equals_vec(const ChunkedArray<int> &ca, const std::vector<int> &vec,
+  testing::AssertionResult coalesced_output_equals_vec(const ChunkedArray<int> &ca,
+                                                       const std::vector<int> &vec,
                                                        const bool all_addresses = false) {
     std::vector<int> out(vec.size());
     ca.coalesce_to(out.data(), all_addresses);
@@ -63,7 +60,6 @@ class ChunkedArrayTest : public testing::Test {
 
   ChunkedArray<int> ca_ = ChunkedArray<int>(CHUNK_SIZE);  //<! Re-used for many tests.
 };
-
 
 /*! ChunkedArray cannot be built from chunks of size 0. */
 TEST_F(ChunkedArrayTest, constructorWithChunkSize0Throws) {
@@ -88,7 +84,6 @@ TEST_F(ChunkedArrayTest, getChunkSizeIsConstant) {
     ca_.add(0);
   }
 }
-
 
 /*!
   get_add_count() should return the number of add calls,
@@ -186,9 +181,11 @@ TEST_F(ChunkedArrayTest, dataLayoutTestThroughGetitem) {
   add_items_to_array(REF_VEC, &ca_);
 
   for (size_t i = 0, chunk = 0, in_chunk_idx = 0; i < REF_VEC.size(); ++i) {
-    int value = ca_.getitem(chunk, in_chunk_idx, -1);  // -1 works as sentinel value (bad layout found)
+    int value =
+        ca_.getitem(chunk, in_chunk_idx, -1);  // -1 works as sentinel value (bad layout found)
 
-    EXPECT_EQ(value, REF_VEC[i]) << " for address (chunk,in_chunk_idx) = (" << chunk << "," << in_chunk_idx << ")";
+    EXPECT_EQ(value, REF_VEC[i]) << " for address (chunk,in_chunk_idx) = (" << chunk << ","
+                                 << in_chunk_idx << ")";
 
     if (++in_chunk_idx == ca_.get_chunk_size()) {
       in_chunk_idx = 0;
@@ -214,11 +211,14 @@ TEST_F(ChunkedArrayTest, dataLayoutTestThroughGetitem) {
 TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
   const size_t MAX_CHUNKS_SEARCH = 5;
   const size_t MAX_IN_CHUNK_SEARCH_IDX = 2 * CHUNK_SIZE;
-  // Number of trials for each new ChunkedArray configuration. Pass 100 times over the search space:
+  // Number of trials for each new ChunkedArray configuration. Pass 100 times over the search
+  // space:
   const size_t N_TRIALS = MAX_CHUNKS_SEARCH * MAX_IN_CHUNK_SEARCH_IDX * 100;
-  const int INVALID = -1;  // A negative value signaling the requested value lives in an invalid address.
+  const int INVALID =
+      -1;  // A negative value signaling the requested value lives in an invalid address.
   const int UNINITIALIZED = -99;  // A negative value to signal this was never updated.
-  std::vector<int> ref_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNINITIALIZED);  // Memorize latest inserted values.
+  std::vector<int> ref_values(MAX_CHUNKS_SEARCH * CHUNK_SIZE,
+                              UNINITIALIZED);  // Memorize latest inserted values.
 
   // Each outer loop iteration changes the test by adding +1 chunk. We start with 1 chunk only:
   for (size_t chunks = 1; chunks < MAX_CHUNKS_SEARCH; ++chunks) {
@@ -233,8 +233,7 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
       const bool valid_address = (trial_chunk < chunks) & (trial_in_chunk_idx < CHUNK_SIZE);
 
       // Insert item. If at a valid address, 0 is returned, otherwise, -1 is returned:
-      EXPECT_EQ(ca_.setitem(trial_chunk, trial_in_chunk_idx, trial_value),
-                valid_address ? 0 : -1);
+      EXPECT_EQ(ca_.setitem(trial_chunk, trial_in_chunk_idx, trial_value), valid_address ? 0 : -1);
       // If at valid address, check that the stored value is correct & remember it for the future:
       if (valid_address) {
         // Check the just-stored value with getitem():
@@ -245,10 +244,12 @@ TEST_F(ChunkedArrayTest, testDataLayoutWithAdvancedInsertionAPI) {
       }
     }
 
-    ca_.new_chunk();  // Just finished a round of trials. Now add a new chunk. Valid addresses will be expanded.
+    ca_.new_chunk();  // Just finished a round of trials. Now add a new chunk. Valid addresses will
+                      // be expanded.
   }
 
-  // Final check: ensure even with overrides, all valid insertions store the latest value at that address:
+  // Final check: ensure even with overrides, all valid insertions store the latest value at that
+  // address:
   std::vector<int> coalesced_out(MAX_CHUNKS_SEARCH * CHUNK_SIZE, UNINITIALIZED);
   ca_.coalesce_to(coalesced_out.data(), true);  // Export all valid addresses.
   for (size_t i = 0; i < ref_values.size(); ++i) {

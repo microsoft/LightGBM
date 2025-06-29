@@ -6,10 +6,12 @@
  * - desc and descl2 fields must be written in reStructuredText format;
  * - nested sections can be placed only at the bottom of parent's section;
  * - [no-automatically-extract]
- *       - do not automatically extract this parameter into a Config property with the same name in Config::GetMembersFromString(). Use if:
+ *       - do not automatically extract this parameter into a Config property with the same name in
+ * Config::GetMembersFromString(). Use if:
  *           - specialized extraction logic for this param exists in Config::GetMembersFromString()
  * - [no-save]
- *       - this param should not be saved into a model text representation via Config::SaveMembersToString(). Use if:
+ *       - this param should not be saved into a model text representation via
+ * Config::SaveMembersToString(). Use if:
  *           - param is only used by the CLI (especially the "predict" and "convert_model" tasks)
  *           - param is related to LightGBM writing files (e.g. "output_model", "save_binary")
  */
@@ -31,9 +33,7 @@
 namespace LightGBM {
 
 /*! \brief Types of tasks */
-enum TaskType {
-  kTrain, kPredict, kConvertModel, KRefitTree, kSaveBinary
-};
+enum TaskType { kTrain, kPredict, kConvertModel, KRefitTree, kSaveBinary };
 const int kDefaultNumLeaves = 31;
 
 struct Config {
@@ -44,63 +44,64 @@ struct Config {
   }
   std::string ToString() const;
   /*!
-  * \brief Get string value by specific name of key
-  * \param params Store the key and value for params
-  * \param name Name of key
-  * \param out Value will assign to out if key exists
-  * \return True if key exists
-  */
-  inline static bool GetString(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, std::string* out);
+   * \brief Get string value by specific name of key
+   * \param params Store the key and value for params
+   * \param name Name of key
+   * \param out Value will assign to out if key exists
+   * \return True if key exists
+   */
+  inline static bool GetString(const std::unordered_map<std::string, std::string>& params,
+                               const std::string& name, std::string* out);
 
   /*!
-  * \brief Get int value by specific name of key
-  * \param params Store the key and value for params
-  * \param name Name of key
-  * \param out Value will assign to out if key exists
-  * \return True if key exists
-  */
-  inline static bool GetInt(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, int* out);
+   * \brief Get int value by specific name of key
+   * \param params Store the key and value for params
+   * \param name Name of key
+   * \param out Value will assign to out if key exists
+   * \return True if key exists
+   */
+  inline static bool GetInt(const std::unordered_map<std::string, std::string>& params,
+                            const std::string& name, int* out);
 
   /*!
-  * \brief Get double value by specific name of key
-  * \param params Store the key and value for params
-  * \param name Name of key
-  * \param out Value will assign to out if key exists
-  * \return True if key exists
-  */
-  inline static bool GetDouble(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, double* out);
+   * \brief Get double value by specific name of key
+   * \param params Store the key and value for params
+   * \param name Name of key
+   * \param out Value will assign to out if key exists
+   * \return True if key exists
+   */
+  inline static bool GetDouble(const std::unordered_map<std::string, std::string>& params,
+                               const std::string& name, double* out);
 
   /*!
-  * \brief Get bool value by specific name of key
-  * \param params Store the key and value for params
-  * \param name Name of key
-  * \param out Value will assign to out if key exists
-  * \return True if key exists
-  */
-  inline static bool GetBool(
-    const std::unordered_map<std::string, std::string>& params,
-    const std::string& name, bool* out);
+   * \brief Get bool value by specific name of key
+   * \param params Store the key and value for params
+   * \param name Name of key
+   * \param out Value will assign to out if key exists
+   * \return True if key exists
+   */
+  inline static bool GetBool(const std::unordered_map<std::string, std::string>& params,
+                             const std::string& name, bool* out);
 
   /*!
-  * \brief Sort aliases by length and then alphabetically
-  * \param x Alias 1
-  * \param y Alias 2
-  * \return true if x has higher priority than y
-  */
+   * \brief Sort aliases by length and then alphabetically
+   * \param x Alias 1
+   * \param y Alias 2
+   * \return true if x has higher priority than y
+   */
   inline static bool SortAlias(const std::string& x, const std::string& y);
 
-  static void KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
-  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
-  static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
+  static void KeepFirstValues(
+      const std::unordered_map<std::string, std::vector<std::string>>& params,
+      std::unordered_map<std::string, std::string>* out);
+  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params,
+                     const char* kv);
+  static void SetVerbosity(
+      const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
-  #ifndef __NVCC__
+#ifndef __NVCC__
+  // clang-format off
   #pragma region Parameters
 
   #pragma region Core Parameters
@@ -1140,6 +1141,8 @@ struct Config {
 
   #pragma endregion
   #endif  // __NVCC__
+
+  // clang-format off
 
   size_t file_load_progress_interval_bytes = size_t(10) * 1024 * 1024 * 1024;
 

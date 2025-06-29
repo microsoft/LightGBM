@@ -22,6 +22,11 @@ repos:
     hooks:
       - id: yamllint
         args: ["--strict"]
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v20.1.0
+    hooks:
+      - id: clang-format
+        types_or: [c++, c, cuda]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: v0.9.10

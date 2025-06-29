@@ -20,12 +20,12 @@ class ObjectiveFunction;
 class Metric;
 
 /*!
-* \brief The main entrance of LightGBM. this application has two tasks:
-*        Train and Predict.
-*        Train task will train a new model
-*        Predict task will predict the scores of test data using existing model,
-*        and save the score to disk.
-*/
+ * \brief The main entrance of LightGBM. this application has two tasks:
+ *        Train and Predict.
+ *        Train task will train a new model
+ *        Predict task will predict the scores of test data using existing model,
+ *        and save the score to disk.
+ */
 class Application {
  public:
   Application(int argc, char** argv);
@@ -74,7 +74,6 @@ class Application {
   std::unique_ptr<ObjectiveFunction> objective_fun_;
 };
 
-
 inline void Application::Run() {
   if (config_.task == TaskType::kPredict || config_.task == TaskType::KRefitTree) {
     InitPredict();
@@ -89,4 +88,4 @@ inline void Application::Run() {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_APPLICATION_H_
+#endif  // LightGBM_APPLICATION_H_

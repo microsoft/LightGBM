@@ -3,7 +3,6 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_tree.hpp>
@@ -27,15 +26,13 @@ __device__ bool GetDecisionTypeCUDA(int8_t decision_type, int8_t mask) {
   return (decision_type & mask) > 0;
 }
 
-__device__ int8_t GetMissingTypeCUDA(int8_t decision_type) {
-  return (decision_type >> 2) & 3;
-}
+__device__ int8_t GetMissingTypeCUDA(int8_t decision_type) { return (decision_type >> 2) & 3; }
 
 __device__ bool IsZeroCUDA(double fval) {
   return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
 }
 
-template<typename T>
+template <typename T>
 __device__ bool FindInBitsetCUDA(const uint32_t* bits, int n, T pos) {
   int i1 = pos / 32;
   if (i1 >= n) {
@@ -46,29 +43,14 @@ __device__ bool FindInBitsetCUDA(const uint32_t* bits, int n, T pos) {
 }
 
 __global__ void SplitKernel(  // split information
-                            const int leaf_index,
-                            const int real_feature_index,
-                            const double real_threshold,
-                            const MissingType missing_type,
-                            const CUDASplitInfo* cuda_split_info,
-                            // tree structure
-                            const int num_leaves,
-                            int* leaf_parent,
-                            int* leaf_depth,
-                            int* left_child,
-                            int* right_child,
-                            int* split_feature_inner,
-                            int* split_feature,
-                            float* split_gain,
-                            double* internal_weight,
-                            double* internal_value,
-                            data_size_t* internal_count,
-                            double* leaf_weight,
-                            double* leaf_value,
-                            data_size_t* leaf_count,
-                            int8_t* decision_type,
-                            uint32_t* threshold_in_bin,
-                            double* threshold) {
+    const int leaf_index, const int real_feature_index, const double real_threshold,
+    const MissingType missing_type, const CUDASplitInfo* cuda_split_info,
+    // tree structure
+    const int num_leaves, int* leaf_parent, int* leaf_depth, int* left_child, int* right_child,
+    int* split_feature_inner, int* split_feature, float* split_gain, double* internal_weight,
+    double* internal_value, data_size_t* internal_count, double* leaf_weight, double* leaf_value,
+    data_size_t* leaf_count, int8_t* decision_type, uint32_t* threshold_in_bin,
+    double* threshold) {
   const int new_node_index = num_leaves - 1;
   const int thread_index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
   const int parent_index = leaf_parent[leaf_index];
@@ -94,17 +76,20 @@ __global__ void SplitKernel(  // split information
     split_gain[new_node_index] = static_cast<float>(cuda_split_info->gain);
   } else if (thread_index == 4) {
     // save current leaf value to internal node before change
-    internal_weight[new_node_index] = cuda_split_info->left_sum_hessians + cuda_split_info->right_sum_hessians;
+    internal_weight[new_node_index] =
+        cuda_split_info->left_sum_hessians + cuda_split_info->right_sum_hessians;
     leaf_weight[leaf_index] = cuda_split_info->left_sum_hessians;
   } else if (thread_index == 5) {
     internal_value[new_node_index] = leaf_value[leaf_index];
-    leaf_value[leaf_index] = isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
+    leaf_value[leaf_index] =
+        isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
   } else if (thread_index == 6) {
     internal_count[new_node_index] = cuda_split_info->left_count + cuda_split_info->right_count;
   } else if (thread_index == 7) {
     leaf_count[leaf_index] = cuda_split_info->left_count;
   } else if (thread_index == 8) {
-    leaf_value[num_leaves] = isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
+    leaf_value[num_leaves] =
+        isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
   } else if (thread_index == 9) {
     leaf_weight[num_leaves] = cuda_split_info->right_sum_hessians;
   } else if (thread_index == 10) {
@@ -116,7 +101,8 @@ __global__ void SplitKernel(  // split information
   } else if (thread_index == 12) {
     decision_type[new_node_index] = 0;
     SetDecisionTypeCUDA(&decision_type[new_node_index], false, kCategoricalMask);
-    SetDecisionTypeCUDA(&decision_type[new_node_index], cuda_split_info->default_left, kDefaultLeftMask);
+    SetDecisionTypeCUDA(&decision_type[new_node_index], cuda_split_info->default_left,
+                        kDefaultLeftMask);
     SetMissingTypeCUDA(&decision_type[new_node_index], static_cast<int8_t>(missing_type));
   } else if (thread_index == 13) {
     threshold_in_bin[new_node_index] = cuda_split_info->threshold;
@@ -125,66 +111,29 @@ __global__ void SplitKernel(  // split information
   }
 }
 
-void CUDATree::LaunchSplitKernel(const int leaf_index,
-                                 const int real_feature_index,
-                                 const double real_threshold,
-                                 const MissingType missing_type,
+void CUDATree::LaunchSplitKernel(const int leaf_index, const int real_feature_index,
+                                 const double real_threshold, const MissingType missing_type,
                                  const CUDASplitInfo* cuda_split_info) {
   SplitKernel<<<3, 5, 0, cuda_stream_>>>(
-    // split information
-    leaf_index,
-    real_feature_index,
-    real_threshold,
-    missing_type,
-    cuda_split_info,
-    // tree structure
-    num_leaves_,
-    cuda_leaf_parent_,
-    cuda_leaf_depth_,
-    cuda_left_child_,
-    cuda_right_child_,
-    cuda_split_feature_inner_,
-    cuda_split_feature_,
-    cuda_split_gain_,
-    cuda_internal_weight_,
-    cuda_internal_value_,
-    cuda_internal_count_,
-    cuda_leaf_weight_,
-    cuda_leaf_value_,
-    cuda_leaf_count_,
-    cuda_decision_type_,
-    cuda_threshold_in_bin_,
-    cuda_threshold_);
+      // split information
+      leaf_index, real_feature_index, real_threshold, missing_type, cuda_split_info,
+      // tree structure
+      num_leaves_, cuda_leaf_parent_, cuda_leaf_depth_, cuda_left_child_, cuda_right_child_,
+      cuda_split_feature_inner_, cuda_split_feature_, cuda_split_gain_, cuda_internal_weight_,
+      cuda_internal_value_, cuda_internal_count_, cuda_leaf_weight_, cuda_leaf_value_,
+      cuda_leaf_count_, cuda_decision_type_, cuda_threshold_in_bin_, cuda_threshold_);
 }
 
 __global__ void SplitCategoricalKernel(  // split information
-  const int leaf_index,
-  const int real_feature_index,
-  const MissingType missing_type,
-  const CUDASplitInfo* cuda_split_info,
-  // tree structure
-  const int num_leaves,
-  int* leaf_parent,
-  int* leaf_depth,
-  int* left_child,
-  int* right_child,
-  int* split_feature_inner,
-  int* split_feature,
-  float* split_gain,
-  double* internal_weight,
-  double* internal_value,
-  data_size_t* internal_count,
-  double* leaf_weight,
-  double* leaf_value,
-  data_size_t* leaf_count,
-  int8_t* decision_type,
-  uint32_t* threshold_in_bin,
-  double* threshold,
-  size_t cuda_bitset_len,
-  size_t cuda_bitset_inner_len,
-  int num_cat,
-  int* cuda_cat_boundaries,
-  int* cuda_cat_boundaries_inner) {
+    const int leaf_index, const int real_feature_index, const MissingType missing_type,
+    const CUDASplitInfo* cuda_split_info,
+    // tree structure
+    const int num_leaves, int* leaf_parent, int* leaf_depth, int* left_child, int* right_child,
+    int* split_feature_inner, int* split_feature, float* split_gain, double* internal_weight,
+    double* internal_value, data_size_t* internal_count, double* leaf_weight, double* leaf_value,
+    data_size_t* leaf_count, int8_t* decision_type, uint32_t* threshold_in_bin, double* threshold,
+    size_t cuda_bitset_len, size_t cuda_bitset_inner_len, int num_cat, int* cuda_cat_boundaries,
+    int* cuda_cat_boundaries_inner) {
   const int new_node_index = num_leaves - 1;
   const int thread_index = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
   const int parent_index = leaf_parent[leaf_index];
@@ -210,17 +159,20 @@ __global__ void SplitCategoricalKernel(  // split information
     split_gain[new_node_index] = static_cast<float>(cuda_split_info->gain);
   } else if (thread_index == 4) {
     // save current leaf value to internal node before change
-    internal_weight[new_node_index] = cuda_split_info->left_sum_hessians + cuda_split_info->right_sum_hessians;
+    internal_weight[new_node_index] =
+        cuda_split_info->left_sum_hessians + cuda_split_info->right_sum_hessians;
     leaf_weight[leaf_index] = cuda_split_info->left_sum_hessians;
   } else if (thread_index == 5) {
     internal_value[new_node_index] = leaf_value[leaf_index];
-    leaf_value[leaf_index] = isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
+    leaf_value[leaf_index] =
+        isnan(cuda_split_info->left_value) ? 0.0f : cuda_split_info->left_value;
   } else if (thread_index == 6) {
     internal_count[new_node_index] = cuda_split_info->left_count + cuda_split_info->right_count;
   } else if (thread_index == 7) {
     leaf_count[leaf_index] = cuda_split_info->left_count;
   } else if (thread_index == 8) {
-    leaf_value[num_leaves] = isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
+    leaf_value[num_leaves] =
+        isnan(cuda_split_info->right_value) ? 0.0f : cuda_split_info->right_value;
   } else if (thread_index == 9) {
     leaf_weight[num_leaves] = cuda_split_info->right_sum_hessians;
   } else if (thread_index == 10) {
@@ -246,45 +198,25 @@ __global__ void SplitCategoricalKernel(  // split information
     if (num_cat == 0) {
       cuda_cat_boundaries_inner[num_cat] = 0;
     }
-    cuda_cat_boundaries_inner[num_cat + 1] = cuda_cat_boundaries_inner[num_cat] + cuda_bitset_inner_len;
+    cuda_cat_boundaries_inner[num_cat + 1] =
+        cuda_cat_boundaries_inner[num_cat] + cuda_bitset_inner_len;
   }
 }
 
-void CUDATree::LaunchSplitCategoricalKernel(const int leaf_index,
-  const int real_feature_index,
-  const MissingType missing_type,
-  const CUDASplitInfo* cuda_split_info,
-  size_t cuda_bitset_len,
-  size_t cuda_bitset_inner_len) {
+void CUDATree::LaunchSplitCategoricalKernel(const int leaf_index, const int real_feature_index,
+                                            const MissingType missing_type,
+                                            const CUDASplitInfo* cuda_split_info,
+                                            size_t cuda_bitset_len, size_t cuda_bitset_inner_len) {
   SplitCategoricalKernel<<<3, 6, 0, cuda_stream_>>>(
-    // split information
-    leaf_index,
-    real_feature_index,
-    missing_type,
-    cuda_split_info,
-    // tree structure
-    num_leaves_,
-    cuda_leaf_parent_,
-    cuda_leaf_depth_,
-    cuda_left_child_,
-    cuda_right_child_,
-    cuda_split_feature_inner_,
-    cuda_split_feature_,
-    cuda_split_gain_,
-    cuda_internal_weight_,
-    cuda_internal_value_,
-    cuda_internal_count_,
-    cuda_leaf_weight_,
-    cuda_leaf_value_,
-    cuda_leaf_count_,
-    cuda_decision_type_,
-    cuda_threshold_in_bin_,
-    cuda_threshold_,
-    cuda_bitset_len,
-    cuda_bitset_inner_len,
-    num_cat_,
-    cuda_cat_boundaries_.RawData(),
-    cuda_cat_boundaries_inner_.RawData());
+      // split information
+      leaf_index, real_feature_index, missing_type, cuda_split_info,
+      // tree structure
+      num_leaves_, cuda_leaf_parent_, cuda_leaf_depth_, cuda_left_child_, cuda_right_child_,
+      cuda_split_feature_inner_, cuda_split_feature_, cuda_split_gain_, cuda_internal_weight_,
+      cuda_internal_value_, cuda_internal_count_, cuda_leaf_weight_, cuda_leaf_value_,
+      cuda_leaf_count_, cuda_decision_type_, cuda_threshold_in_bin_, cuda_threshold_,
+      cuda_bitset_len, cuda_bitset_inner_len, num_cat_, cuda_cat_boundaries_.RawData(),
+      cuda_cat_boundaries_inner_.RawData());
 }
 
 __global__ void ShrinkageKernel(const double rate, double* cuda_leaf_value, const int num_leaves) {
@@ -315,31 +247,24 @@ void CUDATree::LaunchAddBiasKernel(const double val) {
 
 template <bool USE_INDICES>
 __global__ void AddPredictionToScoreKernel(
-  // dataset information
-  const data_size_t num_data,
-  void* const* cuda_data_by_column,
-  const uint8_t* cuda_column_bit_type,
-  const uint32_t* cuda_feature_min_bin,
-  const uint32_t* cuda_feature_max_bin,
-  const uint32_t* cuda_feature_offset,
-  const uint32_t* cuda_feature_default_bin,
-  const uint32_t* cuda_feature_most_freq_bin,
-  const int* cuda_feature_to_column,
-  const data_size_t* cuda_used_indices,
-  // tree information
-  const uint32_t* cuda_threshold_in_bin,
-  const int8_t* cuda_decision_type,
-  const int* cuda_split_feature_inner,
-  const int* cuda_left_child,
-  const int* cuda_right_child,
-  const double* cuda_leaf_value,
-  const uint32_t* cuda_bitset_inner,
-  const int* cuda_cat_boundaries_inner,
-  // output
-  double* score) {
-  const data_size_t inner_data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
+    // dataset information
+    const data_size_t num_data, void* const* cuda_data_by_column,
+    const uint8_t* cuda_column_bit_type, const uint32_t* cuda_feature_min_bin,
+    const uint32_t* cuda_feature_max_bin, const uint32_t* cuda_feature_offset,
+    const uint32_t* cuda_feature_default_bin, const uint32_t* cuda_feature_most_freq_bin,
+    const int* cuda_feature_to_column, const data_size_t* cuda_used_indices,
+    // tree information
+    const uint32_t* cuda_threshold_in_bin, const int8_t* cuda_decision_type,
+    const int* cuda_split_feature_inner, const int* cuda_left_child, const int* cuda_right_child,
+    const double* cuda_leaf_value, const uint32_t* cuda_bitset_inner,
+    const int* cuda_cat_boundaries_inner,
+    // output
+    double* score) {
+  const data_size_t inner_data_index =
+      static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (inner_data_index < num_data) {
-    const data_size_t data_index = USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
+    const data_size_t data_index =
+        USE_INDICES ? cuda_used_indices[inner_data_index] : inner_data_index;
     int node = 0;
     while (node >= 0) {
       const int split_feature_inner = cuda_split_feature_inner[node];
@@ -352,11 +277,14 @@ __global__ void AddPredictionToScoreKernel(
       const uint8_t column_bit_type = cuda_column_bit_type[column];
       uint32_t bin = 0;
       if (column_bit_type == 8) {
-        bin = static_cast<uint32_t>((reinterpret_cast<const uint8_t*>(cuda_data_by_column[column]))[data_index]);
+        bin = static_cast<uint32_t>(
+            (reinterpret_cast<const uint8_t*>(cuda_data_by_column[column]))[data_index]);
       } else if (column_bit_type == 16) {
-        bin = static_cast<uint32_t>((reinterpret_cast<const uint16_t*>(cuda_data_by_column[column]))[data_index]);
+        bin = static_cast<uint32_t>(
+            (reinterpret_cast<const uint16_t*>(cuda_data_by_column[column]))[data_index]);
       } else if (column_bit_type == 32) {
-        bin = static_cast<uint32_t>((reinterpret_cast<const uint32_t*>(cuda_data_by_column[column]))[data_index]);
+        bin = static_cast<uint32_t>(
+            (reinterpret_cast<const uint32_t*>(cuda_data_by_column[column]))[data_index]);
       }
       if (bin >= min_bin && bin <= max_bin) {
         bin = bin - min_bin + offset;
@@ -366,8 +294,10 @@ __global__ void AddPredictionToScoreKernel(
       const int8_t decision_type = cuda_decision_type[node];
       if (GetDecisionTypeCUDA(decision_type, kCategoricalMask)) {
         int cat_idx = static_cast<int>(cuda_threshold_in_bin[node]);
-        if (FindInBitsetCUDA(cuda_bitset_inner + cuda_cat_boundaries_inner[cat_idx],
-                             cuda_cat_boundaries_inner[cat_idx + 1] - cuda_cat_boundaries_inner[cat_idx], bin)) {
+        if (FindInBitsetCUDA(
+                cuda_bitset_inner + cuda_cat_boundaries_inner[cat_idx],
+                cuda_cat_boundaries_inner[cat_idx + 1] - cuda_cat_boundaries_inner[cat_idx],
+                bin)) {
           node = cuda_left_child[node];
         } else {
           node = cuda_right_child[node];
@@ -395,61 +325,44 @@ __global__ void AddPredictionToScoreKernel(
   }
 }
 
-void CUDATree::LaunchAddPredictionToScoreKernel(
-  const Dataset* data,
-  const data_size_t* used_data_indices,
-  data_size_t num_data,
-  double* score) const {
+void CUDATree::LaunchAddPredictionToScoreKernel(const Dataset* data,
+                                                const data_size_t* used_data_indices,
+                                                data_size_t num_data, double* score) const {
   const CUDAColumnData* cuda_column_data = data->cuda_column_data();
-  const int num_blocks = (num_data + num_threads_per_block_add_prediction_to_score_ - 1) / num_threads_per_block_add_prediction_to_score_;
+  const int num_blocks = (num_data + num_threads_per_block_add_prediction_to_score_ - 1) /
+                         num_threads_per_block_add_prediction_to_score_;
   if (used_data_indices == nullptr) {
-    AddPredictionToScoreKernel<false><<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
-      // dataset information
-      num_data,
-      cuda_column_data->cuda_data_by_column(),
-      cuda_column_data->cuda_column_bit_type(),
-      cuda_column_data->cuda_feature_min_bin(),
-      cuda_column_data->cuda_feature_max_bin(),
-      cuda_column_data->cuda_feature_offset(),
-      cuda_column_data->cuda_feature_default_bin(),
-      cuda_column_data->cuda_feature_most_freq_bin(),
-      cuda_column_data->cuda_feature_to_column(),
-      nullptr,
-      // tree information
-      cuda_threshold_in_bin_,
-      cuda_decision_type_,
-      cuda_split_feature_inner_,
-      cuda_left_child_,
-      cuda_right_child_,
-      cuda_leaf_value_,
-      cuda_bitset_inner_.RawDataReadOnly(),
-      cuda_cat_boundaries_inner_.RawDataReadOnly(),
-      // output
-      score);
+    AddPredictionToScoreKernel<false>
+        <<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
+            // dataset information
+            num_data, cuda_column_data->cuda_data_by_column(),
+            cuda_column_data->cuda_column_bit_type(), cuda_column_data->cuda_feature_min_bin(),
+            cuda_column_data->cuda_feature_max_bin(), cuda_column_data->cuda_feature_offset(),
+            cuda_column_data->cuda_feature_default_bin(),
+            cuda_column_data->cuda_feature_most_freq_bin(),
+            cuda_column_data->cuda_feature_to_column(), nullptr,
+            // tree information
+            cuda_threshold_in_bin_, cuda_decision_type_, cuda_split_feature_inner_,
+            cuda_left_child_, cuda_right_child_, cuda_leaf_value_,
+            cuda_bitset_inner_.RawDataReadOnly(), cuda_cat_boundaries_inner_.RawDataReadOnly(),
+            // output
+            score);
   } else {
-    AddPredictionToScoreKernel<true><<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
-      // dataset information
-      num_data,
-      cuda_column_data->cuda_data_by_column(),
-      cuda_column_data->cuda_column_bit_type(),
-      cuda_column_data->cuda_feature_min_bin(),
-      cuda_column_data->cuda_feature_max_bin(),
-      cuda_column_data->cuda_feature_offset(),
-      cuda_column_data->cuda_feature_default_bin(),
-      cuda_column_data->cuda_feature_most_freq_bin(),
-      cuda_column_data->cuda_feature_to_column(),
-      used_data_indices,
-      // tree information
-      cuda_threshold_in_bin_,
-      cuda_decision_type_,
-      cuda_split_feature_inner_,
-      cuda_left_child_,
-      cuda_right_child_,
-      cuda_leaf_value_,
-      cuda_bitset_inner_.RawDataReadOnly(),
-      cuda_cat_boundaries_inner_.RawDataReadOnly(),
-      // output
-      score);
+    AddPredictionToScoreKernel<true>
+        <<<num_blocks, num_threads_per_block_add_prediction_to_score_>>>(
+            // dataset information
+            num_data, cuda_column_data->cuda_data_by_column(),
+            cuda_column_data->cuda_column_bit_type(), cuda_column_data->cuda_feature_min_bin(),
+            cuda_column_data->cuda_feature_max_bin(), cuda_column_data->cuda_feature_offset(),
+            cuda_column_data->cuda_feature_default_bin(),
+            cuda_column_data->cuda_feature_most_freq_bin(),
+            cuda_column_data->cuda_feature_to_column(), used_data_indices,
+            // tree information
+            cuda_threshold_in_bin_, cuda_decision_type_, cuda_split_feature_inner_,
+            cuda_left_child_, cuda_right_child_, cuda_leaf_value_,
+            cuda_bitset_inner_.RawDataReadOnly(), cuda_cat_boundaries_inner_.RawDataReadOnly(),
+            // output
+            score);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
 }
