@@ -33,6 +33,9 @@
   $1 = jenv;
 %}
 
+%newobject LGBM_BoosterSaveModelToStringSWIG;
+%newobject LGBM_BoosterDumpModelSWIG;
+
 %inline %{
   char * LGBM_BoosterSaveModelToStringSWIG(BoosterHandle handle,
                                            int start_iteration,

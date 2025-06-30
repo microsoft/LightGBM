@@ -1018,7 +1018,7 @@ predict.lgb.Booster <- function(object,
                                 ...) {
 
   if (!.is_Booster(x = object)) {
-    stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster"))
+    stop("predict.lgb.Booster: object should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   additional_params <- list(...)
@@ -1175,7 +1175,7 @@ lgb.configure_fast_predict <- function(model,
                                        type = "response",
                                        params = list()) {
   if (!.is_Booster(x = model)) {
-    stop("lgb.configure_fast_predict: model should be an ", sQuote("lgb.Booster"))
+    stop("lgb.configure_fast_predict: model should be an ", sQuote("lgb.Booster", q = FALSE))
   }
   if (type == "class") {
     stop("type='class' is not supported for 'lgb.configure_fast_predict'. Use 'response' instead.")
@@ -1391,7 +1391,7 @@ lgb.save <- function(
   ) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.save: booster should be an ", sQuote("lgb.Booster"))
+    stop("lgb.save: booster should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   if (!(is.character(filename) && length(filename) == 1L)) {
@@ -1455,7 +1455,7 @@ lgb.save <- function(
 lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.dump: booster should be an ", sQuote("lgb.Booster"))
+    stop("lgb.dump: booster should be an ", sQuote("lgb.Booster", q = FALSE))
   }
 
   # Return booster at requested iteration
@@ -1519,7 +1519,7 @@ lgb.dump <- function(booster, num_iteration = NULL, start_iteration = 1L) {
 lgb.get.eval.result <- function(booster, data_name, eval_name, iters = NULL, is_err = FALSE) {
 
   if (!.is_Booster(x = booster)) {
-    stop("lgb.get.eval.result: Can only use ", sQuote("lgb.Booster"), " to get eval result")
+    stop("lgb.get.eval.result: Can only use ", sQuote("lgb.Booster", q = FALSE), " to get eval result")
   }
 
   if (!is.character(data_name) || !is.character(eval_name)) {

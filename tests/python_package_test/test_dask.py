@@ -2,6 +2,7 @@
 """Tests for lightgbm.dask module"""
 
 import inspect
+import re
 import socket
 from itertools import groupby
 from os import getenv
@@ -1016,7 +1017,11 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError):
+        no_client_attr_msg = re.compile(
+            f"{repr(type(local_model).__name__)} object has no attribute '(client|client_)'"
+        )
+
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
             local_model.client_
 
@@ -1040,7 +1045,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         assert dask_model.client_ == client
 
         local_model = dask_model.to_local()
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
             local_model.client_
 
@@ -1126,7 +1131,10 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             local_model = dask_model.to_local()
 
             assert "client" not in local_model.get_params()
-            with pytest.raises(AttributeError):
+            no_client_attr_msg = re.compile(
+                f"{repr(type(local_model).__name__)} object has no attribute '(client|client_)'"
+            )
+            with pytest.raises(AttributeError, match=no_client_attr_msg):
                 local_model.client
                 local_model.client_
 
