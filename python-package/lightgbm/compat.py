@@ -202,25 +202,6 @@ try:
 except ImportError:
     GRAPHVIZ_INSTALLED = False
 
-"""datatable"""
-try:
-    import datatable
-
-    if hasattr(datatable, "Frame"):
-        dt_DataTable = datatable.Frame
-    else:
-        dt_DataTable = datatable.DataTable
-    DATATABLE_INSTALLED = True
-except ImportError:
-    DATATABLE_INSTALLED = False
-
-    class dt_DataTable:  # type: ignore
-        """Dummy class for datatable.DataTable."""
-
-        def __init__(self, *args: Any, **kwargs: Any):
-            pass
-
-
 """dask"""
 try:
     from dask import delayed
@@ -288,6 +269,7 @@ try:
     from pyarrow import Array as pa_Array
     from pyarrow import ChunkedArray as pa_ChunkedArray
     from pyarrow import Table as pa_Table
+    from pyarrow import array as pa_array
     from pyarrow import chunked_array as pa_chunked_array
     from pyarrow.types import is_boolean as arrow_is_boolean
     from pyarrow.types import is_floating as arrow_is_floating
@@ -321,6 +303,7 @@ except ImportError:
         all = None
         equal = None
 
+    pa_array = None
     pa_chunked_array = None
     arrow_is_boolean = None
     arrow_is_integer = None
