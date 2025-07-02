@@ -175,6 +175,9 @@ select = [
     "W",
 ]
 
+[tool.ruff.lint.flake8-pytest-style]
+raises-extend-require-match-for = ["Exception", "IndexError", "TypeError"]
+
 [tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = [
     # (flake8-bugbear) raise exceptions with "raise ... from err"
