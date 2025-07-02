@@ -1456,7 +1456,8 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
 
         dy = dy.to_dask_array(lengths=True)
         dy_col_array = dy.reshape(-1, 1)
-        assert len(dy_col_array.shape) == 2 and dy_col_array.shape[1] == 1
+        assert len(dy_col_array.shape) == 2
+        assert dy_col_array.shape[1] == 1
 
         params = {"n_estimators": 1, "num_leaves": 3, "random_state": 0, "time_out": 5}
         model = model_factory(**params)
