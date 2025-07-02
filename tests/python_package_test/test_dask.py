@@ -1233,7 +1233,7 @@ def test_errors(cluster):
 
         df = dd.demo.make_timeseries()
         df = df.map_partitions(f, meta=df._meta)
-        with pytest.raises(Exception) as info:
+        with pytest.raises(Exception) as info:  # noqa: PT011 # not using `match` since error message needs to be coerced to a string
             lgb.dask._train(client=client, data=df, label=df.x, params={}, model_factory=lgb.LGBMClassifier)
             assert "foo" in str(info.value)
 
