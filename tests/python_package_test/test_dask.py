@@ -80,7 +80,7 @@ def cluster_three_workers():
     dask_cluster.close()
 
 
-@pytest.fixture()
+@pytest.fixture
 def listen_port():
     listen_port.port += 10
     return listen_port.port
