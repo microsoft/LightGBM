@@ -1703,9 +1703,10 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
     # minimum supported scikit-learn version is at least 1.6
     try:
         sklearn_tags = est.__sklearn_tags__()
-    except AttributeError as err:
+    except AttributeError:
         # only the exact error we expected to be raised should be raised
-        assert bool(re.search(r"__sklearn_tags__.* should not be called", str(err)))
+        with pytest.raises(AttributeError, match=r"__sklearn_tags__.* should not be called"):
+            est.__sklearn_tags__()
     else:
         # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
         # and so the actual effects of __sklearn_tags__() should be tested
