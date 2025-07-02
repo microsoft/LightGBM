@@ -1023,6 +1023,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
 
         with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client_
 
         # should be able to set client after construction
@@ -1047,6 +1048,7 @@ def test_training_works_if_client_not_provided_or_set_after_construction(task, c
         local_model = dask_model.to_local()
         with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client
+        with pytest.raises(AttributeError, match=no_client_attr_msg):
             local_model.client_
 
 
@@ -1136,6 +1138,7 @@ def test_model_and_local_version_are_picklable_whether_or_not_client_set_explici
             )
             with pytest.raises(AttributeError, match=no_client_attr_msg):
                 local_model.client
+            with pytest.raises(AttributeError, match=no_client_attr_msg):
                 local_model.client_
 
             tmp_file2 = tmp_path / "model-2.pkl"
@@ -1233,7 +1236,7 @@ def test_errors(cluster):
 
         df = dd.demo.make_timeseries()
         df = df.map_partitions(f, meta=df._meta)
-        with pytest.raises(Exception) as info:  # noqa: PT011 # not using `match` since error message needs to be coerced to a string
+        with pytest.raises(Exception) as info:  # noqa: PT011, PT012 # error message needs to be coerced to a string
             lgb.dask._train(client=client, data=df, label=df.x, params={}, model_factory=lgb.LGBMClassifier)
             assert "foo" in str(info.value)
 
@@ -1362,7 +1365,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
         # test that "machines" is actually respected by creating a socket that uses
         # one of the ports mentioned in "machines"
         error_msg = f"Binding port {open_ports[0]} failed"
-        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):
+        with pytest.raises(lgb.basic.LightGBMError, match=error_msg):  # noqa: PT012
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind((workers_hostname, open_ports[0]))
                 dask_model.fit(dX, dy, group=dg)

@@ -281,17 +281,17 @@ def test_add_features_throws_if_datasets_unconstructed(rng):
     X1 = rng.uniform(size=(100, 1))
     X2 = rng.uniform(size=(100, 1))
     err_msg = "Both source and target Datasets must be constructed before adding features"
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2)
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
+    d1 = lgb.Dataset(X1).construct()
+    d2 = lgb.Dataset(X2)
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1).construct()
-        d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2).construct()
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2).construct()
         d1.add_features_from(d2)
 
 
