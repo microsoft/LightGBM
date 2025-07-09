@@ -172,7 +172,7 @@ select = [
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
-raises-extend-require-match-for = ["Exception", "IndexError", "TypeError"]
+raises-extend-require-match-for = ["*Exception", "*Error"]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = [

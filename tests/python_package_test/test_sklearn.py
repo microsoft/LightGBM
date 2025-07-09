@@ -760,7 +760,7 @@ def test_random_state_object(rng_constructor):
     df3 = clf1.booster_.model_to_string(num_iteration=0)
     assert clf1.random_state is state1
     assert clf2.random_state is state2
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_pred1, y_pred1_refit)
     assert df1 != df3
 
@@ -832,16 +832,16 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pred5 = gbm5.predict(X_test, raw_score=True)
     gbm6 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=[])
     pred6 = gbm6.predict(X_test, raw_score=True)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred_prob, pred4)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred5)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred6)
     assert gbm0.booster_.pandas_categorical == cat_values
     assert gbm1.booster_.pandas_categorical == cat_values
@@ -916,7 +916,7 @@ def test_predict():
     # Tests other parameters for the prediction works
     res_engine = gbm.predict(X_test)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Tests start_iteration
@@ -948,7 +948,7 @@ def test_predict():
     # Tests other parameters for the prediction works, starting from iteration 10
     res_engine = gbm.predict(X_test, start_iteration=10)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0, start_iteration=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Test multiclass binary classification
@@ -982,7 +982,7 @@ def test_predict_with_params_from_init():
     y_preds_params_in_predict = (
         lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).predict(X_test, raw_score=True, **predict_params)
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_preds_no_params, y_preds_params_in_predict)
 
     y_preds_params_in_set_params_before_fit = (

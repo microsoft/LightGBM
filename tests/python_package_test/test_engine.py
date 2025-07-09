@@ -662,7 +662,7 @@ def test_ranking_prediction_early_stopping():
 
     pred_parameter["pred_early_stop_margin"] = 5.5
     ret_early_more_strict = gbm.predict(X_test, **pred_parameter)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(ret_early, ret_early_more_strict)
 
 
@@ -1828,18 +1828,18 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     gbm7 = lgb.train(params, lgb_train, num_boost_round=10)
     pred8 = gbm7.predict(X_test)
     assert lgb_train.categorical_feature == []
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred0, pred4)
     np.testing.assert_allclose(pred0, pred5)
     np.testing.assert_allclose(pred0, pred6)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred7)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred8)
     assert gbm0.pandas_categorical == cat_values
     assert gbm1.pandas_categorical == cat_values

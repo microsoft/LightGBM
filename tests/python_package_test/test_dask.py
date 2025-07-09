@@ -296,10 +296,10 @@ def test_classifier(output, task, boosting_type, tree_learner, cluster):
             assert_eq(p1_local, y)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
@@ -551,7 +551,7 @@ def test_regressor(output, boosting_type, tree_learner, cluster):
         assert_eq(p2, y, rtol=0.5, atol=50.0)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
         # be sure LightGBM actually used at least one categorical column,
@@ -731,10 +731,10 @@ def test_ranker(output, group, boosting_type, tree_learner, cluster):
         assert_eq(rnkvec_dask, rnkvec_dask_local)
 
         # extra predict() parameters should be passed through correctly
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_first_iter_raw)
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(p1_raw, p1_early_stop_raw)
 
         # pref_leaf values should have the right shape
@@ -1503,7 +1503,7 @@ def test_init_score(task, output, cluster, rng):
         pred_init_score = model_init_score.predict(dX, raw_score=True)
 
         # check if init score changes predictions
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError):  # noqa: PT011
             assert_eq(pred, pred_init_score)
 
 
