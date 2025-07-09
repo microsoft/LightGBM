@@ -506,7 +506,7 @@ def test_clone_and_property():
     assert isinstance(clf.feature_importances_, np.ndarray)
 
 
-@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))
+@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))  # noqa: PT007
 def test_estimators_all_have_the_same_kwargs_and_defaults(estimator):
     base_spec = inspect.getfullargspec(lgb.LGBMModel)
     subclass_spec = inspect.getfullargspec(estimator)

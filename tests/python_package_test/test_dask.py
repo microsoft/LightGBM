@@ -1381,7 +1381,7 @@ def test_machines_should_be_used_if_provided(task, cluster):
 
 
 @pytest.mark.parametrize(
-    "dask_est,sklearn_est",
+    ("dask_est", "sklearn_est"),
     [
         (lgb.DaskLGBMClassifier, lgb.LGBMClassifier),
         (lgb.DaskLGBMRegressor, lgb.LGBMRegressor),

@@ -138,11 +138,7 @@ ignore = [
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
     "PLR5501",
     # (flake8-pytest-style) `scope='function'` is implied in `@pytest.fixture()`
-    "PT003",
-    # (flake8-pytest-style) Wrong type passed to first argument of pytest.mark.parametrize; expected {expected_string}
-    "PT006",
-    # (flake8-pytest-style) Wrong values type in `pytest.mark.parametrize` expected {values} of {row}
-    "PT007"
+    "PT003"
 ]
 select = [
     # flake8-bugbear
