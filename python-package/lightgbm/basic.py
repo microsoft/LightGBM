@@ -4153,11 +4153,11 @@ class Booster:
         -------
         produced_empty_tree : bool
             ``True`` if the tree(s) produced by this iteration did not have any splits.
-            This usually means that training is "finished" (calling ``update()`` again
+            This usually means that training is "finished" (calling ``__boost()`` again
             will not change the model's predictions). However, that is not always the
             case. For example, if you have added any randomness (like column sampling by
             setting ``feature_fraction_bynode < 1.0``), it is possible that another call
-            to ``update()`` would produce a non-empty tree.
+            to ``__boost()`` would produce a non-empty tree.
         """
         if self.__num_class > 1:
             grad = grad.ravel(order="F")
