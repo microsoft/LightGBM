@@ -45,9 +45,9 @@
 // https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
 // https://www.oreilly.com/library/view/mac-os-x/0596003560/ch05s01s02.html
 #elif defined(__GNUC__) && defined(HAVE_MALLOC_H)
-  #include <malloc.h>
-  #define _mm_malloc(a, b) memalign(b, a)
-  #define _mm_free(a) free(a)
+#include <malloc.h>
+#define _mm_malloc(a, b) memalign(b, a)
+#define _mm_free(a) free(a)
 #else
 #include <stdlib.h>
 #define _mm_malloc(a, b) malloc(a)
@@ -61,15 +61,12 @@ namespace Common {
 using json11_internal_lightgbm::Json;
 
 /*!
-* Imbues the stream with the C locale.
-*/
-static void C_stringstream(std::stringstream &ss) {
-  ss.imbue(std::locale::classic());
-}
+ * Imbues the stream with the C locale.
+ */
+static void C_stringstream(std::stringstream& ss) { ss.imbue(std::locale::classic()); }
 
 inline static char tolower(char in) {
-  if (in <= 'Z' && in >= 'A')
-    return in - ('Z' - 'z');
+  if (in <= 'Z' && in >= 'A') return in - ('Z' - 'z');
   return in;
 }
 
@@ -121,7 +118,8 @@ inline static std::vector<std::string> Split(const char* c_str, char delimiter) 
   return ret;
 }
 
-inline static std::vector<std::string> SplitBrackets(const char* c_str, char left_delimiter, char right_delimiter) {
+inline static std::vector<std::string> SplitBrackets(const char* c_str, char left_delimiter,
+                                                     char right_delimiter) {
   std::vector<std::string> ret;
   std::string str(c_str);
   size_t i = 0;
@@ -208,7 +206,8 @@ inline static std::string GetFromParserConfig(std::string config_str, std::strin
   return config_json[key].string_value();
 }
 
-inline static std::string SaveToParserConfig(std::string config_str, std::string key, std::string value) {
+inline static std::string SaveToParserConfig(std::string config_str, std::string key,
+                                             std::string value) {
   std::string err;
   Json config_json = Json::parse(config_str, &err);
   if (!err.empty()) {
@@ -220,7 +219,7 @@ inline static std::string SaveToParserConfig(std::string config_str, std::string
   return Json(config_map).dump();
 }
 
-template<typename T>
+template <typename T>
 inline static const char* Atoi(const char* p, T* out) {
   int sign;
   T value;
@@ -244,16 +243,16 @@ inline static const char* Atoi(const char* p, T* out) {
   return p;
 }
 
-template<typename T>
+template <typename T>
 inline static double Pow(T base, int power) {
   if (power < 0) {
     return 1.0 / Pow(base, -power);
   } else if (power == 0) {
     return 1;
   } else if (power % 2 == 0) {
-    return Pow(base*base, power / 2);
+    return Pow(base * base, power / 2);
   } else if (power % 3 == 0) {
-    return Pow(base*base*base, power / 3);
+    return Pow(base * base * base, power / 3);
   } else {
     return base * Pow(base, power - 1);
   }
@@ -315,18 +314,25 @@ inline static const char* Atof(const char* p, double* out) {
       }
       if (expon > 308) expon = 308;
       // Calculate scaling factor.
-      while (expon >= 50) { scale *= 1E50; expon -= 50; }
-      while (expon >= 8) { scale *= 1E8;  expon -= 8; }
-      while (expon > 0) { scale *= 10.0; expon -= 1; }
+      while (expon >= 50) {
+        scale *= 1E50;
+        expon -= 50;
+      }
+      while (expon >= 8) {
+        scale *= 1E8;
+        expon -= 8;
+      }
+      while (expon > 0) {
+        scale *= 10.0;
+        expon -= 1;
+      }
     }
     // Return signed and scaled floating point result.
     *out = sign * (frac ? (value / scale) : (value * scale));
   } else {
     size_t cnt = 0;
-    while (*(p + cnt) != '\0' && *(p + cnt) != ' '
-           && *(p + cnt) != '\t' && *(p + cnt) != ','
-           && *(p + cnt) != '\n' && *(p + cnt) != '\r'
-           && *(p + cnt) != ':') {
+    while (*(p + cnt) != '\0' && *(p + cnt) != ' ' && *(p + cnt) != '\t' && *(p + cnt) != ',' &&
+           *(p + cnt) != '\n' && *(p + cnt) != '\r' && *(p + cnt) != ':') {
       ++cnt;
     }
     if (cnt > 0) {
@@ -361,7 +367,7 @@ inline static const char* AtofPrecise(const char* p, double* out) {
 
   // Rare path: Not in RFC 7159 format. Possible "inf", "nan", etc. Fallback to standard library:
   char* end2;
-  errno = 0;  // This is Required before calling strtod.
+  errno = 0;                     // This is Required before calling strtod.
   *out = std::strtod(p, &end2);  // strtod is locale aware.
   if (end2 == p) {
     Log::Fatal("no conversion to double for: %s", p);
@@ -402,7 +408,7 @@ inline static const char* SkipReturn(const char* p) {
   return p;
 }
 
-template<typename T, typename T2>
+template <typename T, typename T2>
 inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   std::vector<T2> ret(arr.size());
   for (size_t i = 0; i < arr.size(); ++i) {
@@ -411,7 +417,7 @@ inline static std::vector<T2> ArrayCast(const std::vector<T>& arr) {
   return ret;
 }
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelper {
   T operator()(const std::string& str) const {
     T ret = 0;
@@ -420,14 +426,12 @@ struct __StringToTHelper {
   }
 };
 
-template<typename T>
+template <typename T>
 struct __StringToTHelper<T, true> {
-  T operator()(const std::string& str) const {
-    return static_cast<T>(std::stod(str));
-  }
+  T operator()(const std::string& str) const { return static_cast<T>(std::stod(str)); }
 };
 
-template<typename T>
+template <typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = Split(str.c_str(), delimiter);
   std::vector<T> ret;
@@ -439,9 +443,11 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
   return ret;
 }
 
-template<typename T>
-inline static std::vector<std::vector<T>> StringToArrayofArrays(
-    const std::string& str, char left_bracket, char right_bracket, char delimiter) {
+template <typename T>
+inline static std::vector<std::vector<T>> StringToArrayofArrays(const std::string& str,
+                                                                char left_bracket,
+                                                                char right_bracket,
+                                                                char delimiter) {
   std::vector<std::string> strs = SplitBrackets(str.c_str(), left_bracket, right_bracket);
   std::vector<std::vector<T>> ret;
   for (const auto& s : strs) {
@@ -450,7 +456,7 @@ inline static std::vector<std::vector<T>> StringToArrayofArrays(
   return ret;
 }
 
-template<typename T>
+template <typename T>
 inline static std::vector<T> StringToArray(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -466,16 +472,14 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
   return ret;
 }
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelperFast {
-  const char* operator()(const char*p, T* out) const {
-    return Atoi(p, out);
-  }
+  const char* operator()(const char* p, T* out) const { return Atoi(p, out); }
 };
 
-template<typename T>
+template <typename T>
 struct __StringToTHelperFast<T, true> {
-  const char* operator()(const char*p, T* out) const {
+  const char* operator()(const char* p, T* out) const {
     double tmp = 0.0f;
     auto ret = Atof(p, &tmp);
     *out = static_cast<T>(tmp);
@@ -483,7 +487,7 @@ struct __StringToTHelperFast<T, true> {
   }
 };
 
-template<typename T>
+template <typename T>
 inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -497,8 +501,9 @@ inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   return ret;
 }
 
-template<typename T>
-inline static std::string Join(const std::vector<T>& strs, const char* delimiter, const bool force_C_locale = false) {
+template <typename T>
+inline static std::string Join(const std::vector<T>& strs, const char* delimiter,
+                               const bool force_C_locale = false) {
   if (strs.empty()) {
     return std::string("");
   }
@@ -515,8 +520,9 @@ inline static std::string Join(const std::vector<T>& strs, const char* delimiter
   return str_buf.str();
 }
 
-template<>
-inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter, const bool force_C_locale) {
+template <>
+inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* delimiter,
+                                const bool force_C_locale) {
   if (strs.empty()) {
     return std::string("");
   }
@@ -533,8 +539,9 @@ inline std::string Join<int8_t>(const std::vector<int8_t>& strs, const char* del
   return str_buf.str();
 }
 
-template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter, const bool force_C_locale = false) {
+template <typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end,
+                               const char* delimiter, const bool force_C_locale = false) {
   if (end - start <= 0) {
     return std::string("");
   }
@@ -569,7 +576,7 @@ inline static int64_t Pow2RoundUp(int64_t x) {
  * \param p_rec The input/output vector of the values.
  */
 inline static void Softmax(std::vector<double>* p_rec) {
-  std::vector<double> &rec = *p_rec;
+  std::vector<double>& rec = *p_rec;
   double wmax = rec[0];
   for (size_t i = 1; i < rec.size(); ++i) {
     wmax = std::max(rec[i], wmax);
@@ -599,17 +606,18 @@ inline static void Softmax(const double* input, double* output, int len) {
   }
 }
 
-template<typename T>
+template <typename T>
 std::vector<const T*> ConstPtrInVectorWrapper(const std::vector<std::unique_ptr<T>>& input) {
   std::vector<const T*> ret;
-  for (auto t = input.begin(); t !=input.end(); ++t) {
+  for (auto t = input.begin(); t != input.end(); ++t) {
     ret.push_back(t->get());
   }
   return ret;
 }
 
-template<typename T1, typename T2>
-inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start, bool is_reverse = false) {
+template <typename T1, typename T2>
+inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, size_t start,
+                               bool is_reverse = false) {
   std::vector<std::pair<T1, T2>> arr;
   auto& ref_key = *keys;
   auto& ref_value = *values;
@@ -617,13 +625,13 @@ inline static void SortForPair(std::vector<T1>* keys, std::vector<T2>* values, s
     arr.emplace_back(ref_key[i], ref_value[i]);
   }
   if (!is_reverse) {
-    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
-      return a.first < b.first;
-    });
+    std::stable_sort(
+        arr.begin(), arr.end(),
+        [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) { return a.first < b.first; });
   } else {
-    std::stable_sort(arr.begin(), arr.end(), [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) {
-      return a.first > b.first;
-    });
+    std::stable_sort(
+        arr.begin(), arr.end(),
+        [](const std::pair<T1, T2>& a, const std::pair<T1, T2>& b) { return a.first > b.first; });
   }
   for (size_t i = start; i < arr.size(); ++i) {
     ref_key[i] = arr[i].first;
@@ -674,13 +682,13 @@ inline static float AvoidInf(float x) {
   }
 }
 
-template<typename _Iter> inline
-static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
+template <typename _Iter>
+inline static typename std::iterator_traits<_Iter>::value_type* IteratorValType(_Iter) {
   return (0);
 }
 
-template<typename _RanIt, typename _Pr, typename _VTRanIt> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
+template <typename _RanIt, typename _Pr, typename _VTRanIt>
+inline static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t len = _Last - _First;
   const size_t kMinInnerLen = 1024;
   int num_threads = OMP_NUM_THREADS();
@@ -693,7 +701,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
 #pragma omp parallel for num_threads(num_threads) schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
-    size_t left = inner_size*i;
+    size_t left = inner_size * i;
     size_t right = left + inner_size;
     right = std::min(right, len);
     if (right > left) {
@@ -707,13 +715,15 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));
-    #pragma omp parallel for num_threads(num_threads) schedule(static, 1)
+#pragma omp parallel for num_threads(num_threads) schedule(static, 1)
     for (int i = 0; i < loop_size; ++i) {
       size_t left = i * 2 * s;
       size_t mid = left + s;
       size_t right = mid + s;
       right = std::min(len, right);
-      if (mid >= right) { continue; }
+      if (mid >= right) {
+        continue;
+      }
       std::copy(_First + left, _First + mid, buf + left);
       std::merge(buf + left, buf + mid, _First + mid, _First + right, _First + left, _Pred);
     }
@@ -721,17 +731,19 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   }
 }
 
-template<typename _RanIt, typename _Pr> inline
-static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
+template <typename _RanIt, typename _Pr>
+inline static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred) {
   return ParallelSort(_First, _Last, _Pred, IteratorValType(_First));
 }
 
 // Check that all y[] are in interval [ymin, ymax] (end points included); throws error if not
 template <typename T>
-inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int ny, const char *callername) {
+inline static void CheckElementsIntervalClosed(const T* y, T ymin, T ymax, int ny,
+                                               const char* callername) {
   auto fatal_msg = [&y, &ymin, &ymax, &callername](int i) {
     std::ostringstream os;
-    os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", " << ymax << "]";
+    os << "[%s]: does not tolerate element [#%i = " << y[i] << "] outside [" << ymin << ", "
+       << ymax << "]";
     Log::Fatal(os.str().c_str(), callername, i);
   };
   for (int i = 1; i < ny; i += 2) {
@@ -759,7 +771,7 @@ inline static void CheckElementsIntervalClosed(const T *y, T ymin, T ymax, int n
 // One-pass scan over array w with nw elements: find min, max and sum of elements;
 // this is useful for checking weight requirements.
 template <typename T1, typename T2>
-inline static void ObtainMinMaxSum(const T1 *w, int nw, T1 *mi, T1 *ma, T2 *su) {
+inline static void ObtainMinMaxSum(const T1* w, int nw, T1* mi, T1* ma, T2* su) {
   T1 minw;
   T1 maxw;
   T1 sumw;
@@ -807,7 +819,7 @@ inline static std::vector<uint32_t> EmptyBitset(int n) {
   return std::vector<uint32_t>(size);
 }
 
-template<typename T>
+template <typename T>
 inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
   auto& ref_v = *vec;
   int i1 = val / 32;
@@ -818,7 +830,7 @@ inline static void InsertBitset(std::vector<uint32_t>* vec, const T val) {
   ref_v[i1] |= (1 << i2);
 }
 
-template<typename T>
+template <typename T>
 inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   std::vector<uint32_t> ret;
   for (int i = 0; i < n; ++i) {
@@ -832,7 +844,7 @@ inline static std::vector<uint32_t> ConstructBitset(const T* vals, int n) {
   return ret;
 }
 
-template<typename T>
+template <typename T>
 inline static bool FindInBitset(const uint32_t* bits, int n, T pos) {
   int i1 = pos / 32;
   if (i1 >= n) {
@@ -847,9 +859,7 @@ inline static bool CheckDoubleEqualOrdered(double a, double b) {
   return b <= upper;
 }
 
-inline static double GetDoubleUpperBound(double a) {
-  return std::nextafter(a, INFINITY);
-}
+inline static double GetDoubleUpperBound(double a) { return std::nextafter(a, INFINITY); }
 
 inline static size_t GetLine(const char* str) {
   auto start = str;
@@ -894,16 +904,14 @@ inline bool CheckAllowedJSON(const std::string& s) {
         || char_code == 93   // ]
         || char_code == 123  // {
         || char_code == 125  // }
-        ) {
+    ) {
       return false;
     }
   }
   return true;
 }
 
-inline int RoundInt(double x) {
-  return static_cast<int>(x + 0.5f);
-}
+inline int RoundInt(double x) { return static_cast<int>(x + 0.5f); }
 
 template <typename T, std::size_t N = 32>
 class AlignmentAllocator {
@@ -925,49 +933,31 @@ class AlignmentAllocator {
 
   inline ~AlignmentAllocator() throw() {}
 
-  inline pointer address(reference r) {
-    return &r;
-  }
+  inline pointer address(reference r) { return &r; }
 
-  inline const_pointer address(const_reference r) const {
-    return &r;
-  }
+  inline const_pointer address(const_reference r) const { return &r; }
 
-  inline pointer allocate(size_type n) {
-    return (pointer)_mm_malloc(n * sizeof(value_type), N);
-  }
+  inline pointer allocate(size_type n) { return (pointer)_mm_malloc(n * sizeof(value_type), N); }
 
-  inline void deallocate(pointer p, size_type) {
-    _mm_free(p);
-  }
+  inline void deallocate(pointer p, size_type) { _mm_free(p); }
 
-  inline void construct(pointer p, const value_type& wert) {
-    new (p) value_type(wert);
-  }
+  inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
 
-  inline void destroy(pointer p) {
-    p->~value_type();
-  }
+  inline void destroy(pointer p) { p->~value_type(); }
 
-  inline size_type max_size() const throw() {
-    return size_type(-1) / sizeof(value_type);
-  }
+  inline size_type max_size() const throw() { return size_type(-1) / sizeof(value_type); }
 
   template <typename T2>
   struct rebind {
     typedef AlignmentAllocator<T2, N> other;
   };
 
-  bool operator!=(const AlignmentAllocator<T, N>& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const AlignmentAllocator<T, N>& other) const { return !(*this == other); }
 
   // Returns true if and only if storage allocated from *this
   // can be deallocated from other, and vice versa.
   // Always returns true for stateless allocators.
-  bool operator==(const AlignmentAllocator<T, N>&) const {
-    return true;
-  }
+  bool operator==(const AlignmentAllocator<T, N>&) const { return true; }
 };
 
 class Timer {
@@ -1005,8 +995,8 @@ class Timer {
 
   void Print() const {
 #ifdef TIMETAG
-    std::unordered_map<std::string, std::chrono::duration<double, std::milli>>
-        stats(stats_[0].begin(), stats_[0].end());
+    std::unordered_map<std::string, std::chrono::duration<double, std::milli>> stats(
+        stats_[0].begin(), stats_[0].end());
     for (size_t i = 1; i < stats_.size(); ++i) {
       for (auto it = stats_[i].begin(); it != stats_[i].end(); ++it) {
         if (stats.find(it->first) == stats.end()) {
@@ -1016,20 +1006,16 @@ class Timer {
         }
       }
     }
-    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(
-        stats.begin(), stats.end());
+    std::map<std::string, std::chrono::duration<double, std::milli>> ordered(stats.begin(),
+                                                                             stats.end());
     for (auto it = ordered.begin(); it != ordered.end(); ++it) {
       Log::Info("%s costs:\t %f", it->first.c_str(), it->second * 1e-3);
     }
 #endif  // TIMETAG
   }
 #ifdef TIMETAG
-  std::vector<
-      std::unordered_map<std::string, std::chrono::steady_clock::time_point>>
-      start_time_;
-  std::vector<std::unordered_map<std::string,
-                                 std::chrono::duration<double, std::milli>>>
-      stats_;
+  std::vector<std::unordered_map<std::string, std::chrono::steady_clock::time_point>> start_time_;
+  std::vector<std::unordered_map<std::string, std::chrono::duration<double, std::milli>>> stats_;
 #endif  // TIMETAG
 };
 
@@ -1056,20 +1042,20 @@ class FunctionTimer {
 
 extern Common::Timer global_timer;
 
-
 /*!
-* Provides locale-independent alternatives to Common's methods.
-* Essential to make models robust to locale settings.
-*/
+ * Provides locale-independent alternatives to Common's methods.
+ * Essential to make models robust to locale settings.
+ */
 namespace CommonC {
 
-template<typename T>
+template <typename T>
 inline static std::string Join(const std::vector<T>& strs, const char* delimiter) {
   return LightGBM::Common::Join(strs, delimiter, true);
 }
 
-template<typename T>
-inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end, const char* delimiter) {
+template <typename T>
+inline static std::string Join(const std::vector<T>& strs, size_t start, size_t end,
+                               const char* delimiter) {
   return LightGBM::Common::Join(strs, start, end, delimiter, true);
 }
 
@@ -1077,22 +1063,20 @@ inline static const char* Atof(const char* p, double* out) {
   return LightGBM::Common::Atof(p, out);
 }
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelperFast {
-  const char* operator()(const char*p, T* out) const {
-    return LightGBM::Common::Atoi(p, out);
-  }
+  const char* operator()(const char* p, T* out) const { return LightGBM::Common::Atoi(p, out); }
 };
 
 /*!
-* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
-*          has **less** floating point precision than ``__StringToTHelper``.
-*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
-*/
-template<typename T>
+ * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+ *          has **less** floating point precision than ``__StringToTHelper``.
+ *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms
+ * of precision. Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+ */
+template <typename T>
 struct __StringToTHelperFast<T, true> {
-  const char* operator()(const char*p, T* out) const {
+  const char* operator()(const char* p, T* out) const {
     double tmp = 0.0f;
     auto ret = Atof(p, &tmp);
     *out = static_cast<T>(tmp);
@@ -1100,7 +1084,7 @@ struct __StringToTHelperFast<T, true> {
   }
 };
 
-template<typename T, bool is_float>
+template <typename T, bool is_float>
 struct __StringToTHelper {
   T operator()(const std::string& str) const {
     T ret = 0;
@@ -1110,35 +1094,35 @@ struct __StringToTHelper {
 };
 
 /*!
-* \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
-*          has **less** floating point precision than ``__StringToTHelper``.
-*          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-*          Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
-* \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
-*/
-template<typename T>
+ * \warning Beware that ``Common::Atof`` in ``__StringToTHelperFast``,
+ *          has **less** floating point precision than ``__StringToTHelper``.
+ *          Both versions are kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms
+ * of precision. Check ``StringToArrayFast`` and ``StringToArray`` for more details on this.
+ * \note It is possible that ``fast_double_parser::parse_number`` is faster than ``Common::Atof``.
+ */
+template <typename T>
 struct __StringToTHelper<T, true> {
   T operator()(const std::string& str) const {
     double tmp;
 
     const char* end = Common::AtofPrecise(str.c_str(), &tmp);
     if (end == str.c_str()) {
-        Log::Fatal("Failed to parse double: %s", str.c_str());
+      Log::Fatal("Failed to parse double: %s", str.c_str());
     }
 
     return static_cast<T>(tmp);
   }
 };
 
-
 /*!
-* \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
-*          this method has less precision for floating point numbers than ``StringToArray``,
-*          which calls ``__StringToTHelper``.
-*          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
-*          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in terms of precision.
-*/
-template<typename T>
+ * \warning Beware that due to internal use of ``Common::Atof`` in ``__StringToTHelperFast``,
+ *          this method has less precision for floating point numbers than ``StringToArray``,
+ *          which calls ``__StringToTHelper``.
+ *          As such, ``StringToArrayFast`` and ``StringToArray`` are not equivalent!
+ *          Both versions were kept to maintain bit-for-bit the "legacy" LightGBM behaviour in
+ * terms of precision.
+ */
+template <typename T>
 inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -1153,11 +1137,11 @@ inline static std::vector<T> StringToArrayFast(const std::string& str, int n) {
 }
 
 /*!
-* \warning Do not replace calls to this method by ``StringToArrayFast``.
-*          This method is more precise for floating point numbers.
-*          Check ``StringToArrayFast`` for more details.
-*/
-template<typename T>
+ * \warning Do not replace calls to this method by ``StringToArrayFast``.
+ *          This method is more precise for floating point numbers.
+ *          Check ``StringToArrayFast`` for more details.
+ */
+template <typename T>
 inline static std::vector<T> StringToArray(const std::string& str, int n) {
   if (n == 0) {
     return std::vector<T>();
@@ -1174,11 +1158,11 @@ inline static std::vector<T> StringToArray(const std::string& str, int n) {
 }
 
 /*!
-* \warning Do not replace calls to this method by ``StringToArrayFast``.
-*          This method is more precise for floating point numbers.
-*          Check ``StringToArrayFast`` for more details.
-*/
-template<typename T>
+ * \warning Do not replace calls to this method by ``StringToArrayFast``.
+ *          This method is more precise for floating point numbers.
+ *          Check ``StringToArrayFast`` for more details.
+ */
+template <typename T>
 inline static std::vector<T> StringToArray(const std::string& str, char delimiter) {
   std::vector<std::string> strs = LightGBM::Common::Split(str.c_str(), delimiter);
   std::vector<T> ret;
@@ -1191,37 +1175,39 @@ inline static std::vector<T> StringToArray(const std::string& str, char delimite
 }
 
 /*!
-* Safely formats a value onto a buffer according to a format string and null-terminates it.
-*
-* \note It checks that the full value was written or forcefully aborts.
-*       This safety check serves to prevent incorrect internal API usage.
-*       Correct usage will never incur in this problem:
-*         - The received buffer size shall be sufficient at all times for the input format string and value.
-*/
+ * Safely formats a value onto a buffer according to a format string and null-terminates it.
+ *
+ * \note It checks that the full value was written or forcefully aborts.
+ *       This safety check serves to prevent incorrect internal API usage.
+ *       Correct usage will never incur in this problem:
+ *         - The received buffer size shall be sufficient at all times for the input format string
+ * and value.
+ */
 template <typename T>
-inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format, const T value) {
-    auto result = fmt::format_to_n(buffer, buf_len, format, value);
-    if (result.size >= buf_len) {
-      Log::Fatal("Numerical conversion failed. Buffer is too small.");
-    }
-    buffer[result.size] = '\0';
+inline static void format_to_buf(char* buffer, const size_t buf_len, const char* format,
+                                 const T value) {
+  auto result = fmt::format_to_n(buffer, buf_len, format, value);
+  if (result.size >= buf_len) {
+    Log::Fatal("Numerical conversion failed. Buffer is too small.");
+  }
+  buffer[result.size] = '\0';
 }
 
-template<typename T, bool is_float, bool high_precision>
+template <typename T, bool is_float, bool high_precision>
 struct __TToStringHelper {
   void operator()(T value, char* buffer, size_t buf_len) const {
     format_to_buf(buffer, buf_len, "{}", value);
   }
 };
 
-template<typename T>
+template <typename T>
 struct __TToStringHelper<T, true, false> {
   void operator()(T value, char* buffer, size_t buf_len) const {
     format_to_buf(buffer, buf_len, "{:g}", value);
   }
 };
 
-template<typename T>
+template <typename T>
 struct __TToStringHelper<T, true, true> {
   void operator()(T value, char* buffer, size_t buf_len) const {
     format_to_buf(buffer, buf_len, "{:.17g}", value);
@@ -1229,14 +1215,14 @@ struct __TToStringHelper<T, true, true> {
 };
 
 /*!
-* Converts an array to a string with with values separated by the space character.
-* This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
-* and is locale-independent.
-*
-* \note If ``high_precision_output`` is set to true,
-*       floating point values are output with more digits of precision.
-*/
-template<bool high_precision_output = false, typename T>
+ * Converts an array to a string with with values separated by the space character.
+ * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
+ * and is locale-independent.
+ *
+ * \note If ``high_precision_output`` is set to true,
+ *       floating point values are output with more digits of precision.
+ */
+template <bool high_precision_output = false, typename T>
 inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   if (arr.empty() || n == 0) {
     return std::string("");
@@ -1255,9 +1241,7 @@ inline static std::string ArrayToString(const std::vector<T>& arr, size_t n) {
   return str_buf.str();
 }
 
-
 }  // namespace CommonC
-
 
 }  // namespace LightGBM
 

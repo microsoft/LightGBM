@@ -9,15 +9,15 @@
 
 namespace LightGBM {
 
-SampleStrategy* SampleStrategy::CreateSampleStrategy(
-  const Config* config,
-  const Dataset* train_data,
-  const ObjectiveFunction* objective_function,
-  int num_tree_per_iteration) {
+SampleStrategy* SampleStrategy::CreateSampleStrategy(const Config* config,
+                                                     const Dataset* train_data,
+                                                     const ObjectiveFunction* objective_function,
+                                                     int num_tree_per_iteration) {
   if (config->data_sample_strategy == std::string("goss")) {
     return new GOSSStrategy(config, train_data, num_tree_per_iteration);
   } else {
-    return new BaggingSampleStrategy(config, train_data, objective_function, num_tree_per_iteration);
+    return new BaggingSampleStrategy(config, train_data, objective_function,
+                                     num_tree_per_iteration);
   }
 }
 

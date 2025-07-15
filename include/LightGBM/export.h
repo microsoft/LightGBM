@@ -13,7 +13,6 @@
 #define LIGHTGBM_EXTERN_C
 #endif
 
-
 #ifdef _MSC_VER
 #define LIGHTGBM_EXPORT __declspec(dllexport)
 #define LIGHTGBM_C_EXPORT LIGHTGBM_EXTERN_C __declspec(dllexport)

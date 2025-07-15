@@ -37,9 +37,8 @@ class CostEfficientGradientBoosting {
   void Init() {
     auto train_data = tree_learner_->train_data_;
     if (!init_) {
-      splits_per_leaf_.resize(
-          static_cast<size_t>(tree_learner_->config_->num_leaves) *
-          train_data->num_features());
+      splits_per_leaf_.resize(static_cast<size_t>(tree_learner_->config_->num_leaves) *
+                              train_data->num_features());
       is_feature_used_in_split_.clear();
       is_feature_used_in_split_.resize(train_data->num_features());
     }
@@ -59,8 +58,8 @@ class CostEfficientGradientBoosting {
             "number.");
       }
       if (!init_) {
-        feature_used_in_data_ = Common::EmptyBitset(train_data->num_features() *
-                                                    tree_learner_->num_data_);
+        feature_used_in_data_ =
+            Common::EmptyBitset(train_data->num_features() * tree_learner_->num_data_);
       }
     }
     init_ = true;
@@ -69,93 +68,79 @@ class CostEfficientGradientBoosting {
   void BeforeTrain() {
     // clear the splits in splits_per_leaf_
     Threading::For<size_t>(0, splits_per_leaf_.size(), 1024,
-      [this] (int /*thread_index*/, size_t start, size_t end) {
-      for (size_t i = start; i < end; ++i) {
-        splits_per_leaf_[i].Reset();
-      }
-    });
+                           [this](int /*thread_index*/, size_t start, size_t end) {
+                             for (size_t i = start; i < end; ++i) {
+                               splits_per_leaf_[i].Reset();
+                             }
+                           });
   }
 
-  double DeltaGain(int feature_index, int real_fidx, int leaf_index,
-                   int num_data_in_leaf, SplitInfo split_info) {
+  double DeltaGain(int feature_index, int real_fidx, int leaf_index, int num_data_in_leaf,
+                   SplitInfo split_info) {
     auto config = tree_learner_->config_;
-    double delta =
-        config->cegb_tradeoff * config->cegb_penalty_split * num_data_in_leaf;
+    double delta = config->cegb_tradeoff * config->cegb_penalty_split * num_data_in_leaf;
     if (!config->cegb_penalty_feature_coupled.empty() &&
         !is_feature_used_in_split_[feature_index]) {
-      delta += config->cegb_tradeoff *
-               config->cegb_penalty_feature_coupled[real_fidx];
+      delta += config->cegb_tradeoff * config->cegb_penalty_feature_coupled[real_fidx];
     }
     if (!config->cegb_penalty_feature_lazy.empty()) {
-      delta += config->cegb_tradeoff *
-               CalculateOndemandCosts(feature_index, real_fidx, leaf_index);
+      delta +=
+          config->cegb_tradeoff * CalculateOndemandCosts(feature_index, real_fidx, leaf_index);
     }
-    splits_per_leaf_[static_cast<size_t>(leaf_index) *
-                         tree_learner_->train_data_->num_features() +
+    splits_per_leaf_[static_cast<size_t>(leaf_index) * tree_learner_->train_data_->num_features() +
                      feature_index] = split_info;
     return delta;
   }
 
-  void UpdateLeafBestSplits(Tree* tree, int best_leaf,
-                            const SplitInfo* best_split_info,
+  void UpdateLeafBestSplits(Tree* tree, int best_leaf, const SplitInfo* best_split_info,
                             std::vector<SplitInfo>* best_split_per_leaf) {
     auto config = tree_learner_->config_;
     auto train_data = tree_learner_->train_data_;
-    const int inner_feature_index =
-        train_data->InnerFeatureIndex(best_split_info->feature);
+    const int inner_feature_index = train_data->InnerFeatureIndex(best_split_info->feature);
     auto& ref_best_split_per_leaf = *best_split_per_leaf;
     if (!config->cegb_penalty_feature_coupled.empty() &&
         !is_feature_used_in_split_[inner_feature_index]) {
       is_feature_used_in_split_[inner_feature_index] = true;
       for (int i = 0; i < tree->num_leaves(); ++i) {
         if (i == best_leaf) continue;
-        auto split = &splits_per_leaf_[static_cast<size_t>(i) *
-                                           train_data->num_features() +
+        auto split = &splits_per_leaf_[static_cast<size_t>(i) * train_data->num_features() +
                                        inner_feature_index];
         split->gain +=
-            config->cegb_tradeoff *
-            config->cegb_penalty_feature_coupled[best_split_info->feature];
+            config->cegb_tradeoff * config->cegb_penalty_feature_coupled[best_split_info->feature];
         // Avoid to update the leaf that cannot split
-        if (ref_best_split_per_leaf[i].gain > kMinScore &&
-            *split > ref_best_split_per_leaf[i]) {
+        if (ref_best_split_per_leaf[i].gain > kMinScore && *split > ref_best_split_per_leaf[i]) {
           ref_best_split_per_leaf[i] = *split;
         }
       }
     }
     if (!config->cegb_penalty_feature_lazy.empty()) {
       data_size_t cnt_leaf_data = 0;
-      auto tmp_idx = tree_learner_->data_partition_->GetIndexOnLeaf(
-          best_leaf, &cnt_leaf_data);
+      auto tmp_idx = tree_learner_->data_partition_->GetIndexOnLeaf(best_leaf, &cnt_leaf_data);
       for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
         int real_idx = tmp_idx[i_input];
-        Common::InsertBitset(
-            &feature_used_in_data_,
-            train_data->num_data() * inner_feature_index + real_idx);
+        Common::InsertBitset(&feature_used_in_data_,
+                             train_data->num_data() * inner_feature_index + real_idx);
       }
     }
   }
 
  private:
-  double CalculateOndemandCosts(int feature_index, int real_fidx,
-                                int leaf_index) const {
+  double CalculateOndemandCosts(int feature_index, int real_fidx, int leaf_index) const {
     if (tree_learner_->config_->cegb_penalty_feature_lazy.empty()) {
       return 0.0f;
     }
     auto train_data = tree_learner_->train_data_;
-    double penalty =
-        tree_learner_->config_->cegb_penalty_feature_lazy[real_fidx];
+    double penalty = tree_learner_->config_->cegb_penalty_feature_lazy[real_fidx];
 
     double total = 0.0f;
     data_size_t cnt_leaf_data = 0;
-    auto tmp_idx = tree_learner_->data_partition_->GetIndexOnLeaf(
-        leaf_index, &cnt_leaf_data);
+    auto tmp_idx = tree_learner_->data_partition_->GetIndexOnLeaf(leaf_index, &cnt_leaf_data);
 
     for (data_size_t i_input = 0; i_input < cnt_leaf_data; ++i_input) {
       int real_idx = tmp_idx[i_input];
-      if (Common::FindInBitset(
-              feature_used_in_data_.data(),
-              train_data->num_data() * train_data->num_features(),
-              train_data->num_data() * feature_index + real_idx)) {
+      if (Common::FindInBitset(feature_used_in_data_.data(),
+                               train_data->num_data() * train_data->num_features(),
+                               train_data->num_data() * feature_index + real_idx)) {
         continue;
       }
       total += penalty;

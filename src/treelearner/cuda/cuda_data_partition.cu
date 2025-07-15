@@ -17,7 +17,8 @@
 namespace LightGBM {
 
 __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t num_data,
-  data_size_t* data_indices, int* cuda_data_index_to_leaf_index) {
+                                                 data_size_t* data_indices,
+                                                 int* cuda_data_index_to_leaf_index) {
   const unsigned int data_index = threadIdx.x + blockIdx.x * blockDim.x;
   if (data_index < num_data) {
     data_indices[data_index] = data_index;
@@ -25,10 +26,9 @@ __global__ void FillDataIndicesBeforeTrainKernel(const data_size_t num_data,
   }
 }
 
-__global__ void FillDataIndexToLeafIndexKernel(
-  const data_size_t num_data,
-  const data_size_t* data_indices,
-  int* data_index_to_leaf_index) {
+__global__ void FillDataIndexToLeafIndexKernel(const data_size_t num_data,
+                                               const data_size_t* data_indices,
+                                               int* data_index_to_leaf_index) {
   const data_size_t data_index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   if (data_index < num_data) {
     data_index_to_leaf_index[data_indices[data_index]] = 0;
@@ -37,24 +37,34 @@ __global__ void FillDataIndexToLeafIndexKernel(
 
 void CUDADataPartition::LaunchFillDataIndicesBeforeTrain() {
   const data_size_t num_data_in_root = root_num_data();
-  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
-  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) /
+                         FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndicesBeforeTrainKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+      num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
 void CUDADataPartition::LaunchFillDataIndexToLeafIndex() {
   const data_size_t num_data_in_root = root_num_data();
-  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
-  FillDataIndexToLeafIndexKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) /
+                         FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  FillDataIndexToLeafIndexKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+      num_data_in_root, cuda_data_indices_, cuda_data_index_to_leaf_index_);
 }
 
-__device__ __forceinline__ void PrepareOffset(const data_size_t num_data_in_leaf, uint16_t* block_to_left_offset,
-  data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer,
-  const uint16_t thread_to_left_offset_cnt, uint16_t* shared_mem_buffer) {
+__device__ __forceinline__ void PrepareOffset(const data_size_t num_data_in_leaf,
+                                              uint16_t* block_to_left_offset,
+                                              data_size_t* block_to_left_offset_buffer,
+                                              data_size_t* block_to_right_offset_buffer,
+                                              const uint16_t thread_to_left_offset_cnt,
+                                              uint16_t* shared_mem_buffer) {
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockDim_x = blockDim.x;
-  const uint16_t thread_to_left_offset = ShufflePrefixSum<uint16_t>(thread_to_left_offset_cnt, shared_mem_buffer);
-  const data_size_t num_data_in_block = (blockIdx.x + 1) * blockDim_x <= num_data_in_leaf ? static_cast<data_size_t>(blockDim_x) :
-    num_data_in_leaf - static_cast<data_size_t>(blockIdx.x * blockDim_x);
+  const uint16_t thread_to_left_offset =
+      ShufflePrefixSum<uint16_t>(thread_to_left_offset_cnt, shared_mem_buffer);
+  const data_size_t num_data_in_block =
+      (blockIdx.x + 1) * blockDim_x <= num_data_in_leaf
+          ? static_cast<data_size_t>(blockDim_x)
+          : num_data_in_leaf - static_cast<data_size_t>(blockIdx.x * blockDim_x);
   if (static_cast<data_size_t>(threadIdx_x) < num_data_in_block) {
     block_to_left_offset[threadIdx_x] = thread_to_left_offset;
   }
@@ -80,47 +90,30 @@ __device__ bool CUDAFindInBitset(const uint32_t* bits, int n, T pos) {
   return (bits[i1] >> i2) & 1;
 }
 
+#define UpdateDataIndexToLeafIndexKernel_PARAMS                                              \
+  const BIN_TYPE *column_data, const data_size_t num_data_in_leaf,                           \
+      const data_size_t *data_indices_in_leaf, const uint32_t th, const uint32_t t_zero_bin, \
+      const uint32_t max_bin, const uint32_t min_bin, const int left_leaf_index,             \
+      const int right_leaf_index, const int default_leaf_index,                              \
+      const int missing_default_leaf_index
 
+#define UpdateDataIndexToLeafIndex_ARGS                                                  \
+  column_data, num_data_in_leaf, data_indices_in_leaf, th, t_zero_bin, max_bin, min_bin, \
+      left_leaf_index, right_leaf_index, default_leaf_index, missing_default_leaf_index
 
-#define UpdateDataIndexToLeafIndexKernel_PARAMS \
-  const BIN_TYPE* column_data, \
-  const data_size_t num_data_in_leaf, \
-  const data_size_t* data_indices_in_leaf, \
-  const uint32_t th, \
-  const uint32_t t_zero_bin, \
-  const uint32_t max_bin, \
-  const uint32_t min_bin, \
-  const int left_leaf_index, \
-  const int right_leaf_index, \
-  const int default_leaf_index, \
-  const int missing_default_leaf_index
-
-#define UpdateDataIndexToLeafIndex_ARGS \
-  column_data, \
-  num_data_in_leaf, \
-  data_indices_in_leaf, th, \
-  t_zero_bin, \
-  max_bin, \
-  min_bin, \
-  left_leaf_index, \
-  right_leaf_index, \
-  default_leaf_index, \
-  missing_default_leaf_index
-
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
-__global__ void UpdateDataIndexToLeafIndexKernel(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  int* cuda_data_index_to_leaf_index) {
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
+__global__ void UpdateDataIndexToLeafIndexKernel(UpdateDataIndexToLeafIndexKernel_PARAMS,
+                                                 int* cuda_data_index_to_leaf_index) {
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
     const uint32_t bin = static_cast<uint32_t>(column_data[global_data_index]);
     if (!MIN_IS_MAX) {
       if ((MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
-        (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
+          (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
         cuda_data_index_to_leaf_index[global_data_index] = missing_default_leaf_index;
-      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) ||
-                 (!USE_MIN_BIN && bin == 0)) {
+      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) || (!USE_MIN_BIN && bin == 0)) {
         if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO && MFB_IS_ZERO)) {
           cuda_data_index_to_leaf_index[global_data_index] = missing_default_leaf_index;
         } else {
@@ -157,139 +150,127 @@ __global__ void UpdateDataIndexToLeafIndexKernel(
 
 template <typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool missing_is_zero,
-  const bool missing_is_na,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_to_left,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool missing_is_zero, const bool missing_is_na,
+    const bool mfb_is_zero, const bool mfb_is_na, const bool max_to_left,
+    const bool is_single_feature_in_column) {
   if (min_bin < max_bin) {
     if (!missing_is_zero) {
-      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, false, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, false, BIN_TYPE>(
+          UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left,
+          is_single_feature_in_column);
     } else {
-      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, true, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<false, true, BIN_TYPE>(
+          UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left,
+          is_single_feature_in_column);
     }
   } else {
     if (!missing_is_zero) {
-      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, false, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, false, BIN_TYPE>(
+          UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left,
+          is_single_feature_in_column);
     } else {
-      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, true, BIN_TYPE>
-        (UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+      LaunchUpdateDataIndexToLeafIndexKernel_Inner0<true, true, BIN_TYPE>(
+          UpdateDataIndexToLeafIndex_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_to_left,
+          is_single_feature_in_column);
     }
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner0(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool missing_is_na,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_to_left,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool missing_is_na, const bool mfb_is_zero,
+    const bool mfb_is_na, const bool max_to_left, const bool is_single_feature_in_column) {
   if (!missing_is_na) {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left,
+        is_single_feature_in_column);
   } else {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, mfb_is_zero, mfb_is_na, max_to_left,
+        is_single_feature_in_column);
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner1(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_to_left,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool mfb_is_zero, const bool mfb_is_na,
+    const bool max_to_left, const bool is_single_feature_in_column) {
   if (!mfb_is_zero) {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                                  false, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
   } else {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true,
+                                                  BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, mfb_is_na, max_to_left, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner2(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool mfb_is_na,
-  const bool max_to_left,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool mfb_is_na, const bool max_to_left,
+    const bool is_single_feature_in_column) {
   if (!mfb_is_na) {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                                  MFB_IS_ZERO, false, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
   } else {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                                  MFB_IS_ZERO, true, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, max_to_left, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner3(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool max_to_left,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool max_to_left,
+    const bool is_single_feature_in_column) {
   if (!max_to_left) {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                                  MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
   } else {
-    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
-      (UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
+    LaunchUpdateDataIndexToLeafIndexKernel_Inner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                                  MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>(
+        UpdateDataIndexToLeafIndex_ARGS, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
-  UpdateDataIndexToLeafIndexKernel_PARAMS,
-  const bool is_single_feature_in_column) {
+    UpdateDataIndexToLeafIndexKernel_PARAMS, const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
-      <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
-        UpdateDataIndexToLeafIndex_ARGS,
-        cuda_data_index_to_leaf_index_);
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO,
+                                     MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
+        <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_ARGS,
+                                                         cuda_data_index_to_leaf_index_);
   } else {
-    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
-      <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
-        UpdateDataIndexToLeafIndex_ARGS,
-        cuda_data_index_to_leaf_index_);
+    UpdateDataIndexToLeafIndexKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO,
+                                     MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
+        <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_ARGS,
+                                                         cuda_data_index_to_leaf_index_);
   }
 }
 
-#define GenDataToLeftBitVectorKernel_PARAMS \
-  const BIN_TYPE* column_data, \
-  const data_size_t num_data_in_leaf, \
-  const data_size_t* data_indices_in_leaf, \
-  const uint32_t th, \
-  const uint32_t t_zero_bin, \
-  const uint32_t max_bin, \
-  const uint32_t min_bin, \
-  const uint8_t split_default_to_left, \
-  const uint8_t split_missing_default_to_left
+#define GenDataToLeftBitVectorKernel_PARAMS                                                  \
+  const BIN_TYPE *column_data, const data_size_t num_data_in_leaf,                           \
+      const data_size_t *data_indices_in_leaf, const uint32_t th, const uint32_t t_zero_bin, \
+      const uint32_t max_bin, const uint32_t min_bin, const uint8_t split_default_to_left,   \
+      const uint8_t split_missing_default_to_left
 
-#define GenBitVector_ARGS \
-  column_data, \
-  num_data_in_leaf, \
-  data_indices_in_leaf, \
-  th, \
-  t_zero_bin, \
-  max_bin, \
-  min_bin, \
-  split_default_to_left,  \
-  split_missing_default_to_left
+#define GenBitVector_ARGS                                                                \
+  column_data, num_data_in_leaf, data_indices_in_leaf, th, t_zero_bin, max_bin, min_bin, \
+      split_default_to_left, split_missing_default_to_left
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
-__global__ void GenDataToLeftBitVectorKernel(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  uint16_t* block_to_left_offset,
-  data_size_t* block_to_left_offset_buffer,
-  data_size_t* block_to_right_offset_buffer) {
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
+__global__ void GenDataToLeftBitVectorKernel(GenDataToLeftBitVectorKernel_PARAMS,
+                                             uint16_t* block_to_left_offset,
+                                             data_size_t* block_to_left_offset_buffer,
+                                             data_size_t* block_to_right_offset_buffer) {
   __shared__ uint16_t shared_mem_buffer[32];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -298,10 +279,9 @@ __global__ void GenDataToLeftBitVectorKernel(
     const uint32_t bin = static_cast<uint32_t>(column_data[global_data_index]);
     if (!MIN_IS_MAX) {
       if ((MISSING_IS_ZERO && !MFB_IS_ZERO && bin == t_zero_bin) ||
-        (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
+          (MISSING_IS_NA && !MFB_IS_NA && bin == max_bin)) {
         thread_to_left_offset_cnt = split_missing_default_to_left;
-      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) ||
-                 (!USE_MIN_BIN && bin == 0)) {
+      } else if ((USE_MIN_BIN && (bin < min_bin || bin > max_bin)) || (!USE_MIN_BIN && bin == 0)) {
         if ((MISSING_IS_NA && MFB_IS_NA) || (MISSING_IS_ZERO || MFB_IS_ZERO)) {
           thread_to_left_offset_cnt = split_missing_default_to_left;
         } else {
@@ -329,137 +309,135 @@ __global__ void GenDataToLeftBitVectorKernel(
     }
   }
   __syncthreads();
-  PrepareOffset(num_data_in_leaf, block_to_left_offset + blockIdx.x * blockDim.x, block_to_left_offset_buffer, block_to_right_offset_buffer,
-    thread_to_left_offset_cnt, shared_mem_buffer);
+  PrepareOffset(num_data_in_leaf, block_to_left_offset + blockIdx.x * blockDim.x,
+                block_to_left_offset_buffer, block_to_right_offset_buffer,
+                thread_to_left_offset_cnt, shared_mem_buffer);
 }
 
 template <typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool missing_is_zero,
-  const bool missing_is_na,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_bin_to_left,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool missing_is_zero, const bool missing_is_na,
+    const bool mfb_is_zero, const bool mfb_is_na, const bool max_bin_to_left,
+    const bool is_single_feature_in_column) {
   if (min_bin < max_bin) {
     if (!missing_is_zero) {
-      LaunchGenDataToLeftBitVectorKernelInner0<false, false, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+      LaunchGenDataToLeftBitVectorKernelInner0<false, false, BIN_TYPE>(
+          GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+          is_single_feature_in_column);
     } else {
-      LaunchGenDataToLeftBitVectorKernelInner0<false, true, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+      LaunchGenDataToLeftBitVectorKernelInner0<false, true, BIN_TYPE>(
+          GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+          is_single_feature_in_column);
     }
   } else {
     if (!missing_is_zero) {
-      LaunchGenDataToLeftBitVectorKernelInner0<true, false, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+      LaunchGenDataToLeftBitVectorKernelInner0<true, false, BIN_TYPE>(
+          GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+          is_single_feature_in_column);
     } else {
-      LaunchGenDataToLeftBitVectorKernelInner0<true, true, BIN_TYPE>
-        (GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+      LaunchGenDataToLeftBitVectorKernelInner0<true, true, BIN_TYPE>(
+          GenBitVector_ARGS, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+          is_single_feature_in_column);
     }
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool missing_is_na,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_bin_to_left,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool missing_is_na, const bool mfb_is_zero,
+    const bool mfb_is_na, const bool max_bin_to_left, const bool is_single_feature_in_column) {
   if (!missing_is_na) {
-    LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, false, BIN_TYPE>(
+        GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   } else {
-    LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner1<MIN_IS_MAX, MISSING_IS_ZERO, true, BIN_TYPE>(
+        GenBitVector_ARGS, mfb_is_zero, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool mfb_is_zero,
-  const bool mfb_is_na,
-  const bool max_bin_to_left,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool mfb_is_zero, const bool mfb_is_na,
+    const bool max_bin_to_left, const bool is_single_feature_in_column) {
   if (!mfb_is_zero) {
-    LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, false, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, false,
+                                             BIN_TYPE>(
+        GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   } else {
-    LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true, BIN_TYPE>
-      (GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner2<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, true,
+                                             BIN_TYPE>(
+        GenBitVector_ARGS, mfb_is_na, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool mfb_is_na,
-  const bool max_bin_to_left,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool mfb_is_na, const bool max_bin_to_left,
+    const bool is_single_feature_in_column) {
   if (!mfb_is_na) {
-    LaunchGenDataToLeftBitVectorKernelInner3
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, false, BIN_TYPE>
-      (GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                             MFB_IS_ZERO, false, BIN_TYPE>(
+        GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
   } else {
-    LaunchGenDataToLeftBitVectorKernelInner3
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, true, BIN_TYPE>
-      (GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner3<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                             MFB_IS_ZERO, true, BIN_TYPE>(
+        GenBitVector_ARGS, max_bin_to_left, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool max_bin_to_left,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool max_bin_to_left,
+    const bool is_single_feature_in_column) {
   if (!max_bin_to_left) {
-    LaunchGenDataToLeftBitVectorKernelInner4
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>
-      (GenBitVector_ARGS, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                             MFB_IS_ZERO, MFB_IS_NA, false, BIN_TYPE>(
+        GenBitVector_ARGS, is_single_feature_in_column);
   } else {
-    LaunchGenDataToLeftBitVectorKernelInner4
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>
-      (GenBitVector_ARGS, is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner4<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA,
+                                             MFB_IS_ZERO, MFB_IS_NA, true, BIN_TYPE>(
+        GenBitVector_ARGS, is_single_feature_in_column);
   }
 }
 
-template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
+template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO,
+          bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
-  GenDataToLeftBitVectorKernel_PARAMS,
-  const bool is_single_feature_in_column) {
+    GenDataToLeftBitVectorKernel_PARAMS, const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
-    GenDataToLeftBitVectorKernel
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
-      <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
-        cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
+    GenDataToLeftBitVectorKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO,
+                                 MFB_IS_NA, MAX_TO_LEFT, true, BIN_TYPE>
+        <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(
+            GenBitVector_ARGS, cuda_block_to_left_offset_, cuda_block_data_to_left_offset_,
+            cuda_block_data_to_right_offset_);
   } else {
-    GenDataToLeftBitVectorKernel
-      <MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO, MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
-      <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_ARGS,
-        cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_);
+    GenDataToLeftBitVectorKernel<MIN_IS_MAX, MISSING_IS_ZERO, MISSING_IS_NA, MFB_IS_ZERO,
+                                 MFB_IS_NA, MAX_TO_LEFT, false, BIN_TYPE>
+        <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(
+            GenBitVector_ARGS, cuda_block_to_left_offset_, cuda_block_data_to_left_offset_,
+            cuda_block_data_to_right_offset_);
   }
 }
 
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
-  const data_size_t num_data_in_leaf,
-  const int split_feature_index,
-  const uint32_t split_threshold,
-  const uint8_t split_default_left,
-  const data_size_t leaf_data_start,
-  const int left_leaf_index,
-  const int right_leaf_index) {
-  const bool missing_is_zero = static_cast<bool>(cuda_column_data_->feature_missing_is_zero(split_feature_index));
-  const bool missing_is_na = static_cast<bool>(cuda_column_data_->feature_missing_is_na(split_feature_index));
-  const bool mfb_is_zero = static_cast<bool>(cuda_column_data_->feature_mfb_is_zero(split_feature_index));
-  const bool mfb_is_na = static_cast<bool>(cuda_column_data_->feature_mfb_is_na(split_feature_index));
+    const data_size_t num_data_in_leaf, const int split_feature_index,
+    const uint32_t split_threshold, const uint8_t split_default_left,
+    const data_size_t leaf_data_start, const int left_leaf_index, const int right_leaf_index) {
+  const bool missing_is_zero =
+      static_cast<bool>(cuda_column_data_->feature_missing_is_zero(split_feature_index));
+  const bool missing_is_na =
+      static_cast<bool>(cuda_column_data_->feature_missing_is_na(split_feature_index));
+  const bool mfb_is_zero =
+      static_cast<bool>(cuda_column_data_->feature_mfb_is_zero(split_feature_index));
+  const bool mfb_is_na =
+      static_cast<bool>(cuda_column_data_->feature_mfb_is_na(split_feature_index));
   const bool is_single_feature_in_column = is_single_feature_in_column_[split_feature_index];
   const uint32_t default_bin = cuda_column_data_->feature_default_bin(split_feature_index);
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
-  const uint32_t min_bin = is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
+  const uint32_t min_bin =
+      is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
   const uint32_t max_bin = cuda_column_data_->feature_max_bin(split_feature_index);
   uint32_t th = split_threshold + min_bin;
   uint32_t t_zero_bin = min_bin + default_bin;
@@ -491,58 +469,28 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
 
   if (bit_type == 8) {
     const uint8_t* column_data = reinterpret_cast<const uint8_t*>(column_data_pointer);
-    LaunchGenDataToLeftBitVectorKernelInner<uint8_t>(
-      GenBitVector_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+    LaunchGenDataToLeftBitVectorKernelInner<uint8_t>(GenBitVector_ARGS, missing_is_zero,
+                                                     missing_is_na, mfb_is_zero, mfb_is_na,
+                                                     max_bin_to_left, is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint8_t>(
-      UpdateDataIndexToLeafIndex_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+        UpdateDataIndexToLeafIndex_ARGS, missing_is_zero, missing_is_na, mfb_is_zero, mfb_is_na,
+        max_bin_to_left, is_single_feature_in_column);
   } else if (bit_type == 16) {
     const uint16_t* column_data = reinterpret_cast<const uint16_t*>(column_data_pointer);
     LaunchGenDataToLeftBitVectorKernelInner<uint16_t>(
-      GenBitVector_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+        GenBitVector_ARGS, missing_is_zero, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+        is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint16_t>(
-      UpdateDataIndexToLeafIndex_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+        UpdateDataIndexToLeafIndex_ARGS, missing_is_zero, missing_is_na, mfb_is_zero, mfb_is_na,
+        max_bin_to_left, is_single_feature_in_column);
   } else if (bit_type == 32) {
     const uint32_t* column_data = reinterpret_cast<const uint32_t*>(column_data_pointer);
     LaunchGenDataToLeftBitVectorKernelInner<uint32_t>(
-      GenBitVector_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+        GenBitVector_ARGS, missing_is_zero, missing_is_na, mfb_is_zero, mfb_is_na, max_bin_to_left,
+        is_single_feature_in_column);
     LaunchUpdateDataIndexToLeafIndexKernel<uint32_t>(
-      UpdateDataIndexToLeafIndex_ARGS,
-      missing_is_zero,
-      missing_is_na,
-      mfb_is_zero,
-      mfb_is_na,
-      max_bin_to_left,
-      is_single_feature_in_column);
+        UpdateDataIndexToLeafIndex_ARGS, missing_is_zero, missing_is_na, mfb_is_zero, mfb_is_na,
+        max_bin_to_left, is_single_feature_in_column);
   }
 }
 
@@ -553,12 +501,12 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
 
 template <typename BIN_TYPE, bool USE_MIN_BIN>
 __global__ void UpdateDataIndexToLeafIndexKernel_Categorical(
-  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
-  const uint32_t* bitset, const int bitset_len, const BIN_TYPE* column_data,
-  // values from feature
-  const uint32_t max_bin, const uint32_t min_bin, const int8_t mfb_offset,
-  int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
-  const int default_leaf_index) {
+    const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
+    const uint32_t* bitset, const int bitset_len, const BIN_TYPE* column_data,
+    // values from feature
+    const uint32_t max_bin, const uint32_t min_bin, const int8_t mfb_offset,
+    int* cuda_data_index_to_leaf_index, const int left_leaf_index, const int right_leaf_index,
+    const int default_leaf_index) {
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
     const unsigned int global_data_index = data_indices_in_leaf[local_data_index];
@@ -578,13 +526,12 @@ __global__ void UpdateDataIndexToLeafIndexKernel_Categorical(
 // for categorical features
 template <typename BIN_TYPE, bool USE_MIN_BIN>
 __global__ void GenDataToLeftBitVectorKernel_Categorical(
-  const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
-  const uint32_t* bitset, int bitset_len, const BIN_TYPE* column_data,
-  // values from feature
-  const uint32_t max_bin, const uint32_t min_bin, const int8_t mfb_offset,
-  const uint8_t split_default_to_left,
-  uint16_t* block_to_left_offset,
-  data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer) {
+    const data_size_t num_data_in_leaf, const data_size_t* data_indices_in_leaf,
+    const uint32_t* bitset, int bitset_len, const BIN_TYPE* column_data,
+    // values from feature
+    const uint32_t max_bin, const uint32_t min_bin, const int8_t mfb_offset,
+    const uint8_t split_default_to_left, uint16_t* block_to_left_offset,
+    data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer) {
   __shared__ uint16_t shared_mem_buffer[32];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -600,36 +547,31 @@ __global__ void GenDataToLeftBitVectorKernel_Categorical(
     }
   }
   __syncthreads();
-  PrepareOffset(num_data_in_leaf, block_to_left_offset + blockIdx.x * blockDim.x, block_to_left_offset_buffer, block_to_right_offset_buffer,
-    thread_to_left_offset_cnt, shared_mem_buffer);
+  PrepareOffset(num_data_in_leaf, block_to_left_offset + blockIdx.x * blockDim.x,
+                block_to_left_offset_buffer, block_to_right_offset_buffer,
+                thread_to_left_offset_cnt, shared_mem_buffer);
 }
 
-#define GenBitVector_Categorical_ARGS \
-  num_data_in_leaf, data_indices_in_leaf, \
-  bitset, bitset_len, \
-  column_data, max_bin, min_bin, mfb_offset, split_default_to_left, \
-  cuda_block_to_left_offset_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_
+#define GenBitVector_Categorical_ARGS                                                        \
+  num_data_in_leaf, data_indices_in_leaf, bitset, bitset_len, column_data, max_bin, min_bin, \
+      mfb_offset, split_default_to_left, cuda_block_to_left_offset_,                         \
+      cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_
 
-#define UpdateDataIndexToLeafIndex_Categorical_ARGS \
-  num_data_in_leaf, data_indices_in_leaf, \
-  bitset, bitset_len, \
-  column_data, max_bin, min_bin, mfb_offset,  \
-  cuda_data_index_to_leaf_index_, left_leaf_index, right_leaf_index, default_leaf_index
+#define UpdateDataIndexToLeafIndex_Categorical_ARGS                                          \
+  num_data_in_leaf, data_indices_in_leaf, bitset, bitset_len, column_data, max_bin, min_bin, \
+      mfb_offset, cuda_data_index_to_leaf_index_, left_leaf_index, right_leaf_index,         \
+      default_leaf_index
 
 void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
-  const data_size_t num_data_in_leaf,
-  const int split_feature_index,
-  const uint32_t* bitset,
-  const int bitset_len,
-  const uint8_t split_default_left,
-  const data_size_t leaf_data_start,
-  const int left_leaf_index,
-  const int right_leaf_index) {
+    const data_size_t num_data_in_leaf, const int split_feature_index, const uint32_t* bitset,
+    const int bitset_len, const uint8_t split_default_left, const data_size_t leaf_data_start,
+    const int left_leaf_index, const int right_leaf_index) {
   const data_size_t* data_indices_in_leaf = cuda_data_indices_ + leaf_data_start;
   const int column_index = cuda_column_data_->feature_to_column(split_feature_index);
   const uint8_t bit_type = cuda_column_data_->column_bit_type(column_index);
   const bool is_single_feature_in_column = is_single_feature_in_column_[split_feature_index];
-  const uint32_t min_bin = is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
+  const uint32_t min_bin =
+      is_single_feature_in_column ? 1 : cuda_column_data_->feature_min_bin(split_feature_index);
   const uint32_t max_bin = cuda_column_data_->feature_max_bin(split_feature_index);
   const uint32_t most_freq_bin = cuda_column_data_->feature_most_freq_bin(split_feature_index);
   const uint32_t default_bin = cuda_column_data_->feature_default_bin(split_feature_index);
@@ -646,29 +588,47 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
   if (bit_type == 8) {
     const uint8_t* column_data = reinterpret_cast<const uint8_t*>(column_data_pointer);
     if (is_single_feature_in_column) {
-      GenDataToLeftBitVectorKernel_Categorical<uint8_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint8_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint8_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint8_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {
-      GenDataToLeftBitVectorKernel_Categorical<uint8_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint8_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint8_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint8_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     }
   } else if (bit_type == 16) {
     const uint16_t* column_data = reinterpret_cast<const uint16_t*>(column_data_pointer);
     if (is_single_feature_in_column) {
-      GenDataToLeftBitVectorKernel_Categorical<uint16_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint16_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint16_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint16_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {
-      GenDataToLeftBitVectorKernel_Categorical<uint16_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint16_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint16_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint16_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     }
   } else if (bit_type == 32) {
     const uint32_t* column_data = reinterpret_cast<const uint32_t*>(column_data_pointer);
     if (is_single_feature_in_column) {
-      GenDataToLeftBitVectorKernel_Categorical<uint32_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint32_t, false><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint32_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint32_t, false>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     } else {
-      GenDataToLeftBitVectorKernel_Categorical<uint32_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
-      UpdateDataIndexToLeafIndexKernel_Categorical<uint32_t, true><<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(UpdateDataIndexToLeafIndex_Categorical_ARGS);
+      GenDataToLeftBitVectorKernel_Categorical<uint32_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[0]>>>(GenBitVector_Categorical_ARGS);
+      UpdateDataIndexToLeafIndexKernel_Categorical<uint32_t, true>
+          <<<grid_dim_, block_dim_, 0, cuda_streams_[3]>>>(
+              UpdateDataIndexToLeafIndex_Categorical_ARGS);
     }
   }
 }
@@ -676,13 +636,14 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorCategoricalKernel(
 #undef GenBitVector_Categorical_ARGS
 #undef UpdateDataIndexToLeafIndex_Categorical_ARGS
 
-__global__ void AggregateBlockOffsetKernel0(
-  const int left_leaf_index,
-  const int right_leaf_index,
-  data_size_t* block_to_left_offset_buffer,
-  data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
-  data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
-  const data_size_t num_blocks) {
+__global__ void AggregateBlockOffsetKernel0(const int left_leaf_index, const int right_leaf_index,
+                                            data_size_t* block_to_left_offset_buffer,
+                                            data_size_t* block_to_right_offset_buffer,
+                                            data_size_t* cuda_leaf_data_start,
+                                            data_size_t* cuda_leaf_data_end,
+                                            data_size_t* cuda_leaf_num_data,
+                                            const data_size_t* cuda_data_indices,
+                                            const data_size_t num_blocks) {
   __shared__ uint32_t shared_mem_buffer[32];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
@@ -696,16 +657,20 @@ __global__ void AggregateBlockOffsetKernel0(
   uint32_t thread_end_block_index = 0;
   if (threadIdx_x < remain) {
     thread_start_block_index = threadIdx_x * num_blocks_per_thread;
-    thread_end_block_index = min(thread_start_block_index + num_blocks_per_thread, num_blocks_plus_1);
+    thread_end_block_index =
+        min(thread_start_block_index + num_blocks_per_thread, num_blocks_plus_1);
   } else {
-    thread_start_block_index = remain_offset + (num_blocks_per_thread - 1) * (threadIdx_x - remain);
-    thread_end_block_index = min(thread_start_block_index + num_blocks_per_thread - 1, num_blocks_plus_1);
+    thread_start_block_index =
+        remain_offset + (num_blocks_per_thread - 1) * (threadIdx_x - remain);
+    thread_end_block_index =
+        min(thread_start_block_index + num_blocks_per_thread - 1, num_blocks_plus_1);
   }
   if (threadIdx.x == 0) {
     block_to_right_offset_buffer[0] = 0;
   }
   __syncthreads();
-  for (uint32_t block_index = thread_start_block_index + 1; block_index < thread_end_block_index; ++block_index) {
+  for (uint32_t block_index = thread_start_block_index + 1; block_index < thread_end_block_index;
+       ++block_index) {
     block_to_left_offset_buffer[block_index] += block_to_left_offset_buffer[block_index - 1];
     block_to_right_offset_buffer[block_index] += block_to_right_offset_buffer[block_index - 1];
   }
@@ -725,28 +690,32 @@ __global__ void AggregateBlockOffsetKernel0(
   __syncthreads();
   const uint32_t to_left_thread_block_offset = block_to_left_offset;
   const uint32_t to_right_thread_block_offset = block_to_right_offset + to_left_total_count;
-  for (uint32_t block_index = thread_start_block_index; block_index < thread_end_block_index; ++block_index) {
+  for (uint32_t block_index = thread_start_block_index; block_index < thread_end_block_index;
+       ++block_index) {
     block_to_left_offset_buffer[block_index] += to_left_thread_block_offset;
     block_to_right_offset_buffer[block_index] += to_right_thread_block_offset;
   }
   __syncthreads();
   if (blockIdx.x == 0 && threadIdx.x == 0) {
     const data_size_t old_leaf_data_end = cuda_leaf_data_end[left_leaf_index];
-    cuda_leaf_data_end[left_leaf_index] = cuda_leaf_data_start[left_leaf_index] + static_cast<data_size_t>(to_left_total_count);
+    cuda_leaf_data_end[left_leaf_index] =
+        cuda_leaf_data_start[left_leaf_index] + static_cast<data_size_t>(to_left_total_count);
     cuda_leaf_num_data[left_leaf_index] = static_cast<data_size_t>(to_left_total_count);
     cuda_leaf_data_start[right_leaf_index] = cuda_leaf_data_end[left_leaf_index];
     cuda_leaf_data_end[right_leaf_index] = old_leaf_data_end;
-    cuda_leaf_num_data[right_leaf_index] = num_data_in_leaf - static_cast<data_size_t>(to_left_total_count);
+    cuda_leaf_num_data[right_leaf_index] =
+        num_data_in_leaf - static_cast<data_size_t>(to_left_total_count);
   }
 }
 
-__global__ void AggregateBlockOffsetKernel1(
-  const int left_leaf_index,
-  const int right_leaf_index,
-  data_size_t* block_to_left_offset_buffer,
-  data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
-  data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
-  const data_size_t num_blocks) {
+__global__ void AggregateBlockOffsetKernel1(const int left_leaf_index, const int right_leaf_index,
+                                            data_size_t* block_to_left_offset_buffer,
+                                            data_size_t* block_to_right_offset_buffer,
+                                            data_size_t* cuda_leaf_data_start,
+                                            data_size_t* cuda_leaf_data_end,
+                                            data_size_t* cuda_leaf_num_data,
+                                            const data_size_t* cuda_data_indices,
+                                            const data_size_t num_blocks) {
   __shared__ uint32_t shared_mem_buffer[32];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
@@ -774,29 +743,29 @@ __global__ void AggregateBlockOffsetKernel1(
   __syncthreads();
   if (blockIdx.x == 0 && threadIdx.x == 0) {
     const data_size_t old_leaf_data_end = cuda_leaf_data_end[left_leaf_index];
-    cuda_leaf_data_end[left_leaf_index] = cuda_leaf_data_start[left_leaf_index] + static_cast<data_size_t>(to_left_total_count);
+    cuda_leaf_data_end[left_leaf_index] =
+        cuda_leaf_data_start[left_leaf_index] + static_cast<data_size_t>(to_left_total_count);
     cuda_leaf_num_data[left_leaf_index] = static_cast<data_size_t>(to_left_total_count);
     cuda_leaf_data_start[right_leaf_index] = cuda_leaf_data_end[left_leaf_index];
     cuda_leaf_data_end[right_leaf_index] = old_leaf_data_end;
-    cuda_leaf_num_data[right_leaf_index] = num_data_in_leaf - static_cast<data_size_t>(to_left_total_count);
+    cuda_leaf_num_data[right_leaf_index] =
+        num_data_in_leaf - static_cast<data_size_t>(to_left_total_count);
   }
 }
 
-__global__ void SplitTreeStructureKernel(const int left_leaf_index,
-  const int right_leaf_index,
-  data_size_t* block_to_left_offset_buffer,
-  data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
-  data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
-  const CUDASplitInfo* best_split_info,
-  // for leaf splits information update
-  CUDALeafSplitsStruct* smaller_leaf_splits,
-  CUDALeafSplitsStruct* larger_leaf_splits,
-  const int num_total_bin,
-  hist_t* cuda_hist, hist_t** cuda_hist_pool,
-  double* cuda_leaf_output,
-  int* cuda_split_info_buffer) {
+__global__ void SplitTreeStructureKernel(
+    const int left_leaf_index, const int right_leaf_index,
+    data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer,
+    data_size_t* cuda_leaf_data_start, data_size_t* cuda_leaf_data_end,
+    data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
+    const CUDASplitInfo* best_split_info,
+    // for leaf splits information update
+    CUDALeafSplitsStruct* smaller_leaf_splits, CUDALeafSplitsStruct* larger_leaf_splits,
+    const int num_total_bin, hist_t* cuda_hist, hist_t** cuda_hist_pool, double* cuda_leaf_output,
+    int* cuda_split_info_buffer) {
   const unsigned int to_left_total_cnt = cuda_leaf_num_data[left_leaf_index];
-  double* cuda_split_info_buffer_for_hessians = reinterpret_cast<double*>(cuda_split_info_buffer + 8);
+  double* cuda_split_info_buffer_for_hessians =
+      reinterpret_cast<double*>(cuda_split_info_buffer + 8);
   const unsigned int global_thread_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (global_thread_index == 0) {
     cuda_leaf_output[left_leaf_index] = best_split_info->left_value;
@@ -854,7 +823,8 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
     } else if (global_thread_index == 12) {
       larger_leaf_splits->leaf_value = best_split_info->right_value;
     } else if (global_thread_index == 13) {
-      larger_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
+      larger_leaf_splits->data_indices_in_leaf =
+          cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
     } else if (global_thread_index == 14) {
       cuda_split_info_buffer[6] = left_leaf_index;
     } else if (global_thread_index == 15) {
@@ -890,7 +860,8 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
     } else if (global_thread_index == 12) {
       smaller_leaf_splits->leaf_value = best_split_info->right_value;
     } else if (global_thread_index == 13) {
-      smaller_leaf_splits->data_indices_in_leaf = cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
+      smaller_leaf_splits->data_indices_in_leaf =
+          cuda_data_indices + cuda_leaf_num_data[left_leaf_index];
     } else if (global_thread_index == 14) {
       cuda_hist_pool[right_leaf_index] = cuda_hist + 2 * right_leaf_index * num_total_bin;
       smaller_leaf_splits->hist_in_leaf = cuda_hist_pool[right_leaf_index];
@@ -905,12 +876,16 @@ __global__ void SplitTreeStructureKernel(const int left_leaf_index,
 }
 
 __global__ void SplitInnerKernel(const int left_leaf_index, const int right_leaf_index,
-  const data_size_t* cuda_leaf_data_start, const data_size_t* cuda_leaf_num_data,
-  const data_size_t* cuda_data_indices,
-  const data_size_t* block_to_left_offset_buffer, const data_size_t* block_to_right_offset_buffer,
-  const uint16_t* block_to_left_offset, data_size_t* out_data_indices_in_leaf) {
+                                 const data_size_t* cuda_leaf_data_start,
+                                 const data_size_t* cuda_leaf_num_data,
+                                 const data_size_t* cuda_data_indices,
+                                 const data_size_t* block_to_left_offset_buffer,
+                                 const data_size_t* block_to_right_offset_buffer,
+                                 const uint16_t* block_to_left_offset,
+                                 data_size_t* out_data_indices_in_leaf) {
   const data_size_t leaf_num_data_offset = cuda_leaf_data_start[left_leaf_index];
-  const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index] + cuda_leaf_num_data[right_leaf_index];
+  const data_size_t num_data_in_leaf =
+      cuda_leaf_num_data[left_leaf_index] + cuda_leaf_num_data[right_leaf_index];
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockDim_x = blockDim.x;
   const unsigned int global_thread_index = blockIdx.x * blockDim_x + threadIdx_x;
@@ -921,21 +896,23 @@ __global__ void SplitInnerKernel(const int left_leaf_index, const int right_leaf
   data_size_t* left_out_data_indices_in_leaf = out_data_indices_in_leaf + to_left_block_offset;
   data_size_t* right_out_data_indices_in_leaf = out_data_indices_in_leaf + to_right_block_offset;
   if (static_cast<data_size_t>(global_thread_index) < num_data_in_leaf) {
-    const uint32_t thread_to_left_offset = (threadIdx_x == 0 ? 0 : block_to_left_offset_ptr[threadIdx_x - 1]);
+    const uint32_t thread_to_left_offset =
+        (threadIdx_x == 0 ? 0 : block_to_left_offset_ptr[threadIdx_x - 1]);
     const bool to_left = block_to_left_offset_ptr[threadIdx_x] > thread_to_left_offset;
     if (to_left) {
-      left_out_data_indices_in_leaf[thread_to_left_offset] = cuda_data_indices_in_leaf[global_thread_index];
+      left_out_data_indices_in_leaf[thread_to_left_offset] =
+          cuda_data_indices_in_leaf[global_thread_index];
     } else {
       const uint32_t thread_to_right_offset = threadIdx.x - thread_to_left_offset;
-      right_out_data_indices_in_leaf[thread_to_right_offset] = cuda_data_indices_in_leaf[global_thread_index];
+      right_out_data_indices_in_leaf[thread_to_right_offset] =
+          cuda_data_indices_in_leaf[global_thread_index];
     }
   }
 }
 
-__global__ void CopyDataIndicesKernel(
-  const data_size_t num_data_in_leaf,
-  const data_size_t* out_data_indices_in_leaf,
-  data_size_t* cuda_data_indices) {
+__global__ void CopyDataIndicesKernel(const data_size_t num_data_in_leaf,
+                                      const data_size_t* out_data_indices_in_leaf,
+                                      data_size_t* cuda_data_indices) {
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int global_thread_index = blockIdx.x * blockDim.x + threadIdx_x;
   if (global_thread_index < num_data_in_leaf) {
@@ -944,21 +921,14 @@ __global__ void CopyDataIndicesKernel(
 }
 
 void CUDADataPartition::LaunchSplitInnerKernel(
-  const data_size_t num_data_in_leaf,
-  const CUDASplitInfo* best_split_info,
-  const int left_leaf_index,
-  const int right_leaf_index,
-  // for leaf splits information update
-  CUDALeafSplitsStruct* smaller_leaf_splits,
-  CUDALeafSplitsStruct* larger_leaf_splits,
-  data_size_t* left_leaf_num_data_ref,
-  data_size_t* right_leaf_num_data_ref,
-  data_size_t* left_leaf_start_ref,
-  data_size_t* right_leaf_start_ref,
-  double* left_leaf_sum_of_hessians_ref,
-  double* right_leaf_sum_of_hessians_ref,
-  double* left_leaf_sum_of_gradients_ref,
-  double* right_leaf_sum_of_gradients_ref) {
+    const data_size_t num_data_in_leaf, const CUDASplitInfo* best_split_info,
+    const int left_leaf_index, const int right_leaf_index,
+    // for leaf splits information update
+    CUDALeafSplitsStruct* smaller_leaf_splits, CUDALeafSplitsStruct* larger_leaf_splits,
+    data_size_t* left_leaf_num_data_ref, data_size_t* right_leaf_num_data_ref,
+    data_size_t* left_leaf_start_ref, data_size_t* right_leaf_start_ref,
+    double* left_leaf_sum_of_hessians_ref, double* right_leaf_sum_of_hessians_ref,
+    double* left_leaf_sum_of_gradients_ref, double* right_leaf_sum_of_gradients_ref) {
   int num_blocks_final_ref = grid_dim_ - 1;
   int num_blocks_final_aligned = 1;
   while (num_blocks_final_ref > 0) {
@@ -969,48 +939,39 @@ void CUDADataPartition::LaunchSplitInnerKernel(
 
   if (grid_dim_ > AGGREGATE_BLOCK_SIZE_DATA_PARTITION) {
     AggregateBlockOffsetKernel0<<<1, AGGREGATE_BLOCK_SIZE_DATA_PARTITION, 0, cuda_streams_[0]>>>(
-      left_leaf_index,
-      right_leaf_index,
-      cuda_block_data_to_left_offset_,
-      cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
-      cuda_leaf_num_data_, cuda_data_indices_,
-      grid_dim_);
+        left_leaf_index, right_leaf_index, cuda_block_data_to_left_offset_,
+        cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
+        cuda_leaf_num_data_, cuda_data_indices_, grid_dim_);
   } else {
     AggregateBlockOffsetKernel1<<<1, num_blocks_final_aligned, 0, cuda_streams_[0]>>>(
-      left_leaf_index,
-      right_leaf_index,
-      cuda_block_data_to_left_offset_,
-      cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
-      cuda_leaf_num_data_, cuda_data_indices_,
-      grid_dim_);
+        left_leaf_index, right_leaf_index, cuda_block_data_to_left_offset_,
+        cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
+        cuda_leaf_num_data_, cuda_data_indices_, grid_dim_);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AggregateBlockOffsetKernel");
   global_timer.Start("CUDADataPartition::SplitInnerKernel");
   SplitInnerKernel<<<grid_dim_, block_dim_, 0, cuda_streams_[1]>>>(
-    left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_, cuda_data_indices_,
-    cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_, cuda_block_to_left_offset_,
-    cuda_out_data_indices_in_leaf_);
+      left_leaf_index, right_leaf_index, cuda_leaf_data_start_, cuda_leaf_num_data_,
+      cuda_data_indices_, cuda_block_data_to_left_offset_, cuda_block_data_to_right_offset_,
+      cuda_block_to_left_offset_, cuda_out_data_indices_in_leaf_);
   global_timer.Stop("CUDADataPartition::SplitInnerKernel");
   SynchronizeCUDADevice(__FILE__, __LINE__);
 
   global_timer.Start("CUDADataPartition::SplitTreeStructureKernel");
-  SplitTreeStructureKernel<<<4, 5, 0, cuda_streams_[0]>>>(left_leaf_index, right_leaf_index,
-    cuda_block_data_to_left_offset_,
-    cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
-    cuda_leaf_num_data_, cuda_out_data_indices_in_leaf_,
-    best_split_info,
-    smaller_leaf_splits,
-    larger_leaf_splits,
-    num_total_bin_,
-    cuda_hist_,
-    cuda_hist_pool_,
-    cuda_leaf_output_, cuda_split_info_buffer_);
+  SplitTreeStructureKernel<<<4, 5, 0, cuda_streams_[0]>>>(
+      left_leaf_index, right_leaf_index, cuda_block_data_to_left_offset_,
+      cuda_block_data_to_right_offset_, cuda_leaf_data_start_, cuda_leaf_data_end_,
+      cuda_leaf_num_data_, cuda_out_data_indices_in_leaf_, best_split_info, smaller_leaf_splits,
+      larger_leaf_splits, num_total_bin_, cuda_hist_, cuda_hist_pool_, cuda_leaf_output_,
+      cuda_split_info_buffer_);
   global_timer.Stop("CUDADataPartition::SplitTreeStructureKernel");
   std::vector<int> cpu_split_info_buffer(16);
-  const double* cpu_sum_hessians_info = reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
+  const double* cpu_sum_hessians_info =
+      reinterpret_cast<const double*>(cpu_split_info_buffer.data() + 8);
   global_timer.Start("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
-  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 16, cuda_streams_[0], __FILE__, __LINE__);
+  CopyFromCUDADeviceToHostAsync<int>(cpu_split_info_buffer.data(), cuda_split_info_buffer_, 16,
+                                     cuda_streams_[0], __FILE__, __LINE__);
   SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::CopyFromCUDADeviceToHostAsync");
   const data_size_t left_leaf_num_data = cpu_split_info_buffer[1];
@@ -1018,7 +979,8 @@ void CUDADataPartition::LaunchSplitInnerKernel(
   const data_size_t right_leaf_num_data = cpu_split_info_buffer[4];
   global_timer.Start("CUDADataPartition::CopyDataIndicesKernel");
   CopyDataIndicesKernel<<<grid_dim_, block_dim_, 0, cuda_streams_[2]>>>(
-    left_leaf_num_data + right_leaf_num_data, cuda_out_data_indices_in_leaf_, cuda_data_indices_ + left_leaf_data_start);
+      left_leaf_num_data + right_leaf_num_data, cuda_out_data_indices_in_leaf_,
+      cuda_data_indices_ + left_leaf_data_start);
   global_timer.Stop("CUDADataPartition::CopyDataIndicesKernel");
   const data_size_t right_leaf_data_start = cpu_split_info_buffer[5];
   *left_leaf_num_data_ref = left_leaf_num_data;
@@ -1032,14 +994,15 @@ void CUDADataPartition::LaunchSplitInnerKernel(
 }
 
 template <bool USE_BAGGING>
-__global__ void AddPredictionToScoreKernel(
-  const data_size_t* data_indices_in_leaf,
-  const double* leaf_value, double* cuda_scores,
-  const int* cuda_data_index_to_leaf_index, const data_size_t num_data) {
+__global__ void AddPredictionToScoreKernel(const data_size_t* data_indices_in_leaf,
+                                           const double* leaf_value, double* cuda_scores,
+                                           const int* cuda_data_index_to_leaf_index,
+                                           const data_size_t num_data) {
   const unsigned int threadIdx_x = threadIdx.x;
   const unsigned int blockIdx_x = blockIdx.x;
   const unsigned int blockDim_x = blockDim.x;
-  const data_size_t local_data_index = static_cast<data_size_t>(blockIdx_x * blockDim_x + threadIdx_x);
+  const data_size_t local_data_index =
+      static_cast<data_size_t>(blockIdx_x * blockDim_x + threadIdx_x);
   if (local_data_index < num_data) {
     if (USE_BAGGING) {
       const data_size_t global_data_index = data_indices_in_leaf[local_data_index];
@@ -1054,30 +1017,29 @@ __global__ void AddPredictionToScoreKernel(
   }
 }
 
-void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_value, double* cuda_scores) {
+void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_value,
+                                                         double* cuda_scores) {
   global_timer.Start("CUDADataPartition::AddPredictionToScoreKernel");
   const data_size_t num_data_in_root = root_num_data();
-  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) / FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
+  const int num_blocks = (num_data_in_root + FILL_INDICES_BLOCK_SIZE_DATA_PARTITION - 1) /
+                         FILL_INDICES_BLOCK_SIZE_DATA_PARTITION;
   if (use_bagging_) {
     AddPredictionToScoreKernel<true><<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
-      cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_in_root);
+        cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_,
+        num_data_in_root);
   } else {
     AddPredictionToScoreKernel<false><<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
-      cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_, num_data_in_root);
+        cuda_data_indices_, leaf_value, cuda_scores, cuda_data_index_to_leaf_index_,
+        num_data_in_root);
   }
   SynchronizeCUDADevice(__FILE__, __LINE__);
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }
 
 __global__ void RenewDiscretizedTreeLeavesKernel(
-  const score_t* gradients,
-  const score_t* hessians,
-  const data_size_t* data_indices,
-  const data_size_t* leaf_data_start,
-  const data_size_t* leaf_num_data,
-  double* leaf_grad_stat_buffer,
-  double* leaf_hess_stat_buffer,
-  double* leaf_values) {
+    const score_t* gradients, const score_t* hessians, const data_size_t* data_indices,
+    const data_size_t* leaf_data_start, const data_size_t* leaf_num_data,
+    double* leaf_grad_stat_buffer, double* leaf_hess_stat_buffer, double* leaf_values) {
   __shared__ double shared_mem_buffer[32];
   const int leaf_index = static_cast<int>(blockIdx.x);
   const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
@@ -1085,7 +1047,7 @@ __global__ void RenewDiscretizedTreeLeavesKernel(
   double sum_gradients = 0.0f;
   double sum_hessians = 0.0f;
   for (data_size_t inner_data_index = static_cast<int>(threadIdx.x);
-    inner_data_index < num_data_in_leaf; inner_data_index += static_cast<int>(blockDim.x)) {
+       inner_data_index < num_data_in_leaf; inner_data_index += static_cast<int>(blockDim.x)) {
     const data_size_t data_index = data_indices_in_leaf[inner_data_index];
     const score_t gradient = gradients[data_index];
     const score_t hessian = hessians[data_index];
@@ -1101,19 +1063,13 @@ __global__ void RenewDiscretizedTreeLeavesKernel(
   }
 }
 
-void CUDADataPartition::LaunchReduceLeafGradStat(
-  const score_t* gradients, const score_t* hessians,
-  CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const {
+void CUDADataPartition::LaunchReduceLeafGradStat(const score_t* gradients, const score_t* hessians,
+                                                 CUDATree* tree, double* leaf_grad_stat_buffer,
+                                                 double* leaf_hess_state_buffer) const {
   const int num_blocks = tree->num_leaves();
   RenewDiscretizedTreeLeavesKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
-    gradients,
-    hessians,
-    cuda_data_indices_,
-    cuda_leaf_data_start_,
-    cuda_leaf_num_data_,
-    leaf_grad_stat_buffer,
-    leaf_hess_state_buffer,
-    tree->cuda_leaf_value_ref());
+      gradients, hessians, cuda_data_indices_, cuda_leaf_data_start_, cuda_leaf_num_data_,
+      leaf_grad_stat_buffer, leaf_hess_state_buffer, tree->cuda_leaf_value_ref());
 }
 
 }  // namespace LightGBM

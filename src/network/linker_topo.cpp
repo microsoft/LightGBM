@@ -12,10 +12,7 @@
 
 namespace LightGBM {
 
-
-BruckMap::BruckMap() {
-  k = 0;
-}
+BruckMap::BruckMap() { k = 0; }
 
 BruckMap::BruckMap(int n) {
   k = n;
@@ -45,11 +42,10 @@ BruckMap BruckMap::Construct(int rank, int num_machines) {
   return bruckMap;
 }
 
-RecursiveHalvingMap::RecursiveHalvingMap() {
-  k = 0;
-}
+RecursiveHalvingMap::RecursiveHalvingMap() { k = 0; }
 
-RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _type, bool _is_power_of_2) {
+RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _type,
+                                         bool _is_power_of_2) {
   type = _type;
   k = in_k;
   is_power_of_2 = _is_power_of_2;
@@ -68,7 +64,9 @@ RecursiveHalvingMap::RecursiveHalvingMap(int in_k, RecursiveHalvingNodeType _typ
 RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
   // construct all recursive halving map for all machines
   int k = 0;
-  while ((1 << k) <= num_machines) { ++k; }
+  while ((1 << k) <= num_machines) {
+    ++k;
+  }
   // let 1 << k <= num_machines
   --k;
   // distance of each communication
@@ -126,7 +124,8 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
 
     for (int i = 0; i < num_machines; ++i) {
       // meet new group
-      if (node_type[i] == RecursiveHalvingNodeType::Normal || node_type[i] == RecursiveHalvingNodeType::GroupLeader) {
+      if (node_type[i] == RecursiveHalvingNodeType::Normal ||
+          node_type[i] == RecursiveHalvingNodeType::GroupLeader) {
         group_to_node[group_cnt++] = i;
       }
       node_to_group[i] = group_cnt - 1;
@@ -155,7 +154,8 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
       rec_map.ranks[i] = next_node_idx;
       // get receive block information
       const int recv_block_start = cur_group_idx / distance[i];
-      rec_map.recv_block_start[i] = group_block_start[static_cast<size_t>(recv_block_start) * distance[i]];
+      rec_map.recv_block_start[i] =
+          group_block_start[static_cast<size_t>(recv_block_start) * distance[i]];
       int recv_block_len = 0;
       // accumulate block len
       for (int j = 0; j < distance[i]; ++j) {
@@ -164,7 +164,8 @@ RecursiveHalvingMap RecursiveHalvingMap::Construct(int rank, int num_machines) {
       rec_map.recv_block_len[i] = recv_block_len;
       // get send block information
       const int send_block_start = (cur_group_idx + dir * distance[i]) / distance[i];
-      rec_map.send_block_start[i] = group_block_start[static_cast<size_t>(send_block_start) * distance[i]];
+      rec_map.send_block_start[i] =
+          group_block_start[static_cast<size_t>(send_block_start) * distance[i]];
       int send_block_len = 0;
       // accumulate block len
       for (int j = 0; j < distance[i]; ++j) {

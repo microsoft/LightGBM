@@ -48,13 +48,9 @@ LIGHTGBM_EXTERN_C void OMP_SET_NUM_THREADS(int num_threads);
 
 class ThreadExceptionHelper {
  public:
-  ThreadExceptionHelper() {
-    ex_ptr_ = nullptr;
-  }
+  ThreadExceptionHelper() { ex_ptr_ = nullptr; }
 
-  ~ThreadExceptionHelper() {
-    ReThrow();
-  }
+  ~ThreadExceptionHelper() { ReThrow(); }
   void ReThrow() {
     if (ex_ptr_ != nullptr) {
       std::rethrow_exception(ex_ptr_);
@@ -62,9 +58,13 @@ class ThreadExceptionHelper {
   }
   void CaptureException() {
     // only catch first exception.
-    if (ex_ptr_ != nullptr) { return; }
+    if (ex_ptr_ != nullptr) {
+      return;
+    }
     std::unique_lock<std::mutex> guard(lock_);
-    if (ex_ptr_ != nullptr) { return; }
+    if (ex_ptr_ != nullptr) {
+      return;
+    }
     ex_ptr_ = std::current_exception();
   }
 
@@ -91,7 +91,8 @@ class ThreadExceptionHelper {
 /*
  * To be compatible with OpenMP, define a nothrow macro which is used by gcc
  * openmp, but not by clang.
- * See also https://github.com/dmlc/dmlc-core/blob/3106c1cbdcc9fc9ef3a2c1d2196a7a6f6616c13d/include/dmlc/omp.h#L14
+ * See also
+ * https://github.com/dmlc/dmlc-core/blob/3106c1cbdcc9fc9ef3a2c1d2196a7a6f6616c13d/include/dmlc/omp.h#L14
  */
 #if defined(__clang__)
 #undef __GOMP_NOTHROW
@@ -105,18 +106,18 @@ class ThreadExceptionHelper {
 #endif
 
 #ifdef _MSC_VER
-  #pragma warning(disable : 4068)  // disable unknown pragma warning
+#pragma warning(disable : 4068)  // disable unknown pragma warning
 #endif
 
 #ifdef __cplusplus
-  extern "C" {
+extern "C" {
 #endif
-  /** Fall here if no OPENMP support, so just
-      simulate a single thread running.
-      All #pragma omp should be ignored by the compiler **/
-  inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
-  inline int omp_get_thread_num() __GOMP_NOTHROW {return 0;}
-  inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
+/** Fall here if no OPENMP support, so just
+    simulate a single thread running.
+    All #pragma omp should be ignored by the compiler **/
+inline void OMP_SET_NUM_THREADS(int) __GOMP_NOTHROW {}
+inline int omp_get_thread_num() __GOMP_NOTHROW { return 0; }
+inline int OMP_NUM_THREADS() __GOMP_NOTHROW { return 1; }
 #ifdef __cplusplus
 }  // extern "C"
 #endif
@@ -127,7 +128,5 @@ class ThreadExceptionHelper {
 #define OMP_THROW_EX()
 
 #endif
-
-
 
 #endif /* LIGHTGBM_OPENMP_WRAPPER_H_ */

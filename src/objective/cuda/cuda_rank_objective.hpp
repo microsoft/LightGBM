@@ -25,9 +25,11 @@ namespace LightGBM {
 template <typename HOST_OBJECTIVE>
 class CUDALambdaRankObjectiveInterface : public CUDAObjectiveInterface<HOST_OBJECTIVE> {
  public:
-  explicit CUDALambdaRankObjectiveInterface(const Config& config): CUDAObjectiveInterface<HOST_OBJECTIVE>(config) {}
+  explicit CUDALambdaRankObjectiveInterface(const Config& config)
+      : CUDAObjectiveInterface<HOST_OBJECTIVE>(config) {}
 
-  explicit CUDALambdaRankObjectiveInterface(const std::vector<std::string>& strs): CUDAObjectiveInterface<HOST_OBJECTIVE>(strs) {}
+  explicit CUDALambdaRankObjectiveInterface(const std::vector<std::string>& strs)
+      : CUDAObjectiveInterface<HOST_OBJECTIVE>(strs) {}
 
   ~CUDALambdaRankObjectiveInterface() {}
 
@@ -36,15 +38,18 @@ class CUDALambdaRankObjectiveInterface : public CUDAObjectiveInterface<HOST_OBJE
 
     const int num_threads = OMP_NUM_THREADS();
     std::vector<uint16_t> thread_max_num_items_in_query(num_threads);
-    Threading::For<data_size_t>(0, this->num_queries_, 1,
-      [this, &thread_max_num_items_in_query] (int thread_index, data_size_t start, data_size_t end) {
-        for (data_size_t query_index = start; query_index < end; ++query_index) {
-          const data_size_t query_item_count = this->query_boundaries_[query_index + 1] - this->query_boundaries_[query_index];
-          if (query_item_count > thread_max_num_items_in_query[thread_index]) {
-            thread_max_num_items_in_query[thread_index] = query_item_count;
+    Threading::For<data_size_t>(
+        0, this->num_queries_, 1,
+        [this, &thread_max_num_items_in_query](int thread_index, data_size_t start,
+                                               data_size_t end) {
+          for (data_size_t query_index = start; query_index < end; ++query_index) {
+            const data_size_t query_item_count =
+                this->query_boundaries_[query_index + 1] - this->query_boundaries_[query_index];
+            if (query_item_count > thread_max_num_items_in_query[thread_index]) {
+              thread_max_num_items_in_query[thread_index] = query_item_count;
+            }
           }
-        }
-      });
+        });
     data_size_t max_items_in_query = 0;
     for (int thread_index = 0; thread_index < num_threads; ++thread_index) {
       if (thread_max_num_items_in_query[thread_index] > max_items_in_query) {
@@ -58,7 +63,8 @@ class CUDALambdaRankObjectiveInterface : public CUDAObjectiveInterface<HOST_OBJE
       max_items_in_query_aligned_ <<= 1;
     }
     if (max_items_in_query_aligned_ > 2048) {
-      cuda_item_indices_buffer_.Resize(static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]));
+      cuda_item_indices_buffer_.Resize(
+          static_cast<size_t>(metadata.query_boundaries()[metadata.num_queries()]));
     }
     this->cuda_labels_ = metadata.cuda_metadata()->cuda_label();
     cuda_query_boundaries_ = metadata.cuda_metadata()->cuda_query_boundaries();
@@ -75,8 +81,7 @@ class CUDALambdaRankObjectiveInterface : public CUDAObjectiveInterface<HOST_OBJE
   int max_items_in_query_aligned_;
 };
 
-
-class CUDALambdarankNDCG: public CUDALambdaRankObjectiveInterface<LambdarankNDCG> {
+class CUDALambdarankNDCG : public CUDALambdaRankObjectiveInterface<LambdarankNDCG> {
  public:
   explicit CUDALambdarankNDCG(const Config& config);
 
@@ -87,13 +92,13 @@ class CUDALambdarankNDCG: public CUDALambdaRankObjectiveInterface<LambdarankNDCG
   ~CUDALambdarankNDCG();
 
  private:
-  void LaunchGetGradientsKernel(const double* score, score_t* gradients, score_t* hessians) const override;
+  void LaunchGetGradientsKernel(const double* score, score_t* gradients,
+                                score_t* hessians) const override;
 
   // CUDA memory, held by this object
   CUDAVector<double> cuda_inverse_max_dcgs_;
   CUDAVector<double> cuda_label_gain_;
 };
-
 
 class CUDARankXENDCG : public CUDALambdaRankObjectiveInterface<RankXENDCG> {
  public:
@@ -114,7 +119,6 @@ class CUDARankXENDCG : public CUDALambdaRankObjectiveInterface<RankXENDCG> {
   CUDAVector<double> cuda_item_rands_;
   CUDAVector<double> cuda_params_buffer_;
 };
-
 
 }  // namespace LightGBM
 

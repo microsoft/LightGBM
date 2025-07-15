@@ -37,7 +37,7 @@ Application::Application(int argc, char** argv) {
   }
 
   if (config_.device_type == std::string("cuda")) {
-      LGBM_config_::current_device = lgbm_device_cuda;
+    LGBM_config_::current_device = lgbm_device_cuda;
   }
 }
 
@@ -102,13 +102,12 @@ void Application::LoadData() {
   }
 
   Log::Debug("Loading train file...");
-  DatasetLoader dataset_loader(config_, predict_fun,
-                               config_.num_class, config_.data.c_str());
+  DatasetLoader dataset_loader(config_, predict_fun, config_.num_class, config_.data.c_str());
   // load Training data
   if (config_.is_data_based_parallel) {
     // load data for distributed training
-    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(),
-                                                  Network::rank(), Network::num_machines()));
+    train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), Network::rank(),
+                                                  Network::num_machines()));
   } else {
     // load data for single machine
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
@@ -121,7 +120,9 @@ void Application::LoadData() {
   if (config_.is_provide_training_metric) {
     for (auto metric_type : config_.metric) {
       auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-      if (metric == nullptr) { continue; }
+      if (metric == nullptr) {
+        continue;
+      }
       metric->Init(train_data_->metadata(), train_data_->num_data());
       train_metric_.push_back(std::move(metric));
     }
@@ -135,10 +136,8 @@ void Application::LoadData() {
     for (size_t i = 0; i < config_.valid.size(); ++i) {
       Log::Debug("Loading validation file #%zu...", (i + 1));
       // add
-      auto new_dataset = std::unique_ptr<Dataset>(
-        dataset_loader.LoadFromFileAlignWithOtherDataset(
-          config_.valid[i].c_str(),
-          train_data_.get()));
+      auto new_dataset = std::unique_ptr<Dataset>(dataset_loader.LoadFromFileAlignWithOtherDataset(
+          config_.valid[i].c_str(), train_data_.get()));
       valid_datas_.push_back(std::move(new_dataset));
       // need save binary file
       if (config_.save_binary) {
@@ -149,9 +148,10 @@ void Application::LoadData() {
       valid_metrics_.emplace_back();
       for (auto metric_type : config_.metric) {
         auto metric = std::unique_ptr<Metric>(Metric::CreateMetric(metric_type, config_));
-        if (metric == nullptr) { continue; }
-        metric->Init(valid_datas_.back()->metadata(),
-                     valid_datas_.back()->num_data());
+        if (metric == nullptr) {
+          continue;
+        }
+        metric->Init(valid_datas_.back()->metadata(), valid_datas_.back()->num_data());
         valid_metrics_.back().push_back(std::move(metric));
       }
       valid_metrics_.back().shrink_to_fit();
@@ -170,22 +170,15 @@ void Application::InitTrain() {
     // need init network
     Network::Init(config_);
     Log::Info("Finished initializing network");
-    config_.feature_fraction_seed =
-      Network::GlobalSyncUpByMin(config_.feature_fraction_seed);
-    config_.feature_fraction =
-      Network::GlobalSyncUpByMin(config_.feature_fraction);
-    config_.drop_seed =
-      Network::GlobalSyncUpByMin(config_.drop_seed);
+    config_.feature_fraction_seed = Network::GlobalSyncUpByMin(config_.feature_fraction_seed);
+    config_.feature_fraction = Network::GlobalSyncUpByMin(config_.feature_fraction);
+    config_.drop_seed = Network::GlobalSyncUpByMin(config_.drop_seed);
   }
 
   // create boosting
-  boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting,
-                             config_.input_model.c_str()));
+  boosting_.reset(Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
   // create objective function
-  objective_fun_.reset(
-    ObjectiveFunction::CreateObjectiveFunction(config_.objective,
-                                               config_));
+  objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective, config_));
   // load training data
   LoadData();
   if (config_.task == TaskType::kSaveBinary) {
@@ -201,7 +194,8 @@ void Application::InitTrain() {
   for (size_t i = 0; i < valid_datas_.size(); ++i) {
     boosting_->AddValidDataset(valid_datas_[i].get(),
                                Common::ConstPtrInVectorWrapper<Metric>(valid_metrics_[i]));
-    Log::Debug("Number of data points in validation set #%zu: %d", i + 1, valid_datas_[i]->num_data());
+    Log::Debug("Number of data points in validation set #%zu: %d", i + 1,
+               valid_datas_[i]->num_data());
   }
   Log::Info("Finished initializing training");
 }
@@ -222,8 +216,8 @@ void Application::Predict() {
   if (config_.task == TaskType::KRefitTree) {
     // create predictor
     Predictor predictor(boosting_.get(), 0, -1, false, true, false, false, 1, 1);
-    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
-                      config_.precise_float_parser);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header,
+                      config_.predict_disable_shape_check, config_.precise_float_parser);
     TextReader<int> result_reader(config_.output_result.c_str(), false);
     result_reader.ReadAllLines();
 
@@ -235,7 +229,7 @@ void Application::Predict() {
     std::vector<int> pred_leaf;
     pred_leaf.resize(nrow * ncol);
 
-    #pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static)
     for (int irow = 0; irow < static_cast<int>(nrow); ++irow) {
       auto line_vec = Common::StringToArray<int>(result_reader.Lines()[irow], '\t');
       CHECK_EQ(line_vec.size(), ncol);
@@ -245,12 +239,10 @@ void Application::Predict() {
       // Free memory
       result_reader.Lines()[irow].clear();
     }
-    DatasetLoader dataset_loader(config_, nullptr,
-                                 config_.num_class, config_.data.c_str());
+    DatasetLoader dataset_loader(config_, nullptr, config_.num_class, config_.data.c_str());
     train_data_.reset(dataset_loader.LoadFromFile(config_.data.c_str(), 0, 1));
     train_metric_.clear();
-    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective,
-                                                                    config_));
+    objective_fun_.reset(ObjectiveFunction::CreateObjectiveFunction(config_.objective, config_));
     objective_fun_->Init(train_data_->metadata(), train_data_->num_data());
     boosting_->Init(&config_, train_data_.get(), objective_fun_.get(),
                     Common::ConstPtrInVectorWrapper<Metric>(train_metric_));
@@ -261,28 +253,25 @@ void Application::Predict() {
     Log::Info("Finished RefitTree");
   } else {
     // create predictor
-    Predictor predictor(boosting_.get(), config_.start_iteration_predict, config_.num_iteration_predict, config_.predict_raw_score,
-                        config_.predict_leaf_index, config_.predict_contrib,
-                        config_.pred_early_stop, config_.pred_early_stop_freq,
-                        config_.pred_early_stop_margin);
-    predictor.Predict(config_.data.c_str(),
-                      config_.output_result.c_str(), config_.header, config_.predict_disable_shape_check,
-                      config_.precise_float_parser);
+    Predictor predictor(
+        boosting_.get(), config_.start_iteration_predict, config_.num_iteration_predict,
+        config_.predict_raw_score, config_.predict_leaf_index, config_.predict_contrib,
+        config_.pred_early_stop, config_.pred_early_stop_freq, config_.pred_early_stop_margin);
+    predictor.Predict(config_.data.c_str(), config_.output_result.c_str(), config_.header,
+                      config_.predict_disable_shape_check, config_.precise_float_parser);
     Log::Info("Finished prediction");
   }
 }
 
 void Application::InitPredict() {
-  boosting_.reset(
-    Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
-  Log::Info("Finished initializing prediction, total used %d iterations", boosting_->GetCurrentIteration());
+  boosting_.reset(Boosting::CreateBoosting("gbdt", config_.input_model.c_str()));
+  Log::Info("Finished initializing prediction, total used %d iterations",
+            boosting_->GetCurrentIteration());
 }
 
 void Application::ConvertModel() {
-  boosting_.reset(
-    Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
+  boosting_.reset(Boosting::CreateBoosting(config_.boosting, config_.input_model.c_str()));
   boosting_->SaveModelToIfElse(-1, config_.convert_model.c_str());
 }
-
 
 }  // namespace LightGBM

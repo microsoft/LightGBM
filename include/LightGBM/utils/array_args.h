@@ -15,25 +15,24 @@
 namespace LightGBM {
 
 /*!
-* \brief Contains some operation for an array, e.g. ArgMax, TopK.
-*/
-template<typename VAL_T>
+ * \brief Contains some operation for an array, e.g. ArgMax, TopK.
+ */
+template <typename VAL_T>
 class ArrayArgs {
  public:
   inline static size_t ArgMaxMT(const std::vector<VAL_T>& array) {
     int num_threads = OMP_NUM_THREADS();
     std::vector<size_t> arg_maxs(num_threads, 0);
-    int n_blocks = Threading::For<size_t>(
-        0, array.size(), 1024,
-        [&array, &arg_maxs](int i, size_t start, size_t end) {
-          size_t arg_max = start;
-          for (size_t j = start + 1; j < end; ++j) {
-            if (array[j] > array[arg_max]) {
-              arg_max = j;
-            }
-          }
-          arg_maxs[i] = arg_max;
-        });
+    int n_blocks = Threading::For<size_t>(0, array.size(), 1024,
+                                          [&array, &arg_maxs](int i, size_t start, size_t end) {
+                                            size_t arg_max = start;
+                                            for (size_t j = start + 1; j < end; ++j) {
+                                              if (array[j] > array[arg_max]) {
+                                                arg_max = j;
+                                              }
+                                            }
+                                            arg_maxs[i] = arg_max;
+                                          });
     size_t ret = arg_maxs[0];
     for (int i = 1; i < n_blocks; ++i) {
       if (array[arg_maxs[i]] > array[ret]) {
@@ -111,18 +110,35 @@ class ArrayArgs {
     std::vector<VAL_T>& ref = *arr;
     VAL_T v = ref[end - 1];
     for (;;) {
-      while (ref[++i] > v) {}
-      while (v > ref[--j]) { if (j == start) { break; } }
-      if (i >= j) { break; }
+      while (ref[++i] > v) {
+      }
+      while (v > ref[--j]) {
+        if (j == start) {
+          break;
+        }
+      }
+      if (i >= j) {
+        break;
+      }
       std::swap(ref[i], ref[j]);
-      if (ref[i] == v) { p++; std::swap(ref[p], ref[i]); }
-      if (v == ref[j]) { q--; std::swap(ref[j], ref[q]); }
+      if (ref[i] == v) {
+        p++;
+        std::swap(ref[p], ref[i]);
+      }
+      if (v == ref[j]) {
+        q--;
+        std::swap(ref[j], ref[q]);
+      }
     }
     std::swap(ref[i], ref[end - 1]);
     j = i - 1;
     i = i + 1;
-    for (int k = start; k <= p; k++, j--) { std::swap(ref[k], ref[j]); }
-    for (int k = end - 2; k >= q; k--, i++) { std::swap(ref[i], ref[k]); }
+    for (int k = start; k <= p; k++, j--) {
+      std::swap(ref[k], ref[j]);
+    }
+    for (int k = end - 2; k >= q; k--, i++) {
+      std::swap(ref[i], ref[k]);
+    }
     *l = j;
     *r = i;
   }
@@ -189,4 +205,4 @@ class ArrayArgs {
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_UTILS_ARRAY_AGRS_H_
+#endif  // LightGBM_UTILS_ARRAY_AGRS_H_

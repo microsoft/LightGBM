@@ -38,10 +38,9 @@ namespace LightGBM {
 #endif
 
 #ifndef CHECK
-#define CHECK(condition)                                                    \
-  if (!(condition))                                                         \
-    Log::Fatal("Check failed: " #condition " at %s, line %d .\n", __FILE__, \
-               __LINE__);
+#define CHECK(condition) \
+  if (!(condition))      \
+    Log::Fatal("Check failed: " #condition " at %s, line %d .\n", __FILE__, __LINE__);
 #endif
 
 #ifndef CHECK_EQ
@@ -69,10 +68,9 @@ namespace LightGBM {
 #endif
 
 #ifndef CHECK_NOTNULL
-#define CHECK_NOTNULL(pointer)                                         \
-  if ((pointer) == nullptr)                                            \
-    LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", \
-                         __FILE__, __LINE__);
+#define CHECK_NOTNULL(pointer) \
+  if ((pointer) == nullptr)    \
+    LightGBM::Log::Fatal(#pointer " Can't be NULL at %s, line %d .\n", __FILE__, __LINE__);
 #endif
 
 enum class LogLevel : int {
@@ -139,8 +137,7 @@ class Log {
   }
 
  private:
-  static void Write(LogLevel level, const char *level_str, const char *format,
-                    va_list val) {
+  static void Write(LogLevel level, const char *level_str, const char *format, va_list val) {
     if (level <= GetLevel()) {  // omit the message with low level
 // R code should write back to R's output stream,
 // otherwise to stdout

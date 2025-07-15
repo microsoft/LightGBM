@@ -21,11 +21,9 @@ class CUDAMetadata {
 
   ~CUDAMetadata();
 
-  void Init(const std::vector<label_t>& label,
-            const std::vector<label_t>& weight,
+  void Init(const std::vector<label_t>& label, const std::vector<label_t>& weight,
             const std::vector<data_size_t>& query_boundaries,
-            const std::vector<label_t>& query_weights,
-            const std::vector<double>& init_score);
+            const std::vector<label_t>& query_weights, const std::vector<double>& init_score);
 
   void SetLabel(const label_t* label, data_size_t len);
 

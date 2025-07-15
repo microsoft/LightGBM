@@ -67,14 +67,10 @@ int GetLabelIdxForCSV(const std::string& str, int num_features, int label_idx) {
   }
 }
 
-enum DataType {
-  INVALID,
-  CSV,
-  TSV,
-  LIBSVM
-};
+enum DataType { INVALID, CSV, TSV, LIBSVM };
 
-void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* reader, std::vector<char>* buffer, size_t buffer_size) {
+void GetLine(std::stringstream* ss, std::string* line, const VirtualFileReader* reader,
+             std::vector<char>* buffer, size_t buffer_size) {
   std::getline(*ss, *line);
   while (ss->eof()) {
     size_t read_len = reader->Read(buffer->data(), buffer_size);
@@ -176,8 +172,8 @@ int GetNumColFromLIBSVMFile(const char* filename, bool header) {
   return max_col_idx;
 }
 
-DataType GetDataType(const char* filename, bool header,
-                     const std::vector<std::string>& lines, int* num_col) {
+DataType GetDataType(const char* filename, bool header, const std::vector<std::string>& lines,
+                     int* num_col) {
   DataType type = DataType::INVALID;
   if (lines.empty()) {
     return type;
@@ -240,8 +236,8 @@ ParserFactory& ParserFactory::getInstance() {
 
 void ParserFactory::Register(std::string class_name, std::function<Parser*(std::string)> m_objc) {
   if (m_objc) {
-    object_map_.insert(
-        std::map<std::string, std::function<Parser*(std::string)>>::value_type(class_name, m_objc));
+    object_map_.insert(std::map<std::string, std::function<Parser*(std::string)>>::value_type(
+        class_name, m_objc));
   }
 }
 
@@ -251,18 +247,22 @@ Parser* ParserFactory::getObject(std::string class_name, std::string config_str)
   if (iter != object_map_.end()) {
     return iter->second(config_str);
   } else {
-    Log::Fatal("Cannot find parser class '%s', please register first or check config format.", class_name.c_str());
+    Log::Fatal("Cannot find parser class '%s', please register first or check config format.",
+               class_name.c_str());
     return nullptr;
   }
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx,
+                             bool precise_float_parser) {
   const int n_read_line = 32;
   auto lines = ReadKLineFromFile(filename, header, n_read_line);
   int num_col = 0;
   DataType type = GetDataType(filename, header, lines, &num_col);
   if (type == DataType::INVALID) {
-    Log::Fatal("Unknown format of training data. Only CSV, TSV, and LibSVM (zero-based) formatted text files are supported.");
+    Log::Fatal(
+        "Unknown format of training data. Only CSV, TSV, and LibSVM (zero-based) formatted text "
+        "files are supported.");
   }
   std::unique_ptr<Parser> ret;
   int output_label_index = -1;
@@ -284,7 +284,8 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   return ret.release();
 }
 
-Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx, bool precise_float_parser, std::string parser_config_str) {
+Parser* Parser::CreateParser(const char* filename, bool header, int num_features, int label_idx,
+                             bool precise_float_parser, std::string parser_config_str) {
   // customized parser add-on.
   if (!parser_config_str.empty()) {
     std::unique_ptr<Parser> ret;
@@ -297,7 +298,9 @@ Parser* Parser::CreateParser(const char* filename, bool header, int num_features
   return CreateParser(filename, header, num_features, label_idx, precise_float_parser);
 }
 
-std::string Parser::GenerateParserConfigStr(const char* filename, const char* parser_config_filename, bool header, int label_idx) {
+std::string Parser::GenerateParserConfigStr(const char* filename,
+                                            const char* parser_config_filename, bool header,
+                                            int label_idx) {
   TextReader<data_size_t> parser_config_reader(parser_config_filename, false);
   parser_config_reader.ReadAllLines();
   std::string parser_config_str = parser_config_reader.JoinedLines();
@@ -305,11 +308,13 @@ std::string Parser::GenerateParserConfigStr(const char* filename, const char* pa
     // save header to parser config in case needed.
     if (header && Common::GetFromParserConfig(parser_config_str, "header").empty()) {
       TextReader<data_size_t> text_reader(filename, header);
-      parser_config_str = Common::SaveToParserConfig(parser_config_str, "header", text_reader.first_line());
+      parser_config_str =
+          Common::SaveToParserConfig(parser_config_str, "header", text_reader.first_line());
     }
     // save label id to parser config in case needed.
     if (Common::GetFromParserConfig(parser_config_str, "labelId").empty()) {
-      parser_config_str = Common::SaveToParserConfig(parser_config_str, "labelId", std::to_string(label_idx));
+      parser_config_str =
+          Common::SaveToParserConfig(parser_config_str, "labelId", std::to_string(label_idx));
     }
   }
   return parser_config_str;

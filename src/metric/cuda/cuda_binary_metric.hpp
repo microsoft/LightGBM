@@ -20,16 +20,18 @@
 namespace LightGBM {
 
 template <typename HOST_METRIC, typename CUDA_METRIC>
-class CUDABinaryMetricInterface: public CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC> {
+class CUDABinaryMetricInterface : public CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC> {
  public:
-  explicit CUDABinaryMetricInterface(const Config& config): CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>(config) {}
+  explicit CUDABinaryMetricInterface(const Config& config)
+      : CUDAPointwiseMetricInterface<HOST_METRIC, CUDA_METRIC>(config) {}
 
   virtual ~CUDABinaryMetricInterface() {}
 
   std::vector<double> Eval(const double* score, const ObjectiveFunction* objective) const override;
 };
 
-class CUDABinaryLoglossMetric: public CUDABinaryMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric> {
+class CUDABinaryLoglossMetric
+    : public CUDABinaryMetricInterface<BinaryLoglossMetric, CUDABinaryLoglossMetric> {
  public:
   explicit CUDABinaryLoglossMetric(const Config& config);
 

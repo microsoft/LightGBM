@@ -21,71 +21,73 @@ namespace LightGBM {
 #define kDefaultLeftMask (2)
 
 /*!
-* \brief Tree model
-*/
+ * \brief Tree model
+ */
 class Tree {
  public:
   /*!
-  * \brief Constructor
-  * \param max_leaves The number of max leaves
-  * \param track_branch_features Whether to keep track of ancestors of leaf nodes
-  * \param is_linear Whether the tree has linear models at each leaf
-  */
+   * \brief Constructor
+   * \param max_leaves The number of max leaves
+   * \param track_branch_features Whether to keep track of ancestors of leaf nodes
+   * \param is_linear Whether the tree has linear models at each leaf
+   */
   explicit Tree(int max_leaves, bool track_branch_features, bool is_linear);
 
   /*!
-  * \brief Constructor, from a string
-  * \param str Model string
-  * \param used_len used count of str
-  */
+   * \brief Constructor, from a string
+   * \param str Model string
+   * \param used_len used count of str
+   */
   Tree(const char* str, size_t* used_len);
 
   virtual ~Tree() noexcept = default;
 
   /*!
-  * \brief Performing a split on tree leaves.
-  * \param leaf Index of leaf to be split
-  * \param feature Index of feature; the converted index after removing useless features
-  * \param real_feature Index of feature, the original index on data
-  * \param threshold_bin Threshold(bin) of split
-  * \param threshold_double Threshold on feature value
-  * \param left_value Model Left child output
-  * \param right_value Model Right child output
-  * \param left_cnt Count of left child
-  * \param right_cnt Count of right child
-  * \param left_weight Weight of left child
-  * \param right_weight Weight of right child
-  * \param gain Split gain
-  * \param missing_type missing type
-  * \param default_left default direction for missing value
-  * \return The index of new leaf.
-  */
+   * \brief Performing a split on tree leaves.
+   * \param leaf Index of leaf to be split
+   * \param feature Index of feature; the converted index after removing useless features
+   * \param real_feature Index of feature, the original index on data
+   * \param threshold_bin Threshold(bin) of split
+   * \param threshold_double Threshold on feature value
+   * \param left_value Model Left child output
+   * \param right_value Model Right child output
+   * \param left_cnt Count of left child
+   * \param right_cnt Count of right child
+   * \param left_weight Weight of left child
+   * \param right_weight Weight of right child
+   * \param gain Split gain
+   * \param missing_type missing type
+   * \param default_left default direction for missing value
+   * \return The index of new leaf.
+   */
   int Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
-            double threshold_double, double left_value, double right_value,
-            int left_cnt, int right_cnt, double left_weight, double right_weight,
-            float gain, MissingType missing_type, bool default_left);
+            double threshold_double, double left_value, double right_value, int left_cnt,
+            int right_cnt, double left_weight, double right_weight, float gain,
+            MissingType missing_type, bool default_left);
 
   /*!
-  * \brief Performing a split on tree leaves, with categorical feature
-  * \param leaf Index of leaf to be split
-  * \param feature Index of feature; the converted index after removing useless features
-  * \param real_feature Index of feature, the original index on data
-  * \param threshold_bin Threshold(bin) of split, use bitset to represent
-  * \param num_threshold_bin size of threshold_bin
-  * \param threshold Thresholds of real feature value, use bitset to represent
-  * \param num_threshold size of threshold
-  * \param left_value Model Left child output
-  * \param right_value Model Right child output
-  * \param left_cnt Count of left child
-  * \param right_cnt Count of right child
-  * \param left_weight Weight of left child
-  * \param right_weight Weight of right child
-  * \param gain Split gain
-  * \return The index of new leaf.
-  */
-  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin, int num_threshold_bin,
-                       const uint32_t* threshold, int num_threshold, double left_value, double right_value,
-                       int left_cnt, int right_cnt, double left_weight, double right_weight, float gain, MissingType missing_type);
+   * \brief Performing a split on tree leaves, with categorical feature
+   * \param leaf Index of leaf to be split
+   * \param feature Index of feature; the converted index after removing useless features
+   * \param real_feature Index of feature, the original index on data
+   * \param threshold_bin Threshold(bin) of split, use bitset to represent
+   * \param num_threshold_bin size of threshold_bin
+   * \param threshold Thresholds of real feature value, use bitset to represent
+   * \param num_threshold size of threshold
+   * \param left_value Model Left child output
+   * \param right_value Model Right child output
+   * \param left_cnt Count of left child
+   * \param right_cnt Count of right child
+   * \param left_weight Weight of left child
+   * \param right_weight Weight of right child
+   * \param gain Split gain
+   * \return The index of new leaf.
+   */
+  int SplitCategorical(int leaf, int feature, int real_feature, const uint32_t* threshold_bin,
+                       int num_threshold_bin, const uint32_t* threshold, int num_threshold,
+                       double left_value, double right_value, int left_cnt, int right_cnt,
+                       double left_weight, double right_weight, float gain,
+                       MissingType missing_type);
 
   /*! \brief Get the output of one leaf */
   inline double LeafOutput(int leaf) const { return leaf_value_[leaf]; }
@@ -96,41 +98,39 @@ class Tree {
   }
 
   /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  virtual void AddPredictionToScore(const Dataset* data,
-                            data_size_t num_data,
-                            double* score) const;
+   * \brief Adding prediction value of this tree model to scores
+   * \param data The dataset
+   * \param num_data Number of total data
+   * \param score Will add prediction to score
+   */
+  virtual void AddPredictionToScore(const Dataset* data, data_size_t num_data,
+                                    double* score) const;
 
   /*!
-  * \brief Adding prediction value of this tree model to scores
-  * \param data The dataset
-  * \param used_data_indices Indices of used data
-  * \param num_data Number of total data
-  * \param score Will add prediction to score
-  */
-  virtual void AddPredictionToScore(const Dataset* data,
-                            const data_size_t* used_data_indices,
-                            data_size_t num_data, double* score) const;
+   * \brief Adding prediction value of this tree model to scores
+   * \param data The dataset
+   * \param used_data_indices Indices of used data
+   * \param num_data Number of total data
+   * \param score Will add prediction to score
+   */
+  virtual void AddPredictionToScore(const Dataset* data, const data_size_t* used_data_indices,
+                                    data_size_t num_data, double* score) const;
 
   /*!
-  * \brief Get upper bound leaf value of this tree model
-  */
+   * \brief Get upper bound leaf value of this tree model
+   */
   double GetUpperBoundValue() const;
 
   /*!
-  * \brief Get lower bound leaf value of this tree model
-  */
+   * \brief Get lower bound leaf value of this tree model
+   */
   double GetLowerBoundValue() const;
 
   /*!
-  * \brief Prediction on one record
-  * \param feature_values Feature value of this record
-  * \return Prediction result
-  */
+   * \brief Prediction on one record
+   * \param feature_values Feature value of this record
+   * \return Prediction result
+   */
   inline double Predict(const double* feature_values) const;
   inline double PredictByMap(const std::unordered_map<int, double>& feature_values) const;
 
@@ -148,7 +148,7 @@ class Tree {
   inline int leaf_depth(int leaf_idx) const { return leaf_depth_[leaf_idx]; }
 
   /*! \brief Get parent of specific leaf*/
-  inline int leaf_parent(int leaf_idx) const {return leaf_parent_[leaf_idx]; }
+  inline int leaf_parent(int leaf_idx) const { return leaf_parent_[leaf_idx]; }
 
   /*! \brief Get feature of specific split (original feature index)*/
   inline int split_feature(int split_idx) const { return split_feature_[split_idx]; }
@@ -161,9 +161,7 @@ class Tree {
 
   inline double split_gain(int split_idx) const { return split_gain_[split_idx]; }
 
-  inline double internal_value(int node_idx) const {
-    return internal_value_[node_idx];
-  }
+  inline double internal_value(int node_idx) const { return internal_value_[node_idx]; }
 
   inline bool IsNumericalSplit(int node_idx) const {
     return !GetDecisionType(decision_type_[node_idx], kCategoricalMask);
@@ -173,20 +171,21 @@ class Tree {
 
   inline int right_child(int node_idx) const { return right_child_[node_idx]; }
 
-  inline uint32_t threshold_in_bin(int node_idx) const {
-    return threshold_in_bin_[node_idx];
-  }
+  inline uint32_t threshold_in_bin(int node_idx) const { return threshold_in_bin_[node_idx]; }
 
   /*! \brief Get the number of data points that fall at or below this node*/
-  inline int data_count(int node) const { return node >= 0 ? internal_count_[node] : leaf_count_[~node]; }
+  inline int data_count(int node) const {
+    return node >= 0 ? internal_count_[node] : leaf_count_[~node];
+  }
 
   /*!
-  * \brief Shrinkage for the tree's output
-  *        shrinkage rate (a.k.a learning rate) is used to tune the training process
-  * \param rate The factor of shrinkage
-  */
+   * \brief Shrinkage for the tree's output
+   *        shrinkage rate (a.k.a learning rate) is used to tune the training process
+   * \param rate The factor of shrinkage
+   */
   virtual inline void Shrinkage(double rate) {
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] * rate);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] * rate);
@@ -197,8 +196,7 @@ class Tree {
         }
       }
     }
-    leaf_value_[num_leaves_ - 1] =
-        MaybeRoundToZero(leaf_value_[num_leaves_ - 1] * rate);
+    leaf_value_[num_leaves_ - 1] = MaybeRoundToZero(leaf_value_[num_leaves_ - 1] * rate);
     if (is_linear_) {
       leaf_const_[num_leaves_ - 1] = MaybeRoundToZero(leaf_const_[num_leaves_ - 1] * rate);
       for (size_t j = 0; j < leaf_coeff_[num_leaves_ - 1].size(); ++j) {
@@ -211,15 +209,16 @@ class Tree {
   inline double shrinkage() const { return shrinkage_; }
 
   virtual inline void AddBias(double val) {
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] + val);
     }
-    leaf_value_[num_leaves_ - 1] =
-        MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
+    leaf_value_[num_leaves_ - 1] = MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
     if (is_linear_) {
-#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) \
+    schedule(static, 1024) if (num_leaves_ >= 2048)
       for (int i = 0; i < num_leaves_ - 1; ++i) {
         leaf_const_[i] = MaybeRoundToZero(leaf_const_[i] + val);
       }
@@ -255,9 +254,7 @@ class Tree {
     return (fval >= -kZeroThreshold && fval <= kZeroThreshold);
   }
 
-  inline static double MaybeRoundToZero(double fval) {
-    return IsZero(fval) ? 0 : fval;
-  }
+  inline static double MaybeRoundToZero(double fval) { return IsZero(fval) ? 0 : fval; }
 
   inline static bool GetDecisionType(int8_t decision_type, int8_t mask) {
     return (decision_type & mask) > 0;
@@ -271,9 +268,7 @@ class Tree {
     }
   }
 
-  inline static int8_t GetMissingType(int8_t decision_type) {
-    return (decision_type >> 2) & 3;
-  }
+  inline static int8_t GetMissingType(int8_t decision_type) { return (decision_type >> 2) & 3; }
 
   inline static void SetMissingType(int8_t* decision_type, int8_t input) {
     (*decision_type) &= 3;
@@ -291,10 +286,10 @@ class Tree {
   inline std::vector<double> LeafCoeffs(int leaf) const { return leaf_coeff_[leaf]; }
 
   /*! \brief Get the linear model features of one leaf */
-  inline std::vector<int> LeafFeaturesInner(int leaf) const {return leaf_features_inner_[leaf]; }
+  inline std::vector<int> LeafFeaturesInner(int leaf) const { return leaf_features_inner_[leaf]; }
 
   /*! \brief Get the linear model features of one leaf */
-  inline std::vector<int> LeafFeatures(int leaf) const {return leaf_features_[leaf]; }
+  inline std::vector<int> LeafFeatures(int leaf) const { return leaf_features_[leaf]; }
 
   /*! \brief Set the linear model coefficients on one leaf */
   inline void SetLeafCoeffs(int leaf, const std::vector<double>& output) {
@@ -321,13 +316,11 @@ class Tree {
 
   inline bool is_linear() const { return is_linear_; }
 
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   inline bool is_cuda_tree() const { return is_cuda_tree_; }
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 
-  inline void SetIsLinear(bool is_linear) {
-    is_linear_ = is_linear;
-  }
+  inline void SetIsLinear(bool is_linear) { is_linear_ = is_linear; }
 
  protected:
   std::string NumericalDecisionIfElse(int node) const;
@@ -339,8 +332,8 @@ class Tree {
     if (std::isnan(fval) && missing_type != MissingType::NaN) {
       fval = 0.0f;
     }
-    if ((missing_type == MissingType::Zero && IsZero(fval))
-        || (missing_type == MissingType::NaN && std::isnan(fval))) {
+    if ((missing_type == MissingType::Zero && IsZero(fval)) ||
+        (missing_type == MissingType::NaN && std::isnan(fval))) {
       if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
@@ -354,10 +347,11 @@ class Tree {
     }
   }
 
-  inline int NumericalDecisionInner(uint32_t fval, int node, uint32_t default_bin, uint32_t max_bin) const {
+  inline int NumericalDecisionInner(uint32_t fval, int node, uint32_t default_bin,
+                                    uint32_t max_bin) const {
     uint8_t missing_type = GetMissingType(decision_type_[node]);
-    if ((missing_type == MissingType::Zero && fval == default_bin)
-        || (missing_type == MissingType::NaN && fval == max_bin)) {
+    if ((missing_type == MissingType::Zero && fval == default_bin) ||
+        (missing_type == MissingType::NaN && fval == max_bin)) {
       if (GetDecisionType(decision_type_[node], kDefaultLeftMask)) {
         return left_child_[node];
       } else {
@@ -392,7 +386,8 @@ class Tree {
   inline int CategoricalDecisionInner(uint32_t fval, int node) const {
     int cat_idx = static_cast<int>(threshold_in_bin_[node]);
     if (Common::FindInBitset(cat_threshold_inner_.data() + cat_boundaries_inner_[cat_idx],
-                             cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx], fval)) {
+                             cat_boundaries_inner_[cat_idx + 1] - cat_boundaries_inner_[cat_idx],
+                             fval)) {
       return left_child_[node];
     }
     return right_child_[node];
@@ -414,13 +409,14 @@ class Tree {
     }
   }
 
-  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value, int left_cnt, int right_cnt,
-                    double left_weight, double right_weight, float gain);
+  inline void Split(int leaf, int feature, int real_feature, double left_value, double right_value,
+                    int left_cnt, int right_cnt, double left_weight, double right_weight,
+                    float gain);
   /*!
-  * \brief Find leaf index of which record belongs by features
-  * \param feature_values Feature value of this record
-  * \return Leaf index
-  */
+   * \brief Find leaf index of which record belongs by features
+   * \param feature_values Feature value of this record
+   * \return Leaf index
+   */
   inline int GetLeaf(const double* feature_values) const;
   inline int GetLeafByMap(const std::unordered_map<int, double>& feature_values) const;
 
@@ -438,42 +434,43 @@ class Tree {
   inline void RecomputeLeafDepths(int node = 0, int depth = 0);
 
   /*!
-  * \brief Used by TreeSHAP for data we keep about our decision path
-  */
+   * \brief Used by TreeSHAP for data we keep about our decision path
+   */
   struct PathElement {
     int feature_index;
     double zero_fraction;
     double one_fraction;
 
     // note that pweight is included for convenience and is not tied with the other attributes,
-    // the pweight of the i'th path element is the permutation weight of paths with i-1 ones in them
+    // the pweight of the i'th path element is the permutation weight of paths with i-1 ones in
+    // them
     double pweight;
 
     PathElement() {}
-    PathElement(int i, double z, double o, double w) : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
+    PathElement(int i, double z, double o, double w)
+        : feature_index(i), zero_fraction(z), one_fraction(o), pweight(w) {}
   };
 
   /*! \brief Polynomial time algorithm for SHAP values (arXiv:1706.06060)*/
-  void TreeSHAP(const double *feature_values, double *phi,
-                int node, int unique_depth,
-                PathElement *parent_unique_path, double parent_zero_fraction,
+  void TreeSHAP(const double* feature_values, double* phi, int node, int unique_depth,
+                PathElement* parent_unique_path, double parent_zero_fraction,
                 double parent_one_fraction, int parent_feature_index) const;
 
   void TreeSHAPByMap(const std::unordered_map<int, double>& feature_values,
-                     std::unordered_map<int, double>* phi,
-                     int node, int unique_depth,
-                     PathElement *parent_unique_path, double parent_zero_fraction,
+                     std::unordered_map<int, double>* phi, int node, int unique_depth,
+                     PathElement* parent_unique_path, double parent_zero_fraction,
                      double parent_one_fraction, int parent_feature_index) const;
 
   /*! \brief Extend our decision path with a fraction of one and zero extensions for TreeSHAP*/
-  static void ExtendPath(PathElement *unique_path, int unique_depth,
-                         double zero_fraction, double one_fraction, int feature_index);
+  static void ExtendPath(PathElement* unique_path, int unique_depth, double zero_fraction,
+                         double one_fraction, int feature_index);
 
   /*! \brief Undo a previous extension of the decision path for TreeSHAP*/
-  static void UnwindPath(PathElement *unique_path, int unique_depth, int path_index);
+  static void UnwindPath(PathElement* unique_path, int unique_depth, int path_index);
 
-  /*! determine what the total permutation weight would be if we unwound a previous extension in the decision path*/
-  static double UnwoundPathSum(const PathElement *unique_path, int unique_depth, int path_index);
+  /*! determine what the total permutation weight would be if we unwound a previous extension in
+   * the decision path*/
+  static double UnwoundPathSum(const PathElement* unique_path, int unique_depth, int path_index);
 
   /*! \brief Number of max leaves*/
   int max_leaves_;
@@ -518,7 +515,8 @@ class Tree {
   std::vector<int> internal_count_;
   /*! \brief Depth for leaves */
   std::vector<int> leaf_depth_;
-  /*! \brief whether to keep track of ancestor nodes for each leaf (only needed when feature interactions are restricted) */
+  /*! \brief whether to keep track of ancestor nodes for each leaf (only needed when feature
+   * interactions are restricted) */
   bool track_branch_features_;
   /*! \brief Features on leaf's branch, original index */
   std::vector<std::vector<int>> branch_features_;
@@ -534,15 +532,15 @@ class Tree {
   std::vector<std::vector<int>> leaf_features_;
   /* \brief features used in leaf linear models; indexing is relative to used_features_ */
   std::vector<std::vector<int>> leaf_features_inner_;
-  #ifdef USE_CUDA
+#ifdef USE_CUDA
   /*! \brief Marks whether this tree is a CUDATree */
   bool is_cuda_tree_;
-  #endif  // USE_CUDA
+#endif  // USE_CUDA
 };
 
-inline void Tree::Split(int leaf, int feature, int real_feature,
-                        double left_value, double right_value, int left_cnt, int right_cnt,
-                        double left_weight, double right_weight, float gain) {
+inline void Tree::Split(int leaf, int feature, int real_feature, double left_value,
+                        double right_value, int left_cnt, int right_cnt, double left_weight,
+                        double right_weight, float gain) {
   int new_node_idx = num_leaves_ - 1;
   // update parent info
   int parent = leaf_parent_[leaf];
@@ -586,24 +584,24 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
 
 inline double Tree::Predict(const double* feature_values) const {
   if (is_linear_) {
-      int leaf = (num_leaves_ > 1) ? GetLeaf(feature_values) : 0;
-      double output = leaf_const_[leaf];
-      bool nan_found = false;
-      for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
-        int feat_raw = leaf_features_[leaf][i];
-        double feat_val = feature_values[feat_raw];
-        if (std::isnan(feat_val)) {
-          nan_found = true;
-          break;
-        } else {
-          output += leaf_coeff_[leaf][i] * feat_val;
-        }
-      }
-      if (nan_found) {
-        return LeafOutput(leaf);
+    int leaf = (num_leaves_ > 1) ? GetLeaf(feature_values) : 0;
+    double output = leaf_const_[leaf];
+    bool nan_found = false;
+    for (size_t i = 0; i < leaf_features_[leaf].size(); ++i) {
+      int feat_raw = leaf_features_[leaf][i];
+      double feat_val = feature_values[feat_raw];
+      if (std::isnan(feat_val)) {
+        nan_found = true;
+        break;
       } else {
-        return output;
+        output += leaf_coeff_[leaf][i] * feat_val;
       }
+    }
+    if (nan_found) {
+      return LeafOutput(leaf);
+    } else {
+      return output;
+    }
   } else {
     if (num_leaves_ > 1) {
       int leaf = GetLeaf(feature_values);
@@ -656,7 +654,8 @@ inline int Tree::PredictLeafIndex(const double* feature_values) const {
   }
 }
 
-inline int Tree::PredictLeafIndexByMap(const std::unordered_map<int, double>& feature_values) const {
+inline int Tree::PredictLeafIndexByMap(
+    const std::unordered_map<int, double>& feature_values) const {
   if (num_leaves_ > 1) {
     int leaf = GetLeafByMap(feature_values);
     return leaf;
@@ -671,7 +670,7 @@ inline void Tree::PredictContrib(const double* feature_values, int num_features,
   if (num_leaves_ > 1) {
     CHECK_GE(max_depth_, 0);
     const int max_path_len = max_depth_ + 1;
-    std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
+    std::vector<PathElement> unique_path_data(max_path_len * (max_path_len + 1) / 2);
     TreeSHAP(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
   }
 }
@@ -683,7 +682,7 @@ inline void Tree::PredictContribByMap(const std::unordered_map<int, double>& fea
   if (num_leaves_ > 1) {
     CHECK_GE(max_depth_, 0);
     const int max_path_len = max_depth_ + 1;
-    std::vector<PathElement> unique_path_data(max_path_len*(max_path_len + 1) / 2);
+    std::vector<PathElement> unique_path_data(max_path_len * (max_path_len + 1) / 2);
     TreeSHAPByMap(feature_values, output, 0, 0, unique_path_data.data(), 1, 1, -1);
   }
 }
@@ -716,11 +715,17 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
   int node = 0;
   if (num_cat_ > 0) {
     while (node >= 0) {
-      node = Decision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+      node = Decision(feature_values.count(split_feature_[node]) > 0
+                          ? feature_values.at(split_feature_[node])
+                          : 0.0f,
+                      node);
     }
   } else {
     while (node >= 0) {
-      node = NumericalDecision(feature_values.count(split_feature_[node]) > 0 ? feature_values.at(split_feature_[node]) : 0.0f, node);
+      node = NumericalDecision(feature_values.count(split_feature_[node]) > 0
+                                   ? feature_values.at(split_feature_[node])
+                                   : 0.0f,
+                               node);
     }
   }
   return ~node;
@@ -728,4 +733,4 @@ inline int Tree::GetLeafByMap(const std::unordered_map<int, double>& feature_val
 
 }  // namespace LightGBM
 
-#endif   // LightGBM_TREE_H_
+#endif  // LightGBM_TREE_H_
