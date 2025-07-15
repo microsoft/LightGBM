@@ -769,7 +769,7 @@ def _train(
                 )
                 raise LightGBMError(msg)
 
-            worker_address_to_port = {address: local_listen_port for address in worker_addresses}
+            worker_address_to_port = dict.fromkeys(worker_addresses, local_listen_port)
         else:
             _log_info("Finding random open ports for workers")
             worker_to_socket_future, worker_address_to_port = _assign_open_ports_to_workers(
