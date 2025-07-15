@@ -759,7 +759,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle,
 /*!
  * \brief Update the model for one iteration.
  * \param handle Handle of booster
- * \param[out] is_finished 1 means the tree(s) produced by this iteration did not have any splits.
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
  *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
  *                         However, that is not always the case.
  *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
@@ -767,7 +767,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterGetNumClasses(BoosterHandle handle,
  * \return 0 when succeed, -1 when failure happens
  */
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIter(BoosterHandle handle,
-                                                int* is_finished);
+                                                int* produced_empty_tree);
 
 /*!
  * \brief Refit the tree model using the new data (online learning).
@@ -791,7 +791,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
  * \param handle Handle of booster
  * \param grad The first order derivative (gradient) statistics
  * \param hess The second order derivative (Hessian) statistics
- * \param[out] is_finished 1 means the tree(s) produced by this iteration did not have any splits.
+ * \param[out] produced_empty_tree 1 means the tree(s) produced by this iteration did not have any splits.
  *                         This usually means that training is "finished" (calling this function again will not change the model's predictions).
  *                         However, that is not always the case.
  *                         For example, if you have added any randomness (like column sampling by setting ``feature_fraction_bynode < 1.0``),
@@ -801,7 +801,7 @@ LIGHTGBM_C_EXPORT int LGBM_BoosterRefit(BoosterHandle handle,
 LIGHTGBM_C_EXPORT int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                                       const float* grad,
                                                       const float* hess,
-                                                      int* is_finished);
+                                                      int* produced_empty_tree);
 
 /*!
  * \brief Rollback one iteration.
