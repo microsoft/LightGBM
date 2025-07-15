@@ -42,7 +42,7 @@ if ($env:TASK -eq "swig") {
         "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip",
         "$env:BUILD_SOURCESDIRECTORY/swig"
     ) ; Assert-Output $?
-    $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
+    $SwigFolder = Get-ChildItem -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig" -Attributes Directory
     $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", "$env:PATH") -join ";"
     $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
     cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
