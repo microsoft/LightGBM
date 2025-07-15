@@ -4897,6 +4897,37 @@ class Booster:
         new_booster._network = self._network
         return new_booster
 
+    def refit_tree_manual(self, tree_id: int, values: np.ndarray) -> "Booster":
+        """Set all the outputs of a tree and recalculate the dataset scores.
+
+        .. versionadded:: 4.6.0
+
+        Parameters
+        ----------
+        tree_id : int
+            The index of the tree.
+        values : numpy 1-D array
+            Value to set as the outputs of the tree.
+            The number of elements should be equal to the number of leaves in the tree.
+
+        Returns
+        -------
+        self : Booster
+            Booster with the leaf outputs set.
+        """
+        values = _list_to_1d_numpy(values, dtype=np.float64, name="leaf_values")
+
+        _safe_call(
+            _LIB.LGBM_BoosterRefitTreeManual(
+                self._handle,
+                ctypes.c_int(tree_id),
+                values.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+                ctypes.c_int(len(values)),
+            )
+        )
+        self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
+        return self
+
     def get_leaf_output(self, tree_id: int, leaf_id: int) -> float:
         """Get the output of a leaf.
 
