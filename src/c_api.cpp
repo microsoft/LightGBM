@@ -2059,13 +2059,13 @@ int LGBM_BoosterRefit(BoosterHandle handle, const int32_t* leaf_preds, int32_t n
   API_END();
 }
 
-int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
+int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* produced_empty_tree) {
   API_BEGIN();
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter()) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   API_END();
 }
@@ -2073,20 +2073,20 @@ int LGBM_BoosterUpdateOneIter(BoosterHandle handle, int* is_finished) {
 int LGBM_BoosterUpdateOneIterCustom(BoosterHandle handle,
                                     const float* grad,
                                     const float* hess,
-                                    int* is_finished) {
+                                    int* produced_empty_tree) {
   API_BEGIN();
   #ifdef SCORE_T_USE_DOUBLE
   (void) handle;       // UNUSED VARIABLE
   (void) grad;         // UNUSED VARIABLE
   (void) hess;         // UNUSED VARIABLE
-  (void) is_finished;  // UNUSED VARIABLE
+  (void) produced_empty_tree;  // UNUSED VARIABLE
   Log::Fatal("Don't support custom loss function when SCORE_T_USE_DOUBLE is enabled");
   #else
   Booster* ref_booster = reinterpret_cast<Booster*>(handle);
   if (ref_booster->TrainOneIter(grad, hess)) {
-    *is_finished = 1;
+    *produced_empty_tree = 1;
   } else {
-    *is_finished = 0;
+    *produced_empty_tree = 0;
   }
   #endif
   API_END();
