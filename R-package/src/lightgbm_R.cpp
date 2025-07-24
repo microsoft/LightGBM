@@ -739,8 +739,8 @@ SEXP LGBM_BoosterGetNumFeature_R(SEXP handle) {
 SEXP LGBM_BoosterUpdateOneIter_R(SEXP handle) {
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
-  int is_finished = 0;
-  CHECK_CALL(LGBM_BoosterUpdateOneIter(R_ExternalPtrAddr(handle), &is_finished));
+  int produced_empty_tree = 0;
+  CHECK_CALL(LGBM_BoosterUpdateOneIter(R_ExternalPtrAddr(handle), &produced_empty_tree));
   return R_NilValue;
   R_API_END();
 }
@@ -751,12 +751,13 @@ SEXP LGBM_BoosterUpdateOneIterCustom_R(SEXP handle,
   SEXP len) {
   R_API_BEGIN();
   _AssertBoosterHandleNotNull(handle);
-  int is_finished = 0;
+  int produced_empty_tree = 0;
   int int_len = Rf_asInteger(len);
   std::unique_ptr<float[]> tgrad(new float[int_len]), thess(new float[int_len]);
   std::copy(REAL(grad), REAL(grad) + int_len, tgrad.get());
   std::copy(REAL(hess), REAL(hess) + int_len, thess.get());
-  CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.get(), thess.get(), &is_finished));
+  CHECK_CALL(LGBM_BoosterUpdateOneIterCustom(R_ExternalPtrAddr(handle), tgrad.get(), thess.get(),
+    &produced_empty_tree));
   return R_NilValue;
   R_API_END();
 }
