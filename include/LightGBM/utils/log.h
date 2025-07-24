@@ -127,10 +127,16 @@ class Log {
     va_end(val);
 
 // R code should write back to R's error stream,
-// otherwise to stderr
+// otherwise to stderr or callback if set
 #ifndef LGB_R_BUILD
-    fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
-    fflush(stderr);
+    if (GetLogCallBack() == nullptr) {
+      fprintf(stderr, "[LightGBM] [Fatal] %s\n", str_buf);
+      fflush(stderr);
+    } else {
+      GetLogCallBack()("[LightGBM] [Fatal] ");
+      GetLogCallBack()(str_buf);
+      GetLogCallBack()("\n");
+    }
 #else
     REprintf("[LightGBM] [Fatal] %s\n", str_buf);
     R_FlushConsole();
