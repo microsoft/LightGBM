@@ -281,17 +281,17 @@ def test_add_features_throws_if_datasets_unconstructed(rng):
     X1 = rng.uniform(size=(100, 1))
     X2 = rng.uniform(size=(100, 1))
     err_msg = "Both source and target Datasets must be constructed before adding features"
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2)
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
+    d1 = lgb.Dataset(X1).construct()
+    d2 = lgb.Dataset(X2)
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1).construct()
-        d2 = lgb.Dataset(X2)
         d1.add_features_from(d2)
+    d1 = lgb.Dataset(X1)
+    d2 = lgb.Dataset(X2).construct()
     with pytest.raises(ValueError, match=err_msg):
-        d1 = lgb.Dataset(X1)
-        d2 = lgb.Dataset(X2).construct()
         d1.add_features_from(d2)
 
 
@@ -980,14 +980,16 @@ def test_no_copy_in_dataset_from_numpy_2d(rng, order, dtype):
 def test_equal_datasets_from_row_major_and_col_major_data(tmp_path):
     # row-major dataset
     X_row, y = make_blobs(n_samples=1_000, n_features=3, centers=2)
-    assert X_row.flags["C_CONTIGUOUS"] and not X_row.flags["F_CONTIGUOUS"]
+    assert X_row.flags["C_CONTIGUOUS"]
+    assert not X_row.flags["F_CONTIGUOUS"]
     ds_row = lgb.Dataset(X_row, y)
     ds_row_path = tmp_path / "ds_row.txt"
     ds_row._dump_text(ds_row_path)
 
     # col-major dataset
     X_col = np.asfortranarray(X_row)
-    assert X_col.flags["F_CONTIGUOUS"] and not X_col.flags["C_CONTIGUOUS"]
+    assert X_col.flags["F_CONTIGUOUS"]
+    assert not X_col.flags["C_CONTIGUOUS"]
     ds_col = lgb.Dataset(X_col, y)
     ds_col_path = tmp_path / "ds_col.txt"
     ds_col._dump_text(ds_col_path)
