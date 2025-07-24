@@ -14,7 +14,7 @@
 #' @export
 lgb.make_serializable <- function(model) {
   if (!.is_Booster(x = model)) {
-    stop("lgb.make_serializable: model should be an ", sQuote("lgb.Booster"))
+    stop("lgb.make_serializable: model should be an ", sQuote("lgb.Booster", q = FALSE))
   }
   model$save_raw()
   return(invisible(model))

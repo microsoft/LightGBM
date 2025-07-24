@@ -4080,8 +4080,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the update was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``update()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``update()`` would produce a non-empty tree.
         """
         # need reset training data
         if train_set is None and self.train_set_version != self.train_set.version:
@@ -4103,18 +4108,18 @@ class Booster:
             )
             self.__inner_predict_buffer[0] = None
             self.train_set_version = self.train_set.version
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
                 raise LightGBMError("Cannot update due to null objective function.")
             _safe_call(
                 _LIB.LGBM_BoosterUpdateOneIter(
                     self._handle,
-                    ctypes.byref(is_finished),
+                    ctypes.byref(produced_empty_tree),
                 )
             )
             self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-            return is_finished.value == 1
+            return produced_empty_tree.value == 1
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
@@ -4146,8 +4151,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the boost was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``__boost()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``__boost()`` would produce a non-empty tree.
         """
         if self.__num_class > 1:
             grad = grad.ravel(order="F")
@@ -4165,17 +4175,17 @@ class Booster:
                 f"don't match training data length ({num_train_data}) * "
                 f"number of models per one iteration ({self.__num_class})"
             )
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         _safe_call(
             _LIB.LGBM_BoosterUpdateOneIterCustom(
                 self._handle,
                 grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                 hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                ctypes.byref(is_finished),
+                ctypes.byref(produced_empty_tree),
             )
         )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-        return is_finished.value == 1
+        return produced_empty_tree.value == 1
 
     def rollback_one_iter(self) -> "Booster":
         """Rollback one iteration.

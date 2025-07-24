@@ -2,14 +2,17 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
 
-#include <algorithm>
+#include "cuda_best_split_finder.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
-#include "cuda_best_split_finder.hpp"
+#include <LightGBM/cuda/cuda_rocm_interop.h>
+
+#include <algorithm>
 
 namespace LightGBM {
 
@@ -161,9 +164,9 @@ __device__ void FindBestSplitsForLeafKernelInner(
     }
   }
   __shared__ uint32_t best_thread_index;
-  __shared__ double shared_double_buffer[32];
-  __shared__ bool shared_bool_buffer[32];
-  __shared__ uint32_t shared_int_buffer[32];
+  __shared__ double shared_double_buffer[WARPSIZE];
+  __shared__ bool shared_bool_buffer[WARPSIZE];
+  __shared__ uint32_t shared_int_buffer[WARPSIZE];
   const unsigned int threadIdx_x = threadIdx.x;
   const bool skip_sum = REVERSE ?
     (task->skip_default_bin && (task->num_bin - 1 - threadIdx_x) == static_cast<int>(task->default_bin)) :
@@ -361,9 +364,9 @@ __device__ void FindBestSplitsDiscretizedForLeafKernelInner(
     }
   }
   __shared__ uint32_t best_thread_index;
-  __shared__ double shared_double_buffer[32];
-  __shared__ bool shared_bool_buffer[32];
-  __shared__ uint32_t shared_int_buffer[64];
+  __shared__ double shared_double_buffer[WARPSIZE];
+  __shared__ bool shared_bool_buffer[WARPSIZE];
+  __shared__ uint32_t shared_int_buffer[2 * WARPSIZE];  // need 2 * WARPSIZE since the actual ACC_HIST_TYPE could be long int
   const unsigned int threadIdx_x = threadIdx.x;
   const bool skip_sum = REVERSE ?
     (task->skip_default_bin && (task->num_bin - 1 - threadIdx_x) == static_cast<int>(task->default_bin)) :
@@ -515,9 +518,9 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
   const double parent_output,
   // output parameters
   CUDASplitInfo* cuda_best_split_info) {
-  __shared__ double shared_gain_buffer[32];
-  __shared__ bool shared_found_buffer[32];
-  __shared__ uint32_t shared_thread_index_buffer[32];
+  __shared__ double shared_gain_buffer[WARPSIZE];
+  __shared__ bool shared_found_buffer[WARPSIZE];
+  __shared__ uint32_t shared_thread_index_buffer[WARPSIZE];
   __shared__ uint32_t best_thread_index;
   const double cnt_factor = num_data / sum_hessians;
   const double min_gain_shift = parent_gain + min_gain_to_split;
@@ -605,8 +608,8 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner(
   } else {
     __shared__ double shared_value_buffer[NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER];
     __shared__ int16_t shared_index_buffer[NUM_THREADS_PER_BLOCK_BEST_SPLIT_FINDER];
-    __shared__ uint16_t shared_mem_buffer_uint16[32];
-    __shared__ double shared_mem_buffer_double[32];
+    __shared__ uint16_t shared_mem_buffer_uint16[WARPSIZE];
+    __shared__ double shared_mem_buffer_double[WARPSIZE];
     __shared__ int used_bin;
     l2 += cat_l2;
     uint16_t is_valid_bin = 0;
@@ -1092,9 +1095,9 @@ __device__ void FindBestSplitsForLeafKernelInner_GlobalMemory(
     }
   }
   __shared__ uint32_t best_thread_index;
-  __shared__ double shared_double_buffer[32];
-  __shared__ bool shared_found_buffer[32];
-  __shared__ uint32_t shared_thread_index_buffer[32];
+  __shared__ double shared_double_buffer[WARPSIZE];
+  __shared__ bool shared_found_buffer[WARPSIZE];
+  __shared__ uint32_t shared_thread_index_buffer[WARPSIZE];
   const unsigned int threadIdx_x = threadIdx.x;
   const uint32_t feature_num_bin_minus_offset = task->num_bin - task->mfb_offset;
   if (!REVERSE) {
@@ -1307,9 +1310,9 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
   data_size_t* hist_index_buffer_ptr,
   // output parameters
   CUDASplitInfo* cuda_best_split_info) {
-  __shared__ double shared_gain_buffer[32];
-  __shared__ bool shared_found_buffer[32];
-  __shared__ uint32_t shared_thread_index_buffer[32];
+  __shared__ double shared_gain_buffer[WARPSIZE];
+  __shared__ bool shared_found_buffer[WARPSIZE];
+  __shared__ uint32_t shared_thread_index_buffer[WARPSIZE];
   __shared__ uint32_t best_thread_index;
   const double cnt_factor = num_data / sum_hessians;
   const double min_gain_shift = parent_gain + min_gain_to_split;
@@ -1396,7 +1399,7 @@ __device__ void FindBestSplitsForLeafKernelCategoricalInner_GlobalMemory(
         sum_right_hessian, lambda_l1, l2, right_output);
     }
   } else {
-    __shared__ uint16_t shared_mem_buffer_uint16[32];
+    __shared__ uint16_t shared_mem_buffer_uint16[WARPSIZE];
     __shared__ int used_bin;
     l2 += cat_l2;
     uint16_t is_valid_bin = 0;
@@ -1948,9 +1951,9 @@ __global__ void SyncBestSplitForLeafKernel(const int smaller_leaf_index, const i
   const int num_blocks_per_leaf,
   const bool larger_only,
   const int num_leaves) {
-  __shared__ double shared_gain_buffer[32];
-  __shared__ bool shared_found_buffer[32];
-  __shared__ uint32_t shared_thread_index_buffer[32];
+  __shared__ double shared_gain_buffer[WARPSIZE];
+  __shared__ bool shared_found_buffer[WARPSIZE];
+  __shared__ uint32_t shared_thread_index_buffer[WARPSIZE];
   const uint32_t threadIdx_x = threadIdx.x;
   const uint32_t blockIdx_x = blockIdx.x;
 
@@ -2134,8 +2137,8 @@ void CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel(
 __global__ void FindBestFromAllSplitsKernel(const int cur_num_leaves,
   CUDASplitInfo* cuda_leaf_best_split_info,
   int* cuda_best_split_info_buffer) {
-  __shared__ double gain_shared_buffer[32];
-  __shared__ int leaf_index_shared_buffer[32];
+  __shared__ double gain_shared_buffer[WARPSIZE];
+  __shared__ int leaf_index_shared_buffer[WARPSIZE];
   double thread_best_gain = kMinScore;
   int thread_best_leaf_index = -1;
   const int threadIdx_x = static_cast<int>(threadIdx.x);

@@ -2,6 +2,7 @@
  * Copyright (c) 2021 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
@@ -9,6 +10,7 @@
 #include "cuda_data_partition.hpp"
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 #include <LightGBM/tree.h>
 
 #include <algorithm>
@@ -290,7 +292,7 @@ __global__ void GenDataToLeftBitVectorKernel(
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer,
   data_size_t* block_to_right_offset_buffer) {
-  __shared__ uint16_t shared_mem_buffer[32];
+  __shared__ uint16_t shared_mem_buffer[WARPSIZE];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
@@ -585,7 +587,7 @@ __global__ void GenDataToLeftBitVectorKernel_Categorical(
   const uint8_t split_default_to_left,
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer, data_size_t* block_to_right_offset_buffer) {
-  __shared__ uint16_t shared_mem_buffer[32];
+  __shared__ uint16_t shared_mem_buffer[WARPSIZE];
   uint16_t thread_to_left_offset_cnt = 0;
   const unsigned int local_data_index = blockIdx.x * blockDim.x + threadIdx.x;
   if (local_data_index < num_data_in_leaf) {
@@ -683,7 +685,7 @@ __global__ void AggregateBlockOffsetKernel0(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks) {
-  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t shared_mem_buffer[WARPSIZE];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int blockDim_x = blockDim.x;
@@ -747,7 +749,7 @@ __global__ void AggregateBlockOffsetKernel1(
   data_size_t* block_to_right_offset_buffer, data_size_t* cuda_leaf_data_start,
   data_size_t* cuda_leaf_data_end, data_size_t* cuda_leaf_num_data, const data_size_t* cuda_data_indices,
   const data_size_t num_blocks) {
-  __shared__ uint32_t shared_mem_buffer[32];
+  __shared__ uint32_t shared_mem_buffer[WARPSIZE];
   __shared__ uint32_t to_left_total_count;
   const data_size_t num_data_in_leaf = cuda_leaf_num_data[left_leaf_index];
   const unsigned int threadIdx_x = threadIdx.x;
@@ -1123,7 +1125,7 @@ __global__ void RenewDiscretizedTreeLeavesKernel(
   double* leaf_grad_stat_buffer,
   double* leaf_hess_stat_buffer,
   double* leaf_values) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const int leaf_index = static_cast<int>(blockIdx.x);
   const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
   const data_size_t num_data_in_leaf = leaf_num_data[leaf_index];

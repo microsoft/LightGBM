@@ -4,6 +4,7 @@ option(USE_GPU "Enable GPU-accelerated training" OFF)
 option(USE_SWIG "Enable SWIG to generate Java API" OFF)
 option(USE_TIMETAG "Set to ON to output time costs" OFF)
 option(USE_CUDA "Enable CUDA-accelerated training " OFF)
+option(USE_ROCM "Enable ROCm-accelerated training " OFF)
 option(USE_DEBUG "Set to ON for Debug mode" OFF)
 option(USE_SANITIZER "Use sanitizer flags" OFF)
 set(
@@ -160,6 +161,11 @@ if(USE_CUDA)
     set(USE_OPENMP ON CACHE BOOL "CUDA requires OpenMP" FORCE)
 endif()
 
+if(USE_ROCM)
+    enable_language(HIP)
+    set(USE_OPENMP ON CACHE BOOL "ROCm requires OpenMP" FORCE)
+endif()
+
 if(USE_OPENMP)
     if(APPLE)
         find_package(OpenMP)
@@ -260,6 +266,34 @@ if(USE_CUDA)
       set(CMAKE_CUDA_STANDARD 11)
       set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     endif()
+endif()
+
+if(USE_ROCM)
+    find_package(HIP)
+    include_directories(${HIP_INCLUDE_DIRS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_PLATFORM_AMD__")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${OpenMP_CXX_FLAGS} -fPIC -Wall")
+
+    # avoid warning: unused variable 'mask' due to __shfl_down_sync work-around
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-unused-variable")
+    # avoid warning: 'hipHostAlloc' is deprecated: use hipHostMalloc instead
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-deprecated-declarations")
+    # avoid many warnings about missing overrides
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-inconsistent-missing-override")
+    # avoid warning: shift count >= width of type in feature_histogram.hpp
+    set(DISABLED_WARNINGS "${DISABLED_WARNINGS} -Wno-shift-count-overflow")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DISABLED_WARNINGS}")
+    set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} ${DISABLED_WARNINGS}")
+
+    if(USE_DEBUG)
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -g -O0")
+    else()
+      set(CMAKE_HIP_FLAGS "${CMAKE_HIP_FLAGS} -O3")
+    endif()
+    message(STATUS "CMAKE_HIP_FLAGS: ${CMAKE_HIP_FLAGS}")
+
+    add_definitions(-DUSE_ROCM)
 endif()
 
 include(CheckCXXSourceCompiles)
