@@ -1632,8 +1632,8 @@ int LGBM_DatasetCreateFromCSC(const void* col_ptr,
 }
 
 int LGBM_DatasetCreateFromArrow(int64_t n_chunks,
-                                const ArrowArray* chunks,
-                                const ArrowSchema* schema,
+                                const struct ArrowArray* chunks,
+                                const struct ArrowSchema* schema,
                                 const char* parameters,
                                 const DatasetHandle reference,
                                 DatasetHandle *out) {
@@ -1845,8 +1845,8 @@ int LGBM_DatasetSetField(DatasetHandle handle,
 int LGBM_DatasetSetFieldFromArrow(DatasetHandle handle,
                                   const char* field_name,
                                   int64_t n_chunks,
-                                  const ArrowArray* chunks,
-                                  const ArrowSchema* schema) {
+                                  const struct ArrowArray* chunks,
+                                  const struct ArrowSchema* schema) {
   API_BEGIN();
   auto dataset = reinterpret_cast<Dataset*>(handle);
   ArrowChunkedArray ca(n_chunks, chunks, schema);
@@ -2600,8 +2600,8 @@ int LGBM_BoosterPredictForMats(BoosterHandle handle,
 
 int LGBM_BoosterPredictForArrow(BoosterHandle handle,
                                 int64_t n_chunks,
-                                const ArrowArray* chunks,
-                                const ArrowSchema* schema,
+                                const struct ArrowArray* chunks,
+                                const struct ArrowSchema* schema,
                                 int predict_type,
                                 int start_iteration,
                                 int num_iteration,
