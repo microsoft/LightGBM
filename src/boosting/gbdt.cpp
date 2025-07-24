@@ -295,6 +295,25 @@ void GBDT::RefitTree(const int* tree_leaf_prediction, const size_t nrow, const s
   }
 }
 
+void GBDT::RefitTreeManual(int tree_idx, const double *vals, const int vals_size) {
+  CHECK_GE(tree_idx, 0);
+  CHECK_LT(static_cast<size_t>(tree_idx), models_.size());
+  CHECK_EQ(vals_size, models_[tree_idx]->num_leaves());
+  // reset score by adding the difference
+  for (int leaf_id = 0; leaf_id < models_[tree_idx]->num_leaves(); ++leaf_id) {
+    models_[tree_idx]->SetLeafOutput(leaf_id, vals[leaf_id] - models_[tree_idx]->LeafOutput(leaf_id));
+  }
+  // add the delta
+  train_score_updater_->AddScore(models_[tree_idx].get(), tree_idx % num_tree_per_iteration_);
+  for (auto& score_updater : valid_score_updater_) {
+    score_updater->AddScore(models_[tree_idx].get(), tree_idx % num_tree_per_iteration_);
+  }
+  // update the model
+  for (int leaf_id = 0; leaf_id < models_[tree_idx]->num_leaves(); ++leaf_id) {
+    models_[tree_idx]->SetLeafOutput(leaf_id, vals[leaf_id]);
+  }
+}
+
 /* If the custom "average" is implemented it will be used in place of the label average (if enabled)
 *
 * An improvement to this is to have options to explicitly choose
