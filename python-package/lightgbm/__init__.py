@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 
-_version_path = Path(__file__).absolute().parent / "VERSION.txt"
+_version_path = Path(__file__).resolve().parent / "VERSION.txt"
 if _version_path.is_file():
     __version__ = _version_path.read_text(encoding="utf-8").strip()
 

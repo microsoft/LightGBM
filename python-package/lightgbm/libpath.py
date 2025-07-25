@@ -18,7 +18,7 @@ def _find_lib_path() -> List[str]:
     lib_path: list of str
        List of all found library paths to LightGBM.
     """
-    curr_path = Path(__file__).absolute()
+    curr_path = Path(__file__).resolve()
     dll_path = [
         curr_path.parents[1],
         curr_path.parents[0] / "bin",
