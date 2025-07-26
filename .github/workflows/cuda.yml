@@ -19,7 +19,9 @@ jobs:
   test:
     # yamllint disable-line rule:line-length
     name: ${{ matrix.task }} ${{ matrix.cuda_version }} ${{ matrix.method }} (${{ matrix.linux_version }}, ${{ matrix.compiler }}, Python ${{ matrix.python_version }})
-    runs-on: LightGBM-GPU # https://docs.github.com/en/actions/concepts/runners/about-larger-runners#specifications-for-gpu-larger-runners
+    # yamllint disable-line rule:line-length
+    # ref: https://docs.github.com/en/actions/concepts/runners/about-larger-runners#specifications-for-gpu-larger-runners
+    runs-on: LightGBM-GPU
     container:
       image: nvcr.io/nvidia/cuda:${{ matrix.cuda_version }}-devel-${{ matrix.linux_version }}
       env:
