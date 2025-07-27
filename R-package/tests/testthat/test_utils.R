@@ -29,7 +29,7 @@ test_that(".params2str() passes through duplicated params", {
         params = list(
             objective = "regression"
             , bagging_fraction = 0.8
-            , bagging_fraction = 0.5  # nolint: duplicate_argument
+            , bagging_fraction = 0.5  # nolint: duplicate_argument.
         )
     )
     expect_equal(out_str, "objective=regression bagging_fraction=0.8 bagging_fraction=0.5")

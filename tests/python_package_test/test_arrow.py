@@ -211,7 +211,7 @@ def test_dataset_construct_fields_fuzzy():
 
 
 @pytest.mark.parametrize(
-    ["array_type", "label_data"],
+    ("array_type", "label_data"),
     [
         (pa.array, [0, 1, 0, 0, 1]),
         (pa.chunked_array, [[0], [1, 0, 0, 1]]),
@@ -231,7 +231,7 @@ def test_dataset_construct_labels(array_type, label_data, arrow_type):
 
 
 @pytest.mark.parametrize(
-    ["array_type", "label_data"],
+    ("array_type", "label_data"),
     [
         (pa.array, [False, True, False, False, True]),
         (pa.chunked_array, [[False], [True, False, False, True]]),
@@ -262,7 +262,7 @@ def test_dataset_construct_weights_none():
 
 
 @pytest.mark.parametrize(
-    ["array_type", "weight_data"],
+    ("array_type", "weight_data"),
     [
         (pa.array, [3, 0.7, 1.5, 0.5, 0.1]),
         (pa.chunked_array, [[3], [0.7, 1.5, 0.5, 0.1]]),
@@ -285,7 +285,7 @@ def test_dataset_construct_weights(array_type, weight_data, arrow_type):
 
 
 @pytest.mark.parametrize(
-    ["array_type", "group_data"],
+    ("array_type", "group_data"),
     [
         (pa.array, [2, 3]),
         (pa.chunked_array, [[2], [3]]),
@@ -308,7 +308,7 @@ def test_dataset_construct_groups(array_type, group_data, arrow_type):
 
 
 @pytest.mark.parametrize(
-    ["array_type", "init_score_data"],
+    ("array_type", "init_score_data"),
     [
         (pa.array, [0, 1, 2, 3, 3]),
         (pa.chunked_array, [[0, 1, 2], [3, 3]]),

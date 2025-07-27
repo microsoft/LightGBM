@@ -442,7 +442,7 @@ Predictor <- R6::R6Class(
 
         } else {
 
-          stop("predict: cannot predict on data of class ", sQuote(class(data)))
+          stop("predict: cannot predict on data of class ", sQuote(class(data), q = FALSE))
 
         }
       }
@@ -451,9 +451,9 @@ Predictor <- R6::R6Class(
       if (length(preds) %% num_row != 0L) {
         stop(
           "predict: prediction length "
-          , sQuote(length(preds))
+          , sQuote(length(preds), q = FALSE)
           , " is not a multiple of nrows(data): "
-          , sQuote(num_row)
+          , sQuote(num_row, q = FALSE)
         )
       }
 
