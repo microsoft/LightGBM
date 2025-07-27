@@ -678,10 +678,22 @@ def test_list_to_1d_numpy(collection, dtype, rng):
     custom_name = "my_custom_variable"
 
     if collection.startswith("pd"):
-        if not PANDAS_INSTALLED:
-            pytest.skip("pandas is not installed")
-        else:
-            y = pd_Series(y)
+        pd = pytest.importorskip("pandas")
+        y = pd_Series(y)
+        if pd.api.types.is_object_dtype(y):
+            with pytest.raises(
+                ValueError,
+                match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object",
+            ):
+                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            return
+        elif pd.api.types.is_string_dtype(y):
+            with pytest.raises(
+                ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: str"
+            ):
+                lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
+            return
+
     if isinstance(y, np.ndarray) and len(y.shape) == 2:
         with pytest.warns(UserWarning, match="column-vector"):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
@@ -694,12 +706,7 @@ def test_list_to_1d_numpy(collection, dtype, rng):
         with pytest.raises(TypeError, match=err_msg):
             lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
         return
-    elif isinstance(y, pd_Series) and y.dtype == object:
-        with pytest.raises(
-            ValueError, match=r"pandas dtypes must be int, float or bool\.\nFields with bad pandas dtypes: 0: object"
-        ):
-            lgb.basic._list_to_1d_numpy(y, dtype=np.float32, name=custom_name)
-        return
+
     result = lgb.basic._list_to_1d_numpy(y, dtype=dtype, name=custom_name)
     assert result.size == 10
     assert result.dtype == dtype
