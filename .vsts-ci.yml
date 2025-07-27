@@ -53,7 +53,7 @@ jobs:
   # Maintenance #
   ###############
   - job: Maintenance
-    pool: lgb_agent_pool_ado
+    pool: lightgbm_agent_pool_ado
     container: ubuntu-latest
     # routine maintenance (like periodically deleting old files),
     # to be run on 1 random CI runner in the self-hosted pool each runner
@@ -90,7 +90,7 @@ jobs:
       SETUP_CONDA: 'false'
       OS_NAME: 'linux'
       PRODUCES_ARTIFACTS: 'true'
-    pool: lgb_agent_pool_ado
+    pool: lightgbm_agent_pool_ado
     container: linux-artifact-builder
     strategy:
       matrix:
@@ -157,7 +157,7 @@ jobs:
       IN_UBUNTU_BASE_CONTAINER: 'true'
       OS_NAME: 'linux'
       SETUP_CONDA: 'true'
-    pool: lgb_agent_pool_ado
+    pool: lightgbm_agent_pool_ado
     container: ubuntu-latest
     strategy:
       matrix:
