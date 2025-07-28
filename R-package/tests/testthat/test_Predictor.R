@@ -187,8 +187,14 @@ test_that("Feature contribution predictions do not take non-general CSR or CSC i
       , params = list(min_data_in_leaf = 5L, num_threads = .LGB_MAX_THREADS)
     )
 
-    expect_error(predict(bst, SmatC, type = "contrib"))
-    expect_error(predict(bst, SmatR, type = "contrib"))
+    expect_error(
+      predict(bst, SmatC, type = "contrib")
+      , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsCMatrix"  # nolint: line_length.
+    )
+    expect_error(
+      predict(bst, SmatR, type = "contrib")
+      , regexp = "Predictions on sparse inputs are only allowed for 'dsparseVector', 'dgRMatrix', 'dgCMatrix' - got: dsRMatrix" # nolint: line_length.
+    )
 })
 
 test_that("predict() params should override keyword argument for raw-score predictions", {
