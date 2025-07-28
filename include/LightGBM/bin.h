@@ -9,6 +9,7 @@
 #include <LightGBM/utils/common.h>
 #include <LightGBM/utils/file_io.h>
 
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <functional>
@@ -30,11 +31,14 @@ enum MissingType {
 };
 
 typedef double hist_t;
+typedef int32_t int_hist_t;
 typedef uint64_t hist_cnt_t;
 // check at compile time
 static_assert(sizeof(hist_t) == sizeof(hist_cnt_t), "Histogram entry size is not correct");
 
 const size_t kHistEntrySize = 2 * sizeof(hist_t);
+const size_t kInt32HistEntrySize = 2 * sizeof(int_hist_t);
+const size_t kInt16HistEntrySize = 2 * sizeof(int16_t);
 const int kHistOffset = 2;
 const double kSparseThreshold = 0.7;
 
@@ -53,6 +57,26 @@ inline static void HistogramSumReducer(const char* src, char* dst, int type_size
     src += type_size;
     dst += type_size;
     used_size += type_size;
+  }
+}
+
+inline static void Int32HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+  const int64_t* src_ptr = reinterpret_cast<const int64_t*>(src);
+  int64_t* dst_ptr = reinterpret_cast<int64_t*>(dst);
+  const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+  for (comm_size_t i = 0; i < steps; ++i) {
+    dst_ptr[i] += src_ptr[i];
+  }
+}
+
+inline static void Int16HistogramSumReducer(const char* src, char* dst, int type_size, comm_size_t len) {
+  const int32_t* src_ptr = reinterpret_cast<const int32_t*>(src);
+  int32_t* dst_ptr = reinterpret_cast<int32_t*>(dst);
+  const comm_size_t steps = (len + (type_size * 2) - 1) / (type_size * 2);
+  #pragma omp parallel for schedule(static) num_threads(OMP_NUM_THREADS())
+  for (comm_size_t i = 0; i < steps; ++i) {
+    dst_ptr[i] += src_ptr[i];
   }
 }
 
@@ -104,7 +128,7 @@ class BinMapper {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  void SaveBinaryToFile(const VirtualFileWriter* writer) const;
+  void SaveBinaryToFile(BinaryWriter* writer) const;
 
   /*!
   * \brief Mapping bin into feature value
@@ -121,7 +145,7 @@ class BinMapper {
 
   /*!
   * \brief Maximum categorical value
-  * \return Maximum categorical value for categorical features, 0 for numerical features  
+  * \return Maximum categorical value for categorical features, 0 for numerical features
   */
   inline int MaxCatValue() const {
     if (bin_2_categorical_.size() == 0) {
@@ -259,8 +283,14 @@ class Bin {
   /*! \brief virtual destructor */
   virtual ~Bin() {}
   /*!
+  * \brief Initialize for pushing.  By default, no action needed.
+  * \param num_thread The number of external threads that will be calling the push APIs
+  * \param omp_max_threads The maximum number of OpenMP threads to allocate for
+  */
+  virtual void InitStreaming(uint32_t /*num_thread*/, int32_t /*omp_max_threads*/) { }
+  /*!
   * \brief Push one record
-  * \pram tid Thread id
+  * \param tid Thread id
   * \param idx Index of record
   * \param value bin value of record
   */
@@ -280,7 +310,7 @@ class Bin {
   * \brief Save binary data to file
   * \param file File want to write
   */
-  virtual void SaveBinaryToFile(const VirtualFileWriter* writer) const = 0;
+  virtual void SaveBinaryToFile(BinaryWriter* writer) const = 0;
 
   /*!
   * \brief Load from memory
@@ -326,6 +356,33 @@ class Bin {
     const score_t* ordered_gradients, const score_t* ordered_hessians,
     hist_t* out) const = 0;
 
+  virtual void ConstructHistogramInt8(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt32(
+    const data_size_t* data_indices, data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
+    const score_t* ordered_gradients, const score_t* ordered_hessians,
+    hist_t* out) const = 0;
+
   /*!
   * \brief Construct histogram of this feature,
   *        Note: We use ordered_gradients and ordered_hessians to improve cache hit chance
@@ -344,6 +401,24 @@ class Bin {
 
   virtual void ConstructHistogram(data_size_t start, data_size_t end,
                                   const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt8(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt32(const data_size_t* data_indices, data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
+                                       const score_t* ordered_gradients, hist_t* out) const = 0;
 
   virtual data_size_t Split(uint32_t min_bin, uint32_t max_bin,
                             uint32_t default_bin, uint32_t most_freq_bin,
@@ -458,6 +533,57 @@ class MultiValBin {
                                          const score_t* ordered_hessians,
                                          hist_t* out) const = 0;
 
+  virtual void ConstructHistogramInt32(const data_size_t* data_indices,
+                                       data_size_t start, data_size_t end,
+                                       const score_t* gradients,
+                                       const score_t* hessians,
+                                       hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt32(data_size_t start, data_size_t end,
+                                       const score_t* gradients,
+                                       const score_t* hessians,
+                                       hist_t* out) const = 0;
+
+  virtual void ConstructHistogramOrderedInt32(const data_size_t* data_indices,
+                                              data_size_t start, data_size_t end,
+                                              const score_t* ordered_gradients,
+                                              const score_t* ordered_hessians,
+                                              hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(const data_size_t* data_indices,
+                                       data_size_t start, data_size_t end,
+                                       const score_t* gradients,
+                                       const score_t* hessians,
+                                       hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt16(data_size_t start, data_size_t end,
+                                       const score_t* gradients,
+                                       const score_t* hessians,
+                                       hist_t* out) const = 0;
+
+  virtual void ConstructHistogramOrderedInt16(const data_size_t* data_indices,
+                                              data_size_t start, data_size_t end,
+                                              const score_t* ordered_gradients,
+                                              const score_t* ordered_hessians,
+                                              hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt8(const data_size_t* data_indices,
+                                      data_size_t start, data_size_t end,
+                                      const score_t* gradients,
+                                      const score_t* hessians,
+                                      hist_t* out) const = 0;
+
+  virtual void ConstructHistogramInt8(data_size_t start, data_size_t end,
+                                      const score_t* gradients,
+                                      const score_t* hessians,
+                                      hist_t* out) const = 0;
+
+  virtual void ConstructHistogramOrderedInt8(const data_size_t* data_indices,
+                                             data_size_t start, data_size_t end,
+                                             const score_t* ordered_gradients,
+                                             const score_t* ordered_hessians,
+                                             hist_t* out) const = 0;
+
   virtual void FinishLoad() = 0;
 
   virtual bool IsSparse() = 0;
@@ -474,13 +600,13 @@ class MultiValBin {
 
   virtual MultiValBin* Clone() = 0;
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   virtual const void* GetRowWiseData(uint8_t* bit_type,
     size_t* total_size,
     bool* is_sparse,
     const void** out_data_ptr,
     uint8_t* data_ptr_bit_type) const = 0;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 };
 
 inline uint32_t BinMapper::ValueToBin(double value) const {

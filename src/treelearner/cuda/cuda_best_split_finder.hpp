@@ -7,7 +7,7 @@
 #ifndef LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
 #define LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/bin.h>
 #include <LightGBM/dataset.h>
@@ -46,6 +46,7 @@ class CUDABestSplitFinder {
     const hist_t* cuda_hist,
     const Dataset* train_data,
     const std::vector<uint32_t>& feature_hist_offsets,
+    const bool select_features_by_node,
     const Config* config);
 
   ~CUDABestSplitFinder();
@@ -66,7 +67,11 @@ class CUDABestSplitFinder {
     const data_size_t num_data_in_smaller_leaf,
     const data_size_t num_data_in_larger_leaf,
     const double sum_hessians_in_smaller_leaf,
-    const double sum_hessians_in_larger_leaf);
+    const double sum_hessians_in_larger_leaf,
+    const score_t* grad_scale,
+    const score_t* hess_scale,
+    const uint8_t smaller_num_bits_in_histogram_bins,
+    const uint8_t larger_num_bits_in_histogram_bins);
 
   const CUDASplitInfo* FindBestFromAllSplits(
     const int cur_num_leaves,
@@ -87,6 +92,9 @@ class CUDABestSplitFinder {
     const std::vector<uint32_t>& feature_hist_offsets);
 
   void ResetConfig(const Config* config, const hist_t* cuda_hist);
+
+  void SetUsedFeatureByNode(const std::vector<int8_t>& is_feature_used_by_smaller_node,
+                            const std::vector<int8_t>& is_feature_used_by_larger_node);
 
  private:
   #define LaunchFindBestSplitsForLeafKernel_PARAMS \
@@ -109,6 +117,31 @@ class CUDABestSplitFinder {
   void LaunchFindBestSplitsForLeafKernelInner2(LaunchFindBestSplitsForLeafKernel_PARAMS);
 
   #undef LaunchFindBestSplitsForLeafKernel_PARAMS
+
+  #define LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS \
+  const CUDALeafSplitsStruct* smaller_leaf_splits, \
+  const CUDALeafSplitsStruct* larger_leaf_splits, \
+  const int smaller_leaf_index, \
+  const int larger_leaf_index, \
+  const bool is_smaller_leaf_valid, \
+  const bool is_larger_leaf_valid, \
+  const score_t* grad_scale, \
+  const score_t* hess_scale, \
+  const uint8_t smaller_num_bits_in_histogram_bins, \
+  const uint8_t larger_num_bits_in_histogram_bins
+
+  void LaunchFindBestSplitsDiscretizedForLeafKernel(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner0(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner1(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  template <bool USE_RAND, bool USE_L1, bool USE_SMOOTHING>
+  void LaunchFindBestSplitsDiscretizedForLeafKernelInner2(LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS);
+
+  #undef LaunchFindBestSplitsDiscretizedForLeafKernel_PARAMS
 
   void LaunchSyncBestSplitForLeafKernel(
     const int host_smaller_leaf_index,
@@ -172,6 +205,8 @@ class CUDABestSplitFinder {
   int max_num_categorical_bin_;
   // marks whether a feature is categorical
   std::vector<int8_t> is_categorical_;
+  // whether need to select features by node
+  bool select_features_by_node_;
 
   // CUDA memory, held by this object
   // for per leaf best split information
@@ -195,6 +230,9 @@ class CUDABestSplitFinder {
   int max_num_categories_in_split_;
   // used for extremely randomized trees
   CUDAVector<CUDARandom> cuda_randoms_;
+  // features used by node
+  CUDAVector<int8_t> is_feature_used_by_smaller_node_;
+  CUDAVector<int8_t> is_feature_used_by_larger_node_;
 
   // CUDA memory, held by other object
   const hist_t* cuda_hist_;
@@ -202,5 +240,5 @@ class CUDABestSplitFinder {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA
 #endif  // LIGHTGBM_TREELEARNER_CUDA_CUDA_BEST_SPLIT_FINDER_HPP_

@@ -18,19 +18,19 @@ Data
 
 We used 5 datasets to conduct our comparison experiments. Details of data are listed in the following table:
 
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Data      | Task                  | Link                                                                   | #Train\_Set | #Feature | Comments                                     |
-+===========+=======================+========================================================================+=============+==========+==============================================+
-| Higgs     | Binary classification | `link <https://archive.ics.uci.edu/ml/datasets/HIGGS>`__               | 10,500,000  | 28       | last 500,000 samples were used as test set   |
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Yahoo LTR | Learning to rank      | `link <https://webscope.sandbox.yahoo.com/catalog.php?datatype=c>`__   | 473,134     | 700      | set1.train as train, set1.test as test       |
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| MS LTR    | Learning to rank      | `link <http://research.microsoft.com/en-us/projects/mslr/>`__          | 2,270,296   | 137      | {S1,S2,S3} as train set, {S5} as test set    |
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Expo      | Binary classification | `link <http://stat-computing.org/dataexpo/2009/>`__                    | 11,000,000  | 700      | last 1,000,000 samples were used as test set |
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
-| Allstate  | Binary classification | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__           | 13,184,290  | 4228     | last 1,000,000 samples were used as test set |
-+-----------+-----------------------+------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
+| Data      | Task                  | Link                                                                            | #Train\_Set | #Feature | Comments                                     |
++===========+=======================+=================================================================================+=============+==========+==============================================+
+| Higgs     | Binary classification | `link <https://archive.ics.uci.edu/dataset/280/higgs>`__                        | 10,500,000  | 28       | last 500,000 samples were used as test set   |
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
+| Yahoo LTR | Learning to rank      | `link <https://webscope.sandbox.yahoo.com/catalog.php?datatype=c>`__            | 473,134     | 700      | set1.train as train, set1.test as test       |
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
+| MS LTR    | Learning to rank      | `link <https://www.microsoft.com/en-us/research/project/mslr/>`__               | 2,270,296   | 137      | {S1,S2,S3} as train set, {S5} as test set    |
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
+| Expo      | Binary classification | `link <https://community.amstat.org/jointscsg-section/dataexpo/dataexpo2009>`__ | 11,000,000  | 700      | last 1,000,000 samples were used as test set |
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
+| Allstate  | Binary classification | `link <https://www.kaggle.com/c/ClaimPredictionChallenge>`__                    | 13,184,290  | 4228     | last 1,000,000 samples were used as test set |
++-----------+-----------------------+---------------------------------------------------------------------------------+-------------+----------+----------------------------------------------+
 
 Environment
 ^^^^^^^^^^^
@@ -57,7 +57,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 1. xgboost:
 
-   .. code::
+   .. code:: text
 
        eta = 0.1
        max_depth = 8
@@ -68,7 +68,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 2. xgboost\_hist (using histogram based algorithm):
 
-   .. code::
+   .. code:: text
 
        eta = 0.1
        num_round = 500
@@ -81,7 +81,7 @@ We set up total 3 settings for experiments. The parameters of these settings are
 
 3. LightGBM:
 
-   .. code::
+   .. code:: text
 
        learning_rate = 0.1
        num_leaves = 255
@@ -102,7 +102,7 @@ Result
 Speed
 '''''
 
-We compared speed using only the training task without any test or metric output. We didn't count the time for IO. 
+We compared speed using only the training task without any test or metric output. We didn't count the time for IO.
 For the ranking tasks, since XGBoost and LightGBM implement different ranking objective functions, we used ``regression`` objective for speed benchmark, for the fair comparison.
 
 The following table is the comparison of time cost:
@@ -212,7 +212,7 @@ We ran our experiments on 16 Windows servers with the following specifications:
 Settings
 ^^^^^^^^
 
-.. code::
+.. code:: text
 
     learning_rate = 0.1
     num_leaves = 255

@@ -53,9 +53,9 @@ Tree::Tree(int max_leaves, bool track_branch_features, bool is_linear)
     leaf_features_.resize(max_leaves_);
     leaf_features_inner_.resize(max_leaves_);
   }
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   is_cuda_tree_ = false;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 }
 
 int Tree::Split(int leaf, int feature, int real_feature, uint32_t threshold_bin,
@@ -153,7 +153,7 @@ int Tree::SplitCategorical(int leaf, int feature, int real_feature, const uint32
 void Tree::AddPredictionToScore(const Dataset* data, data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[i] += leaf_value_[0];
       }
@@ -234,7 +234,7 @@ void Tree::AddPredictionToScore(const Dataset* data,
   data_size_t num_data, double* score) const {
   if (!is_linear_ && num_leaves_ <= 1) {
     if (leaf_value_[0] != 0.0f) {
-#pragma omp parallel for schedule(static, 512) if (num_data >= 1024)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 512) if (num_data >= 1024)
       for (data_size_t i = 0; i < num_data; ++i) {
         score[used_data_indices[i]] += leaf_value_[0];
       }
@@ -416,12 +416,15 @@ std::string Tree::ToJSON() const {
   str_buf << "\"num_cat\":" << num_cat_ << "," << '\n';
   str_buf << "\"shrinkage\":" << shrinkage_ << "," << '\n';
   if (num_leaves_ == 1) {
+    str_buf << "\"tree_structure\":{";
+    str_buf << "\"leaf_value\":" << leaf_value_[0] << ", " << '\n';
     if (is_linear_) {
-      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << ", " << "\n";
-      str_buf << LinearModelToJSON(0) << "}" << "\n";
+      str_buf << "\"leaf_count\":" << leaf_count_[0] << ", " << '\n';
+      str_buf << LinearModelToJSON(0);
     } else {
-      str_buf << "\"tree_structure\":{" << "\"leaf_value\":" << leaf_value_[0] << "}" << '\n';
+      str_buf << "\"leaf_count\":" << leaf_count_[0];
     }
+    str_buf << "}" << '\n';
   } else {
     str_buf << "\"tree_structure\":" << NodeToJSON(0) << '\n';
   }
@@ -523,35 +526,32 @@ std::string Tree::NumericalDecisionIfElse(int node) const {
   str_buf << std::setprecision(std::numeric_limits<double>::digits10 + 2);
   uint8_t missing_type = GetMissingType(decision_type_[node]);
   bool default_left = GetDecisionType(decision_type_[node], kDefaultLeftMask);
-  if (missing_type == MissingType::None
-      || (missing_type == MissingType::Zero && default_left && kZeroThreshold < threshold_[node])) {
-    str_buf << "if (fval <= " << threshold_[node] << ") {";
-  } else if (missing_type == MissingType::Zero) {
+  if (missing_type != MissingType::NaN) {
+    str_buf << "if (std::isnan(fval)) fval = 0.0;";
+  }
+  if (missing_type == MissingType::Zero) {
     if (default_left) {
-      str_buf << "if (fval <= " << threshold_[node] << " || Tree::IsZero(fval)" << " || std::isnan(fval)) {";
+      str_buf << "if (Tree::IsZero(fval)) {";
     } else {
-      str_buf << "if (fval <= " << threshold_[node] << " && !Tree::IsZero(fval)" << " && !std::isnan(fval)) {";
+      str_buf << "if (!Tree::IsZero(fval)) {";
+    }
+  } else if (missing_type == MissingType::NaN) {
+    if (default_left) {
+      str_buf << "if (std::isnan(fval)) {";
+    } else {
+      str_buf << "if (!std::isnan(fval)) {";
     }
   } else {
-    if (default_left) {
-      str_buf << "if (fval <= " << threshold_[node] << " || std::isnan(fval)) {";
-    } else {
-      str_buf << "if (fval <= " << threshold_[node] << " && !std::isnan(fval)) {";
-    }
+    str_buf << "if (fval <= " << threshold_[node] << ") {";
   }
   return str_buf.str();
 }
 
 std::string Tree::CategoricalDecisionIfElse(int node) const {
-  uint8_t missing_type = GetMissingType(decision_type_[node]);
   std::stringstream str_buf;
   Common::C_stringstream(str_buf);
-  if (missing_type == MissingType::NaN) {
-    str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
-  } else {
-    str_buf << "if (std::isnan(fval)) { int_fval = 0; } else { int_fval = static_cast<int>(fval); }";
-  }
   int cat_idx = static_cast<int>(threshold_[node]);
+  str_buf << "if (std::isnan(fval)) { int_fval = -1; } else { int_fval = static_cast<int>(fval); }";
   str_buf << "if (int_fval >= 0 && int_fval < 32 * (";
   str_buf << cat_boundaries_[cat_idx + 1] - cat_boundaries_[cat_idx];
   str_buf << ") && (((cat_threshold[" << cat_boundaries_[cat_idx];
@@ -734,9 +734,15 @@ Tree::Tree(const char* str, size_t* used_len) {
     is_linear_ = false;
   }
 
-  #ifdef USE_CUDA_EXP
+  if (key_vals.count("leaf_count")) {
+    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
+  } else {
+    leaf_count_.resize(num_leaves_);
+  }
+
+  #ifdef USE_CUDA
   is_cuda_tree_ = false;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 
   if ((num_leaves_ <= 1) && !is_linear_) {
     return;
@@ -794,12 +800,6 @@ Tree::Tree(const char* str, size_t* used_len) {
     leaf_weight_ = CommonC::StringToArray<double>(key_vals["leaf_weight"], num_leaves_);
   } else {
     leaf_weight_.resize(num_leaves_);
-  }
-
-  if (key_vals.count("leaf_count")) {
-    leaf_count_ = CommonC::StringToArrayFast<int>(key_vals["leaf_count"], num_leaves_);
-  } else {
-    leaf_count_.resize(num_leaves_);
   }
 
   if (key_vals.count("decision_type")) {

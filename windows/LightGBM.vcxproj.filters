@@ -51,6 +51,9 @@
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\treelearner\gradient_discretizer.hpp">
+      <Filter>src\treelearner</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\application\predictor.hpp">
       <Filter>src\application</Filter>
     </ClInclude>
@@ -127,6 +130,9 @@
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h">
+      <Filter>include\LightGBM</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\sample_strategy.h">
       <Filter>include\LightGBM</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LightGBM\tree.h">
@@ -228,6 +234,12 @@
     <ClInclude Include="..\src\treelearner\linear_tree_learner.h">
       <Filter>src\treelearner</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\byte_buffer.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\LightGBM\utils\binary_writer.h">
+      <Filter>include\LightGBM\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp">
@@ -272,6 +284,9 @@
     <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\treelearner\feature_histogram.cpp">
+      <Filter>src\treelearner</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
@@ -311,6 +326,9 @@
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp">
       <Filter>src\boosting</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\boosting\sample_strategy.cpp">
+      <Filter>src\boosting</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\io\file_io.cpp">
       <Filter>src\io</Filter>
     </ClCompile>
@@ -326,17 +344,11 @@
     <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp">
       <Filter>src\treelearner</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\io\multi_val_dense_bin.cpp">
-      <Filter>src\io</Filter>
+    <ClCompile Include="..\src\treelearner\gradient_discretizer.cpp">
+      <Filter>src\treelearner</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\io\multi_val_sparse_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\io\dense_bin.cpp">
-      <Filter>src\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\io\sparse_bin.cpp">
-      <Filter>src\io</Filter>
+    <ClCompile Include="..\src\utils\openmp_wrapper.cpp">
+      <Filter>src\utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

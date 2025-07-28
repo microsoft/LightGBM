@@ -44,7 +44,7 @@
 #'                 }
 #'             }
 #' @param eval_freq evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided
-#' @param init_model path of model file of \code{lgb.Booster} object, will continue training from this model
+#' @param init_model path of model file or \code{lgb.Booster} object, will continue training from this model
 #' @param nrounds number of training rounds
 #' @param obj objective function, can be character or custom objective function. Examples include
 #'            \code{regression}, \code{regression_l1}, \code{huber},
@@ -84,21 +84,47 @@
 #'          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
 #'          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
 #'          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
+#'
+#'          \emph{New in version 4.0.0}
+#'
 #' @keywords internal
 NULL
 
 #' @name lightgbm
 #' @title Train a LightGBM model
-#' @description Simple interface for training a LightGBM model.
+#' @description High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+#'              is focused on compatibility with other statistics and machine learning interfaces in R.
+#'              This focus on compatibility means that this interface may experience more frequent breaking API changes
+#'              than \code{\link{lgb.train}}.
+#'              For efficiency-sensitive applications, or for applications where breaking API changes across releases
+#'              is very expensive, use \code{\link{lgb.train}}.
 #' @inheritParams lgb_shared_params
 #' @param label Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}
 #' @param weights Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
 #'                observations / rows have the same importance / weight.
+#'
+#'                \emph{Changed from 'weight', in version 4.0.0}
+#'
 #' @param objective Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
 #'                  For a list of accepted objectives, see
 #'                  \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
 #'                  the "objective" item of the "Parameters" section of the documentation}.
+#'
+#'                  If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+#'                  be determined according to what is passed for \code{label}:\itemize{
+#'                  \item If passing a factor with two variables, will use objective \code{"binary"}.
+#'                  \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+#'                  (note that parameter \code{num_class} in this case will also be determined automatically from
+#'                  \code{label}).
+#'                  \item Otherwise (or if passing \code{lgb.Dataset} as input), will use objective \code{"regression"}.
+#'                  }
+#'
+#'                  \emph{New in version 4.0.0}
+#'
 #' @param init_score initial score is the base prediction lightgbm will boost from
+#'
+#'                   \emph{New in version 4.0.0}
+#'
 #' @param num_threads Number of parallel threads to use. For best speed, this should be set to the number of
 #'                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
 #'                    number of maximum threads.
@@ -113,8 +139,17 @@ NULL
 #'                    system, but be aware that getting the number of cores detected correctly requires package
 #'                    \code{RhpcBLASctl} to be installed.
 #'
-#'                    This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
+#'                    This parameter gets overridden by \code{num_threads} and its aliases under \code{params}
 #'                    if passed there.
+#'
+#'                    \emph{New in version 4.0.0}
+#'
+#' @param colnames Character vector of features. Only used if \code{data} is not an \code{\link{lgb.Dataset}}.
+#' @param categorical_feature categorical features. This can either be a character vector of feature
+#'                            names or an integer vector with the indices of the features (e.g.
+#'                            \code{c(1L, 10L)} to say "the first and tenth columns").
+#'                            Only used if \code{data} is not an \code{\link{lgb.Dataset}}.
+#'
 #' @param ... Additional arguments passed to \code{\link{lgb.train}}. For example
 #'     \itemize{
 #'        \item{\code{valids}: a list of \code{lgb.Dataset} objects, used for validation}
@@ -123,10 +158,6 @@ NULL
 #'                    \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
 #'        \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
 #'        \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-#'        \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
-#'        \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
-#'                            names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-#'                            say "the first and tenth columns").}
 #'        \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
 #'                          into a predictor model which frees up memory and the original datasets}
 #'     }
@@ -144,9 +175,11 @@ lightgbm <- function(data,
                      init_model = NULL,
                      callbacks = list(),
                      serializable = TRUE,
-                     objective = "regression",
+                     objective = "auto",
                      init_score = NULL,
                      num_threads = NULL,
+                     colnames = NULL,
+                     categorical_feature = NULL,
                      ...) {
 
   # validate inputs early to avoid unnecessary computation
@@ -155,25 +188,51 @@ lightgbm <- function(data,
   }
 
   if (is.null(num_threads)) {
-    num_threads <- lgb.get.default.num.threads()
+    num_threads <- .get_default_num_threads()
   }
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "num_threads"
     , params = params
     , alternative_kwarg_value = num_threads
   )
-  params <- lgb.check.wrapper_param(
+  params <- .check_wrapper_param(
     main_param_name = "verbosity"
     , params = params
     , alternative_kwarg_value = verbose
   )
 
+  # Process factors as labels and auto-determine objective
+  if (!.is_Dataset(data)) {
+    data_processor <- DataProcessor$new()
+    temp <- data_processor$process_label(
+        label = label
+        , objective = objective
+        , params = params
+    )
+    label <- temp$label
+    objective <- temp$objective
+    params <- temp$params
+    rm(temp)
+  } else {
+    data_processor <- NULL
+    if (objective == "auto") {
+      objective <- "regression"
+    }
+  }
+
   # Set data to a temporary variable
   dtrain <- data
 
   # Check whether data is lgb.Dataset, if not then create lgb.Dataset manually
-  if (!lgb.is.Dataset(x = dtrain)) {
-    dtrain <- lgb.Dataset(data = data, label = label, weight = weights, init_score = init_score)
+  if (!.is_Dataset(x = dtrain)) {
+    dtrain <- lgb.Dataset(
+      data = data
+      , label = label
+      , weight = weights
+      , init_score = init_score
+      , categorical_feature = categorical_feature
+      , colnames = colnames
+    )
   }
 
   train_args <- list(
@@ -199,6 +258,7 @@ lightgbm <- function(data,
     what = lgb.train
     , args = train_args
   )
+  bst$data_processor <- data_processor
 
   return(bst)
 }
@@ -276,7 +336,7 @@ NULL
 #' @import methods
 #' @importFrom Matrix Matrix
 #' @importFrom R6 R6Class
-#' @useDynLib lib_lightgbm , .registration = TRUE
+#' @useDynLib lightgbm , .registration = TRUE
 NULL
 
 # Suppress false positive warnings from R CMD CHECK about

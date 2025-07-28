@@ -30,8 +30,8 @@
 #include <vector>
 
 #define FMT_HEADER_ONLY
-#include "../../../external_libs/fast_double_parser/include/fast_double_parser.h"
-#include "../../../external_libs/fmt/include/fmt/format.h"
+#include "fast_double_parser.h"
+#include "fmt/format.h"
 
 #ifdef _MSC_VER
 #include <intrin.h>
@@ -58,7 +58,7 @@ namespace LightGBM {
 
 namespace Common {
 
-using json11::Json;
+using json11_internal_lightgbm::Json;
 
 /*!
 * Imbues the stream with the C locale.
@@ -691,7 +691,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   size_t inner_size = (len + num_threads - 1) / num_threads;
   inner_size = std::max(inner_size, kMinInnerLen);
   num_threads = static_cast<int>((len + inner_size - 1) / inner_size);
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel for num_threads(num_threads) schedule(static, 1)
   for (int i = 0; i < num_threads; ++i) {
     size_t left = inner_size*i;
     size_t right = left + inner_size;
@@ -707,7 +707,7 @@ static void ParallelSort(_RanIt _First, _RanIt _Last, _Pr _Pred, _VTRanIt*) {
   // Recursive merge
   while (s < len) {
     int loop_size = static_cast<int>((len + s * 2 - 1) / (s * 2));
-    #pragma omp parallel for schedule(static, 1)
+    #pragma omp parallel for num_threads(num_threads) schedule(static, 1)
     for (int i = 0; i < loop_size; ++i) {
       size_t left = i * 2 * s;
       size_t mid = left + s;
@@ -925,11 +925,11 @@ class AlignmentAllocator {
 
   inline ~AlignmentAllocator() throw() {}
 
-  inline pointer adress(reference r) {
+  inline pointer address(reference r) {
     return &r;
   }
 
-  inline const_pointer adress(const_reference r) const {
+  inline const_pointer address(const_reference r) const {
     return &r;
   }
 
@@ -1232,7 +1232,7 @@ struct __TToStringHelper<T, true, true> {
 * Converts an array to a string with with values separated by the space character.
 * This method replaces Common's ``ArrayToString`` and ``ArrayToStringFast`` functionality
 * and is locale-independent.
-* 
+*
 * \note If ``high_precision_output`` is set to true,
 *       floating point values are output with more digits of precision.
 */

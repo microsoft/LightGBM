@@ -111,7 +111,7 @@ new_data <- data.frame(
     X = rowMeans(predict(
         model
         , agaricus.test$data
-        , predleaf = TRUE
+        , type = "leaf"
     ))
     , Y = pmin(
         pmax(
@@ -162,7 +162,7 @@ new_data2 <- data.frame(
     X = rowMeans(predict(
         model2
         , agaricus.test$data
-        , predleaf = TRUE
+        , type = "leaf"
     ))
     , Y = pmin(
         pmax(
@@ -218,7 +218,7 @@ new_data3 <- data.frame(
     X = rowMeans(predict(
         model3
         , agaricus.test$data
-        , predleaf = TRUE
+        , type = "leaf"
     ))
     , Y = pmin(
         pmax(

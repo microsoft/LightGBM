@@ -34,7 +34,7 @@
     <SccLocalPath>SAK</SccLocalPath>
     <SccProvider>SAK</SccProvider>
     <ProjectName>LightGBM</ProjectName>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
@@ -101,12 +101,12 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <PreprocessorDefinitions>EIGEN_MPL2_ONLY</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EIGEN_MPL2_ONLY;EIGEN_DONT_PARALLELIZE;WIN_HAS_INET_PTON;</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_mpi|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>USE_MPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_MPI;USE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <OpenMPSupport>true</OpenMPSupport>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -117,7 +117,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>
@@ -129,7 +129,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>USE_SOCKET;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_SOCKET;USE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <OpenMPSupport>true</OpenMPSupport>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -140,7 +140,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -149,7 +149,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_DLL|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>USE_SOCKET;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_SOCKET;USE_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <OpenMPSupport>true</OpenMPSupport>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -160,7 +160,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -183,7 +183,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>
@@ -210,7 +210,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies />
@@ -231,7 +231,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\external_libs\eigen;$(ProjectDir)\..\external_libs\fast_double_parser\include;$(ProjectDir)\..\external_libs\fmt\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -253,10 +253,13 @@
     <ClInclude Include="..\include\LightGBM\network.h" />
     <ClInclude Include="..\include\LightGBM\objective_function.h" />
     <ClInclude Include="..\include\LightGBM\prediction_early_stop.h" />
+    <ClInclude Include="..\include\LightGBM\sample_strategy.h" />
     <ClInclude Include="..\include\LightGBM\tree.h" />
     <ClInclude Include="..\include\LightGBM\tree_learner.h" />
     <ClInclude Include="..\include\LightGBM\utils\yamc\alternate_shared_mutex.hpp" />
     <ClInclude Include="..\include\LightGBM\utils\array_args.h" />
+    <ClInclude Include="..\include\LightGBM\utils\binary_writer.h" />
+    <ClInclude Include="..\include\LightGBM\utils\byte_buffer.h" />
     <ClInclude Include="..\include\LightGBM\utils\common.h" />
     <ClInclude Include="..\include\LightGBM\utils\file_io.h" />
     <ClInclude Include="..\include\LightGBM\utils\json11.h" />
@@ -303,6 +306,7 @@
     <ClInclude Include="..\src\treelearner\parallel_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\serial_tree_learner.h" />
     <ClInclude Include="..\src\treelearner\split_info.hpp" />
+    <ClInclude Include="..\src\treelearner\gradient_discretizer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\application\application.cpp" />
@@ -311,20 +315,17 @@
     <ClCompile Include="..\src\boosting\gbdt_model_text.cpp" />
     <ClCompile Include="..\src\boosting\gbdt_prediction.cpp" />
     <ClCompile Include="..\src\boosting\prediction_early_stop.cpp" />
+    <ClCompile Include="..\src\boosting\sample_strategy.cpp" />
     <ClCompile Include="..\src\c_api.cpp" />
     <ClCompile Include="..\src\io\bin.cpp" />
     <ClCompile Include="..\src\io\config.cpp" />
     <ClCompile Include="..\src\io\config_auto.cpp" />
     <ClCompile Include="..\src\io\dataset.cpp" />
     <ClCompile Include="..\src\io\dataset_loader.cpp" />
-    <ClCompile Include="..\src\io\dense_bin.cpp" />
     <ClCompile Include="..\src\io\file_io.cpp" />
     <ClCompile Include="..\src\io\json11.cpp" />
     <ClCompile Include="..\src\io\metadata.cpp" />
-    <ClCompile Include="..\src\io\multi_val_dense_bin.cpp" />
-    <ClCompile Include="..\src\io\multi_val_sparse_bin.cpp" />
     <ClCompile Include="..\src\io\parser.cpp" />
-    <ClCompile Include="..\src\io\sparse_bin.cpp" />
     <ClCompile Include="..\src\io\train_share_states.cpp" />
     <ClCompile Include="..\src\io\tree.cpp" />
     <ClCompile Include="..\src\metric\dcg_calculator.cpp" />
@@ -336,11 +337,14 @@
     <ClCompile Include="..\src\objective\objective_function.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\treelearner\data_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\feature_histogram.cpp" />
     <ClCompile Include="..\src\treelearner\feature_parallel_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\linear_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\serial_tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\tree_learner.cpp" />
     <ClCompile Include="..\src\treelearner\voting_parallel_tree_learner.cpp" />
+    <ClCompile Include="..\src\treelearner\gradient_discretizer.cpp" />
+    <ClCompile Include="..\src\utils\openmp_wrapper.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

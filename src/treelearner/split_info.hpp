@@ -40,16 +40,20 @@ struct SplitInfo {
   double left_sum_gradient = 0;
   /*! \brief Left sum hessian after split */
   double left_sum_hessian = 0;
+  /*! \brief Left sum discretized gradient and hessian after split */
+  int64_t left_sum_gradient_and_hessian = 0;
   /*! \brief Right sum gradient after split */
   double right_sum_gradient = 0;
   /*! \brief Right sum hessian after split */
   double right_sum_hessian = 0;
+  /*! \brief Right sum discretized gradient and hessian after split */
+  int64_t right_sum_gradient_and_hessian = 0;
   std::vector<uint32_t> cat_threshold;
   /*! \brief True if default split is left */
   bool default_left = true;
   int8_t monotone_type = 0;
   inline static int Size(int max_cat_threshold) {
-    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t);
+    return 2 * sizeof(int) + sizeof(uint32_t) + sizeof(bool) + sizeof(double) * 7 + sizeof(data_size_t) * 2 + max_cat_threshold * sizeof(uint32_t) + sizeof(int8_t) + sizeof(int64_t)*2;
   }
 
   inline void CopyTo(char* buffer) const {
@@ -71,10 +75,14 @@ struct SplitInfo {
     buffer += sizeof(left_sum_gradient);
     std::memcpy(buffer, &left_sum_hessian, sizeof(left_sum_hessian));
     buffer += sizeof(left_sum_hessian);
+    std::memcpy(buffer, &left_sum_gradient_and_hessian, sizeof(left_sum_gradient_and_hessian));
+    buffer += sizeof(left_sum_gradient_and_hessian);
     std::memcpy(buffer, &right_sum_gradient, sizeof(right_sum_gradient));
     buffer += sizeof(right_sum_gradient);
     std::memcpy(buffer, &right_sum_hessian, sizeof(right_sum_hessian));
     buffer += sizeof(right_sum_hessian);
+    std::memcpy(buffer, &right_sum_gradient_and_hessian, sizeof(right_sum_gradient_and_hessian));
+    buffer += sizeof(right_sum_gradient_and_hessian);
     std::memcpy(buffer, &default_left, sizeof(default_left));
     buffer += sizeof(default_left);
     std::memcpy(buffer, &monotone_type, sizeof(monotone_type));
@@ -103,10 +111,14 @@ struct SplitInfo {
     buffer += sizeof(left_sum_gradient);
     std::memcpy(&left_sum_hessian, buffer, sizeof(left_sum_hessian));
     buffer += sizeof(left_sum_hessian);
+    std::memcpy(&left_sum_gradient_and_hessian, buffer, sizeof(left_sum_gradient_and_hessian));
+    buffer += sizeof(left_sum_gradient_and_hessian);
     std::memcpy(&right_sum_gradient, buffer, sizeof(right_sum_gradient));
     buffer += sizeof(right_sum_gradient);
     std::memcpy(&right_sum_hessian, buffer, sizeof(right_sum_hessian));
     buffer += sizeof(right_sum_hessian);
+    std::memcpy(&right_sum_gradient_and_hessian, buffer, sizeof(right_sum_gradient_and_hessian));
+    buffer += sizeof(right_sum_gradient_and_hessian);
     std::memcpy(&default_left, buffer, sizeof(default_left));
     buffer += sizeof(default_left);
     std::memcpy(&monotone_type, buffer, sizeof(monotone_type));

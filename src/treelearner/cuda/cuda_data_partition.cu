@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include "cuda_data_partition.hpp"
 
@@ -262,7 +262,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
   }
 }
 
-#define GenDataToLeftBitVectorKernel_PARMS \
+#define GenDataToLeftBitVectorKernel_PARAMS \
   const BIN_TYPE* column_data, \
   const data_size_t num_data_in_leaf, \
   const data_size_t* data_indices_in_leaf, \
@@ -286,7 +286,7 @@ void CUDADataPartition::LaunchUpdateDataIndexToLeafIndexKernel_Inner4(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, bool USE_MIN_BIN, typename BIN_TYPE>
 __global__ void GenDataToLeftBitVectorKernel(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   uint16_t* block_to_left_offset,
   data_size_t* block_to_left_offset_buffer,
   data_size_t* block_to_right_offset_buffer) {
@@ -335,7 +335,7 @@ __global__ void GenDataToLeftBitVectorKernel(
 
 template <typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_zero,
   const bool missing_is_na,
   const bool mfb_is_zero,
@@ -363,7 +363,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool missing_is_na,
   const bool mfb_is_zero,
   const bool mfb_is_na,
@@ -380,7 +380,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner0(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_zero,
   const bool mfb_is_na,
   const bool max_bin_to_left,
@@ -396,7 +396,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner1(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool mfb_is_na,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
@@ -413,7 +413,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner2(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool max_bin_to_left,
   const bool is_single_feature_in_column) {
   if (!max_bin_to_left) {
@@ -429,7 +429,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner3(
 
 template <bool MIN_IS_MAX, bool MISSING_IS_ZERO, bool MISSING_IS_NA, bool MFB_IS_ZERO, bool MFB_IS_NA, bool MAX_TO_LEFT, typename BIN_TYPE>
 void CUDADataPartition::LaunchGenDataToLeftBitVectorKernelInner4(
-  GenDataToLeftBitVectorKernel_PARMS,
+  GenDataToLeftBitVectorKernel_PARAMS,
   const bool is_single_feature_in_column) {
   if (!is_single_feature_in_column) {
     GenDataToLeftBitVectorKernel
@@ -548,7 +548,7 @@ void CUDADataPartition::LaunchGenDataToLeftBitVectorKernel(
 
 #undef UpdateDataIndexToLeafIndexKernel_PARAMS
 #undef UpdateDataIndexToLeafIndex_ARGS
-#undef GenDataToLeftBitVectorKernel_PARMS
+#undef GenDataToLeftBitVectorKernel_PARAMS
 #undef GenBitVector_ARGS
 
 template <typename BIN_TYPE, bool USE_MIN_BIN>
@@ -1045,11 +1045,11 @@ __global__ void AddPredictionToScoreKernel(
       const data_size_t global_data_index = data_indices_in_leaf[local_data_index];
       const int leaf_index = cuda_data_index_to_leaf_index[global_data_index];
       const double leaf_prediction_value = leaf_value[leaf_index];
-      cuda_scores[local_data_index] = leaf_prediction_value;
+      cuda_scores[global_data_index] += leaf_prediction_value;
     } else {
       const int leaf_index = cuda_data_index_to_leaf_index[local_data_index];
       const double leaf_prediction_value = leaf_value[leaf_index];
-      cuda_scores[local_data_index] = leaf_prediction_value;
+      cuda_scores[local_data_index] += leaf_prediction_value;
     }
   }
 }
@@ -1069,6 +1069,53 @@ void CUDADataPartition::LaunchAddPredictionToScoreKernel(const double* leaf_valu
   global_timer.Stop("CUDADataPartition::AddPredictionToScoreKernel");
 }
 
+__global__ void RenewDiscretizedTreeLeavesKernel(
+  const score_t* gradients,
+  const score_t* hessians,
+  const data_size_t* data_indices,
+  const data_size_t* leaf_data_start,
+  const data_size_t* leaf_num_data,
+  double* leaf_grad_stat_buffer,
+  double* leaf_hess_stat_buffer,
+  double* leaf_values) {
+  __shared__ double shared_mem_buffer[32];
+  const int leaf_index = static_cast<int>(blockIdx.x);
+  const data_size_t* data_indices_in_leaf = data_indices + leaf_data_start[leaf_index];
+  const data_size_t num_data_in_leaf = leaf_num_data[leaf_index];
+  double sum_gradients = 0.0f;
+  double sum_hessians = 0.0f;
+  for (data_size_t inner_data_index = static_cast<int>(threadIdx.x);
+    inner_data_index < num_data_in_leaf; inner_data_index += static_cast<int>(blockDim.x)) {
+    const data_size_t data_index = data_indices_in_leaf[inner_data_index];
+    const score_t gradient = gradients[data_index];
+    const score_t hessian = hessians[data_index];
+    sum_gradients += static_cast<double>(gradient);
+    sum_hessians += static_cast<double>(hessian);
+  }
+  sum_gradients = ShuffleReduceSum<double>(sum_gradients, shared_mem_buffer, blockDim.x);
+  __syncthreads();
+  sum_hessians = ShuffleReduceSum<double>(sum_hessians, shared_mem_buffer, blockDim.x);
+  if (threadIdx.x == 0) {
+    leaf_grad_stat_buffer[leaf_index] = sum_gradients;
+    leaf_hess_stat_buffer[leaf_index] = sum_hessians;
+  }
+}
+
+void CUDADataPartition::LaunchReduceLeafGradStat(
+  const score_t* gradients, const score_t* hessians,
+  CUDATree* tree, double* leaf_grad_stat_buffer, double* leaf_hess_state_buffer) const {
+  const int num_blocks = tree->num_leaves();
+  RenewDiscretizedTreeLeavesKernel<<<num_blocks, FILL_INDICES_BLOCK_SIZE_DATA_PARTITION>>>(
+    gradients,
+    hessians,
+    cuda_data_indices_,
+    cuda_leaf_data_start_,
+    cuda_leaf_num_data_,
+    leaf_grad_stat_buffer,
+    leaf_hess_state_buffer,
+    tree->cuda_leaf_value_ref());
+}
+
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

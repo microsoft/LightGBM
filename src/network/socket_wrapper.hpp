@@ -248,7 +248,7 @@ class TcpSocket {
   }
 
   inline bool Connect(const char *url, int port) {
-    sockaddr_in  server_addr = GetAddress(url, port);
+    sockaddr_in server_addr = GetAddress(url, port);
     if (connect(sockfd_, reinterpret_cast<const sockaddr*>(&server_addr), sizeof(sockaddr_in)) == 0) {
       return true;
     }

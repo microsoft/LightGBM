@@ -5,8 +5,13 @@
  * \note
  * - desc and descl2 fields must be written in reStructuredText format;
  * - nested sections can be placed only at the bottom of parent's section;
- * - [doc-only] tag indicates that only documentation for this param should be generated and all other actions are performed manually;
- * - [no-save] tag indicates that this param should not be saved into a model text representation.
+ * - [no-automatically-extract]
+ *       - do not automatically extract this parameter into a Config property with the same name in Config::GetMembersFromString(). Use if:
+ *           - specialized extraction logic for this param exists in Config::GetMembersFromString()
+ * - [no-save]
+ *       - this param should not be saved into a model text representation via Config::SaveMembersToString(). Use if:
+ *           - param is only used by the CLI (especially the "predict" and "convert_model" tasks)
+ *           - param is related to LightGBM writing files (e.g. "output_model", "save_binary")
  */
 #ifndef LIGHTGBM_CONFIG_H_
 #define LIGHTGBM_CONFIG_H_
@@ -33,6 +38,10 @@ const int kDefaultNumLeaves = 31;
 
 struct Config {
  public:
+  Config() {}
+  explicit Config(std::unordered_map<std::string, std::string> parameters_map) {
+    Set(parameters_map);
+  }
   std::string ToString() const;
   /*!
   * \brief Get string value by specific name of key
@@ -78,7 +87,17 @@ struct Config {
     const std::unordered_map<std::string, std::string>& params,
     const std::string& name, bool* out);
 
-  static void KV2Map(std::unordered_map<std::string, std::string>* params, const char* kv);
+  /*!
+  * \brief Sort aliases by length and then alphabetically
+  * \param x Alias 1
+  * \param y Alias 2
+  * \return true if x has higher priority than y
+  */
+  inline static bool SortAlias(const std::string& x, const std::string& y);
+
+  static void KeepFirstValues(const std::unordered_map<std::string, std::vector<std::string>>& params, std::unordered_map<std::string, std::string>* out);
+  static void KV2Map(std::unordered_map<std::string, std::vector<std::string>>* params, const char* kv);
+  static void SetVerbosity(const std::unordered_map<std::string, std::vector<std::string>>& params);
   static std::unordered_map<std::string, std::string> Str2Map(const char* parameters);
 
   #ifndef __NVCC__
@@ -87,15 +106,15 @@ struct Config {
   #pragma region Core Parameters
   #endif  // __NVCC__
 
+  // [no-automatically-extract]
   // [no-save]
-  // [doc-only]
   // alias = config_file
   // desc = path of config file
   // desc = **Note**: can be used only in CLI version
   std::string config = "";
 
+  // [no-automatically-extract]
   // [no-save]
-  // [doc-only]
   // type = enum
   // default = train
   // options = train, predict, convert_model, refit
@@ -108,7 +127,8 @@ struct Config {
   // desc = **Note**: can be used only in CLI version; for language-specific packages you can use the correspondent functions
   TaskType task = TaskType::kTrain;
 
-  // [doc-only]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // options = regression, regression_l1, huber, fair, poisson, quantile, mape, gamma, tweedie, binary, multiclass, multiclassova, cross_entropy, cross_entropy_lambda, lambdarank, rank_xendcg
   // alias = objective_type, app, application, loss
@@ -134,22 +154,35 @@ struct Config {
   // descl2 = ``cross_entropy_lambda``, alternative parameterization of cross-entropy, aliases: ``xentlambda``
   // descl2 = label is anything in interval [0, 1]
   // desc = ranking application
-  // descl2 = ``lambdarank``, `lambdarank <https://papers.nips.cc/paper/2971-learning-to-rank-with-nonsmooth-cost-functions.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
+  // descl2 = ``lambdarank``, `lambdarank <https://proceedings.neurips.cc/paper_files/paper/2006/file/af44c4c56f385c43f2529f9b1b018f6a-Paper.pdf>`__ objective. `label_gain <#label_gain>`__ can be used to set the gain (weight) of ``int`` label and all values in ``label`` must be smaller than number of elements in ``label_gain``
   // descl2 = ``rank_xendcg``, `XE_NDCG_MART <https://arxiv.org/abs/1911.09798>`__ ranking objective function, aliases: ``xendcg``, ``xe_ndcg``, ``xe_ndcg_mart``, ``xendcg_mart``
   // descl2 = ``rank_xendcg`` is faster than and achieves the similar performance as ``lambdarank``
   // descl2 = label should be ``int`` type, and larger number represents the higher relevance (e.g. 0:bad, 1:fair, 2:good, 3:perfect)
+  // desc = custom objective function (gradients and hessians not computed directly by LightGBM)
+  // descl2 = ``custom``
+  // descl2 = must be passed through parameters explicitly in the C API
+  // descl2 = **Note**: cannot be used in CLI version
   std::string objective = "regression";
 
-  // [doc-only]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // alias = boosting_type, boost
-  // options = gbdt, rf, dart, goss
+  // options = gbdt, rf, dart
   // desc = ``gbdt``, traditional Gradient Boosting Decision Tree, aliases: ``gbrt``
   // desc = ``rf``, Random Forest, aliases: ``random_forest``
   // desc = ``dart``, `Dropouts meet Multiple Additive Regression Trees <https://arxiv.org/abs/1505.01866>`__
-  // desc = ``goss``, Gradient-based One-Side Sampling
   // descl2 = **Note**: internally, LightGBM uses ``gbdt`` mode for the first ``1 / learning_rate`` iterations
   std::string boosting = "gbdt";
+
+  // [no-automatically-extract]
+  // type = enum
+  // options = bagging, goss
+  // desc = ``bagging``, Randomly Bagging Sampling
+  // descl2 = **Note**: ``bagging`` is only effective when ``bagging_freq > 0`` and ``bagging_fraction < 1.0``
+  // desc = ``goss``, Gradient-based One-Side Sampling
+  // desc = *New in version 4.0.0*
+  std::string data_sample_strategy = "bagging";
 
   // alias = train, train_data, train_data_file, data_filename
   // desc = path of training data, LightGBM will train from this data
@@ -182,7 +215,8 @@ struct Config {
   // desc = max number of leaves in one tree
   int num_leaves = kDefaultNumLeaves;
 
-  // [doc-only]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
   // options = serial, feature, data, voting
   // alias = tree, tree_type, tree_learner_type
@@ -204,19 +238,21 @@ struct Config {
   // desc = **Note**: please **don't** change this during training, especially when running multiple jobs simultaneously by external packages, otherwise it may cause undesirable errors
   int num_threads = 0;
 
-  // [doc-only]
+  // [no-automatically-extract]
+  // [no-save]
   // type = enum
-  // options = cpu, gpu, cuda, cuda_exp
+  // options = cpu, gpu, cuda
   // alias = device
-  // desc = device for the tree learning, you can use GPU to achieve the faster learning
+  // desc = device for the tree learning
+  // desc = ``cpu`` supports all LightGBM functionality and is portable across the widest range of operating systems and hardware
+  // desc = ``cuda`` offers faster training than ``gpu`` or ``cpu``, but only works on GPUs supporting CUDA
+  // desc = ``gpu`` can be faster than ``cpu`` and works on a wider range of GPUs than CUDA
   // desc = **Note**: it is recommended to use the smaller ``max_bin`` (e.g. 63) to get the better speed up
   // desc = **Note**: for the faster speed, GPU uses 32-bit float point to sum up by default, so this may affect the accuracy for some tasks. You can set ``gpu_use_dp=true`` to enable 64-bit float point, but it will slow down the training
-  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst#build-gpu-version>`__ to build LightGBM with GPU support
-  // desc = **Note**: ``cuda_exp`` is an experimental CUDA version, the installation guide for ``cuda_exp`` is identical with ``cuda``
-  // desc = **Note**: ``cuda_exp`` is faster than ``cuda`` and will replace ``cuda`` in the future
+  // desc = **Note**: refer to `Installation Guide <./Installation-Guide.rst>`__ to build LightGBM with GPU or CUDA support
   std::string device_type = "cpu";
 
-  // [doc-only]
+  // [no-automatically-extract]
   // alias = random_seed, random_state
   // default = None
   // desc = this seed is used to generate other seeds, e.g. ``data_random_seed``, ``feature_fraction_seed``, etc.
@@ -253,7 +289,7 @@ struct Config {
   // desc = enabling this is recommended when:
   // descl2 = the number of data points is large, and the total number of bins is relatively small
   // descl2 = ``num_threads`` is relatively small, e.g. ``<= 16``
-  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` boosting to speed up
+  // descl2 = you want to use small ``bagging_fraction`` or ``goss`` sample strategy to speed up
   // desc = **Note**: setting this to ``true`` will double the memory cost for Dataset object. If you have not enough memory, you can try setting ``force_col_wise=true``
   // desc = **Note**: when both ``force_col_wise`` and ``force_row_wise`` are ``false``, LightGBM will firstly try them both, and then use the faster one. To remove the overhead of testing set the faster one to ``true`` manually
   // desc = **Note**: this parameter cannot be used at the same time with ``force_col_wise``, choose only one of them
@@ -314,13 +350,17 @@ struct Config {
 
   // alias = subsample_freq
   // desc = frequency for bagging
-  // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100 %`` of the data to use for the next ``k`` iterations
-  // desc = **Note**: to enable bagging, ``bagging_fraction`` should be set to value smaller than ``1.0`` as well
+  // desc = ``0`` means disable bagging; ``k`` means perform bagging at every ``k`` iteration. Every ``k``-th iteration, LightGBM will randomly select ``bagging_fraction * 100%`` of the data to use for the next ``k`` iterations
+  // desc = **Note**: bagging is only effective when ``0.0 < bagging_fraction < 1.0``
   int bagging_freq = 0;
 
   // alias = bagging_fraction_seed
   // desc = random seed for bagging
   int bagging_seed = 3;
+
+  // desc = whether to do bagging sample by query
+  // desc = *New in version 4.6.0*
+  bool bagging_by_query = false;
 
   // alias = sub_feature, colsample_bytree
   // check = >0.0
@@ -357,6 +397,11 @@ struct Config {
   // desc = ``<= 0`` means disable
   // desc = can be used to speed up training
   int early_stopping_round = 0;
+
+  // check = >=0.0
+  // desc = when early stopping is used (i.e. ``early_stopping_round > 0``), require the early stopping metric to improve by at least this delta to be considered an improvement
+  // desc = *New in version 4.4.0*
+  double early_stopping_min_delta = 0.0;
 
   // desc = LightGBM allows you to provide multiple evaluation metrics. Set this to ``true``, if you want to use only the first metric for early stopping
   bool first_metric_only = false;
@@ -406,7 +451,7 @@ struct Config {
   double skip_drop = 0.5;
 
   // desc = used only in ``dart``
-  // desc = set this to ``true``, if you want to use xgboost dart mode
+  // desc = set this to ``true``, if you want to use XGBoost DART mode
   bool xgboost_dart_mode = false;
 
   // desc = used only in ``dart``
@@ -430,6 +475,7 @@ struct Config {
   double other_rate = 0.1;
 
   // check = >0
+  // desc = used for the categorical features
   // desc = minimal number of data per categorical group
   int min_data_per_group = 100;
 
@@ -450,6 +496,7 @@ struct Config {
   double cat_smooth = 10.0;
 
   // check = >0
+  // desc = used for the categorical features
   // desc = when number of categories of one feature smaller than or equal to ``max_cat_to_onehot``, one-vs-other split algorithm will be used
   int max_cat_to_onehot = 4;
 
@@ -464,7 +511,7 @@ struct Config {
   // default = None
   // desc = used for constraints of monotonic features
   // desc = ``1`` means increasing, ``-1`` means decreasing, ``0`` means non-constraint
-  // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for 1st feature, non-constraint for 2nd feature and increasing for the 3rd feature
+  // desc = you need to specify all features in order. For example, ``mc=-1,0,1`` means decreasing for the 1st feature, non-constraint for the 2nd feature and increasing for the 3rd feature
   std::vector<int8_t> monotone_constraints;
 
   // type = enum
@@ -472,15 +519,15 @@ struct Config {
   // options = basic, intermediate, advanced
   // desc = used only if ``monotone_constraints`` is set
   // desc = monotone constraints method
-  // descl2 = ``basic``, the most basic monotone constraints method. It does not slow the library at all, but over-constrains the predictions
-  // descl2 = ``intermediate``, a `more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
-  // descl2 = ``advanced``, an `even more advanced method <https://hal.archives-ouvertes.fr/hal-02862802/document>`__, which may slow the library. However, this method is even less constraining than the intermediate method and should again significantly improve the results
+  // descl2 = ``basic``, the most basic monotone constraints method. It does not slow down the training speed at all, but over-constrains the predictions
+  // descl2 = ``intermediate``, a `more advanced method <https://hal.science/hal-02862802/document>`__, which may slow down the training speed very slightly. However, this method is much less constraining than the basic method and should significantly improve the results
+  // descl2 = ``advanced``, an `even more advanced method <https://hal.science/hal-02862802/document>`__, which may slow down the training speed. However, this method is even less constraining than the intermediate method and should again significantly improve the results
   std::string monotone_constraints_method = "basic";
 
   // alias = monotone_splits_penalty, ms_penalty, mc_penalty
   // check = >=0.0
   // desc = used only if ``monotone_constraints`` is set
-  // desc = `monotone penalty <https://hal.archives-ouvertes.fr/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
+  // desc = `monotone penalty <https://hal.science/hal-02862802/document>`__: a penalization parameter X forbids any monotone splits on the first X (rounded down) level(s) of the tree. The penalty applied to monotone splits on a given depth is a continuous, increasing function the penalization parameter
   // desc = if ``0.0`` (the default), no penalization is applied
   double monotone_penalty = 0.0;
 
@@ -496,7 +543,7 @@ struct Config {
   // desc = ``.json`` file can be arbitrarily nested, and each split contains ``feature``, ``threshold`` fields, as well as ``left`` and ``right`` fields representing subsplits
   // desc = categorical splits are forced in a one-hot fashion, with ``left`` representing the split containing the feature value and ``right`` representing other values
   // desc = **Note**: the forced split logic will be ignored, if the split makes gain worse
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/binary_classification/forced_splits.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/binary_classification/forced_splits.json>`__ as an example
   std::string forcedsplits_filename = "";
 
   // check = >=0.0
@@ -528,7 +575,7 @@ struct Config {
   // check = >= 0.0
   // desc = controls smoothing applied to tree nodes
   // desc = helps prevent overfitting on leaves with few samples
-  // desc = if set to zero, no smoothing is applied
+  // desc = if ``0.0`` (the default), no smoothing is applied
   // desc = if ``path_smooth > 0`` then ``min_data_in_leaf`` must be at least ``2``
   // desc = larger values give stronger regularization
   // descl2 = the weight of each node is ``w * (n / path_smooth) / (n / path_smooth + 1) + w_p / (n / path_smooth + 1)``, where ``n`` is the number of samples in the node, ``w`` is the optimal node weight to minimise the loss (approximately ``-sum_gradients / sum_hessians``), and ``w_p`` is the weight of the parent node
@@ -539,7 +586,7 @@ struct Config {
   // desc = by default interaction constraints are disabled, to enable them you can specify
   // descl2 = for CLI, lists separated by commas, e.g. ``[0,1,2],[2,3]``
   // descl2 = for Python-package, list of lists, e.g. ``[[0, 1, 2], [2, 3]]``
-  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc
+  // descl2 = for R-package, list of character or numeric vectors, e.g. ``list(c("var1", "var2", "var3"), c("var3", "var4"))`` or ``list(c(1L, 2L, 3L), c(3L, 4L))``. Numeric vectors should use 1-based indexing, where ``1L`` is the first feature, ``2L`` is the second feature, etc.
   // desc = any two features can only appear in the same branch only if there exists a constraint containing both features
   std::string interaction_constraints = "";
 
@@ -574,6 +621,34 @@ struct Config {
   // desc = **Note**: can be used only in CLI version
   int snapshot_freq = -1;
 
+  // desc = whether to use gradient quantization when training
+  // desc = enabling this will discretize (quantize) the gradients and hessians into bins of ``num_grad_quant_bins``
+  // desc = with quantized training, most arithmetics in the training process will be integer operations
+  // desc = gradient quantization can accelerate training, with little accuracy drop in most cases
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
+  // desc = *New in version 4.0.0*
+  bool use_quantized_grad = false;
+
+  // desc = used only if ``use_quantized_grad=true``
+  // desc = number of bins to quantization gradients and hessians
+  // desc = with more bins, the quantized training will be closer to full precision training
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
+  // desc = *New in version 4.0.0*
+  int num_grad_quant_bins = 4;
+
+  // desc = used only if ``use_quantized_grad=true``
+  // desc = whether to renew the leaf values with original gradients when quantized training
+  // desc = renewing is very helpful for good quantized training accuracy for ranking objectives
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
+  // desc = *New in version 4.0.0*
+  bool quant_train_renew_leaf = false;
+
+  // desc = used only if ``use_quantized_grad=true``
+  // desc = whether to use stochastic rounding in gradient quantization
+  // desc = **Note**: works only with ``cpu`` and ``cuda`` device type
+  // desc = *New in version 4.0.0*
+  bool stochastic_rounding = true;
+
   #ifndef __NVCC__
   #pragma endregion
 
@@ -584,16 +659,16 @@ struct Config {
 
   // alias = linear_trees
   // desc = fit piecewise linear gradient boosting tree
-  // descl2 = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
-  // descl2 = the linear model at each leaf includes all the numerical features in that leaf's branch
-  // descl2 = the first tree has constant leaf values
-  // descl2 = categorical features are used for splits as normal but are not used in the linear models
-  // descl2 = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
-  // descl2 = it is recommended to rescale data before training so that features have similar mean and standard deviation
-  // descl2 = **Note**: only works with CPU and ``serial`` tree learner
-  // descl2 = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
-  // descl2 = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
-  // descl2 = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
+  // desc = tree splits are chosen in the usual way, but the model at each leaf is linear instead of constant
+  // desc = the linear model at each leaf includes all the numerical features in that leaf's branch
+  // desc = the first tree has constant leaf values
+  // desc = categorical features are used for splits as normal but are not used in the linear models
+  // desc = missing values should not be encoded as ``0``. Use ``np.nan`` for Python, ``NA`` for the CLI, and ``NA``, ``NA_real_``, or ``NA_integer_`` for R
+  // desc = it is recommended to rescale data before training so that features have similar mean and standard deviation
+  // desc = **Note**: works only with ``cpu``, ``gpu`` device type and ``serial`` tree learner
+  // desc = **Note**: ``regression_l1`` objective is not supported with linear tree boosting
+  // desc = **Note**: setting ``linear_tree=true`` significantly increases the memory use of LightGBM
+  // desc = **Note**: if you specify ``monotone_constraints``, constraints will be enforced when choosing the split points, but not when fitting the linear models on leaves
   bool linear_tree = false;
 
   // alias = max_bins
@@ -631,7 +706,7 @@ struct Config {
   bool is_enable_sparse = true;
 
   // alias = is_enable_bundle, bundle
-  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree>`__
+  // desc = set this to ``false`` to disable Exclusive Feature Bundling (EFB), which is described in `LightGBM: A Highly Efficient Gradient Boosting Decision Tree <https://papers.nips.cc/paper_files/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html>`__
   // desc = **Note**: disabling this may cause the slow training speed for sparse datasets
   bool enable_bundle = true;
 
@@ -718,7 +793,7 @@ struct Config {
 
   // desc = path to a ``.json`` file that specifies bin upper bounds for some or all features
   // desc = ``.json`` file should contain an array of objects, each containing the word ``feature`` (integer feature index) and ``bin_upper_bound`` (array of thresholds for binning)
-  // desc = see `this file <https://github.com/microsoft/LightGBM/tree/master/examples/regression/forced_bins.json>`__ as an example
+  // desc = see `this file <https://github.com/microsoft/LightGBM/blob/master/examples/regression/forced_bins.json>`__ as an example
   std::string forcedbins_filename = "";
 
   // [no-save]
@@ -735,6 +810,7 @@ struct Config {
   // desc = path to a ``.json`` file that specifies customized parser initialized configuration
   // desc = see `lightgbm-transform <https://github.com/microsoft/lightgbm-transform>`__ for usage examples
   // desc = **Note**: ``lightgbm-transform`` is not maintained by LightGBM's maintainers. Bug reports or feature requests should go to `issues page <https://github.com/microsoft/lightgbm-transform/issues>`__
+  // desc = *New in version 4.0.0*
   std::string parser_config_file = "";
 
   #ifndef __NVCC__
@@ -773,7 +849,7 @@ struct Config {
   // desc = used only in ``prediction`` task
   // desc = set this to ``true`` to estimate `SHAP values <https://arxiv.org/abs/1706.06060>`__, which represent how each feature contributes to each prediction
   // desc = produces ``#features + 1`` values where the last value is the expected value of the model output over the training data
-  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/slundberg/shap>`__
+  // desc = **Note**: if you want to get more explanation for your model's predictions using SHAP values like SHAP interaction values, you can install `shap package <https://github.com/shap>`__
   // desc = **Note**: unlike the shap package, with ``predict_contrib`` we return a matrix with an extra column, where the last column is the expected value
   // desc = **Note**: this feature is not implemented for linear trees
   bool predict_contrib = false;
@@ -795,12 +871,12 @@ struct Config {
   bool pred_early_stop = false;
 
   // [no-save]
-  // desc = used only in ``prediction`` task
+  // desc = used only in ``prediction`` task and if ``pred_early_stop=true``
   // desc = the frequency of checking early-stopping prediction
   int pred_early_stop_freq = 10;
 
   // [no-save]
-  // desc = used only in ``prediction`` task
+  // desc = used only in ``prediction`` task and if ``pred_early_stop=true``
   // desc = the threshold of margin in early-stopping prediction
   double pred_early_stop_margin = 10.0;
 
@@ -917,13 +993,20 @@ struct Config {
   // desc = separate by ``,``
   std::vector<double> label_gain;
 
+  // check = >=0.0
+  // desc = used only in ``lambdarank`` application when positional information is provided and position bias is modeled
+  // desc = larger values reduce the inferred position bias factors
+  // desc = *New in version 4.1.0*
+  double lambdarank_position_bias_regularization = 0.0;
+
   #ifndef __NVCC__
   #pragma endregion
 
   #pragma region Metric Parameters
   #endif  // __NVCC__
 
-  // [doc-only]
+  // [no-automatically-extract]
+  // [no-save]
   // alias = metrics, metric_types
   // default = ""
   // type = multi-enum
@@ -1002,7 +1085,7 @@ struct Config {
   // check = >0
   // alias = num_machine
   // desc = the number of machines for distributed learning application
-  // desc = this parameter is needed to be set in both **socket** and **mpi** versions
+  // desc = this parameter is needed to be set in both **socket** and **MPI** versions
   int num_machines = 1;
 
   // check = >0
@@ -1032,23 +1115,24 @@ struct Config {
   #pragma region GPU Parameters
   #endif  // __NVCC__
 
+  // desc = used only with ``gpu`` device type
   // desc = OpenCL platform ID. Usually each GPU vendor exposes one OpenCL platform
   // desc = ``-1`` means the system-wide default platform
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_platform_id = -1;
 
-  // desc = OpenCL device ID in the specified platform. Each GPU in the selected platform has a unique device ID
+  // desc = OpenCL device ID in the specified platform or CUDA device ID. Each GPU in the selected platform has a unique device ID
   // desc = ``-1`` means the default device in the selected platform
   // desc = **Note**: refer to `GPU Targets <./GPU-Targets.rst#query-opencl-devices-in-your-system>`__ for more details
   int gpu_device_id = -1;
 
   // desc = set this to ``true`` to use double precision math on GPU (by default single precision is used)
-  // desc = **Note**: can be used only in OpenCL implementation, in CUDA implementation only double precision is currently supported
+  // desc = **Note**: can be used only in OpenCL implementation (``device_type="gpu"``), in CUDA implementation only double precision is currently supported
   bool gpu_use_dp = false;
 
   // check = >0
   // desc = number of GPUs
-  // desc = **Note**: can be used only in CUDA implementation
+  // desc = **Note**: can be used only in CUDA implementation (``device_type="cuda"``)
   int num_gpu = 1;
 
   #ifndef __NVCC__
@@ -1063,13 +1147,15 @@ struct Config {
   bool is_data_based_parallel = false;
   LIGHTGBM_EXPORT void Set(const std::unordered_map<std::string, std::string>& params);
   static const std::unordered_map<std::string, std::string>& alias_table();
+  static const std::unordered_map<std::string, std::vector<std::string>>& parameter2aliases();
   static const std::unordered_set<std::string>& parameter_set();
   std::vector<std::vector<double>> auc_mu_weights_matrix;
   std::vector<std::vector<int>> interaction_constraints_vector;
+  static const std::unordered_map<std::string, std::string>& ParameterTypes();
   static const std::string DumpAliases();
 
  private:
-  void CheckParamConflict();
+  void CheckParamConflict(const std::unordered_map<std::string, std::string>& params);
   void GetMembersFromString(const std::unordered_map<std::string, std::string>& params);
   std::string SaveMembersToString() const;
   void GetAucMuWeights();
@@ -1131,6 +1217,10 @@ inline bool Config::GetBool(
   return false;
 }
 
+inline bool Config::SortAlias(const std::string& x, const std::string& y) {
+  return x.size() < y.size() || (x.size() == y.size() && x < y);
+}
+
 struct ParameterAlias {
   static void KeyAliasTransform(std::unordered_map<std::string, std::string>* params) {
     std::unordered_map<std::string, std::string> tmp_map;
@@ -1139,9 +1229,7 @@ struct ParameterAlias {
       if (alias != Config::alias_table().end()) {  // found alias
         auto alias_set = tmp_map.find(alias->second);
         if (alias_set != tmp_map.end()) {  // alias already set
-                                           // set priority by length & alphabetically to ensure reproducible behavior
-          if (alias_set->second.size() < pair.first.size() ||
-            (alias_set->second.size() == pair.first.size() && alias_set->second < pair.first)) {
+          if (Config::SortAlias(alias_set->second, pair.first)) {
             Log::Warning("%s is set with %s=%s, %s=%s will be ignored. Current value: %s=%s",
                          alias->second.c_str(), alias_set->second.c_str(), params->at(alias_set->second).c_str(),
                          pair.first.c_str(), pair.second.c_str(), alias->second.c_str(), params->at(alias_set->second).c_str());

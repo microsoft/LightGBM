@@ -4,7 +4,7 @@
  * license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <algorithm>
 
@@ -17,6 +17,7 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   const hist_t* cuda_hist,
   const Dataset* train_data,
   const std::vector<uint32_t>& feature_hist_offsets,
+  const bool select_features_by_node,
   const Config* config):
   num_features_(train_data->num_features()),
   num_leaves_(config->num_leaves),
@@ -36,8 +37,12 @@ CUDABestSplitFinder::CUDABestSplitFinder(
   use_smoothing_(config->path_smooth > 0),
   path_smooth_(config->path_smooth),
   num_total_bin_(feature_hist_offsets.empty() ? 0 : static_cast<int>(feature_hist_offsets.back())),
+  select_features_by_node_(select_features_by_node),
   cuda_hist_(cuda_hist) {
   InitFeatureMetaInfo(train_data);
+  if (has_categorical_feature_ && config->use_quantized_grad) {
+    Log::Fatal("Quantized training on GPU with categorical features is not supported yet.");
+  }
   cuda_leaf_best_split_info_ = nullptr;
   cuda_best_split_info_ = nullptr;
   cuda_best_split_info_buffer_ = nullptr;
@@ -105,12 +110,17 @@ void CUDABestSplitFinder::Init() {
       AllocateCUDAMemory<data_size_t>(&cuda_feature_hist_index_buffer_, static_cast<size_t>(num_total_bin_), __FILE__, __LINE__);
     }
   }
+
+  if (select_features_by_node_) {
+    is_feature_used_by_smaller_node_.Resize(num_features_);
+    is_feature_used_by_larger_node_.Resize(num_features_);
+  }
 }
 
 void CUDABestSplitFinder::InitCUDAFeatureMetaInfo() {
   AllocateCUDAMemory<int8_t>(&cuda_is_feature_used_bytree_, static_cast<size_t>(num_features_), __FILE__, __LINE__);
 
-  // intialize split find task information (a split find task is one pass through the histogram of a feature)
+  // initialize split find task information (a split find task is one pass through the histogram of a feature)
   num_tasks_ = 0;
   for (int inner_feature_index = 0; inner_feature_index < num_features_; ++inner_feature_index) {
     const uint32_t num_bin = feature_num_bins_[inner_feature_index];
@@ -319,13 +329,23 @@ void CUDABestSplitFinder::FindBestSplitsForLeaf(
   const data_size_t num_data_in_smaller_leaf,
   const data_size_t num_data_in_larger_leaf,
   const double sum_hessians_in_smaller_leaf,
-  const double sum_hessians_in_larger_leaf) {
+  const double sum_hessians_in_larger_leaf,
+  const score_t* grad_scale,
+  const score_t* hess_scale,
+  const uint8_t smaller_num_bits_in_histogram_bins,
+  const uint8_t larger_num_bits_in_histogram_bins) {
   const bool is_smaller_leaf_valid = (num_data_in_smaller_leaf > min_data_in_leaf_ &&
     sum_hessians_in_smaller_leaf > min_sum_hessian_in_leaf_);
   const bool is_larger_leaf_valid = (num_data_in_larger_leaf > min_data_in_leaf_ &&
     sum_hessians_in_larger_leaf > min_sum_hessian_in_leaf_ && larger_leaf_index >= 0);
-  LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
-    smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
+  if (grad_scale != nullptr && hess_scale != nullptr) {
+    LaunchFindBestSplitsDiscretizedForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
+      smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid,
+      grad_scale, hess_scale, smaller_num_bits_in_histogram_bins, larger_num_bits_in_histogram_bins);
+  } else {
+    LaunchFindBestSplitsForLeafKernel(smaller_leaf_splits, larger_leaf_splits,
+      smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
+  }
   global_timer.Start("CUDABestSplitFinder::LaunchSyncBestSplitForLeafKernel");
   LaunchSyncBestSplitForLeafKernel(smaller_leaf_index, larger_leaf_index, is_smaller_leaf_valid, is_larger_leaf_valid);
   SynchronizeCUDADevice(__FILE__, __LINE__);
@@ -364,6 +384,16 @@ void CUDABestSplitFinder::AllocateCatVectors(CUDASplitInfo* cuda_split_infos, ui
   LaunchAllocateCatVectorsKernel(cuda_split_infos, cat_threshold_vec, cat_threshold_real_vec, len);
 }
 
+void CUDABestSplitFinder::SetUsedFeatureByNode(const std::vector<int8_t>& is_feature_used_by_smaller_node,
+                                               const std::vector<int8_t>& is_feature_used_by_larger_node) {
+  if (select_features_by_node_) {
+    CopyFromHostToCUDADevice<int8_t>(is_feature_used_by_smaller_node_.RawData(),
+                                     is_feature_used_by_smaller_node.data(), is_feature_used_by_smaller_node.size(), __FILE__, __LINE__);
+    CopyFromHostToCUDADevice<int8_t>(is_feature_used_by_larger_node_.RawData(),
+                                     is_feature_used_by_larger_node.data(), is_feature_used_by_larger_node.size(), __FILE__, __LINE__);
+  }
+}
+
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

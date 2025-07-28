@@ -4,7 +4,6 @@
  */
 #include <LightGBM/tree_learner.h>
 
-#include "cuda_tree_learner.h"
 #include "gpu_tree_learner.h"
 #include "linear_tree_learner.h"
 #include "parallel_tree_learner.h"
@@ -14,11 +13,11 @@
 namespace LightGBM {
 
 TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, const std::string& device_type,
-                                            const Config* config) {
+                                            const Config* config, const bool boosting_on_cuda) {
   if (device_type == std::string("cpu")) {
     if (learner_type == std::string("serial")) {
       if (config->linear_tree) {
-        return new LinearTreeLearner(config);
+        return new LinearTreeLearner<SerialTreeLearner>(config);
       } else {
         return new SerialTreeLearner(config);
       }
@@ -31,7 +30,11 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("gpu")) {
     if (learner_type == std::string("serial")) {
-      return new GPUTreeLearner(config);
+      if (config->linear_tree) {
+        return new LinearTreeLearner<GPUTreeLearner>(config);
+      } else {
+        return new GPUTreeLearner(config);
+      }
     } else if (learner_type == std::string("feature")) {
       return new FeatureParallelTreeLearner<GPUTreeLearner>(config);
     } else if (learner_type == std::string("data")) {
@@ -41,23 +44,13 @@ TreeLearner* TreeLearner::CreateTreeLearner(const std::string& learner_type, con
     }
   } else if (device_type == std::string("cuda")) {
     if (learner_type == std::string("serial")) {
-      return new CUDATreeLearner(config);
-    } else if (learner_type == std::string("feature")) {
-      return new FeatureParallelTreeLearner<CUDATreeLearner>(config);
-    } else if (learner_type == std::string("data")) {
-      return new DataParallelTreeLearner<CUDATreeLearner>(config);
-    } else if (learner_type == std::string("voting")) {
-      return new VotingParallelTreeLearner<CUDATreeLearner>(config);
-    }
-  } else if (device_type == std::string("cuda_exp")) {
-    if (learner_type == std::string("serial")) {
       if (config->num_gpu == 1) {
-        return new CUDASingleGPUTreeLearner(config);
+        return new CUDASingleGPUTreeLearner(config, boosting_on_cuda);
       } else {
-        Log::Fatal("cuda_exp only supports training on a single GPU.");
+        Log::Fatal("Currently cuda version only supports training on a single GPU.");
       }
     } else {
-      Log::Fatal("cuda_exp only supports training on a single machine.");
+      Log::Fatal("Currently cuda version only supports training on a single machine.");
     }
   }
   return nullptr;

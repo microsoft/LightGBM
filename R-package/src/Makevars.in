@@ -1,4 +1,4 @@
-CXX_STD = CXX11
+CXX_STD = CXX17
 
 PKGROOT=.
 
@@ -26,6 +26,7 @@ OBJECTS = \
     boosting/gbdt_model_text.o \
     boosting/gbdt_prediction.o \
     boosting/prediction_early_stop.o \
+    boosting/sample_strategy.o \
     io/bin.o \
     io/config.o \
     io/config_auto.o \
@@ -37,10 +38,6 @@ OBJECTS = \
     io/parser.o \
     io/train_share_states.o \
     io/tree.o \
-    io/dense_bin.o \
-    io/sparse_bin.o \
-    io/multi_val_dense_bin.o \
-    io/multi_val_sparse_bin.o \
     metric/dcg_calculator.o \
     metric/metric.o \
     objective/objective_function.o \
@@ -49,11 +46,14 @@ OBJECTS = \
     network/linkers_socket.o \
     network/network.o \
     treelearner/data_parallel_tree_learner.o \
+    treelearner/feature_histogram.o \
     treelearner/feature_parallel_tree_learner.o \
     treelearner/gpu_tree_learner.o \
+    treelearner/gradient_discretizer.o \
     treelearner/linear_tree_learner.o \
     treelearner/serial_tree_learner.o \
     treelearner/tree_learner.o \
     treelearner/voting_parallel_tree_learner.o \
+    utils/openmp_wrapper.o \
     c_api.o \
     lightgbm_R.o

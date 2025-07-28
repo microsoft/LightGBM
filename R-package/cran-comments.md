@@ -1,8 +1,255 @@
 # CRAN Submission History
 
-## v3.3.2 - Submission 1 - (TBD)
+## v4.6.0 - Submission 1 - (TBD)
 
 ### CRAN response
+
+TBD
+
+### Maintainer Notes
+
+This release fixed several issues reported by CRAN.
+Bashisms in `configure`
+
+```text
+possible bashism in configure.ac line 63 (should be VAR="${VAR}foo"):
+    LGB_CPPFLAGS+=" -DMM_PREFETCH=1"
+possible bashism in configure.ac line 89 (should be VAR="${VAR}foo"):
+    LGB_CPPFLAGS+=" -DMM_MALLOC=1"
+```
+
+Compilation errors on GCC 15.
+
+```text
+io/json11.cpp:97:28: error: 'uint8_t' does not name a type
+   97 |     } else if (static_cast<uint8_t>(ch) == 0xe2 &&
+      |                            ^~~~~~~
+io/json11.cpp:97:28: note: 'uint8_t' is defined in header '<cstdint>'; this is probably fixable by adding '#include <cstdint>'
+io/json11.cpp:98:28: error: 'uint8_t' does not name a type
+   98 |                static_cast<uint8_t>(value[i + 1]) == 0x80 &&
+```
+
+This release contains fixes for those issues.
+
+## v4.5.0 - Submission 1 - (July 25, 2024)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This release was a response to a request from CRAN.
+On July 4, 2024, CRAN notified us that the following compiler warnings raised by `gcc` 14 needed to be fixed by August 3, 2024.
+
+```text
+Result: WARN
+  Found the following significant warnings:
+    io/dense_bin.hpp:617:27: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/multi_val_dense_bin.hpp:346:26: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/multi_val_sparse_bin.hpp:433:36: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+    io/sparse_bin.hpp:785:19: warning: template-id not allowed for constructor in C++20 [-Wtemplate-id-cdtor]
+  See ‘/data/gannet/ripley/R/packages/tests-devel/lightgbm.Rcheck/00install.out’ for details.
+```
+
+This release contains fixes for those issues.
+
+## v4.4.0 - Submission 1 - (June 14, 2024)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This was a standard release of `{lightgbm}`, not intended to fix any particular R-specific issues.
+
+## v4.3.0 - Submission 1 - (January 18, 2024)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This submission was put up in response to CRAN saying the package would be archived if the following
+warning was not fixed within 14 days.
+
+```text
+/usr/local/clang-trunk/bin/../include/c++/v1/__fwd/string_view.h:22:41:
+warning: 'char_traits<fmt::detail::char8_type>' is deprecated:
+char_traits<T> for T not equal to char, wchar_t, char8_t, char16_t or char32_t is non-standard and is provided for a temporary period.
+It will be removed in LLVM 19, so please migrate off of it. [-Wdeprecated-declarations]
+```
+
+See https://github.com/microsoft/LightGBM/issues/6264.
+
+## v4.2.0 - Submission 1 - (December 7, 2023)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+This submission included many changes from the last 2 years, as well as fixes for a warning
+CRAN said could cause the package to be archived: https://github.com/microsoft/LightGBM/issues/6221.
+
+## v4.1.0 - not submitted
+
+v4.1.0 was not submitted to CRAN, because https://github.com/microsoft/LightGBM/issues/5987 had not been resolved.
+
+## v4.0.0 - Submission 2 - (July 19, 2023)
+
+### CRAN response
+
+> Dear maintainer,
+> package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
+
+The logs linked from those messagges showed one issue remaining on Debian (0 on Windows).
+
+```text
+* checking examples ... [7s/4s] NOTE
+Examples with CPU time > 2.5 times elapsed time
+                    user system elapsed  ratio
+lgb.restore_handle 1.206  0.085   0.128 10.08
+```
+
+### Maintainer Notes
+
+Chose to document the issue and need for a fix in https://github.com/microsoft/LightGBM/issues/5987, but not resubmit,
+to avoid annoying CRAN maintainers.
+
+## v4.0.0 - Submission 1 - (July 16, 2023)
+
+### CRAN response
+
+> Dear maintainer,
+> package lightgbm_4.0.0.tar.gz does not pass the incoming checks automatically.
+
+The logs linked from those messages showed the following issues from `R CMD check`.
+
+```text
+* checking S3 generic/method consistency ... NOTE
+Mismatches for apparent methods not registered:
+merge:
+  function(x, y, ...)
+merge.eval.string:
+  function(env)
+
+format:
+  function(x, ...)
+format.eval.string:
+  function(eval_res, eval_err)
+See section 'Registering S3 methods' in the 'Writing R Extensions'
+manual.
+```
+
+```text
+* checking examples ... [8s/4s] NOTE
+Examples with CPU time > 2.5 times elapsed time
+                    user system elapsed ratio
+lgb.restore_handle 1.819  0.128   0.165  11.8
+```
+
+### Maintainer Notes
+
+Attempted to fix these with https://github.com/microsoft/LightGBM/pull/5988 and resubmitted.
+
+## v3.3.5 - Submission 2 - (January 16, 2023)
+
+### CRAN response
+
+> Reason was
+>
+> Flavor: r-devel-windows-x86_64
+> Check: OOverall checktime, Result: NOTE
+>  Overall checktime 14 min > 10 min
+>
+> but the maintainer cannot do much to reduce this, so I triggered revdep checks now.
+> Please reply to the archival message in case the issue is not fixable easily.
+>
+> Best,
+> Uwe Ligges
+
+### Maintainer Notes
+
+This was technically not a "resubmission".
+We asked CRAN why the first v3.3.5 submission had been archived, and they responded with the response above... and then v3.3.5 passed all checks with no further work from LightGBM maintainers.
+
+## v3.3.5 - Submission 1 - (January 11, 2023)
+
+### CRAN response
+
+Archived without a response.
+
+### Maintainer Notes
+
+Submitted with the following comment.
+
+> This submission contains {lightgbm} 3.3.5
+
+> Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
+
+> This submission includes patches to address the following warnings observed on the fedora and debian CRAN checks.
+
+> Found the following significant warnings:
+>  io/json11.cpp:207:47: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:216:51: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:225:53: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:268:60: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:272:36: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:276:37: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:381:41: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+> io/json11.cpp:150:39: warning: unqualified call to 'std::move' [-Wunqualified-std-cast-call]
+
+Thank you very much for your time and consideration.
+
+## v3.3.4 - Submission 1 - (December 15, 2022)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+Submitted with the following comment:
+
+> This submission contains {lightgbm} 3.3.4
+
+> Per CRAN's policies, I am submitting it on behalf of the project's maintainer (Yu Shi), with his permission.
+
+> This submission includes patches to address the following warnings observed on the fedora and debian CRAN checks.
+>
+> Compiled code should not call entry points which might terminate R nor write to stdout/stderr instead of to the console, nor use Fortran I/O nor system RNGs nor [v]sprintf.
+
+> Thank you very much for your time and consideration.
+
+## v3.3.3 - Submission 1 - (October 10, 2022)
+
+### CRAN response
+
+Accepted to CRAN
+
+### Maintainer Notes
+
+Submitted with the following comment:
+
+> This submission contains {lightgbm} 3.3.3.
+
+> Per CRAN's policies, I am submitting on it on behalf of the project's maintainer (Yu Shi), with his permission (https://github.com/microsoft/LightGBM/pull/5525).
+
+> This submission includes two patches:
+> * a change to testing to avoid a failed test related to non-ASCII strings on the `r-devel-linux-x86_64-debian-clang` check flavor (https://github.com/microsoft/LightGBM/pull/5526)
+> * modifications to allow compatibility with the RTools42 build toolchain (https://github.com/microsoft/LightGBM/pull/5503)
+
+> Thank you very much for your time and consideration.
+
+## v3.3.2 - Submission 1 - (January 7, 2022)
+
+### CRAN response
+
+Accepted to CRAN on January 14, 2022.
 
 ### Maintainer Notes
 

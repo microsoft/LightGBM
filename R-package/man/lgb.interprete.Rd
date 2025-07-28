@@ -30,6 +30,8 @@ Computes feature contribution components of rawscore prediction.
 }
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 Logit <- function(x) log(x / (1.0 - x))
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
@@ -48,6 +50,7 @@ params <- list(
     , max_depth = -1L
     , min_data_in_leaf = 1L
     , min_sum_hessian_in_leaf = 1.0
+    , num_threads = 2L
 )
 model <- lgb.train(
     params = params

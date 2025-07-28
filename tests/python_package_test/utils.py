@@ -1,6 +1,7 @@
 # coding: utf-8
 import pickle
 from functools import lru_cache
+from inspect import getfullargspec
 
 import cloudpickle
 import joblib
@@ -8,10 +9,9 @@ import numpy as np
 import sklearn.datasets
 from sklearn.utils import check_random_state
 
+import lightgbm as lgb
 
-@lru_cache(maxsize=None)
-def load_boston(**kwargs):
-    return sklearn.datasets.load_boston(**kwargs)
+SERIALIZERS = ["pickle", "joblib", "cloudpickle"]
 
 
 @lru_cache(maxsize=None)
@@ -34,8 +34,9 @@ def load_linnerud(**kwargs):
     return sklearn.datasets.load_linnerud(**kwargs)
 
 
-def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
-                 group=None, random_gs=False, avg_gs=10, random_state=0):
+def make_ranking(
+    n_samples=100, n_features=20, n_informative=5, gmax=2, group=None, random_gs=False, avg_gs=10, random_state=0
+):
     """Generate a learning-to-rank dataset - feature vectors grouped together with
     integer-valued graded relevance scores. Replace this with a sklearn.datasets function
     if ranking objective becomes supported in sklearn.datasets module.
@@ -81,7 +82,7 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
     relvalues = range(gmax + 1)
 
     # build y/target and group-id vectors with user-specified group sizes.
-    if group is not None and hasattr(group, '__len__'):
+    if group is not None and hasattr(group, "__len__"):
         n_samples = np.sum(group)
 
         for i, gsize in enumerate(group):
@@ -115,8 +116,10 @@ def make_ranking(n_samples=100, n_features=20, n_informative=5, gmax=2,
 
 
 @lru_cache(maxsize=None)
-def make_synthetic_regression(n_samples=100):
-    return sklearn.datasets.make_regression(n_samples, n_features=4, n_informative=2, random_state=42)
+def make_synthetic_regression(n_samples=100, n_features=4, n_informative=2, random_state=42):
+    return sklearn.datasets.make_regression(
+        n_samples=n_samples, n_features=n_features, n_informative=n_informative, random_state=random_state
+    )
 
 
 def dummy_obj(preds, train_data):
@@ -125,7 +128,7 @@ def dummy_obj(preds, train_data):
 
 def mse_obj(y_pred, dtrain):
     y_true = dtrain.get_label()
-    grad = (y_pred - y_true)
+    grad = y_pred - y_true
     hess = np.ones(len(grad))
     return grad, hess
 
@@ -140,7 +143,7 @@ def logistic_sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def sklearn_multiclass_custom_objective(y_true, y_pred):
+def sklearn_multiclass_custom_objective(y_true, y_pred, weight=None):
     num_rows, num_class = y_pred.shape
     prob = softmax(y_pred)
     grad_update = np.zeros_like(prob)
@@ -148,30 +151,116 @@ def sklearn_multiclass_custom_objective(y_true, y_pred):
     grad = prob + grad_update
     factor = num_class / (num_class - 1)
     hess = factor * prob * (1 - prob)
+    if weight is not None:
+        weight2d = weight.reshape(-1, 1)
+        grad *= weight2d
+        hess *= weight2d
     return grad, hess
 
 
 def pickle_obj(obj, filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'wb') as f:
+    if serializer == "pickle":
+        with open(filepath, "wb") as f:
             pickle.dump(obj, f)
-    elif serializer == 'joblib':
+    elif serializer == "joblib":
         joblib.dump(obj, filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'wb') as f:
+    elif serializer == "cloudpickle":
+        with open(filepath, "wb") as f:
             cloudpickle.dump(obj, f)
     else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
+        raise ValueError(f"Unrecognized serializer type: {serializer}")
 
 
 def unpickle_obj(filepath, serializer):
-    if serializer == 'pickle':
-        with open(filepath, 'rb') as f:
+    if serializer == "pickle":
+        with open(filepath, "rb") as f:
             return pickle.load(f)
-    elif serializer == 'joblib':
+    elif serializer == "joblib":
         return joblib.load(filepath)
-    elif serializer == 'cloudpickle':
-        with open(filepath, 'rb') as f:
+    elif serializer == "cloudpickle":
+        with open(filepath, "rb") as f:
             return cloudpickle.load(f)
     else:
-        raise ValueError(f'Unrecognized serializer type: {serializer}')
+        raise ValueError(f"Unrecognized serializer type: {serializer}")
+
+
+def pickle_and_unpickle_object(obj, serializer):
+    with lgb.basic._TempFile() as tmp_file:
+        pickle_obj(obj=obj, filepath=tmp_file.name, serializer=serializer)
+        obj_from_disk = unpickle_obj(filepath=tmp_file.name, serializer=serializer)
+    return obj_from_disk  # noqa: RET504
+
+
+def assert_silent(capsys) -> None:
+    """
+    Given a ``CaptureFixture`` instance (from the ``pytest`` built-in ``capsys`` fixture),
+    read the recently-captured data into a variable and assert that nothing was written
+    to stdout or stderr.
+
+    This is just here to turn 3 lines of repetitive code into 1.
+
+    Note that this does have a side effect... ``capsys.readouterr()`` copies
+    from a buffer then frees it. So it will only store into ``.out`` and ``.err`` the
+    captured output since the last time that ``.readouterr()`` was called.
+
+    ref: https://docs.pytest.org/en/stable/how-to/capture-stdout-stderr.html
+    """
+    captured = capsys.readouterr()
+    assert captured.out == "", captured.out
+    assert captured.err == "", captured.err
+
+
+# doing this here, at import time, to ensure it only runs once_per import
+# instead of once per assertion
+_numpy_testing_supports_strict_kwarg = "strict" in getfullargspec(np.testing.assert_array_equal).kwonlyargs
+
+
+def np_assert_array_equal(*args, **kwargs):
+    """
+    np.testing.assert_array_equal() only got the kwarg ``strict`` in June 2022:
+    https://github.com/numpy/numpy/pull/21595
+
+    This function is here for testing on older Python (and therefore ``numpy``)
+    """
+    if not _numpy_testing_supports_strict_kwarg:
+        kwargs.pop("strict")
+    np.testing.assert_array_equal(*args, **kwargs)
+
+
+def assert_subtree_valid(root):
+    """Recursively checks the validity of a subtree rooted at `root`.
+
+    Currently it only checks whether weights and counts are consistent between
+    all parent nodes and their children.
+
+    Parameters
+    ----------
+    root : dict
+        A dictionary representing the root of the subtree.
+        It should be produced by dump_model()
+
+    Returns
+    -------
+    tuple
+        A tuple containing the weight and count of the subtree rooted at `root`.
+    """
+    if "leaf_count" in root:
+        return (root["leaf_weight"], root["leaf_count"])
+
+    left_child = root["left_child"]
+    right_child = root["right_child"]
+    (l_w, l_c) = assert_subtree_valid(left_child)
+    (r_w, r_c) = assert_subtree_valid(right_child)
+    assert abs(root["internal_weight"] - (l_w + r_w)) <= 1e-3, (
+        "root node's internal weight should be approximately the sum of its child nodes' internal weights"
+    )
+    assert root["internal_count"] == l_c + r_c, (
+        "root node's internal count should be exactly the sum of its child nodes' internal counts"
+    )
+    return (root["internal_weight"], root["internal_count"])
+
+
+def assert_all_trees_valid(model_dump):
+    for idx, tree in enumerate(model_dump["tree_info"]):
+        assert tree["tree_index"] == idx, f"tree {idx} should have tree_index={idx}. Full tree: {tree}"
+        assert_subtree_valid(tree["tree_structure"])

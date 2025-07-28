@@ -18,6 +18,7 @@
 * [Testing](#testing)
     - [Running the Tests](#running-the-tests)
     - [Code Coverage](#code-coverage)
+* [Updating Documentation](#updating-documentation)
 * [Preparing a CRAN Package](#preparing-a-cran-package)
 * [External Repositories](#external-unofficial-repositories)
 * [Known Issues](#known-issues)
@@ -96,6 +97,10 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
     - If you have `Rtools` 4.0, example:
         - `C:\rtools40\mingw64\bin`
         - `C:\rtools40\usr\bin`
+    - If you have `Rtools` 4.2+, example:
+        - `C:\rtools42\x86_64-w64-mingw32.static.posix\bin`
+        - `C:\rtools42\usr\bin`
+        - **NOTE**: this is e.g. `rtools43\` for R 4.3
 * `CMake`
     - example: `C:\Program Files\CMake\bin`
 * `R`
@@ -103,9 +108,11 @@ After installing `Rtools` and `CMake`, be sure the following paths are added to 
 
 NOTE: Two `Rtools` paths are required from `Rtools` 4.0 onwards because paths and the list of included software was changed in `Rtools` 4.0.
 
+NOTE: `Rtools42` and later take a very different approach to the compiler toolchain than previous releases, and how you install it changes what is required to build packages. See ["Howto: Building R 4.2 and packages on Windows"](https://cran.r-project.org/bin/windows/base/howto-R-4.2.html).
+
 #### Windows Toolchain Options
 
-A "toolchain" refers to the collection of software used to build the library. The R package can be built with three different toolchains.
+A "toolchain" refers to the collection of software used to build the library. The R-package can be built with three different toolchains.
 
 **Warning for Windows users**: it is recommended to use *Visual Studio* for its better multi-threading efficiency in Windows for many core systems. For very simple systems (dual core computers or worse), MinGW64 is recommended for maximum performance. If you do not know what to choose, it is recommended to use [Visual Studio](https://visualstudio.microsoft.com/downloads/), the default compiler. **Do not try using MinGW in Windows on many core systems. It may result in 10x slower results than Visual Studio.**
 
@@ -135,7 +142,7 @@ Rscript build_r.R --use-msys2
 
 #### Mac OS Preparation
 
-You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first and **CMake** version 3.16 or higher is required. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
+You can perform installation either with **Apple Clang** or **gcc**. In case you prefer **Apple Clang**, you should install **OpenMP** (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#apple-clang)) first. In case you prefer **gcc**, you need to install it (details for installation can be found in [Installation Guide](https://github.com/microsoft/LightGBM/blob/master/docs/Installation-Guide.rst#gcc)) and set some environment variables to tell R to use `gcc` and `g++`. If you install these from Homebrew, your versions of `g++` and `gcc` are most likely in `/usr/local/bin`, as shown below.
 
 ```
 # replace 8 with version of gcc installed on your machine
@@ -214,7 +221,7 @@ CRAN does not prepare precompiled binaries for Linux, and as of this writing nei
 
 ### Installing from a Pre-compiled lib_lightgbm <a name="lib_lightgbm"></a>
 
-Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.so` or `lib_lightgbm.dll`) and then build an R package that wraps it.
+Previous versions of LightGBM offered the ability to first compile the C++ library (`lib_lightgbm.{dll,dylib,so}`) and then build an R-package that wraps it.
 
 As of version 3.0.0, this is no longer supported. If building from source is difficult for you, please [open an issue](https://github.com/microsoft/LightGBM/issues).
 
@@ -234,11 +241,11 @@ Please visit [demo](https://github.com/microsoft/LightGBM/tree/master/R-package/
 Testing
 -------
 
-The R package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R package.
+The R-package's unit tests are run automatically on every commit, via integrations like [GitHub Actions](https://github.com/microsoft/LightGBM/actions). Adding new tests in `R-package/tests/testthat` is a valuable way to improve the reliability of the R-package.
 
 ### Running the Tests
 
-While developing the R package, run the code below to run the unit tests.
+While developing the R-package, run the code below to run the unit tests.
 
 ```shell
 sh build-cran-package.sh \
@@ -261,7 +268,7 @@ Rscript testthat.R
 
 When adding tests, you may want to use test coverage to identify untested areas and to check if the tests you've added are covering all branches of the intended code.
 
-The example below shows how to generate code coverage for the R package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
+The example below shows how to generate code coverage for the R-package on a macOS or Linux setup. To adjust for your environment, refer to [the customization step described above](#custom-installation-linux-mac).
 
 ```shell
 # Install
@@ -277,12 +284,35 @@ Rscript -e " \
     "
 ```
 
+Updating Documentation
+----------------------
+
+The R-package uses [`{roxygen2}`](https://CRAN.R-project.org/package=roxygen2) to generate its documentation.
+The generated `DESCRIPTION`, `NAMESPACE`, and `man/` files are checked into source control.
+To regenerate those files, run the following.
+
+```shell
+Rscript \
+    --vanilla \
+    -e "install.packages('roxygen2', repos = 'https://cran.rstudio.com')"
+
+sh build-cran-package.sh --no-build-vignettes
+R CMD INSTALL \
+  --with-keep.source \
+  ./lightgbm_*.tar.gz
+
+cd R-package
+Rscript \
+    --vanilla \
+    -e "roxygen2::roxygenize(load = 'installed')"
+```
+
 Preparing a CRAN Package
 ------------------------
 
-This section is primarily for maintainers, but may help users and contributors to understand the structure of the R package.
+This section is primarily for maintainers, but may help users and contributors to understand the structure of the R-package.
 
-Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker flags, including header file locations, and linking to other libraries. Because CRAN packages typically do not assume the presence of `CMake`, the R package uses an alternative method that is in the CRAN-supported toolchain for building R packages with C++ code: `Autoconf`.
+Most of `LightGBM` uses `CMake` to handle tasks like setting compiler and linker flags, including header file locations, and linking to other libraries. Because CRAN packages typically do not assume the presence of `CMake`, the R-package uses an alternative method that is in the CRAN-supported toolchain for building R packages with C++ code: `Autoconf`.
 
 For more information on this approach, see ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Configure-and-cleanup).
 
@@ -314,7 +344,7 @@ R CMD install lightgbm_*.tar.gz
 
 ### Changing the CRAN Package
 
-A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
+A lot of details are handled automatically by `R CMD build` and `R CMD install`, so it can be difficult to understand how the files in the R-package are related to each other. An extensive treatment of those details is available in ["Writing R Extensions"](https://cran.r-project.org/doc/manuals/r-release/R-exts.html).
 
 This section briefly explains the key files for building a CRAN package. To update the package, edit the files relevant to your change and re-run the steps in [Build a CRAN Package](#build-a-cran-package).
 
@@ -323,22 +353,22 @@ This section briefly explains the key files for building a CRAN package. To upda
 At build time, `configure` will be run and used to create a file `Makevars`, using `Makevars.in` as a template.
 
 1. Edit `configure.ac`.
-2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 20.04.
+2. Create `configure` with `autoconf`. Do not edit it by hand. This file must be generated on Ubuntu 22.04.
 
-    If you have an Ubuntu 20.04 environment available, run the provided script from the root of the `LightGBM` repository.
+    If you have an Ubuntu 22.04 environment available, run the provided script from the root of the `LightGBM` repository.
 
     ```shell
     ./R-package/recreate-configure.sh
     ```
 
-    If you do not have easy access to an Ubuntu 20.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
+    If you do not have easy access to an Ubuntu 22.04 environment, the `configure` script can be generated using Docker by running the code below from the root of this repo.
 
     ```shell
     docker run \
         --rm \
         -v $(pwd):/opt/LightGBM \
         -w /opt/LightGBM \
-        -t ubuntu:20.04 \
+        ubuntu:22.04 \
         ./R-package/recreate-configure.sh
     ```
 
@@ -398,7 +428,7 @@ docker run \
 
 # install dependencies
 RDscript${R_CUSTOMIZATION} \
-  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
+  -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.r-project.org', Ncpus = parallel::detectCores())"
 
 # install lightgbm
 sh build-cran-package.sh --r-executable=RD${R_CUSTOMIZATION}
@@ -429,7 +459,7 @@ docker run \
     -it \
         wch1/r-debug
 
-RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'Matrix', 'RhpcBLASctl', 'rmarkdown', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
+RDscriptvalgrind -e "install.packages(c('R6', 'data.table', 'jsonlite', 'knitr', 'markdown', 'Matrix', 'RhpcBLASctl', 'testthat'), repos = 'https://cran.rstudio.com', Ncpus = parallel::detectCores())"
 
 sh build-cran-package.sh \
     --r-executable=RDvalgrind
@@ -455,14 +485,7 @@ These tests can also be triggered on any pull request by leaving a comment in a 
 
 > /gha run r-valgrind
 
-External (Unofficial) Repositories
-----------------------------------
-
-Projects listed here are not maintained or endorsed by the `LightGBM` development team, but may offer some features currently missing from the main R package.
-
-* [lightgbm.py](https://github.com/kapsner/lightgbm.py): This R package offers a wrapper built with `reticulate`, a package used to call Python code from R. If you are comfortable with the added installation complexity of installing `lightgbm`'s Python package and the performance cost of passing data between R and Python, you might find that this package offers some features that are not yet available in the native `lightgbm` R package.
-
 Known Issues
 ------------
 
-For information about known issues with the R package, see the [R-package section of LightGBM's main FAQ page](https://lightgbm.readthedocs.io/en/latest/FAQ.html#r-package).
+For information about known issues with the R-package, see the [R-package section of LightGBM's main FAQ page](https://lightgbm.readthedocs.io/en/latest/FAQ.html#r-package).

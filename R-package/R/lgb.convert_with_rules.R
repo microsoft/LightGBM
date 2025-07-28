@@ -5,7 +5,7 @@
         vapply(
             X = df
             , FUN = function(x) {
-                paste0(class(x), collapse = ",")
+                paste(class(x), collapse = ",")
             }
             , FUN.VALUE = character(1L)
         )
@@ -20,14 +20,13 @@
     column_classes <- .get_column_classes(df = df)
     unconverted_columns <- column_classes[!(column_classes %in% c("numeric", "integer"))]
     if (length(unconverted_columns) > 0L) {
-        col_detail_string <- paste0(
+        col_detail_string <- toString(
             paste0(
                 names(unconverted_columns)
                 , " ("
                 , unconverted_columns
                 , ")"
             )
-            , collapse = ", "
         )
         msg <- paste0(
             function_name
@@ -116,10 +115,6 @@
 lgb.convert_with_rules <- function(data, rules = NULL) {
 
     column_classes <- .get_column_classes(df = data)
-
-    is_char <- which(column_classes == "character")
-    is_factor <- which(column_classes == "factor")
-    is_logical <- which(column_classes == "logical")
 
     is_data_table <- data.table::is.data.table(x = data)
     is_data_frame <- is.data.frame(data)

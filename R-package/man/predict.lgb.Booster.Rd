@@ -7,11 +7,9 @@
 \method{predict}{lgb.Booster}(
   object,
   newdata,
+  type = "response",
   start_iteration = NULL,
   num_iteration = NULL,
-  rawscore = FALSE,
-  predleaf = FALSE,
-  predcontrib = FALSE,
   header = FALSE,
   params = list(),
   ...
@@ -20,8 +18,47 @@
 \arguments{
 \item{object}{Object of class \code{lgb.Booster}}
 
-\item{newdata}{a \code{matrix} object, a \code{dgCMatrix} object or
-a character representing a path to a text file (CSV, TSV, or LibSVM)}
+\item{newdata}{a \code{matrix} object, a \code{dgCMatrix}, a \code{dgRMatrix} object, a \code{dsparseVector} object,
+               or a character representing a path to a text file (CSV, TSV, or LibSVM).
+
+               For sparse inputs, if predictions are only going to be made for a single row, it will be faster to
+               use CSR format, in which case the data may be passed as either a single-row CSR matrix (class
+               \code{dgRMatrix} from package \code{Matrix}) or as a sparse numeric vector (class
+               \code{dsparseVector} from package \code{Matrix}).
+
+               If single-row predictions are going to be performed frequently, it is recommended to
+               pre-configure the model object for fast single-row sparse predictions through function
+               \link{lgb.configure_fast_predict}.
+
+               \emph{Changed from 'data', in version 4.0.0}}
+
+\item{type}{Type of prediction to output. Allowed types are:\itemize{
+            \item \code{"response"}: will output the predicted score according to the objective function being
+                  optimized (depending on the link function that the objective uses), after applying any necessary
+                  transformations - for example, for \code{objective="binary"}, it will output class probabilities.
+            \item \code{"class"}: for classification objectives, will output the class with the highest predicted
+                  probability. For other objectives, will output the same as "response". Note that \code{"class"} is
+                  not a supported type for \link{lgb.configure_fast_predict} (see the documentation of that function
+                  for more details).
+            \item \code{"raw"}: will output the non-transformed numbers (sum of predictions from boosting iterations'
+                  results) from which the "response" number is produced for a given objective function - for example,
+                  for \code{objective="binary"}, this corresponds to log-odds. For many objectives such as
+                  "regression", since no transformation is applied, the output will be the same as for "response".
+            \item \code{"leaf"}: will output the index of the terminal node / leaf at which each observations falls
+                  in each tree in the model, outputted as integers, with one column per tree.
+            \item \code{"contrib"}: will return the per-feature contributions for each prediction, including an
+                  intercept (each feature will produce one column).
+            }
+
+            Note that, if using custom objectives, types "class" and "response" will not be available and will
+            default towards using "raw" instead.
+
+            If the model was fit through function \link{lightgbm} and it was passed a factor as labels,
+            passing the prediction type through \code{params} instead of through this argument might
+            result in factor levels for classification objectives not being applied correctly to the
+            resulting output.
+
+            \emph{New in version 4.0.0}}
 
 \item{start_iteration}{int or None, optional (default=None)
 Start index of the iteration to predict.
@@ -32,14 +69,6 @@ Limit number of iterations in the prediction.
 If None, if the best iteration exists and start_iteration is None or <= 0, the
 best iteration is used; otherwise, all iterations from start_iteration are used.
 If <= 0, all iterations from start_iteration are used (no limits).}
-
-\item{rawscore}{whether the prediction should be returned in the for of original untransformed
-sum of predictions from boosting iterations' results. E.g., setting \code{rawscore=TRUE}
-for logistic regression would result in predictions for log-odds instead of probabilities.}
-
-\item{predleaf}{whether predict leaf index instead.}
-
-\item{predcontrib}{return per-feature contributions for each record.}
 
 \item{header}{only used for prediction for text file. True if text file has header}
 
@@ -52,17 +81,48 @@ the values in \code{params} take precedence.}
 \item{...}{ignored}
 }
 \value{
-For regression or binary classification, it returns a vector of length \code{nrows(data)}.
-        For multiclass classification, it returns a matrix of dimensions \code{(nrows(data), num_class)}.
+For prediction types that are meant to always return one output per observation (e.g. when predicting
+        \code{type="response"} or \code{type="raw"} on a binary classification or regression objective), will
+        return a vector with one element per row in \code{newdata}.
 
-        When passing \code{predleaf=TRUE} or \code{predcontrib=TRUE}, the output will always be
-        returned as a matrix.
+        For prediction types that are meant to return more than one output per observation (e.g. when predicting
+        \code{type="response"} or \code{type="raw"} on a multi-class objective, or when predicting
+        \code{type="leaf"}, regardless of objective), will return a matrix with one row per observation in
+        \code{newdata} and one column per output.
+
+        For \code{type="leaf"} predictions, will return a matrix with one row per observation in \code{newdata}
+        and one column per tree. Note that for multiclass objectives, LightGBM trains one tree per class at each
+        boosting iteration. That means that, for example, for a multiclass model with 3 classes, the leaf
+        predictions for the first class can be found in columns 1, 4, 7, 10, etc.
+
+        For \code{type="contrib"}, will return a matrix of SHAP values with one row per observation in
+        \code{newdata} and columns corresponding to features. For regression, ranking, cross-entropy, and binary
+        classification objectives, this matrix contains one column per feature plus a final column containing the
+        Shapley base value. For multiclass objectives, this matrix will represent \code{num_classes} such matrices,
+        in the order "feature contributions for first class, feature contributions for second class, feature
+        contributions for third class, etc.".
+
+        If the model was fit through function \link{lightgbm} and it was passed a factor as labels, predictions
+        returned from this function will retain the factor levels (either as values for \code{type="class"}, or
+        as column names for \code{type="response"} and \code{type="raw"} for multi-class objectives). Note that
+        passing the requested prediction type under \code{params} instead of through \code{type} might result in
+        the factor levels not being present in the output.
 }
 \description{
 Predicted values based on class \code{lgb.Booster}
+
+             \emph{New in version 4.0.0}
+}
+\details{
+If the model object has been configured for fast single-row predictions through
+         \link{lgb.configure_fast_predict}, this function will use the prediction parameters
+         that were configured for it - as such, extra prediction parameters should not be passed
+         here, otherwise the configuration will be ignored and the slow route will be taken.
 }
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -74,6 +134,7 @@ params <- list(
   , metric = "l2"
   , min_data = 1L
   , learning_rate = 1.0
+  , num_threads = 2L
 )
 valids <- list(test = dtest)
 model <- lgb.train(

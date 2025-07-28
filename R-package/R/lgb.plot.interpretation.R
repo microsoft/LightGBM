@@ -16,6 +16,8 @@
 #'
 #' @examples
 #' \donttest{
+#' \dontshow{setLGBMthreads(2L)}
+#' \dontshow{data.table::setDTthreads(1L)}
 #' Logit <- function(x) {
 #'   log(x / (1.0 - x))
 #' }
@@ -39,6 +41,7 @@
 #'   , max_depth = -1L
 #'   , min_data_in_leaf = 1L
 #'   , min_sum_hessian_in_leaf = 1.0
+#'   , num_threads = 2L
 #' )
 #' model <- lgb.train(
 #'   params = params
@@ -88,7 +91,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
   if (num_class == 1L) {
 
     # Only one class, plot straight away
-    multiple.tree.plot.interpretation(
+    .multiple_tree_plot_interpretation(
       tree_interpretation = tree_interpretation_dt
       , top_n = top_n
       , title = NULL
@@ -117,7 +120,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
         , old = names(plot_dt)
         , new = c("Feature", "Contribution")
       )
-      multiple.tree.plot.interpretation(
+      .multiple_tree_plot_interpretation(
         tree_interpretation = plot_dt
         , top_n = top_n
         , title = paste("Class", i - 1L)
@@ -130,7 +133,7 @@ lgb.plot.interpretation <- function(tree_interpretation_dt,
 }
 
 #' @importFrom graphics barplot
-multiple.tree.plot.interpretation <- function(tree_interpretation,
+.multiple_tree_plot_interpretation <- function(tree_interpretation,
                                               top_n,
                                               title,
                                               cex) {
@@ -146,7 +149,7 @@ multiple.tree.plot.interpretation <- function(tree_interpretation,
   # create plot
   tree_interpretation[abs(Contribution) > 0.0, bar_color := "firebrick"]
   tree_interpretation[Contribution == 0.0, bar_color := "steelblue"]
-  tree_interpretation[.N:1L,
+  tree_interpretation[rev(seq_len(.N)),
                       graphics::barplot(
                           height = Contribution
                           , names.arg = Feature

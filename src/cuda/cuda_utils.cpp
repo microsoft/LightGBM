@@ -3,9 +3,9 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 
 namespace LightGBM {
 
@@ -26,6 +26,12 @@ void SetCUDADevice(int gpu_device_id, const char* file, int line) {
   }
 }
 
+int GetCUDADevice(const char* file, int line) {
+  int cur_gpu_device_id = 0;
+  CUDASUCCESS_OR_FATAL_OUTER(cudaGetDevice(&cur_gpu_device_id));
+  return cur_gpu_device_id;
+}
+
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

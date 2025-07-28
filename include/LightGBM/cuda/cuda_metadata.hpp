@@ -3,12 +3,12 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_META_DATA_HPP_
-#define LIGHTGBM_CUDA_META_DATA_HPP_
+#ifndef LIGHTGBM_CUDA_CUDA_METADATA_HPP_
+#define LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/meta.h>
 
 #include <vector>
@@ -53,6 +53,6 @@ class CUDAMetadata {
 
 }  // namespace LightGBM
 
-#endif  // LIGHTGBM_CUDA_META_DATA_HPP_
+#endif  // LIGHTGBM_CUDA_CUDA_METADATA_HPP_
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

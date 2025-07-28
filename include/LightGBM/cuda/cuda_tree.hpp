@@ -3,7 +3,7 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #ifndef LIGHTGBM_CUDA_CUDA_TREE_HPP_
 #define LIGHTGBM_CUDA_CUDA_TREE_HPP_
@@ -56,6 +56,29 @@ class CUDATree : public Tree {
     uint32_t* cuda_bitset_inner,
     size_t cuda_bitset_inner_len);
 
+  /*!
+  * \brief Adding prediction value of this tree model to scores
+  * \param data The dataset
+  * \param num_data Number of total data
+  * \param score Will add prediction to score
+  */
+  void AddPredictionToScore(const Dataset* data,
+                            data_size_t num_data,
+                            double* score) const override;
+
+  /*!
+  * \brief Adding prediction value of this tree model to scores
+  * \param data The dataset
+  * \param used_data_indices Indices of used data
+  * \param num_data Number of total data
+  * \param score Will add prediction to score
+  */
+  void AddPredictionToScore(const Dataset* data,
+                            const data_size_t* used_data_indices,
+                            data_size_t num_data, double* score) const override;
+
+  inline void AsConstantTree(double val, int count) override;
+
   const int* cuda_leaf_parent() const { return cuda_leaf_parent_; }
 
   const int* cuda_left_child() const { return cuda_left_child_; }
@@ -105,9 +128,17 @@ class CUDATree : public Tree {
     size_t cuda_bitset_len,
     size_t cuda_bitset_inner_len);
 
+  void LaunchAddPredictionToScoreKernel(const Dataset* data,
+                                        const data_size_t* used_data_indices,
+                                        data_size_t num_data, double* score) const;
+
   void LaunchShrinkageKernel(const double rate);
 
   void LaunchAddBiasKernel(const double val);
+
+  void RecordBranchFeatures(const int left_leaf_index,
+                            const int right_leaf_index,
+                            const int real_feature_index);
 
   int* cuda_left_child_;
   int* cuda_right_child_;
@@ -139,4 +170,4 @@ class CUDATree : public Tree {
 
 #endif  // LIGHTGBM_CUDA_CUDA_TREE_HPP_
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

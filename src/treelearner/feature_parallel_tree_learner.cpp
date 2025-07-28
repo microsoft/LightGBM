@@ -77,7 +77,6 @@ void FeatureParallelTreeLearner<TREELEARNER_T>::FindBestSplitsFromHistograms(
 }
 
 // instantiate template classes, otherwise linker cannot find the code
-template class FeatureParallelTreeLearner<CUDATreeLearner>;
 template class FeatureParallelTreeLearner<GPUTreeLearner>;
 template class FeatureParallelTreeLearner<SerialTreeLearner>;
 }  // namespace LightGBM

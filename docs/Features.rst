@@ -21,7 +21,7 @@ LightGBM uses histogram-based algorithms\ `[4, 5, 6] <#references>`__, which buc
    -  To get one leaf's histograms in a binary tree, use the histogram subtraction of its parent and its neighbor
 
    -  So it needs to construct histograms for only one leaf (with smaller ``#data`` than its neighbor). It then can get histograms of its neighbor by histogram subtraction with small cost (``O(#bins)``)
-   
+
 -  **Reduce memory usage**
 
    -  Replaces continuous values with discrete bins. If ``#bins`` is small, can use small data type, e.g. uint8\_t, to store training data
@@ -71,7 +71,7 @@ Optimization in Network Communication
 -------------------------------------
 
 It only needs to use some collective communication algorithms, like "All reduce", "All gather" and "Reduce scatter", in distributed learning of LightGBM.
-LightGBM implements state-of-art algorithms\ `[9] <#references>`__.
+LightGBM implements state-of-the-art algorithms\ `[9] <#references>`__.
 These collective communication algorithms can provide much better performance than point-to-point communication.
 
 .. _Optimization in Parallel Learning:
@@ -291,7 +291,7 @@ References
 
 .. _On Grouping for Maximum Homogeneity: https://www.tandfonline.com/doi/abs/10.1080/01621459.1958.10501479
 
-.. _Optimization of collective communication operations in MPICH: https://www.mcs.anl.gov/~thakur/papers/ijhpca-coll.pdf
+.. _Optimization of collective communication operations in MPICH: https://web.cels.anl.gov/~thakur/papers/ijhpca-coll.pdf
 
 .. _A Communication-Efficient Parallel Algorithm for Decision Tree: http://papers.nips.cc/paper/6381-a-communication-efficient-parallel-algorithm-for-decision-tree
 

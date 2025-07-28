@@ -3,24 +3,25 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
-#ifndef LIGHTGBM_CUDA_ROW_DATA_HPP_
-#define LIGHTGBM_CUDA_ROW_DATA_HPP_
+#ifndef LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
+#define LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
 #include <LightGBM/bin.h>
 #include <LightGBM/config.h>
-#include <LightGBM/cuda/cuda_utils.h>
+#include <LightGBM/cuda/cuda_utils.hu>
 #include <LightGBM/dataset.h>
 #include <LightGBM/train_share_states.h>
 #include <LightGBM/utils/openmp_wrapper.h>
 
+#include <cstdint>
 #include <vector>
 
 #define COPY_SUBROW_BLOCK_SIZE_ROW_DATA (1024)
 
 #if CUDART_VERSION == 10000
-#define DP_SHARED_HIST_SIZE (5560)
+#define DP_SHARED_HIST_SIZE (5176)
 #else
 #define DP_SHARED_HIST_SIZE (6144)
 #endif
@@ -174,6 +175,6 @@ class CUDARowData {
 };
 
 }  // namespace LightGBM
-#endif  // LIGHTGBM_CUDA_ROW_DATA_HPP_
+#endif  // LIGHTGBM_CUDA_CUDA_ROW_DATA_HPP_
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

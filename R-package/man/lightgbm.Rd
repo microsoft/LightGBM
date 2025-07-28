@@ -16,9 +16,11 @@ lightgbm(
   init_model = NULL,
   callbacks = list(),
   serializable = TRUE,
-  objective = "regression",
+  objective = "auto",
   init_score = NULL,
   num_threads = NULL,
+  colnames = NULL,
+  categorical_feature = NULL,
   ...
 )
 }
@@ -30,7 +32,9 @@ may allow you to pass other types of data like \code{matrix} and then separately
 \item{label}{Vector of labels, used if \code{data} is not an \code{\link{lgb.Dataset}}}
 
 \item{weights}{Sample / observation weights for rows in the input data. If \code{NULL}, will assume that all
-observations / rows have the same importance / weight.}
+               observations / rows have the same importance / weight.
+
+               \emph{Changed from 'weight', in version 4.0.0}}
 
 \item{params}{a list of parameters. See \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html}{
 the "Parameters" section of the documentation} for a list of parameters and valid values.}
@@ -48,7 +52,7 @@ fails to improve for \code{early_stopping_rounds} consecutive boosting rounds.
 If training stops early, the returned model will have attribute \code{best_iter}
 set to the iteration number of the best iteration.}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{callbacks}{List of callback functions that are applied at each iteration.}
 
@@ -56,11 +60,24 @@ set to the iteration number of the best iteration.}
 \code{save} or \code{saveRDS} (see section "Model serialization").}
 
 \item{objective}{Optimization objective (e.g. `"regression"`, `"binary"`, etc.).
-For a list of accepted objectives, see
-\href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
-the "objective" item of the "Parameters" section of the documentation}.}
+                 For a list of accepted objectives, see
+                 \href{https://lightgbm.readthedocs.io/en/latest/Parameters.html#objective}{
+                 the "objective" item of the "Parameters" section of the documentation}.
 
-\item{init_score}{initial score is the base prediction lightgbm will boost from}
+                 If passing \code{"auto"} and \code{data} is not of type \code{lgb.Dataset}, the objective will
+                 be determined according to what is passed for \code{label}:\itemize{
+                 \item If passing a factor with two variables, will use objective \code{"binary"}.
+                 \item If passing a factor with more than two variables, will use objective \code{"multiclass"}
+                 (note that parameter \code{num_class} in this case will also be determined automatically from
+                 \code{label}).
+                 \item Otherwise (or if passing \code{lgb.Dataset} as input), will use objective \code{"regression"}.
+                 }
+
+                 \emph{New in version 4.0.0}}
+
+\item{init_score}{initial score is the base prediction lightgbm will boost from
+
+                  \emph{New in version 4.0.0}}
 
 \item{num_threads}{Number of parallel threads to use. For best speed, this should be set to the number of
                    physical cores in the CPU - in a typical x86-64 machine, this corresponds to half the
@@ -76,8 +93,17 @@ the "objective" item of the "Parameters" section of the documentation}.}
                    system, but be aware that getting the number of cores detected correctly requires package
                    \code{RhpcBLASctl} to be installed.
 
-                   This parameter gets overriden by \code{num_threads} and its aliases under \code{params}
-                   if passed there.}
+                   This parameter gets overridden by \code{num_threads} and its aliases under \code{params}
+                   if passed there.
+
+                   \emph{New in version 4.0.0}}
+
+\item{colnames}{Character vector of features. Only used if \code{data} is not an \code{\link{lgb.Dataset}}.}
+
+\item{categorical_feature}{categorical features. This can either be a character vector of feature
+names or an integer vector with the indices of the features (e.g.
+\code{c(1L, 10L)} to say "the first and tenth columns").
+Only used if \code{data} is not an \code{\link{lgb.Dataset}}.}
 
 \item{...}{Additional arguments passed to \code{\link{lgb.train}}. For example
 \itemize{
@@ -87,10 +113,6 @@ the "objective" item of the "Parameters" section of the documentation}.}
                \code{binary}, \code{lambdarank}, \code{multiclass}, \code{multiclass}}
    \item{\code{eval}: evaluation function, can be (a list of) character or custom eval function}
    \item{\code{record}: Boolean, TRUE will record iteration message to \code{booster$record_evals}}
-   \item{\code{colnames}: feature names, if not null, will use this to overwrite the names in dataset}
-   \item{\code{categorical_feature}: categorical features. This can either be a character vector of feature
-                       names or an integer vector with the indices of the features (e.g. \code{c(1L, 10L)} to
-                       say "the first and tenth columns").}
    \item{\code{reset_data}: Boolean, setting it to TRUE (not the default value) will transform the booster model
                      into a predictor model which frees up memory and the original datasets}
 }}
@@ -99,7 +121,12 @@ the "objective" item of the "Parameters" section of the documentation}.}
 a trained \code{lgb.Booster}
 }
 \description{
-Simple interface for training a LightGBM model.
+High-level R interface to train a LightGBM model. Unlike \code{\link{lgb.train}}, this function
+             is focused on compatibility with other statistics and machine learning interfaces in R.
+             This focus on compatibility means that this interface may experience more frequent breaking API changes
+             than \code{\link{lgb.train}}.
+             For efficiency-sensitive applications, or for applications where breaking API changes across releases
+             is very expensive, use \code{\link{lgb.train}}.
 }
 \section{Early Stopping}{
 

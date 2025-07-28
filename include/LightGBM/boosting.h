@@ -75,7 +75,7 @@ class LIGHTGBM_EXPORT Boosting {
   /*!
   * \brief Update the tree output by new training data
   */
-  virtual void RefitTree(const std::vector<std::vector<int>>& tree_leaf_prediction) = 0;
+  virtual void RefitTree(const int* tree_leaf_prediction, const size_t nrow, const size_t ncol) = 0;
 
   /*!
   * \brief Training logic
@@ -314,7 +314,8 @@ class LIGHTGBM_EXPORT Boosting {
   */
   static Boosting* CreateBoosting(const std::string& type, const char* filename);
 
-  virtual const std::vector<std::unique_ptr<Tree>>& GetTrees() const = 0;
+  virtual std::string GetLoadedParam() const = 0;
+
   virtual bool IsLinear() const { return false; }
 
   virtual std::string ParserConfigStr() const = 0;

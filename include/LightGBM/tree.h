@@ -8,6 +8,7 @@
 #include <LightGBM/dataset.h>
 #include <LightGBM/meta.h>
 
+#include <cstdint>
 #include <string>
 #include <map>
 #include <memory>
@@ -193,7 +194,7 @@ class Tree {
   * \param rate The factor of shrinkage
   */
   virtual inline void Shrinkage(double rate) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] * rate);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] * rate);
@@ -218,7 +219,7 @@ class Tree {
   inline double shrinkage() const { return shrinkage_; }
 
   virtual inline void AddBias(double val) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
     for (int i = 0; i < num_leaves_ - 1; ++i) {
       leaf_value_[i] = MaybeRoundToZero(leaf_value_[i] + val);
       internal_value_[i] = MaybeRoundToZero(internal_value_[i] + val);
@@ -226,7 +227,7 @@ class Tree {
     leaf_value_[num_leaves_ - 1] =
         MaybeRoundToZero(leaf_value_[num_leaves_ - 1] + val);
     if (is_linear_) {
-#pragma omp parallel for schedule(static, 1024) if (num_leaves_ >= 2048)
+#pragma omp parallel for num_threads(OMP_NUM_THREADS()) schedule(static, 1024) if (num_leaves_ >= 2048)
       for (int i = 0; i < num_leaves_ - 1; ++i) {
         leaf_const_[i] = MaybeRoundToZero(leaf_const_[i] + val);
       }
@@ -236,13 +237,14 @@ class Tree {
     shrinkage_ = 1.0f;
   }
 
-  inline void AsConstantTree(double val) {
+  virtual inline void AsConstantTree(double val, int count = 0) {
     num_leaves_ = 1;
     shrinkage_ = 1.0f;
     leaf_value_[0] = val;
     if (is_linear_) {
       leaf_const_[0] = val;
     }
+    leaf_count_[0] = count;
   }
 
   /*! \brief Serialize this object to string*/
@@ -327,9 +329,9 @@ class Tree {
 
   inline bool is_linear() const { return is_linear_; }
 
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   inline bool is_cuda_tree() const { return is_cuda_tree_; }
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 
   inline void SetIsLinear(bool is_linear) {
     is_linear_ = is_linear;
@@ -540,10 +542,10 @@ class Tree {
   std::vector<std::vector<int>> leaf_features_;
   /* \brief features used in leaf linear models; indexing is relative to used_features_ */
   std::vector<std::vector<int>> leaf_features_inner_;
-  #ifdef USE_CUDA_EXP
+  #ifdef USE_CUDA
   /*! \brief Marks whether this tree is a CUDATree */
   bool is_cuda_tree_;
-  #endif  // USE_CUDA_EXP
+  #endif  // USE_CUDA
 };
 
 inline void Tree::Split(int leaf, int feature, int real_feature,
@@ -571,7 +573,7 @@ inline void Tree::Split(int leaf, int feature, int real_feature,
   leaf_parent_[leaf] = new_node_idx;
   leaf_parent_[num_leaves_] = new_node_idx;
   // save current leaf value to internal node before change
-  internal_weight_[new_node_idx] = leaf_weight_[leaf];
+  internal_weight_[new_node_idx] = left_weight + right_weight;
   internal_value_[new_node_idx] = leaf_value_[leaf];
   internal_count_[new_node_idx] = left_cnt + right_cnt;
   leaf_value_[leaf] = std::isnan(left_value) ? 0.0f : left_value;

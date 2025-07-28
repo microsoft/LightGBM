@@ -1,5 +1,4 @@
 library(lightgbm)
-library(methods)
 
 # Load in the agaricus dataset
 data(agaricus.train, package = "lightgbm")
@@ -22,8 +21,8 @@ param <- list(
 bst <- lgb.train(param, dtrain, 1L, valids = valids)
 
 # Note: we need the margin value instead of transformed prediction in set_init_score
-ptrain <- predict(bst, agaricus.train$data, rawscore = TRUE)
-ptest  <- predict(bst, agaricus.test$data, rawscore = TRUE)
+ptrain <- predict(bst, agaricus.train$data, type = "raw")
+ptest  <- predict(bst, agaricus.test$data, type = "raw")
 
 # set the init_score property of dtrain and dtest
 # base margin is the base prediction we will boost from

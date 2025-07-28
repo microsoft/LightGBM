@@ -3,20 +3,19 @@
  * Licensed under the MIT License. See LICENSE file in the project root for license information.
  */
 
-#ifdef USE_CUDA_EXP
+#ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_column_data.hpp>
+
+#include <cstdint>
 
 namespace LightGBM {
 
 CUDAColumnData::CUDAColumnData(const data_size_t num_data, const int gpu_device_id) {
   num_threads_ = OMP_NUM_THREADS();
   num_data_ = num_data;
-  if (gpu_device_id >= 0) {
-    SetCUDADevice(gpu_device_id, __FILE__, __LINE__);
-  } else {
-    SetCUDADevice(0, __FILE__, __LINE__);
-  }
+  gpu_device_id_ = gpu_device_id >= 0 ? gpu_device_id : 0;
+  SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
   cuda_used_indices_ = nullptr;
   cuda_data_by_column_ = nullptr;
   cuda_column_bit_type_ = nullptr;
@@ -117,37 +116,41 @@ void CUDAColumnData::Init(const int num_columns,
   feature_mfb_is_na_ = feature_mfb_is_na;
   data_by_column_.resize(num_columns_, nullptr);
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int column_index = 0; column_index < num_columns_; ++column_index) {
-    OMP_LOOP_EX_BEGIN();
-    const int8_t bit_type = column_bit_type[column_index];
-    if (column_data[column_index] != nullptr) {
-      // is dense column
-      if (bit_type == 4) {
-        column_bit_type_[column_index] = 8;
-        InitOneColumnData<false, true, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
-      } else if (bit_type == 8) {
-        InitOneColumnData<false, false, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
-      } else if (bit_type == 16) {
-        InitOneColumnData<false, false, uint16_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
-      } else if (bit_type == 32) {
-        InitOneColumnData<false, false, uint32_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
+  #pragma omp parallel num_threads(num_threads_)
+  {
+    SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+    #pragma omp for schedule(static)
+    for (int column_index = 0; column_index < num_columns_; ++column_index) {
+      OMP_LOOP_EX_BEGIN();
+      const int8_t bit_type = column_bit_type[column_index];
+      if (column_data[column_index] != nullptr) {
+        // is dense column
+        if (bit_type == 4) {
+          column_bit_type_[column_index] = 8;
+          InitOneColumnData<false, true, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
+        } else if (bit_type == 8) {
+          InitOneColumnData<false, false, uint8_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
+        } else if (bit_type == 16) {
+          InitOneColumnData<false, false, uint16_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
+        } else if (bit_type == 32) {
+          InitOneColumnData<false, false, uint32_t>(column_data[column_index], nullptr, &data_by_column_[column_index]);
+        } else {
+          Log::Fatal("Unknow column bit type %d", bit_type);
+        }
       } else {
-        Log::Fatal("Unknow column bit type %d", bit_type);
+        // is sparse column
+        if (bit_type == 8) {
+          InitOneColumnData<true, false, uint8_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
+        } else if (bit_type == 16) {
+          InitOneColumnData<true, false, uint16_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
+        } else if (bit_type == 32) {
+          InitOneColumnData<true, false, uint32_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
+        } else {
+          Log::Fatal("Unknow column bit type %d", bit_type);
+        }
       }
-    } else {
-      // is sparse column
-      if (bit_type == 8) {
-        InitOneColumnData<true, false, uint8_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
-      } else if (bit_type == 16) {
-        InitOneColumnData<true, false, uint16_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
-      } else if (bit_type == 32) {
-        InitOneColumnData<true, false, uint32_t>(nullptr, column_bin_iterator[column_index], &data_by_column_[column_index]);
-      } else {
-        Log::Fatal("Unknow column bit type %d", bit_type);
-      }
+      OMP_LOOP_EX_END();
     }
-    OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   feature_to_column_ = feature_to_column;
@@ -182,24 +185,28 @@ void CUDAColumnData::CopySubrow(
     AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
     data_by_column_.resize(num_columns_, nullptr);
     OMP_INIT_EX();
-    #pragma omp parallel for schedule(static) num_threads(num_threads_)
-    for (int column_index = 0; column_index < num_columns_; ++column_index) {
-      OMP_LOOP_EX_BEGIN();
-      const uint8_t bit_type = column_bit_type_[column_index];
-      if (bit_type == 8) {
-        uint8_t* column_data = nullptr;
-        AllocateCUDAMemory<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
-      } else if (bit_type == 16) {
-        uint16_t* column_data = nullptr;
-        AllocateCUDAMemory<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
-      } else if (bit_type == 32) {
-        uint32_t* column_data = nullptr;
-        AllocateCUDAMemory<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+    #pragma omp parallel num_threads(num_threads_)
+    {
+      SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+      #pragma omp for schedule(static)
+      for (int column_index = 0; column_index < num_columns_; ++column_index) {
+        OMP_LOOP_EX_BEGIN();
+        const uint8_t bit_type = column_bit_type_[column_index];
+        if (bit_type == 8) {
+          uint8_t* column_data = nullptr;
+          AllocateCUDAMemory<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+          data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+        } else if (bit_type == 16) {
+          uint16_t* column_data = nullptr;
+          AllocateCUDAMemory<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+          data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+        } else if (bit_type == 32) {
+          uint32_t* column_data = nullptr;
+          AllocateCUDAMemory<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+          data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+        }
+        OMP_LOOP_EX_END();
       }
-      OMP_LOOP_EX_END();
     }
     OMP_THROW_EX();
     InitCUDAMemoryFromHostMemory<void*>(&cuda_data_by_column_, data_by_column_.data(), data_by_column_.size(), __FILE__, __LINE__);
@@ -221,27 +228,31 @@ void CUDAColumnData::ResizeWhenCopySubrow(const data_size_t num_used_indices) {
   DeallocateCUDAMemory<data_size_t>(&cuda_used_indices_, __FILE__, __LINE__);
   AllocateCUDAMemory<data_size_t>(&cuda_used_indices_, num_used_indices_size, __FILE__, __LINE__);
   OMP_INIT_EX();
-  #pragma omp parallel for schedule(static) num_threads(num_threads_)
-  for (int column_index = 0; column_index < num_columns_; ++column_index) {
-    OMP_LOOP_EX_BEGIN();
-    const uint8_t bit_type = column_bit_type_[column_index];
-    if (bit_type == 8) {
-      uint8_t* column_data = reinterpret_cast<uint8_t*>(data_by_column_[column_index]);
-      DeallocateCUDAMemory<uint8_t>(&column_data, __FILE__, __LINE__);
-      AllocateCUDAMemory<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
-    } else if (bit_type == 16) {
-      uint16_t* column_data = reinterpret_cast<uint16_t*>(data_by_column_[column_index]);
-      DeallocateCUDAMemory<uint16_t>(&column_data, __FILE__, __LINE__);
-      AllocateCUDAMemory<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
-    } else if (bit_type == 32) {
-      uint32_t* column_data = reinterpret_cast<uint32_t*>(data_by_column_[column_index]);
-      DeallocateCUDAMemory<uint32_t>(&column_data, __FILE__, __LINE__);
-      AllocateCUDAMemory<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
-      data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+  #pragma omp parallel num_threads(num_threads_)
+  {
+    SetCUDADevice(gpu_device_id_, __FILE__, __LINE__);
+    #pragma omp for schedule(static)
+    for (int column_index = 0; column_index < num_columns_; ++column_index) {
+      OMP_LOOP_EX_BEGIN();
+      const uint8_t bit_type = column_bit_type_[column_index];
+      if (bit_type == 8) {
+        uint8_t* column_data = reinterpret_cast<uint8_t*>(data_by_column_[column_index]);
+        DeallocateCUDAMemory<uint8_t>(&column_data, __FILE__, __LINE__);
+        AllocateCUDAMemory<uint8_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      } else if (bit_type == 16) {
+        uint16_t* column_data = reinterpret_cast<uint16_t*>(data_by_column_[column_index]);
+        DeallocateCUDAMemory<uint16_t>(&column_data, __FILE__, __LINE__);
+        AllocateCUDAMemory<uint16_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      } else if (bit_type == 32) {
+        uint32_t* column_data = reinterpret_cast<uint32_t*>(data_by_column_[column_index]);
+        DeallocateCUDAMemory<uint32_t>(&column_data, __FILE__, __LINE__);
+        AllocateCUDAMemory<uint32_t>(&column_data, num_used_indices_size, __FILE__, __LINE__);
+        data_by_column_[column_index] = reinterpret_cast<void*>(column_data);
+      }
+      OMP_LOOP_EX_END();
     }
-    OMP_LOOP_EX_END();
   }
   OMP_THROW_EX();
   DeallocateCUDAMemory<void*>(&cuda_data_by_column_, __FILE__, __LINE__);
@@ -308,4 +319,4 @@ void CUDAColumnData::InitColumnMetaInfo() {
 
 }  // namespace LightGBM
 
-#endif  // USE_CUDA_EXP
+#endif  // USE_CUDA

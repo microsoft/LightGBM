@@ -52,7 +52,7 @@ set to the iteration number of the best iteration.}
 
 \item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{nrounds}{number of training rounds}
 
@@ -105,6 +105,8 @@ Parameter docs shared by \code{lgb.train}, \code{lgb.cv}, and \code{lightgbm}
          Producing and keeping these raw bytes however uses extra memory, and if they are not required,
          it is possible to avoid producing them by passing `serializable=FALSE`. In such cases, these raw
          bytes can be added to the model on demand through function \link{lgb.make_serializable}.
+
+         \emph{New in version 4.0.0}
 }
 
 \keyword{internal}

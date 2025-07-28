@@ -15,8 +15,6 @@ lgb.train(
   record = TRUE,
   eval_freq = 1L,
   init_model = NULL,
-  colnames = NULL,
-  categorical_feature = NULL,
   early_stopping_rounds = NULL,
   callbacks = list(),
   reset_data = FALSE,
@@ -80,13 +78,7 @@ printing of evaluation during training}
 
 \item{eval_freq}{evaluation output frequency, only effective when verbose > 0 and \code{valids} has been provided}
 
-\item{init_model}{path of model file of \code{lgb.Booster} object, will continue training from this model}
-
-\item{colnames}{feature names, if not null, will use this to overwrite the names in dataset}
-
-\item{categorical_feature}{categorical features. This can either be a character vector of feature
-names or an integer vector with the indices of the features (e.g.
-\code{c(1L, 10L)} to say "the first and tenth columns").}
+\item{init_model}{path of model file or \code{lgb.Booster} object, will continue training from this model}
 
 \item{early_stopping_rounds}{int. Activates early stopping. When this parameter is non-null,
 training will stop if the evaluation of any metric on any validation set
@@ -107,7 +99,9 @@ original datasets}
 a trained booster model \code{lgb.Booster}.
 }
 \description{
-Logic to train with LightGBM
+Low-level R interface to train a LightGBM model. Unlike \code{\link{lightgbm}},
+             this function is focused on performance (e.g. speed, memory efficiency). It is also
+             less likely to have breaking API changes in new releases than \code{\link{lightgbm}}.
 }
 \section{Early Stopping}{
 
@@ -128,6 +122,8 @@ Logic to train with LightGBM
 
 \examples{
 \donttest{
+\dontshow{setLGBMthreads(2L)}
+\dontshow{data.table::setDTthreads(1L)}
 data(agaricus.train, package = "lightgbm")
 train <- agaricus.train
 dtrain <- lgb.Dataset(train$data, label = train$label)
@@ -139,6 +135,7 @@ params <- list(
   , metric = "l2"
   , min_data = 1L
   , learning_rate = 1.0
+  , num_threads = 2L
 )
 valids <- list(test = dtest)
 model <- lgb.train(
@@ -149,4 +146,5 @@ model <- lgb.train(
   , early_stopping_rounds = 3L
 )
 }
+
 }

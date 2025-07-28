@@ -2,6 +2,7 @@
 """Tests for dual GPU+CPU support."""
 
 import os
+import platform
 
 import pytest
 from sklearn.metrics import log_loss
@@ -26,9 +27,11 @@ def test_cpu_and_gpu_work():
 
     params_gpu = params_cpu.copy()
     params_gpu["device"] = "gpu"
-    params_gpu["gpu_use_dp"] = True
+    # Double-precision floats are only supported on x86_64 with PoCL
+    params_gpu["gpu_use_dp"] = platform.machine() == "x86_64"
     gpu_bst = lgb.train(params_gpu, data, num_boost_round=10)
     gpu_score = log_loss(y, gpu_bst.predict(X))
 
-    assert cpu_score == pytest.approx(gpu_score)
+    rel = 1e-6 if params_gpu["gpu_use_dp"] else 1e-4
+    assert cpu_score == pytest.approx(gpu_score, rel=rel)
     assert gpu_score < 0.242

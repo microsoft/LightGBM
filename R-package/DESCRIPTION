@@ -4,10 +4,10 @@ Title: Light Gradient Boosting Machine
 Version: ~~VERSION~~
 Date: ~~DATE~~
 Authors@R: c(
-    person("Yu", "Shi", email = "yushi2@microsoft.com", role = c("aut", "cre")),
+    person("Yu", "Shi", email = "yushi2@microsoft.com", role = c("aut")),
     person("Guolin", "Ke", email = "guolin.ke@outlook.com", role = c("aut")),
     person("Damien", "Soukhavong", email = "damien.soukhavong@skema.edu", role = c("aut")),
-    person("James", "Lamb", email="jaylamb20@gmail.com", role = c("aut")),
+    person("James", "Lamb", email="jaylamb20@gmail.com", role = c("aut", "cre")),
     person("Qi", "Meng", role = c("aut")),
     person("Thomas", "Finley", role = c("aut")),
     person("Taifeng", "Wang", role = c("aut")),
@@ -46,9 +46,9 @@ Biarch: true
 VignetteBuilder: knitr
 Suggests:
     knitr,
+    markdown,
     processx,
     RhpcBLASctl,
-    rmarkdown,
     testthat
 Depends:
     R (>= 3.5)
@@ -62,5 +62,5 @@ Imports:
     parallel,
     utils
 SystemRequirements:
-    C++11
-RoxygenNote: 7.2.0
+    ~~CXXSTD~~
+RoxygenNote: 7.3.2

@@ -12,8 +12,10 @@
 \item{...}{Not used}
 }
 \value{
-The same input `x`, returned as invisible.
+The same input \code{x}, returned as invisible.
 }
 \description{
 Show summary information about a LightGBM model object (same as \code{summary}).
+
+             \emph{New in version 4.0.0}
 }

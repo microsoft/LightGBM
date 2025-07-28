@@ -6,7 +6,7 @@ and `Breathe <https://breathe.readthedocs.io/>`__, which works on top of `Doxyge
 
 List of parameters and their descriptions in `Parameters.rst <./Parameters.rst>`__
 is generated automatically from comments in `config file <https://github.com/microsoft/LightGBM/blob/master/include/LightGBM/config.h>`__
-by `this script <https://github.com/microsoft/LightGBM/blob/master/helpers/parameter_generator.py>`__.
+by `this script <https://github.com/microsoft/LightGBM/blob/master/.ci/parameter-generator.py>`__.
 
 After each commit on ``master``, documentation is updated and published to `Read the Docs <https://lightgbm.readthedocs.io/>`__.
 
@@ -35,7 +35,7 @@ Run the following from the root of this repository to pull the relevant image an
         --env READTHEDOCS=true \
         --workdir=/opt/LightGBM/docs \
         --entrypoint="" \
-        -it readthedocs/build:ubuntu-20.04-2021.09.23 \
+        readthedocs/build:ubuntu-24.04-2024.06.17 \
         /bin/bash build-docs.sh
 
 When that code completes, open ``docs/_build/html/index.html`` in your browser.

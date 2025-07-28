@@ -9,7 +9,7 @@ jobs:
     name: r-configure
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    container: "ubuntu:20.04"
+    container: "ubuntu:22.04"
     steps:
       - name: Install essential software before checkout
         run: |
@@ -21,7 +21,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Checkout repository
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v4
         with:
           fetch-depth: 5
           submodules: true
@@ -31,7 +31,7 @@ jobs:
           persist-credentials: true
       - name: Update configure
         shell: bash
-        run: ./R-package/recreate-configure.sh || exit -1
+        run: ./R-package/recreate-configure.sh || exit 1
       - name: Push changes
         run: |
           git config --global user.name "GitHub Actions Bot"
