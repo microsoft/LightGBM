@@ -115,7 +115,7 @@ msg <- sprintf(
 )
 cat(msg)
 
-install.packages(  # nolint[undesirable_function]
+install.packages(  # nolint: undesirable_function.
     pkgs = deps_to_install
     , dependencies = c("Depends", "Imports", "LinkingTo")
     , lib = Sys.getenv("R_LIB_PATH", unset = .libPaths()[[1L]])

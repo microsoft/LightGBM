@@ -136,7 +136,9 @@ ignore = [
     # (pylint) for loop variable overwritten by assignment target
     "PLW2901",
     # (pylint) use 'elif' instead of 'else' then 'if', to reduce indentation
-    "PLR5501"
+    "PLR5501",
+    # (flake8-pytest-style) `scope='function'` is implied in `@pytest.fixture()`
+    "PT003"
 ]
 select = [
     # flake8-bugbear
@@ -155,8 +157,12 @@ select = [
     "NPY",
     # pylint
     "PL",
+    # flake8-pytest-style
+    "PT",
     # flake8-return: unnecessary assignment before return
     "RET504",
+    # flake8-return: superfluous-else-raise
+    "RET506",
     # flake8-simplify: use dict.get() instead of an if-else block
     "SIM401",
     # flake8-print
@@ -164,6 +170,9 @@ select = [
     # pycodestyle (warnings)
     "W",
 ]
+
+[tool.ruff.lint.flake8-pytest-style]
+raises-extend-require-match-for = ["*Exception", "*Error"]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/conf.py" = [

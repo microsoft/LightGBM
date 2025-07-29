@@ -27,14 +27,14 @@ resources:
   # ref: https://learn.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/resources-containers-container
   containers:
     - container: linux-artifact-builder
-      image: lightgbm/vsts-agent:manylinux_2_28_x86_64
+      image: lightgbm.azurecr.io/vsts-agent:manylinux_2_28_x86_64
       mountReadOnly:
         work: false
         externals: true
         tools: true
         tasks: true
     - container: ubuntu-latest
-      image: 'ubuntu:22.04'
+      image: mcr.microsoft.com/mirror/docker/library/ubuntu:22.04
       options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
       mountReadOnly:
         work: false
@@ -53,7 +53,7 @@ jobs:
   # Maintenance #
   ###############
   - job: Maintenance
-    pool: mariner-20240410-0
+    pool: lightgbm_agent_pool_ado
     container: ubuntu-latest
     # routine maintenance (like periodically deleting old files),
     # to be run on 1 random CI runner in the self-hosted pool each runner
@@ -90,7 +90,7 @@ jobs:
       SETUP_CONDA: 'false'
       OS_NAME: 'linux'
       PRODUCES_ARTIFACTS: 'true'
-    pool: mariner-20240410-0
+    pool: lightgbm_agent_pool_ado
     container: linux-artifact-builder
     strategy:
       matrix:
@@ -157,7 +157,7 @@ jobs:
       IN_UBUNTU_BASE_CONTAINER: 'true'
       OS_NAME: 'linux'
       SETUP_CONDA: 'true'
-    pool: mariner-20240410-0
+    pool: lightgbm_agent_pool_ado
     container: ubuntu-latest
     strategy:
       matrix:
@@ -286,7 +286,7 @@ jobs:
   ###########
   - job: Windows
     pool:
-      vmImage: 'windows-2019'
+      vmImage: 'windows-2022'
     strategy:
       matrix:
         regular:

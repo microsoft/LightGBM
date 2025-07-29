@@ -14,7 +14,7 @@
 #' @export
 lgb.drop_serialized <- function(model) {
   if (!.is_Booster(x = model)) {
-    stop("lgb.drop_serialized: model should be an ", sQuote("lgb.Booster"))
+    stop("lgb.drop_serialized: model should be an ", sQuote("lgb.Booster", q = FALSE))
   }
   model$drop_raw()
   return(invisible(model))

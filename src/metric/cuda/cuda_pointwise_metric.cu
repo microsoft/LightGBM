@@ -2,11 +2,13 @@
  * Copyright (c) 2022 Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See LICENSE file in the project root for
  * license information.
+ * Modifications Copyright(C) 2023 Advanced Micro Devices, Inc. All rights reserved.
  */
 
 #ifdef USE_CUDA
 
 #include <LightGBM/cuda/cuda_algorithms.hpp>
+#include <LightGBM/cuda/cuda_rocm_interop.h>
 
 #include "cuda_binary_metric.hpp"
 #include "cuda_pointwise_metric.hpp"
@@ -17,7 +19,7 @@ namespace LightGBM {
 template <typename CUDA_METRIC, bool USE_WEIGHTS>
 __global__ void EvalKernel(const data_size_t num_data, const label_t* labels, const label_t* weights,
                            const double* scores, double* reduce_block_buffer, const double param) {
-  __shared__ double shared_mem_buffer[32];
+  __shared__ double shared_mem_buffer[WARPSIZE];
   const data_size_t index = static_cast<data_size_t>(threadIdx.x + blockIdx.x * blockDim.x);
   double point_metric = 0.0;
   if (index < num_data) {

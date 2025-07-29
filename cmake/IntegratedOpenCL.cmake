@@ -66,8 +66,14 @@ set(BOOST_INCLUDE "${BOOST_BASE}/source" CACHE PATH "")
 set(BOOST_LIBRARY "${BOOST_BASE}/source/stage/lib" CACHE PATH "")
 if(WIN32)
   if(MSVC)
+    # references:
+    #
+    #  * range of MSVC versions: https://learn.microsoft.com/en-us/cpp/overview/compiler-versions
+    #  * MSVC toolchain IDs: not sure...
+    #    comments like https://learn.microsoft.com/en-us/answers/questions/769911/visual-studio-2019-build-tools-v143
+    #
     if(${MSVC_VERSION} GREATER 1929)
-      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+      set(MSVC_TOOLCHAIN_ID "143")
     elseif(${MSVC_VERSION} GREATER 1919)
       set(MSVC_TOOLCHAIN_ID "142")
     elseif(${MSVC_VERSION} GREATER 1909)
@@ -75,7 +81,7 @@ if(WIN32)
     elseif(${MSVC_VERSION} GREATER 1899)
       set(MSVC_TOOLCHAIN_ID "140")
     else()
-      message(FATAL_ERROR "Unrecognized MSVC version number: ${MSVC_VERSION}")
+      message(FATAL_ERROR "Unsupported MSVC version number: ${MSVC_VERSION}")
     endif()
     list(
       APPEND
