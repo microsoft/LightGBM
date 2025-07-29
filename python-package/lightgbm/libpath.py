@@ -41,7 +41,7 @@ def _find_lib_path() -> List[str]:
 
 # we don't need lib_lightgbm while building docs
 _LIB: ctypes.CDLL
-if environ.get("LIGHTGBM_BUILD_DOC", "False") != "True":
+if environ.get("LIGHTGBM_BUILD_DOC", "False") == "True":
     from unittest.mock import Mock  # isort: skip
 
     _LIB = Mock(ctypes.CDLL)  # type: ignore
