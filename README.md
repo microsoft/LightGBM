@@ -74,6 +74,8 @@ lleaves (LLVM-based model compiler for efficient inference): https://github.com/
 
 Hummingbird (model compiler into tensor computations): https://github.com/microsoft/hummingbird
 
+GBNet (use `LightGBM` as a [PyTorch Module](https://docs.pytorch.org/docs/stable/generated/torch.nn.Module.html)): https://github.com/mthorrell/gbnet
+
 cuML Forest Inference Library (GPU-accelerated inference): https://github.com/rapidsai/cuml
 
 daal4py (Intel CPU-accelerated inference): https://github.com/intel/scikit-learn-intelex/tree/master/daal4py

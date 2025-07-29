@@ -506,7 +506,7 @@ def test_clone_and_property():
     assert isinstance(clf.feature_importances_, np.ndarray)
 
 
-@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))
+@pytest.mark.parametrize("estimator", (lgb.LGBMClassifier, lgb.LGBMRegressor, lgb.LGBMRanker))  # noqa: PT007
 def test_estimators_all_have_the_same_kwargs_and_defaults(estimator):
     base_spec = inspect.getfullargspec(lgb.LGBMModel)
     subclass_spec = inspect.getfullargspec(estimator)
@@ -760,7 +760,7 @@ def test_random_state_object(rng_constructor):
     df3 = clf1.booster_.model_to_string(num_iteration=0)
     assert clf1.random_state is state1
     assert clf2.random_state is state2
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_pred1, y_pred1_refit)
     assert df1 != df3
 
@@ -832,16 +832,16 @@ def test_pandas_categorical(rng_fixed_seed, tmp_path):
     pred5 = gbm5.predict(X_test, raw_score=True)
     gbm6 = lgb.sklearn.LGBMClassifier(n_estimators=10).fit(X, y, categorical_feature=[])
     pred6 = gbm6.predict(X_test, raw_score=True)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred1)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred2)
     np.testing.assert_allclose(pred1, pred2)
     np.testing.assert_allclose(pred0, pred3)
     np.testing.assert_allclose(pred_prob, pred4)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred5)  # ordered cat features aren't treated as cat features by default
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(pred0, pred6)
     assert gbm0.booster_.pandas_categorical == cat_values
     assert gbm1.booster_.pandas_categorical == cat_values
@@ -916,7 +916,7 @@ def test_predict():
     # Tests other parameters for the prediction works
     res_engine = gbm.predict(X_test)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Tests start_iteration
@@ -948,7 +948,7 @@ def test_predict():
     # Tests other parameters for the prediction works, starting from iteration 10
     res_engine = gbm.predict(X_test, start_iteration=10)
     res_sklearn_params = clf.predict_proba(X_test, pred_early_stop=True, pred_early_stop_margin=1.0, start_iteration=10)
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(res_engine, res_sklearn_params)
 
     # Test multiclass binary classification
@@ -982,7 +982,7 @@ def test_predict_with_params_from_init():
     y_preds_params_in_predict = (
         lgb.LGBMClassifier(verbose=-1).fit(X_train, y_train).predict(X_test, raw_score=True, **predict_params)
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # noqa: PT011
         np.testing.assert_allclose(y_preds_no_params, y_preds_params_in_predict)
 
     y_preds_params_in_set_params_before_fit = (
@@ -1645,7 +1645,8 @@ def test_getting_feature_names_in_np_input(estimator_class):
 def test_getting_feature_names_in_pd_input(estimator_class):
     X, y = load_digits(n_class=2, return_X_y=True, as_frame=True)
     col_names = X.columns.to_list()
-    assert isinstance(col_names, list) and all(isinstance(c, str) for c in col_names), (
+    assert isinstance(col_names, list)
+    assert all(isinstance(c, str) for c in col_names), (
         "input data must have feature names for this test to cover the expected functionality"
     )
     params = {"n_estimators": 2, "num_leaves": 7}
@@ -1703,9 +1704,10 @@ def test_sklearn_tags_should_correctly_reflect_lightgbm_specific_values(estimato
     # minimum supported scikit-learn version is at least 1.6
     try:
         sklearn_tags = est.__sklearn_tags__()
-    except AttributeError as err:
+    except AttributeError:
         # only the exact error we expected to be raised should be raised
-        assert bool(re.search(r"__sklearn_tags__.* should not be called", str(err)))
+        with pytest.raises(AttributeError, match=r"__sklearn_tags__.* should not be called"):
+            est.__sklearn_tags__()
     else:
         # if no AttributeError was thrown, we must be using scikit-learn>=1.6,
         # and so the actual effects of __sklearn_tags__() should be tested
