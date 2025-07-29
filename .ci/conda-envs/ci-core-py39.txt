@@ -18,7 +18,7 @@ python=3.9.*
 
 # direct imports
 cffi=1.15.*
-# Dask & distributed are the first versions that support tornado >=6.2
+# dask and distributed versions below are the first versions that support tornado >=6.2
 # which is required for testing
 dask=2022.12.*
 distributed=2022.12.*

@@ -75,32 +75,32 @@ jobs:
         include:
           - os: macos-13
             task: regular
-            python_version: "3.11"
+            python_version: '3.11'
           - os: macos-13
             task: sdist
-            python_version: "3.12"
+            python_version: '3.12'
           - os: macos-13
             task: bdist
-            python_version: "3.9"
+            python_version: '3.9'
           - os: macos-13
             task: if-else
-            python_version: "3.10"
+            python_version: '3.10'
           - os: macos-14
             task: bdist
             method: wheel
-            python_version: "3.11"
+            python_version: '3.11'
           - os: macos-13
             task: mpi
             method: source
-            python_version: "3.12"
+            python_version: '3.12'
           - os: macos-13
             task: mpi
             method: pip
-            python_version: "3.13"
+            python_version: '3.13'
           - os: macos-13
             task: mpi
             method: wheel
-            python_version: "3.10"
+            python_version: '3.10'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -165,8 +165,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # This should always include at least the oldest
+        # not-yet-end-of-life Python version
         python_version:
-          - "3.9"
+          - '3.9'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
