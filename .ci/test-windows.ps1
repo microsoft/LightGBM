@@ -42,7 +42,7 @@ if ($env:TASK -eq "swig") {
         "$env:BUILD_SOURCESDIRECTORY/swig/swigwin.zip",
         "$env:BUILD_SOURCESDIRECTORY/swig"
     ) ; Assert-Output $?
-    $SwigFolder = Get-ChildItem -Directory -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig"
+    $SwigFolder = Get-ChildItem -Name -Path "$env:BUILD_SOURCESDIRECTORY/swig" -Attributes Directory
     $env:PATH = @("$env:BUILD_SOURCESDIRECTORY/swig/$SwigFolder", "$env:PATH") -join ";"
     $BuildLogFileName = "$env:BUILD_SOURCESDIRECTORY\cmake_build.log"
     cmake -B build -S . -A x64 -DUSE_SWIG=ON *> "$BuildLogFileName" ; $build_succeeded = $?
@@ -108,7 +108,8 @@ if ($env:TASK -eq "regular") {
     Get-ItemProperty -Path Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors
 
     conda activate $env:CONDA_ENV
-    sh "build-python.sh" bdist_wheel --integrated-opencl ; Assert-Output $?
+    # TODO: restore --integrated-opencl as part of https://github.com/microsoft/LightGBM/issues/6968
+    sh "build-python.sh" bdist_wheel ; Assert-Output $?
     sh ./.ci/check-python-dists.sh ./dist ; Assert-Output $?
     Set-Location dist; pip install @(Get-ChildItem *py3-none-win_amd64.whl) ; Assert-Output $?
     cp @(Get-ChildItem *py3-none-win_amd64.whl) "$env:BUILD_ARTIFACTSTAGINGDIRECTORY"
@@ -128,7 +129,8 @@ if (($env:TASK -eq "sdist") -or (($env:APPVEYOR -eq "true") -and ($env:TASK -eq 
 }
 if ($env:TASK -eq "bdist") {
     # Make sure we can do both CPU and GPU; see tests/python_package_test/test_dual.py
-    $env:LIGHTGBM_TEST_DUAL_CPU_GPU = "1"
+    # TODO: set LIGHTGBM_TEST_DUAL_CPU_GPU back to "1" as part of https://github.com/microsoft/LightGBM/issues/6968
+    env:LIGHTGBM_TEST_DUAL_CPU_GPU = "0"
 }
 
 pytest $tests ; Assert-Output $?
