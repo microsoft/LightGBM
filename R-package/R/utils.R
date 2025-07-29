@@ -1,13 +1,13 @@
 .is_Booster <- function(x) {
-  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals
+  return(all(c("R6", "lgb.Booster") %in% class(x)))  # nolint: class_equals.
 }
 
 .is_Dataset <- function(x) {
-  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals
+  return(all(c("R6", "lgb.Dataset") %in% class(x)))  # nolint: class_equals.
 }
 
 .is_Predictor <- function(x) {
-  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals
+  return(all(c("R6", "lgb.Predictor") %in% class(x)))  # nolint: class_equals.
 }
 
 .is_null_handle <- function(x) {
@@ -95,7 +95,7 @@
     if (any(bad)) {
       stop(
         "unknown feature(s) in interaction_constraints: "
-        , toString(sQuote(constraint[bad], q = "'"))
+        , toString(sQuote(constraint[bad], q = FALSE))
       )
     }
 
@@ -224,7 +224,7 @@
 
 #' @importFrom parallel detectCores
 .get_default_num_threads <- function() {
-  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {  # nolint: undesirable_function
+  if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {  # nolint: undesirable_function.
     return(RhpcBLASctl::get_num_cores())
   } else {
     msg <- "Optional package 'RhpcBLASctl' not found."

@@ -1100,7 +1100,7 @@ class _InnerPredictor:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -1130,7 +1130,7 @@ class _InnerPredictor:
         """
         if isinstance(data, Dataset):
             raise TypeError("Cannot use Dataset instance for prediction, please use raw data instead")
-        elif isinstance(data, pd_DataFrame) and validate_features:
+        if isinstance(data, pd_DataFrame) and validate_features:
             data_names = [str(x) for x in data.columns]
             ptr_names = (ctypes.c_char_p * len(data_names))()
             ptr_names[:] = [x.encode("utf-8") for x in data_names]
@@ -2596,7 +2596,7 @@ class Dataset:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source of Dataset.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM) or a LightGBM Dataset binary file.
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None, optional (default=None)
@@ -2741,7 +2741,7 @@ class Dataset:
         ----------
         field_name : str
             The field name of the information.
-        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray or None
+        data : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             The data to be set.
 
         Returns
@@ -3214,7 +3214,7 @@ class Dataset:
 
         Returns
         -------
-        label : list, numpy 1-D array, pandas Series / one-column DataFrame or None
+        label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array, pyarrow ChunkedArray or None
             The label information from the Dataset.
             For a constructed ``Dataset``, this will only return a numpy array.
         """
@@ -3227,7 +3227,7 @@ class Dataset:
 
         Returns
         -------
-        weight : list, numpy 1-D array, pandas Series or None
+        weight : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Weight for each data point from the Dataset. Weights should be non-negative.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3240,7 +3240,7 @@ class Dataset:
 
         Returns
         -------
-        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), or None
+        init_score : list, list of lists (for multi-class task), numpy array, pandas Series, pandas DataFrame (for multi-class task), pyarrow Array, pyarrow ChunkedArray, pyarrow Table (for multi-class task) or None
             Init score of Booster.
             For a constructed ``Dataset``, this will only return ``None`` or a numpy array.
         """
@@ -3253,7 +3253,7 @@ class Dataset:
 
         Returns
         -------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array or None
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array, pyarrow Table or None
             Raw data used in the Dataset construction.
         """
         if self._handle is None:
@@ -3286,7 +3286,7 @@ class Dataset:
 
         Returns
         -------
-        group : list, numpy 1-D array, pandas Series or None
+        group : list, numpy 1-D array, pandas Series, pyarrow Array, pyarrow ChunkedArray or None
             Group/query data.
             Only used in the learning-to-rank task.
             sum(group) = n_samples.
@@ -4080,8 +4080,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the update was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``update()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``update()`` would produce a non-empty tree.
         """
         # need reset training data
         if train_set is None and self.train_set_version != self.train_set.version:
@@ -4103,18 +4108,18 @@ class Booster:
             )
             self.__inner_predict_buffer[0] = None
             self.train_set_version = self.train_set.version
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         if fobj is None:
             if self.__set_objective_to_none:
                 raise LightGBMError("Cannot update due to null objective function.")
             _safe_call(
                 _LIB.LGBM_BoosterUpdateOneIter(
                     self._handle,
-                    ctypes.byref(is_finished),
+                    ctypes.byref(produced_empty_tree),
                 )
             )
             self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-            return is_finished.value == 1
+            return produced_empty_tree.value == 1
         else:
             if not self.__set_objective_to_none:
                 self.reset_parameter({"objective": "none"}).__set_objective_to_none = True
@@ -4146,8 +4151,13 @@ class Booster:
 
         Returns
         -------
-        is_finished : bool
-            Whether the boost was successfully finished.
+        produced_empty_tree : bool
+            ``True`` if the tree(s) produced by this iteration did not have any splits.
+            This usually means that training is "finished" (calling ``__boost()`` again
+            will not change the model's predictions). However, that is not always the
+            case. For example, if you have added any randomness (like column sampling by
+            setting ``feature_fraction_bynode < 1.0``), it is possible that another call
+            to ``__boost()`` would produce a non-empty tree.
         """
         if self.__num_class > 1:
             grad = grad.ravel(order="F")
@@ -4165,17 +4175,17 @@ class Booster:
                 f"don't match training data length ({num_train_data}) * "
                 f"number of models per one iteration ({self.__num_class})"
             )
-        is_finished = ctypes.c_int(0)
+        produced_empty_tree = ctypes.c_int(0)
         _safe_call(
             _LIB.LGBM_BoosterUpdateOneIterCustom(
                 self._handle,
                 grad.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                 hess.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
-                ctypes.byref(is_finished),
+                ctypes.byref(produced_empty_tree),
             )
         )
         self.__is_predicted_cur_iter = [False for _ in range(self.__num_dataset)]
-        return is_finished.value == 1
+        return produced_empty_tree.value == 1
 
     def rollback_one_iter(self) -> "Booster":
         """Rollback one iteration.
@@ -4670,7 +4680,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, pyarrow Table or scipy.sparse
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse or pyarrow Table
             Data source for prediction.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         start_iteration : int, optional (default=0)
@@ -4751,7 +4761,7 @@ class Booster:
 
         Parameters
         ----------
-        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence or list of numpy array
+        data : str, pathlib.Path, numpy array, pandas DataFrame, scipy.sparse, Sequence, list of Sequence, list of numpy array or pyarrow Table
             Data source for refit.
             If str or pathlib.Path, it represents the path to a text file (CSV, TSV, or LibSVM).
         label : list, numpy 1-D array, pandas Series / one-column DataFrame, pyarrow Array or pyarrow ChunkedArray
@@ -5097,8 +5107,7 @@ class Booster:
                 if split_feature == feature:
                     if isinstance(root["threshold"], str):
                         raise LightGBMError("Cannot compute split value histogram for the categorical feature")
-                    else:
-                        values.append(root["threshold"])
+                    values.append(root["threshold"])
                 add(root["left_child"])
                 add(root["right_child"])
 
