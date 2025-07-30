@@ -45,6 +45,9 @@ from .compat import (
     pd_Series,
 )
 
+if PYARROW_INSTALLED:
+    import pyarrow as pa
+
 if TYPE_CHECKING:
     from typing import Literal
 
@@ -3267,6 +3270,8 @@ class Dataset:
                     self.data = self.data.iloc[self.used_indices].copy()
                 elif isinstance(self.data, Sequence):
                     self.data = self.data[self.used_indices]
+                elif isinstance(self.data, pa_Table):
+                    self.data = self.data.take(self.used_indices)
                 elif _is_list_of_sequences(self.data) and len(self.data) > 0:
                     self.data = np.array(list(self._yield_row_from_seqlist(self.data, self.used_indices)))
                 else:
@@ -3451,6 +3456,21 @@ class Dataset:
                     self.data = np.hstack((self.data, other.data.toarray()))
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = np.hstack((self.data, other.data.values))
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    self.data = np.hstack(
+                        (
+                            self.data,
+                            np.column_stack(
+                                [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                            ),
+                        )
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, scipy.sparse.spmatrix):
@@ -3459,6 +3479,22 @@ class Dataset:
                     self.data = scipy.sparse.hstack((self.data, other.data), format=sparse_format)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = scipy.sparse.hstack((self.data, other.data.values), format=sparse_format)
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    self.data = scipy.sparse.hstack(
+                        (
+                            self.data,
+                            np.column_stack(
+                                [other.data.column(i).to_numpy() for i in range(len(other.data.column_names))]
+                            ),
+                        ),
+                        format=sparse_format,
+                    )
                 else:
                     self.data = None
             elif isinstance(self.data, pd_DataFrame):
@@ -3474,6 +3510,71 @@ class Dataset:
                     self.data = concat((self.data, pd_DataFrame(other.data.toarray())), axis=1, ignore_index=True)
                 elif isinstance(other.data, pd_DataFrame):
                     self.data = concat((self.data, other.data), axis=1, ignore_index=True)
+                elif isinstance(other.data, pa_Table):
+                    if not PYARROW_INSTALLED:
+                        raise LightGBMError(
+                            "Cannot add features to pyarrow.Table type of raw data "
+                            "without pyarrow installed. "
+                            "Install pyarrow and restart your session."
+                        )
+                    self.data = concat(
+                        (
+                            self.data,
+                            pd_DataFrame(
+                                {
+                                    other.data.column_names[i]: other.data.column(i).to_numpy()
+                                    for i in range(len(other.data.column_names))
+                                }
+                            ),
+                        ),
+                        axis=1,
+                        ignore_index=True,
+                    )
+                else:
+                    self.data = None
+            elif isinstance(self.data, pa_Table):
+                if not PYARROW_INSTALLED:
+                    raise LightGBMError(
+                        "Cannot add features to pyarrow.Table type of raw data "
+                        "without pyarrow installed. "
+                        "Install pyarrow and restart your session."
+                    )
+                if isinstance(other.data, np.ndarray):
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa.array(other.data[:, i]) for i in range(other.data.shape[1])],
+                        ],
+                        names=[
+                            *self.data.column_names,
+                            *[f"D{len(self.data.column_names) + i + 1}" for i in range(other.data.shape[1])],
+                        ],
+                    )
+                elif isinstance(other.data, scipy.sparse.spmatrix):
+                    other_array = other.data.toarray()
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa.array(other_array[:, i]) for i in range(other_array.shape[1])],
+                        ],
+                        names=[
+                            *self.data.column_names,
+                            *[f"D{len(self.data.column_names) + i + 1}" for i in range(other_array.shape[1])],
+                        ],
+                    )
+                elif isinstance(other.data, pd_DataFrame):
+                    self.data = pa_Table.from_arrays(
+                        [
+                            *self.data.columns,
+                            *[pa.array(other.data.iloc[:, i].values) for i in range(len(other.data.columns))],
+                        ],
+                        names=[*self.data.column_names, *map(str, other.data.columns.tolist())],
+                    )
+                elif isinstance(other.data, pa_Table):
+                    self.data = pa_Table.from_arrays(
+                        [*self.data.columns, *other.data.columns],
+                        names=[*self.data.column_names, *other.data.column_names],
+                    )
                 else:
                     self.data = None
             else:
