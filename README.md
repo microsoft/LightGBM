@@ -1,6 +1,6 @@
 <img src=https://github.com/microsoft/LightGBM/blob/master/docs/logo/LightGBM_logo_black_text.svg width=300 />
 
-Light Gradient Boosting Machine
+Light Gradient Boosting Machine Test
 ===============================
 
 [![Python-package GitHub Actions Build Status](https://github.com/microsoft/LightGBM/actions/workflows/python_package.yml/badge.svg?branch=master)](https://github.com/microsoft/LightGBM/actions/workflows/python_package.yml)
