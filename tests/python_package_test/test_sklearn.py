@@ -1731,8 +1731,7 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
     params = {"n_estimators": 1, "num_leaves": 3, "random_state": 0}
     model_factory = task_to_model_factory[task]
     if task == "ranking":
-        with pytest.warns(UserWarning, match="column-vector"):
-            model_1d = model_factory(**params).fit(X, y, group=g)
+        model_1d = model_factory(**params).fit(X, y, group=g)
         with pytest.warns(UserWarning, match="column-vector"):
             model_2d = model_factory(**params).fit(X, y_col_array, group=g)
     else:
