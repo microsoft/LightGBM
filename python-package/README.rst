@@ -333,6 +333,12 @@ Examples
 
 Refer to the walk through examples in `Python guide folder <https://github.com/microsoft/LightGBM/tree/master/examples/python-guide>`_.
 
+Supported Python Versions
+-------------------------
+
+This project supports all Python versions until they reach end-of-life.
+For details on the support calendar for Python versions, see https://devguide.python.org/versions/.
+
 Development Guide
 -----------------
 
