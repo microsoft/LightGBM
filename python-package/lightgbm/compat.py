@@ -52,7 +52,7 @@ try:
             #  * lightgbm cannot be used with scikit-learn versions older than that
             #  * this validate_data() re-implementation will not be called in scikit-learn>=1.6
             #
-            from sklearn.utils.validation import _num_features
+            from sklearn.utils.validation import _num_features  # noqa: PLC0415
 
             # _num_features() raises a TypeError on 1-dimensional input. That's a problem
             # because scikit-learn's 'check_fit1d' estimator check sets that expectation that

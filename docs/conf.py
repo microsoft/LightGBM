@@ -67,7 +67,7 @@ class IgnoredDirective(Directive):
 
 # -- General configuration ------------------------------------------------
 
-os.environ["LIGHTGBM_BUILD_DOC"] = "1"
+os.environ["LIGHTGBM_BUILD_DOC"] = "True"
 C_API = os.environ.get("C_API", "").lower().strip() != "no"
 RTD = bool(os.environ.get("READTHEDOCS", ""))
 RTD_VERSION = os.environ.get("READTHEDOCS_VERSION", "stable")

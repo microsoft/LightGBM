@@ -466,3 +466,6 @@ dask-worker-space/
 
 # hipify-perl -inplace leaves behind *.prehip files
 *.prehip
+
+# pixi environments
+.pixi

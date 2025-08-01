@@ -74,7 +74,7 @@ class CallbackEnv:
 def _is_using_cv(env: CallbackEnv) -> bool:
     """Check if model in callback env is a CVBooster."""
     # this import is here to avoid a circular import
-    from .engine import CVBooster
+    from .engine import CVBooster  # noqa: PLC0415
 
     return isinstance(env.model, CVBooster)
 

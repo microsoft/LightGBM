@@ -287,7 +287,7 @@ def _log_callback(msg: bytes) -> None:
 
 
 # connect the Python logger to logging in lib_lightgbm
-if not environ.get("LIGHTGBM_BUILD_DOC", False):
+if environ.get("LIGHTGBM_BUILD_DOC", "False") != "True":
     _LIB.LGBM_GetLastError.restype = ctypes.c_char_p
     callback = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
     _LIB.callback = callback(_log_callback)  # type: ignore[attr-defined]
@@ -840,7 +840,7 @@ def _data_from_pandas(
         for col, category in zip(cat_cols, pandas_categorical):
             if list(data[col].cat.categories) != list(category):
                 data[col] = data[col].cat.set_categories(category)
-    if len(cat_cols):  # cat_cols is list
+    if cat_cols:  # cat_cols is list
         data[cat_cols] = data[cat_cols].apply(lambda x: x.cat.codes).replace({-1: np.nan})
 
     # use cat cols from DataFrame
