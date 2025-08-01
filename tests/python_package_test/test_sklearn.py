@@ -1736,7 +1736,8 @@ def test_training_succeeds_when_data_is_dataframe_and_label_is_column_array(task
             model_2d = model_factory(**params).fit(X, y_col_array, group=g)
     else:
         model_1d = model_factory(**params).fit(X, y)
-        model_2d = model_factory(**params).fit(X, y_col_array)
+        with pytest.warns(UserWarning, match="column-vector"):
+            model_2d = model_factory(**params).fit(X, y_col_array)
 
     preds_1d = model_1d.predict(X)
     preds_2d = model_2d.predict(X)
