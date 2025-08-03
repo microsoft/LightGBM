@@ -165,10 +165,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # end-of-life Python versions
+        # This should always include at least the oldest
+        # not-yet-end-of-life Python version
         python_version:
-          - '3.7'
-          - '3.8'
+          - '3.9'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
