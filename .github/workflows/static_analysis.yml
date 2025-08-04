@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  COMPILER: "gcc"
-  MAKEFLAGS: "-j4"
-  OS_NAME: "linux"
-  PYTHON_VERSION: "3.13"
+  COMPILER: 'gcc'
+  MAKEFLAGS: '-j4'
+  OS_NAME: 'linux'
+  PYTHON_VERSION: '3.13'
 
 jobs:
   lint:
